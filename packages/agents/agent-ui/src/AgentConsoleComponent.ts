@@ -1204,7 +1204,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const selectedTask = await this.selectCodingTask({
             title: 'Coding tasks',
             unavailableNotice: 'Review is unavailable without app RPC.',
-            emptyNotice: 'No coding tasks available.'
+            emptyNotice: 'No coding tasks available.',
+            selectedTaskId: String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim() || undefined
         });
         if (!selectedTask) {
             return true;
@@ -1218,6 +1219,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         unavailableNotice: string;
         emptyNotice: string;
         filter?: (task: any) => boolean;
+        selectedTaskId?: string;
     }): Promise<any | null> {
         if (!this.appRpc) {
             this.notify(options.unavailableNotice);
@@ -1231,10 +1233,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(options.emptyNotice);
             return null;
         }
+        const selectedIndex = Math.max(0, filteredTasks.findIndex(task => task?.id === options.selectedTaskId));
         const selectedTaskId = await this.select(
             options.title,
             filteredTasks.map((task: any) => this.buildCodingTaskSelectOption(task, filteredTasks)),
-            0,
+            selectedIndex,
             this.state.consoleOptions.selectCloseHint
         );
         if (!selectedTaskId) {

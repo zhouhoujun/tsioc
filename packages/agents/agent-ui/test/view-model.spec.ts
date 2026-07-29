@@ -2083,6 +2083,54 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('');
     }
 
+    @Test('review command preselects the active review task in selector')
+    async reviewCommandPreselectsTheActiveReviewTaskInSelector() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const rootTask = {
+            ...createReviewTask(),
+            id: 'task-0',
+            title: 'Initial patch'
+        };
+        const retryTask = {
+            ...createRetryableTask(),
+            id: 'task-1',
+            title: 'Retry patch',
+            metadata: {
+                ...(createRetryableTask().metadata || {}),
+                retryOfTaskId: 'task-0',
+                retrySourceTaskId: 'task-0',
+                retrySequence: 1
+            }
+        };
+        appRpc.codingTasks = [rootTask, retryTask];
+        appRpc.codingTaskDetails.set('task-1', retryTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: retryTask.result.diff,
+            workers: retryTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review task-1';
+        await component.submit();
+
+        component.input = '/review';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toEqual('Coding tasks');
+        expect(component.sessionState.selectMenu?.selectedIndex).toEqual(1);
+        expect(component.sessionState.selectMenu?.options[1]?.label).toContain('task-1');
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
     @Test('retry command retries failed workers for direct task id')
     async retryCommandRetriesFailedWorkersForDirectTaskId() {
         const runtime = new RuntimeStub();
