@@ -367,6 +367,23 @@ export class AgentConsoleRendererTest {
     @Test('renders coding task review panel with diff and worker details')
     async renderCodingTaskReviewPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setReviewTasks([{
+            id: 'task-0',
+            title: 'Initial patch',
+            status: 'failed',
+            executionMode: 'parallel',
+            lineageTaskCount: 2
+        } as any, {
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            executionMode: 'parallel',
+            retryOfTaskId: 'task-0',
+            lineageRootTaskId: 'task-0',
+            retryDepth: 1,
+            lineageTaskCount: 2
+        } as any]);
+        ref.instance.sessionState.setSelectedReviewTaskId('task-1');
         ref.instance.sessionState.openReview({
             id: 'task-1',
             title: 'Patch handlers',
@@ -380,6 +397,9 @@ export class AgentConsoleRendererTest {
             },
             metadata: {
                 executionMode: 'parallel',
+                retryOfTaskId: 'task-0',
+                retrySourceTaskId: 'task-0',
+                retrySequence: 1,
                 checkpoints: [{
                     id: 'checkpoint-task-1',
                     status: 'available'
@@ -419,10 +439,11 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('Patch handlers'))).toBe(true);
         expect(reviewLines.some(line => line.includes('completed'))).toBe(true);
         expect(reviewLines.some(line => line.includes('parallel'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('lineage 2/2 root task-0'))).toBe(true);
         expect(reviewLines.some(line => line.includes('1 worker diff'))).toBe(true);
         expect(reviewLines.some(line => line.includes('group 1/2 aggregate'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('Review: ready · rollback available'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('Scope: 2 files changed · 1 worker'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Review: ready · rollback available · lineage 2/2'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Scope: 2 files changed · 1 worker · lineage 2 tasks'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Rollback: available'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Checkpoints: 1 total'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Groups: 2'))).toBe(true);

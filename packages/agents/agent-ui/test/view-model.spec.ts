@@ -2021,15 +2021,15 @@ export class AgentConsoleComponentTest {
         component.input = '/review task-1';
         await component.submit();
 
-        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: needs attention · lineage 2/2');
 
         await component.sessionState.handleFocusKey('p');
         expect(component.sessionState.reviewTask?.id).toEqual('task-0');
-        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 1/2 · root task-0');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available · lineage 1/2');
 
         await component.sessionState.handleFocusKey('n');
         expect(component.sessionState.reviewTask?.id).toEqual('task-1');
-        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: needs attention · lineage 2/2');
     }
 
     @Test('review command loads direct task id without opening select menu')
@@ -3012,17 +3012,15 @@ export class AgentConsoleComponentTest {
         expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
         expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
         expect(state.reviewDetailLines.join('\n')).toContain('worker-2');
-        expect(state.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available');
-        expect(state.reviewDetailLines.join('\n')).toContain('Scope: 2 files changed · 2 workers');
+        expect(state.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available · lineage 2/2');
+        expect(state.reviewDetailLines.join('\n')).toContain('Scope: 2 files changed · 2 workers · lineage 2 tasks');
         expect(state.reviewDetailLines.join('\n')).toContain('Groups: 3');
         expect(state.reviewDetailLines.join('\n')).toContain('› [1/3] aggregate · aggregate');
         expect(state.reviewDetailLines.join('\n')).toContain('[2/3] worker-1 · worker');
         expect(state.reviewDetailLines.join('\n')).toContain('[3/3] worker-2 · worker');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
-        expect(state.reviewDetailLines.join('\n')).toContain('Retry Of: task-0');
         expect(state.reviewDetailLines.join('\n')).toContain('Retry Workers: worker-2');
         expect(state.reviewDetailLines.join('\n')).toContain('Carry Forward: worker-1');
-        expect(state.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
         expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
         expect(state.reviewDetailLines.join('\n')).toContain('› [1/2] src/a.ts (+2 -0)');

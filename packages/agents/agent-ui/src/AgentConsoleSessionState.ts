@@ -1822,14 +1822,6 @@ export class AgentConsoleSessionState {
             }
         }
 
-        const retrySourceTaskId = typeof this.reviewTask?.metadata?.retrySourceTaskId === 'string' && this.reviewTask.metadata.retrySourceTaskId
-            ? this.reviewTask.metadata.retrySourceTaskId
-            : typeof this.reviewTask?.metadata?.retryOfTaskId === 'string' && this.reviewTask.metadata.retryOfTaskId
-                ? this.reviewTask.metadata.retryOfTaskId
-                : '';
-        if (retrySourceTaskId) {
-            lines.push(`Retry Of: ${retrySourceTaskId}`);
-        }
         const retryWorkerIds = Array.isArray(this.reviewTask?.metadata?.retryOfWorkerIds)
             ? this.reviewTask.metadata.retryOfWorkerIds.filter((item: any) => typeof item === 'string' && item)
             : [];
@@ -1842,14 +1834,6 @@ export class AgentConsoleSessionState {
         if (carryForwardWorkerIds.length) {
             lines.push(`Carry Forward: ${carryForwardWorkerIds.join(', ')}`);
         }
-        const lineageTasks = this.getCurrentReviewLineageTasks();
-        if (lineageTasks.length > 1) {
-            const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
-            const lineageIndex = Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId));
-            const lineageRootId = this.resolveTaskLineageRootId(this.reviewTask || this.selectedTask);
-            lines.push(`Lineage: ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` · root ${lineageRootId}` : ''}`);
-        }
-
         const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
             ? this.reviewTask?.metadata?.checkpoints
             : [];
@@ -2619,6 +2603,11 @@ export class AgentConsoleSessionState {
         const workerFailures = this.reviewWorkers.filter(worker => worker.error || String(worker.status || '').trim().toLowerCase() === 'failed').length;
         const sections = this.aggregateReviewFileSections;
         const rollback = this.reviewTask?.result?.rollback;
+        const lineageTasks = this.currentReviewLineageTasks;
+        const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
+        const lineageIndex = lineageTasks.length
+            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
+            : -1;
 
         const reviewState = rollback?.rolledBackAt
             ? 'rollback applied'
@@ -2631,11 +2620,15 @@ export class AgentConsoleSessionState {
                         : status === 'completed'
                             ? 'ready'
                             : 'pending';
-        lines.push(`Review: ${reviewState}`);
+        const reviewSummary = lineageTasks.length > 1 && lineageIndex >= 0
+            ? `${reviewState} · lineage ${lineageIndex + 1}/${lineageTasks.length}`
+            : reviewState;
+        lines.push(`Review: ${reviewSummary}`);
 
         const scopeParts = [
             sections.length ? `${sections.length} file${sections.length === 1 ? '' : 's'} changed` : '',
-            this.reviewWorkers.length ? `${this.reviewWorkers.length} worker${this.reviewWorkers.length === 1 ? '' : 's'}` : ''
+            this.reviewWorkers.length ? `${this.reviewWorkers.length} worker${this.reviewWorkers.length === 1 ? '' : 's'}` : '',
+            lineageTasks.length > 1 ? `lineage ${lineageTasks.length} tasks` : ''
         ].filter(Boolean);
         if (scopeParts.length) {
             lines.push(`Scope: ${scopeParts.join(' · ')}`);
@@ -3238,7 +3231,7 @@ export class AgentConsoleSessionState {
         }
     }
 
-    protected getCurrentReviewLineageTasks(): AgentConsoleReviewTaskItem[] {
+    get currentReviewLineageTasks(): AgentConsoleReviewTaskItem[] {
         const currentTask = this.reviewTask || this.selectedTask;
         const lineageRootId = this.resolveTaskLineageRootId(currentTask);
         if (!lineageRootId) {
@@ -3248,7 +3241,7 @@ export class AgentConsoleSessionState {
     }
 
     protected async navigateReviewLineage(delta: number): Promise<boolean> {
-        const lineageTasks = this.getCurrentReviewLineageTasks();
+        const lineageTasks = this.currentReviewLineageTasks;
         if (lineageTasks.length < 2) {
             return false;
         }
@@ -3269,7 +3262,7 @@ export class AgentConsoleSessionState {
         return true;
     }
 
-    protected resolveTaskLineageRootId(task: Record<string, any> | undefined | null): string {
+    resolveTaskLineageRootId(task: Record<string, any> | undefined | null): string {
         if (!task) {
             return '';
         }

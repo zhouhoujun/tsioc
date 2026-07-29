@@ -2283,12 +2283,21 @@ export class AgentConsoleReviewPanelComponent {
         const groupSummary = groupCount
             ? `group ${Math.min(groupCount, this.state.selectedReviewGroupIndex + 1)}/${groupCount} ${selectedGroup?.label || '-'}`
             : 'group -';
+        const lineageTasks = this.state.currentReviewLineageTasks;
+        const selectedTaskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
+        const lineageIndex = lineageTasks.length
+            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
+            : -1;
+        const lineageRootId = this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask);
+        const lineageSummary = lineageTasks.length > 1 && lineageIndex >= 0
+            ? `lineage ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` root ${lineageRootId}` : ''}`
+            : '';
         const selectedFile = this.state.selectedReviewFileSection;
         const fileCount = this.state.reviewFileSections.length;
         const fileSummary = fileCount
             ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
             : 'file -';
-        return `review ${taskId || '-'} ${title}${sourceSessionId ? `  |  session ${sourceSessionId}` : ''}${projectLabel ? `  |  project ${projectLabel}` : ''}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}  |  ${groupSummary}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return `review ${taskId || '-'} ${title}${sourceSessionId ? `  |  session ${sourceSessionId}` : ''}${projectLabel ? `  |  project ${projectLabel}` : ''}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}${lineageSummary ? `  |  ${lineageSummary}` : ''}  |  ${groupSummary}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
     }
 
     get reviewHintLabel(): string {
