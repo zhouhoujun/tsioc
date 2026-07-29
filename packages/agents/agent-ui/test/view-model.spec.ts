@@ -325,6 +325,62 @@ class AppRpcStub {
                 } : null
             };
         }
+        if (method === 'coding_task.retry_failed') {
+            const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
+            const retryTask = task ? {
+                ...task,
+                id: `${task.id}-retry`,
+                title: `Retry failed workers: ${task.title}`,
+                status: 'completed',
+                result: {
+                    ...(task.result || {}),
+                    aggregate: task.result?.aggregate ? {
+                        ...task.result.aggregate,
+                        failedWorkers: 0,
+                        completedWorkers: Number(task.result.aggregate.totalWorkers || 0),
+                        status: 'completed',
+                        successfulWorkerIds: ['worker-1', 'worker-2'],
+                        failedWorkerIds: [],
+                        isolatedFailures: []
+                    } : undefined,
+                    workers: Array.isArray(task.result?.workers)
+                        ? task.result.workers.map((worker: any) => worker?.status === 'failed'
+                            ? {
+                                ...worker,
+                                status: 'completed',
+                                error: undefined
+                            }
+                            : worker)
+                        : [],
+                    rollback: {
+                        available: true,
+                        checkpointId: `checkpoint-${task.id}-retry`,
+                        mode: 'parallel_worktree'
+                    }
+                },
+                metadata: {
+                    ...(task.metadata || {}),
+                    retryOfTaskId: task.id,
+                    retrySourceTaskId: task.id
+                }
+            } : null;
+            if (retryTask) {
+                this.codingTaskDetails.set(retryTask.id, retryTask);
+                this.codingTaskDiffs.set(retryTask.id, {
+                    sessionId: params?.sessionId || 'console',
+                    taskId: retryTask.id,
+                    executionMode: retryTask.result?.executionMode || 'parallel',
+                    diff: retryTask.result?.diff || null,
+                    workers: retryTask.result?.workers || []
+                });
+            }
+            return {
+                sessionId: params?.sessionId || 'console',
+                taskId: params?.taskId,
+                retried: !!retryTask,
+                task: retryTask
+            };
+        }
         if (method === 'coding_task.rollback') {
             const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
             return {
@@ -701,6 +757,66 @@ function createCancelableTask() {
                 available: false,
                 checkpointId: undefined,
                 mode: undefined
+            }
+        }
+    };
+}
+
+function createRetryableTask() {
+    const task = createReviewTask();
+    return {
+        ...task,
+        status: 'failed',
+        actions: [{
+            id: 'edit-1',
+            title: 'Edit alpha',
+            tool: 'edit_file',
+            input: {},
+            status: 'completed',
+            workerId: 'worker-1'
+        }, {
+            id: 'edit-2',
+            title: 'Edit beta',
+            tool: 'edit_file',
+            input: {},
+            status: 'failed',
+            workerId: 'worker-2',
+            error: 'beta edit failed'
+        }],
+        result: {
+            ...task.result,
+            completedActions: 1,
+            aggregate: {
+                totalWorkers: 2,
+                completedWorkers: 1,
+                failedWorkers: 1,
+                status: 'partial_failure',
+                successfulWorkerIds: ['worker-1'],
+                failedWorkerIds: ['worker-2'],
+                isolatedFailures: [{
+                    workerId: 'worker-2',
+                    actionIds: ['edit-2'],
+                    error: 'beta edit failed'
+                }]
+            },
+            workers: [{
+                workerId: 'worker-1',
+                actionIds: ['edit-1'],
+                status: 'completed',
+                branch: 'coding-task/task1worker1',
+                worktreePath: '.worktrees/task1worker1'
+            }, {
+                workerId: 'worker-2',
+                actionIds: ['edit-2'],
+                status: 'failed',
+                error: 'beta edit failed',
+                branch: 'coding-task/task1worker2',
+                worktreePath: '.worktrees/task1worker2'
+            }],
+            rollback: {
+                available: true,
+                checkpointId: 'checkpoint-task-1',
+                mode: 'parallel_worktree'
             }
         }
     };
@@ -1740,6 +1856,26 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Cancelled task-1.');
     }
 
+    @Test('tasks focus retry action retries failed workers for selected coding task')
+    async tasksFocusRetryActionRetriesFailedWorkersForSelectedCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createRetryableTask();
+        appRpc.codingTasks = [reviewTask];
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        await component.sessionState.handleFocusKey('r');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
+        expect(component.notice).toEqual('Retried failed workers from task-1 as task-1-retry.');
+    }
+
     @Test('tasks focus escape cancels selected running coding task')
     async tasksFocusEscapeCancelsSelectedRunningCodingTask() {
         const runtime = new RuntimeStub();
@@ -1799,6 +1935,32 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Cancelled task-1.');
     }
 
+    @Test('review focus retry action retries failed workers for active coding task')
+    async reviewFocusRetryActionRetriesFailedWorkersForActiveCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createRetryableTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: reviewTask.result.diff,
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review task-1';
+        await component.submit();
+        await component.sessionState.handleFocusKey('r');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
+        expect(component.notice).toEqual('Retried failed workers from task-1 as task-1-retry.');
+    }
+
     @Test('review command loads direct task id without opening select menu')
     async reviewCommandLoadsDirectTaskIdWithoutSelectMenu() {
         const runtime = new RuntimeStub();
@@ -1830,6 +1992,24 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewWorkers.length).toEqual(1);
         expect(component.sessionState.reviewDetailLines.join('\n')).toContain('diff --git a/src/a.ts b/src/a.ts');
         expect(component.notice).toEqual('');
+    }
+
+    @Test('retry command retries failed workers for direct task id')
+    async retryCommandRetriesFailedWorkersForDirectTaskId() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createRetryableTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/retry task-1';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
+        expect(component.notice).toEqual('Retried failed workers from task-1 as task-1-retry.');
     }
 
     @Test('rollback command rolls back direct task id and refreshes review')

@@ -946,6 +946,9 @@ export class AgentConsoleTasksPanelComponent {
         } else {
             actions.push('esc');
         }
+        if (selected && this.canRetryTask(selected)) {
+            actions.push('r retry');
+        }
         if (selected && this.canRollbackTask(selected)) {
             actions.push('b rollback');
         }
@@ -1070,6 +1073,17 @@ export class AgentConsoleTasksPanelComponent {
         }
         const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
         return checkpoints.some((entry: any) => entry?.status === 'available');
+    }
+
+    protected canRetryTask(task: any): boolean {
+        if (!task) {
+            return false;
+        }
+        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
+        if (workers.some((worker: any) => worker?.status === 'failed')) {
+            return true;
+        }
+        return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
     }
 }
 

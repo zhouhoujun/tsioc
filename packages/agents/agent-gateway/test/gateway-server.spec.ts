@@ -1857,6 +1857,17 @@ export class AppRpcServerTest {
                         }
                     };
                 }
+                if (input.action === 'retry_failed') {
+                    expect(input.task_id).toEqual('task-1');
+                    return {
+                        ran: true,
+                        task: {
+                            ...reviewTask,
+                            id: 'task-1-retry',
+                            title: 'Retry failed workers: Patch handlers'
+                        }
+                    };
+                }
                 throw new Error('unexpected action');
             }
         } as any;
@@ -1937,6 +1948,23 @@ export class AppRpcServerTest {
             task: {
                 ...reviewTask,
                 status: 'cancelled'
+            }
+        });
+
+        const retried = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 20,
+            method: 'coding_task.retry_failed',
+            params: { sessionId: 'rpc-review', taskId: 'task-1' }
+        }, { principalId: 'user-1' });
+        expect((retried as any).result).toEqual({
+            sessionId: 'rpc-review',
+            taskId: 'task-1',
+            retried: true,
+            task: {
+                ...reviewTask,
+                id: 'task-1-retry',
+                title: 'Retry failed workers: Patch handlers'
             }
         });
     }

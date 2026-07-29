@@ -576,6 +576,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    get retrySelectedTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.retryFailedCodingTask(taskId);
+        };
+    }
+
     get rollbackSelectedTaskActionHandler(): (taskId: string) => Promise<void> {
         return async (taskId: string) => {
             if (!taskId) {
@@ -685,6 +694,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
         this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
+        this.state.retrySelectedTaskAction = this.retrySelectedTaskActionHandler;
         this.state.rollbackSelectedTaskAction = this.rollbackSelectedTaskActionHandler;
         this.state.toggleSelectedScheduledTaskAction = this.toggleSelectedScheduledTaskActionHandler;
         this.state.cancelSelectedScheduledTaskAction = this.cancelSelectedScheduledTaskActionHandler;
@@ -712,6 +722,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.activateSelectedSessionAction = undefined;
         this.state.openSelectedTaskAction = undefined;
         this.state.cancelSelectedTaskAction = undefined;
+        this.state.retrySelectedTaskAction = undefined;
         this.state.rollbackSelectedTaskAction = undefined;
         this.state.toggleSelectedScheduledTaskAction = undefined;
         this.state.cancelSelectedScheduledTaskAction = undefined;
@@ -945,6 +956,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return checkpoints.some((entry: any) => entry?.status === 'available');
     }
 
+    protected canRetryCodingTask(task: any): boolean {
+        if (!task) {
+            return false;
+        }
+        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
+        if (workers.some((worker: any) => worker?.status === 'failed')) {
+            return true;
+        }
+        return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
+    }
+
     protected buildCodingTaskChoice(task: any) {
         const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
         const rollback = task?.result?.rollback;
@@ -1092,6 +1114,34 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
         await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null);
         this.notify(`Rolled back ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async retryFailedCodingTask(taskId?: string): Promise<boolean> {
+        const fallbackTask = this.state.reviewTask || this.state.selectedTask;
+        const resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Retry task id is required.');
+            return true;
+        }
+        if (!this.appRpc) {
+            this.notify('Retry is unavailable without app RPC.');
+            return true;
+        }
+        if (fallbackTask && fallbackTask.id === resolvedTaskId && !this.canRetryCodingTask(fallbackTask)) {
+            this.notify(`Retry is unavailable for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        const sessionId = this.resolveCodingTaskSessionId(fallbackTask);
+        const result = await this.appRpc.request('coding_task.retry_failed', { sessionId, taskId: resolvedTaskId });
+        if (result?.retried !== true || !result?.task?.id) {
+            this.notify(`Retry failed for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        await this.openCodingTaskReview(result.task.id, result.task);
+        this.notify(`Retried failed workers from ${resolvedTaskId} as ${result.task.id}.`);
         return true;
     }
 
@@ -1270,6 +1320,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
                     { label: '/tasks', value: '/tasks', description: 'task inspector' },
                     { label: '/review', value: '/review', description: 'coding task review' },
+                    { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
@@ -1329,6 +1380,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 return this.openCodingTaskReviewSelector();
+            case '/retry':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.retryFailedCodingTask(parsed.args);
             case '/rollback':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();

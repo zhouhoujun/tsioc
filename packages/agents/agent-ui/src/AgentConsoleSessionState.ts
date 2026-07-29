@@ -255,7 +255,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: ', . group   [ ] file   a additions   u all   up/down scroll   left/right pan   pg jump   y copy   esc',
+    reviewDetailHint: ', . group   [ ] file   a additions   u all   r retry   up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -352,13 +352,14 @@ export class AgentConsoleSessionState {
     activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
     openSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
+    retrySelectedTaskAction?: (taskId: string) => void | Promise<void>;
     rollbackSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     toggleSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -2843,6 +2844,12 @@ export class AgentConsoleSessionState {
                 case 'end':
                     this.scrollReviewDetailToEdge('end');
                     return true;
+                case 'r':
+                    if (this.canRetryFocusedCodingTask()) {
+                        await this.retryFocusedCodingTask();
+                        return true;
+                    }
+                    return false;
                 default:
                     return false;
             }
@@ -2975,9 +2982,14 @@ export class AgentConsoleSessionState {
                     await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), 'selected task');
                     return true;
                 case 'enter':
-                case 'r':
                     if (this.selectedTask?.id) {
                         await this.openSelectedTaskAction?.(this.selectedTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'r':
+                    if (this.canRetryFocusedCodingTask()) {
+                        await this.retryFocusedCodingTask();
                         return true;
                     }
                     return false;
@@ -3158,10 +3170,29 @@ export class AgentConsoleSessionState {
         return !!task?.id && (status === 'planned' || status === 'running');
     }
 
+    protected canRetryFocusedCodingTask(): boolean {
+        const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
+        if (!task?.id) {
+            return false;
+        }
+        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
+        if (workers.some((worker: any) => worker?.status === 'failed')) {
+            return true;
+        }
+        return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
+    }
+
     protected async cancelFocusedCodingTask(): Promise<void> {
         const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
         if (task?.id) {
             await this.cancelSelectedTaskAction?.(task.id);
+        }
+    }
+
+    protected async retryFocusedCodingTask(): Promise<void> {
+        const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
+        if (task?.id) {
+            await this.retrySelectedTaskAction?.(task.id);
         }
     }
 

@@ -150,6 +150,7 @@ export class AppRpcServer {
                         'coding_task.get',
                         'coding_task.diff',
                         'coding_task.cancel',
+                        'coding_task.retry_failed',
                         'coding_task.rollback'
                     ],
                     streamingMethods: ['run.turn_stream']
@@ -202,6 +203,8 @@ export class AppRpcServer {
                 return this.getCodingTaskDiff(params, context);
             case 'coding_task.cancel':
                 return this.cancelCodingTask(params, context);
+            case 'coding_task.retry_failed':
+                return this.retryFailedCodingTask(params, context);
             case 'coding_task.rollback':
                 return this.rollbackCodingTask(params, context);
             default:
@@ -828,6 +831,19 @@ export class AppRpcServer {
             taskId,
             task: output?.task ?? null,
             cancelled: output?.cancelled === true
+        };
+    }
+
+    private async retryFailedCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'retry_failed', task_id: taskId }, context);
+        return {
+            sessionId,
+            taskId,
+            task: output?.task ?? null,
+            retried: output?.ran === true
         };
     }
 
