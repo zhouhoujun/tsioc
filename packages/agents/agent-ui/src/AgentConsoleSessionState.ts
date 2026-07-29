@@ -113,6 +113,10 @@ export interface AgentConsoleReviewTaskItem {
     rollbackAvailable?: boolean;
     rollbackMode?: string;
     checkpointSummary?: string;
+    retryOfTaskId?: string;
+    lineageRootTaskId?: string;
+    retryDepth?: number;
+    lineageTaskCount?: number;
     updatedAt?: number;
     detail?: string;
 }
@@ -1586,8 +1590,12 @@ export class AgentConsoleSessionState {
             const nextItem: AgentConsoleReviewTaskItem = {
                 id: selectedTaskId,
                 title: String(this.reviewTask?.title || selectedTaskId),
+                sourceSessionId: this.reviewTask?.sourceSessionId || this.reviewTask?.sessionId,
                 status: this.reviewTask?.status,
                 executionMode,
+                retryOfTaskId: this.reviewTask?.metadata?.retrySourceTaskId || this.reviewTask?.metadata?.retryOfTaskId,
+                lineageRootTaskId: this.reviewTask?.metadata?.retryOfTaskId || this.reviewTask?.id,
+                retryDepth: typeof this.reviewTask?.metadata?.retrySequence === 'number' ? this.reviewTask.metadata.retrySequence : undefined,
                 updatedAt: this.reviewTask?.updatedAt,
                 detail: typeof this.reviewDiff?.summary === 'string' ? this.reviewDiff.summary : undefined
             };

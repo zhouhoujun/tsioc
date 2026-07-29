@@ -3266,7 +3266,17 @@ export class AgentConsoleComponentTest {
         appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'done item', status: 'completed' }]);
         appRpc.todoPlanBySession.set('chat-b', [{ id: 'todo-b', content: 'active item', status: 'in_progress' }]);
         appRpc.codingTasksBySession.set('chat-a', [{ id: 'task-a', title: 'Task A', updatedAt: 10, status: 'completed' }]);
-        appRpc.codingTasksBySession.set('chat-b', [{ id: 'task-b', title: 'Task B', updatedAt: 20, status: 'running' }]);
+        appRpc.codingTasksBySession.set('chat-b', [{
+            id: 'task-b',
+            title: 'Task B',
+            updatedAt: 20,
+            status: 'running',
+            metadata: {
+                retryOfTaskId: 'task-a',
+                retrySourceTaskId: 'task-a',
+                retrySequence: 1
+            }
+        }]);
 
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
         await (component as any).openSession('chat-a');
@@ -3277,10 +3287,13 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
         expect(component.sessionState.reviewTaskChoices.map(item => ({
             id: item.id,
-            sourceSessionId: item.sourceSessionId
+            sourceSessionId: item.sourceSessionId,
+            retryOfTaskId: item.retryOfTaskId,
+            retryDepth: item.retryDepth,
+            lineageTaskCount: item.lineageTaskCount
         }))).toEqual([
-            { id: 'task-b', sourceSessionId: 'chat-b' },
-            { id: 'task-a', sourceSessionId: 'chat-a' }
+            { id: 'task-b', sourceSessionId: 'chat-b', retryOfTaskId: 'task-a', retryDepth: 1, lineageTaskCount: 2 },
+            { id: 'task-a', sourceSessionId: 'chat-a', retryOfTaskId: undefined, retryDepth: undefined, lineageTaskCount: 2 }
         ]);
     }
 

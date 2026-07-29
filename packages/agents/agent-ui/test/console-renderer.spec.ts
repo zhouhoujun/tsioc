@@ -459,6 +459,7 @@ export class AgentConsoleRendererTest {
                 metadata: {
                     executionMode: 'parallel',
                     retryOfTaskId: 'task-0',
+                    retrySequence: 1,
                     retryOfWorkerIds: ['worker-2'],
                     carryForwardWorkerIds: ['worker-1'],
                     checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
@@ -483,6 +484,9 @@ export class AgentConsoleRendererTest {
                 sourceSessionId: 'chat-b',
                 status: 'completed',
                 executionMode: 'parallel',
+                retryOfTaskId: 'task-0',
+                retryDepth: 1,
+                lineageTaskCount: 2,
                 workerCount: 1,
                 rollbackAvailable: true,
                 checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
@@ -495,9 +499,14 @@ export class AgentConsoleRendererTest {
             const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
             expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('retry 1')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('from task-0')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('lineage 2')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('summary latest project summary')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('session chat-b')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('worker status completed')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('retry depth 1')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('lineage tasks 2')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('retry task-0')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('retry workers worker-2')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('carry forward worker-1')).toBe(true);

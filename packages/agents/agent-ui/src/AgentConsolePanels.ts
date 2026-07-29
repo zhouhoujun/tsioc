@@ -850,10 +850,29 @@ export class AgentConsoleTasksPanelComponent {
         }
         const showSourceSession = new Set(this.tasks.map(task => String(task.sourceSessionId || '').trim()).filter(Boolean)).size > 1;
         return this.visibleTasks.map(task => {
+            const taskRecord = this.state.taskRecords.find(item => item?.id === task.id);
+            const retryOfTaskId = typeof task.retryOfTaskId === 'string' && task.retryOfTaskId
+                ? task.retryOfTaskId
+                : typeof taskRecord?.metadata?.retrySourceTaskId === 'string' && taskRecord.metadata.retrySourceTaskId
+                    ? taskRecord.metadata.retrySourceTaskId
+                    : typeof taskRecord?.metadata?.retryOfTaskId === 'string' && taskRecord.metadata.retryOfTaskId
+                        ? taskRecord.metadata.retryOfTaskId
+                        : '';
+            const retryDepth = typeof task.retryDepth === 'number'
+                ? task.retryDepth
+                : typeof taskRecord?.metadata?.retrySequence === 'number'
+                    ? taskRecord.metadata.retrySequence
+                    : undefined;
+            const lineageTaskCount = typeof task.lineageTaskCount === 'number'
+                ? task.lineageTaskCount
+                : undefined;
             const meta = [
                 showSourceSession && task.sourceSessionId ? `session ${task.sourceSessionId}` : '',
                 task.status || '',
                 task.executionMode || '',
+                typeof retryDepth === 'number' ? `retry ${retryDepth}` : '',
+                retryOfTaskId ? `from ${retryOfTaskId}` : '',
+                typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? `lineage ${lineageTaskCount}` : '',
                 typeof task.workerCount === 'number' ? `${task.workerCount}w` : ''
             ].filter(Boolean).join(' · ');
             return {
@@ -988,6 +1007,10 @@ export class AgentConsoleTasksPanelComponent {
         const carryForwardWorkerIds = Array.isArray(task?.metadata?.carryForwardWorkerIds)
             ? task.metadata.carryForwardWorkerIds.filter((item: any) => typeof item === 'string' && item)
             : [];
+        const retryDepth = typeof task?.metadata?.retrySequence === 'number'
+            ? task.metadata.retrySequence
+            : undefined;
+        const lineageTaskCount = this.state.reviewTaskChoices.find(item => item.id === task.id)?.lineageTaskCount;
         const rollbackLabel = rollback?.available === true
             ? `available${rollback?.mode ? ` (${rollback.mode})` : ''}`
             : rollback?.rolledBackAt
@@ -1009,6 +1032,8 @@ export class AgentConsoleTasksPanelComponent {
             task?.goal ? `goal ${task.goal}` : '',
             `actions ${(task.actions || []).length}`,
             `workers ${Array.isArray(task?.result?.workers) ? task.result.workers.length : 0}`,
+            retryDepth !== undefined ? `retry depth ${retryDepth}` : '',
+            typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? `lineage tasks ${lineageTaskCount}` : '',
             retrySourceTaskId ? `retry ${retrySourceTaskId}` : '',
             retryWorkerIds.length ? `retry workers ${retryWorkerIds.join(', ')}` : '',
             carryForwardWorkerIds.length ? `carry forward ${carryForwardWorkerIds.join(', ')}` : '',

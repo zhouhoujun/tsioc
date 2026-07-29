@@ -967,9 +967,69 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
     }
 
-    protected buildCodingTaskChoice(task: any) {
+    protected resolveCodingTaskRetrySourceTaskId(task: any): string | undefined {
+        const value = task?.metadata?.retrySourceTaskId || task?.metadata?.retryOfTaskId;
+        return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+    }
+
+    protected buildCodingTaskLineageMetadata(task: any, tasks: any[]): {
+        retryOfTaskId?: string;
+        lineageRootTaskId: string;
+        retryDepth?: number;
+        lineageTaskCount: number;
+    } {
+        const taskId = String(task?.id || '').trim();
+        const retryOfTaskId = this.resolveCodingTaskRetrySourceTaskId(task);
+        const taskById = new Map<string, any>(tasks
+            .filter(item => typeof item?.id === 'string' && item.id.trim())
+            .map(item => [String(item.id).trim(), item]));
+        const seen = new Set<string>();
+        let lineageRootTaskId = taskId;
+        let retryDepth = 0;
+        let currentRetrySource = retryOfTaskId;
+        while (currentRetrySource && !seen.has(currentRetrySource)) {
+            seen.add(currentRetrySource);
+            lineageRootTaskId = currentRetrySource;
+            retryDepth += 1;
+            const nextTask = taskById.get(currentRetrySource);
+            currentRetrySource = nextTask ? this.resolveCodingTaskRetrySourceTaskId(nextTask) : undefined;
+        }
+        const lineageTaskCount = tasks.filter(item => {
+            const itemId = String(item?.id || '').trim();
+            if (!itemId) {
+                return false;
+            }
+            if (itemId === lineageRootTaskId) {
+                return true;
+            }
+            const source = this.resolveCodingTaskRetrySourceTaskId(item);
+            if (!source) {
+                return false;
+            }
+            const itemSeen = new Set<string>();
+            let current: string | undefined = source;
+            while (current && !itemSeen.has(current)) {
+                if (current === lineageRootTaskId) {
+                    return true;
+                }
+                itemSeen.add(current);
+                const nextTask = taskById.get(current);
+                current = nextTask ? this.resolveCodingTaskRetrySourceTaskId(nextTask) : undefined;
+            }
+            return false;
+        }).length || 1;
+        return {
+            ...(retryOfTaskId ? { retryOfTaskId } : {}),
+            lineageRootTaskId: lineageRootTaskId || taskId,
+            ...(retryDepth > 0 ? { retryDepth } : {}),
+            lineageTaskCount
+        };
+    }
+
+    protected buildCodingTaskChoice(task: any, tasks: any[] = []) {
         const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
         const rollback = task?.result?.rollback;
+        const lineage = this.buildCodingTaskLineageMetadata(task, tasks.length ? tasks : [task]);
         return {
             id: task.id,
             title: String(task.title || task.id),
@@ -980,13 +1040,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             rollbackAvailable: this.canRollbackCodingTask(task),
             rollbackMode: rollback?.mode,
             checkpointSummary: this.describeCodingTaskCheckpointSummary(task),
+            retryOfTaskId: lineage.retryOfTaskId,
+            lineageRootTaskId: lineage.lineageRootTaskId,
+            retryDepth: lineage.retryDepth,
+            lineageTaskCount: lineage.lineageTaskCount,
             updatedAt: task.updatedAt,
             detail: task?.result?.diff?.summary || task?.planning?.summary || task?.goal
         };
     }
 
-    protected buildCodingTaskSelectOption(task: any): AgentConsoleSelectOption {
-        const choice = this.buildCodingTaskChoice(task);
+    protected buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
+        const choice = this.buildCodingTaskChoice(task, tasks);
         return {
             label: `${choice.id} · ${choice.title}`,
             value: choice.id,
@@ -994,6 +1058,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 choice.sourceSessionId ? `session ${choice.sourceSessionId}` : '',
                 choice.status,
                 choice.executionMode,
+                typeof choice.retryDepth === 'number' ? `retry ${choice.retryDepth}` : '',
                 `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
                 this.describeCodingTaskRollback(task)
             ].filter(Boolean).join(' · ') || 'review',
@@ -1003,6 +1068,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 choice.sourceSessionId ? `Session: ${choice.sourceSessionId}` : '',
                 choice.status ? `Status: ${choice.status}` : '',
                 choice.executionMode ? `Mode: ${choice.executionMode}` : '',
+                choice.retryOfTaskId ? `Retry Of: ${choice.retryOfTaskId}` : '',
+                choice.lineageRootTaskId ? `Lineage Root: ${choice.lineageRootTaskId}` : '',
+                typeof choice.retryDepth === 'number' ? `Retry Depth: ${choice.retryDepth}` : '',
+                typeof choice.lineageTaskCount === 'number' && choice.lineageTaskCount > 1 ? `Lineage Tasks: ${choice.lineageTaskCount}` : '',
                 `Workers: ${choice.workerCount || 0}`,
                 `Rollback: ${this.describeCodingTaskRollback(task)}`,
                 choice.checkpointSummary ? `Checkpoints: ${choice.checkpointSummary}` : '',
@@ -1035,7 +1104,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
         this.state.batch(() => {
             this.state.setTaskRecords(tasks);
-            this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task)));
+            this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));
         });
         return tasks;
     }
@@ -1050,7 +1119,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('No coding tasks available.');
             return true;
         }
-        const selectedTaskId = await this.select('Coding tasks', tasks.map((task: any) => this.buildCodingTaskSelectOption(task)), 0, this.state.consoleOptions.selectCloseHint);
+        const selectedTaskId = await this.select('Coding tasks', tasks.map((task: any) => this.buildCodingTaskSelectOption(task, tasks)), 0, this.state.consoleOptions.selectCloseHint);
         if (!selectedTaskId) {
             return true;
         }
