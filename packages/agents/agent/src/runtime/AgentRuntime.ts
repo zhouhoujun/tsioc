@@ -24,4 +24,21 @@ export abstract class AgentRuntime {
     abstract searchMemory(sessionId: string, query: string): Promise<AgentMemoryRecord[]>;
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
+
+    /**
+     * Set a toolset filter for a specific session. When set, only tools
+     * matching one of the listed toolsets will be exposed to the agent.
+     * Override this in concrete runtimes that support session-scoped filtering.
+     */
+    setSessionToolFilter(_sessionId: string, _toolsets: string[]): void {
+        // no-op by default
+    }
+
+    /**
+     * Clear a previously set toolset filter for a session.
+     * Override this in concrete runtimes that support session-scoped filtering.
+     */
+    clearSessionToolFilter(_sessionId: string): void {
+        // no-op by default
+    }
 }

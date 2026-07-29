@@ -542,8 +542,27 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return undefined;
     }
 
+    protected sessionToolFilters = new Map<string, Set<string>>();
+
+    setSessionToolFilter(sessionId: string, toolsets: string[]): void {
+        if (toolsets.length === 0) {
+            this.sessionToolFilters.delete(sessionId);
+        } else {
+            this.sessionToolFilters.set(sessionId, new Set(toolsets));
+        }
+    }
+
+    clearSessionToolFilter(sessionId: string): void {
+        this.sessionToolFilters.delete(sessionId);
+    }
+
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
-        return this.toolRegistry.getCallableToolDefinitions(sessionId);
+        const defs = this.toolRegistry.getCallableToolDefinitions(sessionId);
+        const filter = this.sessionToolFilters.get(sessionId);
+        if (!filter || filter.size === 0) {
+            return defs;
+        }
+        return defs.filter(d => d.toolset && filter.has(d.toolset));
     }
 
     private async *collectStreamingResponse(
