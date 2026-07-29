@@ -180,6 +180,7 @@ export type AgentToolItem =
     | 'vision_analyze'
     | 'image_generate'
     | 'spawn_agent'
+    | 'parallel_spawn'
     | 'execute_code'
     | 'knowledge_search'
     | 'knowledge_store'

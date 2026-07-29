@@ -52,7 +52,7 @@ import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
 import { ImageGenerateTool } from '../media/image-generate.tool';
-import { SpawnAgentTool } from '../agent/spawn-agent.tool';
+import { SpawnAgentTool, ParallelSpawnTool } from '../agent';
 import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from '../code-execution';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
@@ -162,6 +162,7 @@ const toolItems = {
     vision_analyze: VisionAnalyzeTool,
     image_generate: ImageGenerateTool,
     spawn_agent: SpawnAgentTool,
+    parallel_spawn: ParallelSpawnTool,
     execute_code: ExecuteCodeTool,
     knowledge_search: KnowledgeSearchTool,
     knowledge_store: KnowledgeStoreTool,
@@ -205,7 +206,7 @@ const toolGroups = {
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal'],
-    agent: ['spawn_agent'],
+    agent: ['spawn_agent', 'parallel_spawn'],
     code_execution: ['execute_code'],
     knowledge: ['knowledge_search', 'knowledge_store'],
     git: ['git_operations'],
@@ -245,7 +246,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.',
-    agent: 'Sub-agent delegation and isolated task execution tools.',
+    agent: 'Sub-agent delegation, parallel task execution, and isolated task execution tools.',
     code_execution: 'Sandboxed code execution across multiple languages.',
     knowledge: 'Knowledge base query and store tools.',
     git: 'Git repository operations and history inspection tools.',
@@ -543,6 +544,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         VisionAnalyzeTool,
         ImageGenerateTool,
         SpawnAgentTool,
+        ParallelSpawnTool,
         ExecuteCodeTool,
         KnowledgeSearchTool,
         KnowledgeStoreTool,
