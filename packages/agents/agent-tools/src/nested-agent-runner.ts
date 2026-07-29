@@ -38,6 +38,34 @@ export interface NestedAgentRunResult {
 @Abstract()
 export abstract class NestedAgentRunner {
     abstract run(request: NestedAgentRunRequest): Promise<NestedAgentRunResult>;
+
+    /**
+     * Run multiple sub-agent tasks in parallel.
+     * Default implementation uses Promise.all on individual run() calls.
+     * Override in concrete runners for more sophisticated parallelism.
+     */
+    async runParallel(requests: NestedAgentRunRequest[]): Promise<NestedAgentRunResult[]> {
+        if (requests.length === 0) {
+            return [];
+        }
+        const settled = await Promise.allSettled(requests.map(req => this.run(req)));
+        return settled.map((result, index) => {
+            if (result.status === 'fulfilled') {
+                return result.value;
+            }
+            const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+            return {
+                content: `[parallel worker failed] ${err.message}`,
+                sessionId: requests[index].sessionId,
+                turnCount: 0,
+                toolCalls: 0,
+                report: {
+                    summary: `Task failed: ${err.message}`,
+                    risks: ['parallel worker error']
+                }
+            };
+        });
+    }
 }
 
 function buildSubAgentPrompt(request: SpawnAgentInput): string {
@@ -128,6 +156,24 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             toolsets: input.toolsets,
             parentSessionId: input.sessionId
         });
+        return this.toSpawnAgentResult(result, sessionId);
+    }
+
+    override async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+        if (inputs.length === 0) {
+            return [];
+        }
+        const requests = inputs.map(input => ({
+            prompt: buildSubAgentPrompt(input),
+            sessionId: `spawn-${randomUUID()}`,
+            toolsets: input.toolsets,
+            parentSessionId: input.sessionId
+        }));
+        const results = await this.requireRunner().runParallel(requests);
+        return results.map((result, index) => this.toSpawnAgentResult(result, requests[index].sessionId));
+    }
+
+    protected toSpawnAgentResult(result: NestedAgentRunResult, sessionId: string): SpawnAgentResult {
         const report = result.report ?? parseDelegatedAgentReport(result.content);
         return {
             output: result.content,

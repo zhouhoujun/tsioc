@@ -4,6 +4,16 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 @Abstract()
 export abstract class SpawnAgentAdapter {
     abstract spawn(input: SpawnAgentInput): Promise<SpawnAgentResult>;
+
+    /**
+     * Spawn multiple sub-agents in parallel.
+     * Default implementation runs each spawn sequentially via Promise.all.
+     * Override for optimized parallel execution.
+     */
+    async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+        const results = await Promise.allSettled(inputs.map(input => this.spawn(input)));
+        return results.map(r => r.status === 'fulfilled' ? r.value : { output: '', error: r.reason instanceof Error ? r.reason.message : String(r.reason) });
+    }
 }
 
 export interface SpawnAgentInput {
