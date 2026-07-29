@@ -5,6 +5,7 @@ export * from './provider';
 export * from './agent-tools.module';
 export * from './env-loader';
 export * from './nested-agent-runner';
+export * from './lightweight-agent-runner';
 export * from './sandbox-policy';
 export * from './location-adapter';
 export * from './weather-adapter';

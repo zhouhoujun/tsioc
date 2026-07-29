@@ -107,7 +107,8 @@ import {
     DefaultDataExportAdapter,
     DefaultApprovalAdapter
 } from './default-adapters';
-import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, NestedAgentRunner } from './nested-agent-runner';
+import { LightweightAgentRunner } from './lightweight-agent-runner';
 import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { WeatherAdapter } from '../utility/weather.tool';
@@ -605,6 +606,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         DefaultIntentVerifierAdapter,
         DefaultDataExportAdapter,
         DefaultApprovalAdapter,
+        LightweightAgentRunner,
+        { provide: NestedAgentRunner, useExisting: LightweightAgentRunner },
         DelegatingSpawnAgentAdapter,
         DelegatingLlmTaskAdapter,
         provideResolvedAgentTools(),

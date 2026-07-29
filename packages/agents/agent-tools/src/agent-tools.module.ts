@@ -14,7 +14,8 @@ import {
     DefaultDataExportAdapter,
     DefaultApprovalAdapter
 } from './default-adapters';
-import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, NestedAgentRunner } from './nested-agent-runner';
+import { LightweightAgentRunner } from './lightweight-agent-runner';
 import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { LocationAdapter, LocationTool } from '../utility/location.tool';
@@ -244,6 +245,8 @@ function provideCodingTaskToolFactory() {
         DefaultIntentVerifierAdapter,
         DefaultDataExportAdapter,
         DefaultApprovalAdapter,
+        LightweightAgentRunner,
+        { provide: NestedAgentRunner, useExisting: LightweightAgentRunner },
         DelegatingSpawnAgentAdapter,
         DelegatingLlmTaskAdapter,
         provideResolvedAgentTools(),
