@@ -1792,6 +1792,27 @@ export class AgentConsoleSessionState {
             }
         }
 
+        const retrySourceTaskId = typeof this.reviewTask?.metadata?.retrySourceTaskId === 'string' && this.reviewTask.metadata.retrySourceTaskId
+            ? this.reviewTask.metadata.retrySourceTaskId
+            : typeof this.reviewTask?.metadata?.retryOfTaskId === 'string' && this.reviewTask.metadata.retryOfTaskId
+                ? this.reviewTask.metadata.retryOfTaskId
+                : '';
+        if (retrySourceTaskId) {
+            lines.push(`Retry Of: ${retrySourceTaskId}`);
+        }
+        const retryWorkerIds = Array.isArray(this.reviewTask?.metadata?.retryOfWorkerIds)
+            ? this.reviewTask.metadata.retryOfWorkerIds.filter((item: any) => typeof item === 'string' && item)
+            : [];
+        if (retryWorkerIds.length) {
+            lines.push(`Retry Workers: ${retryWorkerIds.join(', ')}`);
+        }
+        const carryForwardWorkerIds = Array.isArray(this.reviewTask?.metadata?.carryForwardWorkerIds)
+            ? this.reviewTask.metadata.carryForwardWorkerIds.filter((item: any) => typeof item === 'string' && item)
+            : [];
+        if (carryForwardWorkerIds.length) {
+            lines.push(`Carry Forward: ${carryForwardWorkerIds.join(', ')}`);
+        }
+
         const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
             ? this.reviewTask?.metadata?.checkpoints
             : [];

@@ -974,6 +974,17 @@ export class AgentConsoleTasksPanelComponent {
             : 'none';
         const rollback = task?.result?.rollback;
         const aggregate = task?.result?.aggregate;
+        const retrySourceTaskId = typeof task?.metadata?.retrySourceTaskId === 'string' && task.metadata.retrySourceTaskId
+            ? task.metadata.retrySourceTaskId
+            : typeof task?.metadata?.retryOfTaskId === 'string' && task.metadata.retryOfTaskId
+                ? task.metadata.retryOfTaskId
+                : '';
+        const retryWorkerIds = Array.isArray(task?.metadata?.retryOfWorkerIds)
+            ? task.metadata.retryOfWorkerIds.filter((item: any) => typeof item === 'string' && item)
+            : [];
+        const carryForwardWorkerIds = Array.isArray(task?.metadata?.carryForwardWorkerIds)
+            ? task.metadata.carryForwardWorkerIds.filter((item: any) => typeof item === 'string' && item)
+            : [];
         const rollbackLabel = rollback?.available === true
             ? `available${rollback?.mode ? ` (${rollback.mode})` : ''}`
             : rollback?.rolledBackAt
@@ -995,6 +1006,9 @@ export class AgentConsoleTasksPanelComponent {
             task?.goal ? `goal ${task.goal}` : '',
             `actions ${(task.actions || []).length}`,
             `workers ${Array.isArray(task?.result?.workers) ? task.result.workers.length : 0}`,
+            retrySourceTaskId ? `retry ${retrySourceTaskId}` : '',
+            retryWorkerIds.length ? `retry workers ${retryWorkerIds.join(', ')}` : '',
+            carryForwardWorkerIds.length ? `carry forward ${carryForwardWorkerIds.join(', ')}` : '',
             workerStatus ? `worker status ${workerStatus}` : '',
             isolatedFailureLabel,
             `rollback ${rollbackLabel}`,

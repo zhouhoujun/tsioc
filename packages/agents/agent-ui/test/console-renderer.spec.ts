@@ -458,6 +458,9 @@ export class AgentConsoleRendererTest {
                 },
                 metadata: {
                     executionMode: 'parallel',
+                    retryOfTaskId: 'task-0',
+                    retryOfWorkerIds: ['worker-2'],
+                    carryForwardWorkerIds: ['worker-1'],
                     checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
                 },
                 planning: {
@@ -495,6 +498,9 @@ export class AgentConsoleRendererTest {
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('summary latest project summary')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('session chat-b')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('worker status completed')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('retry task-0')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('retry workers worker-2')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('carry forward worker-1')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('rollback available')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('checkpoints 1 total')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('1.')).toBe(true);

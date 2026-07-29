@@ -4705,6 +4705,122 @@ export class AgentToolsPackageTest {
         expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
     }
 
+    @Test('coding task retry_failed reruns only failed workers and carries forward successful worker artifacts')
+    async codingTaskRetryFailedRerunsOnlyFailedWorkersAndCarriesForwardSuccessfulWorkerArtifacts() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        let betaAttempts = 0;
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'edit_file' && String(action.input?.path || '').includes('beta.ts')) {
+                    betaAttempts++;
+                    if (betaAttempts === 1) {
+                        throw new Error('beta edit failed');
+                    }
+                }
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    const workdir = String(action.input.workdir || '');
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: `diff --git a/${workdir}/file.ts b/${workdir}/file.ts\n+patched ${workdir}` },
+                        summary: `diff:${workdir}`
+                    };
+                }
+                return { tool: action.tool, output: { ok: true, path: action.input?.path }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
+        );
+        const firstRun = await tool.invoke({
+            action: 'run',
+            goal: 'Apply isolated edits with one failure',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } },
+                { id: 'edit-2', title: 'Edit beta', tool: 'edit_file', input: { path: 'src/beta.ts', oldString: 'x', newString: 'y' } }
+            ]
+        }, createSessionContext());
+
+        const retryResult = await tool.invoke({
+            action: 'retry_failed',
+            task_id: firstRun.task.id
+        }, createSessionContext());
+
+        expect(retryResult.ran).toEqual(true);
+        expect(retryResult.task.status).toEqual('completed');
+        expect(retryResult.task.actions.length).toEqual(1);
+        expect(retryResult.task.actions[0].id).toEqual('edit-2');
+        expect(retryResult.task.metadata?.retryOfTaskId).toEqual(firstRun.task.id);
+        expect(retryResult.task.metadata?.retrySourceTaskId).toEqual(firstRun.task.id);
+        expect(retryResult.task.metadata?.retryOfWorkerIds).toEqual(['worker-2']);
+        expect(retryResult.task.metadata?.carryForwardWorkerIds).toEqual(['worker-1']);
+        expect(retryResult.aggregate?.status).toEqual('completed');
+        expect(retryResult.aggregate?.completedWorkers).toEqual(2);
+        expect(retryResult.aggregate?.successfulWorkerIds).toEqual(['worker-1', 'worker-2']);
+        expect(retryResult.summary).toContain('2/2 workers completed');
+        expect(retryResult.task.result?.workers?.length).toEqual(2);
+        expect(retryResult.task.result?.workers?.map((worker: any) => worker.workerId).sort()).toEqual(['worker-1', 'worker-2']);
+        expect((retryResult.task.result?.report?.completed || []).slice().sort()).toEqual(['Edit alpha', 'Edit beta']);
+        expect(retryResult.task.result?.diff?.summary).toContain('2 worker diff');
+        expect(retryResult.task.result?.rollback?.available).toEqual(true);
+
+        const latestCheckpoint = retryResult.task.metadata?.checkpoints?.slice(-1)[0];
+        expect(latestCheckpoint?.mode).toEqual('parallel_worktree');
+        expect(latestCheckpoint?.patches?.length).toEqual(2);
+        expect(latestCheckpoint?.patches?.map((patch: any) => patch.workerId).sort()).toEqual(['worker-1', 'worker-2']);
+
+        const editCalls = calls.filter(call => call.tool === 'edit_file');
+        expect(editCalls.filter(call => String(call.input?.path || '').includes('alpha.ts')).length).toEqual(1);
+        expect(editCalls.filter(call => String(call.input?.path || '').includes('beta.ts')).length).toEqual(2);
+    }
+
+    @Test('coding task retry_failed rejects tasks without failed workers')
+    async codingTaskRetryFailedRejectsTasksWithoutFailedWorkers() {
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: 'diff --git a/src/alpha.ts b/src/alpha.ts\n+patched' },
+                        summary: 'diff:alpha'
+                    };
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const completedTask = await tool.invoke({
+            action: 'run',
+            goal: 'Apply isolated edits',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } }
+            ]
+        }, createSessionContext());
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({
+                action: 'retry_failed',
+                task_id: completedTask.task.id
+            }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+
+        expect(error?.message).toContain('does not have failed workers to retry');
+    }
+
     @Test('coding task parallel workers retry once after transient failure and preserve cleanup')
     async codingTaskParallelWorkersRetryOnceAfterTransientFailureAndPreserveCleanup() {
         const calls: Array<{ tool: string; input: any }> = [];

@@ -54,6 +54,10 @@ interface CodingTaskExecutionReportContext {
     };
 }
 
+interface CodingTaskRunOptions {
+    carryForwardWorkers?: CodingTaskWorkerRecord[];
+}
+
 @Injectable()
 export class CodingTaskTool implements AgentTool {
     private static readonly READ_ONLY_GIT_ACTIONS = new Set(['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote']);
@@ -75,7 +79,7 @@ export class CodingTaskTool implements AgentTool {
         properties: {
             action: {
                 type: 'string',
-                enum: ['plan', 'create', 'run', 'get', 'list', 'cancel', 'rollback']
+                enum: ['plan', 'create', 'run', 'retry_failed', 'get', 'list', 'cancel', 'rollback']
             },
             task_id: { type: 'string' },
             goal: { type: 'string' },
@@ -154,6 +158,8 @@ export class CodingTaskTool implements AgentTool {
                 return this.handleCreate(input, context);
             case 'run':
                 return this.handleRun(input, context);
+            case 'retry_failed':
+                return this.handleRetryFailed(input, context);
             case 'get':
                 return this.handleGet(input, context);
             case 'list':
@@ -163,7 +169,7 @@ export class CodingTaskTool implements AgentTool {
             case 'rollback':
                 return this.handleRollback(input, context);
             default:
-                throw new Error('Invalid action. Must be: plan, create, run, get, list, cancel, rollback.');
+                throw new Error('Invalid action. Must be: plan, create, run, retry_failed, get, list, cancel, rollback.');
         }
     }
 
@@ -204,7 +210,6 @@ export class CodingTaskTool implements AgentTool {
     }
 
     private async handleRun(input: any, context: AgentToolContext): Promise<any> {
-        const runner = this.requireRunner();
         const sessionId = context.sessionId;
         let task = input?.task_id
             ? this.requireTask(sessionId, this.requireString(input?.task_id, 'task_id'))
@@ -227,6 +232,33 @@ export class CodingTaskTool implements AgentTool {
             this.store.save(sessionId, task);
         }
 
+        return this.runTaskRecord(task, input, context);
+    }
+
+    private async handleRetryFailed(input: any, context: AgentToolContext): Promise<any> {
+        const sourceTask = this.requireTask(context.sessionId, this.requireString(input?.task_id, 'task_id'));
+        if (sourceTask.status === 'running') {
+            throw new Error(`Coding task '${sourceTask.id}' is still running and cannot retry failed workers.`);
+        }
+        const retryPlan = this.buildRetryTaskPlan(sourceTask);
+        const retryTask = this.store.save(context.sessionId, retryPlan.task);
+        return this.runTaskRecord(retryTask, {
+            ...input,
+            action: 'run',
+            task_id: retryTask.id,
+            useWorktree: true,
+            executionMode: 'parallel'
+        }, context, { carryForwardWorkers: retryPlan.carryForwardWorkers });
+    }
+
+    private async runTaskRecord(
+        task: CodingTaskRecord,
+        input: any,
+        context: AgentToolContext,
+        options?: CodingTaskRunOptions
+    ): Promise<any> {
+        const runner = this.requireRunner();
+        const sessionId = context.sessionId;
         const executionMode = this.resolveExecutionMode(input);
         if (executionMode === 'parallel' && !input?.useWorktree) {
             throw new Error('coding_task parallel execution requires useWorktree: true.');
@@ -237,7 +269,7 @@ export class CodingTaskTool implements AgentTool {
             actions: task.actions.map(action => ({
                 ...action,
                 status: 'pending',
-                workerId: undefined,
+                workerId: action.workerId,
                 error: undefined,
                 result: undefined
             })),
@@ -249,7 +281,7 @@ export class CodingTaskTool implements AgentTool {
         });
 
         const execution = executionMode === 'parallel'
-            ? await this.executeActionsParallel(working, runner, context)
+            ? await this.executeActionsParallel(working, runner, context, options?.carryForwardWorkers || [])
             : await this.executeActionsSequential(working, runner, context, input);
         const checkpoint = this.buildRollbackCheckpoint(working, execution, input);
         const rollbackSummary = checkpoint
@@ -399,6 +431,71 @@ export class CodingTaskTool implements AgentTool {
             rolledBack: true,
             checkpointId: checkpoint.id,
             task: saved
+        };
+    }
+
+    private buildRetryTaskPlan(sourceTask: CodingTaskRecord): { task: CodingTaskRecord; carryForwardWorkers: CodingTaskWorkerRecord[] } {
+        const sourceWorkers = Array.isArray(sourceTask.result?.workers) ? sourceTask.result!.workers : [];
+        const failedWorkers = sourceWorkers.filter(worker => worker.status === 'failed');
+        if (!failedWorkers.length) {
+            throw new Error(`Coding task '${sourceTask.id}' does not have failed workers to retry.`);
+        }
+
+        const actionIdsToRetry = new Set<string>(failedWorkers.flatMap(worker => worker.actionIds || []));
+        const workerIdsByActionId = new Map<string, string>();
+        for (const worker of failedWorkers) {
+            for (const actionId of worker.actionIds || []) {
+                workerIdsByActionId.set(actionId, worker.workerId);
+            }
+        }
+        const retryActions = sourceTask.actions
+            .filter(action => actionIdsToRetry.has(action.id))
+            .map(action => ({
+                ...action,
+                status: 'pending' as const,
+                workerId: workerIdsByActionId.get(action.id),
+                startedAt: undefined,
+                completedAt: undefined,
+                result: undefined,
+                error: undefined
+            }));
+        if (!retryActions.length) {
+            throw new Error(`Coding task '${sourceTask.id}' does not have retryable failed actions.`);
+        }
+
+        const carryForwardWorkers = sourceWorkers
+            .filter(worker => worker.status === 'completed')
+            .map(worker => this.cloneWorkerRecord(worker));
+        const retryOfTaskId = sourceTask.metadata?.retryOfTaskId || sourceTask.id;
+        const parentTaskId = sourceTask.metadata?.parentTaskId || sourceTask.id;
+        const retrySequence = typeof sourceTask.metadata?.retrySequence === 'number'
+            ? sourceTask.metadata.retrySequence + 1
+            : 1;
+        const now = Date.now();
+        return {
+            task: {
+                id: `coding-${randomUUID()}`,
+                title: `Retry failed workers: ${sourceTask.title}`,
+                goal: sourceTask.goal,
+                status: 'planned',
+                createdAt: now,
+                updatedAt: now,
+                planning: {
+                    ...sourceTask.planning,
+                    summary: sourceTask.planning.summary || `Retry failed workers from ${sourceTask.id}.`
+                },
+                actions: retryActions,
+                metadata: {
+                    ...(sourceTask.metadata || {}),
+                    parentTaskId,
+                    retryOfTaskId,
+                    retryOfWorkerIds: failedWorkers.map(worker => worker.workerId),
+                    retrySourceTaskId: sourceTask.id,
+                    carryForwardWorkerIds: carryForwardWorkers.map(worker => worker.workerId),
+                    retrySequence
+                }
+            },
+            carryForwardWorkers
         };
     }
 
@@ -845,10 +942,15 @@ export class CodingTaskTool implements AgentTool {
     private async executeActionsParallel(
         task: CodingTaskRecord,
         runner: WorkspaceActionRunner,
-        context: AgentToolContext
+        context: AgentToolContext,
+        carryForwardWorkers: CodingTaskWorkerRecord[] = []
     ): Promise<{ completedActions: number; failedActionId?: string; output?: any; diff?: CapturedCodingDiff; workers: CodingTaskWorkerRecord[] }> {
         const workerRuns = task.actions.map((rawAction, index) => this.executeParallelWorker(task, rawAction, index, runner, context));
         const workers = await Promise.all(workerRuns);
+        const combinedWorkers = [
+            ...carryForwardWorkers.map(worker => this.cloneWorkerRecord(worker)),
+            ...workers.map(worker => worker.record)
+        ];
 
         for (const worker of workers) {
             if (worker.worktree) {
@@ -859,23 +961,23 @@ export class CodingTaskTool implements AgentTool {
         const completedActions = workers.filter(worker => worker.record.status === 'completed').length;
         const failedAction = task.actions.find(action => action.status === 'failed');
         const failedActionId = failedAction?.id;
-        const aggregatedDiff = this.aggregateParallelDiffs(workers.map(worker => worker.record));
+        const aggregatedDiff = this.aggregateParallelDiffs(combinedWorkers);
 
         return {
             completedActions,
             failedActionId,
             output: {
-                workers: workers.map(worker => ({
-                    workerId: worker.record.workerId,
-                    actionIds: worker.record.actionIds,
-                    status: worker.record.status,
-                    attemptCount: worker.record.attemptCount,
-                    output: worker.record.output,
-                    error: worker.record.error
+                workers: combinedWorkers.map(worker => ({
+                    workerId: worker.workerId,
+                    actionIds: worker.actionIds,
+                    status: worker.status,
+                    attemptCount: worker.attemptCount,
+                    output: worker.output,
+                    error: worker.error
                 }))
             },
             diff: aggregatedDiff,
-            workers: workers.map(worker => worker.record)
+            workers: combinedWorkers
         };
     }
 
@@ -886,7 +988,7 @@ export class CodingTaskTool implements AgentTool {
         runner: WorkspaceActionRunner,
         context: AgentToolContext
     ): Promise<{ record: CodingTaskWorkerRecord; worktree?: { path: string; branch: string; relativePath: string } }> {
-        const workerId = `worker-${index + 1}`;
+        const workerId = rawAction.workerId || `worker-${index + 1}`;
         const startedAt = Date.now();
         const workerOptions = this.getParallelWorkerOptions();
         rawAction.status = 'running';
@@ -1197,6 +1299,23 @@ export class CodingTaskTool implements AgentTool {
             attemptCount: worker.attemptCount,
             branch: worker.branch,
             worktreePath: worker.worktreePath
+        };
+    }
+
+    private cloneWorkerRecord(worker: CodingTaskWorkerRecord): CodingTaskWorkerRecord {
+        return {
+            workerId: worker.workerId,
+            actionIds: Array.isArray(worker.actionIds) ? worker.actionIds.slice() : [],
+            status: worker.status,
+            attemptCount: worker.attemptCount,
+            startedAt: worker.startedAt,
+            completedAt: worker.completedAt,
+            branch: worker.branch,
+            worktreePath: worker.worktreePath,
+            ...(worker.diff ? { diff: JSON.parse(JSON.stringify(worker.diff)) } : {}),
+            ...(worker.output !== undefined ? { output: JSON.parse(JSON.stringify(worker.output)) } : {}),
+            ...(worker.error ? { error: worker.error } : {}),
+            ...(worker.report ? { report: JSON.parse(JSON.stringify(worker.report)) } : {})
         };
     }
 

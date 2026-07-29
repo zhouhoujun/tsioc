@@ -104,6 +104,13 @@ For partial failures, the merged task report keeps both tracks visible:
 - inspect and fix failed workers
 - rerun only the failed workers
 
+`coding_task retry_failed` now turns that recovery path into a first-class command:
+
+- it creates a retry task linked back to the source task
+- it reruns only failed worker actions from the prior parallel task
+- it carries forward successful worker diff/report state into the retry result
+- it produces a fresh rollback checkpoint that includes both carried and retried successful workers
+
 ## Retry And Timeout Strategy
 
 Parallel workers use task-level options:
@@ -137,11 +144,12 @@ This gives operators a compact view of:
 - delegated worker outputs are structured without requiring transcript scraping
 - partial worker success is preserved even when the overall task status is `failed`
 - retry and timeout behavior is visible in worker results
+- failed-worker reruns preserve successful worker artifacts and rollback coverage
 - task and review panels show aggregate worker status and isolated failure reasons
+- retry lineage is visible in task and review details
 
 ## Current Gaps
 
-- no dedicated worker-only rerun command yet
 - no persisted delegation graph linking a main task to spawned sub-agents
 - no cross-task worker lineage or parent-child task tree in UI
 - no policy layer yet for routing different worker classes to different models

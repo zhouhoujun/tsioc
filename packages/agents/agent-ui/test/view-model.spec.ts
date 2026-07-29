@@ -2694,6 +2694,12 @@ export class AgentConsoleComponentTest {
     async sessionStateSupportsCodingTaskReviewFocusFileNavigationAndScroll() {
         const state = new AgentConsoleSessionState();
         const reviewTask = createReviewTask();
+        (reviewTask as any).metadata = {
+            ...(reviewTask.metadata || {}),
+            retryOfTaskId: 'task-0',
+            retryOfWorkerIds: ['worker-2'],
+            carryForwardWorkerIds: ['worker-1']
+        };
 
         state.openReview(reviewTask as any, {
             executionMode: 'parallel',
@@ -2744,6 +2750,9 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('[2/3] worker-1 · worker');
         expect(state.reviewDetailLines.join('\n')).toContain('[3/3] worker-2 · worker');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
+        expect(state.reviewDetailLines.join('\n')).toContain('Retry Of: task-0');
+        expect(state.reviewDetailLines.join('\n')).toContain('Retry Workers: worker-2');
+        expect(state.reviewDetailLines.join('\n')).toContain('Carry Forward: worker-1');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
         expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
         expect(state.reviewDetailLines.join('\n')).toContain('› [1/2] src/a.ts (+2 -0)');
