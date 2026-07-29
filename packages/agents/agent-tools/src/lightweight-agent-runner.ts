@@ -51,9 +51,13 @@ export class LightweightAgentRunner extends NestedAgentRunner {
 
             // M2d: import sub-agent messages into parent session
             if (request.parentSessionId && this.sessions) {
-                const subMessages = await this.runtime.getMessages(sessionId);
-                for (const msg of subMessages) {
-                    await this.sessions.append(request.parentSessionId, msg);
+                try {
+                    const subMessages = await this.runtime.getMessages(sessionId);
+                    for (const msg of subMessages) {
+                        await this.sessions.append(request.parentSessionId, msg);
+                    }
+                } catch (err) {
+                    // session merge must not break the sub-agent result
                 }
             }
 
