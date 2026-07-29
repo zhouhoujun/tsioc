@@ -225,6 +225,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return sessionId || this.state.sessionId;
     }
 
+    protected resolveFocusedCodingTask(): Record<string, any> | null {
+        if (this.state.reviewOpen && this.state.reviewTask) {
+            return this.state.reviewTask;
+        }
+        if (this.state.tasksFocused && this.state.selectedTask) {
+            return this.state.selectedTask;
+        }
+        return null;
+    }
+
     protected async refreshPendingApprovals(): Promise<void> {
         if (!this.approvalManager) {
             this.state.setPendingApprovals([]);
@@ -1191,22 +1201,46 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async openCodingTaskReviewSelector(): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
+        const selectedTask = await this.selectCodingTask({
+            title: 'Coding tasks',
+            unavailableNotice: 'Review is unavailable without app RPC.',
+            emptyNotice: 'No coding tasks available.'
+        });
+        if (!selectedTask) {
             return true;
+        }
+        await this.openCodingTaskReview(selectedTask.id, selectedTask);
+        return true;
+    }
+
+    protected async selectCodingTask(options: {
+        title: string;
+        unavailableNotice: string;
+        emptyNotice: string;
+        filter?: (task: any) => boolean;
+    }): Promise<any | null> {
+        if (!this.appRpc) {
+            this.notify(options.unavailableNotice);
+            return null;
         }
         const tasks = await this.loadCodingTasks();
-        if (!tasks.length) {
-            this.notify('No coding tasks available.');
-            return true;
+        const filteredTasks = typeof options.filter === 'function'
+            ? tasks.filter(task => options.filter!(task))
+            : tasks;
+        if (!filteredTasks.length) {
+            this.notify(options.emptyNotice);
+            return null;
         }
-        const selectedTaskId = await this.select('Coding tasks', tasks.map((task: any) => this.buildCodingTaskSelectOption(task, tasks)), 0, this.state.consoleOptions.selectCloseHint);
+        const selectedTaskId = await this.select(
+            options.title,
+            filteredTasks.map((task: any) => this.buildCodingTaskSelectOption(task, filteredTasks)),
+            0,
+            this.state.consoleOptions.selectCloseHint
+        );
         if (!selectedTaskId) {
-            return true;
+            return null;
         }
-        const selectedTask = tasks.find((task: any) => task.id === selectedTaskId);
-        await this.openCodingTaskReview(selectedTaskId, selectedTask || null);
-        return true;
+        return filteredTasks.find((task: any) => task.id === selectedTaskId) || null;
     }
 
     protected async openCodingTaskInspector(taskId?: string): Promise<boolean> {
@@ -1240,8 +1274,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async rollbackCodingTask(taskId?: string): Promise<boolean> {
-        const fallbackTask = this.state.reviewTask || this.state.selectedTask;
-        const resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        const fallbackTask = this.resolveFocusedCodingTask();
+        let selectedTask = fallbackTask || null;
+        let resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            selectedTask = await this.selectCodingTask({
+                title: 'Rollback coding tasks',
+                unavailableNotice: 'Rollback is unavailable without app RPC.',
+                emptyNotice: 'No rollbackable coding tasks available.',
+                filter: (task: any) => this.canRollbackCodingTask(task)
+            });
+            if (!selectedTask) {
+                return true;
+            }
+            resolvedTaskId = String(selectedTask.id || '').trim();
+        }
         if (!resolvedTaskId) {
             this.notify('Rollback task id is required.');
             return true;
@@ -1250,12 +1297,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('Rollback is unavailable without app RPC.');
             return true;
         }
-        if (fallbackTask && !this.canRollbackCodingTask(fallbackTask)) {
+        if (selectedTask && selectedTask.id === resolvedTaskId && !this.canRollbackCodingTask(selectedTask)) {
             this.notify(`Rollback is unavailable for ${resolvedTaskId}.`);
             return true;
         }
 
-        const sessionId = this.resolveCodingTaskSessionId(fallbackTask);
+        const sessionId = this.resolveCodingTaskSessionId(selectedTask);
         const result = await this.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
         if (result?.rolledBack !== true) {
             this.notify(`Rollback failed for ${resolvedTaskId}.`);
@@ -1268,8 +1315,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async retryFailedCodingTask(taskId?: string): Promise<boolean> {
-        const fallbackTask = this.state.reviewTask || this.state.selectedTask;
-        const resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        const fallbackTask = this.resolveFocusedCodingTask();
+        let selectedTask = fallbackTask || null;
+        let resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            selectedTask = await this.selectCodingTask({
+                title: 'Retry coding tasks',
+                unavailableNotice: 'Retry is unavailable without app RPC.',
+                emptyNotice: 'No retryable coding tasks available.',
+                filter: (task: any) => this.canRetryCodingTask(task)
+            });
+            if (!selectedTask) {
+                return true;
+            }
+            resolvedTaskId = String(selectedTask.id || '').trim();
+        }
         if (!resolvedTaskId) {
             this.notify('Retry task id is required.');
             return true;
@@ -1278,12 +1338,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('Retry is unavailable without app RPC.');
             return true;
         }
-        if (fallbackTask && fallbackTask.id === resolvedTaskId && !this.canRetryCodingTask(fallbackTask)) {
+        if (selectedTask && selectedTask.id === resolvedTaskId && !this.canRetryCodingTask(selectedTask)) {
             this.notify(`Retry is unavailable for ${resolvedTaskId}.`);
             return true;
         }
 
-        const sessionId = this.resolveCodingTaskSessionId(fallbackTask);
+        const sessionId = this.resolveCodingTaskSessionId(selectedTask);
         const result = await this.appRpc.request('coding_task.retry_failed', { sessionId, taskId: resolvedTaskId });
         if (result?.retried !== true || !result?.task?.id) {
             this.notify(`Retry failed for ${resolvedTaskId}.`);
