@@ -5125,6 +5125,135 @@ export class AgentToolsPackageTest {
 
         expect(seenSessionId).toEqual('custom-42');
     }
+
+    @Test('lightweight agent runner applies and clears toolset filter')
+    async lightweightAgentRunnerAppliesToolsetFilter() {
+        const filterSessions: string[] = [];
+        const clearSessions: string[] = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionToolFilter: (sessionId: string, toolsets: string[]) => {
+                filterSessions.push(`${sessionId}:${toolsets.join(',')}`);
+            },
+            clearSessionToolFilter: (sessionId: string) => {
+                clearSessions.push(sessionId);
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        await runner.run({ prompt: 'test', toolsets: ['filesystem', 'web'] });
+
+        expect(filterSessions.length).toBe(1);
+        expect(filterSessions[0]).toContain('filesystem,web');
+        expect(clearSessions.length).toBe(1);
+        expect(clearSessions[0]).toEqual(filterSessions[0].split(':')[0]);
+    }
+
+    @Test('lightweight agent runner does not call filter when no toolsets')
+    async lightweightAgentRunnerSkipsFilterWhenNoToolsets() {
+        let filterCalled = false;
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionToolFilter: (_sessionId: string, _toolsets: string[]) => {
+                filterCalled = true;
+            },
+            clearSessionToolFilter: (_sessionId: string) => {
+                filterCalled = true;
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        await runner.run({ prompt: 'test' });
+
+        expect(filterCalled).toBe(false);
+    }
+
+    @Test('lightweight agent runner imports messages to parent session')
+    async lightweightAgentRunnerImportsMessagesToParent() {
+        const parentMessages: any[] = [];
+        const subMessages = [
+            { role: 'user', content: 'sub task', id: 's1', ts: 100 },
+            { role: 'assistant', content: 'sub result', id: 's2', ts: 101 },
+            { role: 'tool', content: 'tool result', id: 's3', ts: 102 }
+        ];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => subMessages
+        };
+        const mockSessions = {
+            append: async (_sessionId: string, msg: any) => {
+                parentMessages.push(msg);
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any, mockSessions as any);
+        await runner.run({ prompt: 'test', parentSessionId: 'parent-42' });
+
+        expect(parentMessages.length).toBe(3);
+        expect(parentMessages[0].role).toBe('user');
+        expect(parentMessages[1].role).toBe('assistant');
+        expect(parentMessages[2].role).toBe('tool');
+    }
+
+    @Test('lightweight agent runner skips parent import when no parentSessionId')
+    async lightweightAgentRunnerSkipsParentImportWithoutParentId() {
+        let appendCalled = false;
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [{ role: 'user', content: 'x', id: '1', ts: 1 }]
+        };
+        const mockSessions = {
+            append: async (_sessionId: string, _msg: any) => {
+                appendCalled = true;
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any, mockSessions as any);
+        await runner.run({ prompt: 'test' });
+
+        expect(appendCalled).toBe(false);
+    }
+
+    @Test('lightweight agent runner clears filter on error')
+    async lightweightAgentRunnerClearsFilterOnError() {
+        const clearSessions: string[] = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                throw new Error('turn failed');
+            },
+            getMessages: async () => [],
+            setSessionToolFilter: (_sessionId: string, _toolsets: string[]) => {},
+            clearSessionToolFilter: (sessionId: string) => {
+                clearSessions.push(sessionId);
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        let error: Error | undefined;
+        try {
+            await runner.run({ prompt: 'test', toolsets: ['filesystem'] });
+        } catch (err) {
+            error = err as Error;
+        }
+
+        expect(error?.message).toContain('turn failed');
+        expect(clearSessions.length).toBe(1);
+    }
 }
 
 /** Helper to register mock adapters for tools that require them in DI tests. */
