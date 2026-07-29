@@ -25,6 +25,7 @@ export interface CodingTaskWorkerRecord {
     workerId: string;
     actionIds: string[];
     status: 'completed' | 'failed';
+    attemptCount?: number;
     startedAt?: number;
     completedAt?: number;
     branch?: string;

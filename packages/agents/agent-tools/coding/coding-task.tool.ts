@@ -3,6 +3,8 @@ import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
+import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import {
     CodingTaskActionRecord,
     CodingTaskCheckpointRecord,
@@ -122,6 +124,7 @@ export class CodingTaskTool implements AgentTool {
     private runner?: WorkspaceActionRunner | null;
     private readonly llmTool?: LlmTaskTool | null;
     private readonly injector?: Injector | null;
+    private readonly toolsOptions?: AgentToolsOptions | null;
     private static readonly WORKTREE_FILE_TOOLS = new Set(['read_file', 'write_file', 'edit_file', 'list_dir', 'stat', 'mkdir', 'delete_file', 'move_file', 'copy_file']);
     private static readonly WORKTREE_WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
 
@@ -129,11 +132,13 @@ export class CodingTaskTool implements AgentTool {
         @Optional() store?: CodingTaskStore | null,
         @Optional() runner?: WorkspaceActionRunner | null,
         @Optional() llmTool?: LlmTaskTool | null,
+        @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null }) toolsOptions?: AgentToolsOptions | null,
         @Optional() @Inject() injector?: Injector | null
     ) {
         this.store = store ?? new CodingTaskStore();
         this.runner = runner;
         this.llmTool = llmTool;
+        this.toolsOptions = toolsOptions;
         this.injector = injector;
     }
 
@@ -848,6 +853,7 @@ export class CodingTaskTool implements AgentTool {
                     workerId: worker.record.workerId,
                     actionIds: worker.record.actionIds,
                     status: worker.record.status,
+                    attemptCount: worker.record.attemptCount,
                     output: worker.record.output,
                     error: worker.record.error
                 }))
@@ -866,71 +872,144 @@ export class CodingTaskTool implements AgentTool {
     ): Promise<{ record: CodingTaskWorkerRecord; worktree?: { path: string; branch: string; relativePath: string } }> {
         const workerId = `worker-${index + 1}`;
         const startedAt = Date.now();
+        const workerOptions = this.getParallelWorkerOptions();
         rawAction.status = 'running';
         rawAction.startedAt = startedAt;
         rawAction.workerId = workerId;
+        rawAction.completedAt = undefined;
+        rawAction.error = undefined;
+        rawAction.result = undefined;
         this.store.patch(context.sessionId, task.id, { actions: task.actions });
 
-        let worktree: { path: string; branch: string; relativePath: string } | undefined;
-        try {
-            worktree = await this.setupWorktreeForWorker(task, workerId, runner, context);
-            const action = this.mapActionToWorktree(rawAction, worktree);
-            const result = await runner.run(action, { sessionId: context.sessionId, principalId: context.principalId });
-            const completedAt = Date.now();
-            const diff = await this.captureWorktreeDiff(worktree, runner, context);
-            rawAction.status = 'completed';
-            rawAction.completedAt = completedAt;
-            rawAction.result = { summary: result.summary, output: result.output };
-            this.store.patch(context.sessionId, task.id, { actions: task.actions });
-            return {
-                record: {
+        let attemptCount = 0;
+        let lastError: string | undefined;
+        let lastWorktree: { path: string; branch: string; relativePath: string } | undefined;
+
+        while (attemptCount <= workerOptions.parallelWorkerRetries) {
+            attemptCount++;
+            let worktree: { path: string; branch: string; relativePath: string } | undefined;
+            try {
+                rawAction.status = 'running';
+                rawAction.error = undefined;
+                this.store.patch(context.sessionId, task.id, { actions: task.actions });
+                worktree = await this.setupWorktreeForWorker(task, workerId, runner, context);
+                lastWorktree = worktree;
+                const action = this.mapActionToWorktree(rawAction, worktree);
+                const result = await this.runParallelWorkerAction(
+                    action,
+                    runner,
+                    context,
                     workerId,
-                    actionIds: [rawAction.id],
-                    status: 'completed',
-                    startedAt,
-                    completedAt,
-                    branch: worktree.branch,
-                    worktreePath: worktree.relativePath,
-                    ...(diff ? { diff } : {}),
-                    output: this.summarizeResultPayload(result.output),
-                    report: this.buildWorkerReport(task, {
+                    attemptCount,
+                    workerOptions.parallelWorkerTimeoutMs
+                );
+                const completedAt = Date.now();
+                const diff = await this.captureWorktreeDiff(worktree, runner, context);
+                rawAction.status = 'completed';
+                rawAction.completedAt = completedAt;
+                rawAction.result = { summary: result.summary, output: result.output };
+                this.store.patch(context.sessionId, task.id, { actions: task.actions });
+                return {
+                    record: {
                         workerId,
                         actionIds: [rawAction.id],
                         status: 'completed',
-                        diff,
+                        attemptCount,
+                        startedAt,
+                        completedAt,
                         branch: worktree.branch,
-                        worktreePath: worktree.relativePath
-                    })
-                },
-                worktree
-            };
-        } catch (err) {
-            const completedAt = Date.now();
-            rawAction.status = 'failed';
-            rawAction.completedAt = completedAt;
-            rawAction.error = err instanceof Error ? err.message : String(err);
-            this.store.patch(context.sessionId, task.id, { actions: task.actions });
-            return {
-                record: {
+                        worktreePath: worktree.relativePath,
+                        ...(diff ? { diff } : {}),
+                        output: this.summarizeResultPayload(result.output),
+                        report: this.buildWorkerReport(task, {
+                            workerId,
+                            actionIds: [rawAction.id],
+                            status: 'completed',
+                            diff,
+                            branch: worktree.branch,
+                            worktreePath: worktree.relativePath
+                        })
+                    },
+                    worktree
+                };
+            } catch (err) {
+                lastError = err instanceof Error ? err.message : String(err);
+                if (worktree) {
+                    await this.teardownWorktree(worktree, runner, context, false);
+                }
+                if (attemptCount <= workerOptions.parallelWorkerRetries) {
+                    continue;
+                }
+                break;
+            }
+        }
+
+        const completedAt = Date.now();
+        rawAction.status = 'failed';
+        rawAction.completedAt = completedAt;
+        rawAction.error = lastError || `Worker ${workerId} failed.`;
+        this.store.patch(context.sessionId, task.id, { actions: task.actions });
+        return {
+            record: {
+                workerId,
+                actionIds: [rawAction.id],
+                status: 'failed',
+                attemptCount,
+                startedAt,
+                completedAt,
+                branch: lastWorktree?.branch,
+                worktreePath: lastWorktree?.relativePath,
+                error: rawAction.error,
+                report: this.buildWorkerReport(task, {
                     workerId,
                     actionIds: [rawAction.id],
                     status: 'failed',
-                    startedAt,
-                    completedAt,
-                    branch: worktree?.branch,
-                    worktreePath: worktree?.relativePath,
                     error: rawAction.error,
-                    report: this.buildWorkerReport(task, {
-                        workerId,
-                        actionIds: [rawAction.id],
-                        status: 'failed',
-                        error: rawAction.error,
-                        branch: worktree?.branch,
-                        worktreePath: worktree?.relativePath
-                    })
-                },
-                worktree
-            };
+                    branch: lastWorktree?.branch,
+                    worktreePath: lastWorktree?.relativePath
+                })
+            },
+            worktree: undefined
+        };
+    }
+
+    private getParallelWorkerOptions(): { parallelWorkerTimeoutMs: number; parallelWorkerRetries: number } {
+        const defaults = defaultAgentToolsOptions.codingTask ?? {};
+        const configured = this.toolsOptions?.codingTask ?? {};
+        const timeoutMs = typeof configured.parallelWorkerTimeoutMs === 'number'
+            ? configured.parallelWorkerTimeoutMs
+            : defaults.parallelWorkerTimeoutMs ?? 30000;
+        const retries = typeof configured.parallelWorkerRetries === 'number'
+            ? configured.parallelWorkerRetries
+            : defaults.parallelWorkerRetries ?? 1;
+        return {
+            parallelWorkerTimeoutMs: Math.max(1, timeoutMs),
+            parallelWorkerRetries: Math.max(0, Math.floor(retries))
+        };
+    }
+
+    private async runParallelWorkerAction(
+        action: CodingTaskActionRecord,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext,
+        workerId: string,
+        attemptCount: number,
+        timeoutMs: number
+    ) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            return await Promise.race([
+                runner.run(action, { sessionId: context.sessionId, principalId: context.principalId }),
+                new Promise<never>((_resolve, reject) => {
+                    timer = setTimeout(() => {
+                        reject(new Error(`Worker "${workerId}" attempt ${attemptCount} timed out after ${timeoutMs}ms.`));
+                    }, timeoutMs);
+                })
+            ]);
+        } finally {
+            if (timer) {
+                clearTimeout(timer);
+            }
         }
     }
 

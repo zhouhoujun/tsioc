@@ -103,6 +103,7 @@ function provideCodingTaskToolFactory() {
                     injector.get(CodingTaskStore, null),
                     injector.get(WorkspaceActionRunner, null),
                     injector.get(LlmTaskTool, null),
+                    injector.get(AGENT_TOOLS_OPTIONS, null),
                     injector
                 )
             }];

@@ -91,6 +91,11 @@ export interface AgentToolsScheduleOptions {
     maxIntervalMs?: number;
 }
 
+export interface AgentToolsCodingTaskOptions {
+    parallelWorkerTimeoutMs?: number;
+    parallelWorkerRetries?: number;
+}
+
 export type AgentToolGroup =
     | 'filesystem'
     | 'filesystem_write'
@@ -222,6 +227,7 @@ export interface AgentToolsOptions {
     location?: AgentToolsLocationOptions;
     weather?: AgentToolsWeatherOptions;
     schedule?: AgentToolsScheduleOptions;
+    codingTask?: AgentToolsCodingTaskOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
     registration?: AgentToolsRegistrationOptions;
@@ -260,6 +266,10 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
         geocodingBaseUrl: 'https://geocoding-api.open-meteo.com/v1',
         forecastBaseUrl: 'https://api.open-meteo.com/v1',
         userAgent: 'tsdi-agent/6'
+    },
+    codingTask: {
+        parallelWorkerTimeoutMs: 30000,
+        parallelWorkerRetries: 1
     },
     registration: {
         preset: 'default',
@@ -316,6 +326,10 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         schedule: {
             ...(options?.schedule ?? {})
+        },
+        codingTask: {
+            ...(defaultAgentToolsOptions.codingTask ?? {}),
+            ...(options?.codingTask ?? {})
         },
         roots: (options?.roots ?? []).slice(),
         mcp: options?.mcp ? {

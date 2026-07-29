@@ -4612,6 +4612,103 @@ export class AgentToolsPackageTest {
         expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
     }
 
+    @Test('coding task parallel workers retry once after transient failure and preserve cleanup')
+    async codingTaskParallelWorkersRetryOnceAfterTransientFailureAndPreserveCleanup() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        let editAttempts = 0;
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'edit_file') {
+                    editAttempts++;
+                    if (editAttempts === 1) {
+                        throw new Error('transient failure');
+                    }
+                    return { tool: 'edit_file', output: { ok: true }, summary: 'ok' };
+                }
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: `diff --git a/${action.input.workdir}/file.ts b/${action.input.workdir}/file.ts` },
+                        summary: `diff:${action.input.workdir}`
+                    };
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 1, parallelWorkerTimeoutMs: 1000 } } as any
+        );
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Retry transient failure',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        expect(result.failedActionId).toEqual(undefined);
+        expect(result.task.status).toEqual('completed');
+        expect(result.task.result?.workers?.[0]?.attemptCount).toEqual(2);
+        expect(editAttempts).toEqual(2);
+
+        const gitCalls = calls.filter(call => call.tool === 'git_operations');
+        expect(gitCalls.filter(call => call.input.action === 'worktree_create').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_merge').length).toEqual(1);
+    }
+
+    @Test('coding task parallel workers fail fast on timeout and expose attempt metadata')
+    async codingTaskParallelWorkersFailFastOnTimeoutAndExposeAttemptMetadata() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'edit_file') {
+                    return await new Promise<any>(() => {});
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 20 } } as any
+        );
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Timeout worker',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        expect(result.failedActionId).toEqual('edit-1');
+        expect(result.task.status).toEqual('failed');
+        expect(result.task.result?.workers?.[0]?.attemptCount).toEqual(1);
+        expect(result.task.result?.workers?.[0]?.error).toContain('timed out after 20ms');
+        expect(result.task.result?.error).toContain('timed out after 20ms');
+
+        const gitCalls = calls.filter(call => call.tool === 'git_operations');
+        expect(gitCalls.filter(call => call.input.action === 'worktree_create').length).toEqual(1);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(1);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_merge').length).toEqual(0);
+    }
+
     @Test('coding task parallel worktree mode captures rollback patches in reverse order')
     async codingTaskParallelWorktreeModeCapturesRollbackPatchesInReverseOrder() {
         const calls: Array<{ tool: string; input: any }> = [];
