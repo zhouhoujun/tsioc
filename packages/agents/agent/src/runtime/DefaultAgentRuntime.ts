@@ -6,7 +6,7 @@ import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage } from './AgentMessage';
-import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
@@ -43,6 +43,7 @@ interface ToolInvocationResult {
 interface TurnExecutionContext {
     principalId?: string;
     workspace?: string;
+    diagnostics?: AgentTurnDiagnostics;
 }
 
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
@@ -156,15 +157,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.app.publishEvent(new AgentTurnStartedEvent(this, input.sessionId, input.input));
         const userMessage = this.createMessage('user', input.input);
         await this.sessions.append(input.sessionId, userMessage);
+        const turnContext: TurnExecutionContext = {
+            principalId: input.principalId,
+            workspace: await this.resolveSessionWorkspace(input.sessionId),
+            diagnostics: this.createTurnDiagnostics()
+        };
 
         try {
-            const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, {
-                principalId: input.principalId,
-                workspace: await this.resolveSessionWorkspace(input.sessionId)
-            });
+            const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
+            await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
@@ -181,15 +185,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
             const userMessage = this.createMessage('user', input);
             await this.sessions.append(sessionId, userMessage);
+            const turnContext: TurnExecutionContext = {
+                principalId,
+                workspace: await this.resolveSessionWorkspace(sessionId),
+                diagnostics: this.createTurnDiagnostics()
+            };
 
             try {
-                const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, {
-                    principalId,
-                    workspace: await this.resolveSessionWorkspace(sessionId)
-                });
+                const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
                 await this.sessions.append(sessionId, result.message);
                 await this.maybeSummarize(sessionId);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
+                await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
                 await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
                 await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
                 yield { type: 'done' };
@@ -256,20 +263,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
-            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             let response = await this.modelAdapter.complete(request);
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
+                if (turnContext.diagnostics) {
+                    turnContext.diagnostics.emptyResponseRetryCount++;
+                }
                 response = await this.modelAdapter.complete(this.buildEmptyResponseRetryRequest(request));
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+                if (turnContext.diagnostics) {
+                    turnContext.diagnostics.followUpRecoveryCount++;
+                }
                 response = await this.modelAdapter.complete(this.buildFollowUpRecoveryRequest(request));
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
 
-            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools, turnContext);
+            const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
@@ -280,11 +293,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
         await this.sessions.append(sessionId, limitMessage);
 
-        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = await this.modelAdapter.complete(finalRequest);
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
         return { sessionId, message: finalMessage };
     }
 
@@ -296,17 +310,23 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
-            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             let response = yield* this.collectStreamingResponse(sessionId, request);
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
+                if (turnContext.diagnostics) {
+                    turnContext.diagnostics.emptyResponseRetryCount++;
+                }
                 response = yield* this.collectStreamingResponse(sessionId, this.buildEmptyResponseRetryRequest(request));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+                if (turnContext.diagnostics) {
+                    turnContext.diagnostics.followUpRecoveryCount++;
+                }
                 response = yield* this.collectStreamingResponse(sessionId, this.buildFollowUpRecoveryRequest(request));
             }
 
-            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools, turnContext);
+            const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
@@ -318,17 +338,22 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
         await this.sessions.append(sessionId, limitMessage);
 
-        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = yield* this.collectStreamingResponse(sessionId, finalRequest);
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
         return { sessionId, message: finalMessage };
     }
 
-    private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string): Promise<ModelRequest> {
+    private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages, currentUserMessageId);
-        messages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
+        const rewrittenMessages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
+        if (turnContext?.diagnostics && rewrittenMessages !== messages) {
+            turnContext.diagnostics.followUpContextRewritten = true;
+        }
+        messages = rewrittenMessages;
         const preparedHistory = await this.contextManager.prepareHistory(messages);
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
@@ -371,6 +396,55 @@ export class DefaultAgentRuntime extends AgentRuntime {
         } catch {
             // context observability must not break turn execution
         }
+    }
+
+    private createTurnDiagnostics(): AgentTurnDiagnostics {
+        return {
+            emptyResponseRetryCount: 0,
+            followUpRecoveryCount: 0,
+            followUpContextRewritten: false,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false
+        };
+    }
+
+    private async publishTurnDiagnosticsEvent(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
+        if (!diagnostics) {
+            return;
+        }
+        try {
+            await this.app.publishEvent(new AgentTurnDiagnosticsEvent(this, sessionId, { ...diagnostics }));
+        } catch {
+            // diagnostics observability must not break turn execution
+        }
+    }
+
+    private async captureAssistantDiagnostics(
+        sessionId: string,
+        currentUserMessageId: string,
+        message: AgentMessage,
+        turnContext: TurnExecutionContext
+    ): Promise<void> {
+        const diagnostics = turnContext.diagnostics;
+        if (!diagnostics) {
+            return;
+        }
+        diagnostics.finalAssistantWasClarification = this.isClarificationAssistantMessage(message.content);
+        diagnostics.repeatedClarificationDetected = diagnostics.finalAssistantWasClarification
+            && await this.hadPriorClarification(sessionId, currentUserMessageId);
+    }
+
+    private async hadPriorClarification(sessionId: string, currentUserMessageId: string): Promise<boolean> {
+        const messages = (await this.sessions.get(sessionId)).messages;
+        const currentIndex = messages.findIndex(message => message.id === currentUserMessageId);
+        if (currentIndex < 1) {
+            return false;
+        }
+        const previousAssistantIndex = this.findPreviousMessageIndex(messages, currentIndex - 1, 'assistant');
+        if (previousAssistantIndex < 0) {
+            return false;
+        }
+        return this.isClarificationAssistantMessage(messages[previousAssistantIndex]?.content);
     }
 
     private rewriteClarificationFollowUp(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
@@ -576,6 +650,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private async handleModelResponse(
         sessionId: string,
         response: ModelResponse,
+        currentUserMessageId: string,
         loopDetector: ToolLoopDetector,
         callableTools: AgentToolDefinition[],
         turnContext: TurnExecutionContext
@@ -595,8 +670,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return {};
         }
 
+        const message = await this.createAssistantMessageFromResponse(sessionId, response);
+        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, message, turnContext);
         return {
-            message: await this.createAssistantMessageFromResponse(sessionId, response)
+            message
         };
     }
 

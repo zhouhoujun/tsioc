@@ -153,6 +153,7 @@
 - 已补充长会话回归测试，覆盖工具交互边界和多行摘要格式。
 - runtime 已发布 `AgentContextPreparedEvent`，可观测压缩/裁剪策略、压缩前后 token、消息数和已压缩历史量，且事件失败不会影响 turn 主流程。
 - `prepareHistory` 已对旧 tool output 做细粒度摘要化，优先保留 anchor 所需状态消息，同时通过 `toolMessagesCompacted` 指标暴露压缩量。
+- runtime 已发布 `AgentTurnDiagnosticsEvent`，记录空响应重试、追问恢复、追问上下文重写、最终澄清和重复澄清指标，且诊断事件失败不会影响 turn 主流程。
 
 ### M2. 补齐多 Agent 高层编排
 
@@ -350,12 +351,12 @@
 
 ### M1 上下文压缩
 
-- `[ ]` `AGENT-M1-ARCH`：定义 compaction strategy，包括触发条件、保留窗口、摘要结构、tool output 保留规则
-- `[ ]` `AGENT-M1-RUNTIME-1`：在 `AgentContextManager` 中实现最近消息窗口与远端摘要窗口分层保留
-- `[ ]` `AGENT-M1-RUNTIME-2`：为 `LLMSessionSummarizer` 增加结构化摘要 schema 与稳定字段约束
-- `[ ]` `AGENT-M1-RUNTIME-3`：为大体积 tool output 引入按类型裁剪与摘要策略
-- `[ ]` `AGENT-M1-TEST`：补长会话 regression 用例，覆盖多轮 `继续`、工具失败、回滚、追问
-- `[ ]` `AGENT-M1-OBS`：补压缩指标采集，包括压缩次数、token 变化、空响应率、重复提问率
+- `[x]` `AGENT-M1-ARCH`：定义 compaction strategy，包括触发条件、保留窗口、摘要结构、tool output 保留规则
+- `[x]` `AGENT-M1-RUNTIME-1`：在 `AgentContextManager` 中实现最近消息窗口与远端摘要窗口分层保留
+- `[x]` `AGENT-M1-RUNTIME-2`：为 `LLMSessionSummarizer` 增加结构化摘要 schema 与稳定字段约束
+- `[x]` `AGENT-M1-RUNTIME-3`：为大体积 tool output 引入按类型裁剪与摘要策略
+- `[x]` `AGENT-M1-TEST`：补长会话 regression 用例，覆盖多轮 `继续`、工具失败、回滚、追问
+- `[x]` `AGENT-M1-OBS`：补压缩指标采集，包括压缩次数、token 变化、空响应率、重复提问率
 
 ### M2 多 Agent 编排
 

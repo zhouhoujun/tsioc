@@ -27,6 +27,14 @@ export interface AgentToolExecutionReceipt {
     sandboxApplied?: boolean;
 }
 
+export interface AgentTurnDiagnostics {
+    emptyResponseRetryCount: number;
+    followUpRecoveryCount: number;
+    followUpContextRewritten: boolean;
+    finalAssistantWasClarification: boolean;
+    repeatedClarificationDetected: boolean;
+}
+
 function summarizeEventInput(input: any): string | undefined {
     if (input === undefined) {
         return undefined;
@@ -160,6 +168,12 @@ export class AgentModelCompletedEvent extends ApplicationEvent {
 
 export class AgentTurnCompletedEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly message: AgentMessage) {
+        super(source);
+    }
+}
+
+export class AgentTurnDiagnosticsEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly diagnostics: AgentTurnDiagnostics) {
         super(source);
     }
 }

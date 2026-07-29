@@ -21,7 +21,7 @@ import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
 import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
-import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent } from '../src/runtime/AgentEvents';
+import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnDiagnosticsEvent } from '../src/runtime/AgentEvents';
 
 class FakeApp {
     events: any[] = [];
@@ -48,6 +48,15 @@ class ThrowOnContextPreparedApp extends FakeApp {
         await super.publishEvent(event);
         if (event instanceof AgentContextPreparedEvent) {
             throw new Error('context event failed');
+        }
+    }
+}
+
+class ThrowOnTurnDiagnosticsApp extends FakeApp {
+    async publishEvent(event?: any): Promise<void> {
+        await super.publishEvent(event);
+        if (event instanceof AgentTurnDiagnosticsEvent) {
+            throw new Error('diagnostics event failed');
         }
     }
 }
@@ -236,6 +245,15 @@ class BlankThenFollowUpRecoveryModelAdapter extends EchoModelAdapter {
         }
         return {
             message: 'Recovered from follow-up context',
+            stopReason: 'end'
+        };
+    }
+}
+
+class RepeatedClarificationModelAdapter extends EchoModelAdapter {
+    async complete(): Promise<any> {
+        return {
+            message: 'Which city should I check?',
             stopReason: 'end'
         };
     }
@@ -1063,6 +1081,7 @@ export class RuntimeLoopTest {
     @Test('recovers empty replies by compacting rewritten follow-up context into a focused retry')
     async recoversEmptyRepliesFromClarificationFollowUp() {
         const model = new BlankThenFollowUpRecoveryModelAdapter();
+        const app = new FakeApp();
         const sessions = new InMemorySessionStore();
         await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
         await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
@@ -1073,16 +1092,78 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            app as any
         );
 
         const result = await runtime.runTurn('s1', '成都');
+        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
 
         expect(result.message.content).toEqual('Recovered from follow-up context');
         expect(model.requests.length).toEqual(3);
         expect(model.requests[0].messages[model.requests[0].messages.length - 1].content).toContain('[Follow-up Context]');
         expect(model.requests[2].messages.filter((message: any) => message.role === 'user').length).toEqual(1);
         expect(model.requests[2].messages[model.requests[2].messages.length - 1].content).toContain('User follow-up answer: 成都');
+        expect(diagnostics?.diagnostics).toEqual({
+            emptyResponseRetryCount: 1,
+            followUpRecoveryCount: 1,
+            followUpContextRewritten: true,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false
+        });
+    }
+
+    @Test('publishes turn diagnostics for empty-response retry recovery')
+    async publishesTurnDiagnosticsForEmptyResponseRetryRecovery() {
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            new BlankThenAnswerModelAdapter(),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+
+        expect(result.message.content).toEqual('Recovered answer');
+        expect(diagnostics?.diagnostics).toEqual({
+            emptyResponseRetryCount: 1,
+            followUpRecoveryCount: 0,
+            followUpContextRewritten: false,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false
+        });
+    }
+
+    @Test('flags repeated clarification turns in diagnostics')
+    async flagsRepeatedClarificationTurnsInDiagnostics() {
+        const app = new FakeApp();
+        const sessions = new InMemorySessionStore();
+        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
+        const runtime = new DefaultAgentRuntime(
+            new RepeatedClarificationModelAdapter(),
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        await runtime.runTurn('s1', '成都');
+
+        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        expect(diagnostics?.diagnostics).toEqual({
+            emptyResponseRetryCount: 0,
+            followUpRecoveryCount: 0,
+            followUpContextRewritten: true,
+            finalAssistantWasClarification: true,
+            repeatedClarificationDetected: true
+        });
     }
 
     @Test('publishes memory retrieval lifecycle events on success')
@@ -1274,6 +1355,23 @@ export class RuntimeLoopTest {
                 context: { ...defaultAgentOptions.context, compactionThreshold: 1, compactionMinTokens: 1 }
             },
             new ThrowOnContextPreparedApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('done');
+    }
+
+    @Test('turn diagnostics event failures do not break turns')
+    async turnDiagnosticsEventFailuresDoNotBreakTurns() {
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new ThrowOnTurnDiagnosticsApp() as any
         );
 
         const result = await runtime.runTurn('s1', 'hello');
