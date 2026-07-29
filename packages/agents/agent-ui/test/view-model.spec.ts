@@ -1723,6 +1723,24 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Activated read_file.');
     }
 
+    @Test('help command uses action hint in select menu')
+    async helpCommandUsesActionHintInSelectMenu() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        await component.onInit();
+
+        component.input = '/help';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toEqual('Help');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
     @Test('review command lists coding tasks and opens selected review')
     async reviewCommandListsCodingTasksAndOpensSelectedReview() {
         const runtime = new RuntimeStub();
@@ -1780,6 +1798,74 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewTask?.id).toEqual('task-1');
         expect(component.sessionState.reviewExecutionMode).toEqual('parallel');
         expect(component.sessionState.reviewWorkers.length).toEqual(1);
+    }
+
+    @Test('approval request selector uses action hint')
+    async approvalRequestSelectorUsesActionHint() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const approvals = new ApprovalManagerStub();
+        approvals.pending = [{
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }, {
+            id: 'approval-2',
+            toolName: 'edit_file',
+            sessionId: 'console',
+            reason: 'Editing files requires approval.',
+            summary: 'Editing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"src/app.ts"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals);
+        await component.onInit();
+
+        const pending = (component as any).openApprovalInspector(approvals.pending.slice());
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toEqual('Pending approvals');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
+    @Test('approval action selector uses action hint')
+    async approvalActionSelectorUsesActionHint() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const approvals = new ApprovalManagerStub();
+        approvals.pending = [{
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals);
+        await component.onInit();
+
+        const pending = (component as any).openApprovalInspector(approvals.pending.slice());
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toContain('Approval approval');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
     }
 
     @Test('tasks command opens inspector with rollback metadata')

@@ -297,7 +297,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
                 `Timeout: ${request.timeoutMs}ms`
             ].join('\n')
-        })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), this.state.consoleOptions.selectCloseHint);
+        })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), this.state.consoleOptions.selectHint);
         return requests.find(request => request.id === selected);
     }
 
@@ -338,7 +338,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     description: 'Copy request input summary',
                     detail
                 }
-            ], 0, this.state.consoleOptions.selectCloseHint);
+            ], 0, this.state.consoleOptions.selectHint);
             if (!action) {
                 if (requests.length === 1) {
                     return;
@@ -1540,7 +1540,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
-                ], 0, this.state.consoleOptions.selectCloseHint);
+                ], 0, this.state.consoleOptions.selectHint);
                 if (helpSelection) {
                     await this.handleMenuSelection(helpSelection);
                 }
