@@ -1257,9 +1257,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         const resolvedTaskId = String(taskId || '').trim();
+        const preferredTaskId = String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim();
         const selectedTaskId = resolvedTaskId && tasks.some((task: any) => task.id === resolvedTaskId)
             ? resolvedTaskId
-            : tasks[0].id;
+            : preferredTaskId && tasks.some((task: any) => task.id === preferredTaskId)
+                ? preferredTaskId
+                : tasks[0].id;
         this.state.batch(() => {
             this.state.setSessionsFocused(false);
             this.state.setToolsFocused(false);
