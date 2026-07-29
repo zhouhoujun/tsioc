@@ -3292,8 +3292,8 @@ export class AgentConsoleComponentTest {
             retryDepth: item.retryDepth,
             lineageTaskCount: item.lineageTaskCount
         }))).toEqual([
-            { id: 'task-b', sourceSessionId: 'chat-b', retryOfTaskId: 'task-a', retryDepth: 1, lineageTaskCount: 2 },
-            { id: 'task-a', sourceSessionId: 'chat-a', retryOfTaskId: undefined, retryDepth: undefined, lineageTaskCount: 2 }
+            { id: 'task-a', sourceSessionId: 'chat-a', retryOfTaskId: undefined, retryDepth: undefined, lineageTaskCount: 2 },
+            { id: 'task-b', sourceSessionId: 'chat-b', retryOfTaskId: 'task-a', retryDepth: 1, lineageTaskCount: 2 }
         ]);
     }
 

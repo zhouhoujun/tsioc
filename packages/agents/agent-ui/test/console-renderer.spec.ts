@@ -439,6 +439,36 @@ export class AgentConsoleRendererTest {
         try {
             const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
             ref.instance.sessionState.setTaskRecords([{
+                id: 'task-0',
+                sourceSessionId: 'chat-b',
+                title: 'Initial patch',
+                status: 'failed',
+                result: {
+                    executionMode: 'parallel',
+                    workers: [{ workerId: 'worker-1' }, { workerId: 'worker-2' }],
+                    aggregate: {
+                        totalWorkers: 2,
+                        completedWorkers: 1,
+                        failedWorkers: 1,
+                        status: 'partial_failure'
+                    },
+                    rollback: {
+                        available: true
+                    }
+                },
+                metadata: {
+                    executionMode: 'parallel',
+                    checkpoints: [{ id: 'checkpoint-task-0', status: 'available' }]
+                },
+                planning: {
+                    summary: 'Initial patch summary'
+                },
+                goal: 'Initial patch goal',
+                actions: [
+                    { title: 'Edit initial handlers', status: 'completed', tool: 'edit_file', workerId: 'worker-1' },
+                    { title: 'Retry beta path', status: 'failed', tool: 'edit_file', workerId: 'worker-2' }
+                ]
+            } as any, {
                 id: 'task-1',
                 sourceSessionId: 'chat-b',
                 title: 'Patch handlers',
@@ -479,6 +509,16 @@ export class AgentConsoleRendererTest {
                 projectSessionCount: 2
             });
             ref.instance.sessionState.setReviewTasks([{
+                id: 'task-0',
+                title: 'Initial patch',
+                sourceSessionId: 'chat-b',
+                status: 'failed',
+                executionMode: 'parallel',
+                lineageTaskCount: 2,
+                workerCount: 2,
+                rollbackAvailable: true,
+                checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
+            } as any, {
                 id: 'task-1',
                 title: 'Patch handlers',
                 sourceSessionId: 'chat-b',
@@ -497,11 +537,13 @@ export class AgentConsoleRendererTest {
             await Promise.resolve();
 
             const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
-            expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1')).toBe(true);
+            expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 2')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('task-0 · Initial patch')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('retry 1')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('from task-0')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('lineage 2')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('  - task-1 · Patch handlers')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('summary latest project summary')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('session chat-b')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('worker status completed')).toBe(true);

@@ -1049,6 +1049,77 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    protected orderCodingTasksByLineage(tasks: any[]): any[] {
+        const tasksById = new Map<string, any>(tasks
+            .filter(task => typeof task?.id === 'string' && task.id.trim())
+            .map(task => [String(task.id).trim(), task]));
+        const childrenByParent = new Map<string, any[]>();
+        const roots: any[] = [];
+
+        for (const task of tasks) {
+            const parentId = this.resolveCodingTaskRetrySourceTaskId(task);
+            if (!parentId || !tasksById.has(parentId)) {
+                roots.push(task);
+                continue;
+            }
+            const siblings = childrenByParent.get(parentId) || [];
+            siblings.push(task);
+            childrenByParent.set(parentId, siblings);
+        }
+
+        const compareByUpdatedAt = (left: any, right: any) => {
+            const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return String(left?.id || '').localeCompare(String(right?.id || ''));
+        };
+        const computeFamilyUpdatedAt = (task: any, seen = new Set<string>()): number => {
+            const taskId = String(task?.id || '').trim();
+            if (!taskId || seen.has(taskId)) {
+                return Number(task?.updatedAt || 0);
+            }
+            seen.add(taskId);
+            const childMax = (childrenByParent.get(taskId) || [])
+                .reduce((max, child) => Math.max(max, computeFamilyUpdatedAt(child, new Set(seen))), 0);
+            return Math.max(Number(task?.updatedAt || 0), childMax);
+        };
+
+        roots.sort((left, right) => {
+            const activityDelta = computeFamilyUpdatedAt(right) - computeFamilyUpdatedAt(left);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return compareByUpdatedAt(left, right);
+        });
+        for (const siblings of childrenByParent.values()) {
+            siblings.sort(compareByUpdatedAt);
+        }
+
+        const ordered: any[] = [];
+        const visited = new Set<string>();
+        const visit = (task: any) => {
+            const taskId = String(task?.id || '').trim();
+            if (!taskId || visited.has(taskId)) {
+                return;
+            }
+            visited.add(taskId);
+            ordered.push(task);
+            for (const child of childrenByParent.get(taskId) || []) {
+                visit(child);
+            }
+        };
+
+        for (const root of roots) {
+            visit(root);
+        }
+        const remaining = tasks.filter(task => !visited.has(String(task?.id || '').trim())).sort(compareByUpdatedAt);
+        for (const task of remaining) {
+            visit(task);
+        }
+        return ordered;
+    }
+
     protected buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
         const choice = this.buildCodingTaskChoice(task, tasks);
         return {
@@ -1095,13 +1166,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 sourceSessionId: sessionId
             }));
         }));
-        const tasks = responses.flat().sort((left, right) => {
+        const tasks = this.orderCodingTasksByLineage(responses.flat().sort((left, right) => {
             const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
             if (activityDelta !== 0) {
                 return activityDelta;
             }
             return String(left?.id || '').localeCompare(String(right?.id || ''));
-        });
+        }));
         this.state.batch(() => {
             this.state.setTaskRecords(tasks);
             this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));

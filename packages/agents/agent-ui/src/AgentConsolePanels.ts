@@ -863,6 +863,9 @@ export class AgentConsoleTasksPanelComponent {
                 : typeof taskRecord?.metadata?.retrySequence === 'number'
                     ? taskRecord.metadata.retrySequence
                     : undefined;
+            const indentation = typeof retryDepth === 'number' && retryDepth > 0
+                ? `${'  '.repeat(Math.min(retryDepth, 6))}- `
+                : '';
             const lineageTaskCount = typeof task.lineageTaskCount === 'number'
                 ? task.lineageTaskCount
                 : undefined;
@@ -877,7 +880,7 @@ export class AgentConsoleTasksPanelComponent {
             ].filter(Boolean).join(' · ');
             return {
                 id: task.id,
-                label: `${this.state.selectedReviewTaskId === task.id ? '›' : ' '} ${task.id} · ${task.title}${meta ? ` (${meta})` : ''}`
+                label: `${this.state.selectedReviewTaskId === task.id ? '›' : ' '} ${indentation}${task.id} · ${task.title}${meta ? ` (${meta})` : ''}`
             };
         });
     }
