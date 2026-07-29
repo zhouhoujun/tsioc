@@ -121,7 +121,7 @@ export interface AgentConsoleReviewTaskItem {
     detail?: string;
 }
 
-export type AgentConsoleTaskFilter = 'all' | 'failed' | 'rollback';
+export type AgentConsoleTaskFilter = 'all' | 'failed' | 'rollback' | 'lineage';
 export type AgentConsoleReviewPatchFilter = 'all' | 'additions';
 
 export interface AgentConsoleReviewWorker {
@@ -320,6 +320,7 @@ export class AgentConsoleSessionState {
     planTodoSourceSessionId = '';
     selectedReviewTaskId = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
+    selectedTaskLineageRootId = '';
     selectedReviewGroupIndex = 0;
     selectedReviewFileIndex = 0;
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
@@ -1382,6 +1383,10 @@ export class AgentConsoleSessionState {
                 return this.reviewTaskChoices.filter(item => this.isFailedTaskChoice(item));
             case 'rollback':
                 return this.reviewTaskChoices.filter(item => !!item.rollbackAvailable);
+            case 'lineage':
+                return this.selectedTaskLineageRootId
+                    ? this.reviewTaskChoices.filter(item => this.resolveTaskLineageRootId(item) === this.selectedTaskLineageRootId)
+                    : this.reviewTaskChoices;
             default:
                 return this.reviewTaskChoices;
         }
@@ -1392,8 +1397,23 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedTaskFilter = filter;
+        if (filter !== 'lineage') {
+            this.selectedTaskLineageRootId = '';
+        }
         this.syncFilteredTaskSelection();
         this.notify();
+    }
+
+    focusSelectedTaskLineageFilter(): boolean {
+        const rootId = this.resolveTaskLineageRootId(this.selectedTask);
+        if (!rootId) {
+            return false;
+        }
+        this.selectedTaskFilter = 'lineage';
+        this.selectedTaskLineageRootId = rootId;
+        this.syncFilteredTaskSelection();
+        this.notify();
+        return true;
     }
 
     protected formatScheduledTimestamp(value?: number): string {
@@ -1637,6 +1657,7 @@ export class AgentConsoleSessionState {
         this.taskRecords = [];
         this.selectedReviewTaskId = '';
         this.selectedTaskFilter = 'all';
+        this.selectedTaskLineageRootId = '';
         this.selectedReviewGroupIndex = 0;
         this.selectedReviewFileIndex = 0;
         this.selectedReviewPatchFilter = 'all';
@@ -3013,6 +3034,8 @@ export class AgentConsoleSessionState {
                         return true;
                     }
                     return false;
+                case 'l':
+                    return this.focusSelectedTaskLineageFilter();
                 case 'f':
                     this.setTaskFilter('failed');
                     return true;
@@ -3202,6 +3225,19 @@ export class AgentConsoleSessionState {
         if (task?.id) {
             await this.retrySelectedTaskAction?.(task.id);
         }
+    }
+
+    protected resolveTaskLineageRootId(task: Record<string, any> | undefined | null): string {
+        if (!task) {
+            return '';
+        }
+        if (typeof task.lineageRootTaskId === 'string' && task.lineageRootTaskId.trim()) {
+            return task.lineageRootTaskId.trim();
+        }
+        if (typeof task?.metadata?.retryOfTaskId === 'string' && task.metadata.retryOfTaskId.trim()) {
+            return task.metadata.retryOfTaskId.trim();
+        }
+        return typeof task.id === 'string' && task.id.trim() ? task.id.trim() : '';
     }
 
     async processRawChunk(

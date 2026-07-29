@@ -974,6 +974,9 @@ export class AgentConsoleTasksPanelComponent {
         if (selected && this.canRollbackTask(selected)) {
             actions.push('b rollback');
         }
+        if (selected && this.canFocusLineage(selected)) {
+            actions.push('l lineage');
+        }
         actions.push('f failed', 'v rollback', 'u all');
         actions.push('y copy');
         return `up/down move   pg jump   ${actions.join('   ')}`;
@@ -1067,6 +1070,8 @@ export class AgentConsoleTasksPanelComponent {
         switch (this.state.selectedTaskFilter) {
             case 'failed':
                 return 'failed';
+            case 'lineage':
+                return this.state.selectedTaskLineageRootId ? `lineage ${this.state.selectedTaskLineageRootId}` : 'lineage';
             case 'rollback':
                 return 'rollback';
             default:
@@ -1112,6 +1117,14 @@ export class AgentConsoleTasksPanelComponent {
             return true;
         }
         return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
+    }
+
+    protected canFocusLineage(task: any): boolean {
+        if (!task) {
+            return false;
+        }
+        const lineageTaskCount = this.state.reviewTaskChoices.find(item => item.id === task.id)?.lineageTaskCount;
+        return Number(lineageTaskCount || 0) > 1;
     }
 }
 

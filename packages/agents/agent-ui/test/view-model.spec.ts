@@ -1788,12 +1788,20 @@ export class AgentConsoleComponentTest {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const appRpc = new AppRpcStub();
-        const rollbackTask = createReviewTask();
+        const rollbackTask = {
+            ...createReviewTask(),
+            lineageRootTaskId: 'task-1',
+            lineageTaskCount: 2
+        };
         const failedTask = {
             ...createReviewTask(),
             id: 'task-2',
             title: 'Fix validation',
             status: 'failed',
+            retryOfTaskId: 'task-1',
+            lineageRootTaskId: 'task-1',
+            retryDepth: 1,
+            lineageTaskCount: 2,
             result: {
                 executionMode: 'sequential',
                 workers: [],
@@ -1821,6 +1829,12 @@ export class AgentConsoleComponentTest {
         await component.submit();
 
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2', 'task-3']);
+
+        await component.sessionState.handleFocusKey('l');
+        expect(component.sessionState.selectedTaskFilter).toEqual('lineage');
+        expect(component.sessionState.selectedTaskLineageRootId).toEqual('task-1');
+        expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2']);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-1');
 
         await component.sessionState.handleFocusKey('f');
         expect(component.sessionState.selectedTaskFilter).toEqual('failed');

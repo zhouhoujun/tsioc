@@ -968,7 +968,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected resolveCodingTaskRetrySourceTaskId(task: any): string | undefined {
-        const value = task?.metadata?.retrySourceTaskId || task?.metadata?.retryOfTaskId;
+        const value = task?.retryOfTaskId || task?.metadata?.retrySourceTaskId || task?.metadata?.retryOfTaskId;
         return typeof value === 'string' && value.trim() ? value.trim() : undefined;
     }
 
