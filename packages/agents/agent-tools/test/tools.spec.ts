@@ -2925,6 +2925,7 @@ export class AgentToolsPackageTest {
             usage: { promptTokens: 10 },
             report: {
                 summary: 'done',
+                diff: 'src/app.ts +1 -0',
                 completed: ['analyze'],
                 nextSteps: ['review'],
                 risks: ['none'],
@@ -2940,6 +2941,10 @@ export class AgentToolsPackageTest {
         expect(result.model).toEqual('mock-model');
         expect(result.finishReason).toEqual('stop');
         expect(result.usage?.promptTokens).toEqual(10);
+        expect(result.summary).toEqual('done');
+        expect(result.diff).toEqual('src/app.ts +1 -0');
+        expect(result.nextSteps).toEqual(['review']);
+        expect(result.artifacts).toEqual(['patch.diff']);
         expect(result.report?.summary).toEqual('done');
         expect(result.report?.nextSteps).toEqual(['review']);
         expect(result.report?.artifacts).toEqual(['patch.diff']);
@@ -2965,6 +2970,7 @@ export class AgentToolsPackageTest {
                     request.prompt,
                     '',
                     'Summary: analyzed the project structure',
+                    'Diff: src/app.ts +12 -3',
                     'Completed: mapped files, identified risks',
                     'Next steps: update review summary, split workers',
                     'Risks: duplicate analysis, stale context',
@@ -2994,6 +3000,10 @@ export class AgentToolsPackageTest {
         expect(result.model).toEqual('mock');
         expect(result.finishReason).toEqual('end');
         expect(result.usage?.promptTokens).toEqual(12);
+        expect(result.summary).toContain('analyzed the project structure');
+        expect(result.diff).toEqual('src/app.ts +12 -3');
+        expect(result.nextSteps).toEqual(['update review summary', 'split workers']);
+        expect(result.artifacts).toEqual(['diff.patch', 'notes.md']);
         expect(result.report?.summary).toContain('analyzed the project structure');
         expect(result.report?.nextSteps).toEqual(['update review summary', 'split workers']);
         expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
@@ -3006,8 +3016,10 @@ export class AgentToolsPackageTest {
             sessionId: 'spawn-1',
             turnCount: 2,
             toolCalls: 3,
+            diff: 'src/app.ts +12 -3',
             report: {
                 summary: 'analyzed the project structure',
+                diff: 'src/app.ts +12 -3',
                 nextSteps: ['update review summary', 'split workers'],
                 artifacts: ['diff.patch']
             }
@@ -3015,11 +3027,40 @@ export class AgentToolsPackageTest {
 
         expect(summary).toContain('analyze project');
         expect(summary).toContain('analyzed the project structure');
+        expect(summary).toContain('diff=src/app.ts +12 -3');
         expect(summary).toContain('session=spawn-1');
         expect(summary).toContain('2 turns');
         expect(summary).toContain('3 tools');
         expect(summary).toContain('next=update review summary, split workers');
         expect(summary).toContain('artifacts=diff.patch');
+    }
+
+    @Test('parse delegated agent reports with diff and structured lists')
+    async parseDelegatedAgentReportsWithDiffAndStructuredLists() {
+        const adapter = new DelegatingSpawnAgentAdapter({
+            run: async () => ({
+                content: [
+                    'Summary: finished the worker pass',
+                    'Diff: src/a.ts +4 -1',
+                    'Completed: wrote tests, updated docs',
+                    'Next steps: review diff, merge branch',
+                    'Risks: flaky test, stale lockfile',
+                    'Artifacts: patch.diff, notes.md'
+                ].join('\n'),
+                turnCount: 1,
+                toolCalls: 1
+            })
+        } as NestedAgentRunner);
+
+        const result = await adapter.spawn({ goal: 'worker task' });
+
+        expect(result.summary).toEqual('finished the worker pass');
+        expect(result.diff).toEqual('src/a.ts +4 -1');
+        expect(result.completed).toEqual(['wrote tests', 'updated docs']);
+        expect(result.nextSteps).toEqual(['review diff', 'merge branch']);
+        expect(result.risks).toEqual(['flaky test', 'stale lockfile']);
+        expect(result.artifacts).toEqual(['patch.diff', 'notes.md']);
+        expect(result.report?.diff).toEqual('src/a.ts +4 -1');
     }
 
     @Test('coding task output summary prefers aggregated report fields')

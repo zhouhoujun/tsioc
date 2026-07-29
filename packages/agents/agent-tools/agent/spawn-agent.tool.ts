@@ -22,6 +22,12 @@ export interface SpawnAgentResult {
     model?: string;
     finishReason?: string;
     usage?: Record<string, any>;
+    summary?: string;
+    diff?: string;
+    completed?: string[];
+    nextSteps?: string[];
+    risks?: string[];
+    artifacts?: string[];
     report?: import('../src/nested-agent-runner').DelegatedAgentReport;
 }
 
@@ -79,6 +85,12 @@ export class SpawnAgentTool implements AgentTool {
             model: result.model,
             finishReason: result.finishReason,
             usage: result.usage,
+            summary: result.summary ?? result.report?.summary,
+            diff: result.diff ?? result.report?.diff,
+            completed: result.completed ?? result.report?.completed,
+            nextSteps: result.nextSteps ?? result.report?.nextSteps,
+            risks: result.risks ?? result.report?.risks,
+            artifacts: result.artifacts ?? result.report?.artifacts,
             report: result.report
         };
     }

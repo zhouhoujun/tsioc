@@ -16,6 +16,7 @@ export interface NestedAgentRunRequest {
 
 export interface DelegatedAgentReport {
     summary?: string;
+    diff?: string;
     completed?: string[];
     nextSteps?: string[];
     risks?: string[];
@@ -41,7 +42,7 @@ export abstract class NestedAgentRunner {
 function buildSubAgentPrompt(request: SpawnAgentInput): string {
     const parts = [
         'Complete the delegated task independently and return the most useful final result.',
-        'Return a compact report using these labels: Summary:, Completed:, Next steps:, Risks:, Artifacts:.',
+        'Return a compact report using these labels: Summary:, Diff:, Completed:, Next steps:, Risks:, Artifacts:.',
         `Task:\n${request.goal}`
     ];
     if (request.context?.trim()) {
@@ -56,7 +57,7 @@ export function parseDelegatedAgentReport(content: string): DelegatedAgentReport
     const multiValueLabels = new Set(['Completed', 'Next steps', 'Risks', 'Artifacts']);
 
     for (const line of lines) {
-        const match = /^\s*(Summary|Completed|Next steps|Risks|Artifacts)\s*:\s*(.*)\s*$/i.exec(line);
+        const match = /^\s*(Summary|Diff|Completed|Next steps|Risks|Artifacts)\s*:\s*(.*)\s*$/i.exec(line);
         if (!match) {
             continue;
         }
@@ -67,6 +68,10 @@ export function parseDelegatedAgentReport(content: string): DelegatedAgentReport
         }
         if (label === 'summary') {
             report.summary = value;
+            continue;
+        }
+        if (label === 'diff') {
+            report.diff = value;
             continue;
         }
         const items = value
@@ -82,7 +87,7 @@ export function parseDelegatedAgentReport(content: string): DelegatedAgentReport
         }
     }
 
-    return report.summary || report.completed?.length || report.nextSteps?.length || report.risks?.length || report.artifacts?.length
+    return report.summary || report.diff || report.completed?.length || report.nextSteps?.length || report.risks?.length || report.artifacts?.length
         ? report
         : undefined;
 }
@@ -91,6 +96,8 @@ function normalizeLabel(label: string): keyof DelegatedAgentReport | undefined {
     switch (String(label || '').trim().toLowerCase()) {
         case 'summary':
             return 'summary';
+        case 'diff':
+            return 'diff';
         case 'completed':
             return 'completed';
         case 'next steps':
@@ -119,6 +126,7 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             sessionId,
             toolsets: input.toolsets
         });
+        const report = result.report ?? parseDelegatedAgentReport(result.content);
         return {
             output: result.content,
             sessionId: result.sessionId ?? sessionId,
@@ -127,7 +135,13 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             model: result.model,
             finishReason: result.finishReason,
             usage: result.usage,
-            report: result.report ?? parseDelegatedAgentReport(result.content)
+            summary: report?.summary,
+            diff: report?.diff,
+            completed: report?.completed,
+            nextSteps: report?.nextSteps,
+            risks: report?.risks,
+            artifacts: report?.artifacts,
+            report
         };
     }
 

@@ -250,7 +250,10 @@ function summarizeCodingTaskPayload(payload: Record<string, any>): string | unde
 
 function summarizeSpawnAgentPayload(payload: Record<string, any>): string | undefined {
     const report = payload.report && typeof payload.report === 'object' ? payload.report : undefined;
-    const summary = summarizeReportSnippet(report) || pickString(payload.summary) || pickString(payload.output);
+    const summary = summarizeReportSnippet(report)
+        || pickString(payload.summary)
+        || pickString(payload.output);
+    const diff = pickString(payload.diff) || pickString(report?.diff);
     const goal = pickString(payload.goal);
     const sessionId = pickString(payload.sessionId);
     const turnCount = numberOrUndefined(payload.turnCount);
@@ -259,6 +262,7 @@ function summarizeSpawnAgentPayload(payload: Record<string, any>): string | unde
     const parts = [
         goal,
         summary,
+        diff ? `diff=${diff}` : '',
         sessionId ? `session=${sessionId}` : '',
         turnCount != null ? `${turnCount} turn${turnCount === 1 ? '' : 's'}` : '',
         toolCalls != null ? `${toolCalls} tool${toolCalls === 1 ? '' : 's'}` : '',
@@ -272,11 +276,13 @@ function summarizeReportSnippet(report: Record<string, any> | undefined): string
         return undefined;
     }
     const summary = pickString(report.summary);
+    const diff = pickString(report.diff);
     const nextSteps = Array.isArray(report.nextSteps) ? report.nextSteps.map(pickString).filter(Boolean) : [];
     const risks = Array.isArray(report.risks) ? report.risks.map(pickString).filter(Boolean) : [];
     const artifacts = Array.isArray(report.artifacts) ? report.artifacts.map(pickString).filter(Boolean) : [];
     const parts = [
         summary,
+        diff ? `diff=${diff}` : '',
         nextSteps.length ? `next=${nextSteps.slice(0, 2).join(', ')}` : '',
         risks.length ? `risks=${risks.slice(0, 2).join(', ')}` : '',
         artifacts.length ? `artifacts=${artifacts.slice(0, 2).join(', ')}` : ''
