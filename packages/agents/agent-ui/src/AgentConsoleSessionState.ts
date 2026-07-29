@@ -2552,6 +2552,7 @@ export class AgentConsoleSessionState {
     protected buildReviewAssessmentLines(): string[] {
         const lines: string[] = [];
         const status = String(this.reviewTask?.status || '').trim().toLowerCase();
+        const aggregate = this.reviewTask?.result?.aggregate;
         const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
             ? this.reviewTask?.metadata?.checkpoints
             : [];
@@ -2581,6 +2582,9 @@ export class AgentConsoleSessionState {
         if (scopeParts.length) {
             lines.push(`Scope: ${scopeParts.join(' · ')}`);
         }
+        if (aggregate) {
+            lines.push(`Workers: ${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed${aggregate.failedWorkers ? ` · ${aggregate.failedWorkers} failed` : ''}`);
+        }
 
         const riskParts = [
             workerFailures > 0 ? `${workerFailures} worker failure${workerFailures === 1 ? '' : 's'}` : '',
@@ -2594,6 +2598,10 @@ export class AgentConsoleSessionState {
         ].filter(Boolean);
         if (riskParts.length) {
             lines.push(`Risks: ${riskParts.join(' · ')}`);
+        }
+        const isolatedFailures = Array.isArray(aggregate?.isolatedFailures) ? aggregate.isolatedFailures : [];
+        if (isolatedFailures.length) {
+            lines.push(`Worker Failures: ${isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`);
         }
 
         return lines;

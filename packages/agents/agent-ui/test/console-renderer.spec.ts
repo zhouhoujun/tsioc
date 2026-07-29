@@ -446,6 +446,12 @@ export class AgentConsoleRendererTest {
                 result: {
                     executionMode: 'parallel',
                     workers: [{ workerId: 'worker-1' }],
+                    aggregate: {
+                        totalWorkers: 1,
+                        completedWorkers: 1,
+                        failedWorkers: 0,
+                        status: 'completed'
+                    },
                     rollback: {
                         available: true
                     }
@@ -488,6 +494,7 @@ export class AgentConsoleRendererTest {
             expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('summary latest project summary')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('session chat-b')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('worker status completed')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('rollback available')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('checkpoints 1 total')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('1.')).toBe(true);

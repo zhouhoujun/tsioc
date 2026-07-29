@@ -973,11 +973,18 @@ export class AgentConsoleTasksPanelComponent {
             ? `${checkpoints.length} total · ${checkpoints.filter((entry: any) => entry?.status === 'available').length} available`
             : 'none';
         const rollback = task?.result?.rollback;
+        const aggregate = task?.result?.aggregate;
         const rollbackLabel = rollback?.available === true
             ? `available${rollback?.mode ? ` (${rollback.mode})` : ''}`
             : rollback?.rolledBackAt
                 ? `applied${rollback?.mode ? ` (${rollback.mode})` : ''}`
                 : 'unavailable';
+        const workerStatus = aggregate
+            ? `${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed${aggregate.failedWorkers ? ` · ${aggregate.failedWorkers} failed` : ''}`
+            : '';
+        const isolatedFailureLabel = Array.isArray(aggregate?.isolatedFailures) && aggregate.isolatedFailures.length
+            ? `worker failures ${aggregate.isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`
+            : '';
         const parts = [
             this.state.projectSummary ? `summary ${this.state.projectSummary}` : '',
             `title ${task.title || task.id}`,
@@ -988,6 +995,8 @@ export class AgentConsoleTasksPanelComponent {
             task?.goal ? `goal ${task.goal}` : '',
             `actions ${(task.actions || []).length}`,
             `workers ${Array.isArray(task?.result?.workers) ? task.result.workers.length : 0}`,
+            workerStatus ? `worker status ${workerStatus}` : '',
+            isolatedFailureLabel,
             `rollback ${rollbackLabel}`,
             `checkpoints ${checkpointSummary}`,
             task?.result?.diff?.summary ? `diff ${task.result.diff.summary}` : ''

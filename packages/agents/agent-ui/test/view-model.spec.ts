@@ -2803,6 +2803,17 @@ export class AgentConsoleComponentTest {
             status: 'failed',
             result: {
                 ...createReviewTask().result,
+                aggregate: {
+                    totalWorkers: 1,
+                    completedWorkers: 0,
+                    failedWorkers: 1,
+                    status: 'failed',
+                    isolatedFailures: [{
+                        workerId: 'worker-1',
+                        actionIds: ['edit-1'],
+                        error: 'patch rejected'
+                    }]
+                },
                 rollback: {
                     available: false
                 },
@@ -2827,7 +2838,9 @@ export class AgentConsoleComponentTest {
         });
 
         expect(state.reviewDetailLines.join('\n')).toContain('Review: needs attention');
+        expect(state.reviewDetailLines.join('\n')).toContain('Workers: failed · 0/1 completed · 1 failed');
         expect(state.reviewDetailLines.join('\n')).toContain('Risks: 1 worker failure · rollback unavailable');
+        expect(state.reviewDetailLines.join('\n')).toContain('Worker Failures: worker-1: patch rejected');
     }
 
     @Test('review detail keeps large diffs scoped to the selected file')
