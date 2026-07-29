@@ -44,6 +44,25 @@ export interface CodingTaskReport {
     artifacts?: string[];
 }
 
+export interface CodingTaskIsolatedFailure {
+    workerId: string;
+    actionIds: string[];
+    error: string;
+    attemptCount?: number;
+    branch?: string;
+    worktreePath?: string;
+}
+
+export interface CodingTaskWorkerAggregate {
+    totalWorkers: number;
+    completedWorkers: number;
+    failedWorkers: number;
+    status: 'completed' | 'partial_failure' | 'failed';
+    successfulWorkerIds: string[];
+    failedWorkerIds: string[];
+    isolatedFailures?: CodingTaskIsolatedFailure[];
+}
+
 export interface CodingTaskCheckpointPatch {
     workerId?: string;
     branch?: string;
@@ -89,6 +108,7 @@ export interface CodingTaskRecord {
         output?: any;
         diff?: any;
         workers?: CodingTaskWorkerRecord[];
+        aggregate?: CodingTaskWorkerAggregate;
         report?: CodingTaskReport;
         error?: string;
         rollback?: {

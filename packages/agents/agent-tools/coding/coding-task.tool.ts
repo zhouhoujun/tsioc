@@ -7,9 +7,11 @@ import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import {
     CodingTaskActionRecord,
+    CodingTaskWorkerAggregate,
     CodingTaskCheckpointRecord,
     CodingTaskComplexity,
     CodingTaskExecutionMode,
+    CodingTaskIsolatedFailure,
     CodingTaskPlanningStrategy,
     CodingTaskRecord,
     CodingTaskReport,
@@ -43,6 +45,7 @@ interface CodingTaskExecutionReportContext {
     failedActionId?: string;
     diff?: CapturedCodingDiff;
     workers: CodingTaskWorkerRecord[];
+    aggregate?: CodingTaskWorkerAggregate;
     rollback: {
         available: boolean;
         checkpointId?: string;
@@ -267,8 +270,10 @@ export class CodingTaskTool implements AgentTool {
             failedActionId: execution.failedActionId,
             diff: execution.diff,
             workers: execution.workers,
+            aggregate: this.buildWorkerAggregate(execution.workers),
             rollback: rollbackSummary
         });
+        const aggregate = this.buildWorkerAggregate(execution.workers);
 
         const finalStatus = execution.failedActionId ? 'failed' : 'completed';
         const saved = this.store.patch(sessionId, working.id, {
@@ -290,6 +295,7 @@ export class CodingTaskTool implements AgentTool {
                 output: this.summarizeResultPayload(execution.output),
                 ...(execution.diff ? { diff: execution.diff } : {}),
                 ...(execution.workers.length ? { workers: execution.workers } : {}),
+                ...(aggregate ? { aggregate } : {}),
                 ...(report ? { report } : {}),
                 error: execution.failedActionId ? working.actions.find(item => item.id === execution.failedActionId)?.error : undefined,
                 rollback: rollbackSummary
@@ -300,7 +306,17 @@ export class CodingTaskTool implements AgentTool {
             ran: true,
             task: saved,
             completedActions: execution.completedActions,
-            failedActionId: execution.failedActionId
+            failedActionId: execution.failedActionId,
+            executionMode,
+            diff: saved.result?.diff,
+            workers: saved.result?.workers ?? [],
+            aggregate: saved.result?.aggregate,
+            report: saved.result?.report,
+            summary: saved.result?.report?.summary,
+            nextSteps: saved.result?.report?.nextSteps,
+            risks: saved.result?.report?.risks,
+            artifacts: saved.result?.report?.artifacts,
+            rollback: saved.result?.rollback
         };
     }
 
@@ -1085,6 +1101,7 @@ export class CodingTaskTool implements AgentTool {
         const workerReports = execution.workers
             .map(worker => worker.report)
             .filter((report): report is CodingTaskReport => !!report);
+        const aggregate = execution.aggregate;
         const failedAction = execution.failedActionId
             ? task.actions.find(action => action.id === execution.failedActionId)
             : undefined;
@@ -1096,20 +1113,26 @@ export class CodingTaskTool implements AgentTool {
 
         return this.mergeReports([
             {
-                summary: execution.diff?.summary
-                    || (execution.failedActionId
-                        ? `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed before failure`
-                        : `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed`),
+                summary: this.buildExecutionSummary(execution, totalActions),
                 completed: completedTitles.length ? completedTitles : undefined,
-                nextSteps: execution.failedActionId
-                    ? [
-                        failedAction?.title ? `fix ${failedAction.title}` : 'fix the failed action',
-                        'rerun the task'
-                    ]
-                    : execution.diff || execution.workers.length
-                        ? ['review diff', 'verify changes']
-                        : ['verify changes'],
+                nextSteps: aggregate?.status === 'partial_failure'
+                    ? this.mergeUniqueStrings([
+                        execution.diff ? 'review completed worker diff' : '',
+                        failedAction?.title ? `fix ${failedAction.title}` : 'fix the failed worker',
+                        'rerun failed workers'
+                    ])
+                    : execution.failedActionId
+                        ? [
+                            failedAction?.title ? `fix ${failedAction.title}` : 'fix the failed action',
+                            'rerun the task'
+                        ]
+                        : execution.diff || execution.workers.length
+                            ? ['review diff', 'verify changes']
+                            : ['verify changes'],
                 risks: [
+                    aggregate && aggregate.failedWorkers > 0
+                        ? `${aggregate.failedWorkers} worker failure${aggregate.failedWorkers === 1 ? '' : 's'}`
+                        : '',
                     execution.failedActionId && execution.rollback.available === false && execution.rollback.reason ? execution.rollback.reason : '',
                     failedAction?.error || ''
                 ].filter((item): item is string => !!item),
@@ -1120,6 +1143,61 @@ export class CodingTaskTool implements AgentTool {
             },
             ...workerReports
         ]);
+    }
+
+    private buildExecutionSummary(
+        execution: CodingTaskExecutionReportContext,
+        totalActions: number
+    ): string {
+        const aggregate = execution.aggregate;
+        if (aggregate && aggregate.totalWorkers > 1) {
+            if (aggregate.status === 'partial_failure') {
+                return `${aggregate.completedWorkers}/${aggregate.totalWorkers} workers completed; ${aggregate.failedWorkers} failed${execution.diff?.summary ? ` · ${execution.diff.summary}` : ''}`;
+            }
+            if (aggregate.status === 'failed') {
+                return `${aggregate.failedWorkers}/${aggregate.totalWorkers} workers failed`;
+            }
+            return execution.diff?.summary
+                ? `${aggregate.completedWorkers}/${aggregate.totalWorkers} workers completed · ${execution.diff.summary}`
+                : `${aggregate.completedWorkers}/${aggregate.totalWorkers} workers completed`;
+        }
+        return execution.diff?.summary
+            || (execution.failedActionId
+                ? `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed before failure`
+                : `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed`);
+    }
+
+    private buildWorkerAggregate(workers: CodingTaskWorkerRecord[]): CodingTaskWorkerAggregate | undefined {
+        if (!workers.length) {
+            return undefined;
+        }
+        const completed = workers.filter(worker => worker.status === 'completed');
+        const failed = workers.filter(worker => worker.status === 'failed');
+        const isolatedFailures = failed
+            .filter(worker => typeof worker.error === 'string' && worker.error.trim())
+            .map(worker => this.toIsolatedFailure(worker));
+        return {
+            totalWorkers: workers.length,
+            completedWorkers: completed.length,
+            failedWorkers: failed.length,
+            status: failed.length
+                ? (completed.length ? 'partial_failure' : 'failed')
+                : 'completed',
+            successfulWorkerIds: completed.map(worker => worker.workerId),
+            failedWorkerIds: failed.map(worker => worker.workerId),
+            ...(isolatedFailures.length ? { isolatedFailures } : {})
+        };
+    }
+
+    private toIsolatedFailure(worker: CodingTaskWorkerRecord): CodingTaskIsolatedFailure {
+        return {
+            workerId: worker.workerId,
+            actionIds: worker.actionIds.slice(),
+            error: String(worker.error || '').trim(),
+            attemptCount: worker.attemptCount,
+            branch: worker.branch,
+            worktreePath: worker.worktreePath
+        };
     }
 
     private mergeReports(reports: Array<CodingTaskReport | undefined>): CodingTaskReport | undefined {

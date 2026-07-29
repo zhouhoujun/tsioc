@@ -1850,7 +1850,12 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
+        );
         const result = await tool.invoke({
             action: 'run',
             goal: 'Apply weather location fix',
@@ -1887,7 +1892,12 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
+        );
         const result = await tool.invoke({
             action: 'run',
             goal: 'Patch fallback flow and add tests',
@@ -4440,7 +4450,12 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
+        );
         const result = await tool.invoke({
             action: 'run',
             goal: 'Patch error handling',
@@ -4585,8 +4600,15 @@ export class AgentToolsPackageTest {
         expect(result.ran).toEqual(true);
         expect(result.completedActions).toEqual(2);
         expect(result.failedActionId).toEqual(undefined);
+        expect(result.executionMode).toEqual('parallel');
+        expect(result.aggregate?.status).toEqual('completed');
+        expect(result.aggregate?.completedWorkers).toEqual(2);
+        expect(result.report?.summary).toContain('2/2 workers completed');
+        expect(result.summary).toContain('2/2 workers completed');
+        expect(result.nextSteps).toEqual(['review diff', 'verify changes']);
         expect(result.task.result?.executionMode).toEqual('parallel');
         expect(result.task.result?.workers?.length).toEqual(2);
+        expect(result.task.result?.aggregate?.status).toEqual('completed');
         expect(result.task.result?.diff?.summary).toContain('2 worker diff');
         expect(result.task.result?.report?.summary).toContain('2 worker diff');
         expect(result.task.result?.report?.completed).toEqual(['Edit alpha', 'Edit beta']);
@@ -4609,6 +4631,77 @@ export class AgentToolsPackageTest {
         expect(gitCalls.filter(call => call.input.action === 'branch_create').length).toEqual(2);
         expect(gitCalls.filter(call => call.input.action === 'worktree_create').length).toEqual(2);
         expect(gitCalls.filter(call => call.input.action === 'worktree_merge').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
+    }
+
+    @Test('coding task parallel worktree mode isolates failed workers while preserving completed diffs')
+    async codingTaskParallelWorktreeModeIsolatesFailedWorkersWhilePreservingCompletedDiffs() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'edit_file' && String(action.input?.path || '').includes('beta.ts')) {
+                    throw new Error('beta edit failed');
+                }
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: `diff --git a/${action.input.workdir}/file.ts b/${action.input.workdir}/file.ts` },
+                        summary: `diff:${action.input.workdir}`
+                    };
+                }
+                return { tool: action.tool, output: { ok: true, path: action.input?.path }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(
+            new CodingTaskStore(),
+            runner,
+            null as any,
+            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
+        );
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Apply isolated edits with one failure',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } },
+                { id: 'edit-2', title: 'Edit beta', tool: 'edit_file', input: { path: 'src/beta.ts', oldString: 'x', newString: 'y' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        expect(result.failedActionId).toEqual('edit-2');
+        expect(result.task.status).toEqual('failed');
+        expect(result.diff?.summary).toContain('1 worker diff');
+        expect(result.aggregate?.status).toEqual('partial_failure');
+        expect(result.aggregate?.completedWorkers).toEqual(1);
+        expect(result.aggregate?.failedWorkers).toEqual(1);
+        expect(result.aggregate?.successfulWorkerIds).toEqual(['worker-1']);
+        expect(result.aggregate?.failedWorkerIds).toEqual(['worker-2']);
+        expect(result.aggregate?.isolatedFailures?.[0]?.error).toEqual('beta edit failed');
+        expect(result.report?.summary).toContain('1/2 workers completed; 1 failed');
+        expect(result.report?.nextSteps).toEqual(expect.arrayContaining([
+            'review completed worker diff',
+            'fix Edit beta',
+            'rerun failed workers',
+            'review diff',
+            'verify changes',
+            'inspect Edit beta',
+            'fix the failure and rerun'
+        ]));
+        expect(result.risks).toContain('1 worker failure');
+        expect(result.risks).toContain('beta edit failed');
+        expect(result.rollback?.available).toEqual(true);
+        expect(result.task.result?.aggregate?.status).toEqual('partial_failure');
+        expect(result.task.result?.workers?.length).toEqual(2);
+        expect(result.task.result?.workers?.find((worker: any) => worker.workerId === 'worker-1')?.diff?.summary).toContain('diff:');
+        expect(result.task.result?.workers?.find((worker: any) => worker.workerId === 'worker-2')?.error).toEqual('beta edit failed');
+
+        const gitCalls = calls.filter(call => call.tool === 'git_operations');
+        expect(gitCalls.filter(call => call.input.action === 'worktree_merge').length).toEqual(1);
         expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
     }
 

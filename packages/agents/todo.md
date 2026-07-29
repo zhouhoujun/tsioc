@@ -362,7 +362,7 @@
 
 - `[ ]` `AGENT-M2-ARCH`：定义主 agent / worker agent delegation payload 与 result schema
 - `[x]` `AGENT-M2-RUNTIME-1`：让 `spawn_agent` 输出标准化 summary / diff / artifact / next-step
-- `[ ]` `AGENT-M2-RUNTIME-2`：为主 agent 增加多 worker 结果聚合与失败隔离策略
+- `[x]` `AGENT-M2-RUNTIME-2`：为主 agent 增加多 worker 结果聚合与失败隔离策略
 - `[x]` `AGENT-M2-RUNTIME-3`：为并行 worker 增加重试与超时回收机制
 - `[ ]` `AGENT-M2-UI`：在 review / tasks 面板展示 worker 数量、状态、摘要与失败原因
 - `[x]` `AGENT-M2-TEST`：补并行 delegation 集成测试，覆盖部分失败与重试场景
