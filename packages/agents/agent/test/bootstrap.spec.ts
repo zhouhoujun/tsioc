@@ -44,6 +44,10 @@ class CustomBootstrapRuntime extends AgentRuntime {
     async getMessages(_sessionId: string): Promise<AgentMessage[]> {
         return [];
     }
+
+    synthesizeExperiences(_options?: any): any {
+        return { totalSessions: 0, processedSessions: 0, patterns: [], errors: [] };
+    }
 }
 
 @Suite('Agents bootstrap')

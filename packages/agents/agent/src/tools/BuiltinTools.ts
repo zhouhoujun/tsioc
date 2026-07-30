@@ -63,3 +63,48 @@ export class MemorySearchTool implements AgentTool {
         return context.memory.search(query, context.sessionId);
     }
 }
+
+@Injectable()
+export class ExperienceSynthesizeTool implements AgentTool {
+    name = 'experience.synthesize';
+    description = 'Analyse past sessions and return reusable knowledge patterns, including workflow habits. Use this periodically to surface patterns across sessions.';
+    toolset = 'memory';
+    source = 'local';
+    execution = { readOnly: true };
+    inputSchema = {
+        type: 'object',
+        properties: {
+            sessionIds: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Optional session IDs to restrict the analysis to (default: all compacted sessions)'
+            },
+            query: {
+                type: 'string',
+                description: 'Optional search query to filter the returned patterns by content'
+            }
+        }
+    };
+
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
+        const query = String(input?.query ?? '').trim();
+        const records = await context.memory.search('experience:', context.sessionId);
+        if (!records || records.length === 0) {
+            return { patterns: [], message: 'No experience patterns available yet. Patterns are generated automatically after session compaction.' };
+        }
+        let patterns = records.map(r => ({
+            content: r.value,
+            key: r.key,
+            scope: r.scope,
+            createdAt: r.createdAt
+        }));
+        if (query) {
+            const ql = query.toLowerCase();
+            patterns = patterns.filter(p =>
+                p.content.toLowerCase().includes(ql) ||
+                p.key.toLowerCase().includes(ql)
+            );
+        }
+        return { patterns, total: patterns.length };
+    }
+}

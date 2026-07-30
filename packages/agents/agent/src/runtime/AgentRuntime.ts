@@ -5,6 +5,7 @@ import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
 import { AgentTurnInput } from './AgentTurnInput';
 import { StreamChunk } from '../model/StreamChunk';
+import { SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 
 @Abstract()
 export abstract class AgentRuntime {
@@ -24,6 +25,8 @@ export abstract class AgentRuntime {
     abstract searchMemory(sessionId: string, query: string): Promise<AgentMemoryRecord[]>;
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
+
+    abstract synthesizeExperiences(options?: SynthesisOptions): SynthesisReport;
 
     /**
      * Set a toolset filter for a specific session. When set, only tools

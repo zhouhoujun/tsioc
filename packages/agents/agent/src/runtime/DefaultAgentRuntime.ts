@@ -21,7 +21,7 @@ import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
-import { AgentContextManager, ContextPreparationReport } from '../context/AgentContextManager';
+import { AgentContextManager, ContextPreparationReport, SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
@@ -177,6 +177,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentErrorEvent(this, input.sessionId, err));
             throw err;
         }
+    }
+
+    synthesizeExperiences(options?: SynthesisOptions): SynthesisReport {
+        return this.contextManager.synthesizeExperiences(options);
     }
 
     async *runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk> {

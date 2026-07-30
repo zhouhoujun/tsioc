@@ -13,7 +13,7 @@ import { ToolApprovalManager } from './tools/ToolApprovalManager';
 import { AgentContextManager } from './context/AgentContextManager';
 import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, MemorySection } from './prompt/SystemPromptBuilder';
 import { AGENT_PROMPT_SECTIONS } from './tokens';
-import { EchoTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
+import { EchoTool, ExperienceSynthesizeTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
 import { InMemorySessionStore } from './memory/InMemorySessionStore';
 import { DefaultSessionStore } from './memory/DefaultSessionStore';
@@ -85,6 +85,7 @@ import { createAgentProviders } from './provider';
         TimeTool,
         MemoryPutTool,
         MemorySearchTool,
+        ExperienceSynthesizeTool,
         InMemorySessionStore,
         DefaultSessionStore,
         { provide: SessionStore, useExisting: DefaultSessionStore },
@@ -108,7 +109,8 @@ import { createAgentProviders } from './provider';
         { provide: AGENT_TOOLS, useExisting: EchoTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: TimeTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: MemoryPutTool, multi: true },
-        { provide: AGENT_TOOLS, useExisting: MemorySearchTool, multi: true }
+        { provide: AGENT_TOOLS, useExisting: MemorySearchTool, multi: true },
+        { provide: AGENT_TOOLS, useExisting: ExperienceSynthesizeTool, multi: true }
     ],
     exports: [
         DefaultAgentRuntime,
