@@ -269,7 +269,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|clear   esc',
+    reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|summary|approve-all|clear-all   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -1817,6 +1817,41 @@ export class AgentConsoleSessionState {
         if (!path) return;
         delete this.reviewFileAnnotations[path];
         this.notify();
+    }
+
+    approveAllReviewFiles(comment?: string): void {
+        if (!this.reviewOpen) return;
+        const sections = this.reviewFileSections;
+        for (const section of sections) {
+            this.reviewFileAnnotations[section.path] = {
+                status: 'approved',
+                comment,
+                createdAt: new Date().toISOString()
+            };
+        }
+        this.notify();
+    }
+
+    clearAllReviewAnnotations(): void {
+        if (!this.reviewOpen) return;
+        this.reviewFileAnnotations = {};
+        this.notify();
+    }
+
+    getReviewAnnotationSummary(): string[] {
+        const lines: string[] = [];
+        const entries = Object.entries(this.reviewFileAnnotations);
+        if (!entries.length) {
+            lines.push('No annotations.');
+            return lines;
+        }
+        const approved = entries.filter(([, a]) => a.status === 'approved').length;
+        const rejected = entries.filter(([, a]) => a.status === 'rejected').length;
+        lines.push(`Annotations: ${approved} approved, ${rejected} rejected`);
+        for (const [path, annot] of entries) {
+            lines.push(`  ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? ` — ${annot.comment}` : ''}`);
+        }
+        return lines;
     }
 
     get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {

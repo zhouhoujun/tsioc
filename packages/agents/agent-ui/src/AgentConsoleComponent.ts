@@ -1616,19 +1616,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
                 if (parsed.args) {
                     const arg = parsed.args.trim();
-                    if (arg === 'approve') {
-                        this.state.setReviewFileAnnotation('approved');
-                        this.notify('File approved.');
+                    if (arg === 'summary') {
+                        const lines = this.state.getReviewAnnotationSummary();
+                        for (const line of lines) {
+                            this.notify(line);
+                        }
                         return true;
                     }
-                    if (arg === 'reject') {
-                        this.state.setReviewFileAnnotation('rejected');
-                        this.notify('File rejected.');
+                    if (arg === 'approve-all') {
+                        this.state.approveAllReviewFiles();
+                        this.notify('All files approved.');
+                        return true;
+                    }
+                    if (arg === 'clear-all') {
+                        this.state.clearAllReviewAnnotations();
+                        this.notify('All annotations cleared.');
                         return true;
                     }
                     if (arg === 'clear') {
                         this.state.clearReviewFileAnnotation();
                         this.notify('Annotation cleared.');
+                        return true;
+                    }
+                    if (arg.startsWith('approve')) {
+                        const comment = arg.slice(7).trim() || undefined;
+                        this.state.setReviewFileAnnotation('approved', comment);
+                        this.notify(comment ? `File approved: ${comment}` : 'File approved.');
+                        return true;
+                    }
+                    if (arg.startsWith('reject')) {
+                        const comment = arg.slice(6).trim() || undefined;
+                        this.state.setReviewFileAnnotation('rejected', comment);
+                        this.notify(comment ? `File rejected: ${comment}` : 'File rejected.');
                         return true;
                     }
                     await this.openCodingTaskReview(arg);
