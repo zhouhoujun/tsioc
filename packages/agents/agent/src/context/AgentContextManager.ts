@@ -46,6 +46,48 @@ export interface ContextPreparationReport {
     cumulativeTokenSavings: number;
 }
 
+/**
+ * A pattern extracted from one or more sessions during cross-session experience synthesis.
+ */
+export interface ExtractedPattern {
+    /** The semantic kind of pattern. */
+    type: 'goal' | 'error' | 'tool_pattern' | 'preference' | 'workflow';
+    /** Human-readable description of the pattern. */
+    content: string;
+    /** Session IDs where this pattern was observed. */
+    sourceSessionIds: string[];
+    /** Confidence score 0-1 based on frequency and consistency. */
+    confidence: number;
+    /** Timestamp of first observation. */
+    firstObserved: number;
+    /** Timestamp of last observation. */
+    lastObserved: number;
+}
+
+/**
+ * Options for the {@link AgentContextManager.synthesizeExperiences} call.
+ */
+export interface SynthesisOptions {
+    /** Restrict synthesis to specific session IDs (default: all compacted sessions). */
+    sessionIds?: string[];
+    /** Maximum number of patterns to retain after deduplication (default: 50). */
+    maxPatterns?: number;
+}
+
+/**
+ * Outcome report from a cross-session experience synthesis pass.
+ */
+export interface SynthesisReport {
+    /** Number of sessions examined. */
+    totalSessions: number;
+    /** Number of sessions that yielded one or more patterns. */
+    processedSessions: number;
+    /** Deduplicated and merged patterns. */
+    patterns: ExtractedPattern[];
+    /** Non-fatal errors encountered during synthesis. */
+    errors: string[];
+}
+
 const DEFAULT_BUDGET: ContextBudget = {
     maxHistoryTokens: 32000,
     maxMemoryRecords: 50,
@@ -913,6 +955,192 @@ export class AgentContextManager {
         }
 
         return -1;
+    }
+
+    // ── Cross-session experience synthesis ──────────────────────────────────
+
+    /**
+     * Returns session IDs that have stashed original content available for
+     * cross-session pattern extraction.
+     */
+    listCompactedSessions(): string[] {
+        return [...this.originalMessageStore.keys()];
+    }
+
+    /**
+     * Extract patterns from a single session's stashed messages.
+     * Returns an array of {@link ExtractedPattern} for goals, tool usages,
+     * error contexts, and preferences found in the session log.
+     */
+    extractSessionPatterns(sessionId: string): ExtractedPattern[] {
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) {
+            return [];
+        }
+
+        const patterns: ExtractedPattern[] = [];
+        const now = record.timestamp;
+
+        // ── Session goal: first substantive user message (not follow-up) ──
+        const firstUserMsg = record.messages.find(
+            m => m.role === 'user' && !FOLLOW_UP_ONLY_MESSAGE_RE.test((m.content || '').trim())
+        );
+        if (firstUserMsg) {
+            const goalText = firstUserMsg.content.slice(0, 200).replace(/\s+/g, ' ').trim();
+            if (goalText) {
+                patterns.push({
+                    type: 'goal',
+                    content: goalText,
+                    sourceSessionIds: [sessionId],
+                    confidence: 0.7,
+                    firstObserved: firstUserMsg.createdAt || now,
+                    lastObserved: firstUserMsg.createdAt || now,
+                });
+            }
+        }
+
+        // ── Error patterns: assistant messages that report failures ──
+        const errorTerms = ['error', 'fail', 'unable', 'cannot', 'timeout', 'rejected', 'denied', 'not found', 'invalid'];
+        for (const msg of record.messages) {
+            if (msg.role === 'assistant' || msg.role === 'tool') {
+                const lower = (msg.content || '').toLowerCase();
+                const matchedTerms = errorTerms.filter(t => lower.includes(t));
+                if (matchedTerms.length >= 2 && lower.length < 500) {
+                    const excerpt = msg.content.slice(0, 200).replace(/\s+/g, ' ').trim();
+                    if (excerpt) {
+                        patterns.push({
+                            type: 'error',
+                            content: excerpt,
+                            sourceSessionIds: [sessionId],
+                            confidence: 0.5 + matchedTerms.length * 0.1,
+                            firstObserved: msg.createdAt || now,
+                            lastObserved: msg.createdAt || now,
+                        });
+                    }
+                }
+            }
+        }
+
+        // ── Tool usage patterns ──
+        const toolCallNames = new Map<string, number>();
+        for (const msg of record.messages) {
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls: Array<{ name?: string }> = msg.metadata.toolCalls as any;
+                for (const call of calls) {
+                    if (call.name) {
+                        toolCallNames.set(call.name, (toolCallNames.get(call.name) || 0) + 1);
+                    }
+                }
+            }
+        }
+        for (const [toolName, count] of toolCallNames) {
+            if (count >= 2) {
+                patterns.push({
+                    type: 'tool_pattern',
+                    content: `Tool "${toolName}" used ${count} times in session`,
+                    sourceSessionIds: [sessionId],
+                    confidence: Math.min(0.9, 0.4 + count * 0.15),
+                    firstObserved: now,
+                    lastObserved: now,
+                });
+            }
+        }
+
+        // ── Preferences: reuse same heuristic as DeterministicExperienceDistiller ──
+        for (const msg of record.messages) {
+            if (msg.role === 'user') {
+                const normalized = (msg.content || '').trim().replace(/\s+/g, ' ');
+                const prefMatch = normalized.match(/^i\s+prefer\s+(.+)$/i);
+                if (prefMatch) {
+                    const value = prefMatch[1].replace(/[.。!！?？]+$/u, '').replace(/\s+/g, ' ').trim();
+                    if (value && value.length <= 120) {
+                        patterns.push({
+                            type: 'preference',
+                            content: value,
+                            sourceSessionIds: [sessionId],
+                            confidence: 0.6,
+                            firstObserved: msg.createdAt || now,
+                            lastObserved: msg.createdAt || now,
+                        });
+                    }
+                }
+            }
+        }
+
+        return patterns;
+    }
+
+    /**
+     * Synthesize cross-session patterns from stashed compaction history.
+     *
+     * Scans all (or specified) sessions in the stash, extracts goals, errors,
+     * tool patterns, and preferences, then deduplicates and merges patterns
+     * that share the same normalized content.
+     */
+    synthesizeExperiences(options?: SynthesisOptions): SynthesisReport {
+        const report: SynthesisReport = {
+            totalSessions: 0,
+            processedSessions: 0,
+            patterns: [],
+            errors: [],
+        };
+
+        const sessionIds = options?.sessionIds ?? this.listCompactedSessions();
+        report.totalSessions = sessionIds.length;
+
+        const rawPatterns: ExtractedPattern[] = [];
+
+        for (const sid of sessionIds) {
+            try {
+                const sessionPatterns = this.extractSessionPatterns(sid);
+                if (sessionPatterns.length > 0) {
+                    report.processedSessions++;
+                }
+                rawPatterns.push(...sessionPatterns);
+            } catch (e: any) {
+                report.errors.push(`Session ${sid}: ${e.message || e}`);
+            }
+        }
+
+        // ── Deduplicate by normalised content ──
+        const merged = new Map<string, ExtractedPattern>();
+        for (const p of rawPatterns) {
+            const normKey = p.type + '::' + p.content
+                .toLowerCase()
+                .replace(/[^\p{L}\p{N} ]/gu, '')
+                .trim()
+                .slice(0, 80);
+
+            const existing = merged.get(normKey);
+            if (existing) {
+                // Merge source sessions
+                for (const sid of p.sourceSessionIds) {
+                    if (!existing.sourceSessionIds.includes(sid)) {
+                        existing.sourceSessionIds.push(sid);
+                    }
+                }
+                // Boost confidence based on multi-session observation
+                if (existing.sourceSessionIds.length >= 2) {
+                    existing.confidence = Math.min(1.0, existing.confidence + 0.1);
+                }
+                existing.lastObserved = Math.max(existing.lastObserved, p.lastObserved);
+                existing.firstObserved = Math.min(existing.firstObserved, p.firstObserved);
+            } else {
+                merged.set(normKey, { ...p, sourceSessionIds: [...p.sourceSessionIds] });
+            }
+        }
+
+        // Sort: confidence desc, then multi-session first, then newest first
+        const sorted = [...merged.values()].sort((a, b) => {
+            if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+            if (b.sourceSessionIds.length !== a.sourceSessionIds.length) return b.sourceSessionIds.length - a.sourceSessionIds.length;
+            return b.lastObserved - a.lastObserved;
+        });
+
+        const maxPatterns = options?.maxPatterns ?? 50;
+        report.patterns = sorted.slice(0, maxPatterns);
+
+        return report;
     }
 
     private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount'>): ContextPreparationReport {

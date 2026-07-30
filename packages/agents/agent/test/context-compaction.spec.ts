@@ -1052,6 +1052,229 @@ export class ContextCompactionTest {
     }
 }
 
+@Suite('Agent cross-session experience synthesis')
+export class CrossSessionSynthesisTest {
+    private makeManager(): AgentContextManager {
+        const ctx = new AgentContextManager();
+        ctx.configure({
+            maxHistoryTokens: 32000,
+            compactionMinTokens: 2000,
+        });
+        return ctx;
+    }
+
+    private stashMessages(
+        ctx: AgentContextManager,
+        sessionId: string,
+        messages: AgentMessage[],
+        level: 'light' | 'medium' | 'deep' = 'light',
+        timestamp?: number,
+    ): void {
+        const store = (ctx as any).originalMessageStore as Map<string, any>;
+        store.set(sessionId, {
+            messages,
+            timestamp: timestamp ?? Date.now(),
+            level,
+        });
+    }
+
+    private makeMsg(overrides: Partial<AgentMessage> & { id: string }): AgentMessage {
+        return {
+            role: 'user',
+            content: '',
+            createdAt: Date.now(),
+            ...overrides,
+        };
+    }
+
+    @Test('listCompactedSessions returns known session IDs')
+    testListCompactedSessions() {
+        const ctx = this.makeManager();
+        const store = (ctx as any).originalMessageStore as Map<string, any>;
+        expect(ctx.listCompactedSessions()).toEqual([]);
+
+        store.set('s1', { messages: [], timestamp: 1, level: 'light' });
+        store.set('s2', { messages: [], timestamp: 2, level: 'medium' });
+        expect(ctx.listCompactedSessions().sort()).toEqual(['s1', 's2']);
+    }
+
+    @Test('extractSessionPatterns extracts goal from first substantive user message')
+    testExtractGoal() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: '继续', createdAt: 10 }),
+            this.makeMsg({ id: 'm2', role: 'user', content: '帮我写一个 Express 路由', createdAt: 20 }),
+            this.makeMsg({ id: 'm3', role: 'assistant', content: 'Here is the route.', createdAt: 30 }),
+        ], 'light', 1000);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const goals = patterns.filter(p => p.type === 'goal');
+        expect(goals.length).toBe(1);
+        expect(goals[0].content).toContain('Express');
+        expect(goals[0].sourceSessionIds).toEqual(['s1']);
+    }
+
+    @Test('extractSessionPatterns extracts tool patterns for frequently used tools')
+    testExtractToolPatterns() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Refactor the auth module', createdAt: 10 }),
+            this.makeMsg({
+                id: 'm2', role: 'assistant', content: 'Looking...', createdAt: 20,
+                metadata: { toolCalls: [{ id: 't1', name: 'read_file' }, { id: 't2', name: 'grep' }] }
+            }),
+            this.makeMsg({ id: 'm3', role: 'user', content: '继续', createdAt: 30 }),
+            this.makeMsg({
+                id: 'm4', role: 'assistant', content: 'Done...', createdAt: 40,
+                metadata: { toolCalls: [{ id: 't3', name: 'read_file' }, { id: 't4', name: 'write_file' }] }
+            }),
+        ], 'light', 1000);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const tools = patterns.filter(p => p.type === 'tool_pattern');
+        expect(tools.length).toBe(1);
+        expect(tools[0].content).toContain('read_file');
+        // read_file used 2 times — only tool with count >= 2
+        expect(tools[0].content).toMatch(/2 times/);
+    }
+
+    @Test('extractSessionPatterns extracts error patterns from assistant/tool messages')
+    testExtractErrors() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Fix the API', createdAt: 10 }),
+            this.makeMsg({
+                id: 'm2', role: 'assistant',
+                content: 'Cannot connect to database: connection timeout. The connection failed with error code 10060.',
+                createdAt: 20,
+            }),
+        ], 'light', 1000);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const errors = patterns.filter(p => p.type === 'error');
+        expect(errors.length).toBe(1);
+        expect(errors[0].content).toContain('Cannot');
+    }
+
+    @Test('extractSessionPatterns extracts "I prefer" preferences')
+    testExtractPreferences() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'I prefer TypeScript over JavaScript.', createdAt: 10 }),
+            this.makeMsg({ id: 'm2', role: 'user', content: '继续', createdAt: 20 }),
+        ], 'light', 1000);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const prefs = patterns.filter(p => p.type === 'preference');
+        expect(prefs.length).toBe(1);
+        expect(prefs[0].content).toContain('TypeScript');
+    }
+
+    @Test('extractSessionPatterns returns empty array for unknown session')
+    testUnknownSession() {
+        const ctx = this.makeManager();
+        expect(ctx.extractSessionPatterns('no-such')).toEqual([]);
+    }
+
+    @Test('synthesizeExperiences merges patterns across sessions')
+    testCrossSessionMerge() {
+        const ctx = this.makeManager();
+        const ts = 1000;
+
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'I prefer async/await over callbacks.', createdAt: 10 }),
+        ], 'light', ts);
+
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm2', role: 'user', content: 'I prefer async/await over callbacks.', createdAt: 20 }),
+        ], 'light', ts + 100);
+
+        const report = ctx.synthesizeExperiences();
+        expect(report.totalSessions).toBe(2);
+        expect(report.processedSessions).toBe(2);
+        // Message is both a "goal" (first substantive) and "preference" (I prefer…)
+        // → 2 pattern types, each deduplicated across sessions
+        const prefs = report.patterns.filter(p => p.type === 'preference');
+        expect(prefs.length).toBe(1);
+        expect(prefs[0].sourceSessionIds).toEqual(['s1', 's2']);
+        expect(prefs[0].confidence).toBeGreaterThan(0.6); // boosted from 0.6
+        const goals = report.patterns.filter(p => p.type === 'goal');
+        expect(goals.length).toBe(1);
+        expect(goals[0].sourceSessionIds).toEqual(['s1', 's2']);
+    }
+
+    @Test('synthesizeExperiences respects sessionIds filter')
+    testSessionFilter() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'I prefer tabs.', createdAt: 10 }),
+        ], 'light', 1000);
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm2', role: 'user', content: 'I prefer spaces.', createdAt: 20 }),
+        ], 'light', 1001);
+
+        const report = ctx.synthesizeExperiences({ sessionIds: ['s1'] });
+        expect(report.totalSessions).toBe(1);
+        expect(report.processedSessions).toBe(1);
+        const prefs = report.patterns.filter(p => p.type === 'preference');
+        expect(prefs.length).toBe(1);
+        expect(prefs[0].content).toContain('tabs');
+        // The message also yields a 'goal' pattern from first substantive user msg
+        expect(report.patterns.length).toBe(2);
+    }
+
+    @Test('synthesizeExperiences respects maxPatterns')
+    testMaxPatterns() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Goal one', createdAt: 10 }),
+            this.makeMsg({ id: 'm2', role: 'user', content: '继续', createdAt: 20 }),
+        ], 'light', 1000);
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm3', role: 'user', content: 'Goal two', createdAt: 30 }),
+        ], 'light', 1001);
+
+        const full = ctx.synthesizeExperiences();
+        expect(full.patterns.length).toBe(2);
+
+        const limited = ctx.synthesizeExperiences({ maxPatterns: 1 });
+        expect(limited.patterns.length).toBe(1);
+    }
+
+    @Test('synthesizeExperiences sorts by confidence then multi-session then newest')
+    testSortOrder() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Refactor the auth module.', createdAt: 10 }),
+            // Only 2 error terms → confidence 0.7, single-session
+            this.makeMsg({ id: 'm2', role: 'assistant', content: 'Cannot connect: timeout.', createdAt: 20 }),
+        ], 'light', 1000);
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm3', role: 'user', content: 'Refactor the auth module.', createdAt: 30 }),
+        ], 'light', 1001);
+
+        const report = ctx.synthesizeExperiences();
+        // 2 dedup'd patterns: goal (0.7+boost→0.8, multi-session), error (0.7, single-session)
+        // Sort: 0.8 > 0.7 → goal first
+        expect(report.patterns.length).toBe(2);
+        expect(report.patterns[0].type).toBe('goal');
+        expect(report.patterns[0].sourceSessionIds.length).toBe(2);
+        expect(report.patterns[0].confidence).toBeGreaterThanOrEqual(0.79);
+        expect(report.patterns[1].type).toBe('error');
+        expect(report.patterns[1].sourceSessionIds.length).toBe(1);
+    }
+
+    @Test('synthesizeExperiences with empty stash yields empty report')
+    testEmptyStash() {
+        const ctx = this.makeManager();
+        const report = ctx.synthesizeExperiences();
+        expect(report.totalSessions).toBe(0);
+        expect(report.processedSessions).toBe(0);
+        expect(report.patterns).toEqual([]);
+        expect(report.errors).toEqual([]);
+    }
+}
+
 class StaticSummaryModelAdapter extends EchoModelAdapter {
     constructor(private readonly content: string) {
         super();
