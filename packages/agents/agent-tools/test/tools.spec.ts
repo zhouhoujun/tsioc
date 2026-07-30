@@ -7,6 +7,7 @@ import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
 import { SpawnAgentTool, ParallelSpawnTool, SpawnAgentAdapter } from '../agent';
+import { OrchestrateTool } from '../agent/orchestrate.tool';
 import { SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { NestedAgentRunRequest, NestedAgentRunResult } from '../src/nested-agent-runner';
 import { VisionAdapter } from '../media/vision-analyze.tool';
@@ -36,6 +37,7 @@ import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture
 import { LocalCodeExecutionAdapter } from '../code-execution';
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
+import { DefaultApprovalAdapter } from '../src/default-adapters';
 import { CheckpointTool } from '../approval/checkpoint.tool';
 import { PipelineTool } from '../pipeline/pipeline.tool';
 import { KanbanTool } from '../kanban/kanban.tool';
@@ -2927,23 +2929,27 @@ export class AgentToolsPackageTest {
         }
         expect(adapter).toBeDefined();
 
-        const tool = new SpawnAgentTool(new MockAdapter(async () => ({
-            output: 'done',
-            sessionId: 'spawn-1',
-            turnCount: 2,
-            toolCalls: 3,
-            model: 'mock-model',
-            finishReason: 'stop',
-            usage: { promptTokens: 10 },
-            report: {
-                summary: 'done',
-                diff: 'src/app.ts +1 -0',
-                completed: ['analyze'],
-                nextSteps: ['review'],
-                risks: ['none'],
-                artifacts: ['patch.diff']
-            }
-        })));
+        let seenMaxTurns: number | undefined;
+        const tool = new SpawnAgentTool(new MockAdapter(async (request: SpawnAgentInput) => {
+            seenMaxTurns = request.maxTurns;
+            return {
+                output: 'done',
+                sessionId: 'spawn-1',
+                turnCount: 2,
+                toolCalls: 3,
+                model: 'mock-model',
+                finishReason: 'stop',
+                usage: { promptTokens: 10 },
+                report: {
+                    summary: 'done',
+                    diff: 'src/app.ts +1 -0',
+                    completed: ['analyze'],
+                    nextSteps: ['review'],
+                    risks: ['none'],
+                    artifacts: ['patch.diff']
+                }
+            };
+        }));
         const result = await tool.invoke({ goal: 'test task', context: 'some context', toolsets: ['filesystem', 'web'], maxTurns: 5 }, createSessionContext());
         expect(result.goal).toEqual('test task');
         expect(result.output).toEqual('done');
@@ -2960,6 +2966,7 @@ export class AgentToolsPackageTest {
         expect(result.report?.summary).toEqual('done');
         expect(result.report?.nextSteps).toEqual(['review']);
         expect(result.report?.artifacts).toEqual(['patch.diff']);
+        expect(seenMaxTurns).toEqual(5);
 
         let goalError: Error | undefined;
         try {
@@ -2973,9 +2980,11 @@ export class AgentToolsPackageTest {
     @Test('shared spawn adapter delegates through nested agent runner')
     async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
         let seenSessionId = '';
+        let seenMaxTurns: number | undefined;
         const adapter = new DelegatingSpawnAgentAdapter({
             run: async (request: NestedAgentRunRequest) => {
                 seenSessionId = request.sessionId || '';
+                seenMaxTurns = request.maxTurns;
                 return {
                 sessionId: request.sessionId,
                 content: [
@@ -3000,13 +3009,16 @@ export class AgentToolsPackageTest {
         const result = await adapter.spawn({
             goal: 'analyze project',
             context: 'focus on risks',
-            toolsets: ['filesystem']
+            toolsets: ['filesystem'],
+            maxTurns: 4
         });
 
         expect(result.output).toContain('analyze project');
         expect(result.output).toContain('focus on risks');
+        expect(result.output).toContain('Use at most 4 turns.');
         expect(result.sessionId).toContain('spawn-');
         expect(seenSessionId).toEqual(result.sessionId);
+        expect(seenMaxTurns).toEqual(4);
         expect(result.turnCount).toBe(1);
         expect(result.toolCalls).toBe(2);
         expect(result.model).toEqual('mock');
@@ -3019,6 +3031,34 @@ export class AgentToolsPackageTest {
         expect(result.report?.summary).toContain('analyzed the project structure');
         expect(result.report?.nextSteps).toEqual(['update review summary', 'split workers']);
         expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
+        expect(seenMaxTurns).toEqual(4);
+    }
+
+    @Test('orchestrate skips dependent tasks after failure and forwards maxTurns')
+    async orchestrateSkipsDependentTasksAfterFailureAndForwardsMaxTurns() {
+        const calls: SpawnAgentInput[][] = [];
+        const adapter = new MockAdapter(async (inputs: SpawnAgentInput[]) => {
+            calls.push(inputs.map(input => ({ ...input })));
+            return inputs.map(() => ({
+                output: 'done',
+                error: 'boom'
+            }));
+        });
+        const tool = new OrchestrateTool(adapter as any);
+
+        const result = await tool.invoke({
+            goal: 'top goal',
+            tasks: [
+                { id: 'a', goal: 'first task', maxTurns: 3 },
+                { id: 'b', goal: 'second task', dependsOn: ['a'], maxTurns: 2 }
+            ]
+        }, createSessionContext());
+
+        expect(calls.length).toEqual(1);
+        expect(calls[0][0].maxTurns).toEqual(3);
+        expect(result.phases[0].tasks[0].status).toEqual('failed');
+        expect(result.phases[1].tasks[0].status).toEqual('skipped');
+        expect(result.phases[1].tasks[0].error).toContain('Skipped because dependency "a" failed');
     }
 
     @Test('parallel spawn requires adapter')
@@ -3220,17 +3260,19 @@ export class AgentToolsPackageTest {
         const tool = new ParallelSpawnTool(adapter);
         await tool.invoke({
             tasks: [
-                { goal: 'research', toolsets: ['web', 'filesystem'] },
-                { goal: 'write code', context: 'use TypeScript' }
+                { goal: 'research', toolsets: ['web', 'filesystem'], maxTurns: 3 },
+                { goal: 'write code', context: 'use TypeScript', maxTurns: 4 }
             ]
         }, createSessionContext());
         expect(captured.length).toBe(2);
         expect(captured[0].goal).toBe('research');
         expect(captured[0].toolsets).toEqual(['web', 'filesystem']);
         expect(captured[0].context).toBeUndefined();
+        expect(captured[0].maxTurns).toBe(3);
         expect(captured[1].goal).toBe('write code');
         expect(captured[1].context).toBe('use TypeScript');
         expect(captured[1].toolsets).toBeUndefined();
+        expect(captured[1].maxTurns).toBe(4);
     }
 
     @Test('parallel spawn adapter default runs spawn sequentially')
@@ -4421,6 +4463,30 @@ export class AgentToolsPackageTest {
 
         const cancelResult = await tool.invoke({ action: 'cancel', tool: 'delete_file' }, createSessionContext());
         expect(cancelResult.cancelled).toEqual(true);
+    }
+
+    @Test('default approval adapter scopes requests by session')
+    async defaultApprovalAdapterScopesRequestsBySession() {
+        const adapter = new DefaultApprovalAdapter();
+        await adapter.requestApproval({
+            toolName: 'delete_file',
+            input: { path: '/tmp/a' },
+            reason: 'cleanup',
+            requestedAt: 1,
+            sessionId: 's1'
+        });
+        await adapter.requestApproval({
+            toolName: 'delete_file',
+            input: { path: '/tmp/b' },
+            reason: 'cleanup',
+            requestedAt: 2,
+            sessionId: 's2'
+        });
+
+        expect(adapter.pendingRequests('s1').map(item => item.input.path)).toEqual(['/tmp/a']);
+        expect(adapter.cancelRequest('delete_file', 's1')).toEqual(true);
+        expect(adapter.pendingRequests('s1')).toEqual([]);
+        expect(adapter.pendingRequests('s2').map(item => item.input.path)).toEqual(['/tmp/b']);
     }
 
     @Test('checkpoint saves and lists with memory store fallback')

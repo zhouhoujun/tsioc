@@ -75,7 +75,7 @@ export class ParallelSpawnTool implements AgentTool {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        const tasks: Array<{ goal: string; context?: string; toolsets?: string[] }> = Array.isArray(input?.tasks) ? input.tasks : [];
+        const tasks: Array<{ goal: string; context?: string; toolsets?: string[]; maxTurns?: number }> = Array.isArray(input?.tasks) ? input.tasks : [];
         if (tasks.length === 0) {
             return { results: [], error: 'tasks array is required and must contain at least one task.' };
         }
@@ -83,6 +83,7 @@ export class ParallelSpawnTool implements AgentTool {
             goal: this.requireString(task.goal, 'parallel_spawn task goal'),
             context: typeof task.context === 'string' ? task.context : undefined,
             toolsets: Array.isArray(task.toolsets) ? task.toolsets.filter((t: any) => typeof t === 'string') : undefined,
+            maxTurns: typeof task.maxTurns === 'number' ? task.maxTurns : undefined,
             sessionId: _context?.sessionId
         }));
         const results = await this.adapter.spawnParallel(inputs);

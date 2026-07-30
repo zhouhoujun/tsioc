@@ -147,22 +147,45 @@ export class OrchestrateTool implements AgentTool {
 
         for (const phase of phases) {
             const phaseTasks = phase.tasks.map(task => {
+                const depResults = this.getDependencyResults(task, completedResults);
+                const blockedDep = depResults.find(result => result.status !== 'completed');
+                if (blockedDep) {
+                    return {
+                        task,
+                        skipped: true,
+                        reason: `Skipped because dependency "${blockedDep.id}" ${blockedDep.status}.`
+                    };
+                }
                 const depContext = this.buildDependencyContext(task, completedResults);
                 const fullContext = [task.context, depContext].filter(Boolean).join('\n\n');
                 return { task, context: fullContext || undefined };
             });
 
-            const inputs: SpawnAgentInput[] = phaseTasks.map(pt => ({
+            const runnable = phaseTasks.filter(pt => !(pt as any).skipped) as Array<{ task: OrchestrateTask; context?: string }>;
+            const inputs: SpawnAgentInput[] = runnable.map(pt => ({
                 goal: pt.task.goal,
                 context: pt.context,
                 toolsets: pt.task.toolsets,
+                maxTurns: pt.task.maxTurns,
                 sessionId: _context?.sessionId
             }));
 
-            const results = await this.adapter.spawnParallel(inputs);
+            const results = inputs.length ? await this.adapter.spawnParallel(inputs) : [];
+            let resultIndex = 0;
 
-            const taskResults: OrchestrateTaskResult[] = phaseTasks.map((pt, idx) => {
-                const result = results[idx];
+            const taskResults: OrchestrateTaskResult[] = phaseTasks.map((pt: any) => {
+                if (pt.skipped) {
+                    const skippedResult: OrchestrateTaskResult = {
+                        id: pt.task.id,
+                        goal: pt.task.goal,
+                        status: 'skipped',
+                        error: pt.reason
+                    };
+                    completedResults.set(pt.task.id, skippedResult);
+                    return skippedResult;
+                }
+
+                const result = results[resultIndex++];
                 const isError = !!result?.error;
                 const tr: OrchestrateTaskResult = {
                     id: pt.task.id,
@@ -284,6 +307,15 @@ export class OrchestrateTool implements AgentTool {
         return parts.join('\n\n');
     }
 
+    protected getDependencyResults(task: OrchestrateTask, completed: Map<string, OrchestrateTaskResult>): OrchestrateTaskResult[] {
+        if (!task.dependsOn || task.dependsOn.length === 0) {
+            return [];
+        }
+        return task.dependsOn
+            .map(depId => completed.get(depId))
+            .filter((result): result is OrchestrateTaskResult => !!result);
+    }
+
     protected buildFinalResult(
         goal: string,
         phases: OrchestrateResult['phases'],
@@ -304,7 +336,8 @@ export class OrchestrateTool implements AgentTool {
             const count = phase.tasks.length;
             const ok = phase.tasks.filter(t => t.status === 'completed').length;
             const fail = phase.tasks.filter(t => t.status === 'failed').length;
-            return `phase ${phase.depth + 1}: ${ok}/${count} succeeded${fail ? `, ${fail} failed` : ''}`;
+            const skipped = phase.tasks.filter(t => t.status === 'skipped').length;
+            return `phase ${phase.depth + 1}: ${ok}/${count} succeeded${fail ? `, ${fail} failed` : ''}${skipped ? `, ${skipped} skipped` : ''}`;
         });
 
         const summary = [

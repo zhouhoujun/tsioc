@@ -1,6 +1,6 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
-import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent } from '@tsdi/agent';
+import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo, SessionProjectGroup } from '../contracts/SessionInfo';
@@ -14,6 +14,7 @@ import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 @Injectable()
 export class SessionHandler {
     private sessionIds = new Set<string>();
+    private activeSessionIds = new Set<string>();
 
     constructor(
         private runtime: AgentRuntime,
@@ -30,16 +31,24 @@ export class SessionHandler {
     @EventHandler(AgentTurnStartedEvent)
     onTurnStarted(event: AgentTurnStartedEvent): void {
         this.track(event.sessionId);
+        this.activeSessionIds.add(event.sessionId);
     }
 
     @EventHandler(AgentTurnCompletedEvent)
     onTurnCompleted(event: AgentTurnCompletedEvent): void {
         this.track(event.sessionId);
+        this.activeSessionIds.delete(event.sessionId);
     }
 
     @EventHandler(AgentStreamChunkEvent)
     onStreamChunk(event: AgentStreamChunkEvent): void {
         this.track(event.sessionId);
+    }
+
+    @EventHandler(AgentErrorEvent)
+    onError(event: AgentErrorEvent): void {
+        this.track(event.sessionId);
+        this.activeSessionIds.delete(event.sessionId);
     }
 
     getRoutes(): GatewayRoute[] {
@@ -85,20 +94,14 @@ export class SessionHandler {
             await this.owners.unbind(sessionId);
             await this.sessions.delete(sessionId);
             this.sessionIds.delete(sessionId);
+            this.activeSessionIds.delete(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ status: 'deleted' }));
         };
 
         const runningSessions: RouteHandler = async (req, res) => {
             const principalId = getRequestPrincipalId(req);
-            const running: string[] = [];
-            const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
-            for (const id of await this.owners.listOwned(ids, principalId)) {
-                const state = await this.sessions.get(id);
-                if (state.messages.length > 0) {
-                    running.push(id);
-                }
-            }
+            const running = await this.owners.listOwned(this.activeSessionIds, principalId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(running));
         };

@@ -23,13 +23,13 @@ export class DefaultApprovalAdapter extends ApprovalAdapter {
 
     pendingRequests(sessionId?: string): ApprovalRequest[] {
         if (sessionId) {
-            return this.requests.filter(r => r.toolName === sessionId);
+            return this.requests.filter(r => r.sessionId === sessionId);
         }
         return [...this.requests];
     }
 
     cancelRequest(toolName: string, sessionId: string): boolean {
-        const idx = this.requests.findIndex(r => r.toolName === toolName);
+        const idx = this.requests.findIndex(r => r.toolName === toolName && r.sessionId === sessionId);
         if (idx >= 0) {
             this.requests.splice(idx, 1);
             return true;

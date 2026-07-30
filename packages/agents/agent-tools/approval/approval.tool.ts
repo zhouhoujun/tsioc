@@ -6,6 +6,7 @@ export interface ApprovalRequest {
     input: Record<string, any>;
     reason: string;
     requestedAt: number;
+    sessionId?: string;
 }
 
 export interface ApprovalResult {
@@ -83,7 +84,8 @@ export class ApprovalTool implements AgentTool {
                     toolName: tool,
                     input: typeof input?.input === 'object' && input.input !== null ? input.input : {},
                     reason,
-                    requestedAt: Date.now()
+                    requestedAt: Date.now(),
+                    sessionId: context.sessionId
                 });
                 return {
                     tool,

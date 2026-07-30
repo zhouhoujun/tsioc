@@ -417,6 +417,39 @@ export class SessionHandlerTest {
         expect(data.length).toEqual(1);
         expect(data[0].id).toEqual('s1');
     }
+
+    @Test('lists only actively running sessions')
+    async listsOnlyActivelyRunningSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/running' && route.method === 'GET')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(JSON.parse(body)).toEqual([]);
+
+        handler.onTurnStarted({ sessionId: 's1' } as any);
+        await route.handler(req, res, {} as any);
+        expect(JSON.parse(body)).toEqual(['s1']);
+
+        handler.onTurnCompleted({ sessionId: 's1' } as any);
+        await route.handler(req, res, {} as any);
+        expect(JSON.parse(body)).toEqual([]);
+    }
 }
 
 @Suite('ToolsHandler')

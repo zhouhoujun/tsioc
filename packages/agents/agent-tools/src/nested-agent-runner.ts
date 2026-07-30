@@ -12,6 +12,7 @@ export interface NestedAgentRunRequest {
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    maxTurns?: number;
     parentSessionId?: string;
 }
 
@@ -74,6 +75,9 @@ function buildSubAgentPrompt(request: SpawnAgentInput): string {
         'Return a compact report using these labels: Summary:, Diff:, Completed:, Next steps:, Risks:, Artifacts:.',
         `Task:\n${request.goal}`
     ];
+    if (typeof request.maxTurns === 'number' && request.maxTurns > 0) {
+        parts.push(`Turn budget:\nUse at most ${request.maxTurns} turns.`);
+    }
     if (request.context?.trim()) {
         parts.push(`Context:\n${request.context.trim()}`);
     }
@@ -154,6 +158,7 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             prompt: buildSubAgentPrompt(input),
             sessionId,
             toolsets: input.toolsets,
+            maxTurns: input.maxTurns,
             parentSessionId: input.sessionId
         });
         return this.toSpawnAgentResult(result, sessionId);
@@ -167,6 +172,7 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             prompt: buildSubAgentPrompt(input),
             sessionId: `spawn-${randomUUID()}`,
             toolsets: input.toolsets,
+            maxTurns: input.maxTurns,
             parentSessionId: input.sessionId
         }));
         const results = await this.requireRunner().runParallel(requests);
