@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
+import { runAgentApplication, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
 import { runAgentConsole } from './run-console';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
+import { SessionStore } from '@tsdi/agent';
 
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
@@ -109,6 +110,83 @@ function createAgentCli(): Command {
         .option('--timeout <ms>', 'Request timeout in ms.')
         .action(async (options: any) => {
             await runAgentConsole(options);
+        });
+
+    const project = program
+        .command('project')
+        .description('Manage projects and inspect project-level session grouping.');
+
+    project
+        .command('list')
+        .description('List all projects with session counts and last active timestamps.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            const config = new AgentUiConfigService(configReader, options);
+            const resolved = config.resolve(options);
+            const ctx = await runAgentApplication(options, {});
+            try {
+                const sessionStore = ctx.get(SessionStore);
+                const projects = await sessionStore.listProjects();
+                if (options.json) {
+                    process.stdout.write(JSON.stringify(projects, null, 2) + '\n');
+                    return;
+                }
+                if (!projects.length) {
+                    process.stdout.write('No projects found.\n');
+                    return;
+                }
+                for (const project of projects) {
+                    const key = project.projectKey || '-';
+                    const workspace = project.workspace || '-';
+                    const count = project.sessionIds.length;
+                    const lastActive = project.lastActiveAt
+                        ? new Date(project.lastActiveAt).toISOString()
+                        : '-';
+                    process.stdout.write(`${key}  |  workspace ${workspace}  |  ${count} session${count === 1 ? '' : 's'}  |  last ${lastActive}\n`);
+                }
+            } finally {
+                await ctx.close();
+            }
+        });
+
+    project
+        .command('sessions <projectKey>')
+        .description('List sessions belonging to a project.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--json', 'Output JSON.')
+        .action(async (projectKey: string, options: any) => {
+            const config = new AgentUiConfigService(configReader, options);
+            const resolved = config.resolve(options);
+            const ctx = await runAgentApplication(options, {});
+            try {
+                const sessionStore = ctx.get(SessionStore);
+                const projects = await sessionStore.listProjects();
+                const match = projects.find((p: { projectKey?: string; workspace?: string; sessionIds: string[]; lastActiveAt?: string }) => p.projectKey === projectKey);
+                if (!match) {
+                    process.stdout.write(`Project not found: ${projectKey}\n`);
+                    return;
+                }
+                const sessions = await Promise.all(
+                    match.sessionIds.map(async (id: string) => {
+                        const state = await sessionStore.get(id);
+                        return { id, summary: state.summary || '', messages: state.messages?.length || 0, updatedAt: state.updatedAt };
+                    })
+                );
+                if (options.json) {
+                    process.stdout.write(JSON.stringify({ project: match, sessions }, null, 2) + '\n');
+                    return;
+                }
+                process.stdout.write(`Project: ${projectKey}  (${match.workspace || '-'})\n`);
+                process.stdout.write(`Sessions: ${sessions.length}\n\n`);
+                for (const session of sessions) {
+                    const updated = session.updatedAt ? new Date(session.updatedAt).toISOString() : '-';
+                    const summary = (session.summary || '').slice(0, 80);
+                    process.stdout.write(`  ${session.id}  |  ${session.messages} msgs  |  ${updated}  |  ${summary}\n`);
+                }
+            } finally {
+                await ctx.close();
+            }
         });
 
     program
