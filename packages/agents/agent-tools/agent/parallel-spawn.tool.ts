@@ -1,6 +1,32 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { SpawnAgentAdapter, SpawnAgentInput } from './spawn-agent.tool';
+import { SpawnAgentAdapter, SpawnAgentInput, SpawnAgentResult } from './spawn-agent.tool';
+
+export interface ParallelSpawnResultItem {
+    goal: string;
+    sessionId?: string;
+    output?: string;
+    error?: string;
+    summary?: string;
+    completed?: string[];
+    nextSteps?: string[];
+    risks?: string[];
+    artifacts?: string[];
+    turnCount?: number;
+    toolCalls?: number;
+    model?: string;
+    finishReason?: string;
+    usage?: Record<string, any>;
+}
+
+export interface ParallelSpawnAggregateReport {
+    summary: string;
+    completed: string[];
+    nextSteps: string[];
+    risks: string[];
+    artifacts: string[];
+    failures: Array<{ goal: string; error: string; sessionId?: string }>;
+}
 
 @Injectable()
 export class ParallelSpawnTool implements AgentTool {
@@ -60,10 +86,17 @@ export class ParallelSpawnTool implements AgentTool {
             sessionId: _context?.sessionId
         }));
         const results = await this.adapter.spawnParallel(inputs);
+        const aggregate = this.aggregateResults(tasks, results);
         return {
             taskCount: tasks.length,
             succeededCount: results.filter(r => !r.error).length,
             failedCount: results.filter(r => r.error).length,
+            summary: aggregate.summary,
+            completed: aggregate.completed,
+            nextSteps: aggregate.nextSteps,
+            risks: aggregate.risks,
+            artifacts: aggregate.artifacts,
+            failures: aggregate.failures,
             results: results.map((r, i) => ({
                 goal: tasks[i].goal,
                 output: r.output,
@@ -81,6 +114,76 @@ export class ParallelSpawnTool implements AgentTool {
                 artifacts: r.artifacts ?? r.report?.artifacts
             }))
         };
+    }
+
+    protected aggregateResults(tasks: Array<{ goal: string }>, results: SpawnAgentResult[]): ParallelSpawnAggregateReport {
+        const items: ParallelSpawnResultItem[] = results.map((result, index) => ({
+            goal: tasks[index]?.goal || `task-${index + 1}`,
+            sessionId: result.sessionId,
+            output: result.output,
+            error: result.error,
+            summary: result.summary ?? result.report?.summary,
+            completed: this.normalizeList(result.completed ?? result.report?.completed),
+            nextSteps: this.normalizeList(result.nextSteps ?? result.report?.nextSteps),
+            risks: this.normalizeList(result.risks ?? result.report?.risks),
+            artifacts: this.normalizeList(result.artifacts ?? result.report?.artifacts),
+            turnCount: result.turnCount,
+            toolCalls: result.toolCalls,
+            model: result.model,
+            finishReason: result.finishReason,
+            usage: result.usage
+        }));
+
+        const successful = items.filter(item => !item.error);
+        const failed = items.filter(item => !!item.error);
+        const completed = this.dedupeLists(items.flatMap(item => item.completed ?? []));
+        const nextSteps = this.dedupeLists(items.flatMap(item => item.nextSteps ?? []));
+        const risks = this.dedupeLists([
+            ...items.flatMap(item => item.risks ?? []),
+            ...failed.map(item => item.error || '')
+        ]);
+        const artifacts = this.dedupeLists(items.flatMap(item => item.artifacts ?? []));
+        const successfulSummaries = successful
+            .map(item => item.summary || this.summarizeOutput(item.output))
+            .filter(Boolean);
+        const summary = successfulSummaries.length === 1 && failed.length === 0
+            ? successfulSummaries[0]
+            : [
+                `parallel ${tasks.length} task${tasks.length === 1 ? '' : 's'}`,
+                `${successful.length} succeeded`,
+                failed.length ? `${failed.length} failed` : ''
+            ].filter(Boolean).join(' · ');
+
+        return {
+            summary,
+            completed,
+            nextSteps,
+            risks,
+            artifacts,
+            failures: failed.map(item => ({
+                goal: item.goal,
+                error: item.error || 'parallel task failed',
+                sessionId: item.sessionId
+            }))
+        };
+    }
+
+    protected summarizeOutput(output: string | undefined): string {
+        const text = String(output || '').replace(/\s+/g, ' ').trim();
+        if (!text) {
+            return '';
+        }
+        return text.length > 160 ? `${text.slice(0, 160)}...` : text;
+    }
+
+    protected normalizeList(values?: string[] | null): string[] {
+        return Array.isArray(values)
+            ? values.map(value => String(value || '').trim()).filter(Boolean)
+            : [];
+    }
+
+    protected dedupeLists(values: string[]): string[] {
+        return Array.from(new Set(values.map(value => String(value || '').trim()).filter(Boolean)));
     }
 
     private requireString(value: unknown, field: string): string {

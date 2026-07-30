@@ -3288,6 +3288,51 @@ export class AgentToolsPackageTest {
         expect(results[1].output).toContain('build');
     }
 
+    @Test('parallel spawn tool aggregates task summaries and failures')
+    async parallelSpawnToolAggregatesResults() {
+        const tool = new ParallelSpawnTool({
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, index) => index === 1
+                    ? {
+                        output: '',
+                        error: 'worker failed',
+                        sessionId: `spawn-${index + 1}`
+                    }
+                    : {
+                        output: `result ${input.goal}`,
+                        sessionId: `spawn-${index + 1}`,
+                        summary: `summary ${index + 1}`,
+                        completed: ['shared-step', `step-${index + 1}`],
+                        nextSteps: ['review diff', `next-${index + 1}`],
+                        risks: ['shared-risk', `risk-${index + 1}`],
+                        artifacts: ['patch.diff', `artifact-${index + 1}`]
+                    });
+            }
+        } as any);
+
+        const result = await tool.invoke({
+            tasks: [
+                { goal: 'alpha' },
+                { goal: 'beta' },
+                { goal: 'gamma' }
+            ]
+        }, createSessionContext());
+
+        expect(result.taskCount).toBe(3);
+        expect(result.succeededCount).toBe(2);
+        expect(result.failedCount).toBe(1);
+        expect(result.summary).toContain('parallel 3 tasks');
+        expect(result.summary).toContain('2 succeeded');
+        expect(result.summary).toContain('1 failed');
+        expect(result.completed).toEqual(['shared-step', 'step-1', 'step-3']);
+        expect(result.nextSteps).toEqual(['review diff', 'next-1', 'next-3']);
+        expect(result.risks).toContain('shared-risk');
+        expect(result.risks).toContain('worker failed');
+        expect(result.artifacts).toEqual(['patch.diff', 'artifact-1', 'artifact-3']);
+        expect(result.failures.length).toBe(1);
+        expect(result.failures[0].goal).toBe('beta');
+    }
+
     @Test('spawn agent output summary prefers structured report fields')
     spawnAgentOutputSummaryPrefersStructuredReportFields() {
         const summary = summarizeToolDisplayText('spawn_agent', {
