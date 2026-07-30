@@ -9,6 +9,7 @@ import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRp
 @Injectable()
 export class AppRpcServer {
     protected static readonly CONSOLE_INPUT_HISTORY_KEY = 'agent-ui.console.input-history';
+    protected static readonly REVIEW_ANNOTATIONS_CACHE_KEY = 'agent-ui.review.annotations-cache';
 
     constructor(
         private runtime: AgentRuntime,
@@ -151,7 +152,9 @@ export class AppRpcServer {
                         'coding_task.diff',
                         'coding_task.cancel',
                         'coding_task.retry_failed',
-                        'coding_task.rollback'
+                        'coding_task.rollback',
+                        'review_annotations.save',
+                        'review_annotations.load'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -207,6 +210,10 @@ export class AppRpcServer {
                 return this.retryFailedCodingTask(params, context);
             case 'coding_task.rollback':
                 return this.rollbackCodingTask(params, context);
+            case 'review_annotations.save':
+                return this.saveReviewAnnotations(params, context);
+            case 'review_annotations.load':
+                return this.loadReviewAnnotations(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -900,6 +907,34 @@ export class AppRpcServer {
         const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
         const workspace = String(uiConsole?.workspace || '').trim();
         return workspace || undefined;
+    }
+
+    private async saveReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const cache = params?.cache;
+        if (cache === undefined || cache === null) {
+            throw new AppRpcError(-32602, 'Invalid params: cache is required');
+        }
+        const serialized = JSON.stringify(cache);
+        await this.runtime.putMemory(sessionId, AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY, serialized, 'session');
+        return { ok: true };
+    }
+
+    private async loadReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<Record<string, Record<string, any>> | null> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const records = await this.memory.getAll(sessionId);
+        const record = (records || []).find(r => r.key === AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY);
+        if (!record) {
+            return null;
+        }
+        try {
+            const parsed = JSON.parse(record.value);
+            return parsed || null;
+        } catch {
+            return null;
+        }
     }
 
     private requireSessionId(params: any): string {

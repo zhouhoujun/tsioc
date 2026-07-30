@@ -761,6 +761,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
+        this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
+        this.restoreReviewAnnotationsCacheFromDisk();
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         this.ensureWorkspaceMentionResolver();
@@ -791,6 +793,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.resolveApprovalAction = undefined;
         void this.persistInputHistory();
         this.dispose();
+    }
+
+    protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {
+        if (!this.appRpc) {
+            return;
+        }
+        try {
+            await this.appRpc.request('review_annotations.save', { sessionId: this.state.sessionId, cache });
+        } catch {
+            // annotation persistence is best-effort
+        }
+    }
+
+    protected async restoreReviewAnnotationsCacheFromDisk(): Promise<void> {
+        if (!this.appRpc) {
+            return;
+        }
+        try {
+            const cache = await this.appRpc.request('review_annotations.load', { sessionId: this.state.sessionId });
+            if (cache) {
+                this.state.setAnnotationCache(cache);
+            }
+        } catch {
+            // annotation restore is best-effort
+        }
     }
 
     protected ensureWorkspaceMentionResolver(): void {

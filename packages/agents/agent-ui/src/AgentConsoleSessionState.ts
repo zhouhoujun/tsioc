@@ -346,8 +346,14 @@ export class AgentConsoleSessionState {
     selectedReviewFileIndex = 0;
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
     reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
-    /** Persists annotations keyed by task ID so they survive review close/reopen within a session. */
     protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
+    onReviewAnnotationsPersist?: (cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>) => void;
+    getAnnotationCache(): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
+        return { ...this.reviewAnnotationCache };
+    }
+    setAnnotationCache(cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>): void {
+        this.reviewAnnotationCache = { ...(cache || {}) };
+    }
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
     reviewDetailScroll = 0;
@@ -1719,6 +1725,7 @@ export class AgentConsoleSessionState {
         if (this.selectedReviewTaskId && Object.keys(this.reviewFileAnnotations).length > 0) {
             this.reviewAnnotationCache[this.selectedReviewTaskId] = { ...this.reviewFileAnnotations };
         }
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
@@ -1852,6 +1859,7 @@ export class AgentConsoleSessionState {
             comment,
             createdAt: new Date().toISOString()
         };
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
 
@@ -1860,6 +1868,7 @@ export class AgentConsoleSessionState {
         const path = filePath ?? this.selectedReviewFileSection?.path;
         if (!path) return;
         delete this.reviewFileAnnotations[path];
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
 
@@ -1873,12 +1882,14 @@ export class AgentConsoleSessionState {
                 createdAt: new Date().toISOString()
             };
         }
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
 
     clearAllReviewAnnotations(): void {
         if (!this.reviewOpen) return;
         this.reviewFileAnnotations = {};
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
 
