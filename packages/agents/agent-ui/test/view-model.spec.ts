@@ -3708,6 +3708,35 @@ export class AgentConsoleComponentTest {
         ]);
     }
 
+    @Test('openSession prefers latest project summary and aggregates todos across session order')
+    async openSessionPrefersLatestProjectSummaryAndAggregatesTodosAcrossSessionOrder() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 2,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-a', workspace: '/tmp/project-a', summary: 'older summary', messageCount: 2, lastActiveAt: 10 },
+                { id: 'chat-b', workspace: '/tmp/project-b', summary: 'latest project summary', messageCount: 3, lastActiveAt: 20 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'older active item', status: 'pending' }]);
+        appRpc.todoPlanBySession.set('chat-b', [{ id: 'todo-b', content: 'newer active item', status: 'in_progress' }]);
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.projectSummary).toEqual('latest project summary');
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b', 'todo-a']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
+    }
+
     @Test('review requests use the source session for aggregated project tasks')
     async reviewRequestsUseTheSourceSessionForAggregatedProjectTasks() {
         const runtime = new RuntimeStub();

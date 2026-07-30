@@ -206,6 +206,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             || projectSessions.find(item => item.current)
             || projectSessions[0];
         const summary = projectSessions
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))
             .map(item => String(item.summary || '').trim())
             .find(Boolean) || '';
         this.state.setProjectContext({
@@ -2560,25 +2562,37 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.appRpc) {
             return;
         }
-        const sessionIds = this.resolveCurrentProjectSessionIds();
-        const results = await Promise.all(sessionIds.map(async sessionId => ({
-            sessionId,
-            result: await this.appRpc!.request('todo.get', { sessionId })
+        const sessions = this.resolveCurrentProjectSessions()
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
+        const results = await Promise.all(sessions.map(async session => ({
+            sessionId: session.id,
+            updatedAt: session.updatedAt || 0,
+            result: await this.appRpc!.request('todo.get', { sessionId: session.id })
         })));
-        const normalized = results.map(entry => ({
-            sessionId: entry.sessionId,
-            todos: Array.isArray(entry.result?.todos)
+        const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
+        let sourceSessionId = this.state.sessionId;
+        for (const entry of results) {
+            const todos = Array.isArray(entry.result?.todos)
                 ? entry.result.todos.map((item: any) => ({
                     id: String(item?.id || '').trim(),
                     content: String(item?.content || '').trim(),
                     status: this.normalizeTodoStatus(item?.status)
                 })).filter((item: any) => !!item.id && !!item.content)
-                : []
-        }));
-        const selected = normalized.find(entry => entry.todos.some((todo: { status: string }) => todo.status === 'pending' || todo.status === 'in_progress'))
-            || normalized.find(entry => entry.todos.length)
-            || { sessionId: this.state.sessionId, todos: [] };
-        this.state.setPlanTodos(selected.todos, selected.sessionId);
+                : [];
+            if (!todos.length) {
+                continue;
+            }
+            sourceSessionId = entry.sessionId;
+            for (const todo of todos) {
+                if (!merged.has(todo.id)) {
+                    merged.set(todo.id, todo);
+                }
+            }
+        }
+        const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
+        const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
+        this.state.setPlanTodos(nextTodos, sourceSessionId);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
