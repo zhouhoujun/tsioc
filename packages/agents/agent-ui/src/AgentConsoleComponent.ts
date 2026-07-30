@@ -1679,6 +1679,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         }
                         return true;
                     }
+                    if (arg === 'risk') {
+                        const sections = this.state.reviewFileSections;
+                        if (!sections.length) {
+                            this.notify('No review files to analyze.');
+                            return true;
+                        }
+                        for (const section of sections) {
+                            const risk = this.state.computeFileRiskScore(section);
+                            const annot = this.state.reviewFileAnnotations[section.path];
+                            const marker = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
+                            this.notify(`${String(risk.score).padStart(2, ' ')} ${risk.level.padEnd(8, ' ')} ${section.path} (+${section.additions}/-${section.deletions})${marker}${annot?.comment ? ` - ${annot.comment}` : ''}`);
+                        }
+                        return true;
+                    }
                     if (arg.startsWith('approve')) {
                         const comment = arg.slice(7).trim() || undefined;
                         this.state.setReviewFileAnnotation('approved', comment);

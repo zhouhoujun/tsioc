@@ -1898,6 +1898,15 @@ export class AgentConsoleSessionState {
         return lines;
     }
 
+    computeFileRiskScore(section: AgentConsoleReviewDiffSection): { score: number; level: 'low' | 'medium' | 'high' | 'critical' } {
+        const rawScore = section.additions * 1 + section.deletions * 0.5;
+        if (rawScore < 10) return { score: 1, level: 'low' };
+        if (rawScore < 30) return { score: 3, level: 'low' };
+        if (rawScore < 60) return { score: 5, level: 'medium' };
+        if (rawScore < 120) return { score: 7, level: 'high' };
+        return { score: 10, level: 'critical' };
+    }
+
     getReviewExportReport(): string[] {
         const lines: string[] = [];
         const task = this.filteredReviewTaskChoices.find(t => t.id === this.selectedReviewTaskId);
@@ -2097,6 +2106,44 @@ export class AgentConsoleSessionState {
         this.reviewDetailScroll = position === 'start'
             ? 0
             : Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
+        this.notify();
+    }
+
+    jumpReviewHunk(direction: -1 | 1): void {
+        if (!this.reviewOpen) return;
+        const section = this.selectedReviewFileSection;
+        if (!section) return;
+        const hunkPositions: number[] = [];
+        for (let i = 0; i < section.lines.length; i++) {
+            if (section.lines[i].startsWith('@@ ')) {
+                hunkPositions.push(i);
+            }
+        }
+        if (!hunkPositions.length) return;
+        const current = this.reviewDetailScroll;
+        let nextIdx = -1;
+        if (direction === 1) {
+            for (let i = 0; i < hunkPositions.length; i++) {
+                if (hunkPositions[i] > current) {
+                    nextIdx = i;
+                    break;
+                }
+            }
+            if (nextIdx === -1) {
+                nextIdx = 0;
+            }
+        } else {
+            for (let i = hunkPositions.length - 1; i >= 0; i--) {
+                if (hunkPositions[i] < current) {
+                    nextIdx = i;
+                    break;
+                }
+            }
+            if (nextIdx === -1) {
+                nextIdx = hunkPositions.length - 1;
+            }
+        }
+        this.reviewDetailScroll = Math.max(0, hunkPositions[nextIdx] - 2);
         this.notify();
     }
 
@@ -3077,6 +3124,12 @@ export class AgentConsoleSessionState {
                     return true;
                 case 'end':
                     this.scrollReviewDetailToEdge('end');
+                    return true;
+                case '{':
+                    this.jumpReviewHunk(-1);
+                    return true;
+                case '}':
+                    this.jumpReviewHunk(1);
                     return true;
                 case 'r':
                     if (this.canRetryFocusedCodingTask()) {

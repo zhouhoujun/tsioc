@@ -2503,12 +2503,17 @@ export class AgentConsoleReviewPanelComponent {
             return '';
         }
         const rollback = this.reviewTask?.result?.rollback;
+        const files = this.state.reviewFileSections;
+        const riskEntries = files.map(s => this.state.computeFileRiskScore(s));
+        const maxRisk = riskEntries.length ? Math.max(...riskEntries.map(r => r.score)) : 0;
+        const riskLevel = maxRisk >= 10 ? 'critical' : maxRisk >= 7 ? 'high' : maxRisk >= 5 ? 'medium' : 'low';
         const parts = [
             `status ${this.reviewTask?.status || 'unknown'}`,
             `mode ${this.state.reviewExecutionMode || 'n/a'}`,
             `workers ${this.reviewWorkers.length}`,
             `groups ${this.state.reviewGroups.length}`,
-            `files ${this.state.reviewFileSections.length}`,
+            `files ${files.length}`,
+            `risk ${riskLevel}`,
             rollback?.available === true
                 ? 'rollback available'
                 : rollback?.rolledBackAt
@@ -2550,6 +2555,7 @@ export class AgentConsoleReviewPanelComponent {
             lineageSummary,
             groupSummary,
             fileSummary,
+            selectedFile ? `risk ${this.state.computeFileRiskScore(selectedFile).level}` : '',
             `lines ${start}-${end} / ${total}`,
             `col ${column}/${totalColumns}`
         ].filter(Boolean).join(' · ');
