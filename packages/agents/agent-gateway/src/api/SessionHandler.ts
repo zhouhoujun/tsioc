@@ -117,16 +117,29 @@ export class SessionHandler {
         const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
         for (const id of await this.owners.listOwned(ids, principalId)) {
             const state = await this.sessions.get(id);
+            const projectKey = this.resolveProjectKey(state);
             infos.push({
                 id,
+                sessionId: id,
                 createdAt: state.createdAt ?? 0,
                 lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
                 messageCount: state.messages.length,
                 summary: state.summary,
-                workspace: state.workspace
+                workspace: state.workspace,
+                projectKey,
+                projectId: state.projectId ?? undefined,
+                primaryThreadId: state.primaryThreadId ?? undefined,
+                sessionRole: state.sessionRole ?? undefined,
+                rootRequest: state.rootRequest ?? undefined,
+                focusSummary: state.focusSummary ?? undefined
             });
         }
         return infos.sort((left, right) => {
+            const leftProjectKey = String(left.projectKey || '').trim();
+            const rightProjectKey = String(right.projectKey || '').trim();
+            if (leftProjectKey !== rightProjectKey) {
+                return leftProjectKey.localeCompare(rightProjectKey);
+            }
             const leftWorkspace = String(left.workspace || '').trim();
             const rightWorkspace = String(right.workspace || '').trim();
             if (leftWorkspace !== rightWorkspace) {
@@ -143,28 +156,51 @@ export class SessionHandler {
     groupSessionInfos(infos: SessionInfo[]): SessionProjectGroup[] {
         const buckets = new Map<string, SessionInfo[]>();
         for (const info of infos) {
-            const workspace = String(info.workspace || '').trim();
-            const bucket = buckets.get(workspace) ?? [];
+            const projectKey = this.resolveProjectKey(info);
+            const bucket = buckets.get(projectKey) ?? [];
             bucket.push(info);
-            buckets.set(workspace, bucket);
+            buckets.set(projectKey, bucket);
         }
 
         return Array.from(buckets.entries())
-            .map(([workspace, sessions]) => ({
-                workspace,
-                sessions: sessions.slice().sort((left, right) => {
-                    const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-                    if (activityDelta !== 0) {
-                        return activityDelta;
-                    }
-                    return left.id.localeCompare(right.id);
-                }),
-                sessionCount: sessions.length,
-                lastActiveAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0)
-            }))
+            .map(([projectKey, sessions]) => {
+                const first = sessions[0];
+                const workspace = String(first?.workspace || '').trim();
+                const projectId = String(first?.projectId || '').trim() || undefined;
+                const primaryThreadId = String(first?.primaryThreadId || '').trim() || undefined;
+                const sessionRole = String(first?.sessionRole || '').trim() || undefined;
+                const rootRequest = String(first?.rootRequest || '').trim() || undefined;
+                const focusSummary = String(first?.focusSummary || '').trim() || undefined;
+                return {
+                    projectKey,
+                    projectId,
+                    workspace,
+                    primaryThreadId,
+                    sessionRole,
+                    rootRequest,
+                    focusSummary,
+                    label: this.resolveProjectLabel(first),
+                    sessions: sessions.slice().sort((left, right) => {
+                        const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                        if (activityDelta !== 0) {
+                            return activityDelta;
+                        }
+                        return left.id.localeCompare(right.id);
+                    }),
+                    sessionCount: sessions.length,
+                    lastActiveAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0)
+                };
+            })
             .sort((left, right) => {
-                if (left.workspace !== right.workspace) {
-                    return left.workspace.localeCompare(right.workspace);
+                const leftLabel = String(left.label || left.projectId || left.workspace || '').trim();
+                const rightLabel = String(right.label || right.projectId || right.workspace || '').trim();
+                if (leftLabel !== rightLabel) {
+                    return leftLabel.localeCompare(rightLabel);
+                }
+                const leftProjectKey = String(left.projectKey || '').trim();
+                const rightProjectKey = String(right.projectKey || '').trim();
+                if (leftProjectKey !== rightProjectKey) {
+                    return leftProjectKey.localeCompare(rightProjectKey);
                 }
                 const activityDelta = right.lastActiveAt - left.lastActiveAt;
                 if (activityDelta !== 0) {
@@ -172,6 +208,49 @@ export class SessionHandler {
                 }
                 return left.workspace.localeCompare(right.workspace);
             });
+    }
+
+    private resolveProjectKey(state: { sessionId?: string; id?: string; projectId?: string | null; workspace?: string | null; primaryThreadId?: string | null }): string {
+        const projectId = String(state.projectId || '').trim();
+        if (projectId) {
+            return `project:${projectId}`;
+        }
+        const workspace = String(state.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
+        }
+        const primaryThreadId = String(state.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
+        }
+        return `session:${String(state.sessionId || state.id || '').trim()}`;
+    }
+
+    private resolveProjectLabel(state?: { projectId?: string | null; workspace?: string | null; primaryThreadId?: string | null; rootRequest?: string | null; focusSummary?: string | null; sessionId?: string; id?: string }): string {
+        if (!state) {
+            return 'session';
+        }
+        const projectId = String(state.projectId || '').trim();
+        if (projectId) {
+            return projectId;
+        }
+        const focusSummary = String(state.focusSummary || '').trim();
+        if (focusSummary) {
+            return focusSummary;
+        }
+        const workspace = String(state.workspace || '').trim();
+        if (workspace) {
+            return workspace;
+        }
+        const primaryThreadId = String(state.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return primaryThreadId;
+        }
+        const rootRequest = String(state.rootRequest || '').trim();
+        if (rootRequest) {
+            return rootRequest;
+        }
+        return state.sessionId || state.id || 'session';
     }
 
     private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {
