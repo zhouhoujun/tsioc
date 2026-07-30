@@ -916,8 +916,9 @@ export class AppRpcServer {
         if (cache === undefined || cache === null) {
             throw new AppRpcError(-32602, 'Invalid params: cache is required');
         }
+        const cacheKey = this.resolveReviewAnnotationsCacheKey(params) || sessionId;
         const serialized = JSON.stringify(cache);
-        await this.runtime.putMemory(sessionId, AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY, serialized, 'session');
+        await this.runtime.putMemory(sessionId, this.reviewAnnotationsMemoryKey(cacheKey), serialized, 'session');
         return { ok: true };
     }
 
@@ -925,7 +926,9 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const records = await this.memory.getAll(sessionId);
-        const record = (records || []).find(r => r.key === AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY);
+        const cacheKey = this.resolveReviewAnnotationsCacheKey(params) || sessionId;
+        const record = (records || []).find(r => r.key === this.reviewAnnotationsMemoryKey(cacheKey))
+            || (records || []).find(r => r.key === AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY);
         if (!record) {
             return null;
         }
@@ -935,6 +938,29 @@ export class AppRpcServer {
         } catch {
             return null;
         }
+    }
+
+    private resolveReviewAnnotationsCacheKey(params: any): string | undefined {
+        const cacheKey = typeof params?.cacheKey === 'string' && params.cacheKey.trim()
+            ? params.cacheKey.trim()
+            : '';
+        if (cacheKey) {
+            return cacheKey;
+        }
+        const reviewTaskId = typeof params?.reviewTaskId === 'string' && params.reviewTaskId.trim()
+            ? params.reviewTaskId.trim()
+            : '';
+        if (!reviewTaskId) {
+            return undefined;
+        }
+        const sourceSessionId = typeof params?.sourceSessionId === 'string' && params.sourceSessionId.trim()
+            ? params.sourceSessionId.trim()
+            : '';
+        return sourceSessionId ? `${sourceSessionId}:${reviewTaskId}` : reviewTaskId;
+    }
+
+    private reviewAnnotationsMemoryKey(cacheKey: string): string {
+        return `${AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY}:${cacheKey}`;
     }
 
     private requireSessionId(params: any): string {

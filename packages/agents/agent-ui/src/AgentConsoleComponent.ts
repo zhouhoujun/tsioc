@@ -106,6 +106,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.notify(message);
     }
 
+    protected resolveReviewAnnotationsSessionId(): string {
+        return String(
+            this.state.reviewTask?.sourceSessionId
+            || this.state.reviewTask?.sessionId
+            || this.state.sessionId
+            || ''
+        ).trim();
+    }
+
+    protected getReviewAnnotationsCacheKey(): string | undefined {
+        const sessionId = this.resolveReviewAnnotationsSessionId();
+        const reviewTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
+        if (!sessionId || !reviewTaskId) {
+            return undefined;
+        }
+        return `${sessionId}:${reviewTaskId}`;
+    }
+
     protected async refreshSessions(): Promise<void> {
         if (!this.sessionService) {
             return;
@@ -801,8 +819,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.appRpc) {
             return;
         }
+        const cacheKey = this.getReviewAnnotationsCacheKey();
+        if (!cacheKey) {
+            return;
+        }
         try {
-            await this.appRpc.request('review_annotations.save', { sessionId: this.state.sessionId, cache });
+            await this.appRpc.request('review_annotations.save', {
+                sessionId: this.resolveReviewAnnotationsSessionId(),
+                cacheKey,
+                cache
+            });
         } catch {
             // annotation persistence is best-effort
         }
@@ -812,10 +838,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.appRpc) {
             return;
         }
+        const cacheKey = this.getReviewAnnotationsCacheKey();
+        if (!cacheKey) {
+            return;
+        }
         try {
-            const cache = await this.appRpc.request('review_annotations.load', { sessionId: this.state.sessionId });
+            const cache = await this.appRpc.request('review_annotations.load', {
+                sessionId: this.resolveReviewAnnotationsSessionId(),
+                cacheKey
+            });
             if (cache) {
                 this.state.setAnnotationCache(cache);
+                const selectedTaskId = String(this.state.selectedReviewTaskId || '').trim();
+                if (selectedTaskId) {
+                    this.state.reviewFileAnnotations = {
+                        ...((cache as Record<string, Record<string, any>>)[selectedTaskId] || {})
+                    };
+                    this.state.notify();
+                }
             }
         } catch {
             // annotation restore is best-effort
@@ -999,6 +1039,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setNotice('');
             this.state.setLastError('');
         });
+        await this.restoreReviewAnnotationsCacheFromDisk();
         return true;
     }
 

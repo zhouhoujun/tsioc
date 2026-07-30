@@ -255,6 +255,7 @@ class AppRpcStub {
     codingTasksBySession = new Map<string, any[]>();
     codingTaskDetails = new Map<string, any>();
     codingTaskDiffs = new Map<string, any>();
+    reviewAnnotationCacheByKey = new Map<string, Record<string, any>>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -312,6 +313,15 @@ class AppRpcStub {
                 diff: null,
                 workers: []
             };
+        }
+        if (method === 'review_annotations.save') {
+            const cacheKey = String(params?.cacheKey || params?.sessionId || 'console').trim();
+            this.reviewAnnotationCacheByKey.set(cacheKey, params?.cache || {});
+            return { ok: true };
+        }
+        if (method === 'review_annotations.load') {
+            const cacheKey = String(params?.cacheKey || params?.sessionId || 'console').trim();
+            return this.reviewAnnotationCacheByKey.get(cacheKey) || null;
         }
         if (method === 'coding_task.cancel') {
             const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
@@ -3782,6 +3792,73 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.diff' && call.params?.sessionId === 'chat-b' && call.params?.taskId === 'task-b')).toEqual(true);
         expect(component.sessionState.reviewTask?.sourceSessionId).toEqual('chat-b');
+    }
+
+    @Test('review annotations are isolated by review scope key')
+    async reviewAnnotationsAreIsolatedByReviewScopeKey() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 2,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-a', workspace: '/tmp/project-a', messageCount: 2, lastActiveAt: 10 },
+                { id: 'chat-b', workspace: '/tmp/project-b', messageCount: 3, lastActiveAt: 20 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.codingTaskDetails.set('task-a', {
+            id: 'task-a',
+            title: 'Task A',
+            sourceSessionId: 'chat-a',
+            status: 'running'
+        });
+        appRpc.codingTaskDetails.set('task-b', {
+            id: 'task-b',
+            title: 'Task B',
+            sourceSessionId: 'chat-b',
+            status: 'running'
+        });
+        appRpc.codingTaskDiffs.set('task-a', {
+            sessionId: 'chat-a',
+            taskId: 'task-a',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'Task A diff',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+task a'
+            },
+            workers: []
+        });
+        appRpc.codingTaskDiffs.set('task-b', {
+            sessionId: 'chat-b',
+            taskId: 'task-b',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'Task B diff',
+                text: 'diff --git a/src/b.ts b/src/b.ts\n+task b'
+            },
+            workers: []
+        });
+        appRpc.reviewAnnotationCacheByKey.set('chat-a:task-a', {
+            'src/a.ts': { status: 'approved', comment: 'task a', createdAt: '2026-07-30T00:00:00.000Z' }
+        });
+        appRpc.reviewAnnotationCacheByKey.set('chat-b:task-b', {
+            'src/b.ts': { status: 'rejected', comment: 'task b', createdAt: '2026-07-30T00:00:00.000Z' }
+        });
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (component as any).openCodingTaskReview('task-a');
+        expect(component.sessionState.reviewFileAnnotations['src/a.ts']?.status).toEqual('approved');
+        await (component as any).openCodingTaskReview('task-b');
+        expect(component.sessionState.reviewFileAnnotations['src/b.ts']?.status).toEqual('rejected');
+        expect(component.sessionState.reviewFileAnnotations['src/a.ts']).toBeUndefined();
+        expect(appRpc.calls.some(call => call.method === 'review_annotations.load' && call.params?.cacheKey === 'chat-a:task-a')).toEqual(true);
+        expect(appRpc.calls.some(call => call.method === 'review_annotations.load' && call.params?.cacheKey === 'chat-b:task-b')).toEqual(true);
     }
 
     @Test('session state supports focused message list navigation')
