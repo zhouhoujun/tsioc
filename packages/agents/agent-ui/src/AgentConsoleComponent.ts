@@ -115,6 +115,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (groupedSessions.length) {
             this.state.setSessions(groupedSessions);
             this.refreshProjectContext();
+            this.refreshProjects();
             return;
         }
         const sessions = await this.sessionService.listSessions(this.state.sessionId);
@@ -132,6 +133,35 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             projectLabel: item.projectId || item.workspace
         })));
         this.refreshProjectContext();
+        this.refreshProjects();
+    }
+
+    protected refreshProjects(): void {
+        const seen = new Map<string, { key: string; label: string; lastActive: number; count: number }>();
+        for (const s of this.state.sessions) {
+            const key = String(s.projectKey || s.projectId || s.workspace || '').trim();
+            if (!key) continue;
+            const existing = seen.get(key);
+            if (existing) {
+                existing.count += 1;
+                if (s.updatedAt && s.updatedAt > existing.lastActive) {
+                    existing.lastActive = s.updatedAt;
+                }
+            } else {
+                seen.set(key, {
+                    key,
+                    label: s.projectLabel || key,
+                    lastActive: s.updatedAt || 0,
+                    count: 1
+                });
+            }
+        }
+        this.state.setProjects(Array.from(seen.values()).map(p => ({
+            key: p.key,
+            label: p.label,
+            sessionCount: p.count,
+            lastActive: p.lastActive || undefined
+        })));
     }
 
     protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]): Array<{
@@ -1751,6 +1781,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeReview();
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
+                return true;
+            case '/projects':
+                if (!this.state.projects.length) {
+                    await this.refreshSessions();
+                }
+                if (!this.state.projects.length) {
+                    this.notify('No projects available.');
+                    return true;
+                }
+                this.state.closeReview();
+                this.state.setSessionsFocused(false);
+                this.state.setMessagesFocused(false);
+                this.state.setProjectsFocused(true);
                 return true;
             case '/messages':
                 this.state.closeReview();

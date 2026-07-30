@@ -46,6 +46,13 @@ export interface AgentConsoleSessionItem {
     projectSessionCount?: number;
 }
 
+export interface AgentConsoleProjectItem {
+    key: string;
+    label: string;
+    sessionCount: number;
+    lastActive?: number;
+}
+
 export interface AgentConsoleContextPreparationSnapshot extends ContextPreparationReport {
     summary: string;
 }
@@ -309,6 +316,8 @@ export class AgentConsoleSessionState {
     projectLabel = '';
     projectSummary = '';
     projectSessionCount = 0;
+    projects: AgentConsoleProjectItem[] = [];
+    projectsFocused = false;
     contextPreparation?: AgentConsoleContextPreparationSnapshot | null = null;
     tasksCount = 0;
     sessions: AgentConsoleSessionItem[] = [];
@@ -336,6 +345,8 @@ export class AgentConsoleSessionState {
     selectedReviewFileIndex = 0;
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
     reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
+    /** Persists annotations keyed by task ID so they survive review close/reopen within a session. */
+    protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
     reviewDetailScroll = 0;
@@ -498,6 +509,7 @@ export class AgentConsoleSessionState {
 
     protected syncDerivedInputFocus(): void {
         this.inputFocused = !this.sessionsFocused
+            && !this.projectsFocused
             && !this.tasksFocused
             && !this.jobsFocused
             && !this.toolsFocused
@@ -1185,6 +1197,20 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setProjects(projects: AgentConsoleProjectItem[]): void {
+        this.projects = projects.slice();
+        this.notify();
+    }
+
+    setProjectsFocused(focused: boolean): void {
+        this.projectsFocused = focused;
+        if (focused && !this.selectedSessionId && this.sessions.length) {
+            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
     setSelectedSessionId(sessionId: string): void {
         if (!sessionId || !this.sessions.some(item => item.id === sessionId)) {
             return;
@@ -1640,6 +1666,10 @@ export class AgentConsoleSessionState {
         const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
         if (selectedTaskId) {
             this.selectedReviewTaskId = selectedTaskId;
+            const cached = this.reviewAnnotationCache[selectedTaskId];
+            if (cached) {
+                this.reviewFileAnnotations = { ...cached };
+            }
             const executionMode = payload?.executionMode ?? this.reviewExecutionMode;
             const existingIndex = this.reviewTaskChoices.findIndex(item => item.id === selectedTaskId);
             const nextItem: AgentConsoleReviewTaskItem = {
@@ -1678,6 +1708,9 @@ export class AgentConsoleSessionState {
         if (!this.reviewOpen && this.reviewDetailScroll === 0 && this.reviewDetailColumnScroll === 0) {
             return;
         }
+        if (this.selectedReviewTaskId && Object.keys(this.reviewFileAnnotations).length > 0) {
+            this.reviewAnnotationCache[this.selectedReviewTaskId] = { ...this.reviewFileAnnotations };
+        }
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
@@ -1685,6 +1718,9 @@ export class AgentConsoleSessionState {
     }
 
     clearReview(): void {
+        if (this.selectedReviewTaskId && Object.keys(this.reviewFileAnnotations).length > 0) {
+            this.reviewAnnotationCache[this.selectedReviewTaskId] = { ...this.reviewFileAnnotations };
+        }
         this.reviewTask = null;
         this.reviewDiff = null;
         this.reviewWorkers = [];
@@ -2256,6 +2292,10 @@ export class AgentConsoleSessionState {
         }
         if (this.sessionsFocused) {
             this.setSessionsFocused(false);
+            return true;
+        }
+        if (this.projectsFocused) {
+            this.setProjectsFocused(false);
             return true;
         }
         if (!this.inputFocused) {
@@ -2881,7 +2921,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused) {
+        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.projectsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
