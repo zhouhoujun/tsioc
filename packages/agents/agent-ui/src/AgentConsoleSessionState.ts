@@ -318,6 +318,7 @@ export class AgentConsoleSessionState {
     projectSessionCount = 0;
     projects: AgentConsoleProjectItem[] = [];
     projectsFocused = false;
+    toolRunsFocused = false;
     contextPreparation?: AgentConsoleContextPreparationSnapshot | null = null;
     tasksCount = 0;
     sessions: AgentConsoleSessionItem[] = [];
@@ -509,6 +510,7 @@ export class AgentConsoleSessionState {
 
     protected syncDerivedInputFocus(): void {
         this.inputFocused = !this.sessionsFocused
+            && !this.toolRunsFocused
             && !this.projectsFocused
             && !this.tasksFocused
             && !this.jobsFocused
@@ -1207,6 +1209,12 @@ export class AgentConsoleSessionState {
         if (focused && !this.selectedSessionId && this.sessions.length) {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setToolRunsFocused(focused: boolean): void {
+        this.toolRunsFocused = focused;
         this.syncDerivedInputFocus();
         this.notify();
     }
@@ -2294,6 +2302,10 @@ export class AgentConsoleSessionState {
             this.setSessionsFocused(false);
             return true;
         }
+        if (this.toolRunsFocused) {
+            this.setToolRunsFocused(false);
+            return true;
+        }
         if (this.projectsFocused) {
             this.setProjectsFocused(false);
             return true;
@@ -2921,7 +2933,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.projectsFocused) {
+        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused) {
             await this.dismissFocusLayer();
             return true;
         }

@@ -1782,6 +1782,41 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
+            case '/toolruns':
+                if (!this.state.toolRuns.length) {
+                    this.notify('No tool runs available.');
+                    return true;
+                }
+                this.state.closeReview();
+                {
+                    const selectedRun = await this.select(
+                        'Tool runs',
+                        this.state.toolRuns.map((r, i) => ({
+                            label: `${r.name} [${r.status}]${r.durationMs != null ? ` ${r.durationMs}ms` : ''}${r.attemptCount && r.attemptCount > 1 ? ` #${r.attemptCount}` : ''}`,
+                            value: String(i),
+                            detail: r.inputSummary || r.outputSummary || r.error || ''
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (selectedRun != null) {
+                        const idx = parseInt(selectedRun, 10);
+                        const run = this.state.toolRuns[idx];
+                        if (run) {
+                            this.notify(
+                                [
+                                    `${run.name} [${run.status}]`,
+                                    run.durationMs != null ? `${run.durationMs}ms` : '',
+                                    run.attemptCount ? `attempt #${run.attemptCount}` : '',
+                                    run.error ? `error: ${run.error}` : '',
+                                    run.inputSummary ? `in: ${this.state.summarize(run.inputSummary)}` : '',
+                                    run.outputSummary ? `out: ${this.state.summarize(run.outputSummary)}` : ''
+                                ].filter(Boolean).join(' | ')
+                            );
+                        }
+                    }
+                }
+                return true;
             case '/projects':
                 if (!this.state.projects.length) {
                     await this.refreshSessions();
@@ -1791,9 +1826,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 this.state.closeReview();
-                this.state.setSessionsFocused(false);
-                this.state.setMessagesFocused(false);
-                this.state.setProjectsFocused(true);
+                {
+                    const project = await this.select(
+                        'Projects',
+                        this.state.projects.map(p => ({
+                            label: `${p.label} (${p.sessionCount})`,
+                            value: p.key,
+                            detail: p.lastActive ? `last active ${new Date(p.lastActive).toLocaleDateString()}` : undefined
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (!project) return true;
+                    const projectSessions = this.state.sessions.filter(
+                        s => String(s.projectKey || s.projectId || s.workspace || '').trim() === project
+                    );
+                    if (!projectSessions.length) {
+                        this.notify('No sessions in this project.');
+                        return true;
+                    }
+                    const sessionId = await this.select(
+                        `Sessions in ${project}`,
+                        projectSessions.map(s => ({
+                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
+                            value: s.id,
+                            detail: s.summary
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (!sessionId) return true;
+                    await this.openSession(sessionId);
+                }
                 return true;
             case '/messages':
                 this.state.closeReview();
