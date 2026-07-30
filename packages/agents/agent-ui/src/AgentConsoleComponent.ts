@@ -1615,7 +1615,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 if (parsed.args) {
-                    await this.openCodingTaskReview(parsed.args);
+                    const arg = parsed.args.trim();
+                    if (arg === 'approve') {
+                        this.state.setReviewFileAnnotation('approved');
+                        this.notify('File approved.');
+                        return true;
+                    }
+                    if (arg === 'reject') {
+                        this.state.setReviewFileAnnotation('rejected');
+                        this.notify('File rejected.');
+                        return true;
+                    }
+                    if (arg === 'clear') {
+                        this.state.clearReviewFileAnnotation();
+                        this.notify('Annotation cleared.');
+                        return true;
+                    }
+                    await this.openCodingTaskReview(arg);
                     return true;
                 }
                 return this.openCodingTaskReviewSelector();

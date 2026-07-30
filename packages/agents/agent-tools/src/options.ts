@@ -181,6 +181,7 @@ export type AgentToolItem =
     | 'image_generate'
     | 'spawn_agent'
     | 'parallel_spawn'
+    | 'orchestrate'
     | 'execute_code'
     | 'knowledge_search'
     | 'knowledge_store'

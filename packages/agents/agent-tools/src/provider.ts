@@ -52,7 +52,7 @@ import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
 import { ImageGenerateTool } from '../media/image-generate.tool';
-import { SpawnAgentTool, ParallelSpawnTool } from '../agent';
+import { SpawnAgentTool, ParallelSpawnTool, OrchestrateTool } from '../agent';
 import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from '../code-execution';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
@@ -163,6 +163,7 @@ const toolItems = {
     image_generate: ImageGenerateTool,
     spawn_agent: SpawnAgentTool,
     parallel_spawn: ParallelSpawnTool,
+    orchestrate: OrchestrateTool,
     execute_code: ExecuteCodeTool,
     knowledge_search: KnowledgeSearchTool,
     knowledge_store: KnowledgeStoreTool,
@@ -206,7 +207,7 @@ const toolGroups = {
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal'],
-    agent: ['spawn_agent', 'parallel_spawn'],
+    agent: ['spawn_agent', 'parallel_spawn', 'orchestrate'],
     code_execution: ['execute_code'],
     knowledge: ['knowledge_search', 'knowledge_store'],
     git: ['git_operations'],
@@ -545,6 +546,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ImageGenerateTool,
         SpawnAgentTool,
         ParallelSpawnTool,
+        OrchestrateTool,
         ExecuteCodeTool,
         KnowledgeSearchTool,
         KnowledgeStoreTool,

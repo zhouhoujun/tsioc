@@ -146,6 +146,12 @@ export interface AgentConsoleReviewDiffSection {
     lines: string[];
 }
 
+export interface AgentConsoleReviewAnnotation {
+    status: 'approved' | 'rejected';
+    comment?: string;
+    createdAt?: string;
+}
+
 export interface AgentConsoleReviewGroup {
     key: string;
     kind: 'aggregate' | 'worker';
@@ -263,7 +269,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   esc',
+    reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|clear   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -329,6 +335,7 @@ export class AgentConsoleSessionState {
     selectedReviewGroupIndex = 0;
     selectedReviewFileIndex = 0;
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
+    reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
     reviewDetailScroll = 0;
@@ -1689,6 +1696,7 @@ export class AgentConsoleSessionState {
         this.selectedReviewGroupIndex = 0;
         this.selectedReviewFileIndex = 0;
         this.selectedReviewPatchFilter = 'all';
+        this.reviewFileAnnotations = {};
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
@@ -1788,6 +1796,26 @@ export class AgentConsoleSessionState {
         }
         this.selectedReviewPatchFilter = filter;
         this.resetReviewDetailViewport();
+        this.notify();
+    }
+
+    setReviewFileAnnotation(status: 'approved' | 'rejected', comment?: string, filePath?: string): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        if (!path) return;
+        this.reviewFileAnnotations[path] = {
+            status,
+            comment,
+            createdAt: new Date().toISOString()
+        };
+        this.notify();
+    }
+
+    clearReviewFileAnnotation(filePath?: string): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        if (!path) return;
+        delete this.reviewFileAnnotations[path];
         this.notify();
     }
 
@@ -1894,10 +1922,17 @@ export class AgentConsoleSessionState {
                     for (let index = 0; index < sections.length; index++) {
                         const section = sections[index];
                         const marker = index === this.selectedReviewFileIndex ? '›' : ' ';
-                        lines.push(`${marker} [${index + 1}/${sections.length}] ${section.path} (+${section.additions} -${section.deletions})`);
+                        const annot = this.reviewFileAnnotations[section.path];
+                        const annotMark = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
+                        lines.push(`${marker} [${index + 1}/${sections.length}] ${section.path} (+${section.additions} -${section.deletions})${annotMark}`);
                     }
                     if (selectedSection) {
+                        const annot = this.reviewFileAnnotations[selectedSection.path];
+                        const annotLine = annot
+                            ? `  Annotation: ${annot.status === 'approved' ? 'approved' : 'rejected'}${annot.comment ? ` · ${annot.comment}` : ''}`
+                            : '  [a]pprove  [r]eject  [c]lear annotation';
                         lines.push(`Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`);
+                        lines.push(annotLine);
                         lines.push(...this.filterReviewPatchLines(selectedSection.lines));
                     }
                 } else if (selectedGroup.diffText) {
