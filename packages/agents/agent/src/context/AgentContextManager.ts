@@ -11,9 +11,19 @@ export interface ContextBudget {
     compactionMinTokens: number;
 }
 
+export type CompactionLevel = 'light' | 'medium' | 'deep';
+
+export interface StashedContext {
+    messages: AgentMessage[];
+    timestamp: number;
+    level: CompactionLevel;
+}
+
 export interface ContextPreparationReport {
     strategy: 'unchanged' | 'pruned' | 'compacted';
     compactionTriggered: boolean;
+    /** Progressive compaction level selected based on token pressure */
+    level: CompactionLevel;
     summaryInserted: boolean;
     beforeMessageCount: number;
     afterMessageCount: number;
@@ -24,6 +34,10 @@ export interface ContextPreparationReport {
     recentMessageCount: number;
     prunedMessageCount: number;
     toolMessagesCompacted: number;
+    /** Percentage of tokens saved: Math.round((1 - after/before) * 100) */
+    compressionRatio: number;
+    /** Cumulative tokens saved across all prepareHistory calls */
+    cumulativeTokenSavings: number;
 }
 
 const DEFAULT_BUDGET: ContextBudget = {
@@ -40,6 +54,8 @@ export class AgentContextManager {
     private budget: ContextBudget = { ...DEFAULT_BUDGET };
     private summarizer?: SessionSummarizer;
     private compactionThreshold = 0;
+    private cumulativeTokenSavings = 0;
+    private originalMessageStore = new Map<string, StashedContext>();
 
     configure(budget?: Partial<ContextBudget>): this {
         this.budget = {
@@ -99,34 +115,132 @@ export class AgentContextManager {
         return estimatedTokens >= tokenThreshold;
     }
 
-    async prepareHistory(messages: AgentMessage[]): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+    /**
+     * Stash a snapshot of original messages before compaction so detail recovery
+     * can retrieve them later when a user query references compacted content.
+     */
+    private stashOriginalMessages(sessionId: string, messages: AgentMessage[], level: CompactionLevel): void {
+        this.originalMessageStore.set(sessionId, {
+            messages: messages.map(m => ({ ...m, content: m.content })),
+            timestamp: Date.now(),
+            level
+        });
+        // Bound the store to the last 20 sessions to prevent memory leak
+        if (this.originalMessageStore.size > 20) {
+            const oldest = [...this.originalMessageStore.entries()]
+                .sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+            if (oldest) {
+                this.originalMessageStore.delete(oldest[0]);
+            }
+        }
+    }
+
+    /**
+     * Whether the given session has stashed original messages available for recovery.
+     */
+    hasCompactedContent(sessionId: string): boolean {
+        return this.originalMessageStore.has(sessionId);
+    }
+
+    /**
+     * Recover original messages from the stashed context that are relevant to
+     * the user's current query. Uses keyword overlap between query terms and
+     * original message content.
+     */
+    recoverDetail(sessionId: string, userQuery: string): AgentMessage[] | undefined {
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) {
+            return undefined;
+        }
+
+        const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+        if (queryTerms.length === 0) {
+            return undefined;
+        }
+
+        const relevant: AgentMessage[] = [];
+        const seenIds = new Set<string>();
+        for (const msg of record.messages) {
+            const content = (msg.content || '').toLowerCase();
+            if (queryTerms.some(term => content.includes(term)) && !seenIds.has(msg.id)) {
+                seenIds.add(msg.id);
+                relevant.push(msg);
+            }
+        }
+
+        return relevant.length > 0 ? relevant : undefined;
+    }
+
+    /**
+     * Clear the stashed original messages for a session.
+     */
+    clearCompactedContent(sessionId: string): void {
+        this.originalMessageStore.delete(sessionId);
+    }
+
+    private selectCompactionLevel(estimatedTokens: number): CompactionLevel {
+        const maxTokens = this.budget.maxHistoryTokens;
+        if (estimatedTokens >= maxTokens * 1.5) {
+            return 'deep';
+        }
+        if (estimatedTokens >= maxTokens * 0.6) {
+            return 'medium';
+        }
+        return 'light';
+    }
+
+    async prepareHistory(messages: AgentMessage[], sessionId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
         const beforeMessageCount = messages.length;
         const beforeTokens = this.estimateMessages(messages);
         const compactionTriggered = this.shouldCompact(messages);
-        const toolPrepared = this.compactToolMessagesForContext(messages, compactionTriggered);
+        const level: CompactionLevel = compactionTriggered
+            ? this.selectCompactionLevel(beforeTokens)
+            : 'light';
+
+        const toolPrepared = this.compactToolMessagesForContext(messages, level);
         const workingMessages = toolPrepared.messages;
 
-        if (!compactionTriggered) {
+        if (level === 'light') {
             const prepared = this.pruneHistory(workingMessages);
+            const afterTokens = this.estimateMessages(prepared);
+            const savings = beforeTokens - afterTokens;
+            this.cumulativeTokenSavings += Math.max(0, savings);
+            const compressionRatio = afterTokens > 0
+                ? Math.round((1 - afterTokens / beforeTokens) * 100)
+                : 0;
+
+            // Stash originals when pruning actually removed or compacted content
+            if (sessionId && (prepared !== messages || toolPrepared.compactedCount > 0)) {
+                this.stashOriginalMessages(sessionId, messages, level);
+            }
+
             return {
                 messages: prepared,
                 report: this.createPreparationReport({
                     strategy: prepared === messages && toolPrepared.compactedCount === 0 ? 'unchanged' : 'pruned',
-                    compactionTriggered: false,
+                    compactionTriggered,
+                    level,
                     summaryInserted: false,
                     beforeMessageCount,
                     afterMessageCount: prepared.length,
                     beforeTokens,
-                    afterTokens: this.estimateMessages(prepared),
+                    afterTokens,
                     compactedMessageCount: 0,
                     preservedAnchorCount: 0,
                     recentMessageCount: toolPrepared.recentMessageCount,
-                    toolMessagesCompacted: toolPrepared.compactedCount
+                    toolMessagesCompacted: toolPrepared.compactedCount,
+                    compressionRatio,
+                    cumulativeTokenSavings: this.cumulativeTokenSavings
                 })
             };
         }
 
-        return this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount);
+        // Stash originals before medium/deep compaction for detail recovery
+        if (sessionId) {
+            this.stashOriginalMessages(sessionId, messages, level);
+        }
+
+        return this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level);
     }
 
     async compactHistory(messages: AgentMessage[]): Promise<AgentMessage[]> {
@@ -175,22 +289,42 @@ export class AgentContextManager {
         };
     }
 
-    private async compactHistoryWithReport(messages: AgentMessage[], beforeMessageCount: number, beforeTokens: number, toolMessagesCompacted: number, preparedRecentMessageCount: number): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+    private async compactHistoryWithReport(messages: AgentMessage[], beforeMessageCount: number, beforeTokens: number, toolMessagesCompacted: number, preparedRecentMessageCount: number, level: CompactionLevel): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+        const buildReport = (overrides: Partial<ContextPreparationReport> & { afterTokens: number; strategy: ContextPreparationReport['strategy']; compactedMessageCount: number; preservedAnchorCount: number; afterMessageCount: number }): ContextPreparationReport => {
+            const afterTokens = overrides.afterTokens;
+            const savings = beforeTokens - afterTokens;
+            this.cumulativeTokenSavings += Math.max(0, savings);
+            const compressionRatio = beforeTokens > 0
+                ? Math.round((1 - Math.min(afterTokens, beforeTokens) / beforeTokens) * 100)
+                : 0;
+            return this.createPreparationReport({
+                strategy: overrides.strategy,
+                compactionTriggered: true,
+                level,
+                summaryInserted: overrides.summaryInserted ?? false,
+                beforeMessageCount,
+                afterMessageCount: overrides.afterMessageCount,
+                beforeTokens,
+                afterTokens,
+                compactedMessageCount: overrides.compactedMessageCount,
+                preservedAnchorCount: overrides.preservedAnchorCount,
+                recentMessageCount: preparedRecentMessageCount,
+                toolMessagesCompacted,
+                compressionRatio,
+                cumulativeTokenSavings: this.cumulativeTokenSavings
+            });
+        };
+
         if (!this.summarizer) {
             return {
                 messages,
-                report: this.createPreparationReport({
+                report: buildReport({
                     strategy: 'unchanged',
-                    compactionTriggered: true,
-                    summaryInserted: false,
-                    beforeMessageCount,
                     afterMessageCount: messages.length,
-                    beforeTokens,
                     afterTokens: beforeTokens,
                     compactedMessageCount: 0,
                     preservedAnchorCount: 0,
-                    recentMessageCount: preparedRecentMessageCount,
-                    toolMessagesCompacted
+                    summaryInserted: false
                 })
             };
         }
@@ -199,18 +333,13 @@ export class AgentContextManager {
         if (oldMessages.length === 0) {
             return {
                 messages,
-                report: this.createPreparationReport({
+                report: buildReport({
                     strategy: 'unchanged',
-                    compactionTriggered: true,
-                    summaryInserted: false,
-                    beforeMessageCount,
                     afterMessageCount: messages.length,
-                    beforeTokens,
                     afterTokens: beforeTokens,
                     compactedMessageCount: 0,
                     preservedAnchorCount: 0,
-                    recentMessageCount: recentMessages.length,
-                    toolMessagesCompacted
+                    summaryInserted: false
                 })
             };
         }
@@ -220,41 +349,32 @@ export class AgentContextManager {
         if (oldTokens <= minOldSectionTokens) {
             return {
                 messages,
-                report: this.createPreparationReport({
+                report: buildReport({
                     strategy: 'unchanged',
-                    compactionTriggered: true,
-                    summaryInserted: false,
-                    beforeMessageCount,
                     afterMessageCount: messages.length,
-                    beforeTokens,
                     afterTokens: beforeTokens,
                     compactedMessageCount: oldMessages.length,
                     preservedAnchorCount: 0,
-                    recentMessageCount: recentMessages.length,
-                    toolMessagesCompacted
+                    summaryInserted: false
                 })
             };
         }
 
         try {
-            const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages);
+            const minimalAnchors = level === 'deep';
+            const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages, minimalAnchors);
             const summary = await this.summarizer.summarize(oldMessages);
             if (!summary?.trim()) {
                 const prepared = this.pruneHistory(messages);
                 return {
                     messages: prepared,
-                    report: this.createPreparationReport({
+                    report: buildReport({
                         strategy: prepared === messages ? 'unchanged' : 'pruned',
-                        compactionTriggered: true,
-                        summaryInserted: false,
-                        beforeMessageCount,
                         afterMessageCount: prepared.length,
-                        beforeTokens,
                         afterTokens: this.estimateMessages(prepared),
                         compactedMessageCount: oldMessages.length,
                         preservedAnchorCount: preservedAnchors.length,
-                        recentMessageCount: recentMessages.length,
-                        toolMessagesCompacted
+                        summaryInserted: false
                     })
                 };
             }
@@ -267,41 +387,35 @@ export class AgentContextManager {
             };
 
             const compacted = [...systemMessages, summaryMessage, ...preservedAnchors, ...recentMessages];
-            const prepared = this.estimateMessages(compacted) <= this.budget.maxHistoryTokens
+            // For deep level, apply additional pruning if still over budget
+            const afterCompactTokens = this.estimateMessages(compacted);
+            const prepared = afterCompactTokens <= this.budget.maxHistoryTokens
                 ? compacted
-                : this.pruneHistory(compacted);
+                : level === 'deep'
+                    ? this.aggressivePrune(compacted)
+                    : this.pruneHistory(compacted);
             return {
                 messages: prepared,
-                report: this.createPreparationReport({
+                report: buildReport({
                     strategy: 'compacted',
-                    compactionTriggered: true,
-                    summaryInserted: true,
-                    beforeMessageCount,
                     afterMessageCount: prepared.length,
-                    beforeTokens,
                     afterTokens: this.estimateMessages(prepared),
                     compactedMessageCount: oldMessages.length,
                     preservedAnchorCount: preservedAnchors.length,
-                    recentMessageCount: recentMessages.length,
-                    toolMessagesCompacted
+                    summaryInserted: true
                 })
             };
         } catch {
             const prepared = this.pruneHistory(messages);
             return {
                 messages: prepared,
-                report: this.createPreparationReport({
+                report: buildReport({
                     strategy: prepared === messages ? 'unchanged' : 'pruned',
-                    compactionTriggered: true,
-                    summaryInserted: false,
-                    beforeMessageCount,
                     afterMessageCount: prepared.length,
-                    beforeTokens,
                     afterTokens: this.estimateMessages(prepared),
                     compactedMessageCount: oldMessages.length,
                     preservedAnchorCount: 0,
-                    recentMessageCount: recentMessages.length,
-                    toolMessagesCompacted
+                    summaryInserted: false
                 })
             };
         }
@@ -392,12 +506,32 @@ export class AgentContextManager {
         return kept.slice(-Math.max(8, Math.floor(this.budget.maxHistoryTokens / 100)));
     }
 
+    /**
+     * Aggressive pruning for deep compaction level — reduces message count more
+     * aggressively by keeping only the absolute minimum: system messages, the
+     * most recent messages, and critical anchors.
+     */
+    private aggressivePrune(messages: AgentMessage[]): AgentMessage[] {
+        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
+        if (oldMessages.length === 0) {
+            return messages;
+        }
+        // For deep level, keep only system + first substantive user anchor + recent
+        const anchors = this.resolveCompactionAnchors(oldMessages, recentMessages, true);
+        const minimal = [...systemMessages, ...anchors, ...recentMessages];
+        if (this.estimateMessages(minimal) <= this.budget.maxHistoryTokens) {
+            return minimal;
+        }
+        // If still over budget, fall back to prune with a tighter limit
+        return recentMessages.slice(-Math.max(4, Math.floor(this.budget.maxHistoryTokens / 200)));
+    }
+
     trimMemory<T extends { value?: string }>(records: T[]): T[] {
         if (records.length <= this.budget.maxMemoryRecords) return records;
         return records.slice(-this.budget.maxMemoryRecords);
     }
 
-    private resolveCompactionAnchors(oldMessages: AgentMessage[], recentMessages: AgentMessage[]): AgentMessage[] {
+    private resolveCompactionAnchors(oldMessages: AgentMessage[], recentMessages: AgentMessage[], minimal = false): AgentMessage[] {
         const recentIds = new Set(recentMessages.map(message => message.id));
         const pinnedIds = new Set<string>();
         const anchors: AgentMessage[] = [];
@@ -408,10 +542,12 @@ export class AgentContextManager {
             anchors.push(firstSubstantiveUser);
         }
 
-        const latestSubstantiveUser = this.findLatestSubstantiveUserMessage(oldMessages);
-        if (latestSubstantiveUser && !recentIds.has(latestSubstantiveUser.id) && !pinnedIds.has(latestSubstantiveUser.id)) {
-            pinnedIds.add(latestSubstantiveUser.id);
-            anchors.push(latestSubstantiveUser);
+        if (!minimal) {
+            const latestSubstantiveUser = this.findLatestSubstantiveUserMessage(oldMessages);
+            if (latestSubstantiveUser && !recentIds.has(latestSubstantiveUser.id) && !pinnedIds.has(latestSubstantiveUser.id)) {
+                pinnedIds.add(latestSubstantiveUser.id);
+                anchors.push(latestSubstantiveUser);
+            }
         }
 
         const latestErrorContext = this.findLatestErrorContextMessage(oldMessages, pinnedIds);
@@ -420,10 +556,12 @@ export class AgentContextManager {
             anchors.push(latestErrorContext);
         }
 
-        const latestToolState = this.findLatestToolStateMessage(oldMessages, pinnedIds);
-        if (latestToolState && !recentIds.has(latestToolState.id) && !pinnedIds.has(latestToolState.id)) {
-            pinnedIds.add(latestToolState.id);
-            anchors.push(latestToolState);
+        if (!minimal) {
+            const latestToolState = this.findLatestToolStateMessage(oldMessages, pinnedIds);
+            if (latestToolState && !recentIds.has(latestToolState.id) && !pinnedIds.has(latestToolState.id)) {
+                pinnedIds.add(latestToolState.id);
+                anchors.push(latestToolState);
+            }
         }
 
         return oldMessages.filter(message => pinnedIds.has(message.id));
@@ -553,17 +691,37 @@ export class AgentContextManager {
         return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
     }
 
-    private compactToolMessagesForContext(messages: AgentMessage[], compactionTriggered: boolean): {
+    private compactToolMessagesForContext(messages: AgentMessage[], level: CompactionLevel): {
         messages: AgentMessage[];
         compactedCount: number;
         recentMessageCount: number;
     } {
         const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
-        const protectedIds = compactionTriggered
-            ? new Set(this.resolveCompactionAnchors(oldMessages, recentMessages).map(message => message.id))
-            : new Set<string>();
-        const oldPrepared = this.compactToolMessages(oldMessages, 'summary-preferred', protectedIds);
-        const recentPrepared = this.compactToolMessages(recentMessages, compactionTriggered ? 'oversized-only' : 'recent-light');
+        const minimalAnchors = level === 'deep';
+        const protectedIds = level === 'light'
+            ? new Set<string>()
+            : new Set(this.resolveCompactionAnchors(oldMessages, recentMessages, minimalAnchors).map(message => message.id));
+
+        let oldMode: 'summary-preferred' | 'oversized-only' | 'recent-light';
+        let recentMode: 'summary-preferred' | 'oversized-only' | 'recent-light';
+
+        switch (level) {
+            case 'deep':
+                oldMode = 'summary-preferred';
+                recentMode = 'summary-preferred';
+                break;
+            case 'medium':
+                oldMode = 'summary-preferred';
+                recentMode = 'oversized-only';
+                break;
+            default: // light
+                oldMode = 'recent-light';
+                recentMode = 'recent-light';
+                break;
+        }
+
+        const oldPrepared = this.compactToolMessages(oldMessages, oldMode, protectedIds);
+        const recentPrepared = this.compactToolMessages(recentMessages, recentMode);
 
         const compactedCount = oldPrepared.compactedCount + recentPrepared.compactedCount;
         if (!compactedCount) {

@@ -354,9 +354,30 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turnContext.diagnostics.followUpContextRewritten = true;
         }
         messages = rewrittenMessages;
-        const preparedHistory = await this.contextManager.prepareHistory(messages);
+        const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId);
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
+
+        // Selective detail recovery: if the user query refers to previously compacted
+        // content, inject the relevant original messages into the history.
+        if (this.contextManager.hasCompactedContent(sessionId)) {
+            const recovered = this.contextManager.recoverDetail(sessionId, query);
+            if (recovered && recovered.length > 0) {
+                // Insert recovered messages before the recent window, after any summary
+                let insertAt = -1;
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].role === 'system' && messages[i].content.includes('Context Summary')) {
+                        insertAt = i;
+                        break;
+                    }
+                }
+                messages = [
+                    ...messages.slice(0, insertAt + 1),
+                    ...recovered,
+                    ...messages.slice(insertAt + 1)
+                ];
+            }
+        }
 
         const memory = this.contextManager.trimMemory(
             await this.getRelevantMemory(query, sessionId)

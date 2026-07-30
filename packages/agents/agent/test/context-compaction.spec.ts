@@ -812,6 +812,132 @@ export class ContextCompactionTest {
         expect(result.length).toBeLessThan(10);
         expect(result.length).toBeGreaterThan(0);
     }
+
+    /* --- progressive compression levels --- */
+
+    @Test('selectCompactionLevel returns light when tokens are well within budget')
+    async selectLevelLight() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        expect((ctx as any).selectCompactionLevel(5000)).toEqual('light');
+        expect((ctx as any).selectCompactionLevel(10000)).toEqual('light');
+        expect((ctx as any).selectCompactionLevel(19000)).toEqual('light');
+    }
+
+    @Test('selectCompactionLevel returns medium when tokens approach budget')
+    async selectLevelMedium() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        expect((ctx as any).selectCompactionLevel(25000)).toEqual('medium');
+        expect((ctx as any).selectCompactionLevel(40000)).toEqual('medium');
+        expect((ctx as any).selectCompactionLevel(47999)).toEqual('medium');
+    }
+
+    @Test('selectCompactionLevel returns deep when tokens far exceed budget')
+    async selectLevelDeep() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        expect((ctx as any).selectCompactionLevel(48001)).toEqual('deep');
+        expect((ctx as any).selectCompactionLevel(100000)).toEqual('deep');
+    }
+
+    @Test('prepareHistory report includes level field')
+    async reportIncludesLevel() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(8);
+        const prepared = await ctx.prepareHistory(messages);
+        expect(prepared.report.level).toBeDefined();
+        expect(['light', 'medium', 'deep']).toContain(prepared.report.level);
+    }
+
+    @Test('prepareHistory report includes compressionRatio')
+    async reportIncludesCompressionRatio() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(8);
+        const prepared = await ctx.prepareHistory(messages);
+        expect(typeof prepared.report.compressionRatio).toEqual('number');
+        expect(prepared.report.compressionRatio).toBeGreaterThanOrEqual(0);
+    }
+
+    @Test('prepareHistory report includes cumulativeTokenSavings')
+    async reportIncludesCumulativeTokenSavings() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(8);
+        const prepared = await ctx.prepareHistory(messages);
+        expect(typeof prepared.report.cumulativeTokenSavings).toEqual('number');
+        expect(prepared.report.cumulativeTokenSavings).toBeGreaterThanOrEqual(0);
+    }
+
+    /* --- selective detail recovery --- */
+
+    @Test('prepareHistory with sessionId stashes original messages')
+    async stashesWithSessionId() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(5);
+        await ctx.prepareHistory(messages, 'test-session');
+        expect(ctx.hasCompactedContent('test-session')).toEqual(true);
+        expect(ctx.hasCompactedContent('other-session')).toEqual(false);
+    }
+
+    @Test('prepareHistory without sessionId does not stash')
+    async doesNotStashWithoutSessionId() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(5);
+        await ctx.prepareHistory(messages);
+        expect(ctx.hasCompactedContent('test-session')).toEqual(false);
+    }
+
+    @Test('recoverDetail returns empty when session has no compacted content')
+    async recoverEmptySession() {
+        const ctx = new AgentContextManager();
+        const result = ctx.recoverDetail('nonexistent', 'some query');
+        expect(result).toEqual([]);
+    }
+
+    @Test('clearCompactedContent removes stashed content')
+    async clearStashedContent() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(5);
+        await ctx.prepareHistory(messages, 'test-session');
+        expect(ctx.hasCompactedContent('test-session')).toEqual(true);
+        ctx.clearCompactedContent('test-session');
+        expect(ctx.hasCompactedContent('test-session')).toEqual(false);
+    }
+
+    /* --- aggressive prune (deep level) --- */
+
+    @Test('aggressivePrune keeps system + minimal anchors + recent only')
+    async aggressivePruneMinimal() {
+        const ctx = new AgentContextManager();
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Long goal text '.repeat(30), createdAt: 2 },
+            { id: 'a1', role: 'assistant', content: 'Some reply '.repeat(20), createdAt: 3 },
+            { id: 'u2', role: 'user', content: '继续', createdAt: 4 },
+            { id: 'a2', role: 'assistant', content: 'Another reply '.repeat(20), createdAt: 5 },
+            { id: 'u3', role: 'user', content: '继续', createdAt: 6 },
+            { id: 'a3', role: 'assistant', content: 'Yet another reply '.repeat(20), createdAt: 7 }
+        ];
+        const result: AgentMessage[] = (ctx as any).aggressivePrune(messages, 32000);
+        // Must keep system message
+        expect(result.some(m => m.id === 'sys')).toEqual(true);
+        // Must keep last few messages (recent window)
+        expect(result.some(m => m.id === 'a3')).toEqual(true);
+        // Should drop most intermediate messages
+        expect(result.length).toBeLessThan(messages.length);
+    }
 }
 
 class StaticSummaryModelAdapter extends EchoModelAdapter {
