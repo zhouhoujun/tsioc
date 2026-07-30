@@ -1668,6 +1668,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         this.notify('Annotation cleared.');
                         return true;
                     }
+                    if (arg === 'export') {
+                        const report = this.state.getReviewExportReport();
+                        if (!report.length) {
+                            this.notify('No review data to export.');
+                            return true;
+                        }
+                        for (const line of report) {
+                            this.notify(line);
+                        }
+                        return true;
+                    }
                     if (arg.startsWith('approve')) {
                         const comment = arg.slice(7).trim() || undefined;
                         this.state.setReviewFileAnnotation('approved', comment);

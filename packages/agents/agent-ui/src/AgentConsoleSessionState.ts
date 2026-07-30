@@ -1898,6 +1898,43 @@ export class AgentConsoleSessionState {
         return lines;
     }
 
+    getReviewExportReport(): string[] {
+        const lines: string[] = [];
+        const task = this.filteredReviewTaskChoices.find(t => t.id === this.selectedReviewTaskId);
+        lines.push(`# Review Report`);
+        lines.push(`Task: ${(task?.title ?? this.selectedReviewTaskId) || '(none)'}`);
+        lines.push(`Date: ${new Date().toISOString()}`);
+        lines.push(`Status: ${task?.status ?? 'unknown'}`);
+        lines.push('');
+        const entries = Object.entries(this.reviewFileAnnotations);
+        if (!entries.length) {
+            lines.push('No annotations.');
+            return lines;
+        }
+        const approved = entries.filter(([, a]) => a.status === 'approved');
+        const rejected = entries.filter(([, a]) => a.status === 'rejected');
+        lines.push(`## Summary`);
+        lines.push(`- Approved: ${approved.length}`);
+        lines.push(`- Rejected: ${rejected.length}`);
+        lines.push(`- Total: ${entries.length}`);
+        lines.push('');
+        if (approved.length) {
+            lines.push(`## Approved Files`);
+            for (const [path, annot] of approved) {
+                lines.push(`- ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
+            }
+            lines.push('');
+        }
+        if (rejected.length) {
+            lines.push(`## Rejected Files`);
+            for (const [path, annot] of rejected) {
+                lines.push(`- ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
+            }
+            lines.push('');
+        }
+        return lines;
+    }
+
     get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {
         const sections = this.reviewFileSections;
         if (!sections.length) {
