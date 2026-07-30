@@ -1525,6 +1525,47 @@ export class ExperiencePersistenceTest {
         expect(defaultNs.length).toBe(0);
     }
 
+    @Test('isExperienceMemoryEnabled returns configured value')
+    testExperienceMemoryFlag() {
+        const ctx = new AgentContextManager();
+        expect(ctx.isExperienceMemoryEnabled()).toBe(false);
+
+        ctx.configure({ experienceMemory: true });
+        expect(ctx.isExperienceMemoryEnabled()).toBe(true);
+
+        ctx.configure({ experienceMemory: false });
+        expect(ctx.isExperienceMemoryEnabled()).toBe(false);
+    }
+
+    @Test('loadExperienceMemory returns records from memory store')
+    async testLoadExperienceMemory() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        await ctx.persistExperiences(report, memoryStore);
+
+        const expRecords = await ctx.loadExperienceMemory(memoryStore);
+        expect(expRecords.length).toBeGreaterThan(0);
+        for (const r of expRecords) {
+            expect(r.key).toMatch(/^experience:/);
+            expect(r.scope).toBe('global');
+            expect(r.category).toBe('experience');
+            expect(r.value).toMatch(/\[confidence: \d+%\]/);
+        }
+    }
+
+    @Test('loadExperienceMemory returns empty when no experiences exist')
+    async testLoadExperienceMemoryEmpty() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        const expRecords = await ctx.loadExperienceMemory(memoryStore);
+        expect(expRecords).toEqual([]);
+    }
+
     @Test('storedRecords field is set after persist')
     async testStoredRecordsField() {
         const ctx = this.makeManager();

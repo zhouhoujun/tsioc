@@ -79,7 +79,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             maxMemoryRecords: this.options.context?.maxMemoryRecords,
             maxToolResults: this.options.context?.maxToolResultChars,
             recentMessageWindow: this.options.context?.compactionRecentMessages,
-            compactionMinTokens: this.options.context?.compactionMinTokens
+            compactionMinTokens: this.options.context?.compactionMinTokens,
+            experienceMemory: this.options.context?.experienceMemory,
         });
         if (this.summarizer && this.options.context?.compactionThreshold) {
             this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);
@@ -379,8 +380,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
+        const relevantMemory = await this.getRelevantMemory(query, sessionId);
         const memory = this.contextManager.trimMemory(
-            await this.getRelevantMemory(query, sessionId)
+            this.contextManager.isExperienceMemoryEnabled()
+                ? [...relevantMemory, ...(await this.contextManager.loadExperienceMemory(this.memory))]
+                : relevantMemory
         );
 
         if (this.promptBuilder) {

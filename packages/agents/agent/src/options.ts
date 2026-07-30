@@ -23,6 +23,8 @@ export interface AgentContextOptions {
      * Must be greater than context.compactionRecentMessages to avoid compacting all recent context.
      */
     compactionThreshold?: number;
+    /** Load cross-session experience patterns from MemoryStore during context assembly (default: false). */
+    experienceMemory?: boolean;
 }
 
 export interface AgentToolOptions {

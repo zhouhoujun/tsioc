@@ -18,6 +18,8 @@ export interface ContextBudget {
     adaptiveRecentWindowMax?: number;
     /** TTL in ms for stashed compaction content (default: 3600000 = 1 hour). Set 0 to disable. */
     stashTTL?: number;
+    /** Load cross-session experience patterns from MemoryStore during context assembly (default: false). */
+    experienceMemory?: boolean;
 }
 
 export type CompactionLevel = 'light' | 'medium' | 'deep';
@@ -122,7 +124,8 @@ const DEFAULT_BUDGET: ContextBudget = {
     adaptiveBudget: false,
     adaptiveCompactionMin: 200,
     adaptiveRecentWindowMax: 20,
-    stashTTL: 3600000
+    stashTTL: 3600000,
+    experienceMemory: false
 };
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
@@ -141,6 +144,10 @@ export class AgentContextManager {
     private dynamicRecentWindow = DEFAULT_BUDGET.recentMessageWindow;
     private consecutiveHighGrowthWindows = 0;
     private consecutiveLowGrowthWindows = 0;
+
+    isExperienceMemoryEnabled(): boolean {
+        return !!this.budget.experienceMemory;
+    }
 
     configure(budget?: Partial<ContextBudget>): this {
         this.budget = {
@@ -1289,6 +1296,30 @@ export class AgentContextManager {
 
         const maxPatterns = options?.maxPatterns ?? 50;
         return patterns.slice(0, maxPatterns);
+    }
+
+    /**
+     * Retrieve experiences from a MemoryStore and wrap each as an AgentMemoryRecord.
+     * Useful for injecting cross-session patterns into context assembly alongside
+     * regular memory records (e.g. in DefaultAgentRuntime.buildModelRequest).
+     *
+     * Each record uses:
+     *  - key: `experience:<type>`
+     *  - value: the pattern content with confidence annotation
+     *  - scope: 'global', category: 'experience'
+     */
+    async loadExperienceMemory(store: MemoryStore, options?: RetrieveOptions): Promise<import('../memory/MemoryStore').AgentMemoryRecord[]> {
+        const patterns = await this.retrieveExperiences(store, options);
+        return patterns.map((p, i) => ({
+            id: `exp_${p.type}_${i}`,
+            key: `experience:${p.type}`,
+            value: `${p.content} [confidence: ${Math.round(p.confidence * 100)}%]`,
+            scope: 'global' as const,
+            category: 'experience' as const,
+            namespace: options?.namespace ?? 'experience',
+            metadata: { ...p },
+            createdAt: Date.now(),
+        }));
     }
 
     private normaliseExperienceContent(content: string): string {
