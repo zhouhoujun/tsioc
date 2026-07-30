@@ -4,7 +4,7 @@ import {
     processConsoleTextInputChunk,
     shouldSkipConsoleHistoryEntry
 } from '@tsdi/components/console';
-import { AgentMessage, AgentToolDefinition, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentMessage, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeInput,
@@ -44,6 +44,10 @@ export interface AgentConsoleSessionItem {
     projectId?: string;
     projectLabel?: string;
     projectSessionCount?: number;
+}
+
+export interface AgentConsoleContextPreparationSnapshot extends ContextPreparationReport {
+    summary: string;
 }
 
 export interface AgentConsoleActivity {
@@ -299,6 +303,7 @@ export class AgentConsoleSessionState {
     projectLabel = '';
     projectSummary = '';
     projectSessionCount = 0;
+    contextPreparation?: AgentConsoleContextPreparationSnapshot | null = null;
     tasksCount = 0;
     sessions: AgentConsoleSessionItem[] = [];
     sessionsFocused = false;
@@ -375,8 +380,14 @@ export class AgentConsoleSessionState {
     protected suppressSuggestionMenu = false;
 
     configure(meta: AgentConsoleSessionMeta): this {
-        if (meta.sessionId) {
-            this.sessionId = meta.sessionId;
+        const nextSessionId = String(meta.sessionId || '').trim();
+        if (nextSessionId && nextSessionId !== this.sessionId) {
+            this.sessionId = nextSessionId;
+            this.projectKey = '';
+            this.projectLabel = '';
+            this.projectSummary = '';
+            this.projectSessionCount = 0;
+            this.contextPreparation = null;
         }
         if (meta.provider !== undefined) {
             this.provider = meta.provider;
@@ -426,6 +437,23 @@ export class AgentConsoleSessionState {
         this.projectSummary = String(context?.projectSummary || '').trim();
         this.projectSessionCount = Math.max(0, Number(context?.projectSessionCount || 0));
         this.notify();
+    }
+
+    setContextPreparation(report?: ContextPreparationReport | null): void {
+        if (!report) {
+            this.contextPreparation = null;
+            this.notify();
+            return;
+        }
+        this.contextPreparation = {
+            ...report,
+            summary: this.formatContextPreparationSummary(report)
+        };
+        this.notify();
+    }
+
+    get contextPreparationSummary(): string {
+        return this.contextPreparation?.summary || '';
     }
 
     setModelProfile(modelProfile: string): void {
@@ -2751,6 +2779,20 @@ export class AgentConsoleSessionState {
             typeof selected?.planning?.summary === 'string' ? selected.planning.summary : '',
             typeof selected?.goal === 'string' ? selected.goal : ''
         ].filter(Boolean).join('\n');
+    }
+
+    protected formatContextPreparationSummary(report: ContextPreparationReport): string {
+        return [
+            `context ${report.strategy}`,
+            `level ${report.level}`,
+            report.summaryInserted ? 'summary' : 'no summary',
+            `${report.beforeMessageCount}→${report.afterMessageCount} msgs`,
+            `${report.beforeTokens}→${report.afterTokens} tok`,
+            `${report.compressionRatio}% saved`,
+            report.preservedAnchorCount ? `${report.preservedAnchorCount} anchors` : '',
+            report.toolMessagesCompacted ? `${report.toolMessagesCompacted} tools` : '',
+            report.cumulativeTokenSavings ? `cum ${report.cumulativeTokenSavings} tok` : ''
+        ].filter(Boolean).join(' · ');
     }
 
     async handleEscapeKey(): Promise<boolean> {
