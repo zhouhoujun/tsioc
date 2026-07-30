@@ -129,6 +129,19 @@ const DEFAULT_BUDGET: ContextBudget = {
 };
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
+const WORKFLOW_LABELS: Record<string, string> = {
+    'search→read': 'Research: search then read results',
+    'read→edit': 'Edit: read then modify',
+    'search→read→edit': 'Find-and-fix: search, read, then edit',
+    'read→edit→read': 'Read-edit-verify: read, edit, then read again',
+    'exec→read→exec': 'Build-check: execute, read output, execute again',
+    'read→exec': 'Inspect-execute: read code then run it',
+    'search→read→read': 'Multi-source research: search then read multiple results',
+    'read→think': 'Analysis: read then reason',
+    'think→read': 'Plan-then-research: reason then verify',
+    'search→edit': 'Quick-fix: search then edit directly',
+};
+
 @Injectable()
 export class AgentContextManager {
     private budget: ContextBudget = { ...DEFAULT_BUDGET };
@@ -1136,6 +1149,53 @@ export class AgentContextManager {
             }
         }
 
+        // ── Workflow patterns: detect repeated multi-step tool call sequences ──
+        const toolCategories: Record<string, string> = {
+            read_file: 'read', read: 'read', look_at: 'read', glob: 'read',
+            read_mcp_resource: 'read', list_mcp_resources: 'read',
+            edit: 'edit', edit_file: 'edit', write_file: 'edit', write: 'edit',
+            ast_grep_replace: 'edit', ast_grep_search: 'edit',
+            grep: 'search', search: 'search', web_search: 'search',
+            websearch: 'search', grep_app_searchGitHub: 'search',
+            bash: 'exec', exec: 'exec', shell_exec: 'exec',
+            context7_query_docs: 'think', context7_resolve_library_id: 'think',
+        };
+        const sequence: string[] = [];
+        for (const msg of record.messages) {
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls: Array<{ name?: string }> = msg.metadata.toolCalls as any;
+                for (const call of calls) {
+                    const cat = toolCategories[call.name || ''] || call.name || 'unknown';
+                    sequence.push(cat);
+                }
+            }
+        }
+        // Count adjacent 2- and 3-step sequences
+        const seqCounts = new Map<string, number>();
+        for (let i = 0; i < sequence.length - 1; i++) {
+            const pair = `${sequence[i]}→${sequence[i + 1]}`;
+            seqCounts.set(pair, (seqCounts.get(pair) || 0) + 1);
+            if (i < sequence.length - 2) {
+                const triple = `${pair}→${sequence[i + 2]}`;
+                seqCounts.set(triple, (seqCounts.get(triple) || 0) + 1);
+            }
+        }
+        const seenSequences = new Set<string>();
+        for (const [seq, count] of seqCounts) {
+            if (count >= 2 && !seenSequences.has(seq)) {
+                seenSequences.add(seq);
+                const label = WORKFLOW_LABELS[seq] || `Workflow: ${seq} (×${count})`;
+                patterns.push({
+                    type: 'workflow',
+                    content: label,
+                    sourceSessionIds: [sessionId],
+                    confidence: Math.min(0.9, 0.4 + count * 0.2),
+                    firstObserved: now,
+                    lastObserved: now,
+                });
+            }
+        }
+
         // ── Preferences: reuse same heuristic as DeterministicExperienceDistiller ──
         for (const msg of record.messages) {
             if (msg.role === 'user') {
@@ -1192,6 +1252,45 @@ export class AgentContextManager {
             }
         }
 
+        // ── Cross-session workflow aggregation ──
+        // Count adjacent tool sequences across ALL sessions to catch patterns
+        // that appear once per session but persist across sessions.
+        const crossSessionSeqCounts = new Map<string, { count: number; now: number }>();
+        for (const sid of sessionIds) {
+            const seq = this.collectToolSequence(sid);
+            for (let i = 0; i < seq.length - 1; i++) {
+                const pair = `${seq[i]}→${seq[i + 1]}`;
+                const entry = crossSessionSeqCounts.get(pair) || { count: 0, now: 0 };
+                entry.count++;
+                const stamp = this.originalMessageStore.get(sid)?.timestamp ?? 0;
+                if (stamp > entry.now) entry.now = stamp;
+                crossSessionSeqCounts.set(pair, entry);
+                if (i < seq.length - 2) {
+                    const triple = `${pair}→${seq[i + 2]}`;
+                    const entry3 = crossSessionSeqCounts.get(triple) || { count: 0, now: 0 };
+                    entry3.count++;
+                    const stamp3 = this.originalMessageStore.get(sid)?.timestamp ?? 0;
+                    if (stamp3 > entry3.now) entry3.now = stamp3;
+                    crossSessionSeqCounts.set(triple, entry3);
+                }
+            }
+        }
+        for (const [seq, info] of crossSessionSeqCounts) {
+            // Only emit if not already emitted per-session (avoid duplicate dedup)
+            const alreadyEmitted = rawPatterns.some(p => p.type === 'workflow' && p.content.includes(seq));
+            if (!alreadyEmitted && info.count >= 2) {
+                const label = WORKFLOW_LABELS[seq] || `Workflow: ${seq} (×${info.count})`;
+                rawPatterns.push({
+                    type: 'workflow',
+                    content: label,
+                    sourceSessionIds: [],
+                    confidence: Math.min(0.9, 0.4 + info.count * 0.15),
+                    firstObserved: info.now,
+                    lastObserved: info.now,
+                });
+            }
+        }
+
         // ── Deduplicate by normalised content ──
         const merged = new Map<string, ExtractedPattern>();
         for (const p of rawPatterns) {
@@ -1233,9 +1332,35 @@ export class AgentContextManager {
         return report;
     }
 
+    private collectToolSequence(sessionId: string): string[] {
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) return [];
+        const toolCategories: Record<string, string> = {
+            read_file: 'read', read: 'read', look_at: 'read', glob: 'read',
+            read_mcp_resource: 'read', list_mcp_resources: 'read',
+            edit: 'edit', edit_file: 'edit', write_file: 'edit', write: 'edit',
+            ast_grep_replace: 'edit', ast_grep_search: 'edit',
+            grep: 'search', search: 'search', web_search: 'search',
+            websearch: 'search', grep_app_searchGitHub: 'search',
+            bash: 'exec', exec: 'exec', shell_exec: 'exec',
+            context7_query_docs: 'think', context7_resolve_library_id: 'think',
+        };
+        const sequence: string[] = [];
+        for (const msg of record.messages) {
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls: Array<{ name?: string }> = msg.metadata.toolCalls as any;
+                for (const call of calls) {
+                    const cat = toolCategories[call.name || ''] || call.name || 'unknown';
+                    sequence.push(cat);
+                }
+            }
+        }
+        return sequence;
+    }
+
     async persistExperiences(report: SynthesisReport, store: MemoryStore, options?: PersistOptions): Promise<number> {
         const namespace = options?.namespace ?? 'experience';
-        const existing = await store.getAll();
+        const existing = await store.search('experience:');
         const existingKeys = new Set(
             existing
                 .filter(r => r.namespace === namespace && r.category === 'experience')
@@ -1273,7 +1398,7 @@ export class AgentContextManager {
 
     async retrieveExperiences(store: MemoryStore, options?: RetrieveOptions): Promise<ExtractedPattern[]> {
         const namespace = options?.namespace ?? 'experience';
-        const records = await store.getAll();
+        const records = await store.search('experience:');
         const patterns: ExtractedPattern[] = [];
 
         for (const record of records) {

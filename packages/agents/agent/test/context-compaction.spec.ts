@@ -1300,6 +1300,94 @@ export class CrossSessionSynthesisTest {
         expect(report.patterns).toEqual([]);
         expect(report.errors).toEqual([]);
     }
+
+    // ── Workflow pattern tests ──
+
+    @Test('extractSessionPatterns detects read→edit workflow')
+    testWorkflowReadEdit() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Fix the bug' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm3', role: 'tool', content: 'file content' }),
+            this.makeMsg({ id: 'm4', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+            // repeated: read→edit again
+            this.makeMsg({ id: 'm5', role: 'user', content: 'Another fix' }),
+            this.makeMsg({ id: 'm6', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm7', role: 'tool', content: 'more file' }),
+            this.makeMsg({ id: 'm8', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+        ]);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const workflowPatterns = patterns.filter(p => p.type === 'workflow');
+        expect(workflowPatterns.length).toBeGreaterThanOrEqual(1);
+        expect(workflowPatterns.some(p => p.content.includes('read then modify'))).toBe(true);
+        expect(workflowPatterns[0].confidence).toBeGreaterThanOrEqual(0.4);
+    }
+
+    @Test('extractSessionPatterns detects search→read→edit workflow')
+    testWorkflowSearchReadEdit() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Fix the bug' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', metadata: { toolCalls: [{ name: 'grep' }] } }),
+            this.makeMsg({ id: 'm3', role: 'tool', content: 'results' }),
+            this.makeMsg({ id: 'm4', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm5', role: 'tool', content: 'content' }),
+            this.makeMsg({ id: 'm6', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+            // repeat same pattern
+            this.makeMsg({ id: 'm7', role: 'user', content: 'Another' }),
+            this.makeMsg({ id: 'm8', role: 'assistant', metadata: { toolCalls: [{ name: 'grep' }] } }),
+            this.makeMsg({ id: 'm9', role: 'tool', content: 'results2' }),
+            this.makeMsg({ id: 'm10', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm11', role: 'tool', content: 'content2' }),
+            this.makeMsg({ id: 'm12', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+        ]);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const workflowPatterns = patterns.filter(p => p.type === 'workflow');
+        expect(workflowPatterns.some(p => p.content.toLowerCase().includes('find-and-fix'))).toBe(true);
+    }
+
+    @Test('extractSessionPatterns does not emit workflow for single-use sequences')
+    testWorkflowNoSingleUse() {
+        const ctx = this.makeManager();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Do it' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm3', role: 'tool', content: 'content' }),
+            this.makeMsg({ id: 'm4', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+        ]);
+
+        const patterns = ctx.extractSessionPatterns('s1');
+        const workflowPatterns = patterns.filter(p => p.type === 'workflow');
+        // read→edit appears only once, so no workflow pattern
+        expect(workflowPatterns.length).toBe(0);
+    }
+
+    @Test('workflow patterns are merged across sessions during synthesis')
+    testWorkflowCrossSession() {
+        const ctx = this.makeManager();
+        // Session 1: read→edit (once — not enough alone)
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Fix A' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm3', role: 'tool', content: 'a' }),
+            this.makeMsg({ id: 'm4', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+        ], 'light', 100);
+        // Session 2: read→edit (once — not enough alone, but combined = 2)
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm5', role: 'user', content: 'Fix B' }),
+            this.makeMsg({ id: 'm6', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }] } }),
+            this.makeMsg({ id: 'm7', role: 'tool', content: 'b' }),
+            this.makeMsg({ id: 'm8', role: 'assistant', metadata: { toolCalls: [{ name: 'edit_file' }] } }),
+        ], 'light', 200);
+
+        const report = ctx.synthesizeExperiences();
+        const workflows = report.patterns.filter(p => p.type === 'workflow');
+        expect(workflows.length).toBeGreaterThanOrEqual(1);
+        expect(workflows.some(p => p.content.includes('read then modify'))).toBe(true);
+    }
 }
 
 @Suite('Agent stash TTL')
