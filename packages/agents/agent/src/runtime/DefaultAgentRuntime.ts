@@ -359,6 +359,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
 
+        // Auto-synthesise cross-session experiences when compaction happened
+        if (this.contextManager.isExperienceMemoryEnabled() && preparedHistory.report.strategy !== 'unchanged') {
+            this.contextManager.autoSynthesizeExperiences(this.memory);
+        }
+
         // Selective detail recovery: if the user query refers to previously compacted
         // content, inject the relevant original messages into the history.
         if (this.contextManager.hasCompactedContent(sessionId)) {

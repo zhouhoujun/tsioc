@@ -1322,6 +1322,20 @@ export class AgentContextManager {
         }));
     }
 
+    autoSynthesizeExperiences(store: MemoryStore): SynthesisReport {
+        const sessionIds = this.listCompactedSessions();
+        if (sessionIds.length === 0) {
+            const empty: SynthesisReport = { totalSessions: 0, processedSessions: 0, patterns: [], errors: [], storedRecords: 0 };
+            return empty;
+        }
+        const report = this.synthesizeExperiences({ sessionIds });
+        if (report.patterns.length > 0) {
+            // fire-and-forget persist — errors must not block the turn
+            this.persistExperiences(report, store).catch(() => {});
+        }
+        return report;
+    }
+
     private normaliseExperienceContent(content: string): string {
         return content
             .toLowerCase()

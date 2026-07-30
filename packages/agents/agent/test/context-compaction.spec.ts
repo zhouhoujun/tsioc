@@ -1566,6 +1566,37 @@ export class ExperiencePersistenceTest {
         expect(expRecords).toEqual([]);
     }
 
+    @Test('autoSynthesizeExperiences synthesizes and persists from current stash')
+    async testAutoSynthesize() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: timeout, database connection rejected, failed' }),
+        ]);
+
+        const report = ctx.autoSynthesizeExperiences(memoryStore);
+        expect(report.totalSessions).toBe(1);
+        expect(report.patterns.length).toBeGreaterThan(0);
+
+        // Wait for fire-and-forget persist to settle
+        await new Promise(r => setTimeout(r, 5));
+
+        const stored = await memoryStore.getAll();
+        const expRecords = stored.filter(r => r.category === 'experience');
+        expect(expRecords.length).toBeGreaterThan(0);
+    }
+
+    @Test('autoSynthesizeExperiences returns empty when stash is empty')
+    testAutoSynthesizeEmpty() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        const report = ctx.autoSynthesizeExperiences(memoryStore);
+        expect(report.totalSessions).toBe(0);
+        expect(report.patterns).toEqual([]);
+        expect(report.storedRecords).toBe(0);
+    }
+
     @Test('storedRecords field is set after persist')
     async testStoredRecordsField() {
         const ctx = this.makeManager();
