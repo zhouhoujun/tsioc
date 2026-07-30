@@ -320,8 +320,16 @@ export class AgentConsoleDashboardPanelComponent {
         if (this.state.lastError) {
             lines.push(`error ${this.summarize(this.state.lastError)}`);
         }
-        const latestToolRun = this.state.toolRuns[0];
-        if (latestToolRun) {
+        const runningToolRuns = this.state.toolRuns.filter(r => r.status === 'running');
+        if (runningToolRuns.length) {
+            for (const run of runningToolRuns.slice(0, 2)) {
+                const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
+                const summary = run.inputSummary || run.message || run.name;
+                lines.push(`▶ ${run.name}${attempt} · ${this.summarize(summary)}`);
+            }
+        }
+        const latestToolRun = this.state.toolRuns.find(r => r.status !== 'running') || this.state.toolRuns[0];
+        if (latestToolRun && !runningToolRuns.includes(latestToolRun)) {
             const summary = latestToolRun.outputSummary || latestToolRun.inputSummary || latestToolRun.message || latestToolRun.error || latestToolRun.name;
             lines.push(`tool ${latestToolRun.name} ${latestToolRun.status}${latestToolRun.durationMs != null ? ` ${latestToolRun.durationMs}ms` : ''} · ${this.summarize(summary)}`);
         }
@@ -703,10 +711,28 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         }
         const parts = [`(${this.elapsedLabel} • wait for reply)`];
         if (this.state.runningTools.length) {
+            const progress = this.toolRunProgressBar;
+            parts.push(progress);
             parts.push(this.runningLabel);
         }
         parts.push(`${this.totalTokens} tokens`);
         return ` ${parts.join(' · ')}`;
+    }
+
+    get toolRunProgressBar(): string {
+        const runs = this.state.toolRuns.filter(r => r.status === 'running');
+        if (!runs.length) {
+            return '';
+        }
+        return runs.map(run => {
+            const name = run.name.length > 12 ? run.name.slice(0, 12) + '…' : run.name;
+            const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
+            const barWidth = 8;
+            const filled = run.attemptCount ? Math.min(Math.ceil(run.attemptCount / 3 * barWidth), barWidth) : 1;
+            const empty = barWidth - filled;
+            const bar = `[${'█'.repeat(filled)}${'░'.repeat(empty)}]`;
+            return `${bar} ${name}${attempt}`;
+        }).join(' ');
     }
 
     get workingLabel(): string {
@@ -1733,8 +1759,16 @@ export class AgentConsoleToolRunsPanelComponent {
     get toolRunLabels(): string[] {
         return this.toolRuns.slice(0, this.state.consoleOptions.toolRunsVisibleItems).map(run => {
             const duration = run.durationMs == null ? '' : ` ${run.durationMs}ms`;
-            return `${run.name} ${run.status}${duration}`;
+            const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
+            const inputPreview = run.inputSummary ? ` ${this.summarize(run.inputSummary, 40)}` : '';
+            return `${run.name} ${run.status}${duration}${attempt}${inputPreview}`;
         });
+    }
+
+    protected summarize(value: string, maxLength?: number): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        const limit = maxLength ?? this.state?.consoleOptions?.toolRunSummaryMaxLength ?? 96;
+        return text.length > limit ? `${text.slice(0, limit)}...` : text;
     }
 
     get toolRunsSummary(): string {
@@ -1769,13 +1803,6 @@ export class AgentConsoleToolRunsPanelComponent {
         }
         const detail = this.highlightedToolRun.inputSummary || this.highlightedToolRun.message || this.highlightedToolRun.name;
         return `└ ${this.summarize(detail || this.highlightedToolRun.name)}`;
-    }
-
-    protected summarize(value: string): string {
-        const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
-            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
-            : text;
     }
 }
 
