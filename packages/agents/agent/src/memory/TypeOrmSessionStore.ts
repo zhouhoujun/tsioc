@@ -61,6 +61,7 @@ export class TypeOrmSessionStore extends SessionStore {
                 projectKey,
                 projectId: session.projectId ?? undefined,
                 workspace: session.workspace ?? undefined,
+                primaryThreadId: session.primaryThreadId ?? undefined,
                 sessionIds: [],
                 lastActiveAt: 0
             };
@@ -68,6 +69,7 @@ export class TypeOrmSessionStore extends SessionStore {
             existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, Number(session.updatedAt || session.createdAt || 0));
             existing.projectId = existing.projectId || session.projectId || undefined;
             existing.workspace = existing.workspace || session.workspace || undefined;
+            existing.primaryThreadId = existing.primaryThreadId || session.primaryThreadId || undefined;
             buckets.set(projectKey, existing);
         }
         return Array.from(buckets.values()).sort((left, right) => {
@@ -197,6 +199,10 @@ export class TypeOrmSessionStore extends SessionStore {
         const workspace = String(state.workspace || '').trim();
         if (workspace) {
             return `workspace:${workspace}`;
+        }
+        const primaryThreadId = String((state as any).primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
         }
         return `session:${state.sessionId}`;
     }

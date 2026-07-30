@@ -284,7 +284,7 @@ export class AgentConsoleSessionService {
     }
 
     protected groupProjectIndexes(
-        projects: Array<{ projectKey: string; projectId?: string; workspace?: string; sessionIds: string[]; lastActiveAt?: number }>,
+        projects: Array<{ projectKey: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: number }>,
         sessions: AgentConsoleSessionChoice[]
     ): AgentConsoleSessionProjectGroup[] {
         const sessionMap = new Map(sessions.map(session => [session.id, session]));
@@ -295,11 +295,13 @@ export class AgentConsoleSessionService {
                     .filter((session): session is AgentConsoleSessionChoice => !!session);
                 const workspace = String(project.workspace || '').trim();
                 const projectId = String(project.projectId || '').trim() || undefined;
+                const primaryThreadId = String(project.primaryThreadId || '').trim() || undefined;
                 return {
                     projectKey: String(project.projectKey || '').trim() || undefined,
                     projectId,
-                    label: projectId || workspace || groupedSessions[0]?.id || 'session',
+                    label: projectId || workspace || primaryThreadId || groupedSessions[0]?.id || 'session',
                     workspace,
+                    primaryThreadId,
                     sessions: this.sortSessionChoices(groupedSessions),
                     sessionCount: groupedSessions.length,
                     lastActiveAt: Number(project.lastActiveAt || Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0))

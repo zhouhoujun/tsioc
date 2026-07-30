@@ -89,8 +89,29 @@ export class SessionStoreTest {
             projectKey: 'project:exam-system',
             projectId: 'exam-system',
             workspace: '/tmp/project-a',
+            primaryThreadId: 'thread-1',
             sessionIds: ['session-1'],
             lastActiveAt: state.updatedAt
+        }]);
+    }
+
+    @Test('falls back to primary thread when grouping projects')
+    async fallsBackToPrimaryThreadWhenGroupingProjects() {
+        const store = new InMemorySessionStore();
+        await store.append('session-thread', { id: '1', role: 'user', content: 'thread', createdAt: 1 });
+        await store.setProjectMetadata('session-thread', {
+            primaryThreadId: 'thread-9',
+            sessionRole: 'worker'
+        });
+
+        const projects = await store.listProjects();
+        expect(projects).toEqual([{
+            projectKey: 'thread:thread-9',
+            projectId: undefined,
+            workspace: undefined,
+            primaryThreadId: 'thread-9',
+            sessionIds: ['session-thread'],
+            lastActiveAt: expect.any(Number)
         }]);
     }
 

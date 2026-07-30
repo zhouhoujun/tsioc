@@ -46,6 +46,7 @@ export class InMemorySessionStore extends SessionStore {
                 projectKey,
                 projectId: state.projectId,
                 workspace: state.workspace,
+                primaryThreadId: state.primaryThreadId,
                 sessionIds: [],
                 lastActiveAt: 0
             };
@@ -53,6 +54,7 @@ export class InMemorySessionStore extends SessionStore {
             existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, state.updatedAt || state.createdAt || 0);
             existing.projectId = existing.projectId || state.projectId;
             existing.workspace = existing.workspace || state.workspace;
+            existing.primaryThreadId = existing.primaryThreadId || state.primaryThreadId;
             buckets.set(projectKey, existing);
         }
         return Array.from(buckets.values()).sort((left, right) => {
@@ -134,6 +136,10 @@ export class InMemorySessionStore extends SessionStore {
         const workspace = String(state.workspace || '').trim();
         if (workspace) {
             return `workspace:${workspace}`;
+        }
+        const primaryThreadId = String(state.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
         }
         return `session:${state.sessionId}`;
     }
