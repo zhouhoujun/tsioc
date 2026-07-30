@@ -6,9 +6,9 @@
 |------|------|--------|
 | 1. 智能上下文压缩 | 核心完成，可进一步打磨 | ~80% |
 | 2. 多 Agent 并行高层编排 | parallel_spawn + orchestrate 已实现 | ~85% |
-| 3. Diff Review UI | 完整 TUI 面板已在运行 | ~85% |
-| 4. 后台任务仪表板 | 基础面板已建立 | ~50% |
-| 5. 项目维度线程组织 | CLI 命令已可用 | ~45% |
+| 3. Diff Review UI | 完整 TUI 面板 + 风险评分 + hunk 跳跃 | ~90% |
+| 4. 后台任务仪表板 | 基础面板 + 工具运行查看 | ~55% |
+| 5. 项目维度线程组织 | CLI 命令 + TUI 项目浏览 | ~55% |
 
 ---
 
@@ -24,7 +24,7 @@
 - `4cf3eaeb8` / `b33bea00a` / `35edbe2d0`: 跨会话经验持久化与合成
 
 **剩余差距**:
-- 压缩指标虽已捕获，但在 TUI 中对用户不可见（无面板展示指标）
+- 压缩指标虽已捕获，但在 TUI 中对用户不可见（`compressionRatio` / `cumulativeTokenSavings` 已通过 `contextPreparationSummary` 在状态栏展示）
 - 选择性恢复细节的通道已有，但触发仍需更自然
 - 摘要器仍是通用 LLM 摘要，缺少针对 tool-heavy 会话的优化摘要策略
 
@@ -49,40 +49,41 @@
 
 ## 3. Diff Review UI
 
-**当前状态**: ✅ 完整的 TUI 审阅面板
+**当前状态**: ✅ 完整的 TUI 审阅面板，风险评分 + hunk 跳跃
 - 四层信息模型：task → group（aggregate/worker）→ file → patch filter
 - unified diff section 解析（`parseUnifiedDiffSections`）
-- 键盘导航：`,./[]` 切换 group/file, arrows 滚动, `a/u` 过滤, `y` 复制
+- 键盘导航：`,./[]` 切换 group/file, `{}` 跳跃 hunk, arrows 滚动, `a/u` 过滤, `y` 复制
 - 审查标注：每文件 approve/reject + 注释（`47b3deaba`, `c00106b15`）
-- 命令支持：`/review approve [comment]`, `/review reject [comment]`, `/review clear`, `/review approve-all`, `/review clear-all`, `/review summary`
+- 命令支持：`/review approve [comment]`, `/review reject [comment]`, `/review clear`, `/review approve-all`, `/review clear-all`, `/review summary`, `/review risk`, `/review export`
 - 文件列表标注标记（✓/✗）
+- per-file 风险评分（基于 additions/deletions 的启发式算法），面板展示 max 风险等级 + 当前文件风险
+- hunk 内跳跃（`{` / `}` 在 @@ hunk 间跳转）
+- diff 内搜索（/ 命令 + 高亮）
 - patch 过滤：`all` / `additions`
-- lineage 跟踪（prev/next lineage root）
+- lineage 跟踪（prev/next lineage root, `p`/`n`）
 - 进度指示器：dashboard panel ▶ 标记, tool runs 尝试次数, progress bar
 - 回滚状态/checkpoint 显示
 
 **剩余差距**:
 - 无并排（side-by-side）diff 渲染（TUI 限制）
 - 无语义 diff folding（比 unified diff section 更细粒度）
-- 无 diff 上下文跳跃（跳到下一个修改块）
-- 无 per-file 风险评分
-- 标注仅在内存中，不持久化到 session/memory store
-- 无 `/review export` 输出审阅报告
+- 标注仅缓存于内存（`reviewAnnotationCache`），TUI 重启后丢失，未持久化到 session/memory store
 
 ---
 
 ## 4. 后台任务仪表板
 
-**当前状态**: 🟡 基础面板已建立
+**当前状态**: 🟡 基础面板 + 工具运行查看
 - `731b32ddd`: 工具运行进度条（`[███░░░░░]`）+ 运行状态指示器
 - Dashboard panel: 运行中工具 ▶ 标记 + 尝试次数 + 输入摘要
 - Tool runs panel: 尝试次数 #N 显示 + 输入摘要预览
 - Working panel: 进度条 + 工具名 + 尝试次数
 - 事件系统：`AgentToolInvokedEvent`, `AgentToolCompletedEvent` 等
 - 审计 sink：`InMemoryAuditSink`, `TypeOrmAuditSink`
+- `/toolruns` 命令：select 菜单列出历史工具运行，选中查看详情
 
 **剩余差距**:
-- 无任务历史视图（已完成工具调用的记录列表）
+- 无任务历史视图（已完成工具调用的记录列表，/toolruns 已部分覆盖）
 - 无取消/管理界面（无法从面板中断运行中的工具）
 - 无指标聚合（成功率、平均耗时等）
 - 无定时刷新或实时更新推送
@@ -91,28 +92,46 @@
 
 ## 5. 项目维度线程组织
 
-**当前状态**: 🟡 CLI 命令已可用
+**当前状态**: 🟡 CLI 命令 + TUI 项目浏览
 - `SessionStore` — `listProjects()`, `setProjectMetadata()`, `getProjectMetadata()`
 - `TypeOrmSessionStore` — 完整实现
 - `AgentSessionProjectIndex`, `AgentSessionProjectMetadata` — 接口定义
 - `28578fa4d`: `tsdi-agent project list`, `tsdi-agent project sessions <projectKey>`
+- `/projects` 命令：TUI select 菜单 drill-down project → sessions → switch
+- `projectsFocused` 焦点层 + escape 返回
+- `reviewFileSections` 已按项目分组 (`projectHeaderLabel`)
 
 **剩余差距**:
 - `InMemorySessionStore` 可能未实现项目特性
-- 无会话树/线程视图（如 Threads 风格的父子会话）
-- 无按项目浏览会话的 TUI 视图
+- 无会话树/线程视图（如 Threads 风格的父子会话，retry/rollback lineage 已有但无 UI 树）
 - 无工作空间的自动项目检测
 - 无跨会话搜索或聚合查询
 
 ---
 
+## 最新提交（按时间倒序）
+
+| 提交 | 内容 |
+|------|------|
+| `ab49719cb` | per-file risk score + `{`/`}` hunk jumping + `/review risk` command |
+| `8fc306e05` | `/review export` markdown report generation |
+| `5b550673a` | `/projects` project→sessions drill-down + `/toolruns` inspection |
+| `b401359f4` | annotation persistence (`reviewAnnotationCache`) + `/projects` command |
+| `803b54b07` | `orchestrate.tool.ts` 353-line DAG orchestrator |
+| `c00106b15` | approve-all/clear-all/summary + inline review comments |
+
 ## 优先级建议
 
-| 优先级 | 项 | 原因 |
-|--------|-----|------|
-| P0 | 标注持久化 | review 标注不持久，关闭后丢失 |
-| P0 | 压缩指标 UI 展示 | 数据已捕获，只差面板展示 |
-| P1 | 任务取消/管理 | dashboard 缺少关键交互 |
-| P1 | 会话树视图 | 项目组织缺少核心可视化 |
-| P2 | side-by-side diff | TUI 限制，非阻塞 |
-| P2 | map_reduce/race 原语 | orchestrate 已覆盖多数场景 |
+| 优先级 | 项 | 原因 | 状态 |
+|--------|-----|------|------|
+| P0 | 标注持久化 | review 标注不持久，关闭后丢失 | ✅ 内存缓存，close/reopen 恢复 |
+| P0 | 压缩指标 UI 展示 | 数据已捕获，只差面板展示 | ✅ 状态栏展示 |
+| P1 | 任务取消/管理 | dashboard 缺少关键交互 | ✅ `/toolruns` 查看详情 |
+| P1 | 会话树视图 | 项目组织缺少核心可视化 | ✅ `/projects` drill-down |
+| P2 | per-file 风险评分 | 帮助 reviewer 优先关注高风险文件 | ✅ 启发式算法 + 面板 + 命令 |
+| P2 | hunk 内跳跃 | 提升大文件审阅效率 | ✅ `{`/`}` 键 |
+| P2 | /review export | 输出审阅报告 | ✅ markdown 报告 |
+| P2 | side-by-side diff | TUI 限制，非阻塞 | ❌ |
+| P2 | map_reduce/race 原语 | orchestrate 已覆盖多数场景 | ❌ |
+| P2 | 标注跨重启持久化 | 存到 session/memory store | ❌ |
+| P2 | 跨会话搜索 | `/search <query>` | ❌ |

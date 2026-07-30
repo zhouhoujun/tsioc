@@ -1842,6 +1842,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     }
                 }
                 return true;
+            case '/search':
+                if (!parsed.args || !parsed.args.trim()) {
+                    this.notify('Usage: /search <query>');
+                    return true;
+                }
+                {
+                    const query = parsed.args.trim().toLowerCase();
+                    const matches = this.state.sessions.filter(s => {
+                        const id = (s.id || '').toLowerCase();
+                        const summary = (s.summary || '').toLowerCase();
+                        const ws = (s.workspace || '').toLowerCase();
+                        const proj = (s.projectLabel || s.projectKey || s.projectId || '').toLowerCase();
+                        return id.includes(query) || summary.includes(query) || ws.includes(query) || proj.includes(query);
+                    });
+                    if (!matches.length) {
+                        this.notify(`No sessions matching "${parsed.args.trim()}".`);
+                        return true;
+                    }
+                    const sessionId = await this.select(
+                        `Search: "${parsed.args.trim()}" (${matches.length})`,
+                        matches.map(s => ({
+                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
+                            value: s.id,
+                            detail: s.summary || s.workspace || ''
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (sessionId) {
+                        await this.openSession(sessionId);
+                    }
+                }
+                return true;
             case '/projects':
                 if (!this.state.projects.length) {
                     await this.refreshSessions();
