@@ -2,6 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
+import { MemoryStore } from '../memory/MemoryStore';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -88,6 +89,28 @@ export interface SynthesisReport {
     patterns: ExtractedPattern[];
     /** Non-fatal errors encountered during synthesis. */
     errors: string[];
+    /** Number of patterns actually persisted to memory store (new or updated). */
+    storedRecords?: number;
+}
+
+/** Options for {@link AgentContextManager.persistExperiences}. */
+export interface PersistOptions {
+    /** Override TTL in ms for each stored record (default: no TTL / store default). */
+    ttlMs?: number;
+    /** Custom namespace to store records under (default: 'experience'). */
+    namespace?: string;
+}
+
+/** Options for {@link AgentContextManager.retrieveExperiences}. */
+export interface RetrieveOptions {
+    /** Filter by pattern type. */
+    type?: ExtractedPattern['type'];
+    /** Maximum patterns to return (default: 50). */
+    maxPatterns?: number;
+    /** Minimum confidence to include (default: 0). */
+    minConfidence?: number;
+    /** Namespace to query (default: 'experience'). */
+    namespace?: string;
 }
 
 const DEFAULT_BUDGET: ContextBudget = {
@@ -1201,6 +1224,80 @@ export class AgentContextManager {
         report.patterns = sorted.slice(0, maxPatterns);
 
         return report;
+    }
+
+    async persistExperiences(report: SynthesisReport, store: MemoryStore, options?: PersistOptions): Promise<number> {
+        const namespace = options?.namespace ?? 'experience';
+        const existing = await store.getAll();
+        const existingKeys = new Set(
+            existing
+                .filter(r => r.namespace === namespace && r.category === 'experience')
+                .map(r => r.key)
+        );
+
+        let stored = 0;
+        for (const pattern of report.patterns) {
+            const key = `experience:${pattern.type}:${this.normaliseExperienceContent(pattern.content)}`;
+            if (existingKeys.has(key)) continue;
+
+            const record: import('../memory/MemoryStore').AgentMemoryRecord = {
+                id: `exp_${key.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)}_${Date.now()}`,
+                key,
+                value: pattern.content,
+                scope: 'global',
+                namespace,
+                category: 'experience',
+                metadata: {
+                    type: pattern.type,
+                    confidence: pattern.confidence,
+                    sourceSessionIds: pattern.sourceSessionIds,
+                    firstObserved: pattern.firstObserved,
+                    lastObserved: pattern.lastObserved,
+                },
+                createdAt: Date.now(),
+            };
+            await store.put(record);
+            stored++;
+        }
+
+        report.storedRecords = stored;
+        return stored;
+    }
+
+    async retrieveExperiences(store: MemoryStore, options?: RetrieveOptions): Promise<ExtractedPattern[]> {
+        const namespace = options?.namespace ?? 'experience';
+        const records = await store.getAll();
+        const patterns: ExtractedPattern[] = [];
+
+        for (const record of records) {
+            if (record.namespace !== namespace) continue;
+            if (record.category !== 'experience') continue;
+            if (options?.type && record.metadata?.type !== options.type) continue;
+
+            const confidence = record.metadata?.confidence ?? 0.5;
+            if (options?.minConfidence != null && confidence < options.minConfidence) continue;
+
+            patterns.push({
+                type: (record.metadata?.type as ExtractedPattern['type']) ?? 'preference',
+                content: record.value,
+                sourceSessionIds: (record.metadata?.sourceSessionIds as string[]) ?? [],
+                confidence,
+                firstObserved: record.metadata?.firstObserved ?? record.createdAt,
+                lastObserved: record.metadata?.lastObserved ?? record.createdAt,
+            });
+        }
+
+        const maxPatterns = options?.maxPatterns ?? 50;
+        return patterns.slice(0, maxPatterns);
+    }
+
+    private normaliseExperienceContent(content: string): string {
+        return content
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N} ]/gu, '')
+            .trim()
+            .slice(0, 80)
+            .replace(/\s+/g, '_');
     }
 
     private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount'>): ContextPreparationReport {

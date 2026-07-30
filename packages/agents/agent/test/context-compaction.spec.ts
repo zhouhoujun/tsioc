@@ -6,6 +6,7 @@ import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { AgentMessage } from '../src/runtime/AgentMessage';
+import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 
 /**
  * Test-only interface exposing package-internal members of AgentContextManager
@@ -1389,6 +1390,159 @@ export class StashTTLTest {
         });
 
         expect(ctx.extractSessionPatterns('s1')).toEqual([]);
+    }
+}
+
+@Suite('Agent experience persistence')
+export class ExperiencePersistenceTest {
+    private makeManager(): AgentContextManager {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 0 });
+        return ctx;
+    }
+
+    private stashMessages(
+        ctx: AgentContextManager,
+        sessionId: string,
+        messages: AgentMessage[],
+        level: 'light' | 'medium' | 'deep' = 'light',
+        timestamp?: number,
+    ): void {
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set(sessionId, { messages, timestamp: timestamp ?? Date.now(), level });
+    }
+
+    private makeMsg(overrides: Partial<AgentMessage> & { id: string }): AgentMessage {
+        return { role: 'user', content: '', createdAt: Date.now(), ...overrides };
+    }
+
+    @Test('persistExperiences stores patterns to memory store')
+    async testPersistBasic() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', content: 'I got an error: invalid token format' }),
+            this.makeMsg({ id: 'm3', role: 'assistant', content: 'Error: failed to connect to database, timeout rejected' }),
+        ]);
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm4', role: 'user', content: 'Add rate limiting to the API' }),
+            this.makeMsg({ id: 'm5', role: 'assistant', content: 'Tool "read_file" used 3 times in session' }),
+            this.makeMsg({ id: 'm6', role: 'user', content: 'I prefer functional components over class components' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        expect(report.patterns.length).toBeGreaterThan(0);
+
+        const stored = await ctx.persistExperiences(report, memoryStore);
+        expect(stored).toBeGreaterThan(0);
+        expect(report.storedRecords).toBe(stored);
+
+        const allRecords = await memoryStore.getAll();
+        const expRecords = allRecords.filter(r => r.category === 'experience');
+        expect(expRecords.length).toBe(stored);
+    }
+
+    @Test('persistExperiences skips duplicate patterns')
+    async testPersistDedup() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+        ]);
+
+        const report1 = ctx.synthesizeExperiences();
+        const first = await ctx.persistExperiences(report1, memoryStore);
+
+        const report2 = ctx.synthesizeExperiences();
+        const second = await ctx.persistExperiences(report2, memoryStore);
+
+        // Second persist should find everything already exists
+        expect(second).toBe(0);
+        const allRecords = await memoryStore.getAll();
+        const expRecords = allRecords.filter(r => r.category === 'experience');
+        expect(expRecords.length).toBe(first);
+    }
+
+    @Test('retrieveExperiences returns stored patterns')
+    async testRetrieveBasic() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+        ]);
+        this.stashMessages(ctx, 's2', [
+            this.makeMsg({ id: 'm2', role: 'user', content: 'Add rate limiting' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        await ctx.persistExperiences(report, memoryStore);
+
+        const retrieved = await ctx.retrieveExperiences(memoryStore);
+        expect(retrieved.length).toBeGreaterThan(0);
+        // All retrieved patterns should have valid types
+        for (const p of retrieved) {
+            expect(['goal', 'error', 'tool_pattern', 'preference', 'workflow']).toContain(p.type);
+            expect(typeof p.content).toBe('string');
+            expect(p.confidence).toBeGreaterThan(0);
+        }
+    }
+
+    @Test('retrieveExperiences filters by type')
+    async testRetrieveFilterType() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: database timeout, connection rejected' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        await ctx.persistExperiences(report, memoryStore);
+
+        const goals = await ctx.retrieveExperiences(memoryStore, { type: 'goal' });
+        expect(goals.every(p => p.type === 'goal')).toBe(true);
+
+        const errors = await ctx.retrieveExperiences(memoryStore, { type: 'error' });
+        expect(errors.every(p => p.type === 'error')).toBe(true);
+    }
+
+    @Test('persistExperiences uses custom namespace')
+    async testCustomNamespace() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        await ctx.persistExperiences(report, memoryStore, { namespace: 'custom_exp' });
+
+        const custom = await ctx.retrieveExperiences(memoryStore, { namespace: 'custom_exp' });
+        expect(custom.length).toBeGreaterThan(0);
+
+        const defaultNs = await ctx.retrieveExperiences(memoryStore);
+        expect(defaultNs.length).toBe(0);
+    }
+
+    @Test('storedRecords field is set after persist')
+    async testStoredRecordsField() {
+        const ctx = this.makeManager();
+        const memoryStore = new InMemoryMemoryStore();
+        this.stashMessages(ctx, 's1', [
+            this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
+            this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: timeout, connection rejected, failed' }),
+            this.makeMsg({ id: 'm3', role: 'assistant', metadata: { toolCalls: [{ name: 'read_file' }, { name: 'read_file' }] } as any }),
+            this.makeMsg({ id: 'm4', role: 'user', content: 'I prefer TypeScript over JavaScript' }),
+        ]);
+
+        const report = ctx.synthesizeExperiences();
+        // storedRecords should not be set before persist
+        expect(report.storedRecords).toBeUndefined();
+
+        await ctx.persistExperiences(report, memoryStore);
+        expect(report.storedRecords).toBeGreaterThan(0);
+        expect(report.storedRecords).toBe(report.patterns.length);
     }
 }
 
