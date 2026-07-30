@@ -363,6 +363,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
 
+        // Capture compression metrics for diagnostics
+        const report = preparedHistory.report;
+        if (report.compactionTriggered && turnContext?.diagnostics) {
+            turnContext.diagnostics.compactionCount = (turnContext.diagnostics.compactionCount || 0) + 1;
+            turnContext.diagnostics.totalTokenSavings = (turnContext.diagnostics.totalTokenSavings || 0) + report.cumulativeTokenSavings;
+            turnContext.diagnostics.compressionRatio = report.compressionRatio;
+            turnContext.diagnostics.compactionLevel = report.level;
+        }
+
         // Auto-synthesise cross-session experiences when compaction happened
         if (this.contextManager.isExperienceMemoryEnabled() && preparedHistory.report.strategy !== 'unchanged') {
             this.contextManager.autoSynthesizeExperiences(this.memory);
@@ -438,7 +447,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             followUpRecoveryCount: 0,
             followUpContextRewritten: false,
             finalAssistantWasClarification: false,
-            repeatedClarificationDetected: false
+            repeatedClarificationDetected: false,
+            compactionCount: 0,
+            totalTokenSavings: 0,
+            compressionRatio: undefined,
+            compactionLevel: undefined
         };
     }
 

@@ -33,6 +33,14 @@ export interface AgentTurnDiagnostics {
     followUpContextRewritten: boolean;
     finalAssistantWasClarification: boolean;
     repeatedClarificationDetected: boolean;
+    /** Number of context compactions performed during this turn. */
+    compactionCount: number;
+    /** Total tokens saved by compaction across this session. */
+    totalTokenSavings: number;
+    /** Latest compression ratio (percentage). */
+    compressionRatio?: number;
+    /** Latest compaction level applied. */
+    compactionLevel?: string;
 }
 
 function summarizeEventInput(input: any): string | undefined {
