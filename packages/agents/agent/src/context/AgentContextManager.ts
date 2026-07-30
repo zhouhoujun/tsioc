@@ -15,6 +15,8 @@ export interface ContextBudget {
     adaptiveCompactionMin?: number;
     /** Upper bound for recentMessageWindow when adaptive (default: 20) */
     adaptiveRecentWindowMax?: number;
+    /** TTL in ms for stashed compaction content (default: 3600000 = 1 hour). Set 0 to disable. */
+    stashTTL?: number;
 }
 
 export type CompactionLevel = 'light' | 'medium' | 'deep';
@@ -96,7 +98,8 @@ const DEFAULT_BUDGET: ContextBudget = {
     compactionMinTokens: 1200,
     adaptiveBudget: false,
     adaptiveCompactionMin: 200,
-    adaptiveRecentWindowMax: 20
+    adaptiveRecentWindowMax: 20,
+    stashTTL: 3600000
 };
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
@@ -113,6 +116,8 @@ export class AgentContextManager {
     private tokenGrowthHistory: Array<{ timestamp: number; beforeTokens: number; messageCount: number }> = [];
     private dynamicCompactionMinTokens = DEFAULT_BUDGET.compactionMinTokens;
     private dynamicRecentWindow = DEFAULT_BUDGET.recentMessageWindow;
+    private consecutiveHighGrowthWindows = 0;
+    private consecutiveLowGrowthWindows = 0;
 
     configure(budget?: Partial<ContextBudget>): this {
         this.budget = {
@@ -197,9 +202,27 @@ export class AgentContextManager {
     }
 
     /**
+     * Purge expired entries from the stash based on stashTTL.
+     * No-op when stashTTL is 0 or undefined.
+     */
+    private purgeExpiredStash(): void {
+        const ttl = this.budget.stashTTL;
+        if (!ttl || ttl <= 0) {
+            return;
+        }
+        const cutoff = Date.now() - ttl;
+        for (const [sid, record] of this.originalMessageStore) {
+            if (record.timestamp < cutoff) {
+                this.originalMessageStore.delete(sid);
+            }
+        }
+    }
+
+    /**
      * Whether the given session has stashed original messages available for recovery.
      */
     hasCompactedContent(sessionId: string): boolean {
+        this.purgeExpiredStash();
         return this.originalMessageStore.has(sessionId);
     }
 
@@ -209,6 +232,7 @@ export class AgentContextManager {
      * original message content.
      */
     recoverDetail(sessionId: string, userQuery: string): AgentMessage[] | undefined {
+        this.purgeExpiredStash();
         const record = this.originalMessageStore.get(sessionId);
         if (!record) {
             return undefined;
@@ -236,6 +260,7 @@ export class AgentContextManager {
      * Clear the stashed original messages for a session.
      */
     clearCompactedContent(sessionId: string): void {
+        this.purgeExpiredStash();
         this.originalMessageStore.delete(sessionId);
     }
 
@@ -265,55 +290,88 @@ export class AgentContextManager {
      * Adjust dynamic budget thresholds based on observed token growth patterns.
      * Called after each prepareHistory when adaptiveBudget is enabled.
      *
-     * - High token growth rate (>5000/turn avg over last 5 turns): lower compactionMinTokens
-     *   to trigger compaction earlier, preventing sudden pressure spikes.
-     * - Rapid follow-up pattern (>60% follow-ups): increase recentMessageWindow
-     *   to preserve more conversational context.
+     * Refinements over the basic version:
+     * - Hysteresis: tracks consecutive high/low growth windows to avoid thrashing.
+     * - Plateau detection: sustained low growth (>3 windows) gradually raises the
+     *   compaction threshold since the session has proven it can stay lean.
+     * - Sustained growth acceleration: 3+ high-growth windows compound the
+     *   reduction factor to stay ahead of accumulating pressure.
+     * - Growth volatility: high variance between turns adds conservatism.
+     * - Recovery decay: after a plateau, the threshold decays back toward
+     *   baseline gradually instead of snapping in one step.
      */
     private adjustBudget(): void {
         const history = this.tokenGrowthHistory;
-        if (history.length < 3) {
+        if (history.length < 4) {
             return;
         }
 
-        // Use last 5 entries max to keep the response snappy
-        const window = history.slice(-5);
+        const window = history.slice(-6);
+        const n = window.length;
 
-        // Average token growth per turn
-        let totalGrowth = 0;
+        // ── Per-turn growth deltas ──
+        const deltas: number[] = [];
         let followUpCount = 0;
-        for (let i = 1; i < window.length; i++) {
-            totalGrowth += Math.max(0, window[i].beforeTokens - window[i - 1].beforeTokens);
-        }
-        const avgGrowthPerTurn = window.length > 1 ? totalGrowth / (window.length - 1) : 0;
-
-        // Count turns where message count barely grew (follow-up pattern)
-        for (let i = 1; i < window.length; i++) {
+        for (let i = 1; i < n; i++) {
+            const growth = Math.max(0, window[i].beforeTokens - window[i - 1].beforeTokens);
+            deltas.push(growth);
             if (window[i].messageCount - window[i - 1].messageCount <= 2) {
                 followUpCount++;
             }
         }
-        const followUpRatio = window.length > 1 ? followUpCount / (window.length - 1) : 0;
 
-        // Adjust compactionMinTokens: high growth → compact earlier
+        const avgGrowth = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+
+        // ── Growth volatility: coefficient of variation ──
+        const mean = avgGrowth || 1;
+        const variance = deltas.reduce((sum, d) => sum + (d - mean) ** 2, 0) / deltas.length;
+        const cv = Math.sqrt(variance) / mean;
+
+        // ── Update consecutive window counters (hysteresis) ──
+        const isHighGrowth = avgGrowth > 5000;
+        const isLowGrowth = avgGrowth < 1000;
+        this.consecutiveHighGrowthWindows = isHighGrowth
+            ? this.consecutiveHighGrowthWindows + 1
+            : Math.max(0, this.consecutiveHighGrowthWindows - 1);
+        this.consecutiveLowGrowthWindows = isLowGrowth
+            ? this.consecutiveLowGrowthWindows + 1
+            : Math.max(0, this.consecutiveLowGrowthWindows - 1);
+
+        // ── Adjust compactionMinTokens ──
         const baseMin = this.budget.compactionMinTokens;
         const adaptiveMin = this.budget.adaptiveCompactionMin ?? 200;
-        if (avgGrowthPerTurn > 10000) {
-            // Very fast growth: halve the threshold
+        const sustainAccel = Math.min(3, Math.floor(this.consecutiveHighGrowthWindows / 3)) * 0.1;
+
+        if (this.consecutiveHighGrowthWindows >= 3 && avgGrowth > 5000) {
+            // Sustained high growth: progressively more aggressive
+            const factor = Math.max(0.3, 0.7 - sustainAccel);
+            this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * factor));
+        } else if (avgGrowth > 10000) {
+            // Very fast growth spike: halve
             this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * 0.5));
-        } else if (avgGrowthPerTurn > 5000) {
-            // Moderate-fast growth: reduce by 30%
-            this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * 0.7));
+        } else if (avgGrowth > 5000) {
+            // Moderate-fast growth: reduce by 30% (plus volatility penalty)
+            const volPenalty = cv > 1.5 ? 0.1 : 0;
+            this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * (0.7 - volPenalty)));
+        } else if (this.consecutiveLowGrowthWindows >= 3) {
+            // Plateau: gradually raise threshold (less aggressive compaction)
+            const raise = Math.min(0.3, this.consecutiveLowGrowthWindows * 0.1);
+            this.dynamicCompactionMinTokens = Math.round(baseMin * (1 + raise));
         } else {
-            // Normal growth: restore baseline
+            // Normal: restore baseline
             this.dynamicCompactionMinTokens = baseMin;
         }
 
-        // Adjust recentMessageWindow: many follow-ups → wider window
+        // ── Adjust recentMessageWindow ──
         const baseWindow = this.budget.recentMessageWindow;
         const adaptiveWindowMax = this.budget.adaptiveRecentWindowMax ?? 20;
-        if (followUpRatio > 0.6) {
+        if (followUpCount / deltas.length > 0.8) {
+            this.dynamicRecentWindow = Math.min(adaptiveWindowMax, Math.round(baseWindow * 2));
+        } else if (followUpCount / deltas.length > 0.6) {
             this.dynamicRecentWindow = Math.min(adaptiveWindowMax, Math.round(baseWindow * 1.5));
+        } else if (followUpCount / deltas.length < 0.3 && this.dynamicRecentWindow > baseWindow) {
+            // Low follow-up ratio: shrink window back toward baseline
+            this.dynamicRecentWindow = Math.max(baseWindow, this.dynamicRecentWindow - 1);
         } else {
             this.dynamicRecentWindow = baseWindow;
         }
@@ -964,6 +1022,7 @@ export class AgentContextManager {
      * cross-session pattern extraction.
      */
     listCompactedSessions(): string[] {
+        this.purgeExpiredStash();
         return [...this.originalMessageStore.keys()];
     }
 
@@ -973,6 +1032,7 @@ export class AgentContextManager {
      * error contexts, and preferences found in the session log.
      */
     extractSessionPatterns(sessionId: string): ExtractedPattern[] {
+        this.purgeExpiredStash();
         const record = this.originalMessageStore.get(sessionId);
         if (!record) {
             return [];

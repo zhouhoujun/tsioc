@@ -1,11 +1,36 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { AgentContextManager } from '../src/context/AgentContextManager';
+import { AgentContextManager, StashedContext, CompactionLevel } from '../src/context/AgentContextManager';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { AgentMessage } from '../src/runtime/AgentMessage';
+
+/**
+ * Test-only interface exposing package-internal members of AgentContextManager
+ * that tests need to verify behavior without (ctx as any) casts.
+ */
+interface TestAgentContextManager {
+    originalMessageStore: Map<string, StashedContext>;
+    dynamicCompactionMinTokens: number;
+    dynamicRecentWindow: number;
+    tokenGrowthHistory: Array<{ timestamp: number; beforeTokens: number; messageCount: number }>;
+    consecutiveHighGrowthWindows: number;
+    consecutiveLowGrowthWindows: number;
+    adaptiveEnabled: boolean;
+    recordTokenGrowth(beforeTokens: number, messageCount: number): void;
+    adjustBudget(): void;
+    aggressivePrune(messages: AgentMessage[]): AgentMessage[];
+    readonly effectiveCompactionMinTokens: number;
+    readonly effectiveRecentWindow: number;
+    isErrorContextMessage(msg: AgentMessage): boolean;
+    selectCompactionLevel(estimatedTokens: number): CompactionLevel;
+}
+
+function asTestCtx(ctx: AgentContextManager): TestAgentContextManager {
+    return ctx as unknown as TestAgentContextManager;
+}
 
 @Suite('Agent context compaction')
 export class ContextCompactionTest {
@@ -742,7 +767,7 @@ export class ContextCompactionTest {
         ];
 
         for (const msg of cleanMessages) {
-            const result = (ctx as any).isErrorContextMessage(msg);
+            const result = asTestCtx(ctx).isErrorContextMessage(msg);
             expect(result).toEqual(false);
         }
     }
@@ -776,7 +801,7 @@ export class ContextCompactionTest {
         ];
 
         for (const msg of errorMessages) {
-            const result = (ctx as any).isErrorContextMessage(msg);
+            const result = asTestCtx(ctx).isErrorContextMessage(msg);
             expect(result).toEqual(true);
         }
     }
@@ -819,26 +844,26 @@ export class ContextCompactionTest {
     async selectLevelLight() {
         const ctx = new AgentContextManager();
         ctx.configure({ maxHistoryTokens: 32000 });
-        expect((ctx as any).selectCompactionLevel(5000)).toEqual('light');
-        expect((ctx as any).selectCompactionLevel(10000)).toEqual('light');
-        expect((ctx as any).selectCompactionLevel(19000)).toEqual('light');
+        expect(asTestCtx(ctx).selectCompactionLevel(5000)).toEqual('light');
+        expect(asTestCtx(ctx).selectCompactionLevel(10000)).toEqual('light');
+        expect(asTestCtx(ctx).selectCompactionLevel(19000)).toEqual('light');
     }
 
     @Test('selectCompactionLevel returns medium when tokens approach budget')
     async selectLevelMedium() {
         const ctx = new AgentContextManager();
         ctx.configure({ maxHistoryTokens: 32000 });
-        expect((ctx as any).selectCompactionLevel(25000)).toEqual('medium');
-        expect((ctx as any).selectCompactionLevel(40000)).toEqual('medium');
-        expect((ctx as any).selectCompactionLevel(47999)).toEqual('medium');
+        expect(asTestCtx(ctx).selectCompactionLevel(25000)).toEqual('medium');
+        expect(asTestCtx(ctx).selectCompactionLevel(40000)).toEqual('medium');
+        expect(asTestCtx(ctx).selectCompactionLevel(47999)).toEqual('medium');
     }
 
     @Test('selectCompactionLevel returns deep when tokens far exceed budget')
     async selectLevelDeep() {
         const ctx = new AgentContextManager();
         ctx.configure({ maxHistoryTokens: 32000 });
-        expect((ctx as any).selectCompactionLevel(48001)).toEqual('deep');
-        expect((ctx as any).selectCompactionLevel(100000)).toEqual('deep');
+        expect(asTestCtx(ctx).selectCompactionLevel(48001)).toEqual('deep');
+        expect(asTestCtx(ctx).selectCompactionLevel(100000)).toEqual('deep');
     }
 
     @Test('prepareHistory report includes level field')
@@ -938,7 +963,7 @@ export class ContextCompactionTest {
             { id: 'u7', role: 'user', content: '继续', createdAt: 14 },
             { id: 'a7', role: 'assistant', content: 'Reply 7 '.repeat(20), createdAt: 15 }
         ];
-        const result: AgentMessage[] = (ctx as any).aggressivePrune(messages, 32000);
+        const result: AgentMessage[] = asTestCtx(ctx).aggressivePrune(messages);
         // Must keep system message
         expect(result.some(m => m.id === 'sys')).toEqual(true);
         // Must keep last few messages (recent window)
@@ -954,9 +979,9 @@ export class ContextCompactionTest {
         const ctx = new AgentContextManager();
         ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 1000 });
         // Not setting adaptiveBudget → defaults to false
-        expect((ctx as any).adaptiveEnabled).toEqual(false);
-        expect((ctx as any).effectiveCompactionMinTokens).toEqual(1000);
-        expect((ctx as any).effectiveRecentWindow).toEqual(6);
+        expect(asTestCtx(ctx).adaptiveEnabled).toEqual(false);
+        expect(asTestCtx(ctx).effectiveCompactionMinTokens).toEqual(1000);
+        expect(asTestCtx(ctx).effectiveRecentWindow).toEqual(6);
     }
 
     @Test('adaptive budget enabled reduces compactionMinTokens on high growth')
@@ -971,17 +996,17 @@ export class ContextCompactionTest {
 
         // Simulate high growth: push history entries with growing token counts
         for (let i = 0; i < 5; i++) {
-            (ctx as any).recordTokenGrowth(5000 + i * 12000, 10 + i * 2);
+            asTestCtx(ctx).recordTokenGrowth(5000 + i * 12000, 10 + i * 2);
         }
-        (ctx as any).adjustBudget();
+        asTestCtx(ctx).adjustBudget();
 
         // High growth (>10000 avg per turn) should halve the threshold
-        expect((ctx as any).dynamicCompactionMinTokens).toBeLessThan(2000);
-        expect((ctx as any).dynamicCompactionMinTokens).toBeGreaterThanOrEqual(200);
+        expect(asTestCtx(ctx).dynamicCompactionMinTokens).toBeLessThan(2000);
+        expect(asTestCtx(ctx).dynamicCompactionMinTokens).toBeGreaterThanOrEqual(200);
     }
 
-    @Test('adaptive budget keeps baseline on low growth')
-    async adaptiveKeepsBaselineOnLowGrowth() {
+    @Test('adaptive budget keeps baseline on moderate growth')
+    async adaptiveKeepsBaselineOnModerateGrowth() {
         const ctx = new AgentContextManager();
         ctx.configure({
             maxHistoryTokens: 32000,
@@ -989,14 +1014,13 @@ export class ContextCompactionTest {
             adaptiveBudget: true
         });
 
-        // Simulate low growth: small steady increases
+        // Moderate growth (avg delta ~2000/turn): not high, not plateau → baseline
         for (let i = 0; i < 5; i++) {
-            (ctx as any).recordTokenGrowth(1000 + i * 500, 5 + i);
+            asTestCtx(ctx).recordTokenGrowth(1000 + i * 2000, 5 + i);
         }
-        (ctx as any).adjustBudget();
+        asTestCtx(ctx).adjustBudget();
 
-        // Low growth should keep baseline
-        expect((ctx as any).dynamicCompactionMinTokens).toEqual(2000);
+        expect(asTestCtx(ctx).dynamicCompactionMinTokens).toEqual(2000);
     }
 
     @Test('adaptive budget increases recent window on follow-up patterns')
@@ -1011,30 +1035,30 @@ export class ContextCompactionTest {
 
         // Simulate follow-up pattern: message count barely grows each turn
         for (let i = 0; i < 5; i++) {
-            (ctx as any).recordTokenGrowth(1000 + i * 200, 3);
+            asTestCtx(ctx).recordTokenGrowth(1000 + i * 200, 3);
         }
-        (ctx as any).adjustBudget();
+        asTestCtx(ctx).adjustBudget();
 
         // High follow-up ratio (>60%) should widen the window
-        expect((ctx as any).dynamicRecentWindow).toBeGreaterThan(6);
-        expect((ctx as any).dynamicRecentWindow).toBeLessThanOrEqual(20);
+        expect(asTestCtx(ctx).dynamicRecentWindow).toBeGreaterThan(6);
+        expect(asTestCtx(ctx).dynamicRecentWindow).toBeLessThanOrEqual(20);
     }
 
     @Test('configure resets adaptive tracking state')
     async adaptiveResetsOnConfigure() {
         const ctx = new AgentContextManager();
         ctx.configure({ maxHistoryTokens: 32000, adaptiveBudget: true });
-        (ctx as any).recordTokenGrowth(10000, 10);
-        (ctx as any).recordTokenGrowth(25000, 12);
-        expect((ctx as any).tokenGrowthHistory.length).toEqual(2);
+        asTestCtx(ctx).recordTokenGrowth(10000, 10);
+        asTestCtx(ctx).recordTokenGrowth(25000, 12);
+        expect(asTestCtx(ctx).tokenGrowthHistory.length).toEqual(2);
 
         // Reconfigure → resets
         ctx.configure({ maxHistoryTokens: 32000, adaptiveBudget: true });
-        expect((ctx as any).tokenGrowthHistory.length).toEqual(0);
-        expect((ctx as any).dynamicCompactionMinTokens).toEqual(1200);
+        expect(asTestCtx(ctx).tokenGrowthHistory.length).toEqual(0);
+        expect(asTestCtx(ctx).dynamicCompactionMinTokens).toEqual(1200);
     }
 
-    @Test('adaptive budget with fewer than 3 data points does not adjust')
+    @Test('adaptive budget with fewer than 4 data points does not adjust')
     async adaptiveSkipsWithInsufficientData() {
         const ctx = new AgentContextManager();
         ctx.configure({
@@ -1043,12 +1067,13 @@ export class ContextCompactionTest {
             adaptiveBudget: true
         });
 
-        (ctx as any).recordTokenGrowth(1000, 5);
-        (ctx as any).recordTokenGrowth(20000, 8);
-        (ctx as any).adjustBudget();
+        asTestCtx(ctx).recordTokenGrowth(1000, 5);
+        asTestCtx(ctx).recordTokenGrowth(20000, 8);
+        asTestCtx(ctx).recordTokenGrowth(35000, 10);
+        asTestCtx(ctx).adjustBudget();
 
-        // Only 2 data points (less than 3) → no adjustment
-        expect((ctx as any).dynamicCompactionMinTokens).toEqual(2000);
+        // Only 3 data points (< 4 deltas needed) → no adjustment
+        expect(asTestCtx(ctx).dynamicCompactionMinTokens).toEqual(2000);
     }
 }
 
@@ -1059,6 +1084,7 @@ export class CrossSessionSynthesisTest {
         ctx.configure({
             maxHistoryTokens: 32000,
             compactionMinTokens: 2000,
+            stashTTL: 0, // disable TTL for cross-session tests
         });
         return ctx;
     }
@@ -1070,7 +1096,7 @@ export class CrossSessionSynthesisTest {
         level: 'light' | 'medium' | 'deep' = 'light',
         timestamp?: number,
     ): void {
-        const store = (ctx as any).originalMessageStore as Map<string, any>;
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
         store.set(sessionId, {
             messages,
             timestamp: timestamp ?? Date.now(),
@@ -1090,7 +1116,7 @@ export class CrossSessionSynthesisTest {
     @Test('listCompactedSessions returns known session IDs')
     testListCompactedSessions() {
         const ctx = this.makeManager();
-        const store = (ctx as any).originalMessageStore as Map<string, any>;
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
         expect(ctx.listCompactedSessions()).toEqual([]);
 
         store.set('s1', { messages: [], timestamp: 1, level: 'light' });
@@ -1272,6 +1298,97 @@ export class CrossSessionSynthesisTest {
         expect(report.processedSessions).toBe(0);
         expect(report.patterns).toEqual([]);
         expect(report.errors).toEqual([]);
+    }
+}
+
+@Suite('Agent stash TTL')
+export class StashTTLTest {
+    private makeMsg(overrides: Partial<AgentMessage> & { id: string }): AgentMessage {
+        return { role: 'user', content: '', createdAt: Date.now(), ...overrides };
+    }
+
+    @Test('hasCompactedContent returns false for expired entry')
+    testExpiredEntryExcluded() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 100 }); // 100ms TTL
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', { messages: [], timestamp: Date.now() - 200, level: 'light' });
+
+        expect(ctx.hasCompactedContent('s1')).toBe(false);
+    }
+
+    @Test('hasCompactedContent returns true for non-expired entry')
+    testActiveEntryIncluded() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 60000 }); // 60s TTL
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', { messages: [], timestamp: Date.now(), level: 'light' });
+
+        expect(ctx.hasCompactedContent('s1')).toBe(true);
+    }
+
+    @Test('listCompactedSessions excludes expired entries')
+    testListExcludesExpired() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 100 });
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', { messages: [], timestamp: Date.now() - 200, level: 'light' });
+        store.set('s2', { messages: [], timestamp: Date.now(), level: 'medium' });
+
+        const sessions = ctx.listCompactedSessions();
+        expect(sessions).toEqual(['s2']);
+    }
+
+    @Test('recoverDetail returns undefined for expired entry')
+    testRecoverExcludesExpired() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 100 });
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', {
+            messages: [this.makeMsg({ id: 'm1', content: 'hello world' })],
+            timestamp: Date.now() - 200,
+            level: 'light',
+        });
+
+        expect(ctx.recoverDetail('s1', 'hello')).toBeUndefined();
+    }
+
+    @Test('clearCompactedContent purges expired before delete')
+    testClearPurgesExpiredFirst() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 100 });
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', { messages: [], timestamp: Date.now() - 200, level: 'light' });
+        store.set('s2', { messages: [], timestamp: Date.now(), level: 'light' });
+
+        // s1 is already expired — clearCompactedContent purges expired then deletes s2
+        ctx.clearCompactedContent('s2');
+        // After purge + delete, only s1 was already purged, s2 explicitly deleted
+        expect(ctx.listCompactedSessions()).toEqual([]);
+    }
+
+    @Test('TTL=0 disables expiry')
+    testTTLZeroDisablesExpiry() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 0 });
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', { messages: [], timestamp: 1, level: 'light' }); // very old
+
+        expect(ctx.hasCompactedContent('s1')).toBe(true);
+    }
+
+    @Test('extractSessionPatterns purges expired before extraction')
+    testExtractPurgesExpired() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ stashTTL: 100 });
+        const store = asTestCtx(ctx).originalMessageStore as Map<string, any>;
+        store.set('s1', {
+            messages: [this.makeMsg({ id: 'm1', role: 'user', content: 'Do something' })],
+            timestamp: Date.now() - 200,
+            level: 'light',
+        });
+
+        expect(ctx.extractSessionPatterns('s1')).toEqual([]);
     }
 }
 
