@@ -879,9 +879,9 @@ export class ContextCompactionTest {
     @Test('prepareHistory with sessionId stashes original messages')
     async stashesWithSessionId() {
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
-        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
-        const messages = this.makeToolMessages(5);
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 10);
+        const messages = this.makeToolMessages(10);
         await ctx.prepareHistory(messages, 'test-session');
         expect(ctx.hasCompactedContent('test-session')).toEqual(true);
         expect(ctx.hasCompactedContent('other-session')).toEqual(false);
@@ -897,19 +897,19 @@ export class ContextCompactionTest {
         expect(ctx.hasCompactedContent('test-session')).toEqual(false);
     }
 
-    @Test('recoverDetail returns empty when session has no compacted content')
+    @Test('recoverDetail returns undefined when session has no compacted content')
     async recoverEmptySession() {
         const ctx = new AgentContextManager();
         const result = ctx.recoverDetail('nonexistent', 'some query');
-        expect(result).toEqual([]);
+        expect(result).toBeUndefined();
     }
 
     @Test('clearCompactedContent removes stashed content')
     async clearStashedContent() {
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
-        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
-        const messages = this.makeToolMessages(5);
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 10);
+        const messages = this.makeToolMessages(10);
         await ctx.prepareHistory(messages, 'test-session');
         expect(ctx.hasCompactedContent('test-session')).toEqual(true);
         ctx.clearCompactedContent('test-session');
@@ -928,15 +928,127 @@ export class ContextCompactionTest {
             { id: 'u2', role: 'user', content: '继续', createdAt: 4 },
             { id: 'a2', role: 'assistant', content: 'Another reply '.repeat(20), createdAt: 5 },
             { id: 'u3', role: 'user', content: '继续', createdAt: 6 },
-            { id: 'a3', role: 'assistant', content: 'Yet another reply '.repeat(20), createdAt: 7 }
+            { id: 'a3', role: 'assistant', content: 'Yet another reply '.repeat(20), createdAt: 7 },
+            { id: 'u4', role: 'user', content: '继续', createdAt: 8 },
+            { id: 'a4', role: 'assistant', content: 'Reply 4 '.repeat(20), createdAt: 9 },
+            { id: 'u5', role: 'user', content: '继续', createdAt: 10 },
+            { id: 'a5', role: 'assistant', content: 'Reply 5 '.repeat(20), createdAt: 11 },
+            { id: 'u6', role: 'user', content: '继续', createdAt: 12 },
+            { id: 'a6', role: 'assistant', content: 'Reply 6 '.repeat(20), createdAt: 13 },
+            { id: 'u7', role: 'user', content: '继续', createdAt: 14 },
+            { id: 'a7', role: 'assistant', content: 'Reply 7 '.repeat(20), createdAt: 15 }
         ];
         const result: AgentMessage[] = (ctx as any).aggressivePrune(messages, 32000);
         // Must keep system message
         expect(result.some(m => m.id === 'sys')).toEqual(true);
         // Must keep last few messages (recent window)
-        expect(result.some(m => m.id === 'a3')).toEqual(true);
+        expect(result.some(m => m.id === 'a7')).toEqual(true);
         // Should drop most intermediate messages
         expect(result.length).toBeLessThan(messages.length);
+    }
+
+    /* --- adaptive budget adjustment --- */
+
+    @Test('adaptive budget disabled by default, uses base compactionMinTokens')
+    async adaptiveDisabledByDefault() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 1000 });
+        // Not setting adaptiveBudget → defaults to false
+        expect((ctx as any).adaptiveEnabled).toEqual(false);
+        expect((ctx as any).effectiveCompactionMinTokens).toEqual(1000);
+        expect((ctx as any).effectiveRecentWindow).toEqual(6);
+    }
+
+    @Test('adaptive budget enabled reduces compactionMinTokens on high growth')
+    async adaptiveReducesThresholdOnHighGrowth() {
+        const ctx = new AgentContextManager();
+        ctx.configure({
+            maxHistoryTokens: 32000,
+            compactionMinTokens: 2000,
+            adaptiveBudget: true,
+            adaptiveCompactionMin: 200
+        });
+
+        // Simulate high growth: push history entries with growing token counts
+        for (let i = 0; i < 5; i++) {
+            (ctx as any).recordTokenGrowth(5000 + i * 12000, 10 + i * 2);
+        }
+        (ctx as any).adjustBudget();
+
+        // High growth (>10000 avg per turn) should halve the threshold
+        expect((ctx as any).dynamicCompactionMinTokens).toBeLessThan(2000);
+        expect((ctx as any).dynamicCompactionMinTokens).toBeGreaterThanOrEqual(200);
+    }
+
+    @Test('adaptive budget keeps baseline on low growth')
+    async adaptiveKeepsBaselineOnLowGrowth() {
+        const ctx = new AgentContextManager();
+        ctx.configure({
+            maxHistoryTokens: 32000,
+            compactionMinTokens: 2000,
+            adaptiveBudget: true
+        });
+
+        // Simulate low growth: small steady increases
+        for (let i = 0; i < 5; i++) {
+            (ctx as any).recordTokenGrowth(1000 + i * 500, 5 + i);
+        }
+        (ctx as any).adjustBudget();
+
+        // Low growth should keep baseline
+        expect((ctx as any).dynamicCompactionMinTokens).toEqual(2000);
+    }
+
+    @Test('adaptive budget increases recent window on follow-up patterns')
+    async adaptiveWidensWindowOnFollowUps() {
+        const ctx = new AgentContextManager();
+        ctx.configure({
+            maxHistoryTokens: 32000,
+            recentMessageWindow: 6,
+            adaptiveBudget: true,
+            adaptiveRecentWindowMax: 20
+        });
+
+        // Simulate follow-up pattern: message count barely grows each turn
+        for (let i = 0; i < 5; i++) {
+            (ctx as any).recordTokenGrowth(1000 + i * 200, 3);
+        }
+        (ctx as any).adjustBudget();
+
+        // High follow-up ratio (>60%) should widen the window
+        expect((ctx as any).dynamicRecentWindow).toBeGreaterThan(6);
+        expect((ctx as any).dynamicRecentWindow).toBeLessThanOrEqual(20);
+    }
+
+    @Test('configure resets adaptive tracking state')
+    async adaptiveResetsOnConfigure() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, adaptiveBudget: true });
+        (ctx as any).recordTokenGrowth(10000, 10);
+        (ctx as any).recordTokenGrowth(25000, 12);
+        expect((ctx as any).tokenGrowthHistory.length).toEqual(2);
+
+        // Reconfigure → resets
+        ctx.configure({ maxHistoryTokens: 32000, adaptiveBudget: true });
+        expect((ctx as any).tokenGrowthHistory.length).toEqual(0);
+        expect((ctx as any).dynamicCompactionMinTokens).toEqual(1200);
+    }
+
+    @Test('adaptive budget with fewer than 3 data points does not adjust')
+    async adaptiveSkipsWithInsufficientData() {
+        const ctx = new AgentContextManager();
+        ctx.configure({
+            maxHistoryTokens: 32000,
+            compactionMinTokens: 2000,
+            adaptiveBudget: true
+        });
+
+        (ctx as any).recordTokenGrowth(1000, 5);
+        (ctx as any).recordTokenGrowth(20000, 8);
+        (ctx as any).adjustBudget();
+
+        // Only 2 data points (less than 3) → no adjustment
+        expect((ctx as any).dynamicCompactionMinTokens).toEqual(2000);
     }
 }
 

@@ -9,6 +9,12 @@ export interface ContextBudget {
     maxToolResults: number;
     recentMessageWindow: number;
     compactionMinTokens: number;
+    /** Enable adaptive budget tuning based on observed session token growth patterns */
+    adaptiveBudget?: boolean;
+    /** Lower bound for compactionMinTokens when adaptive (default: 200) */
+    adaptiveCompactionMin?: number;
+    /** Upper bound for recentMessageWindow when adaptive (default: 20) */
+    adaptiveRecentWindowMax?: number;
 }
 
 export type CompactionLevel = 'light' | 'medium' | 'deep';
@@ -45,7 +51,10 @@ const DEFAULT_BUDGET: ContextBudget = {
     maxMemoryRecords: 50,
     maxToolResults: 8000,
     recentMessageWindow: 6,
-    compactionMinTokens: 1200
+    compactionMinTokens: 1200,
+    adaptiveBudget: false,
+    adaptiveCompactionMin: 200,
+    adaptiveRecentWindowMax: 20
 };
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
@@ -57,12 +66,22 @@ export class AgentContextManager {
     private cumulativeTokenSavings = 0;
     private originalMessageStore = new Map<string, StashedContext>();
 
+    // Adaptive budget tracking
+    private adaptiveEnabled = false;
+    private tokenGrowthHistory: Array<{ timestamp: number; beforeTokens: number; messageCount: number }> = [];
+    private dynamicCompactionMinTokens = DEFAULT_BUDGET.compactionMinTokens;
+    private dynamicRecentWindow = DEFAULT_BUDGET.recentMessageWindow;
+
     configure(budget?: Partial<ContextBudget>): this {
         this.budget = {
             ...DEFAULT_BUDGET,
             ...(budget ?? {}),
             recentMessageWindow: Math.max(1, Math.floor(Number(budget?.recentMessageWindow ?? DEFAULT_BUDGET.recentMessageWindow) || DEFAULT_BUDGET.recentMessageWindow))
         };
+        this.adaptiveEnabled = !!this.budget.adaptiveBudget;
+        this.dynamicCompactionMinTokens = this.budget.compactionMinTokens;
+        this.dynamicRecentWindow = this.budget.recentMessageWindow;
+        this.tokenGrowthHistory = [];
         return this;
     }
 
@@ -111,7 +130,7 @@ export class AgentContextManager {
             return true;
         }
 
-        const tokenThreshold = Math.min(this.budget.compactionMinTokens, this.budget.maxHistoryTokens);
+        const tokenThreshold = Math.min(this.effectiveCompactionMinTokens, this.budget.maxHistoryTokens);
         return estimatedTokens >= tokenThreshold;
     }
 
@@ -189,6 +208,85 @@ export class AgentContextManager {
         return 'light';
     }
 
+    /**
+     * Record token and message counts for adaptive budget tracking.
+     */
+    private recordTokenGrowth(beforeTokens: number, messageCount: number): void {
+        this.tokenGrowthHistory.push({ timestamp: Date.now(), beforeTokens, messageCount });
+        // Keep only the last 20 entries to bound memory
+        if (this.tokenGrowthHistory.length > 20) {
+            this.tokenGrowthHistory = this.tokenGrowthHistory.slice(-20);
+        }
+    }
+
+    /**
+     * Adjust dynamic budget thresholds based on observed token growth patterns.
+     * Called after each prepareHistory when adaptiveBudget is enabled.
+     *
+     * - High token growth rate (>5000/turn avg over last 5 turns): lower compactionMinTokens
+     *   to trigger compaction earlier, preventing sudden pressure spikes.
+     * - Rapid follow-up pattern (>60% follow-ups): increase recentMessageWindow
+     *   to preserve more conversational context.
+     */
+    private adjustBudget(): void {
+        const history = this.tokenGrowthHistory;
+        if (history.length < 3) {
+            return;
+        }
+
+        // Use last 5 entries max to keep the response snappy
+        const window = history.slice(-5);
+
+        // Average token growth per turn
+        let totalGrowth = 0;
+        let followUpCount = 0;
+        for (let i = 1; i < window.length; i++) {
+            totalGrowth += Math.max(0, window[i].beforeTokens - window[i - 1].beforeTokens);
+        }
+        const avgGrowthPerTurn = window.length > 1 ? totalGrowth / (window.length - 1) : 0;
+
+        // Count turns where message count barely grew (follow-up pattern)
+        for (let i = 1; i < window.length; i++) {
+            if (window[i].messageCount - window[i - 1].messageCount <= 2) {
+                followUpCount++;
+            }
+        }
+        const followUpRatio = window.length > 1 ? followUpCount / (window.length - 1) : 0;
+
+        // Adjust compactionMinTokens: high growth → compact earlier
+        const baseMin = this.budget.compactionMinTokens;
+        const adaptiveMin = this.budget.adaptiveCompactionMin ?? 200;
+        if (avgGrowthPerTurn > 10000) {
+            // Very fast growth: halve the threshold
+            this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * 0.5));
+        } else if (avgGrowthPerTurn > 5000) {
+            // Moderate-fast growth: reduce by 30%
+            this.dynamicCompactionMinTokens = Math.max(adaptiveMin, Math.round(baseMin * 0.7));
+        } else {
+            // Normal growth: restore baseline
+            this.dynamicCompactionMinTokens = baseMin;
+        }
+
+        // Adjust recentMessageWindow: many follow-ups → wider window
+        const baseWindow = this.budget.recentMessageWindow;
+        const adaptiveWindowMax = this.budget.adaptiveRecentWindowMax ?? 20;
+        if (followUpRatio > 0.6) {
+            this.dynamicRecentWindow = Math.min(adaptiveWindowMax, Math.round(baseWindow * 1.5));
+        } else {
+            this.dynamicRecentWindow = baseWindow;
+        }
+    }
+
+    /** Effective compactionMinTokens considering adaptive tuning */
+    private get effectiveCompactionMinTokens(): number {
+        return this.adaptiveEnabled ? this.dynamicCompactionMinTokens : this.budget.compactionMinTokens;
+    }
+
+    /** Effective recentMessageWindow considering adaptive tuning */
+    private get effectiveRecentWindow(): number {
+        return this.adaptiveEnabled ? this.dynamicRecentWindow : this.budget.recentMessageWindow;
+    }
+
     async prepareHistory(messages: AgentMessage[], sessionId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
         const beforeMessageCount = messages.length;
         const beforeTokens = this.estimateMessages(messages);
@@ -197,10 +295,27 @@ export class AgentContextManager {
             ? this.selectCompactionLevel(beforeTokens)
             : 'light';
 
-        const toolPrepared = this.compactToolMessagesForContext(messages, level);
+        // compact tool message outputs across all levels (pre-level check)
+        const toolPrepared = this.compactToolMessagesForContext(messages);
         const workingMessages = toolPrepared.messages;
 
+        // Record token growth for adaptive budget (affects next call)
+        if (this.adaptiveEnabled) {
+            this.recordTokenGrowth(beforeTokens, beforeMessageCount);
+            this.adjustBudget();
+        }
+
         if (level === 'light') {
+            // Even at light level, use the summarizer if configured and compaction is needed.
+            // This preserves the pre-existing behavior where any compaction trigger with a
+            // summarizer would go through compactHistoryWithReport.
+            if (this.summarizer && compactionTriggered) {
+                const prepared = await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level);
+                if (sessionId) {
+                    this.stashOriginalMessages(sessionId, messages, level);
+                }
+                return prepared;
+            }
             const prepared = this.pruneHistory(workingMessages);
             const afterTokens = this.estimateMessages(prepared);
             const savings = beforeTokens - afterTokens;
@@ -268,7 +383,7 @@ export class AgentContextManager {
             return { systemMessages, oldMessages: [], recentMessages: [] };
         }
 
-        const recentCount = Math.max(1, this.budget.recentMessageWindow);
+        const recentCount = Math.max(1, this.effectiveRecentWindow);
         let startIndex = Math.max(conversation.length - recentCount, 0);
         for (let cursor = conversation.length - 1; cursor >= startIndex; cursor--) {
             const message = conversation[cursor];
@@ -691,37 +806,25 @@ export class AgentContextManager {
         return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
     }
 
-    private compactToolMessagesForContext(messages: AgentMessage[], level: CompactionLevel): {
+    private compactToolMessagesForContext(messages: AgentMessage[]): {
         messages: AgentMessage[];
         compactedCount: number;
         recentMessageCount: number;
     } {
         const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
-        const minimalAnchors = level === 'deep';
-        const protectedIds = level === 'light'
-            ? new Set<string>()
-            : new Set(this.resolveCompactionAnchors(oldMessages, recentMessages, minimalAnchors).map(message => message.id));
-
-        let oldMode: 'summary-preferred' | 'oversized-only' | 'recent-light';
-        let recentMode: 'summary-preferred' | 'oversized-only' | 'recent-light';
-
-        switch (level) {
-            case 'deep':
-                oldMode = 'summary-preferred';
-                recentMode = 'summary-preferred';
-                break;
-            case 'medium':
-                oldMode = 'summary-preferred';
-                recentMode = 'oversized-only';
-                break;
-            default: // light
-                oldMode = 'recent-light';
-                recentMode = 'recent-light';
-                break;
+        // Protect stateful/error tool messages in the old section from content compaction,
+        // so resolveCompactionAnchors can still detect them as anchors during summarization.
+        // Only protect messages where statefulness is content-derived (no receipt/error metadata),
+        // because metadata-based statefulness survives content compaction.
+        const protectedIds = new Set<string>();
+        for (const msg of oldMessages) {
+            const hasMetadataIndicator = !!(msg.metadata?.receipt?.outputSummary || msg.metadata?.receipt?.error || msg.metadata?.error);
+            if (!hasMetadataIndicator && (this.isStatefulToolMessage(msg) || this.isErrorContextMessage(msg))) {
+                protectedIds.add(msg.id);
+            }
         }
-
-        const oldPrepared = this.compactToolMessages(oldMessages, oldMode, protectedIds);
-        const recentPrepared = this.compactToolMessages(recentMessages, recentMode);
+        const oldPrepared = this.compactToolMessages(oldMessages, 'summary-preferred', protectedIds);
+        const recentPrepared = this.compactToolMessages(recentMessages, 'oversized-only');
 
         const compactedCount = oldPrepared.compactedCount + recentPrepared.compactedCount;
         if (!compactedCount) {
