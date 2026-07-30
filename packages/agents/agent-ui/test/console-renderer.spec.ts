@@ -8,6 +8,7 @@ import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleApprovalsPanelComponent,
     AgentConsoleComponent,
+    AgentConsoleDashboardPanelComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
@@ -58,6 +59,7 @@ export class AgentConsoleRendererTest {
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const lines = renderer.renderToLines(root);
         const sessionsPanel = ref.hostView.query(AgentConsoleSessionsPanelComponent) as ComponentRef<AgentConsoleSessionsPanelComponent>;
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
         const sessionLines = renderer.renderToLines(sessionsPanel.hostView.rootNodes[0]);
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
         const inputLines = renderer.renderToLines(inputPanel.hostView.rootNodes[0]);
@@ -65,6 +67,8 @@ export class AgentConsoleRendererTest {
         expect(root.tagName).toEqual('div');
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
+        expect(dashboardPanel).toBeTruthy();
+        expect(lines.some(line => line.toLowerCase().includes('dashboard'))).toBe(true);
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('•') && line.includes('world'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
@@ -437,6 +441,7 @@ export class AgentConsoleRendererTest {
 
         expect(reviewLines.some(line => line.includes('task-1'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Patch handlers'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('status completed · mode parallel · workers 1 · groups 2 · files 2 · rollback available'))).toBe(true);
         expect(reviewLines.some(line => line.includes('completed'))).toBe(true);
         expect(reviewLines.some(line => line.includes('parallel'))).toBe(true);
         expect(reviewLines.some(line => line.includes('lineage 2/2 root task-0'))).toBe(true);

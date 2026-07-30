@@ -3,6 +3,7 @@ import { ApplicationContext, ApplicationEventMulticaster } from '@tsdi/core';
 import {
     AGENT_CONSOLE_APP_RPC,
     AgentRuntime,
+    AgentContextPreparedEvent,
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
     AgentApprovalRequestedEvent,
@@ -79,6 +80,14 @@ export class AgentConsoleEventBridge {
         bind(AgentTurnCompletedEvent, async (event: AgentTurnCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setStatus('idle');
+        });
+
+        bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.batch(() => {
+                this.state.setContextPreparation(event.report);
+                this.state.pushActivity('model', `Context ${event.report.strategy}: ${event.report.beforeTokens}→${event.report.afterTokens}`);
+            });
         });
 
         bind(AgentToolInvokedEvent, (event: AgentToolInvokedEvent) => {

@@ -22,6 +22,7 @@ import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './A
     template: `
     <div class="agent-console">
         <agent-console-brand-panel></agent-console-brand-panel>
+        <agent-console-dashboard-panel v-show="showDashboardPanel"></agent-console-dashboard-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
@@ -372,6 +373,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get showStatusPanel(): boolean {
         return !!this.state.notice || !!this.state.pendingApprovals.length;
+    }
+
+    get showDashboardPanel(): boolean {
+        return !!this.state.status && (
+            this.state.status !== 'idle'
+            || !!this.state.notice
+            || !!this.state.lastError
+            || !!this.state.projectLabel
+            || !!this.state.projectSummary
+            || !!this.state.contextPreparationSummary
+            || !!this.state.pendingApprovals.length
+            || !!this.state.scheduledTasks.length
+            || !!this.state.planTodos.length
+            || !!this.state.toolRuns.length
+            || !!this.state.activities.length
+            || !!this.state.runningTools.length
+            || (this.state.tokenUsage.totalTokens || 0) > 0
+        );
     }
 
     get showSessionsPanel(): boolean {

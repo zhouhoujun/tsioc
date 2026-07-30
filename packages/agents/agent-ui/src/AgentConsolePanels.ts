@@ -143,6 +143,9 @@ export class AgentConsoleStatusPanelComponent {
         if (this.notice) {
             lines.push(this.notice);
         }
+        if (this.state.contextPreparationSummary) {
+            lines.push(this.state.contextPreparationSummary);
+        }
         if (this.state.pendingApprovals.length) {
             const requests = this.state.pendingApprovals;
             const first = requests[0];
@@ -225,6 +228,157 @@ export class AgentConsoleStatusPanelComponent {
             default:
                 return this.activeTheme.statusIdleValue;
         }
+    }
+}
+
+@Component({
+    selector: 'agent-console-dashboard-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-dashboard-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{dashboardSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="dashboardCountersLabel">{{dashboardCountersLabel}}</label>
+        <label v-style="detailStyle" v-show="dashboardDetailLabel">{{dashboardDetailLabel}}</label>
+    </div>
+    `
+})
+export class AgentConsoleDashboardPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? resolveSectionFrameStyle(this.activeThemeStyles.messagesShell) : {};
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get dashboardSummaryLabel(): string {
+        const parts = [
+            this.state.status || 'idle',
+            this.state.workspace ? `workspace ${this.workspaceLabel(this.state.workspace)}` : '',
+            this.state.projectLabel ? `project ${this.state.projectLabel}` : ''
+        ].filter(Boolean);
+        return parts.length ? `dashboard · ${parts.join(' · ')}` : 'dashboard';
+    }
+
+    get dashboardCountersLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const activeTodos = this.state.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
+        const activeApprovals = this.state.pendingApprovals.length;
+        const activeTools = this.state.runningTools.length;
+        const toolRuns = this.state.toolRuns.length;
+        const activities = this.state.activities.length;
+        const totalTokens = this.state.tokenUsage.totalTokens || 0;
+        return [
+            `approvals ${formatCompactNumber(activeApprovals)}`,
+            `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}`,
+            `tasks ${formatCompactNumber(activeTodos)}/${formatCompactNumber(this.state.planTodos.length)}`,
+            `tools ${formatCompactNumber(activeTools)}`,
+            `runs ${formatCompactNumber(toolRuns)}`,
+            `activity ${formatCompactNumber(activities)}`,
+            totalTokens ? `tokens ${formatCompactNumber(totalTokens)}` : ''
+        ].filter(Boolean).join(' · ');
+    }
+
+    get dashboardDetailLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const lines: string[] = [];
+        if (this.state.contextPreparationSummary) {
+            lines.push(this.state.contextPreparationSummary);
+        }
+        if (this.state.projectSummary) {
+            lines.push(`project summary ${this.summarize(this.state.projectSummary)}`);
+        }
+        if (this.state.notice) {
+            lines.push(`notice ${this.summarize(this.state.notice)}`);
+        }
+        if (this.state.lastError) {
+            lines.push(`error ${this.summarize(this.state.lastError)}`);
+        }
+        const latestToolRun = this.state.toolRuns[0];
+        if (latestToolRun) {
+            const summary = latestToolRun.outputSummary || latestToolRun.inputSummary || latestToolRun.message || latestToolRun.error || latestToolRun.name;
+            lines.push(`tool ${latestToolRun.name} ${latestToolRun.status}${latestToolRun.durationMs != null ? ` ${latestToolRun.durationMs}ms` : ''} · ${this.summarize(summary)}`);
+        }
+        const latestActivity = this.state.activities[this.state.activities.length - 1];
+        if (latestActivity) {
+            lines.push(`activity ${latestActivity.kind} · ${this.summarize(latestActivity.message)}`);
+        }
+        const latestJob = this.latestScheduledTask();
+        if (latestJob) {
+            lines.push(`job ${latestJob.id} · ${this.summarize(latestJob.prompt)} · ${latestJob.running ? 'running' : latestJob.paused ? 'paused' : 'idle'}`);
+        }
+        const latestApproval = this.state.pendingApprovals[this.state.pendingApprovals.length - 1];
+        if (latestApproval) {
+            lines.push(`approval ${latestApproval.toolName} · ${this.summarize(latestApproval.reason)}`);
+        }
+        return lines.join('\n');
+    }
+
+    get shouldShow(): boolean {
+        return !!this.state.status
+            && (
+                this.state.status !== 'idle'
+                || !!this.state.notice
+                || !!this.state.lastError
+                || !!this.state.projectLabel
+                || !!this.state.projectSummary
+                || !!this.state.contextPreparationSummary
+                || !!this.state.pendingApprovals.length
+                || !!this.state.scheduledTasks.length
+                || !!this.state.planTodos.length
+                || !!this.state.toolRuns.length
+                || !!this.state.activities.length
+                || !!this.state.runningTools.length
+                || (this.state.tokenUsage.totalTokens || 0) > 0
+            );
+    }
+
+    protected latestScheduledTask(): ScheduledAgentTask | undefined {
+        return this.state.scheduledTasks
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
+    }
+
+    protected workspaceLabel(workspace?: string): string {
+        const text = String(workspace || '').trim();
+        if (!text) {
+            return '';
+        }
+        const segments = text.split(/[\\/]/).filter(Boolean);
+        return segments[segments.length - 1] || text;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
     }
 }
 
@@ -2191,6 +2345,8 @@ export class AgentConsoleMessageDetailPanelComponent {
     template: `
     <div class="console-panel console-review-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{reviewSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="reviewStatsLabel">{{reviewStatsLabel}}</label>
+        <label v-style="detailStyle" v-show="reviewSelectionLabel">{{reviewSelectionLabel}}</label>
         <label v-style="hintStyle">{{reviewHintLabel}}</label>
         <label v-style="detailLineStyleAt(index)" v-for="index in detailIndexes">
             <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span v-style="detailLineContentStyle">{{detailLineContentAt(index)}}</span>
@@ -2223,6 +2379,14 @@ export class AgentConsoleReviewPanelComponent {
 
     get hintStyle() {
         return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get metaStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get detailStyle() {
+        return styleTextToObject(this.activeTheme.statusValue);
     }
 
     get detailLineContentStyle() {
@@ -2305,6 +2469,63 @@ export class AgentConsoleReviewPanelComponent {
             return '';
         }
         return this.state.consoleOptions.reviewDetailHint;
+    }
+
+    get reviewStatsLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const rollback = this.reviewTask?.result?.rollback;
+        const parts = [
+            `status ${this.reviewTask?.status || 'unknown'}`,
+            `mode ${this.state.reviewExecutionMode || 'n/a'}`,
+            `workers ${this.reviewWorkers.length}`,
+            `groups ${this.state.reviewGroups.length}`,
+            `files ${this.state.reviewFileSections.length}`,
+            rollback?.available === true
+                ? 'rollback available'
+                : rollback?.rolledBackAt
+                    ? 'rollback applied'
+                    : 'rollback unavailable'
+        ];
+        return parts.join(' · ');
+    }
+
+    get reviewSelectionLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const selectedGroup = this.state.selectedReviewGroup;
+        const selectedFile = this.state.selectedReviewFileSection;
+        const total = this.contentLines.length;
+        const start = Math.min(total, this.state.reviewDetailScroll + 1);
+        const end = Math.min(total, this.state.reviewDetailScroll + this.visibleLines.length);
+        const column = this.state.reviewDetailColumnScroll + 1;
+        const totalColumns = Math.max(1, this.state.reviewDetailMaxColumn);
+        const lineageTasks = this.state.currentReviewLineageTasks;
+        const selectedTaskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
+        const lineageIndex = lineageTasks.length
+            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
+            : -1;
+        const lineageRootId = this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask);
+        const lineageSummary = lineageTasks.length > 1 && lineageIndex >= 0
+            ? `lineage ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` root ${lineageRootId}` : ''}`
+            : '';
+        const groupCount = this.state.reviewGroups.length;
+        const groupSummary = groupCount
+            ? `group ${Math.min(groupCount, this.state.selectedReviewGroupIndex + 1)}/${groupCount} ${selectedGroup?.label || '-'}`
+            : 'group -';
+        const fileCount = this.state.reviewFileSections.length;
+        const fileSummary = fileCount
+            ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
+            : 'file -';
+        return [
+            lineageSummary,
+            groupSummary,
+            fileSummary,
+            `lines ${start}-${end} / ${total}`,
+            `col ${column}/${totalColumns}`
+        ].filter(Boolean).join(' · ');
     }
 
     detailLineNumberAt(index: number): string {

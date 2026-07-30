@@ -10,6 +10,7 @@ export interface AgentConsoleSessionChoice {
     messageCount?: number;
     summary?: string;
     workspace?: string;
+    projectKey?: string;
     projectId?: string;
     primaryThreadId?: string;
     sessionRole?: string;
@@ -65,6 +66,7 @@ export class AgentConsoleSessionService {
                     messageCount: item?.messageCount,
                     summary: item?.summary,
                     workspace: item?.workspace,
+                    projectKey: item?.projectKey,
                     projectId: item?.projectId,
                     primaryThreadId: item?.primaryThreadId,
                     sessionRole: item?.sessionRole,
@@ -169,6 +171,7 @@ export class AgentConsoleSessionService {
         messages?: AgentMessage[];
         summary?: string;
         workspace?: string;
+        projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
         sessionRole?: string;
@@ -182,6 +185,7 @@ export class AgentConsoleSessionService {
             messageCount: state?.messages?.length || 0,
             summary: state?.summary,
             workspace: state?.workspace,
+            projectKey: state?.projectKey,
             projectId: state?.projectId,
             primaryThreadId: state?.primaryThreadId,
             sessionRole: state?.sessionRole,
@@ -192,6 +196,14 @@ export class AgentConsoleSessionService {
 
     protected sortSessionChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice[] {
         return sessions.slice().sort((left, right) => {
+            const leftProjectKey = String(left.projectKey || '').trim();
+            const rightProjectKey = String(right.projectKey || '').trim();
+            if (!!leftProjectKey !== !!rightProjectKey) {
+                return leftProjectKey ? -1 : 1;
+            }
+            if (leftProjectKey !== rightProjectKey) {
+                return leftProjectKey.localeCompare(rightProjectKey);
+            }
             const leftWorkspace = String(left.workspace || '').trim();
             const rightWorkspace = String(right.workspace || '').trim();
             if (leftWorkspace !== rightWorkspace) {
@@ -208,23 +220,44 @@ export class AgentConsoleSessionService {
     protected groupProjectChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionProjectGroup[] {
         const buckets = new Map<string, AgentConsoleSessionChoice[]>();
         for (const session of sessions) {
-            const workspace = String(session.workspace || '').trim();
-            const bucket = buckets.get(workspace) ?? [];
+            const projectKey = this.resolveProjectChoiceKey(session);
+            const bucket = buckets.get(projectKey) ?? [];
             bucket.push(session);
-            buckets.set(workspace, bucket);
+            buckets.set(projectKey, bucket);
         }
         return Array.from(buckets.entries())
-            .map(([workspace, groupedSessions]) => ({
-                projectKey: workspace ? `workspace:${workspace}` : undefined,
-                label: workspace || groupedSessions[0]?.id || 'session',
-                workspace,
-                sessions: this.sortSessionChoices(groupedSessions),
-                sessionCount: groupedSessions.length,
-                lastActiveAt: Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0)
-            }))
+            .map(([projectKey, groupedSessions]) => {
+                const first = groupedSessions[0];
+                const workspace = String(first?.workspace || '').trim();
+                const projectId = String(first?.projectId || '').trim() || undefined;
+                const primaryThreadId = String(first?.primaryThreadId || '').trim() || undefined;
+                const sessionRole = String(first?.sessionRole || '').trim() || undefined;
+                const rootRequest = String(first?.rootRequest || '').trim() || undefined;
+                const focusSummary = String(first?.focusSummary || '').trim() || undefined;
+                return {
+                    projectKey,
+                    projectId,
+                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || groupedSessions[0]?.id || 'session',
+                    workspace,
+                    primaryThreadId,
+                    sessionRole,
+                    rootRequest,
+                    focusSummary,
+                    sessions: this.sortSessionChoices(groupedSessions),
+                    sessionCount: groupedSessions.length,
+                    lastActiveAt: Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0)
+                };
+            })
             .sort((left, right) => {
-                if (left.workspace !== right.workspace) {
-                    return left.workspace.localeCompare(right.workspace);
+                const leftLabel = String(left.label || left.projectId || left.workspace || '').trim();
+                const rightLabel = String(right.label || right.projectId || right.workspace || '').trim();
+                if (leftLabel !== rightLabel) {
+                    return leftLabel.localeCompare(rightLabel);
+                }
+                const leftProjectKey = String(left.projectKey || '').trim();
+                const rightProjectKey = String(right.projectKey || '').trim();
+                if (leftProjectKey !== rightProjectKey) {
+                    return leftProjectKey.localeCompare(rightProjectKey);
                 }
                 const activityDelta = right.lastActiveAt - left.lastActiveAt;
                 if (activityDelta !== 0) {
@@ -232,6 +265,22 @@ export class AgentConsoleSessionService {
                 }
                 return left.workspace.localeCompare(right.workspace);
             });
+    }
+
+    protected resolveProjectChoiceKey(session: AgentConsoleSessionChoice): string {
+        const projectId = String(session.projectId || '').trim();
+        if (projectId) {
+            return `project:${projectId}`;
+        }
+        const workspace = String(session.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
+        }
+        const primaryThreadId = String(session.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
+        }
+        return `session:${session.id}`;
     }
 
     protected groupProjectIndexes(
