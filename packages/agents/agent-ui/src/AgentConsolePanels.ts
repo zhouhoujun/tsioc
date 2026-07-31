@@ -1098,7 +1098,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get planListLabel(): string {
-        if (!this.shouldShow || !this.planTodos.length) {
+        if (!this.shouldShow || !this.shouldShowPlanTodos) {
             return '';
         }
         const sourceSessionId = String(this.state.planTodoSourceSessionId || '').trim();
@@ -1150,7 +1150,7 @@ export class AgentConsoleTasksPanelComponent {
         }
         const projectLabel = String(this.state.projectLabel || '').trim();
         const projectSuffix = projectLabel ? ` · project ${projectLabel}` : '';
-        if (this.planTodos.length) {
+        if (this.shouldShowPlanTodos) {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
             return `plan ${this.planTodos.length} · active ${activeCount}${projectSuffix}`;
         }
@@ -1198,7 +1198,7 @@ export class AgentConsoleTasksPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        if (this.planTodos.length && !this.state.selectedTask) {
+        if (this.shouldShowPlanTodos && !this.state.selectedTask) {
             return this.state.projectSummary ? `summary ${this.state.projectSummary}` : '';
         }
         if (!this.state.selectedTask) {
@@ -1276,6 +1276,10 @@ export class AgentConsoleTasksPanelComponent {
 
     get shouldShow(): boolean {
         return this.state.tasksFocused || this.state.hasActivePlanTodos();
+    }
+
+    protected get shouldShowPlanTodos(): boolean {
+        return this.state.hasActivePlanTodos();
     }
 
     protected get taskFilterLabel(): string {

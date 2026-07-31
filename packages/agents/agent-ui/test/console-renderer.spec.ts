@@ -612,6 +612,32 @@ export class AgentConsoleRendererTest {
         }
     }
 
+    @Test('tasks panel falls back to coding tasks when plan todos are completed')
+    async tasksPanelFallsBackToCodingTasksWhenPlanIsCompleted() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'completed' },
+            { id: 'p2', content: 'Generate project structure', status: 'completed' }
+        ] as any);
+        ref.instance.sessionState.setReviewTasks([{
+            id: 'task-1',
+            title: 'Patch handlers',
+            sourceSessionId: 'chat-a',
+            status: 'running',
+            updatedAt: 20
+        } as any]);
+        ref.instance.sessionState.setSelectedReviewTaskId('task-1');
+        ref.instance.sessionState.setTasksFocused(true);
+        await ref.render();
+        await Promise.resolve();
+
+        const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+        expect(tasksPanel.instance.tasksSummaryLabel.includes('plan 2')).toBe(false);
+        expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1/1')).toBe(true);
+        expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
+        expect(tasksPanel.instance.taskListLabel.includes('Design architecture')).toBe(false);
+    }
+
     @Test('renders scheduled jobs panel with task details')
     async renderScheduledJobsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
