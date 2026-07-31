@@ -4436,6 +4436,38 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.projectLabel).toEqual('Latest summary');
     }
 
+    @Test('project list prefers latest active session label in fallback groups')
+    async projectListPrefersLatestActiveSessionLabelInFallbackGroups() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [];
+        sessionService.sessions = [
+            {
+                id: 'chat-a',
+                current: true,
+                workspace: '/tmp/project-a',
+                primaryThreadId: 'thread-1',
+                focusSummary: 'Older summary',
+                lastActiveAt: 10
+            },
+            {
+                id: 'chat-b',
+                current: false,
+                workspace: '/tmp/project-b',
+                primaryThreadId: 'thread-1',
+                focusSummary: 'Latest summary',
+                lastActiveAt: 20
+            }
+        ];
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.projects.map(item => item.key)).toEqual(['thread:thread-1']);
+        expect(component.sessionState.projects.map(item => item.label)).toEqual(['Latest summary']);
+    }
+
     @Test('sessions command refreshes grouped project sessions into the panel state')
     async sessionsCommandRefreshesGroupedProjectSessions() {
         const runtime = new RuntimeStub();

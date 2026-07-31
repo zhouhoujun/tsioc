@@ -177,22 +177,41 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected refreshProjects(): void {
-        const seen = new Map<string, { key: string; label: string; lastActive: number; count: number }>();
+        const seen = new Map<string, {
+            key: string;
+            label: string;
+            lastActive: number;
+            count: number;
+            representativeLastActive: number;
+            representativeId: string;
+        }>();
         for (const s of this.state.sessions) {
             const key = this.resolveSessionProjectKey(s);
             if (!key) continue;
+            const sessionLastActive = s.updatedAt || 0;
+            const sessionId = String(s.id || '');
+            const sessionLabel = s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || s.rootRequest || key;
             const existing = seen.get(key);
             if (existing) {
                 existing.count += 1;
-                if (s.updatedAt && s.updatedAt > existing.lastActive) {
-                    existing.lastActive = s.updatedAt;
+                if (sessionLastActive > existing.lastActive) {
+                    existing.lastActive = sessionLastActive;
+                }
+                if (sessionLastActive > existing.representativeLastActive
+                    || (sessionLastActive === existing.representativeLastActive
+                        && (!existing.representativeId || sessionId.localeCompare(existing.representativeId) < 0))) {
+                    existing.label = sessionLabel;
+                    existing.representativeLastActive = sessionLastActive;
+                    existing.representativeId = sessionId;
                 }
             } else {
                 seen.set(key, {
                     key,
-                    label: s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || s.rootRequest || key,
-                    lastActive: s.updatedAt || 0,
-                    count: 1
+                    label: sessionLabel,
+                    lastActive: sessionLastActive,
+                    count: 1,
+                    representativeLastActive: sessionLastActive,
+                    representativeId: sessionId
                 });
             }
         }
@@ -251,7 +270,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setProjectContext();
             return;
         }
-        const representative = projectSessions
+        const representative = this.selectProjectRepresentative(projectSessions);
+        const summary = projectSessions
             .slice()
             .sort((left, right) => {
                 const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
@@ -259,10 +279,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return activityDelta;
                 }
                 return String(left.id || '').localeCompare(String(right.id || ''));
-            })[0];
-        const summary = projectSessions
-            .slice()
-            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))
+            })
             .map(item => String(item.summary || '').trim())
             .find(Boolean) || '';
         this.state.setProjectContext({
@@ -325,6 +342,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectSessionCount?: number;
     }> {
         return this.resolveProjectSessionsFor(this.state.sessionId);
+    }
+
+    protected selectProjectRepresentative<T extends {
+        id: string;
+        updatedAt?: number;
+    }>(sessions: T[]): T | undefined {
+        return sessions
+            .slice()
+            .sort((left, right) => {
+                const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return String(left.id || '').localeCompare(String(right.id || ''));
+            })[0];
     }
 
     protected resolveSessionProjectKey(session?: {
