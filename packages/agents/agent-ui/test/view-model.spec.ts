@@ -1742,6 +1742,32 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.toolRuns).toEqual([]);
     }
 
+    @Test('openSession clears stale context preparation before switching sessions')
+    async openSessionClearsStaleContextPreparationBeforeSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        component.sessionState.setContextPreparation({
+            strategy: 'summarize',
+            beforeTokens: 1200,
+            afterTokens: 600,
+            targetTokens: 800,
+            reason: 'Reduce prompt budget'
+        } as any);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.contextPreparation).toEqual(null);
+        expect(component.sessionState.contextPreparationSummary).toEqual('');
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
