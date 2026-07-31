@@ -5488,14 +5488,14 @@ export class AgentToolsPackageTest {
 
     @Test('lightweight agent runner embeds system prompt')
     async lightweightAgentRunnerEmbedsSystemPrompt() {
-        let seenPrompt = '';
+        const prompts: string[] = [];
         const mockRuntime = {
             start: async () => { },
             runTurn: async (_sessionId: string, prompt: string) => {
-                seenPrompt = prompt;
+                prompts.push(prompt);
                 return {
                     message: {
-                        content: 'done',
+                        content: 'Summary: done',
                         metadata: {}
                     }
                 };
@@ -5506,8 +5506,8 @@ export class AgentToolsPackageTest {
         const runner = new LightweightAgentRunner(mockRuntime as any);
         await runner.run({ prompt: 'do the thing', systemPrompt: 'You are a helpful assistant' });
 
-        expect(seenPrompt).toContain('You are a helpful assistant');
-        expect(seenPrompt).toContain('do the thing');
+        expect(prompts[0]).toContain('You are a helpful assistant');
+        expect(prompts[0]).toContain('do the thing');
     }
 
     @Test('lightweight agent runner continues until report or maxTurns')
@@ -5545,6 +5545,37 @@ export class AgentToolsPackageTest {
         expect(result.turnCount).toBe(2);
         expect(result.report?.summary).toEqual('completed analysis');
         expect(result.report?.nextSteps).toEqual(['verify']);
+    }
+
+    @Test('lightweight agent runner defaults to documented turn budget when maxTurns is not provided')
+    async lightweightAgentRunnerDefaultsToDocumentedTurnBudget() {
+        let callCount = 0;
+        const mockRuntime = {
+            start: async () => { },
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                callCount++;
+                return {
+                    message: {
+                        content: callCount === 1
+                            ? 'Still investigating.'
+                            : 'Summary: completed analysis',
+                        metadata: {}
+                    }
+                };
+            },
+            getMessages: async () => [
+                { role: 'user', content: 'first', id: '1', ts: 1 },
+                { role: 'assistant', content: 'working', id: '2', ts: 2 },
+                { role: 'user', content: 'continue', id: '3', ts: 3 },
+                { role: 'assistant', content: 'done', id: '4', ts: 4 }
+            ]
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const result = await runner.run({ prompt: 'analyze project' });
+
+        expect(callCount).toBe(2);
+        expect(result.report?.summary).toEqual('completed analysis');
     }
 
     @Test('lightweight agent runner uses custom session id')

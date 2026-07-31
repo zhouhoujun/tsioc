@@ -11,6 +11,7 @@ import {
 @Injectable()
 export class LightweightAgentRunner extends NestedAgentRunner {
     private started = false;
+    static readonly DEFAULT_MAX_TURNS = 10;
     private static readonly CONTINUE_PROMPT = [
         'Continue the delegated task from the current session state.',
         'If the task is complete, return the final result using these labels: Summary:, Diff:, Completed:, Next steps:, Risks:, Artifacts:.',
@@ -68,7 +69,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         try {
             const maxTurns = typeof request.maxTurns === 'number' && request.maxTurns > 0
                 ? Math.floor(request.maxTurns)
-                : 1;
+                : LightweightAgentRunner.DEFAULT_MAX_TURNS;
             let result = await this.runtime!.runTurn(sessionId, prompt);
             let report = parseDelegatedAgentReport(result.message.content);
 
