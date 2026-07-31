@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -127,6 +127,49 @@ export class EventHandler {
     onTurnCancelled(event: AgentTurnCancelledEvent): void {
         this.publish('turn_cancelled', {
             sessionId: event.sessionId
+        });
+    }
+
+    @OnEvent(AgentApprovalRequestedEvent)
+    onApprovalRequested(event: AgentApprovalRequestedEvent): void {
+        this.publish('approval_requested', {
+            sessionId: event.request.sessionId,
+            request: {
+                id: event.request.id,
+                toolName: event.request.toolName,
+                sessionId: event.request.sessionId,
+                reason: event.request.reason,
+                summary: event.request.summary,
+                hasInput: event.request.hasInput,
+                inputSummary: event.request.inputSummary,
+                timeoutMs: event.request.timeoutMs
+            }
+        });
+    }
+
+    @OnEvent(AgentApprovalCompletedEvent)
+    onApprovalCompleted(event: AgentApprovalCompletedEvent): void {
+        this.publish('approval_completed', {
+            sessionId: event.request.sessionId,
+            request: {
+                id: event.request.id,
+                toolName: event.request.toolName,
+                sessionId: event.request.sessionId
+            },
+            approved: event.approved
+        });
+    }
+
+    @OnEvent(AgentApprovalFailedEvent)
+    onApprovalFailed(event: AgentApprovalFailedEvent): void {
+        this.publish('approval_failed', {
+            sessionId: event.request.sessionId,
+            request: {
+                id: event.request.id,
+                toolName: event.request.toolName,
+                sessionId: event.request.sessionId
+            },
+            error: event.error.message
         });
     }
 

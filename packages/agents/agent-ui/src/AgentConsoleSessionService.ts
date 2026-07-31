@@ -190,6 +190,26 @@ export class AgentConsoleSessionService {
         return false;
     }
 
+    async listApprovals(sessionId?: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('approval.list', sessionId ? { sessionId } : {}, context);
+            return Array.isArray(result?.requests) ? result.requests : [];
+        }
+        return [];
+    }
+
+    async decideApproval(decision: 'approve' | 'deny', requestId: string, context?: any): Promise<Record<string, any> | null> {
+        if (!this.appRpc || !requestId) {
+            return null;
+        }
+        const result = await this.appRpc.request(
+            decision === 'approve' ? 'approval.approve' : 'approval.reject',
+            { requestId },
+            context
+        );
+        return result ?? null;
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

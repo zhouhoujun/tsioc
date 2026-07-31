@@ -26,6 +26,7 @@ export * from './api/HealthHandler';
 export * from './api/SessionHandler';
 export * from './api/MemoryHandler';
 export * from './api/ToolsHandler';
+export * from './api/ApprovalHandler';
 export * from './api/EventHandler';
 export * from './api/AppRpcHandler';
 

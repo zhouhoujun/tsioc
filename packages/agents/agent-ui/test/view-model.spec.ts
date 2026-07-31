@@ -276,6 +276,9 @@ class AppRpcStub {
     codingTaskRollbackHandlers = new Map<string, () => Promise<any>>();
     reviewAnnotationCacheByKey = new Map<string, Record<string, any>>();
     reviewAnnotationLoadHandlers = new Map<string, () => Promise<any>>();
+    approvalRequests: any[] = [];
+    approvedApprovals: string[] = [];
+    deniedApprovals: string[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -367,6 +370,33 @@ class AppRpcStub {
             }
             const cacheKey = String(params?.cacheKey || params?.sessionId || 'console').trim();
             return this.reviewAnnotationCacheByKey.get(cacheKey) || null;
+        }
+        if (method === 'approval.list') {
+            const sessionId = params?.sessionId;
+            return {
+                sessionId: sessionId || null,
+                requests: sessionId
+                    ? this.approvalRequests.filter(item => item.sessionId === sessionId)
+                    : this.approvalRequests
+            };
+        }
+        if (method === 'approval.approve') {
+            const requestId = params?.requestId;
+            const request = this.approvalRequests.find(item => item.id === requestId);
+            if (request) {
+                this.approvedApprovals.push(requestId);
+                this.approvalRequests = this.approvalRequests.filter(item => item.id !== requestId);
+            }
+            return { requestId, applied: !!request, decision: 'approved' };
+        }
+        if (method === 'approval.reject') {
+            const requestId = params?.requestId;
+            const request = this.approvalRequests.find(item => item.id === requestId);
+            if (request) {
+                this.deniedApprovals.push(requestId);
+                this.approvalRequests = this.approvalRequests.filter(item => item.id !== requestId);
+            }
+            return { requestId, applied: !!request, decision: 'denied' };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -487,11 +517,30 @@ class SessionServiceStub extends AgentConsoleSessionService {
     messagesBySession = new Map<string, any[]>();
     ensureSessionHandlers = new Map<string, () => Promise<AgentConsoleSessionChoice>>();
     loadMessagesHandlers = new Map<string, () => Promise<any[]>>();
+    rpcRef?: AppRpcStub | null;
     protected runtimeRef: RuntimeStub;
 
     constructor(runtimeSource: RuntimeStub) {
         super(undefined, undefined, runtimeSource as any);
         this.runtimeRef = runtimeSource;
+    }
+
+    override async listApprovals(sessionId?: string): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('approval.list', sessionId ? { sessionId } : {});
+            return Array.isArray(result?.requests) ? result.requests : [];
+        }
+        return [];
+    }
+
+    override async decideApproval(decision: 'approve' | 'deny', requestId: string): Promise<Record<string, any> | null> {
+        const rpc = this.rpcRef;
+        if (rpc && requestId) {
+            const result = await rpc.request(decision === 'approve' ? 'approval.approve' : 'approval.reject', { requestId });
+            return result ?? null;
+        }
+        return null;
     }
 
     override async ensureSession(sessionId?: string): Promise<AgentConsoleSessionChoice> {
@@ -745,6 +794,9 @@ function createConsoleParts(
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, appRpc as any, app as any);
     const sessions = sessionService || new SessionServiceStub(runtime);
+    if (sessions instanceof SessionServiceStub) {
+        sessions.rpcRef = appRpc || null;
+    }
     const component = new AgentConsoleComponent(
         state,
         runtime as any,
@@ -2171,6 +2223,100 @@ export class AgentConsoleComponentTest {
 
         await component.sessionState.cancelSelectMenu();
         await pending;
+    }
+
+    @Test('approvals command loads pending requests through rpc when no local approval manager')
+    async approvalsCommandLoadsThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.approvalRequests = [{
+            id: 'approval-rpc-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/approvals';
+        await component.submit();
+
+        expect(component.sessionState.approvalsFocused).toEqual(true);
+        expect(component.sessionState.selectedApproval?.id).toEqual('approval-rpc-1');
+        expect(appRpc.calls.some(call => call.method === 'approval.list' && call.params?.sessionId === 'console')).toEqual(true);
+    }
+
+    @Test('approval resolve routes through rpc when no local approval manager')
+    async approvalResolveRoutesThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.approvalRequests = [{
+            id: 'approval-rpc-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/approve approval-rpc-1';
+        await component.submit();
+
+        expect(appRpc.approvedApprovals).toEqual(['approval-rpc-1']);
+        expect(appRpc.calls.some(call => call.method === 'approval.approve' && call.params?.requestId === 'approval-rpc-1')).toEqual(true);
+        expect(component.notice).toContain('Approved write_file');
+
+        appRpc.approvalRequests = [{
+            id: 'approval-rpc-2',
+            toolName: 'delete_file',
+            sessionId: 'console',
+            reason: 'Deleting files requires approval.',
+            summary: 'Deleting files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        component.input = '/deny approval-rpc-2';
+        await component.submit();
+        expect(appRpc.deniedApprovals).toEqual(['approval-rpc-2']);
+        expect(appRpc.calls.some(call => call.method === 'approval.reject' && call.params?.requestId === 'approval-rpc-2')).toEqual(true);
+    }
+
+    @Test('approval list refresh fetches pending requests through rpc')
+    async approvalListRefreshFetchesThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.approvalRequests = [{
+            id: 'approval-rpc-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'approval required',
+            summary: 'approval required',
+            hasInput: true,
+            inputSummary: undefined,
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        await (component as any).refreshPendingApprovals('console');
+
+        expect(component.sessionState.pendingApprovals.map(item => item.id)).toEqual(['approval-rpc-1']);
     }
 
     @Test('review command lists coding tasks and opens selected review')

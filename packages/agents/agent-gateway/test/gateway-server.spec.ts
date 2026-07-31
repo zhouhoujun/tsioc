@@ -15,9 +15,10 @@ import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, LocalToolRegistry } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
+import { ApprovalHandler } from '../src/api/ApprovalHandler';
 import { ReadFileTool } from '../../agent-tools/src';
 import { AgentGatewayModule, provideAgentGateway } from '../src';
 
@@ -561,11 +562,101 @@ export class SessionHandlerTest {
     }
 }
 
+@Suite('ApprovalHandler')
+export class ApprovalHandlerTest {
+    @Test('lists pending approvals and resolves them through api routes')
+    async listsAndResolvesApprovals() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const approvalManager = new ToolApprovalManager(
+            { publishEvent: async () => {} } as any,
+            { requires: () => true, reason: () => 'approval required' } as any,
+            { defaultTimeoutMs: 60000 }
+        );
+        const handler = new ApprovalHandler(approvalManager as any, owners);
+
+        const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+        const requestId = approvalManager.getPending()[0].id;
+
+        let listBody = '';
+        const listRes = {
+            writeHead: () => listRes,
+            end: (value?: string) => {
+                listBody = value ?? '';
+                return listRes;
+            }
+        } as any;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const listRoute = handler.getRoutes().find(route => route.path === '/api/approvals' && route.method === 'GET')!;
+        await listRoute.handler(req, listRes, {} as any);
+        const listed = JSON.parse(listBody);
+        expect(listed.requests.length).toEqual(1);
+        expect(listed.requests[0].id).toEqual(requestId);
+
+        const approveRoute = handler.getRoutes().find(route => route.path === '/api/approvals/:id/approve' && route.method === 'POST')!;
+        let approveBody = '';
+        const approveRes = {
+            writeHead: () => approveRes,
+            end: (value?: string) => {
+                approveBody = value ?? '';
+                return approveRes;
+            }
+        } as any;
+        await approveRoute.handler(req, approveRes, { id: requestId });
+        const approved = JSON.parse(approveBody);
+        expect(approved.applied).toEqual(true);
+        expect(approvalManager.getPending().length).toEqual(0);
+        await pendingCheck;
+    }
+
+    @Test('approval routes return forbidden for non-owners')
+    async approvalRoutesForbidNonOwners() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const approvalManager = new ToolApprovalManager(
+            { publishEvent: async () => {} } as any,
+            { requires: () => true, reason: () => 'approval required' } as any,
+            { defaultTimeoutMs: 60000 }
+        );
+        const handler = new ApprovalHandler(approvalManager as any, owners);
+
+        const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+        const requestId = approvalManager.getPending()[0].id;
+
+        let status = 0;
+        let body = '';
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const approveRoute = handler.getRoutes().find(route => route.path === '/api/approvals/:id/approve' && route.method === 'POST')!;
+        await approveRoute.handler(req, res, { id: requestId });
+        expect(status).toEqual(403);
+        expect(approvalManager.getPending().length).toEqual(1);
+        approvalManager.cancelBySession('s-1');
+        await pendingCheck;
+    }
+}
+
 @Suite('ToolsHandler')
 export class ToolsHandlerTest {
     @Test('lists registered agent-tools definitions through api route')
-    async listsRegisteredAgentTools() {
-        const registry = new LocalToolRegistry([
+    async listsRegisteredAgentTools() {        const registry = new LocalToolRegistry([
             new ReadFileTool({ file: { rootDir: process.cwd() } })
         ], new InMemoryMemoryStore());
         const bundles = [{
@@ -2467,5 +2558,134 @@ export class StdioAppRpcServerTest {
 
         const response = JSON.parse(buffer.trim());
         expect(response.error.code).toEqual(-32700);
+    }
+
+    @Test('approval.list returns pending requests scoped by session and principal')
+    async approvalListScopesPendingRequests() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await store.get('s-2');
+        await owners.create('s-1', 'user-1');
+        await owners.create('s-2', 'user-2');
+        const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        const events = new EventHandler(owners);
+        const approvalManager = new ToolApprovalManager(
+            { publishEvent: async () => {} } as any,
+            { requires: () => true, reason: () => 'approval required' } as any,
+            { defaultTimeoutMs: 60000 }
+        );
+        const rpc = new AppRpcServer(
+            { searchSessions: async () => [] } as any,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {} as any,
+            null,
+            approvalManager as any
+        );
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 20,
+            method: 'approval.list',
+            params: {}
+        }, { principalId: 'user-1' });
+
+        expect((response as any).result.requests).toEqual([]);
+    }
+
+    @Test('approval.approve and approval.reject resolve pending requests')
+    async approvalDecideResolvesPendingRequests() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        const events = new EventHandler(owners);
+        const approvalManager = new ToolApprovalManager(
+            { publishEvent: async () => {} } as any,
+            { requires: () => true, reason: () => 'approval required' } as any,
+            { defaultTimeoutMs: 60000 }
+        );
+
+        const rpc = new AppRpcServer(
+            { searchSessions: async () => [] } as any,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {} as any,
+            null,
+            approvalManager as any
+        );
+
+        const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+        const pending = approvalManager.getPending();
+        expect(pending.length).toBe(1);
+        const requestId = pending[0].id;
+
+        const approveResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 21,
+            method: 'approval.approve',
+            params: { requestId }
+        }, { principalId: 'user-1' });
+
+        expect((approveResponse as any).result.applied).toEqual(true);
+        expect((approveResponse as any).result.decision).toEqual('approved');
+        expect(approvalManager.getPending().length).toBe(0);
+        await pendingCheck;
+    }
+
+    @Test('approval events are forwarded through the SSE event handler')
+    async approvalEventsForwardedThroughSse() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const events = new EventHandler(owners);
+
+        events.onApprovalRequested(new AgentApprovalRequestedEvent(events, {
+            id: 'req-1',
+            toolName: 'write_file',
+            sessionId: 's-1',
+            reason: 'approval required',
+            summary: 'approval required',
+            hasInput: true,
+            inputSummary: '{"path":"/tmp/x"}',
+            timeoutMs: 30000
+        }));
+        events.onApprovalCompleted(new AgentApprovalCompletedEvent(events, {
+            id: 'req-1',
+            toolName: 'write_file',
+            sessionId: 's-1'
+        }, true));
+
+        const history = events.getHistory('s-1');
+        const types = history.events.map(record => record.type);
+        expect(types).toContain('approval_requested');
+        expect(types).toContain('approval_completed');
+        const requested = history.events.find(record => record.type === 'approval_requested');
+        expect(requested?.data?.request?.id).toEqual('req-1');
+        expect(requested?.data?.request?.sessionId).toEqual('s-1');
+        const completed = history.events.find(record => record.type === 'approval_completed');
+        expect(completed?.data?.approved).toEqual(true);
+
+        events.onApprovalFailed(new AgentApprovalFailedEvent(events, {
+            id: 'req-1',
+            toolName: 'write_file',
+            sessionId: 's-1'
+        }, new Error('cancelled')));
+        const failed = events.getHistory('s-1').events.find(record => record.type === 'approval_failed');
+        expect(failed?.data?.error).toEqual('cancelled');
     }
 }

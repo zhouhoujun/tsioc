@@ -424,17 +424,47 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
-        if (!this.approvalManager) {
+        if (this.approvalManager) {
+            const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
             if (sessionId === this.state.sessionId) {
-                this.state.setPendingApprovals([]);
+                this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
             }
             return;
         }
-        const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
-        if (sessionId !== this.state.sessionId) {
+        if (this.appRpc && this.sessionService) {
+            const requests = await this.sessionService.listApprovals(sessionId);
+            if (sessionId === this.state.sessionId) {
+                this.state.setPendingApprovals(requests as AgentConsoleApprovalRequest[]);
+            }
             return;
         }
-        this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
+        if (sessionId === this.state.sessionId) {
+            this.state.setPendingApprovals([]);
+        }
+    }
+
+    protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean> {
+        if (this.approvalManager) {
+            return decision === 'approve'
+                ? this.approvalManager.approve(requestId)
+                : this.approvalManager.reject(requestId);
+        }
+        if (this.appRpc && this.sessionService) {
+            const result = await this.sessionService.decideApproval(decision, requestId);
+            return result?.applied === true;
+        }
+        return false;
+    }
+
+    protected async getPendingApprovals(sessionId: string): Promise<AgentConsoleApprovalRequest[]> {
+        if (this.approvalManager) {
+            return this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId) as AgentConsoleApprovalRequest[];
+        }
+        if (this.appRpc && this.sessionService) {
+            const requests = await this.sessionService.listApprovals(sessionId);
+            return requests as AgentConsoleApprovalRequest[];
+        }
+        return [];
     }
 
     protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean }): Promise<void> {
@@ -568,17 +598,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 continue;
             }
             if (action === 'approve') {
-                const approved = this.approvalManager?.approve(request.id);
+                const approved = await this.applyApprovalDecision('approve', request.id);
                 this.notify(approved
                     ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
                     : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+                await this.refreshPendingApprovals();
                 return;
             }
             if (action === 'deny') {
-                const denied = this.approvalManager?.reject(request.id);
+                const denied = await this.applyApprovalDecision('deny', request.id);
                 this.notify(denied
                     ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
                     : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+                await this.refreshPendingApprovals();
                 return;
             }
             if (action === 'copy-input') {
@@ -904,17 +936,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get resolveApprovalActionHandler(): (decision: 'approve' | 'deny', requestId: string) => Promise<void> {
         return async (decision: 'approve' | 'deny', requestId: string) => {
-            if (!this.approvalManager || !requestId) {
+            if (!requestId) {
                 return;
             }
-            const request = this.approvalManager.getPending().find((item: any) => item.id === requestId)
+            const requests = await this.getPendingApprovals(this.state.sessionId);
+            const request = requests.find((item: any) => item.id === requestId)
                 || this.state.selectedApproval
                 || { id: requestId, toolName: 'request' };
-            const applied = decision === 'approve'
-                ? this.approvalManager.approve(requestId)
-                : this.approvalManager.reject(requestId);
-            const pending = this.approvalManager.getPending().filter((item: any) => item.sessionId === this.state.sessionId);
-            this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
+            const applied = await this.applyApprovalDecision(decision, requestId);
+            await this.refreshPendingApprovals();
             this.notify(applied
                 ? `${decision === 'approve' ? 'Approved' : 'Denied'} ${request.toolName} (${requestId.slice(0, 8)}).`
                 : `Approval request ${requestId.slice(0, 8)} is no longer pending.`);
@@ -2121,9 +2151,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.notify('Started a new session.');
                 return true;
             case '/approvals': {
-                const pending = this.approvalManager
-                    ? this.approvalManager.getPending().filter((r: any) => r.sessionId === this.state.sessionId)
-                    : [];
+                const pending = await this.getPendingApprovals(this.state.sessionId);
                 if (!pending.length) {
                     this.notify('No pending approvals.');
                     return true;
@@ -2366,15 +2394,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             case '/approve':
             case '/deny': {
-                if (!this.approvalManager) { return true; }
                 const isApprove = resolved.command === '/approve';
-                const pend = this.approvalManager.getPending().filter((r: any) => r.sessionId === this.state.sessionId);
+                const pend = await this.getPendingApprovals(this.state.sessionId);
                 if (!pend.length) { this.notify('No pending approvals.'); return true; }
                 if (parsed.args) {
                     const exact = pend.find((item: any) => item.id === parsed.args);
                     const matches = exact ? [exact] : pend.filter((item: any) => item.id.startsWith(parsed.args));
                     if (matches.length === 1) {
-                        const applied = isApprove ? this.approvalManager.approve(matches[0].id) : this.approvalManager.reject(matches[0].id);
+                        const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', matches[0].id);
                         this.notify(applied
                             ? `${isApprove ? 'Approved' : 'Denied'} ${matches[0].toolName} (${matches[0].id.slice(0, 8)}).`
                             : `Approval request ${matches[0].id.slice(0, 8)} is no longer pending.`);
@@ -2392,7 +2419,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     if (!sel) { return true; }
                     const found = pend.find((r: any) => r.id === sel);
                     if (found) {
-                        const applied = isApprove ? this.approvalManager.approve(found.id) : this.approvalManager.reject(found.id);
+                        const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', found.id);
                         this.notify(applied
                             ? `${isApprove ? 'Approved' : 'Denied'} ${found.toolName} (${found.id.slice(0, 8)}).`
                             : `Approval request ${found.id.slice(0, 8)} is no longer pending.`);
@@ -2400,7 +2427,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 if (req) {
-                    const applied = isApprove ? this.approvalManager.approve(req.id) : this.approvalManager.reject(req.id);
+                    const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', req.id);
                     this.notify(applied
                         ? `${isApprove ? 'Approved' : 'Denied'} ${req.toolName} (${req.id.slice(0, 8)}).`
                         : `Approval request ${req.id.slice(0, 8)} is no longer pending.`);
@@ -2694,11 +2721,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected consumeStreamEventChunk(chunk: any): void {
+        const eventType = String(chunk?.eventType || 'state').trim() || 'state';
+        if (eventType === 'approval_requested') {
+            const toolName = String(chunk?.toolName || 'tool');
+            this.state.upsertPendingApproval({
+                id: String(chunk?.approvalId || `approval-${Date.now()}`),
+                toolName,
+                sessionId: this.state.sessionId,
+                reason: String(chunk?.content || `Approval required for ${toolName}`),
+                summary: String(chunk?.content || ''),
+                hasInput: true,
+                inputSummary: undefined,
+                createdAt: Date.now(),
+                timeoutMs: 0
+            } as AgentConsoleApprovalRequest);
+            this.state.pushActivity('tool', `Approval required for ${toolName}`);
+            return;
+        }
+        if (eventType === 'approval_completed' || eventType === 'approval_failed') {
+            void this.refreshPendingApprovals();
+            return;
+        }
         const content = String(chunk?.content || '').trim();
         if (!content) {
             return;
         }
-        const eventType = String(chunk?.eventType || 'state').trim() || 'state';
         const label = String(chunk?.label || this.resolveStreamEventLabel(eventType)).trim() || 'state';
         const status = this.normalizeUiEventStatus(chunk?.status);
         const eventKey = this.qualifyTurnUiEventKey(this.resolveToolEventKey(eventType, chunk))
@@ -3123,6 +3170,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case 'tool_failed':
             case 'tool_skipped':
                 return 'tool';
+            case 'approval_requested':
+            case 'approval_completed':
+            case 'approval_failed':
+                return 'approval';
             case 'error':
                 return 'error';
             default:

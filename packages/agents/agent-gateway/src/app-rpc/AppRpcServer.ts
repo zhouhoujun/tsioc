@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -20,7 +20,8 @@ export class AppRpcServer {
         private sessionHandler: SessionHandler,
         private events: EventHandler,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
-        @Optional() private audit?: AuditSink | null
+        @Optional() private audit?: AuditSink | null,
+        @Optional() private approvalManager?: ToolApprovalManager | null
     ) {
     }
 
@@ -138,6 +139,9 @@ export class AppRpcServer {
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
+                        'approval.list',
+                        'approval.approve',
+                        'approval.reject',
                         'tools.list',
                         'tools.activate',
                         'tools.invoke',
@@ -182,6 +186,12 @@ export class AppRpcServer {
                 return this.runTurn(params, context);
             case 'run.cancel':
                 return this.cancelTurn(params, context);
+            case 'approval.list':
+                return this.listApprovals(params, context);
+            case 'approval.approve':
+                return this.decideApproval(params, context, true);
+            case 'approval.reject':
+                return this.decideApproval(params, context, false);
             case 'tools.list':
                 return this.tools.getToolDefinitions(this.optionalSessionId(params));
             case 'tools.activate':
@@ -401,6 +411,51 @@ export class AppRpcServer {
         };
     }
 
+    private async listApprovals(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.approvalManager) {
+            return { sessionId: null, requests: [] };
+        }
+        const sessionId = this.optionalSessionId(params);
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const requests = this.approvalManager.getPending();
+        const scoped = sessionId
+            ? requests.filter(request => request.sessionId === sessionId)
+            : requests;
+        if (!context.principalId) {
+            return { sessionId: sessionId ?? null, requests: scoped };
+        }
+        const sessionIds = Array.from(new Set(scoped.map(request => request.sessionId)));
+        const ownedIds = await this.owners.listOwned(sessionIds, context.principalId);
+        const owned = new Set(ownedIds);
+        return {
+            sessionId: sessionId ?? null,
+            requests: scoped.filter(request => owned.has(request.sessionId))
+        };
+    }
+
+    private async decideApproval(params: any, context: AppRpcRequestContext, approve: boolean): Promise<any> {
+        const requestId = this.requireString(params?.requestId ?? params?.id, 'requestId');
+        if (!this.approvalManager) {
+            throw new AppRpcError(-32004, 'Approval is not configured');
+        }
+        const pending = this.approvalManager.getPending().find(request => request.id === requestId);
+        if (!pending) {
+            return { requestId, applied: false };
+        }
+        await this.ensureSessionAccess(pending.sessionId, context);
+        const applied = approve
+            ? this.approvalManager.approve(requestId)
+            : this.approvalManager.reject(requestId);
+        return {
+            requestId,
+            sessionId: pending.sessionId,
+            applied,
+            decision: approve ? 'approved' : 'denied'
+        };
+    }
+
     private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
         const input = this.requireString(params?.input, 'run.turn_stream input');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
@@ -522,7 +577,8 @@ export class AppRpcServer {
                 status: event.status,
                 content: event.content,
                 ...(event.toolName ? { toolName: event.toolName } : {}),
-                ...(event.toolCallId ? { toolCallId: event.toolCallId } : {})
+                ...(event.toolCallId ? { toolCallId: event.toolCallId } : {}),
+                ...(event.approvalId ? { approvalId: event.approvalId } : {})
             }
         };
     }
@@ -534,6 +590,7 @@ export class AppRpcServer {
         content: string;
         toolName?: string;
         toolCallId?: string;
+        approvalId?: string;
     } | null {
         const data = record.data || {};
         switch (record.type) {
@@ -593,6 +650,33 @@ export class AppRpcServer {
                     label: 'state',
                     status: 'failed',
                     content: 'Turn cancelled'
+                };
+            case 'approval_requested':
+                return {
+                    eventType: 'approval_requested',
+                    label: 'approval',
+                    status: 'running',
+                    toolName: String(data?.request?.toolName || ''),
+                    approvalId: String(data?.request?.id || ''),
+                    content: data?.request?.summary
+                        ? `Approval required for ${data.request.toolName}: ${data.request.summary}`
+                        : `Approval required for ${data?.request?.toolName || 'tool'}`
+                };
+            case 'approval_completed':
+                return {
+                    eventType: 'approval_completed',
+                    label: 'approval',
+                    status: data?.approved === true ? 'success' : 'failed',
+                    toolName: String(data?.request?.toolName || ''),
+                    content: `${data?.request?.toolName || 'tool'} ${data?.approved === true ? 'approved' : 'denied'}`
+                };
+            case 'approval_failed':
+                return {
+                    eventType: 'approval_failed',
+                    label: 'approval',
+                    status: 'error',
+                    toolName: String(data?.request?.toolName || ''),
+                    content: `${data?.request?.toolName || 'tool'} approval failed: ${data?.error || 'unknown error'}`
                 };
             default:
                 return null;

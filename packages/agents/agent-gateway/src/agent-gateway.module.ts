@@ -15,6 +15,7 @@ import { MemoryHandler } from './api/MemoryHandler';
 import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
+import { ApprovalHandler } from './api/ApprovalHandler';
 import { AppRpcHandler } from './api/AppRpcHandler';
 import { AppRpcServer } from './app-rpc/AppRpcServer';
 import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
@@ -40,6 +41,7 @@ import { createAgentGatewayProviders } from './provider';
         ToolsHandler,
         EventHandler,
         AuditHandler,
+        ApprovalHandler,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,
@@ -59,6 +61,7 @@ import { createAgentGatewayProviders } from './provider';
         ToolsHandler,
         EventHandler,
         AuditHandler,
+        ApprovalHandler,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,
