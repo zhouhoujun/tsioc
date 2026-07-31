@@ -152,7 +152,7 @@ describe('Persistent session store', () => {
                 sessionRole: undefined,
                 rootRequest: undefined,
                 focusSummary: undefined,
-                sessionIds: ['session-a', 'session-b']
+                sessionIds: ['session-b', 'session-a']
             }));
         } finally {
             Date.now = originalNow;

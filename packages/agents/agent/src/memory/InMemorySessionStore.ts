@@ -42,6 +42,7 @@ export class InMemorySessionStore extends SessionStore {
         const buckets = new Map<string, AgentSessionProjectIndex & {
             representativeLastActiveAt: number;
             representativeSessionId: string;
+            sessionEntries: Array<{ id: string; lastActiveAt: number }>;
         }>();
         for (const state of this.sessions.values()) {
             const projectKey = this.resolveProjectKey(state);
@@ -57,9 +58,11 @@ export class InMemorySessionStore extends SessionStore {
                 sessionIds: [],
                 lastActiveAt: 0,
                 representativeLastActiveAt: -1,
-                representativeSessionId: ''
+                representativeSessionId: '',
+                sessionEntries: []
             };
             existing.sessionIds.push(state.sessionId);
+            existing.sessionEntries.push({ id: state.sessionId, lastActiveAt });
             existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, lastActiveAt);
             if (lastActiveAt > existing.representativeLastActiveAt
                 || (lastActiveAt === existing.representativeLastActiveAt
@@ -78,8 +81,21 @@ export class InMemorySessionStore extends SessionStore {
         return Array.from(buckets.values()).map(({
             representativeLastActiveAt: _representativeLastActiveAt,
             representativeSessionId: _representativeSessionId,
+            sessionEntries,
             ...project
-        }) => project).sort((left, right) => {
+        }) => ({
+            ...project,
+            sessionIds: sessionEntries
+                .slice()
+                .sort((left, right) => {
+                    const activityDelta = right.lastActiveAt - left.lastActiveAt;
+                    if (activityDelta !== 0) {
+                        return activityDelta;
+                    }
+                    return left.id.localeCompare(right.id);
+                })
+                .map(entry => entry.id)
+        })).sort((left, right) => {
             const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
             if (activityDelta !== 0) {
                 return activityDelta;

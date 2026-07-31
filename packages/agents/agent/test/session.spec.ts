@@ -178,7 +178,7 @@ export class SessionStoreTest {
             sessionRole: undefined,
             rootRequest: undefined,
             focusSummary: undefined,
-            sessionIds: ['session-a', 'session-b'],
+            sessionIds: ['session-b', 'session-a'],
             lastActiveAt: expect.any(Number)
         }]);
     }
@@ -194,7 +194,7 @@ export class SessionStoreTest {
 
         const projects = await store.listProjects();
         expect(projects.map(project => project.projectKey)).toEqual(['session:session-c', 'workspace:/tmp/project-a']);
-        expect(projects.find(project => project.projectKey === 'workspace:/tmp/project-a')?.sessionIds.sort()).toEqual(['session-a', 'session-b']);
+        expect(projects.find(project => project.projectKey === 'workspace:/tmp/project-a')?.sessionIds.slice().sort()).toEqual(['session-a', 'session-b']);
         expect(projects.find(project => project.projectKey === 'session:session-c')?.sessionIds).toEqual(['session-c']);
     }
 }
