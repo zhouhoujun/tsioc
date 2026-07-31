@@ -1654,6 +1654,44 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Nothing to copy for input.');
     }
 
+    @Test('sessions command clears stale session state when no sessions remain')
+    async sessionsCommandClearsStaleSessionStateWhenNoSessionsRemain() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        component.sessionState.setSessions([{
+            id: 'chat-a',
+            current: true,
+            projectKey: 'project:exam-system',
+            projectLabel: 'exam-system'
+        } as any]);
+        component.sessionState.setProjects([{
+            key: 'project:exam-system',
+            label: 'exam-system',
+            sessionCount: 1
+        } as any]);
+        component.sessionState.setProjectContext({
+            projectKey: 'project:exam-system',
+            projectLabel: 'exam-system',
+            projectSummary: 'old summary',
+            projectSessionCount: 1
+        });
+
+        sessionService.sessions = [];
+        sessionService.projectGroups = [];
+        component.input = '/sessions';
+        await component.submit();
+
+        expect(component.notice).toEqual('No sessions available.');
+        expect(component.sessionState.sessions).toEqual([]);
+        expect(component.sessionState.projects).toEqual([]);
+        expect(component.sessionState.projectLabel).toEqual('');
+        expect(component.sessionState.projectSummary).toEqual('');
+        expect(component.sessionState.projectSessionCount).toEqual(0);
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();

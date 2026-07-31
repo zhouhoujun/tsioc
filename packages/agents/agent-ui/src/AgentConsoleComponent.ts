@@ -142,6 +142,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const sessions = await this.sessionService.listSessions(this.state.sessionId);
         if (!sessions.length) {
+            this.state.setSessions([]);
+            this.state.setProjects([]);
+            this.state.setProjectContext();
             return;
         }
         this.state.setSessions(sessions.map(item => ({
