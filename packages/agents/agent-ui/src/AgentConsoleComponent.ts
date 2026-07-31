@@ -45,6 +45,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
+    protected openSessionRequestId = 0;
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
@@ -128,19 +129,25 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return `${sessionId}:${reviewTaskId}`;
     }
 
-    protected async refreshSessions(): Promise<void> {
+    protected async refreshSessions(currentSessionId = this.state.sessionId): Promise<void> {
         if (!this.sessionService) {
             return;
         }
-        const groups = await this.sessionService.listProjectSessions(this.state.sessionId);
+        const groups = await this.sessionService.listProjectSessions(currentSessionId);
+        if (currentSessionId !== this.state.sessionId) {
+            return;
+        }
         const groupedSessions = this.flattenProjectSessions(groups);
         if (groupedSessions.length) {
-        this.state.setSessions(groupedSessions);
+            this.state.setSessions(groupedSessions);
             this.refreshProjectContext();
             this.refreshProjects();
             return;
         }
-        const sessions = await this.sessionService.listSessions(this.state.sessionId);
+        const sessions = await this.sessionService.listSessions(currentSessionId);
+        if (currentSessionId !== this.state.sessionId) {
+            return;
+        }
         if (!sessions.length) {
             this.state.setSessions([]);
             this.state.setProjects([]);
@@ -257,7 +264,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
     }
 
-    protected resolveCurrentProjectSessions(): Array<{
+    protected resolveProjectSessionsFor(sessionId = this.state.sessionId): Array<{
         id: string;
         current: boolean;
         workspace?: string;
@@ -272,7 +279,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
-        const anchor = this.state.sessions.find(item => item.id === this.state.sessionId)
+        const anchor = this.state.sessions.find(item => item.id === sessionId)
             || this.state.sessions.find(item => item.current)
             || this.state.sessions[0];
         if (!anchor) {
@@ -291,6 +298,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return this.state.sessions.filter(item => String(item.primaryThreadId || '').trim() === primaryThreadId);
         }
         return [anchor];
+    }
+
+    protected resolveCurrentProjectSessions(): Array<{
+        id: string;
+        current: boolean;
+        workspace?: string;
+        updatedAt?: number;
+        messageCount?: number;
+        summary?: string;
+        projectKey?: string;
+        projectId?: string;
+        primaryThreadId?: string;
+        rootRequest?: string;
+        focusSummary?: string;
+        projectLabel?: string;
+        projectSessionCount?: number;
+    }> {
+        return this.resolveProjectSessionsFor(this.state.sessionId);
     }
 
     protected resolveSessionProjectKey(session?: {
@@ -318,10 +343,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return '';
     }
 
-    protected resolveCurrentProjectSessionIds(): string[] {
-        const sessions = this.resolveCurrentProjectSessions();
+    protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
+        const sessions = this.resolveProjectSessionsFor(sessionId);
         const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
-        return ids.length ? ids : [this.state.sessionId];
+        return ids.length ? ids : [sessionId];
+    }
+
+    protected resolveCurrentProjectSessionIds(): string[] {
+        return this.resolveProjectSessionIdsFor(this.state.sessionId);
     }
 
     protected resolveCodingTaskSessionId(task?: Record<string, any> | null): string {
@@ -339,12 +368,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return null;
     }
 
-    protected async refreshPendingApprovals(): Promise<void> {
+    protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
         if (!this.approvalManager) {
-            this.state.setPendingApprovals([]);
+            if (sessionId === this.state.sessionId) {
+                this.state.setPendingApprovals([]);
+            }
             return;
         }
-        const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === this.state.sessionId);
+        const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
+        if (sessionId !== this.state.sessionId) {
+            return;
+        }
         this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
     }
 
@@ -356,7 +390,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.sessionService) {
             return;
         }
+        const requestId = ++this.openSessionRequestId;
         const target = await this.sessionService.ensureSession(sessionId);
+        if (requestId !== this.openSessionRequestId) {
+            return;
+        }
         this.state.batch(() => {
             this.state.configure({ sessionId: target.id });
             this.state.setMessagesFocused(false);
@@ -378,14 +416,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setNotice('');
             this.state.setInput('', 0);
         });
-        await this.refreshSessions();
+        await this.refreshSessions(target.id);
+        if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
+            return;
+        }
+        const projectSessions = this.resolveProjectSessionsFor(target.id);
+        const projectSessionIds = this.resolveProjectSessionIdsFor(target.id);
         const [messages] = await Promise.all([
             this.loadSessionMessages(target.id),
-            this.refreshTools(),
-            this.refreshPendingApprovals(),
-            this.refreshTodoPlan(),
-            this.loadCodingTasks()
+            this.refreshTools(target.id),
+            this.refreshPendingApprovals(target.id),
+            this.refreshTodoPlan(target.id, projectSessions),
+            this.loadCodingTasks(target.id, projectSessionIds)
         ]);
+        if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
+            return;
+        }
         this.state.setMessages(messages);
     }
 
@@ -1393,15 +1439,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
-    protected async loadCodingTasks(): Promise<any[]> {
+    protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds = this.resolveProjectSessionIdsFor(sessionId)): Promise<any[]> {
         if (!this.appRpc) {
-            this.state.batch(() => {
-                this.state.setTaskRecords([]);
-                this.state.setReviewTasks([]);
-            });
+            if (sessionId === this.state.sessionId) {
+                this.state.batch(() => {
+                    this.state.setTaskRecords([]);
+                    this.state.setReviewTasks([]);
+                });
+            }
             return [];
         }
-        const sessionIds = this.resolveCurrentProjectSessionIds();
         const responses = await Promise.allSettled(sessionIds.map(async sessionId => {
             const result = await this.appRpc!.request('coding_task.list', { sessionId });
             const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
@@ -1421,6 +1468,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return String(left?.id || '').localeCompare(String(right?.id || ''));
                 })
         );
+        if (sessionId !== this.state.sessionId) {
+            return tasks;
+        }
         this.state.batch(() => {
             this.state.setTaskRecords(tasks);
             this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));
@@ -2708,15 +2758,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         ]);
     }
 
-    protected async refreshTodoPlan(): Promise<void> {
+    protected async refreshTodoPlan(
+        sessionId = this.state.sessionId,
+        sessions = this.resolveProjectSessionsFor(sessionId)
+    ): Promise<void> {
         if (!this.appRpc) {
-            this.state.clearPlanTodos();
+            if (sessionId === this.state.sessionId) {
+                this.state.clearPlanTodos();
+            }
             return;
         }
-        const sessions = this.resolveCurrentProjectSessions()
+        const relatedSessions = sessions
             .slice()
             .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
-        const results = await Promise.allSettled(sessions.map(async session => ({
+        const results = await Promise.allSettled(relatedSessions.map(async session => ({
             sessionId: session.id,
             updatedAt: session.updatedAt || 0,
             result: await this.appRpc!.request('todo.get', { sessionId: session.id })
@@ -2747,11 +2802,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
         const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
+        if (sessionId !== this.state.sessionId) {
+            return;
+        }
         if (!nextTodos.length) {
             this.state.clearPlanTodos();
             return;
         }
-        this.state.setPlanTodos(nextTodos, sourceSessionId || this.state.sessionId);
+        this.state.setPlanTodos(nextTodos, sourceSessionId || sessionId);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
@@ -2891,15 +2949,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.runtime.runTurn(this.state.sessionId, input);
     }
 
-    protected async loadTools(): Promise<any[]> {
+    protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {
         if (this.appRpc) {
-            const tools = await this.appRpc.request('tools.list', { sessionId: this.state.sessionId });
+            const tools = await this.appRpc.request('tools.list', { sessionId });
             return Array.isArray(tools) ? tools : [];
         }
         if (!this.toolRegistry) {
             return [];
         }
-        return this.toolRegistry.getToolDefinitions(this.state.sessionId) as any[];
+        return this.toolRegistry.getToolDefinitions(sessionId) as any[];
     }
 
     protected getModelProfileOptions(): AgentConsoleSelectOption[] {
@@ -3034,21 +3092,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return !!(await this.toolRegistry.activateTool(this.state.sessionId, name));
     }
 
-    protected async refreshTools(): Promise<void> {
-        const definitions = await this.loadTools();
+    protected async refreshTools(sessionId = this.state.sessionId): Promise<void> {
+        const definitions = await this.loadTools(sessionId);
         if (!definitions.length) {
-            this.state.setTools([]);
+            if (sessionId === this.state.sessionId) {
+                this.state.setTools([]);
+            }
             return;
         }
         const tools = await Promise.all(definitions.map(async def => {
             const active = this.appRpc
                 ? def.activation?.activated ?? true
                 : this.toolRegistry && typeof this.toolRegistry.isToolActive === 'function'
-                ? await this.toolRegistry.isToolActive(this.state.sessionId, def.name)
+                ? await this.toolRegistry.isToolActive(sessionId, def.name)
                 : def.activation?.activated ?? true;
             return this.state.toToolItem(def, active);
         }));
         tools.sort((a, b) => a.name.localeCompare(b.name));
+        if (sessionId !== this.state.sessionId) {
+            return;
+        }
         this.state.setTools(tools);
     }
 

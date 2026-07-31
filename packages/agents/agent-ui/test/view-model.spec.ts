@@ -129,6 +129,16 @@ class RuntimeStub {
     }
 }
 
+function createDeferred<T>() {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    return { promise, resolve, reject };
+}
+
 class FailingRuntimeStub extends RuntimeStub {
     override async runTurn(_sessionId: string, _input: string): Promise<any> {
         throw new Error('submit failed');
@@ -436,6 +446,8 @@ class SessionServiceStub extends AgentConsoleSessionService {
     projectGroups?: AgentConsoleSessionProjectGroup[];
     ensuredSessionIds: Array<string | undefined> = [];
     messagesBySession = new Map<string, any[]>();
+    ensureSessionHandlers = new Map<string, () => Promise<AgentConsoleSessionChoice>>();
+    loadMessagesHandlers = new Map<string, () => Promise<any[]>>();
     protected runtimeRef: RuntimeStub;
 
     constructor(runtimeSource: RuntimeStub) {
@@ -445,6 +457,11 @@ class SessionServiceStub extends AgentConsoleSessionService {
 
     override async ensureSession(sessionId?: string): Promise<AgentConsoleSessionChoice> {
         const resolvedId = sessionId || `session-${this.ensuredSessionIds.length + 1}`;
+        const handler = this.ensureSessionHandlers.get(resolvedId);
+        if (handler) {
+            this.ensuredSessionIds.push(sessionId);
+            return handler();
+        }
         this.ensuredSessionIds.push(sessionId);
         const existing = this.sessions.find(item => item.id === resolvedId);
         if (!existing) {
@@ -503,6 +520,10 @@ class SessionServiceStub extends AgentConsoleSessionService {
     }
 
     override async loadMessages(sessionId: string): Promise<any[]> {
+        const handler = this.loadMessagesHandlers.get(sessionId);
+        if (handler) {
+            return handler();
+        }
         if (this.messagesBySession.has(sessionId)) {
             return this.messagesBySession.get(sessionId)!;
         }
@@ -1830,6 +1851,64 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.toolRunsFocused).toEqual(false);
         expect(component.sessionState.tasksFocused).toEqual(false);
         expect(component.sessionState.jobsFocused).toEqual(false);
+    }
+
+    @Test('openSession ignores stale ensureSession results from earlier switches')
+    async openSessionIgnoresStaleEnsureSessionResultsFromEarlierSwitches() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 3 },
+            { id: 'chat-b', current: false, lastActiveAt: 2 },
+            { id: 'chat-c', current: false, lastActiveAt: 1 }
+        ];
+        sessionService.messagesBySession.set('chat-c', [{ id: 'msg-c', role: 'assistant', content: 'chat c', createdAt: 1 } as any]);
+        const deferred = createDeferred<AgentConsoleSessionChoice>();
+        sessionService.ensureSessionHandlers.set('chat-b', () => deferred.promise);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        const firstSwitch = (component as any).openSession('chat-b');
+        await Promise.resolve();
+
+        await (component as any).openSession('chat-c');
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
+
+        deferred.resolve({ id: 'chat-b', current: true } as any);
+        await firstSwitch;
+
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
+    }
+
+    @Test('openSession ignores stale message loads from earlier switches')
+    async openSessionIgnoresStaleMessageLoadsFromEarlierSwitches() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 3 },
+            { id: 'chat-b', current: false, lastActiveAt: 2 },
+            { id: 'chat-c', current: false, lastActiveAt: 1 }
+        ];
+        const deferred = createDeferred<any[]>();
+        sessionService.loadMessagesHandlers.set('chat-b', () => deferred.promise);
+        sessionService.messagesBySession.set('chat-c', [{ id: 'msg-c', role: 'assistant', content: 'chat c', createdAt: 1 } as any]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        const firstSwitch = (component as any).openSession('chat-b');
+        await Promise.resolve();
+
+        await (component as any).openSession('chat-c');
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
+
+        deferred.resolve([{ id: 'msg-b', role: 'assistant', content: 'chat b', createdAt: 1 } as any]);
+        await firstSwitch;
+
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
     }
 
     @Test('clear command starts a new session after submit')
