@@ -42,6 +42,7 @@ import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './A
 export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly STREAM_MESSAGE_FLUSH_MS = 160;
     protected static readonly STREAM_PENDING_NOTICE_MS = 8000;
+    protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
@@ -988,22 +989,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {
-        if (!this.appRpc) {
-            return;
-        }
         const cacheKey = this.getReviewAnnotationsCacheKey();
         const selectedTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
         if (!cacheKey) {
             return;
         }
+        const annotations = selectedTaskId || cacheKey
+            ? this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {}
+            : {};
+        const snapshot = this.rememberVolatileReviewAnnotations(cacheKey, annotations);
+        if (!this.appRpc) {
+            return;
+        }
         try {
-            const annotations = selectedTaskId || cacheKey
-                ? this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {}
-                : {};
             await this.appRpc.request('review_annotations.save', {
                 sessionId: this.resolveReviewAnnotationsSessionId(),
                 cacheKey,
-                cache: annotations
+                cache: snapshot
             });
         } catch {
             // annotation persistence is best-effort
@@ -1020,15 +1022,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         sessionId?: string;
         requestId?: number;
     }): Promise<void> {
-        if (!this.appRpc) {
-            return;
-        }
         const cacheKey = String(scope?.cacheKey || this.getReviewAnnotationsCacheKey() || '').trim();
         if (!cacheKey) {
             return;
         }
         const sessionId = String(scope?.sessionId || this.resolveReviewAnnotationsSessionId() || '').trim();
         const selectedTaskId = String(scope?.selectedTaskId || this.state.selectedReviewTaskId || '').trim();
+        if (scope?.requestId != null && scope.requestId !== this.openReviewRequestId) {
+            return;
+        }
+        const volatileAnnotations = this.getVolatileReviewAnnotations(cacheKey);
+        if (volatileAnnotations !== undefined) {
+            this.applyReviewAnnotationsForScope(cacheKey, selectedTaskId, volatileAnnotations);
+            return;
+        }
+        if (!this.appRpc) {
+            return;
+        }
         try {
             const cache = await this.appRpc.request('review_annotations.load', {
                 sessionId,
@@ -1037,21 +1047,57 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (scope?.requestId != null && scope.requestId !== this.openReviewRequestId) {
                 return;
             }
-            if (cache) {
-                if (selectedTaskId || cacheKey) {
-                    const annotations = this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {};
-                    const cacheEntryKey = cacheKey || selectedTaskId;
-                    this.state.setAnnotationCache({
-                        ...this.state.getAnnotationCache(),
-                        ...(cacheEntryKey ? { [cacheEntryKey]: annotations } : {})
-                    });
-                    this.state.reviewFileAnnotations = { ...annotations };
-                    this.state.notify();
-                }
+            if (cache && (selectedTaskId || cacheKey)) {
+                const annotations = this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {};
+                const snapshot = this.rememberVolatileReviewAnnotations(cacheKey, annotations);
+                this.applyReviewAnnotationsForScope(cacheKey, selectedTaskId, snapshot);
             }
         } catch {
             // annotation restore is best-effort
         }
+    }
+
+    protected rememberVolatileReviewAnnotations(cacheKey: string, annotations?: Record<string, any> | null): Record<string, any> {
+        const snapshot = { ...(annotations || {}) };
+        this.getReviewAnnotationsVolatileCache(true)?.set(cacheKey, snapshot);
+        return { ...snapshot };
+    }
+
+    protected getVolatileReviewAnnotations(cacheKey: string): Record<string, any> | undefined {
+        const cache = this.getReviewAnnotationsVolatileCache();
+        if (!cache?.has(cacheKey)) {
+            return undefined;
+        }
+        const cached = cache.get(cacheKey);
+        return { ...(cached || {}) };
+    }
+
+    protected getReviewAnnotationsVolatileCache(create = false): Map<string, Record<string, any>> | undefined {
+        const owner = this.appRpc as object | null | undefined;
+        if (!owner) {
+            return undefined;
+        }
+        const existing = AgentConsoleComponent.REVIEW_ANNOTATIONS_VOLATILE_CACHE.get(owner);
+        if (existing || !create) {
+            return existing;
+        }
+        const cache = new Map<string, Record<string, any>>();
+        AgentConsoleComponent.REVIEW_ANNOTATIONS_VOLATILE_CACHE.set(owner, cache);
+        return cache;
+    }
+
+    protected applyReviewAnnotationsForScope(
+        cacheKey: string,
+        selectedTaskId: string,
+        annotations: Record<string, any>
+    ): void {
+        const cacheEntryKey = cacheKey || selectedTaskId;
+        this.state.setAnnotationCache({
+            ...this.state.getAnnotationCache(),
+            ...(cacheEntryKey ? { [cacheEntryKey]: { ...annotations } } : {})
+        });
+        this.state.reviewFileAnnotations = { ...annotations };
+        this.state.notify();
     }
 
     protected extractReviewAnnotations(

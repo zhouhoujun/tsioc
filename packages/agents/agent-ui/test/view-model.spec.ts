@@ -4861,6 +4861,55 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'review_annotations.load' && call.params?.cacheKey === 'chat-b:task-b')).toEqual(true);
     }
 
+    @Test('review annotations restore after recreating the console for the same task scope')
+    async reviewAnnotationsRestoreAfterRecreatingConsoleForTheSameTaskScope() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 1,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-a', workspace: '/tmp/project-a', messageCount: 2, lastActiveAt: 20 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.codingTaskDetails.set('task-a', {
+            id: 'task-a',
+            title: 'Task A',
+            sourceSessionId: 'chat-a',
+            status: 'running'
+        });
+        appRpc.codingTaskDiffs.set('task-a', {
+            sessionId: 'chat-a',
+            taskId: 'task-a',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'Task A diff',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+task a'
+            },
+            workers: []
+        });
+
+        const firstComponent = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        // onInit wires the annotation persist callback; the test helper builds the component directly, so wire it explicitly.
+        firstComponent.sessionState.onReviewAnnotationsPersist = (cache) => (firstComponent as any).saveReviewAnnotationsCacheToDisk(cache);
+        await (firstComponent as any).openCodingTaskReview('task-a');
+        firstComponent.sessionState.setReviewFileAnnotation('approved', 'looks good', 'src/a.ts');
+
+        const secondComponent = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (secondComponent as any).openCodingTaskReview('task-a');
+
+        expect(secondComponent.sessionState.reviewFileAnnotations['src/a.ts']).toEqual(expect.objectContaining({
+            status: 'approved',
+            comment: 'looks good'
+        }));
+    }
+
     @Test('session state isolates review annotations for duplicate task ids across sessions')
     sessionStateIsolatesReviewAnnotationsForDuplicateTaskIdsAcrossSessions() {
         const state = new AgentConsoleSessionState();
