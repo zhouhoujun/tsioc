@@ -2636,6 +2636,16 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    clearToolActivity(): void {
+        if (!this.activeToolSet.size && !this.runningTools.length && !this.toolRuns.length) {
+            return;
+        }
+        this.activeToolSet.clear();
+        this.runningTools = [];
+        this.toolRuns = [];
+        this.notify();
+    }
+
     pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
         const normalizedMessage = String(message || '').trim();
         const lastActivity = this.activities[this.activities.length - 1];

@@ -365,6 +365,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setApprovalsFocused(false);
             this.state.clearReview();
             this.state.clearPlanTodos();
+            this.state.clearToolActivity();
             this.state.closeMessageDetail();
             this.state.clearActivities();
             this.state.setLastError('');

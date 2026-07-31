@@ -1716,6 +1716,32 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.planTodoSourceSessionId).toEqual('');
     }
 
+    @Test('openSession clears stale tool activity before switching sessions')
+    async openSessionClearsStaleToolActivityBeforeSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        component.sessionState.setRunningTool('read_file');
+        component.sessionState.upsertToolRun({
+            name: 'read_file',
+            status: 'running',
+            message: 'Running',
+            updatedAt: 1
+        } as any);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.runningTools).toEqual([]);
+        expect(component.sessionState.toolRuns).toEqual([]);
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
