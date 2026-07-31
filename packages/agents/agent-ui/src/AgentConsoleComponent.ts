@@ -196,6 +196,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         summary?: string;
         projectKey?: string;
         projectId?: string;
+        primaryThreadId?: string;
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
@@ -204,6 +205,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const projectId = String(group.projectId || '').trim() || undefined;
             const projectLabel = String(group.label || group.projectId || group.workspace || '').trim()
                 || undefined;
+            const primaryThreadId = String(group.primaryThreadId || '').trim() || undefined;
             return group.sessions.map(item => ({
                 id: item.id,
                 current: !!item.current,
@@ -213,6 +215,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 summary: item.summary,
                 projectKey,
                 projectId,
+                primaryThreadId: item.primaryThreadId || primaryThreadId,
                 projectLabel,
                 projectSessionCount: group.sessionCount
             }));
@@ -235,7 +238,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             .find(Boolean) || '';
         this.state.setProjectContext({
             projectKey: anchor?.projectKey,
-            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.workspace || anchor?.id,
+            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.workspace || anchor?.primaryThreadId || anchor?.id,
             projectSummary: summary,
             projectSessionCount: anchor?.projectSessionCount || projectSessions.length
         });
@@ -250,6 +253,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         summary?: string;
         projectKey?: string;
         projectId?: string;
+        primaryThreadId?: string;
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
@@ -267,9 +271,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (workspace) {
             return this.state.sessions.filter(item => String(item.workspace || '').trim() === workspace);
         }
-        const primaryThreadId = String((anchor as any).primaryThreadId || '').trim();
+        const primaryThreadId = String(anchor.primaryThreadId || '').trim();
         if (primaryThreadId) {
-            return this.state.sessions.filter(item => String((item as any).primaryThreadId || '').trim() === primaryThreadId);
+            return this.state.sessions.filter(item => String(item.primaryThreadId || '').trim() === primaryThreadId);
         }
         return [anchor];
     }

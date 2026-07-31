@@ -23,6 +23,10 @@ export interface AgentConsoleSessionProjectGroup {
     projectId?: string;
     label?: string;
     workspace: string;
+    primaryThreadId?: string;
+    sessionRole?: string;
+    rootRequest?: string;
+    focusSummary?: string;
     sessionCount: number;
     lastActiveAt: number;
     sessions: AgentConsoleSessionChoice[];
