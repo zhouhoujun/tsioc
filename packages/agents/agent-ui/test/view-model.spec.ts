@@ -675,6 +675,7 @@ class InputHistoryStoreStub extends AgentConsoleInputHistoryStore {
     workspaces: string[] = [];
     sessionIds: string[] = [];
     entriesByScope = new Map<string, string[]>();
+    saveHandlers: Array<(entries: string[], workspace?: string, sessionId?: string) => Promise<void>> = [];
 
     protected scopeKey(workspace?: string, sessionId?: string): string {
         return `${String(workspace || '')}::${String(sessionId || '')}`;
@@ -696,6 +697,10 @@ class InputHistoryStoreStub extends AgentConsoleInputHistoryStore {
 
     override async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
         const next = entries.slice();
+        const handler = this.saveHandlers.shift();
+        if (handler) {
+            await handler(next, workspace, sessionId);
+        }
         this.saveCalls.push(next);
         this.workspaces.push(String(workspace || ''));
         this.sessionIds.push(String(sessionId || ''));
@@ -1987,6 +1992,47 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.getInputHistoryEntries()).toEqual([]);
         expect(historyStore.saveCalls[1]).toEqual(['history-b']);
         expect(historyStore.sessionIds[2]).toEqual('chat-b');
+    }
+
+    @Test('openSession ignores stale switches blocked behind history persistence')
+    async openSessionIgnoresStaleSwitchesBlockedBehindHistoryPersistence() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const historyStore = new InputHistoryStoreStub();
+        const persistDeferred = createDeferred<void>();
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 3 },
+            { id: 'chat-b', current: false, lastActiveAt: 2 },
+            { id: 'chat-c', current: false, lastActiveAt: 1 }
+        ];
+        sessionService.messagesBySession.set('chat-c', [{ id: 'msg-c', role: 'assistant', content: 'chat c', createdAt: 1 } as any]);
+        historyStore.saveHandlers.push(async () => persistDeferred.promise);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            undefined,
+            { ui: { title: 'Console', console: { workspace: '/tmp/workspace-history' } } },
+            historyStore
+        );
+
+        component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-history' });
+        component.sessionState.setInputHistoryEntries(['history-a']);
+
+        const firstSwitch = (component as any).openSession('chat-b');
+        await Promise.resolve();
+
+        const secondSwitch = (component as any).openSession('chat-c');
+        persistDeferred.resolve();
+        await Promise.all([firstSwitch, secondSwitch]);
+
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
     }
 
     @Test('clear command starts a new session after submit')

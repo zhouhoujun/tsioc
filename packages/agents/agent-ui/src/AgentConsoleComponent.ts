@@ -391,10 +391,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.sessionService) {
             return;
         }
+        const requestId = ++this.openSessionRequestId;
         if (options?.persistCurrentHistory !== false) {
             await this.persistInputHistory();
+            if (requestId !== this.openSessionRequestId) {
+                return;
+            }
         }
-        const requestId = ++this.openSessionRequestId;
         const target = await this.sessionService.ensureSession(sessionId);
         if (requestId !== this.openSessionRequestId) {
             return;
