@@ -1768,6 +1768,37 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.contextPreparationSummary).toEqual('');
     }
 
+    @Test('openSession clears stale approvals before switching sessions')
+    async openSessionClearsStaleApprovalsBeforeSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        const approvals = new ApprovalManagerStub();
+        approvals.pending = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals, undefined, sessionService);
+
+        component.sessionState.setPendingApprovals([{
+            id: 'approval-a',
+            toolName: 'write_file',
+            reason: 'Need permission',
+            inputSummary: 'stale request',
+            timeoutMs: 30_000,
+            createdAt: 1
+        } as any]);
+        component.sessionState.setApprovalsFocused(true);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.pendingApprovals).toEqual([]);
+        expect(component.sessionState.selectedApproval).toEqual(undefined);
+        expect(component.sessionState.approvalsFocused).toEqual(false);
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
