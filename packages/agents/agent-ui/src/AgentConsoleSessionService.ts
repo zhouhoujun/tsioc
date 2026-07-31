@@ -221,6 +221,16 @@ export class AgentConsoleSessionService {
         });
     }
 
+    protected selectProjectRepresentative(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice | undefined {
+        return sessions.slice().sort((left, right) => {
+            const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.id.localeCompare(right.id);
+        })[0];
+    }
+
     protected groupProjectChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionProjectGroup[] {
         const buckets = new Map<string, AgentConsoleSessionChoice[]>();
         for (const session of sessions) {
@@ -231,17 +241,17 @@ export class AgentConsoleSessionService {
         }
         return Array.from(buckets.entries())
             .map(([projectKey, groupedSessions]) => {
-                const first = groupedSessions[0];
-                const workspace = String(first?.workspace || '').trim();
-                const projectId = String(first?.projectId || '').trim() || undefined;
-                const primaryThreadId = String(first?.primaryThreadId || '').trim() || undefined;
-                const sessionRole = String(first?.sessionRole || '').trim() || undefined;
-                const rootRequest = String(first?.rootRequest || '').trim() || undefined;
-                const focusSummary = String(first?.focusSummary || '').trim() || undefined;
+                const representative = this.selectProjectRepresentative(groupedSessions);
+                const workspace = String(representative?.workspace || '').trim();
+                const projectId = String(representative?.projectId || '').trim() || undefined;
+                const primaryThreadId = String(representative?.primaryThreadId || '').trim() || undefined;
+                const sessionRole = String(representative?.sessionRole || '').trim() || undefined;
+                const rootRequest = String(representative?.rootRequest || '').trim() || undefined;
+                const focusSummary = String(representative?.focusSummary || '').trim() || undefined;
                 return {
                     projectKey,
                     projectId,
-                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || groupedSessions[0]?.id || 'session',
+                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || representative?.id || 'session',
                     workspace,
                     primaryThreadId,
                     sessionRole,
@@ -297,15 +307,16 @@ export class AgentConsoleSessionService {
                 const groupedSessions = project.sessionIds
                     .map(sessionId => sessionMap.get(sessionId))
                     .filter((session): session is AgentConsoleSessionChoice => !!session);
+                const representative = this.selectProjectRepresentative(groupedSessions);
                 const workspace = String(project.workspace || '').trim();
                 const projectId = String(project.projectId || '').trim() || undefined;
                 const primaryThreadId = String(project.primaryThreadId || '').trim() || undefined;
-                const focusSummary = String(groupedSessions[0]?.focusSummary || '').trim() || undefined;
-                const rootRequest = String(groupedSessions[0]?.rootRequest || '').trim() || undefined;
+                const focusSummary = String(representative?.focusSummary || '').trim() || undefined;
+                const rootRequest = String(representative?.rootRequest || '').trim() || undefined;
                 return {
                     projectKey: String(project.projectKey || '').trim() || undefined,
                     projectId,
-                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || groupedSessions[0]?.id || 'session',
+                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || representative?.id || 'session',
                     workspace,
                     primaryThreadId,
                     rootRequest,

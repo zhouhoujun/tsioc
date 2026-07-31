@@ -251,19 +251,25 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setProjectContext();
             return;
         }
-        const anchor = projectSessions.find(item => item.id === this.state.sessionId)
-            || projectSessions.find(item => item.current)
-            || projectSessions[0];
+        const representative = projectSessions
+            .slice()
+            .sort((left, right) => {
+                const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return String(left.id || '').localeCompare(String(right.id || ''));
+            })[0];
         const summary = projectSessions
             .slice()
             .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))
             .map(item => String(item.summary || '').trim())
             .find(Boolean) || '';
         this.state.setProjectContext({
-            projectKey: anchor ? this.resolveSessionProjectKey(anchor) : undefined,
-            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.focusSummary || anchor?.workspace || anchor?.primaryThreadId || anchor?.rootRequest || anchor?.id,
+            projectKey: representative ? this.resolveSessionProjectKey(representative) : undefined,
+            projectLabel: representative?.projectLabel || representative?.projectId || representative?.focusSummary || representative?.workspace || representative?.primaryThreadId || representative?.rootRequest || representative?.id,
             projectSummary: summary,
-            projectSessionCount: anchor?.projectSessionCount || projectSessions.length
+            projectSessionCount: representative?.projectSessionCount || projectSessions.length
         });
     }
 
@@ -2856,7 +2862,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             result: await this.appRpc!.request('todo.get', { sessionId: session.id })
         })));
         const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
-        let sourceSessionId: string | undefined;
+        let latestAnyTodoSessionId: string | undefined;
+        let latestActiveTodoSessionId: string | undefined;
         for (const entry of results) {
             if (entry.status !== 'fulfilled') {
                 continue;
@@ -2872,7 +2879,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!todos.length) {
                 continue;
             }
-            sourceSessionId ||= value.sessionId;
+            latestAnyTodoSessionId ||= value.sessionId;
+            if (!latestActiveTodoSessionId && todos.some((todo: any) => todo.status === 'pending' || todo.status === 'in_progress')) {
+                latestActiveTodoSessionId = value.sessionId;
+            }
             for (const todo of todos) {
                 if (!merged.has(todo.id)) {
                     merged.set(todo.id, todo);
@@ -2881,6 +2891,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
         const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
+        const sourceSessionId = activeTodos.length
+            ? latestActiveTodoSessionId || latestAnyTodoSessionId
+            : latestAnyTodoSessionId;
         if (sessionId !== this.state.sessionId) {
             return;
         }

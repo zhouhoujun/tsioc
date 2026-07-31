@@ -449,6 +449,58 @@ export class SessionHandlerTest {
         expect(data[0].workspace).toEqual('/tmp/project-a');
     }
 
+    @Test('projects route prefers latest active session metadata for grouped labels')
+    async projectsRoutePrefersLatestActiveSessionMetadataForGroupedLabels() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+            await store.append('s2', { id: '2', role: 'user', content: 'hello', createdAt: 2 });
+            await store.setWorkspace('s1', '/tmp/project-a');
+            await store.setWorkspace('s2', '/tmp/project-b');
+            await store.setProjectMetadata('s1', {
+                projectId: 'exam-system',
+                focusSummary: 'Older summary',
+                rootRequest: 'Older request'
+            });
+            await store.setProjectMetadata('s2', {
+                projectId: 'exam-system',
+                focusSummary: 'Latest summary',
+                rootRequest: 'Latest request'
+            });
+            await owners.create('s1', 'user-1');
+            await owners.create('s2', 'user-1');
+        } finally {
+            Date.now = originalNow;
+        }
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+        handler.track('s2');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/projects' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].label).toEqual('exam-system');
+        expect(data[0].focusSummary).toEqual('Latest summary');
+        expect(data[0].rootRequest).toEqual('Latest request');
+        expect(data[0].workspace).toEqual('/tmp/project-b');
+    }
+
     @Test('lists only actively running sessions')
     async listsOnlyActivelyRunningSessions() {
         const store = new InMemorySessionStore();

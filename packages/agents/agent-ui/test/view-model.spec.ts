@@ -4372,6 +4372,70 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessions[1].current).toEqual(true);
     }
 
+    @Test('session service prefers latest active session metadata for grouped labels')
+    async sessionServicePrefersLatestActiveSessionMetadataForGroupedLabels() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system',
+            focusSummary: 'Older summary',
+            rootRequest: 'Older request'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 5,
+            updatedAt: 5,
+            workspace: '/tmp/project-b',
+            projectId: 'exam-system',
+            focusSummary: 'Latest summary',
+            rootRequest: 'Latest request'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-a');
+
+        expect(projects[0].projectKey).toEqual('project:exam-system');
+        expect(projects[0].focusSummary).toEqual('Latest summary');
+        expect(projects[0].rootRequest).toEqual('Latest request');
+    }
+
+    @Test('project context prefers latest active session metadata in fallback groups')
+    async projectContextPrefersLatestActiveSessionMetadataInFallbackGroups() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [];
+        sessionService.sessions = [
+            {
+                id: 'chat-a',
+                current: true,
+                workspace: '/tmp/project-a',
+                primaryThreadId: 'thread-1',
+                focusSummary: 'Older summary',
+                lastActiveAt: 10
+            },
+            {
+                id: 'chat-b',
+                current: false,
+                workspace: '/tmp/project-b',
+                primaryThreadId: 'thread-1',
+                focusSummary: 'Latest summary',
+                lastActiveAt: 20
+            }
+        ];
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.projectKey).toEqual('thread:thread-1');
+        expect(component.sessionState.projectLabel).toEqual('Latest summary');
+    }
+
     @Test('sessions command refreshes grouped project sessions into the panel state')
     async sessionsCommandRefreshesGroupedProjectSessions() {
         const runtime = new RuntimeStub();
@@ -4533,6 +4597,34 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.projectSummary).toEqual('latest project summary');
         expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b', 'todo-a']);
         expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
+    }
+
+    @Test('openSession prefers active todo source session over newer completed-only sessions')
+    async openSessionPrefersActiveTodoSourceSessionOverNewerCompletedOnlySessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 2,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-b', workspace: '/tmp/project-b', summary: 'latest project summary', messageCount: 3, lastActiveAt: 20 },
+                { id: 'chat-a', workspace: '/tmp/project-a', summary: 'older summary', messageCount: 2, lastActiveAt: 10 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.todoPlanBySession.set('chat-b', [{ id: 'todo-b', content: 'finished item', status: 'completed' }]);
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'active item', status: 'in_progress' }]);
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-a');
     }
 
     @Test('review requests use the source session for aggregated project tasks')

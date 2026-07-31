@@ -167,13 +167,20 @@ export class SessionHandler {
 
         return Array.from(buckets.entries())
             .map(([projectKey, sessions]) => {
-                const first = sessions[0];
-                const workspace = String(first?.workspace || '').trim();
-                const projectId = String(first?.projectId || '').trim() || undefined;
-                const primaryThreadId = String(first?.primaryThreadId || '').trim() || undefined;
-                const sessionRole = String(first?.sessionRole || '').trim() || undefined;
-                const rootRequest = String(first?.rootRequest || '').trim() || undefined;
-                const focusSummary = String(first?.focusSummary || '').trim() || undefined;
+                const orderedSessions = sessions.slice().sort((left, right) => {
+                    const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                    if (activityDelta !== 0) {
+                        return activityDelta;
+                    }
+                    return left.id.localeCompare(right.id);
+                });
+                const representative = orderedSessions[0];
+                const workspace = String(representative?.workspace || '').trim();
+                const projectId = String(representative?.projectId || '').trim() || undefined;
+                const primaryThreadId = String(representative?.primaryThreadId || '').trim() || undefined;
+                const sessionRole = String(representative?.sessionRole || '').trim() || undefined;
+                const rootRequest = String(representative?.rootRequest || '').trim() || undefined;
+                const focusSummary = String(representative?.focusSummary || '').trim() || undefined;
                 return {
                     projectKey,
                     projectId,
@@ -182,14 +189,8 @@ export class SessionHandler {
                     sessionRole,
                     rootRequest,
                     focusSummary,
-                    label: this.resolveProjectLabel(first),
-                    sessions: sessions.slice().sort((left, right) => {
-                        const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-                        if (activityDelta !== 0) {
-                            return activityDelta;
-                        }
-                        return left.id.localeCompare(right.id);
-                    }),
+                    label: this.resolveProjectLabel(representative),
+                    sessions: orderedSessions,
                     sessionCount: sessions.length,
                     lastActiveAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0)
                 };
