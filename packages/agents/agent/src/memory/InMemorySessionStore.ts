@@ -39,25 +39,41 @@ export class InMemorySessionStore extends SessionStore {
     }
 
     async listProjects(): Promise<AgentSessionProjectIndex[]> {
-        const buckets = new Map<string, AgentSessionProjectIndex>();
+        const buckets = new Map<string, AgentSessionProjectIndex & {
+            representativeLastActiveAt: number;
+            representativeSessionId: string;
+        }>();
         for (const state of this.sessions.values()) {
             const projectKey = this.resolveProjectKey(state);
+            const lastActiveAt = state.updatedAt || state.createdAt || 0;
             const existing = buckets.get(projectKey) ?? {
                 projectKey,
-                projectId: state.projectId,
-                workspace: state.workspace,
-                primaryThreadId: state.primaryThreadId,
+                projectId: undefined,
+                workspace: undefined,
+                primaryThreadId: undefined,
                 sessionIds: [],
-                lastActiveAt: 0
+                lastActiveAt: 0,
+                representativeLastActiveAt: -1,
+                representativeSessionId: ''
             };
             existing.sessionIds.push(state.sessionId);
-            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, state.updatedAt || state.createdAt || 0);
-            existing.projectId = existing.projectId || state.projectId;
-            existing.workspace = existing.workspace || state.workspace;
-            existing.primaryThreadId = existing.primaryThreadId || state.primaryThreadId;
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, lastActiveAt);
+            if (lastActiveAt > existing.representativeLastActiveAt
+                || (lastActiveAt === existing.representativeLastActiveAt
+                    && (!existing.representativeSessionId || state.sessionId.localeCompare(existing.representativeSessionId) < 0))) {
+                existing.projectId = state.projectId;
+                existing.workspace = state.workspace;
+                existing.primaryThreadId = state.primaryThreadId;
+                existing.representativeLastActiveAt = lastActiveAt;
+                existing.representativeSessionId = state.sessionId;
+            }
             buckets.set(projectKey, existing);
         }
-        return Array.from(buckets.values()).sort((left, right) => {
+        return Array.from(buckets.values()).map(({
+            representativeLastActiveAt: _representativeLastActiveAt,
+            representativeSessionId: _representativeSessionId,
+            ...project
+        }) => project).sort((left, right) => {
             const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
             if (activityDelta !== 0) {
                 return activityDelta;

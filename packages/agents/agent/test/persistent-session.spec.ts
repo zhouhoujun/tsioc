@@ -119,4 +119,38 @@ describe('Persistent session store', () => {
             await ctx.close();
         }
     });
+
+    it('listProjects prefers latest active session metadata for grouped projects', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-a', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('session-a', '/tmp/project-a');
+            await store.setProjectMetadata('session-a', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-a'
+            });
+            await store.append('session-b', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+            await store.setWorkspace('session-b', '/tmp/project-b');
+            await store.setProjectMetadata('session-b', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-b'
+            });
+
+            const projects = await store.listProjects();
+            expect(projects).toContainEqual(expect.objectContaining({
+                projectKey: 'project:exam-system',
+                projectId: 'exam-system',
+                workspace: '/tmp/project-b',
+                primaryThreadId: 'thread-b',
+                sessionIds: ['session-a', 'session-b']
+            }));
+        } finally {
+            Date.now = originalNow;
+            await ctx.close();
+        }
+    });
 });

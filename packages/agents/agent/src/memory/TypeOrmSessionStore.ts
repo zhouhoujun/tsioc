@@ -54,25 +54,41 @@ export class TypeOrmSessionStore extends SessionStore {
 
     async listProjects(): Promise<AgentSessionProjectIndex[]> {
         const sessions = await this.adapter.getRepository(AgentSessionEntity).find();
-        const buckets = new Map<string, AgentSessionProjectIndex>();
+        const buckets = new Map<string, AgentSessionProjectIndex & {
+            representativeLastActiveAt: number;
+            representativeSessionId: string;
+        }>();
         for (const session of sessions) {
             const projectKey = this.resolveProjectKey(session);
+            const lastActiveAt = Number(session.updatedAt || session.createdAt || 0);
             const existing = buckets.get(projectKey) ?? {
                 projectKey,
-                projectId: session.projectId ?? undefined,
-                workspace: session.workspace ?? undefined,
-                primaryThreadId: session.primaryThreadId ?? undefined,
+                projectId: undefined,
+                workspace: undefined,
+                primaryThreadId: undefined,
                 sessionIds: [],
-                lastActiveAt: 0
+                lastActiveAt: 0,
+                representativeLastActiveAt: -1,
+                representativeSessionId: ''
             };
             existing.sessionIds.push(session.sessionId);
-            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, Number(session.updatedAt || session.createdAt || 0));
-            existing.projectId = existing.projectId || session.projectId || undefined;
-            existing.workspace = existing.workspace || session.workspace || undefined;
-            existing.primaryThreadId = existing.primaryThreadId || session.primaryThreadId || undefined;
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, lastActiveAt);
+            if (lastActiveAt > existing.representativeLastActiveAt
+                || (lastActiveAt === existing.representativeLastActiveAt
+                    && (!existing.representativeSessionId || session.sessionId.localeCompare(existing.representativeSessionId) < 0))) {
+                existing.projectId = session.projectId ?? undefined;
+                existing.workspace = session.workspace ?? undefined;
+                existing.primaryThreadId = session.primaryThreadId ?? undefined;
+                existing.representativeLastActiveAt = lastActiveAt;
+                existing.representativeSessionId = session.sessionId;
+            }
             buckets.set(projectKey, existing);
         }
-        return Array.from(buckets.values()).sort((left, right) => {
+        return Array.from(buckets.values()).map(({
+            representativeLastActiveAt: _representativeLastActiveAt,
+            representativeSessionId: _representativeSessionId,
+            ...project
+        }) => project).sort((left, right) => {
             const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
             if (activityDelta !== 0) {
                 return activityDelta;
