@@ -44,6 +44,28 @@ export class MemoryForgetTool implements AgentTool {
         };
     }
 
+    /**
+     * Snapshot the records matching the filters before deletion so
+     * compensate() can restore them exactly.
+     */
+    async captureCompensation(input: any, context: AgentToolContext): Promise<unknown> {
+        const records = await context.memory.getAll(context.sessionId);
+        return this.filterRecords(records, input);
+    }
+
+    /**
+     * Re-insert the records captured before deletion.
+     */
+    async compensate(captured: unknown, context: AgentToolContext): Promise<void> {
+        const records = captured as AgentMemoryRecord[] | undefined;
+        if (!Array.isArray(records)) {
+            return;
+        }
+        for (const record of records) {
+            await context.memory.put({ ...record });
+        }
+    }
+
     private filterRecords(records: AgentMemoryRecord[], input: any): AgentMemoryRecord[] {
         const id = this.optionalString(input?.id);
         const key = this.optionalString(input?.key);

@@ -33,6 +33,30 @@ export class MemoryDeleteTool implements AgentTool {
         };
     }
 
+    /**
+     * Snapshot the full record(s) about to be deleted so compensate() can
+     * restore them exactly (same id, scope, and content).
+     */
+    async captureCompensation(input: any, context: AgentToolContext): Promise<unknown> {
+        const id = this.requireId(input?.id);
+        const scope = this.resolveScope(input?.scope);
+        const records = await context.memory.getAll(context.sessionId);
+        return records.filter(record => record.id === id && (scope === undefined || record.scope === scope));
+    }
+
+    /**
+     * Re-insert the records captured before deletion.
+     */
+    async compensate(captured: unknown, context: AgentToolContext): Promise<void> {
+        const records = captured as AgentMemoryRecord[] | undefined;
+        if (!Array.isArray(records)) {
+            return;
+        }
+        for (const record of records) {
+            await context.memory.put({ ...record });
+        }
+    }
+
     private requireId(id: unknown): string {
         if (typeof id !== 'string' || !id.trim()) {
             throw new Error('Invalid memory.delete input: id must be a non-empty string.');

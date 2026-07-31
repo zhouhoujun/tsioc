@@ -86,6 +86,29 @@ export class MemoryPurgeTool implements AgentTool {
         return true;
     }
 
+    /**
+     * Snapshot the records matching the purge selectors before deletion so
+     * compensate() can restore them exactly.
+     */
+    async captureCompensation(input: any, context: AgentToolContext): Promise<unknown> {
+        this.requireConfirm(input?.confirm);
+        const records = await context.memory.getAll(context.sessionId);
+        return this.filterRecords(records, input);
+    }
+
+    /**
+     * Re-insert the records captured before the purge.
+     */
+    async compensate(captured: unknown, context: AgentToolContext): Promise<void> {
+        const records = captured as AgentMemoryRecord[] | undefined;
+        if (!Array.isArray(records)) {
+            return;
+        }
+        for (const record of records) {
+            await context.memory.put({ ...record });
+        }
+    }
+
     private optionalString(value: unknown): string | undefined {
         return typeof value === 'string' && value.trim() ? value.trim() : undefined;
     }

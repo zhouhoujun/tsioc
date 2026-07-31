@@ -1614,6 +1614,68 @@ export class AgentToolsPackageTest {
         expect(globalWithFlag.count).toEqual(1);
     }
 
+    @Test('memory delete compensation restores the deleted record exactly')
+    async memoryDeleteCompensationRestoresRecord() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', createdAt: 1 });
+        const tool = new MemoryDeleteTool();
+
+        const captured = await tool.captureCompensation({ id: 's1-note' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await tool.invoke({ id: 's1-note' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect((await store.getAll('s1')).length).toEqual(0);
+
+        await tool.compensate(captured, createSessionContext({ sessionId: 's1', memory: store }));
+        const restored = await store.getAll('s1');
+        expect(restored.length).toEqual(1);
+        expect(restored[0]).toMatchObject({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', namespace: 'agent' });
+    }
+
+    @Test('memory forget compensation restores the forgotten records')
+    async memoryForgetCompensationRestoresRecords() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 'keep-1', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
+        await store.put({ id: 'drop-1', sessionId: 's1', key: 'scratch', value: 'temp', scope: 'session', createdAt: 2 });
+        const tool = new MemoryForgetTool();
+
+        const captured = await tool.captureCompensation({ key: 'scratch' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await tool.invoke({ key: 'scratch' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect((await store.getAll('s1')).map(record => record.id)).toEqual(['keep-1']);
+
+        await tool.compensate(captured, createSessionContext({ sessionId: 's1', memory: store }));
+        expect((await store.getAll('s1')).map(record => record.id).sort()).toEqual(['drop-1', 'keep-1']);
+    }
+
+    @Test('memory purge compensation restores the purged records')
+    async memoryPurgeCompensationRestoresRecords() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 'purge-1', sessionId: 's1', key: 'scratch', value: 'temp', scope: 'session', createdAt: 1 });
+        const tool = new MemoryPurgeTool();
+
+        const captured = await tool.captureCompensation({ confirm: true, key: 'scratch' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await tool.invoke({ confirm: true, key: 'scratch' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect((await store.getAll('s1')).length).toEqual(0);
+
+        await tool.compensate(captured, createSessionContext({ sessionId: 's1', memory: store }));
+        expect((await store.getAll('s1')).map(record => record.id)).toEqual(['purge-1']);
+    }
+
+    @Test('memory put compensation removes only the records the call added')
+    async memoryPutCompensationRemovesOnlyAddedRecords() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 'existing-1', sessionId: 's1', key: 'topic', value: 'old', scope: 'session', createdAt: 1 });
+        const tool = new MemoryPutTool();
+
+        const captured = await tool.captureCompensation({ key: 'topic' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await tool.invoke({ key: 'topic', value: 'new-1' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await tool.invoke({ key: 'topic', value: 'new-2' }, createSessionContext({ sessionId: 's1', memory: store }));
+
+        await tool.compensate(captured, createSessionContext({ sessionId: 's1', memory: store }));
+        const records = await store.getAll('s1');
+        expect(records.length).toEqual(1);
+        expect(records[0].id).toEqual('existing-1');
+        expect(records[0].value).toEqual('old');
+    }
+
     @Test('memory recall returns visible records with filters')
     async memoryRecallReturnsVisibleRecordsWithFilters() {
         const store = new InMemoryMemoryStore();

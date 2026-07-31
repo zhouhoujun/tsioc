@@ -49,6 +49,46 @@ export class MemoryPutTool implements AgentTool {
         };
     }
 
+    /**
+     * Snapshot the existing records for the target key/scope/namespace before
+     * the put so compensate() can remove only the records this call added.
+     */
+    async captureCompensation(input: any, context: AgentToolContext): Promise<unknown> {
+        const key = this.requireString(input?.key, 'key');
+        const scope = this.resolveScope(input?.scope);
+        const namespace = this.optionalString(input?.namespace);
+        const existing = (await context.memory.getAll(context.sessionId))
+            .filter(record => record.key === key
+                && record.scope === scope
+                && (namespace === undefined || record.namespace === namespace));
+        return {
+            key,
+            scope,
+            namespace,
+            existingIds: existing.map(record => record.id)
+        };
+    }
+
+    /**
+     * Delete the memory records this put added, keeping any records that
+     * already existed for the key.
+     */
+    async compensate(captured: unknown, context: AgentToolContext): Promise<void> {
+        const snapshot = captured as { key: string; scope: AgentMemoryRecord['scope']; namespace?: string; existingIds: string[] } | undefined;
+        if (!snapshot) {
+            return;
+        }
+        const existingIds = new Set(snapshot.existingIds ?? []);
+        const added = (await context.memory.getAll(context.sessionId))
+            .filter(record => record.key === snapshot.key
+                && record.scope === snapshot.scope
+                && (snapshot.namespace === undefined || record.namespace === snapshot.namespace)
+                && !existingIds.has(record.id));
+        for (const record of added) {
+            await context.memory.delete(record.id, context.sessionId, record.scope);
+        }
+    }
+
     private requireString(value: unknown, field: string): string {
         if (typeof value !== 'string' || !value.trim()) {
             throw new Error(`Invalid memory.put input: ${field} must be a non-empty string.`);
