@@ -127,6 +127,31 @@ export class AgentConsoleRendererTest {
         expect(lines.some(line => line.includes('plan 2'))).toBe(false);
     }
 
+    @Test('dashboard shows coding task counters when no plan todos exist')
+    async dashboardShowsCodingTaskCountersWithoutPlanTodos() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setReviewTasks([{
+            id: 'task-1',
+            title: 'Patch handlers',
+            sourceSessionId: 'chat-a',
+            status: 'running',
+            updatedAt: 20
+        } as any, {
+            id: 'task-2',
+            title: 'Review diff',
+            sourceSessionId: 'chat-b',
+            status: 'completed',
+            updatedAt: 10
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.shouldShow).toBe(true);
+        expect(dashboardPanel.instance.dashboardCountersLabel.includes('tasks 1/2')).toBe(true);
+        expect(dashboardPanel.instance.dashboardDetailLabel.includes('task task-1 · Patch handlers · running')).toBe(true);
+    }
+
     @Test('renders message history before jobs panel in root output')
     async renderMessagesBeforeJobsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

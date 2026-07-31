@@ -285,7 +285,8 @@ export class AgentConsoleDashboardPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        const activeTodos = this.state.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        const activeTasks = this.activeDashboardTaskCount;
+        const totalTasks = this.totalDashboardTaskCount;
         const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
         const activeApprovals = this.state.pendingApprovals.length;
         const activeTools = this.state.runningTools.length;
@@ -295,7 +296,7 @@ export class AgentConsoleDashboardPanelComponent {
         return [
             `approvals ${formatCompactNumber(activeApprovals)}`,
             `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}`,
-            `tasks ${formatCompactNumber(activeTodos)}/${formatCompactNumber(this.state.planTodos.length)}`,
+            `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}`,
             `tools ${formatCompactNumber(activeTools)}`,
             `runs ${formatCompactNumber(toolRuns)}`,
             `activity ${formatCompactNumber(activities)}`,
@@ -345,6 +346,10 @@ export class AgentConsoleDashboardPanelComponent {
         if (latestApproval) {
             lines.push(`approval ${latestApproval.toolName} · ${this.summarize(latestApproval.reason)}`);
         }
+        const latestTask = this.latestReviewTask();
+        if (latestTask && !this.hasActivePlanTodos) {
+            lines.push(`task ${latestTask.id} · ${this.summarize(latestTask.title)} · ${latestTask.status || 'idle'}`);
+        }
         return lines.join('\n');
     }
 
@@ -360,6 +365,7 @@ export class AgentConsoleDashboardPanelComponent {
                 || !!this.state.pendingApprovals.length
                 || !!this.state.scheduledTasks.length
                 || !!this.state.planTodos.length
+                || !!this.state.reviewTaskChoices.length
                 || !!this.state.toolRuns.length
                 || !!this.state.activities.length
                 || !!this.state.runningTools.length
@@ -367,10 +373,36 @@ export class AgentConsoleDashboardPanelComponent {
             );
     }
 
+    protected get totalDashboardTaskCount(): number {
+        return this.hasActivePlanTodos ? this.state.planTodos.length : this.state.reviewTaskChoices.length;
+    }
+
+    protected get activeDashboardTaskCount(): number {
+        if (this.hasActivePlanTodos) {
+            return this.state.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        }
+        return this.state.reviewTaskChoices.filter(task => this.isActiveReviewTask(task)).length;
+    }
+
+    protected get hasActivePlanTodos(): boolean {
+        return this.state.planTodos.some(item => item.status === 'pending' || item.status === 'in_progress');
+    }
+
     protected latestScheduledTask(): ScheduledAgentTask | undefined {
         return this.state.scheduledTasks
             .slice()
             .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
+    }
+
+    protected latestReviewTask(): AgentConsoleReviewTaskItem | undefined {
+        return this.state.reviewTaskChoices
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
+    }
+
+    protected isActiveReviewTask(task?: AgentConsoleReviewTaskItem | null): boolean {
+        const status = String(task?.status || '').trim().toLowerCase();
+        return status === 'planned' || status === 'running';
     }
 
     protected workspaceLabel(workspace?: string): string {
