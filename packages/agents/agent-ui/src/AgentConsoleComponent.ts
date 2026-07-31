@@ -1986,6 +1986,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
+                    { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
@@ -2434,6 +2435,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 if (!this.multilineMode) { this.draftLines = []; }
                 return true;
             case '/cancel':
+                if (this.isTurnInProgress()) {
+                    const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
+                    this.notify(cancelled
+                        ? 'Cancelling current turn...'
+                        : 'No running turn to cancel.');
+                    return true;
+                }
                 this.draftLines = [];
                 this.multilineMode = false;
                 return true;
@@ -3118,6 +3126,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case 'failed':
             case 'error':
                 return status as 'success' | 'failed' | 'error';
+            case 'cancelled':
+                return 'failed';
             default:
                 return 'running';
         }

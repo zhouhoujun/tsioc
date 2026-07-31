@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -137,6 +137,7 @@ export class AppRpcServer {
                         'session.delete',
                         'run.turn',
                         'run.turn_stream',
+                        'run.cancel',
                         'tools.list',
                         'tools.activate',
                         'tools.invoke',
@@ -179,6 +180,8 @@ export class AppRpcServer {
                 return this.deleteSession(this.requireSessionId(params), context);
             case 'run.turn':
                 return this.runTurn(params, context);
+            case 'run.cancel':
+                return this.cancelTurn(params, context);
             case 'tools.list':
                 return this.tools.getToolDefinitions(this.optionalSessionId(params));
             case 'tools.activate':
@@ -387,8 +390,17 @@ export class AppRpcServer {
         };
     }
 
-    private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {
-        const params = request.params ?? {};
+    private async cancelTurn(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const cancelled = await this.runtime.cancelTurn(sessionId);
+        return {
+            sessionId,
+            cancelled
+        };
+    }
+
+    private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
         const input = this.requireString(params?.input, 'run.turn_stream input');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
@@ -437,6 +449,22 @@ export class AppRpcServer {
                 };
             }
             yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
+        } catch (error) {
+            if (error instanceof AgentTurnCancelledError) {
+                yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
+                if (request.id !== undefined) {
+                    yield {
+                        jsonrpc: '2.0',
+                        id: request.id,
+                        result: {
+                            sessionId,
+                            cancelled: true
+                        }
+                    };
+                }
+                return;
+            }
+            throw error;
         } finally {
             unsubscribe();
         }
@@ -557,6 +585,13 @@ export class AppRpcServer {
                     label: 'error',
                     status: 'error',
                     content: String(data.error || 'Unknown error')
+                };
+            case 'turn_cancelled':
+                return {
+                    eventType: 'turn_cancelled',
+                    label: 'state',
+                    status: 'failed',
+                    content: 'Turn cancelled'
                 };
             default:
                 return null;

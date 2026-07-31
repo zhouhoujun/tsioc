@@ -176,6 +176,20 @@ export class AgentConsoleSessionService {
         await this.sessionStore?.delete(sessionId);
     }
 
+    async cancelTurn(sessionId: string, context?: any): Promise<boolean> {
+        if (!sessionId) {
+            return false;
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('run.cancel', { sessionId }, context);
+            return result?.cancelled === true;
+        }
+        if (this.runtime && typeof this.runtime.cancelTurn === 'function') {
+            return this.runtime.cancelTurn(sessionId);
+        }
+        return false;
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

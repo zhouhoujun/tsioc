@@ -29,6 +29,17 @@ export abstract class AgentRuntime {
 
     abstract searchSessions(query: string, options?: SessionSearchOptions): Promise<SessionSearchMatch[]>;
 
+    /**
+     * Request cancellation of the currently running turn for a session.
+     * Returns true when a running turn was found and cancellation was requested;
+     * returns false when no turn is currently running (or it is already cancelling).
+     * Override this in concrete runtimes that support turn cancellation.
+     */
+    async cancelTurn(_sessionId: string): Promise<boolean> {
+        // no-op by default
+        return false;
+    }
+
     abstract synthesizeExperiences(options?: SynthesisOptions): SynthesisReport;
 
     /**

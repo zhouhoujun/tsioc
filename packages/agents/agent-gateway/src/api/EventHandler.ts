@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -120,6 +120,13 @@ export class EventHandler {
         this.publish('turn_completed', {
             sessionId: event.sessionId,
             message: event.message
+        });
+    }
+
+    @OnEvent(AgentTurnCancelledEvent)
+    onTurnCancelled(event: AgentTurnCancelledEvent): void {
+        this.publish('turn_cancelled', {
+            sessionId: event.sessionId
         });
     }
 

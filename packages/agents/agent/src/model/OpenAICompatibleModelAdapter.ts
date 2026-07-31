@@ -131,7 +131,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         const toolNames = this.createToolNameMaps(request.tools);
         const requestBody = this.createRequest(request, toolNames.forward);
 
-        const { signal, cleanup } = this.createTimeoutContext();
+        const { signal, cleanup } = this.createTimeoutContext(request.signal);
         try {
             const requestUrl = this.resolveUrl('/chat/completions');
             let response: Response;
@@ -192,7 +192,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
         const toolNames = this.createToolNameMaps(request.tools);
 
-        const { signal, cleanup, markActivity, getAbortReason } = this.createStreamingTimeoutContext();
+        const { signal, cleanup, markActivity, getAbortReason } = this.createStreamingTimeoutContext(request.signal);
         const url = this.resolveUrl('/chat/completions');
         const reqBody = this.createStreamRequest(request, toolNames.forward);
         let emittedAnyChunk = false;
@@ -754,9 +754,9 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return [];
     }
 
-    protected createTimeoutContext(): { signal?: AbortSignal, cleanup(): void } {
+    protected createTimeoutContext(external?: AbortSignal): { signal?: AbortSignal, cleanup(): void } {
         const timeout = this.options.timeoutMs;
-        if (!timeout || timeout <= 0) {
+        if ((!timeout || timeout <= 0) && !external) {
             return {
                 cleanup() {
                     return;
@@ -765,23 +765,36 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
 
         const controller = new AbortController();
-        const handle = setTimeout(() => controller.abort(), timeout);
+        const onExternalAbort = () => controller.abort();
+        if (external) {
+            if (external.aborted) {
+                controller.abort();
+            } else {
+                external.addEventListener('abort', onExternalAbort, { once: true });
+            }
+        }
+        const handle = timeout && timeout > 0 ? setTimeout(() => controller.abort(), timeout) : undefined;
         return {
             signal: controller.signal,
             cleanup() {
-                clearTimeout(handle);
+                if (handle) {
+                    clearTimeout(handle);
+                }
+                if (external) {
+                    external.removeEventListener('abort', onExternalAbort);
+                }
             }
         };
     }
 
-    protected createStreamingTimeoutContext(): {
+    protected createStreamingTimeoutContext(external?: AbortSignal): {
         signal?: AbortSignal;
         cleanup(): void;
         markActivity(): void;
         getAbortReason(): string | undefined;
     } {
         const timeout = this.options.timeoutMs;
-        if (!timeout || timeout <= 0) {
+        if ((!timeout || timeout <= 0) && !external) {
             return {
                 cleanup() {
                     return;
@@ -798,15 +811,29 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         const controller = new AbortController();
         let abortReason: string | undefined;
         let stallHandle: ReturnType<typeof setTimeout> | undefined;
-        const stallTimeout = Math.min(timeout, 15000);
-        const totalHandle = setTimeout(() => {
-            abortReason = `Model stream timed out after ${timeout}ms.`;
-            controller.abort();
-        }, timeout);
+        let totalHandle: ReturnType<typeof setTimeout> | undefined;
+        const onExternalAbort = () => controller.abort();
+        if (external) {
+            if (external.aborted) {
+                controller.abort();
+            } else {
+                external.addEventListener('abort', onExternalAbort, { once: true });
+            }
+        }
+        if (timeout && timeout > 0) {
+            totalHandle = setTimeout(() => {
+                abortReason = `Model stream timed out after ${timeout}ms.`;
+                controller.abort();
+            }, timeout);
+        }
         const armStallTimer = () => {
+            if (!timeout || timeout <= 0) {
+                return;
+            }
             if (stallHandle) {
                 clearTimeout(stallHandle);
             }
+            const stallTimeout = Math.min(timeout, 15000);
             stallHandle = setTimeout(() => {
                 abortReason = `Model stream stalled after ${stallTimeout}ms without output.`;
                 controller.abort();
@@ -817,9 +844,14 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return {
             signal: controller.signal,
             cleanup() {
-                clearTimeout(totalHandle);
+                if (totalHandle) {
+                    clearTimeout(totalHandle);
+                }
                 if (stallHandle) {
                     clearTimeout(stallHandle);
+                }
+                if (external) {
+                    external.removeEventListener('abort', onExternalAbort);
                 }
             },
             markActivity() {

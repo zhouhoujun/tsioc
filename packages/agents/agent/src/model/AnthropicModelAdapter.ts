@@ -123,7 +123,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY'}.`);
         }
 
-        const { signal, cleanup } = this.createTimeoutContext();
+        const { signal, cleanup } = this.createTimeoutContext(request.signal);
         try {
             const body = this.buildBody(request);
             const response = await fetch(this.resolveUrl('/v1/messages'), {
@@ -157,7 +157,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY'}.`);
         }
 
-        const { signal, cleanup } = this.createTimeoutContext();
+        const { signal, cleanup } = this.createTimeoutContext(request.signal);
         try {
             const body = this.buildBody(request);
             const response = await fetch(this.resolveUrl('/v1/messages'), {
@@ -520,16 +520,31 @@ export class AnthropicModelAdapter extends ModelAdapter {
         return this.complete(request, attempt + 1);
     }
 
-    protected createTimeoutContext(): { signal?: AbortSignal; cleanup(): void } {
+    protected createTimeoutContext(external?: AbortSignal): { signal?: AbortSignal; cleanup(): void } {
         const timeout = this.options.timeoutMs;
-        if (!timeout || timeout <= 0) {
+        if ((!timeout || timeout <= 0) && !external) {
             return { cleanup() { return; } };
         }
         const controller = new AbortController();
-        const handle = setTimeout(() => controller.abort(), timeout);
+        const onExternalAbort = () => controller.abort();
+        if (external) {
+            if (external.aborted) {
+                controller.abort();
+            } else {
+                external.addEventListener('abort', onExternalAbort, { once: true });
+            }
+        }
+        const handle = timeout && timeout > 0 ? setTimeout(() => controller.abort(), timeout) : undefined;
         return {
             signal: controller.signal,
-            cleanup() { clearTimeout(handle); }
+            cleanup() {
+                if (handle) {
+                    clearTimeout(handle);
+                }
+                if (external) {
+                    external.removeEventListener('abort', onExternalAbort);
+                }
+            }
         };
     }
 }

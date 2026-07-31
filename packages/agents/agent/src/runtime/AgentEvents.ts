@@ -180,6 +180,12 @@ export class AgentTurnCompletedEvent extends ApplicationEvent {
     }
 }
 
+export class AgentTurnCancelledEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string) {
+        super(source);
+    }
+}
+
 export class AgentTurnDiagnosticsEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly diagnostics: AgentTurnDiagnostics) {
         super(source);

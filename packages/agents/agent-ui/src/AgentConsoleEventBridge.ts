@@ -14,6 +14,7 @@ import {
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
     AgentToolInvokedEvent,
+    AgentTurnCancelledEvent,
     AgentTurnCompletedEvent,
     AgentTurnStartedEvent
 } from '@tsdi/agent';
@@ -80,6 +81,22 @@ export class AgentConsoleEventBridge {
         bind(AgentTurnCompletedEvent, async (event: AgentTurnCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setStatus('idle');
+        });
+
+        bind(AgentTurnCancelledEvent, (event: AgentTurnCancelledEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.batch(() => {
+                this.state.setStatus('cancelled');
+                this.state.clearToolActivity();
+                this.state.pushActivity('turn', 'Turn cancelled');
+                if (!this.appRpc) {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('turn-cancel'), 'Turn cancelled', {
+                        eventType: 'turn_cancelled',
+                        label: 'state',
+                        status: 'failed'
+                    });
+                }
+            });
         });
 
         bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {

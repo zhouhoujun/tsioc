@@ -6,7 +6,8 @@ import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage } from './AgentMessage';
-import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
@@ -56,6 +57,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnQueues = new Map<string, Array<() => void>>();
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
+    protected sessionTurnAborts = new Map<string, AbortController>();
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
     constructor(
@@ -99,6 +101,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
+        this.beginTurnAbortScope(sessionId);
         try {
             await this.ensureSessionWorkspace(sessionId);
             const handler = typeof (this.app as any)?.get === 'function'
@@ -112,6 +115,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             return await handler.handle({ sessionId, input, principalId }, createRunContext(handler.injector ?? this.app));
         } finally {
+            this.endTurnAbortScope(sessionId);
             release();
         }
     }
@@ -173,6 +177,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
+            if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
+                await this.app.publishEvent(new AgentTurnCancelledEvent(this, input.sessionId));
+                throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(input.sessionId);
+            }
             const err = error instanceof Error ? error : new Error(String(error));
             await this.app.publishEvent(new AgentErrorEvent(this, input.sessionId, err));
             throw err;
@@ -185,6 +193,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async *runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
+        this.beginTurnAbortScope(sessionId);
         try {
             await this.ensureSessionWorkspace(sessionId);
             await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
@@ -206,11 +215,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
                 yield { type: 'done' };
             } catch (error) {
+                if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
+                    await this.app.publishEvent(new AgentTurnCancelledEvent(this, sessionId));
+                    throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(sessionId);
+                }
                 const err = error instanceof Error ? error : new Error(String(error));
                 await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
                 throw err;
             }
         } finally {
+            this.endTurnAbortScope(sessionId);
             release();
         }
     }
@@ -264,6 +278,43 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.sessions.search(query, options);
     }
 
+    async cancelTurn(sessionId: string): Promise<boolean> {
+        const controller = this.sessionTurnAborts.get(sessionId);
+        if (!controller || controller.signal.aborted) {
+            return false;
+        }
+        controller.abort();
+        return true;
+    }
+
+    protected beginTurnAbortScope(sessionId: string): void {
+        this.sessionTurnAborts.set(sessionId, new AbortController());
+    }
+
+    protected endTurnAbortScope(sessionId: string): void {
+        this.sessionTurnAborts.delete(sessionId);
+    }
+
+    protected getTurnAbortSignal(sessionId: string): AbortSignal | undefined {
+        return this.sessionTurnAborts.get(sessionId)?.signal;
+    }
+
+    protected isTurnAborted(sessionId: string): boolean {
+        return this.sessionTurnAborts.get(sessionId)?.signal.aborted === true;
+    }
+
+    protected throwIfTurnCancelled(sessionId: string): void {
+        if (this.isTurnAborted(sessionId)) {
+            throw new AgentTurnCancelledError(sessionId);
+        }
+    }
+
+    protected prepareModelRequest(sessionId: string, request: ModelRequest): ModelRequest {
+        this.throwIfTurnCancelled(sessionId);
+        request.signal = this.getTurnAbortSignal(sessionId);
+        return request;
+    }
+
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
         const loopDetector = new ToolLoopDetector();
         loopDetector.reset();
@@ -272,22 +323,23 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
+            this.throwIfTurnCancelled(sessionId);
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            let response = await this.modelAdapter.complete(request);
+            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request));
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
-                response = await this.modelAdapter.complete(this.buildEmptyResponseRetryRequest(request));
+                response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request)));
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
-                response = await this.modelAdapter.complete(this.buildFollowUpRecoveryRequest(request));
+                response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request)));
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
 
@@ -299,11 +351,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             round++;
         }
 
+        this.throwIfTurnCancelled(sessionId);
         const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
         await this.sessions.append(sessionId, limitMessage);
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = await this.modelAdapter.complete(finalRequest);
+        const finalResponse = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, finalRequest));
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
@@ -319,20 +372,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
+            this.throwIfTurnCancelled(sessionId);
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            let response = yield* this.collectStreamingResponse(sessionId, request);
+            let response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, request));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
-                response = yield* this.collectStreamingResponse(sessionId, this.buildEmptyResponseRetryRequest(request));
+                response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request)));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
-                response = yield* this.collectStreamingResponse(sessionId, this.buildFollowUpRecoveryRequest(request));
+                response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request)));
             }
 
             const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
@@ -343,12 +397,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             round++;
         }
 
+        this.throwIfTurnCancelled(sessionId);
         yield { type: 'text', content: '\n\n[Reached tool round limit. Requesting final answer...]\n\n' };
         const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
         await this.sessions.append(sessionId, limitMessage);
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = yield* this.collectStreamingResponse(sessionId, finalRequest);
+        const finalResponse = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, finalRequest));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
