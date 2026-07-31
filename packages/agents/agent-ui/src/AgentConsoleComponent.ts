@@ -1395,10 +1395,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async loadCodingTasks(): Promise<any[]> {
         if (!this.appRpc) {
+            this.state.batch(() => {
+                this.state.setTaskRecords([]);
+                this.state.setReviewTasks([]);
+            });
             return [];
         }
         const sessionIds = this.resolveCurrentProjectSessionIds();
-        const responses = await Promise.all(sessionIds.map(async sessionId => {
+        const responses = await Promise.allSettled(sessionIds.map(async sessionId => {
             const result = await this.appRpc!.request('coding_task.list', { sessionId });
             const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
             return tasks.map((task: any) => ({
@@ -1406,13 +1410,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 sourceSessionId: sessionId
             }));
         }));
-        const tasks = this.orderCodingTasksByLineage(responses.flat().sort((left, right) => {
-            const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
-            if (activityDelta !== 0) {
-                return activityDelta;
-            }
-            return String(left?.id || '').localeCompare(String(right?.id || ''));
-        }));
+        const tasks = this.orderCodingTasksByLineage(
+            responses
+                .flatMap(result => result.status === 'fulfilled' ? result.value : [])
+                .sort((left, right) => {
+                    const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
+                    if (activityDelta !== 0) {
+                        return activityDelta;
+                    }
+                    return String(left?.id || '').localeCompare(String(right?.id || ''));
+                })
+        );
         this.state.batch(() => {
             this.state.setTaskRecords(tasks);
             this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));
@@ -2702,12 +2710,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async refreshTodoPlan(): Promise<void> {
         if (!this.appRpc) {
+            this.state.clearPlanTodos();
             return;
         }
         const sessions = this.resolveCurrentProjectSessions()
             .slice()
             .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
-        const results = await Promise.all(sessions.map(async session => ({
+        const results = await Promise.allSettled(sessions.map(async session => ({
             sessionId: session.id,
             updatedAt: session.updatedAt || 0,
             result: await this.appRpc!.request('todo.get', { sessionId: session.id })
@@ -2715,8 +2724,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
         let sourceSessionId: string | undefined;
         for (const entry of results) {
-            const todos = Array.isArray(entry.result?.todos)
-                ? entry.result.todos.map((item: any) => ({
+            if (entry.status !== 'fulfilled') {
+                continue;
+            }
+            const value = entry.value;
+            const todos = Array.isArray(value.result?.todos)
+                ? value.result.todos.map((item: any) => ({
                     id: String(item?.id || '').trim(),
                     content: String(item?.content || '').trim(),
                     status: this.normalizeTodoStatus(item?.status)
@@ -2725,7 +2738,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!todos.length) {
                 continue;
             }
-            sourceSessionId ||= entry.sessionId;
+            sourceSessionId ||= value.sessionId;
             for (const todo of todos) {
                 if (!merged.has(todo.id)) {
                     merged.set(todo.id, todo);
@@ -2734,6 +2747,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
         const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
+        if (!nextTodos.length) {
+            this.state.clearPlanTodos();
+            return;
+        }
         this.state.setPlanTodos(nextTodos, sourceSessionId || this.state.sessionId);
     }
 

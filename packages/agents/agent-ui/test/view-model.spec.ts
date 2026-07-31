@@ -251,8 +251,10 @@ class AppRpcStub {
     streamChunks?: any[];
     todoPlan?: any[];
     todoPlanBySession = new Map<string, any[]>();
+    todoFailuresBySession = new Set<string>();
     codingTasks?: any[];
     codingTasksBySession = new Map<string, any[]>();
+    codingTaskFailuresBySession = new Set<string>();
     codingTaskDetails = new Map<string, any>();
     codingTaskDiffs = new Map<string, any>();
     reviewAnnotationCacheByKey = new Map<string, Record<string, any>>();
@@ -278,6 +280,9 @@ class AppRpcStub {
             };
         }
         if (method === 'todo.get') {
+            if (this.todoFailuresBySession.has(params?.sessionId)) {
+                throw new Error(`todo lookup failed for ${params?.sessionId}`);
+            }
             const todos = this.todoPlanBySession.get(params?.sessionId) || this.todoPlan || [];
             return {
                 sessionId: params?.sessionId || 'console',
@@ -292,6 +297,9 @@ class AppRpcStub {
             };
         }
         if (method === 'coding_task.list') {
+            if (this.codingTaskFailuresBySession.has(params?.sessionId)) {
+                throw new Error(`coding task lookup failed for ${params?.sessionId}`);
+            }
             const tasks = this.codingTasksBySession.get(params?.sessionId) || this.codingTasks || [];
             return {
                 sessionId: params?.sessionId || 'console',
@@ -4066,6 +4074,65 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.diff' && call.params?.sessionId === 'chat-b' && call.params?.taskId === 'task-b')).toEqual(true);
         expect(component.sessionState.reviewTask?.sourceSessionId).toEqual('chat-b');
+    }
+
+    @Test('refreshTodoPlan ignores failed project sessions and clears stale todos')
+    async refreshTodoPlanIgnoresFailedProjectSessionsAndClearsStaleTodos() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.todoFailuresBySession.add('chat-b');
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'active item', status: 'in_progress' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, projectKey: 'project:exam-system' } as any,
+            { id: 'chat-b', current: false, updatedAt: 20, projectKey: 'project:exam-system' } as any
+        ]);
+        component.sessionState.setPlanTodos([{ id: 'stale', content: 'stale todo', status: 'pending' } as any], 'chat-a');
+
+        await (component as any).refreshTodoPlan();
+
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-a');
+
+        appRpc.todoFailuresBySession.add('chat-a');
+        await (component as any).refreshTodoPlan();
+
+        expect(component.sessionState.planTodos).toEqual([]);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('');
+    }
+
+    @Test('loadCodingTasks ignores failed project sessions and clears stale tasks')
+    async loadCodingTasksIgnoresFailedProjectSessionsAndClearsStaleTasks() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.codingTaskFailuresBySession.add('chat-b');
+        appRpc.codingTasksBySession.set('chat-a', [{ id: 'task-a', title: 'Task A', updatedAt: 10, status: 'running' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, projectKey: 'project:exam-system' } as any,
+            { id: 'chat-b', current: false, updatedAt: 20, projectKey: 'project:exam-system' } as any
+        ]);
+        component.sessionState.setTaskRecords([{ id: 'stale-task' } as any]);
+        component.sessionState.setReviewTasks([{ id: 'stale-task', title: 'Stale task' } as any]);
+
+        const tasks = await (component as any).loadCodingTasks();
+
+        expect(tasks.map((item: any) => item.id)).toEqual(['task-a']);
+        expect(component.sessionState.reviewTaskChoices.map(item => item.id)).toEqual(['task-a']);
+        expect(component.sessionState.taskRecords.map(item => item.id)).toEqual(['task-a']);
+
+        appRpc.codingTaskFailuresBySession.add('chat-a');
+        const emptyTasks = await (component as any).loadCodingTasks();
+
+        expect(emptyTasks).toEqual([]);
+        expect(component.sessionState.reviewTaskChoices).toEqual([]);
+        expect(component.sessionState.taskRecords).toEqual([]);
     }
 
     @Test('review annotations are isolated by review scope key')
