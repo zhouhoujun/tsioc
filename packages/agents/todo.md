@@ -63,3 +63,13 @@
    - 测试：agent-gateway 新增 approval.list / approve / SSE 转发 / HTTP 路由 / 非 owner 403 共 5 条；agent-ui 新增 RPC 模式下 `/approvals`、`/approve`、刷新 3 条。
 
 全量回归：agent 257 / agent-tools 186 / agent-gateway 68 / agent-ui 188 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P4 打磨（已完成）
+
+1. ~~`run.cancel` 幂等 + 空闲取消~~ → 已完成：`AppRpcServer.cancelTurn` 先 `sessions.has(sessionId)`，未知/空闲会话直接返回 `{ sessionId, cancelled: false }`；`SessionHandler` 新增 `onTurnCancelled`（`track()` + `activeSessionIds.delete()`），取消后 session 不再残留 running 状态。测试：gateway `run.cancel is idempotent for unknown and inactive sessions`、`cancelled turns are removed from running sessions`。
+2. ~~审批面安全收口 + expiresAt~~ → 已完成：`ApprovalHandler` GET `/api/approvals` 无 sessionId 时用 `owners.listOwned` 过滤（消除跨会话泄漏，对齐 RPC `approval.list`）；`ToolApprovalManager` 的 `ApprovalRequest`/`ApprovalRequestView` 增加 `expiresAt`（`createRequest` 内 `createdAt + timeoutMs` 派生），`AgentApprovalRequestedEvent` 载荷追加 optional `createdAt/expiresAt`，UI bridge/component 透出并显示到期时间。测试：gateway `approval list scopes by ownership`、UI fixture 更新。
+3. ~~审批决策审计落库~~ → 已完成：`ToolApprovalManager` 注入 `@Optional() AuditSink`，approve / reject / autoDeny / timeout / cancel 决策统一走 `recordApprovalAudit`（`toolCallId: 'approval:' + id`，`metadata.kind: 'approval'`，approved→success / denied→skipped / timeout/cancelled→error）。测试：agent tools `approval decisions written to audit sink`。
+4. ~~跨会话聚合统计 /api/stats~~ → 已完成：新 `StatsHandler` 提供 `GET /api/stats`（sessionId 参数→owner 校验，无参数→按 principal 聚合全部 owned session 的审计记录），输出 runs/ok/fail/skipped/successRate/avgDurationMs/sessions/timeRange/byTool/byKind（approval vs execution）。开发期修复 avg-duration 统计与 byTool/byKind 分组 map 变异两个 bug。测试：gateway `stats aggregates audit records scoped to owned sessions`、`stats route forbids other sessions`。
+5. ~~工具补偿/回滚 phase 1~~ → 已完成：`AgentTool` 契约新增可选 `captureCompensation(input, context)` / `compensate(captured, context)`；`DefaultAgentRuntime` 在工具执行前捕获快照、成功入栈（coordinator 与直接调用两条路径），`cancelTurn` / `cancelChildTurns` / turn 错误路径按 LIFO 触发 `compensate`（单条失败不阻断剩余回滚）；内置 `MemoryPutTool` 提供删除本次新增记录的参考实现（保留已存在记录）。测试：agent `turn-cancel.spec.ts`（取消回滚、错误回滚、逆序回滚 3 条）、`tools.spec.ts`（memory.put 补偿只删新增记录）。
+
+全量回归：agent 262 / agent-tools 186 / agent-gateway 73 / agent-ui 188 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。

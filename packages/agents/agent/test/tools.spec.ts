@@ -163,6 +163,43 @@ export class BuiltinToolsTest {
         expect(records[0].scope).toEqual('session');
     }
 
+    @Test('memory put compensation removes only the records the call added')
+    async memoryPutCompensationRestoresPriorState() {
+        const store = new InMemoryMemoryStore();
+        const tool = new MemoryPutTool();
+        await store.put({
+            id: 'existing-1',
+            sessionId: 's1',
+            key: 'note',
+            value: 'old-value',
+            scope: 'session',
+            createdAt: 1
+        });
+
+        const captured = await tool.captureCompensation({ key: 'note' }, {
+            sessionId: 's1',
+            memory: store
+        });
+        await tool.invoke({ key: 'note', value: 'new-1' }, {
+            sessionId: 's1',
+            memory: store
+        });
+        await tool.invoke({ key: 'note', value: 'new-2' }, {
+            sessionId: 's1',
+            memory: store
+        });
+
+        await tool.compensate(captured, {
+            sessionId: 's1',
+            memory: store
+        });
+
+        const records = await store.getAll('s1');
+        expect(records.length).toEqual(1);
+        expect(records[0].id).toEqual('existing-1');
+        expect(records[0].value).toEqual('old-value');
+    }
+
     @Test('memory search returns matching records')
     async memorySearchFindsRecord() {
         const store = new InMemoryMemoryStore();

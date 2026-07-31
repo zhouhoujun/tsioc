@@ -301,6 +301,105 @@ export class TurnCancellationTest {
         }
         expect(error).toBeInstanceOf(AgentTurnCancelledError);
     }
+
+    @Test('cancelling a turn rolls back successful side-effecting tool calls with the captured snapshot')
+    async cancelTurnRollsBackToolSideEffects() {
+        const tool = new ReversiblePutTool();
+        const adapter = new ToolThenBlockModelAdapter('reversible_put', 'block');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new SingleToolRegistry(tool),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        const turn = runtime.runTurn('s1', 'store it');
+        await waitFor(() => adapter.requests.length >= 2);
+
+        const cancelled = await runtime.cancelTurn('s1');
+        expect(cancelled).toEqual(true);
+
+        let error: any;
+        try {
+            await turn;
+        } catch (err) {
+            error = err;
+        }
+        expect(error).toBeInstanceOf(AgentTurnCancelledError);
+
+        expect(tool.captured.length).toEqual(1);
+        expect(tool.compensated.length).toEqual(1);
+        expect(tool.compensated[0]).toEqual({
+            ...tool.captured[0],
+            existingIds: ['pre-existing-id']
+        });
+    }
+
+    @Test('a failing turn rolls back successful side-effecting tool calls before publishing AgentErrorEvent')
+    async failingTurnRollsBackToolSideEffects() {
+        const tool = new ReversiblePutTool();
+        const adapter = new ToolThenBlockModelAdapter('reversible_put', 'error');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new SingleToolRegistry(tool),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        let error: any;
+        try {
+            await runtime.runTurn('s1', 'store it');
+        } catch (err) {
+            error = err;
+        }
+        expect(error).toBeInstanceOf(Error);
+        expect(error?.message).toEqual('model exploded');
+        expect(app.events.some(event => event instanceof AgentErrorEvent)).toEqual(true);
+
+        expect(tool.compensated.length).toEqual(1);
+        expect(tool.compensated[0].existingIds).toEqual(['pre-existing-id']);
+    }
+
+    @Test('rollback compensates successful tool calls in reverse order')
+    async rollbackRunsInReverseOrder() {
+        const orderLog: string[] = [];
+        const toolA = new ReversiblePutTool('reversible_a', orderLog);
+        const toolB = new ReversiblePutTool('reversible_b', orderLog);
+        const adapter = new SequentialTwoToolModelAdapter('reversible_a', 'reversible_b');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new MultiToolRegistry([toolA, toolB]),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        let error: any;
+        try {
+            await runtime.runTurn('s1', 'store it');
+        } catch (err) {
+            error = err;
+        }
+        expect(error).toBeInstanceOf(Error);
+        expect(toolA.captured.length).toEqual(1);
+        expect(toolB.captured.length).toEqual(1);
+        expect(toolA.compensated.length).toEqual(1);
+        expect(toolB.compensated.length).toEqual(1);
+
+        // the second call was compensated first (LIFO over the turn)
+        expect(orderLog).toEqual(['reversible_b', 'reversible_a']);
+    }
 }
 
 class ToolCallingModelAdapter extends EchoModelAdapter {
@@ -372,5 +471,142 @@ class EchoToolRegistry extends ToolRegistry {
 
     async invoke(name: string, input?: any): Promise<any> {
         return name === 'sensitive_tool' ? { ok: true } : null;
+    }
+}
+
+class ReversiblePutTool {
+    name: string;
+    captured: any[] = [];
+    compensated: any[] = [];
+
+    constructor(name = 'reversible_put', private orderLog?: string[]) {
+        this.name = name;
+    }
+
+    getDefinition() {
+        return {
+            name: this.name,
+            description: 'reversible put',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: true }
+        };
+    }
+
+    async captureCompensation(input: any): Promise<any> {
+        this.captured.push(input);
+        return { ...input, existingIds: ['pre-existing-id'] };
+    }
+
+    async compensate(captured: any): Promise<void> {
+        this.compensated.push(captured);
+        this.orderLog?.push(this.name);
+    }
+
+    async invoke(input: any): Promise<any> {
+        return { stored: true };
+    }
+}
+
+class SingleToolRegistry extends ToolRegistry {
+    constructor(private tool: any) {
+        super();
+    }
+
+    getTools() {
+        return [this.tool];
+    }
+
+    getTool(name: string) {
+        return this.tool.name === name ? this.tool : undefined;
+    }
+
+    async invoke(name: string): Promise<any> {
+        return this.tool.name === name ? this.tool.invoke({}) : null;
+    }
+}
+
+class MultiToolRegistry extends ToolRegistry {
+    constructor(private tools: any[]) {
+        super();
+    }
+
+    getTools() {
+        return this.tools;
+    }
+
+    getTool(name: string) {
+        return this.tools.find(tool => tool.name === name);
+    }
+
+    async invoke(name: string, input: any): Promise<any> {
+        const tool = this.getTool(name);
+        return tool ? tool.invoke(input) : null;
+    }
+}
+
+/**
+ * Emits a single tool call, then on the second model request either blocks
+ * until aborted ('block') or throws ('error').
+ */
+class ToolThenBlockModelAdapter extends EchoModelAdapter {
+    calls = 0;
+    requests: any[] = [];
+
+    constructor(private toolName: string, private secondBehavior: 'block' | 'error') {
+        super();
+    }
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.calls++ === 0) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-1', name: this.toolName, input: { key: 'note', value: 'v1' } }]
+            };
+        }
+        if (this.secondBehavior === 'error') {
+            throw new Error('model exploded');
+        }
+        await new Promise<void>((resolve, reject) => {
+            if (request.signal?.aborted) {
+                reject(new Error('The operation was aborted.'));
+                return;
+            }
+            request.signal?.addEventListener('abort', () => {
+                reject(new Error('The operation was aborted.'));
+            });
+        });
+        return { message: 'done', stopReason: 'end' };
+    }
+}
+
+/**
+ * Emits two sequential tool calls, then throws on the third model request.
+ */
+class SequentialTwoToolModelAdapter extends EchoModelAdapter {
+    calls = 0;
+
+    constructor(private firstTool: string, private secondTool: string) {
+        super();
+    }
+
+    async complete(): Promise<any> {
+        const call = this.calls++;
+        if (call === 0) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-1', name: this.firstTool, input: { key: 'a', value: '1' } }]
+            };
+        }
+        if (call === 1) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-2', name: this.secondTool, input: { key: 'b', value: '2' } }]
+            };
+        }
+        throw new Error('model exploded');
     }
 }

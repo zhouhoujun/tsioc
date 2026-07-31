@@ -104,4 +104,16 @@ export interface AgentCapabilityBundle {
 export interface AgentTool extends AgentToolDefinition {
     getDefinition?(): AgentToolDefinition;
     invoke(input: any, context: AgentToolContext): Promise<any>;
+    /**
+     * Called by the runtime before invoke() so a side-effecting tool can
+     * snapshot the state it would need to undo the upcoming operation.
+     * Returning undefined means no compensation entry is recorded.
+     */
+    captureCompensation?(input: any, context: AgentToolContext): Promise<unknown> | unknown;
+    /**
+     * Called by the runtime (LIFO over the turn's successful side-effecting
+     * calls) when the turn is cancelled or fails, restoring the state that
+     * captureCompensation() snapshot beforehand.
+     */
+    compensate?(captured: unknown, context: AgentToolContext): Promise<void> | void;
 }

@@ -48,6 +48,35 @@ export class MemoryPutTool implements AgentTool {
         });
         return { stored: true, key, value };
     }
+
+    /**
+     * Snapshot the existing record ids for the target key before the put so
+     * compensate() can remove only the records this call added.
+     */
+    async captureCompensation(input: any, context: AgentToolContext): Promise<unknown> {
+        const key = input?.key ?? 'note';
+        const scope = input?.scope ?? 'session';
+        const existing = (await context.memory.getAll(context.sessionId))
+            .filter(record => record.key === key && record.scope === scope);
+        return { key, scope, existingIds: existing.map(record => record.id) };
+    }
+
+    /**
+     * Delete the memory records this put added, keeping any records that
+     * already existed for the key.
+     */
+    async compensate(captured: unknown, context: AgentToolContext): Promise<void> {
+        const snapshot = captured as { key: string; scope: string; existingIds: string[] } | undefined;
+        if (!snapshot) {
+            return;
+        }
+        const existingIds = new Set(snapshot.existingIds ?? []);
+        const added = (await context.memory.getAll(context.sessionId))
+            .filter(record => record.key === snapshot.key && record.scope === snapshot.scope && !existingIds.has(record.id));
+        for (const record of added) {
+            await context.memory.delete(record.id, context.sessionId, record.scope);
+        }
+    }
 }
 
 @Injectable()

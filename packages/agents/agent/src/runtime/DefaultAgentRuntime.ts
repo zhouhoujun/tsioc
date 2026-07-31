@@ -47,6 +47,12 @@ interface TurnExecutionContext {
     diagnostics?: AgentTurnDiagnostics;
 }
 
+interface ToolCompensationEntry {
+    toolName: string;
+    toolCallId: string;
+    captured: unknown;
+}
+
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 @Injectable()
@@ -59,6 +65,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnsRunning = new Set<string>();
     protected sessionTurnAborts = new Map<string, AbortController>();
     protected sessionChildSessions = new Map<string, Set<string>>();
+    protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
     constructor(
@@ -179,10 +186,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return result;
         } catch (error) {
             if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
+                await this.rollbackTurnCompensations(input.sessionId);
                 await this.app.publishEvent(new AgentTurnCancelledEvent(this, input.sessionId));
                 throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(input.sessionId);
             }
             const err = error instanceof Error ? error : new Error(String(error));
+            await this.rollbackTurnCompensations(input.sessionId);
             await this.app.publishEvent(new AgentErrorEvent(this, input.sessionId, err));
             throw err;
         }
@@ -217,10 +226,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield { type: 'done' };
             } catch (error) {
                 if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
+                    await this.rollbackTurnCompensations(sessionId);
                     await this.app.publishEvent(new AgentTurnCancelledEvent(this, sessionId));
                     throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(sessionId);
                 }
                 const err = error instanceof Error ? error : new Error(String(error));
+                await this.rollbackTurnCompensations(sessionId);
                 await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
                 throw err;
             }
@@ -291,6 +302,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         // Cascade cancellation to any running child (sub-agent) sessions so
         // spawned workers do not keep running after their parent is cancelled.
         await this.cancelChildTurns(sessionId);
+        // Undo the side effects the turn already applied, newest first.
+        await this.rollbackTurnCompensations(sessionId);
         return true;
     }
 
@@ -323,12 +336,62 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             this.toolApprovalManager?.cancelBySession(childSessionId);
             controller.abort();
+            await this.rollbackTurnCompensations(childSessionId);
             await this.cancelChildTurns(childSessionId);
         }
     }
 
     protected beginTurnAbortScope(sessionId: string): void {
         this.sessionTurnAborts.set(sessionId, new AbortController());
+    }
+
+    protected getCompensationStack(sessionId: string): ToolCompensationEntry[] {
+        let stack = this.sessionCompensationStacks.get(sessionId);
+        if (!stack) {
+            stack = [];
+            this.sessionCompensationStacks.set(sessionId, stack);
+        }
+        return stack;
+    }
+
+    protected pushToolCompensation(sessionId: string, toolName: string, toolCallId: string, captured: unknown): void {
+        if (captured === undefined) {
+            return;
+        }
+        this.getCompensationStack(sessionId).push({ toolName, toolCallId, captured });
+    }
+
+    /**
+     * Roll back the turn's successful side-effecting tool calls in reverse
+     * order. Each entry is passed to the tool's compensate() hook with the
+     * snapshot captured before the call ran. Returns the number of entries
+     * compensated; failures during rollback are collected but do not stop
+     * the remaining entries.
+     */
+    protected async rollbackTurnCompensations(sessionId: string): Promise<number> {
+        const stack = this.sessionCompensationStacks.get(sessionId);
+        if (!stack?.length) {
+            this.sessionCompensationStacks.delete(sessionId);
+            return 0;
+        }
+        let compensated = 0;
+        for (const entry of [...stack].reverse()) {
+            const tool = this.toolRegistry.getTool(entry.toolName);
+            if (!tool?.compensate) {
+                continue;
+            }
+            try {
+                await tool.compensate(entry.captured, {
+                    sessionId,
+                    memory: this.memory
+                });
+                compensated++;
+            } catch {
+                continue;
+            }
+        }
+        this.sessionCompensationStacks.delete(sessionId);
+        return compensated;
     }
 
     protected endTurnAbortScope(sessionId: string): void {
@@ -1021,6 +1084,23 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
 
+        // Phase 1 compensation: snapshot pre-call state so the side effects can
+        // be undone when the turn is cancelled or fails.
+        let compensationCapture: unknown;
+        const tool = this.toolRegistry.getTool(toolCall.name);
+        if (tool?.captureCompensation && tool.compensate) {
+            try {
+                compensationCapture = await tool.captureCompensation(toolCallInput, {
+                    sessionId,
+                    memory: this.memory,
+                    principalId: turnContext.principalId,
+                    workspace: turnContext.workspace
+                });
+            } catch {
+                compensationCapture = undefined;
+            }
+        }
+
         if (this.toolExecutionCoordinator) {
             const outcome = await this.toolExecutionCoordinator.execute({
                 sessionId,
@@ -1043,6 +1123,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (outcome.error) {
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
+            this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
             return {
                 toolCall,
                 content: truncated,
@@ -1070,6 +1151,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 outputSummary: this.summarizeToolOutput(toolCall.name, output)
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
+            this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
             return {
                 toolCall,
                 content: truncated,
