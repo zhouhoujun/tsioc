@@ -47,6 +47,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected destroyed = false;
     protected openSessionRequestId = 0;
     protected openReviewRequestId = 0;
+    protected activateModelRequestId = 0;
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
@@ -824,14 +825,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!name) {
                 return;
             }
+            const sessionId = this.state.sessionId;
             const selected = this.state.tools.find(item => item.name === name);
             if (selected?.active) {
                 this.notify(`Tool ${name} is already active.`);
                 return;
             }
             try {
-                const activated = await this.activateTool(name);
-                await this.refreshTools();
+                const activated = await this.activateToolForSession(name, sessionId);
+                await this.refreshTools(sessionId);
+                if (sessionId !== this.state.sessionId) {
+                    return;
+                }
                 this.state.setSelectedToolName(name);
                 const current = this.state.tools.find(item => item.name === name);
                 this.notify(activated || current?.active
@@ -3079,7 +3084,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         if (this.appRpc) {
-            const result = await this.appRpc.request('model.activate', { sessionId: this.state.sessionId, name });
+            const requestId = ++this.activateModelRequestId;
+            const sessionId = this.state.sessionId;
+            const result = await this.appRpc.request('model.activate', { sessionId, name });
+            if (requestId !== this.activateModelRequestId || sessionId !== this.state.sessionId) {
+                return;
+            }
             this.state.batch(() => {
                 this.state.setModelProfile(String(result?.modelProfile || name));
                 if (result?.provider) {
@@ -3113,14 +3123,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async activateTool(name: string): Promise<boolean> {
+        return this.activateToolForSession(name, this.state.sessionId);
+    }
+
+    protected async activateToolForSession(name: string, sessionId: string): Promise<boolean> {
         if (this.appRpc) {
-            const result = await this.appRpc.request('tools.activate', { sessionId: this.state.sessionId, name });
+            const result = await this.appRpc.request('tools.activate', { sessionId, name });
             return result?.activated !== false;
         }
         if (!this.toolRegistry || typeof this.toolRegistry.activateTool !== 'function') {
             return false;
         }
-        return !!(await this.toolRegistry.activateTool(this.state.sessionId, name));
+        return !!(await this.toolRegistry.activateTool(sessionId, name));
     }
 
     protected async refreshTools(sessionId = this.state.sessionId): Promise<void> {

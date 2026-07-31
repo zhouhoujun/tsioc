@@ -259,6 +259,7 @@ class AppRpcStub {
     state?: Record<string, any>;
     tools?: any[];
     modelProfiles?: any[];
+    modelActivateHandlers = new Map<string, () => Promise<any>>();
     streamChunks?: any[];
     todoPlan?: any[];
     todoPlanBySession = new Map<string, any[]>();
@@ -286,6 +287,10 @@ class AppRpcStub {
             return this.modelProfiles || [];
         }
         if (method === 'model.activate') {
+            const handler = this.modelActivateHandlers.get(params?.name);
+            if (handler) {
+                return await handler();
+            }
             const matched = (this.modelProfiles || []).find(item => item.name === params?.name);
             return {
                 modelProfile: params?.name,
@@ -2992,6 +2997,52 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'model.activate' && call.params?.name === 'strong')).toEqual(true);
         expect(component.sessionState.modelProfile).toEqual('strong');
         expect(component.model).toEqual('deepseek-v4-pro');
+    }
+
+    @Test('model activation ignores stale app rpc results after switching sessions')
+    async modelActivationIgnoresStaleAppRpcResultsAfterSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const deferred = createDeferred<any>();
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        appRpc.state = {
+            sessionId: 'chat-a',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            modelProfile: 'flash',
+            workspace: '/tmp/workspace',
+            title: 'Console'
+        };
+        appRpc.modelProfiles = [
+            { name: 'flash', selected: true, provider: 'deepseek', model: 'deepseek-v4-flash' },
+            { name: 'strong', selected: false, provider: 'deepseek', model: 'deepseek-v4-pro' }
+        ];
+        appRpc.modelActivateHandlers.set('strong', () => deferred.promise);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+
+        await component.onInit();
+        const activation = (component as any).activateModelProfile('strong');
+        await Promise.resolve();
+
+        await (component as any).openSession('chat-b');
+        component.configure({ provider: 'openai', model: 'gpt-5-mini', modelProfile: 'flash' });
+
+        deferred.resolve({
+            modelProfile: 'strong',
+            provider: 'deepseek',
+            model: 'deepseek-v4-pro'
+        });
+        await activation;
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.provider).toEqual('openai');
+        expect(component.model).toEqual('gpt-5-mini');
+        expect(component.sessionState.modelProfile).toEqual('flash');
     }
 
     @Test('event bridge refreshes tools through app rpc when available')
