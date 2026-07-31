@@ -116,6 +116,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected getReviewAnnotationsCacheKey(): string | undefined {
+        const stateCacheKey = String(this.state.selectedReviewTaskCacheKey || '').trim();
+        if (stateCacheKey) {
+            return stateCacheKey;
+        }
         const sessionId = this.resolveReviewAnnotationsSessionId();
         const reviewTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
         if (!sessionId || !reviewTaskId) {
@@ -863,8 +867,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         try {
-            const annotations = selectedTaskId
-                ? this.extractReviewAnnotations(cache, selectedTaskId) || {}
+            const annotations = selectedTaskId || cacheKey
+                ? this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {}
                 : {};
             await this.appRpc.request('review_annotations.save', {
                 sessionId: this.resolveReviewAnnotationsSessionId(),
@@ -891,11 +895,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             });
             if (cache) {
                 const selectedTaskId = String(this.state.selectedReviewTaskId || '').trim();
-                if (selectedTaskId) {
-                    const annotations = this.extractReviewAnnotations(cache, selectedTaskId) || {};
+                if (selectedTaskId || cacheKey) {
+                    const annotations = this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {};
+                    const cacheEntryKey = cacheKey || selectedTaskId;
                     this.state.setAnnotationCache({
                         ...this.state.getAnnotationCache(),
-                        [selectedTaskId]: annotations
+                        ...(cacheEntryKey ? { [cacheEntryKey]: annotations } : {})
                     });
                     this.state.reviewFileAnnotations = { ...annotations };
                     this.state.notify();
@@ -908,11 +913,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected extractReviewAnnotations(
         cache: Record<string, Record<string, any>> | Record<string, any> | null | undefined,
-        selectedTaskId: string
+        scope: { cacheKey?: string; selectedTaskId?: string }
     ): Record<string, any> | undefined {
-        const direct = cache && typeof cache === 'object' ? (cache as Record<string, any>)[selectedTaskId] : undefined;
+        const cacheKey = String(scope.cacheKey || '').trim();
+        const selectedTaskId = String(scope.selectedTaskId || '').trim();
+        const direct = cache && typeof cache === 'object' && cacheKey
+            ? (cache as Record<string, any>)[cacheKey]
+            : undefined;
         if (this.looksLikeReviewAnnotationMap(direct)) {
             return direct;
+        }
+        const legacy = cache && typeof cache === 'object' && selectedTaskId
+            ? (cache as Record<string, any>)[selectedTaskId]
+            : undefined;
+        if (this.looksLikeReviewAnnotationMap(legacy)) {
+            return legacy;
         }
         if (this.looksLikeReviewAnnotationMap(cache)) {
             return cache as Record<string, any>;

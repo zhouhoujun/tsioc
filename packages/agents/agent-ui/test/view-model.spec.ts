@@ -3900,6 +3900,44 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'review_annotations.load' && call.params?.cacheKey === 'chat-b:task-b')).toEqual(true);
     }
 
+    @Test('session state isolates review annotations for duplicate task ids across sessions')
+    sessionStateIsolatesReviewAnnotationsForDuplicateTaskIdsAcrossSessions() {
+        const state = new AgentConsoleSessionState();
+        const taskA = { id: 'task-1', title: 'Task A', sourceSessionId: 'chat-a', status: 'running' };
+        const taskB = { id: 'task-1', title: 'Task B', sourceSessionId: 'chat-b', status: 'running' };
+
+        state.openReview(taskA as any, {
+            executionMode: 'parallel',
+            diff: {
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+task a'
+            },
+            workers: []
+        });
+        state.setReviewFileAnnotation('approved', 'task a', 'src/a.ts');
+        state.closeReview();
+
+        state.openReview(taskB as any, {
+            executionMode: 'parallel',
+            diff: {
+                text: 'diff --git a/src/b.ts b/src/b.ts\n+task b'
+            },
+            workers: []
+        });
+        expect(state.reviewFileAnnotations['src/a.ts']).toBeUndefined();
+        state.setReviewFileAnnotation('rejected', 'task b', 'src/b.ts');
+        state.closeReview();
+
+        state.openReview(taskA as any, {
+            executionMode: 'parallel',
+            diff: {
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+task a'
+            },
+            workers: []
+        });
+        expect(state.reviewFileAnnotations['src/a.ts']?.status).toEqual('approved');
+        expect(state.reviewFileAnnotations['src/b.ts']).toBeUndefined();
+    }
+
     @Test('session state supports focused message list navigation')
     sessionStateSupportsFocusedMessageListNavigation() {
         const state = new AgentConsoleSessionState();

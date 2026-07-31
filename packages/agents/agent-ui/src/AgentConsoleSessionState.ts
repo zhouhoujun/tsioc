@@ -121,6 +121,7 @@ export interface AgentConsoleScheduledTaskItem {
 export interface AgentConsoleReviewTaskItem {
     id: string;
     title: string;
+    cacheKey?: string;
     sourceSessionId?: string;
     status?: string;
     executionMode?: 'sequential' | 'parallel' | null;
@@ -344,6 +345,7 @@ export class AgentConsoleSessionState {
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     selectedReviewTaskId = '';
+    selectedReviewTaskCacheKey = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
     selectedTaskLineageRootId = '';
     selectedReviewGroupIndex = 0;
@@ -353,6 +355,7 @@ export class AgentConsoleSessionState {
     protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
     onReviewAnnotationsPersist?: (cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>) => void;
     getAnnotationCache(): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
+        this.syncCurrentReviewAnnotationCache();
         return { ...this.reviewAnnotationCache };
     }
     setAnnotationCache(cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>): void {
@@ -1398,16 +1401,19 @@ export class AgentConsoleSessionState {
         this.tasksFocused = focused;
         if (focused && !this.selectedReviewTaskId && this.filteredReviewTaskChoices.length) {
             this.selectedReviewTaskId = this.filteredReviewTaskChoices[0].id;
+            this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(this.filteredReviewTaskChoices[0]);
         }
         this.syncDerivedInputFocus();
         this.notify();
     }
 
     setSelectedReviewTaskId(taskId: string): void {
-        if (!taskId || !this.reviewTaskChoices.some(item => item.id === taskId)) {
+        const matched = this.reviewTaskChoices.find(item => item.id === taskId);
+        if (!taskId || !matched) {
             return;
         }
         this.selectedReviewTaskId = taskId;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(matched);
         this.notify();
     }
 
@@ -1419,6 +1425,7 @@ export class AgentConsoleSessionState {
         const currentIndex = Math.max(0, tasks.findIndex(item => item.id === this.selectedReviewTaskId));
         const nextIndex = (currentIndex + delta + tasks.length) % tasks.length;
         this.selectedReviewTaskId = tasks[nextIndex].id;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[nextIndex]);
         this.notify();
     }
 
@@ -1431,6 +1438,7 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
         const nextIndex = Math.max(0, Math.min(tasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedReviewTaskId = tasks[nextIndex].id;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[nextIndex]);
         this.notify();
     }
 
@@ -1440,6 +1448,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedReviewTaskId = tasks[0].id;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[0]);
         this.notify();
     }
 
@@ -1449,6 +1458,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedReviewTaskId = tasks[tasks.length - 1].id;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[tasks.length - 1]);
         this.notify();
     }
 
@@ -1674,6 +1684,7 @@ export class AgentConsoleSessionState {
     ): void {
         const preferredGroupKey = this.selectedReviewGroup?.key;
         const preferredFilePath = this.selectedReviewFileSection?.path;
+        this.syncCurrentReviewAnnotationCache();
         if (task !== undefined) {
             this.reviewTask = task || null;
         }
@@ -1684,15 +1695,12 @@ export class AgentConsoleSessionState {
         const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
         if (selectedTaskId) {
             this.selectedReviewTaskId = selectedTaskId;
-            const cached = this.reviewAnnotationCache[selectedTaskId];
-            if (cached) {
-                this.reviewFileAnnotations = { ...cached };
-            }
             const executionMode = payload?.executionMode ?? this.reviewExecutionMode;
             const existingIndex = this.reviewTaskChoices.findIndex(item => item.id === selectedTaskId);
             const nextItem: AgentConsoleReviewTaskItem = {
                 id: selectedTaskId,
                 title: String(this.reviewTask?.title || selectedTaskId),
+                cacheKey: this.resolveReviewAnnotationCacheKey(this.reviewTask),
                 sourceSessionId: this.reviewTask?.sourceSessionId || this.reviewTask?.sessionId,
                 status: this.reviewTask?.status,
                 executionMode,
@@ -1710,6 +1718,9 @@ export class AgentConsoleSessionState {
             } else {
                 this.reviewTaskChoices = [nextItem, ...this.reviewTaskChoices];
             }
+            this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(this.reviewTask) || this.resolveReviewAnnotationCacheKey(nextItem) || selectedTaskId;
+            const cached = this.reviewAnnotationCache[this.selectedReviewTaskCacheKey] || this.reviewAnnotationCache[selectedTaskId];
+            this.reviewFileAnnotations = cached ? { ...cached } : {};
         }
         if (!this.reviewTask && !this.reviewDiff && !this.reviewWorkers.length) {
             return;
@@ -1726,9 +1737,7 @@ export class AgentConsoleSessionState {
         if (!this.reviewOpen && this.reviewDetailScroll === 0 && this.reviewDetailColumnScroll === 0) {
             return;
         }
-        if (this.selectedReviewTaskId && Object.keys(this.reviewFileAnnotations).length > 0) {
-            this.reviewAnnotationCache[this.selectedReviewTaskId] = { ...this.reviewFileAnnotations };
-        }
+        this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
@@ -1737,15 +1746,14 @@ export class AgentConsoleSessionState {
     }
 
     clearReview(): void {
-        if (this.selectedReviewTaskId && Object.keys(this.reviewFileAnnotations).length > 0) {
-            this.reviewAnnotationCache[this.selectedReviewTaskId] = { ...this.reviewFileAnnotations };
-        }
+        this.syncCurrentReviewAnnotationCache();
         this.reviewTask = null;
         this.reviewDiff = null;
         this.reviewWorkers = [];
         this.reviewTaskChoices = [];
         this.taskRecords = [];
         this.selectedReviewTaskId = '';
+        this.selectedReviewTaskCacheKey = '';
         this.selectedTaskFilter = 'all';
         this.selectedTaskLineageRootId = '';
         this.selectedReviewGroupIndex = 0;
@@ -1863,6 +1871,7 @@ export class AgentConsoleSessionState {
             comment,
             createdAt: new Date().toISOString()
         };
+        this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
@@ -1872,6 +1881,7 @@ export class AgentConsoleSessionState {
         const path = filePath ?? this.selectedReviewFileSection?.path;
         if (!path) return;
         delete this.reviewFileAnnotations[path];
+        this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
@@ -1886,6 +1896,7 @@ export class AgentConsoleSessionState {
                 createdAt: new Date().toISOString()
             };
         }
+        this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
@@ -1893,6 +1904,7 @@ export class AgentConsoleSessionState {
     clearAllReviewAnnotations(): void {
         if (!this.reviewOpen) return;
         this.reviewFileAnnotations = {};
+        this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
         this.notify();
     }
@@ -2952,12 +2964,55 @@ export class AgentConsoleSessionState {
         const tasks = this.filteredReviewTaskChoices;
         if (!tasks.length) {
             this.selectedReviewTaskId = '';
+            this.selectedReviewTaskCacheKey = '';
             return;
         }
         if (this.selectedReviewTaskId && tasks.some(item => item.id === this.selectedReviewTaskId)) {
             return;
         }
         this.selectedReviewTaskId = tasks[0].id;
+        this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[0]);
+    }
+
+    protected syncCurrentReviewAnnotationCache(): void {
+        const cacheKey = this.getCurrentReviewAnnotationCacheKey();
+        if (!cacheKey) {
+            return;
+        }
+        if (Object.keys(this.reviewFileAnnotations).length > 0) {
+            this.reviewAnnotationCache[cacheKey] = { ...this.reviewFileAnnotations };
+            return;
+        }
+        delete this.reviewAnnotationCache[cacheKey];
+    }
+
+    protected getCurrentReviewAnnotationCacheKey(): string {
+        const explicit = String(this.selectedReviewTaskCacheKey || '').trim();
+        if (explicit) {
+            return explicit;
+        }
+        const taskChoice = this.reviewTaskChoices.find(item => item.id === this.selectedReviewTaskId);
+        return this.resolveReviewAnnotationCacheKey(this.reviewTask)
+            || this.resolveReviewAnnotationCacheKey(taskChoice)
+            || String(this.selectedReviewTaskId || '').trim();
+    }
+
+    protected resolveReviewAnnotationCacheKey(task?: {
+        id?: string;
+        cacheKey?: string;
+        sourceSessionId?: string;
+        sessionId?: string;
+    } | null): string {
+        const explicit = String(task?.cacheKey || '').trim();
+        if (explicit) {
+            return explicit;
+        }
+        const taskId = String(task?.id || '').trim();
+        if (!taskId) {
+            return '';
+        }
+        const sourceSessionId = String(task?.sourceSessionId || task?.sessionId || '').trim();
+        return sourceSessionId ? `${sourceSessionId}:${taskId}` : taskId;
     }
 
     protected syncReviewGroupSelection(preferredKey?: string): void {
