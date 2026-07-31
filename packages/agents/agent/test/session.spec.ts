@@ -90,6 +90,9 @@ export class SessionStoreTest {
             projectId: 'exam-system',
             workspace: '/tmp/project-a',
             primaryThreadId: 'thread-1',
+            sessionRole: 'main',
+            rootRequest: 'Build an exam system',
+            focusSummary: 'M4 grouping',
             sessionIds: ['session-1'],
             lastActiveAt: state.updatedAt
         }]);
@@ -110,6 +113,9 @@ export class SessionStoreTest {
             projectId: undefined,
             workspace: undefined,
             primaryThreadId: 'thread-9',
+            sessionRole: 'worker',
+            rootRequest: undefined,
+            focusSummary: undefined,
             sessionIds: ['session-thread'],
             lastActiveAt: expect.any(Number)
         }]);
@@ -131,6 +137,9 @@ export class SessionStoreTest {
             projectId: undefined,
             workspace: '/tmp/project-a',
             primaryThreadId: 'thread-9',
+            sessionRole: 'worker',
+            rootRequest: undefined,
+            focusSummary: undefined,
             sessionIds: ['session-thread'],
             lastActiveAt: expect.any(Number)
         }]);
@@ -166,6 +175,9 @@ export class SessionStoreTest {
             projectId: 'exam-system',
             workspace: '/tmp/project-b',
             primaryThreadId: 'thread-b',
+            sessionRole: undefined,
+            rootRequest: undefined,
+            focusSummary: undefined,
             sessionIds: ['session-a', 'session-b'],
             lastActiveAt: expect.any(Number)
         }]);

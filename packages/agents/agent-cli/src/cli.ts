@@ -152,7 +152,17 @@ function createAgentCli(): Command {
             try {
                 const sessionStore = ctx.get(SessionStore);
                 const projects = await sessionStore.listProjects();
-                const match = projects.find((p: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: string }) => p.projectKey === projectKey);
+                const match = projects.find((p: {
+                    projectKey?: string;
+                    projectId?: string;
+                    workspace?: string;
+                    primaryThreadId?: string;
+                    sessionRole?: string;
+                    rootRequest?: string;
+                    focusSummary?: string;
+                    sessionIds: string[];
+                    lastActiveAt?: string;
+                }) => p.projectKey === projectKey);
                 if (!match) {
                     process.stdout.write(`Project not found: ${projectKey}\n`);
                     return;
@@ -217,11 +227,28 @@ function createAgentCli(): Command {
     return program;
 }
 
-function resolveProjectDisplayLabel(project?: { projectId?: string; primaryThreadId?: string; workspace?: string; projectKey?: string } | null): string {
-    return String(project?.projectId || project?.primaryThreadId || project?.workspace || project?.projectKey || '-').trim() || '-';
+function resolveProjectDisplayLabel(project?: {
+    projectId?: string;
+    primaryThreadId?: string;
+    workspace?: string;
+    projectKey?: string;
+    rootRequest?: string;
+    focusSummary?: string;
+} | null): string {
+    return String(project?.projectId || project?.focusSummary || project?.workspace || project?.primaryThreadId || project?.rootRequest || project?.projectKey || '-').trim() || '-';
 }
 
-function formatProjectListLine(project: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: number }): string {
+function formatProjectListLine(project: {
+    projectKey?: string;
+    projectId?: string;
+    workspace?: string;
+    primaryThreadId?: string;
+    sessionRole?: string;
+    rootRequest?: string;
+    focusSummary?: string;
+    sessionIds: string[];
+    lastActiveAt?: number;
+}): string {
     const key = String(project.projectKey || '-').trim() || '-';
     const label = resolveProjectDisplayLabel(project);
     const workspace = String(project.workspace || '-').trim() || '-';
@@ -232,7 +259,14 @@ function formatProjectListLine(project: { projectKey?: string; projectId?: strin
     return `${label}  [${key}]  |  workspace ${workspace}  |  ${count} session${count === 1 ? '' : 's'}  |  last ${lastActive}`;
 }
 
-function formatProjectSessionsHeader(project: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string }): string {
+function formatProjectSessionsHeader(project: {
+    projectKey?: string;
+    projectId?: string;
+    workspace?: string;
+    primaryThreadId?: string;
+    rootRequest?: string;
+    focusSummary?: string;
+}): string {
     const label = resolveProjectDisplayLabel(project);
     const key = String(project.projectKey || '-').trim() || '-';
     const workspace = String(project.workspace || '-').trim() || '-';

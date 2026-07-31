@@ -113,6 +113,9 @@ describe('Persistent session store', () => {
                 projectKey: 'project:exam-system',
                 projectId: 'exam-system',
                 workspace: '/tmp/project-a',
+                sessionRole: 'main',
+                rootRequest: 'Build an exam system',
+                focusSummary: 'Group related sessions',
                 sessionIds: ['session-5']
             }));
         } finally {
@@ -146,6 +149,9 @@ describe('Persistent session store', () => {
                 projectId: 'exam-system',
                 workspace: '/tmp/project-b',
                 primaryThreadId: 'thread-b',
+                sessionRole: undefined,
+                rootRequest: undefined,
+                focusSummary: undefined,
                 sessionIds: ['session-a', 'session-b']
             }));
         } finally {

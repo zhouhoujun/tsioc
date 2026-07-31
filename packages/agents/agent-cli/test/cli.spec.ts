@@ -154,18 +154,27 @@ export class AgentCliTest {
     formatsProjectListLines() {
         expect(resolveProjectDisplayLabel({
             projectId: 'exam-system',
+            focusSummary: 'Latest summary',
             primaryThreadId: 'thread-1',
             workspace: '/tmp/project-a',
             projectKey: 'project:exam-system'
         } as any)).toBe('exam-system');
 
+        expect(resolveProjectDisplayLabel({
+            focusSummary: 'Investigate flaky worker startup',
+            primaryThreadId: 'thread-9',
+            workspace: '/tmp/project-a',
+            projectKey: 'thread:thread-9'
+        } as any)).toBe('Investigate flaky worker startup');
+
         expect(formatProjectListLine({
             projectKey: 'thread:thread-9',
+            focusSummary: 'Investigate flaky worker startup',
             primaryThreadId: 'thread-9',
             workspace: '',
             sessionIds: ['s1', 's2'],
             lastActiveAt: 1
-        } as any)).toContain('thread-9  [thread:thread-9]');
+        } as any)).toContain('Investigate flaky worker startup  [thread:thread-9]');
     }
 
     @Test('formats project sessions header with stable project label')
@@ -173,6 +182,7 @@ export class AgentCliTest {
         expect(formatProjectSessionsHeader({
             projectKey: 'project:exam-system',
             projectId: 'exam-system',
+            focusSummary: 'Latest summary',
             workspace: '/tmp/project-a'
         } as any)).toBe('Project: exam-system  [project:exam-system]  |  workspace /tmp/project-a');
     }

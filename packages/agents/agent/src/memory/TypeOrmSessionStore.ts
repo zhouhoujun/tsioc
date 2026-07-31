@@ -66,6 +66,9 @@ export class TypeOrmSessionStore extends SessionStore {
                 projectId: undefined,
                 workspace: undefined,
                 primaryThreadId: undefined,
+                sessionRole: undefined,
+                rootRequest: undefined,
+                focusSummary: undefined,
                 sessionIds: [],
                 lastActiveAt: 0,
                 representativeLastActiveAt: -1,
@@ -79,6 +82,9 @@ export class TypeOrmSessionStore extends SessionStore {
                 existing.projectId = session.projectId ?? undefined;
                 existing.workspace = session.workspace ?? undefined;
                 existing.primaryThreadId = session.primaryThreadId ?? undefined;
+                existing.sessionRole = session.sessionRole ?? undefined;
+                existing.rootRequest = session.rootRequest ?? undefined;
+                existing.focusSummary = session.focusSummary ?? undefined;
                 existing.representativeLastActiveAt = lastActiveAt;
                 existing.representativeSessionId = session.sessionId;
             }

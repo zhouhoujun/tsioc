@@ -51,6 +51,9 @@ export class InMemorySessionStore extends SessionStore {
                 projectId: undefined,
                 workspace: undefined,
                 primaryThreadId: undefined,
+                sessionRole: undefined,
+                rootRequest: undefined,
+                focusSummary: undefined,
                 sessionIds: [],
                 lastActiveAt: 0,
                 representativeLastActiveAt: -1,
@@ -64,6 +67,9 @@ export class InMemorySessionStore extends SessionStore {
                 existing.projectId = state.projectId;
                 existing.workspace = state.workspace;
                 existing.primaryThreadId = state.primaryThreadId;
+                existing.sessionRole = state.sessionRole;
+                existing.rootRequest = state.rootRequest;
+                existing.focusSummary = state.focusSummary;
                 existing.representativeLastActiveAt = lastActiveAt;
                 existing.representativeSessionId = state.sessionId;
             }

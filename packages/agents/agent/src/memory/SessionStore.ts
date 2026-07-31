@@ -17,6 +17,9 @@ export interface AgentSessionProjectIndex {
     projectId?: string;
     workspace?: string;
     primaryThreadId?: string;
+    sessionRole?: AgentSessionRole;
+    rootRequest?: string;
+    focusSummary?: string;
     sessionIds: string[];
     lastActiveAt?: number;
 }
