@@ -38,6 +38,9 @@ function aggregate(records: AgentAuditRecord[]) {
     const overall = emptyCounts();
     const byTool = new Map<string, StatsCounts>();
     const byKind = new Map<string, StatsCounts>();
+    const bySession = new Map<string, StatsCounts>();
+    const byDay = new Map<string, StatsCounts>();
+    const errorCounts = new Map<string, { toolName: string; error: string; count: number; lastAt: number }>();
     let from = Number.POSITIVE_INFINITY;
     let to = Number.NEGATIVE_INFINITY;
 
@@ -56,6 +59,29 @@ function aggregate(records: AgentAuditRecord[]) {
             byKind.set(kind, kindCounts);
         }
         addCount(kindCounts, record);
+        let sessionCounts = bySession.get(record.sessionId);
+        if (!sessionCounts) {
+            sessionCounts = emptyCounts();
+            bySession.set(record.sessionId, sessionCounts);
+        }
+        addCount(sessionCounts, record);
+        const day = new Date(record.createdAt).toISOString().slice(0, 10);
+        let dayCounts = byDay.get(day);
+        if (!dayCounts) {
+            dayCounts = emptyCounts();
+            byDay.set(day, dayCounts);
+        }
+        addCount(dayCounts, record);
+        if (record.status === 'error' && record.error) {
+            const errorKey = `${record.toolName}\u0000${record.error}`;
+            let entry = errorCounts.get(errorKey);
+            if (!entry) {
+                entry = { toolName: record.toolName, error: record.error, count: 0, lastAt: record.createdAt };
+                errorCounts.set(errorKey, entry);
+            }
+            entry.count++;
+            if (record.createdAt > entry.lastAt) entry.lastAt = record.createdAt;
+        }
         if (record.createdAt < from) from = record.createdAt;
         if (record.createdAt > to) to = record.createdAt;
     }
@@ -69,6 +95,16 @@ function aggregate(records: AgentAuditRecord[]) {
         avgDurationMs: counts.avgDurationMs
     });
 
+    const topErrors = [...errorCounts.values()]
+        .sort((a, b) => b.count - a.count || a.lastAt - b.lastAt)
+        .slice(0, 10)
+        .map(entry => ({
+            toolName: entry.toolName,
+            error: entry.error,
+            count: entry.count,
+            lastAt: entry.lastAt
+        }));
+
     return {
         runs: overall.runs,
         ok: overall.ok,
@@ -79,7 +115,10 @@ function aggregate(records: AgentAuditRecord[]) {
         sessions: new Set(records.map(record => record.sessionId)).size,
         timeRange: records.length ? { from, to } : null,
         byTool: Object.fromEntries([...byTool.entries()].map(([name, counts]) => [name, serialize(counts)])),
-        byKind: Object.fromEntries([...byKind.entries()].map(([name, counts]) => [name, serialize(counts)]))
+        byKind: Object.fromEntries([...byKind.entries()].map(([name, counts]) => [name, serialize(counts)])),
+        bySession: Object.fromEntries([...bySession.entries()].map(([name, counts]) => [name, serialize(counts)])),
+        byDay: Object.fromEntries([...byDay.entries()].map(([name, counts]) => [name, serialize(counts)])),
+        errors: topErrors
     };
 }
 

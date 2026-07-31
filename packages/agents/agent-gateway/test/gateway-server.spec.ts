@@ -785,10 +785,19 @@ export class StatsHandlerTest {
         expect(stats.byKind['approval'].runs).toEqual(1);
         expect(stats.byKind['approval'].skipped).toEqual(1);
         expect(stats.byKind['execution'].runs).toEqual(2);
+        expect(stats.bySession['s-1'].runs).toEqual(3);
+        expect(stats.bySession['s-1'].fail).toEqual(1);
+        const dayKey = new Date(100).toISOString().slice(0, 10);
+        expect(stats.byDay[dayKey].runs).toEqual(3);
+        expect(stats.errors).toEqual([
+            { toolName: 'write_file', error: 'boom', count: 1, lastAt: 200 }
+        ]);
 
         const user2Stats = await fetchStats('user-2');
         expect(user2Stats.runs).toEqual(1);
         expect(user2Stats.ok).toEqual(1);
+        expect(user2Stats.bySession['s-2'].runs).toEqual(1);
+        expect(user2Stats.errors).toEqual([]);
     }
 
     @Test('stats route forbids access to sessions owned by others')
@@ -819,6 +828,73 @@ export class StatsHandlerTest {
 
         await route.handler(req, res, {} as any);
         expect(status).toEqual(403);
+    }
+
+    @Test('stats errors break ties by recency and cap at ten entries')
+    async statsErrorsOrderedAndCapped() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const sink = new InMemoryAuditSink();
+        // write_file 'boom' twice, read_file 'nope' once, plus nine more distinct
+        // errors to overflow the top-N cap.
+        await sink.append({ id: 'e1', sessionId: 's-1', toolName: 'write_file', toolCallId: 't1', status: 'error', error: 'boom', createdAt: 200 });
+        await sink.append({ id: 'e2', sessionId: 's-1', toolName: 'read_file', toolCallId: 't2', status: 'error', error: 'nope', createdAt: 300 });
+        await sink.append({ id: 'e3', sessionId: 's-1', toolName: 'write_file', toolCallId: 't3', status: 'error', error: 'boom', createdAt: 500 });
+        for (let index = 0; index < 9; index++) {
+            await sink.append({ id: `e4-${index}`, sessionId: 's-1', toolName: 'other', toolCallId: `t4-${index}`, status: 'error', error: `err-${index}`, createdAt: 600 + index });
+        }
+
+        const handler = new StatsHandler(sink, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/stats' && route.method === 'GET')!;
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-x', principalId: 'user-1' });
+        await route.handler(req, res, {} as any);
+        const stats = JSON.parse(body);
+
+        expect(stats.errors.length).toEqual(10);
+        expect(stats.errors[0]).toEqual({ toolName: 'write_file', error: 'boom', count: 2, lastAt: 500 });
+        expect(stats.errors[1]).toEqual({ toolName: 'read_file', error: 'nope', count: 1, lastAt: 300 });
+    }
+
+    @Test('stats byDay buckets records by UTC day')
+    async statsBucketsByDay() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const sink = new InMemoryAuditSink();
+        await sink.append({ id: 'd1', sessionId: 's-1', toolName: 'read_file', toolCallId: 't1', status: 'success', createdAt: Date.parse('2026-07-01T12:00:00Z') });
+        await sink.append({ id: 'd2', sessionId: 's-1', toolName: 'read_file', toolCallId: 't2', status: 'success', createdAt: Date.parse('2026-07-02T12:00:00Z') });
+        await sink.append({ id: 'd3', sessionId: 's-1', toolName: 'read_file', toolCallId: 't3', status: 'error', error: 'x', createdAt: Date.parse('2026-07-02T18:00:00Z') });
+
+        const handler = new StatsHandler(sink, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/stats' && route.method === 'GET')!;
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-x', principalId: 'user-1' });
+        await route.handler(req, res, {} as any);
+        const stats = JSON.parse(body);
+
+        expect(stats.byDay['2026-07-01'].runs).toEqual(1);
+        expect(stats.byDay['2026-07-02'].runs).toEqual(2);
+        expect(stats.byDay['2026-07-02'].fail).toEqual(1);
     }
 }
 
