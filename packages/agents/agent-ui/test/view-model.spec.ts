@@ -1692,6 +1692,30 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.projectSessionCount).toEqual(0);
     }
 
+    @Test('openSession clears stale local plan todos before switching sessions')
+    async openSessionClearsStaleLocalPlanTodosBeforeSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        component.sessionState.setPlanTodos([{
+            id: 'todo-a',
+            content: 'Old session todo',
+            status: 'in_progress'
+        } as any], 'chat-a');
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.planTodos).toEqual([]);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('');
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
