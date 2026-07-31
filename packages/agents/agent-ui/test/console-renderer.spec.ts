@@ -127,6 +127,21 @@ export class AgentConsoleRendererTest {
         expect(lines.some(line => line.includes('plan 2'))).toBe(false);
     }
 
+    @Test('hides dashboard when only completed plan todos remain')
+    async hideDashboardWhenOnlyCompletedPlanTodosRemain() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'completed' },
+            { id: 'p2', content: 'Generate project structure', status: 'completed' }
+        ] as any);
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(ref.instance.showDashboardPanel).toBe(false);
+        expect(dashboardPanel.instance.shouldShow).toBe(false);
+    }
+
     @Test('dashboard shows coding task counters when no plan todos exist')
     async dashboardShowsCodingTaskCountersWithoutPlanTodos() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

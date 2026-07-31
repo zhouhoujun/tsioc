@@ -485,7 +485,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             || !!this.state.contextPreparationSummary
             || !!this.state.pendingApprovals.length
             || !!this.state.scheduledTasks.length
-            || !!this.state.planTodos.length
+            || this.state.hasActivePlanTodos()
             || !!this.state.reviewTaskChoices.length
             || !!this.state.toolRuns.length
             || !!this.state.activities.length

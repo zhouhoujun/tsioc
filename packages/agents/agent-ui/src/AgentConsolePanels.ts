@@ -364,7 +364,7 @@ export class AgentConsoleDashboardPanelComponent {
                 || !!this.state.contextPreparationSummary
                 || !!this.state.pendingApprovals.length
                 || !!this.state.scheduledTasks.length
-                || !!this.state.planTodos.length
+                || this.hasActivePlanTodos
                 || !!this.state.reviewTaskChoices.length
                 || !!this.state.toolRuns.length
                 || !!this.state.activities.length
