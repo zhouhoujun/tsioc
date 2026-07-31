@@ -73,3 +73,12 @@
 5. ~~工具补偿/回滚 phase 1~~ → 已完成：`AgentTool` 契约新增可选 `captureCompensation(input, context)` / `compensate(captured, context)`；`DefaultAgentRuntime` 在工具执行前捕获快照、成功入栈（coordinator 与直接调用两条路径），`cancelTurn` / `cancelChildTurns` / turn 错误路径按 LIFO 触发 `compensate`（单条失败不阻断剩余回滚）；内置 `MemoryPutTool` 提供删除本次新增记录的参考实现（保留已存在记录）。测试：agent `turn-cancel.spec.ts`（取消回滚、错误回滚、逆序回滚 3 条）、`tools.spec.ts`（memory.put 补偿只删新增记录）。
 
 全量回归：agent 262 / agent-tools 186 / agent-gateway 73 / agent-ui 188 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P5 打磨（已完成）
+
+1. ~~工具补偿 phase 2：agent-tools 写工具接入~~ → 已完成：`memory.delete` / `memory.forget` / `memory.purge` / `memory.put` 四个写工具实现 `captureCompensation` / `compensate`（put 只删除本次新增记录；delete/forget/purge 恢复被删记录），经 `@tsdi/agent-tools` 测试 `tools.spec.ts` 验证。测试：agent-tools 新增 4 条。
+2. ~~回滚信息透出~~ → 已完成：`AgentRuntime.cancelTurn` 返回类型升级为 `CancelTurnResult { cancelled, compensated, toolCallIds }`（抽象方法默认 `{ cancelled: false, compensated: 0, toolCallIds: [] }`）；新增 `AgentCompensationEvent(source, sessionId, reason: 'cancelled' | 'error', compensated, toolCallIds)`，`DefaultAgentRuntime.rollbackTurnCompensations(sessionId, reason)` 在补偿数 > 0 时发布事件；网关 RPC `run.cancel` 返回 `{ sessionId, cancelled, compensated, toolCallIds }`（未知会话幂等）；SSE 新增 `compensation` 事件类型（`EventHandler.onCompensation`）；UI 本地事件桥绑定 `AgentCompensationEvent` 透出 `rollback` 活动（「Rolled back N side-effecting tool call(s)」），RPC 流式客户端经 `consumeStreamEventChunk` 同样透出。测试：agent `turn-cancel.spec.ts` 断言升级为结果对象并新增取消/错误两条补偿事件断言；gateway 新增 `compensation events forwarded through SSE`；agent-ui view-model 新增 5 条。
+3. ~~StatsHandler 补维度~~ → 已完成：`GET /api/stats` 聚合新增 `bySession`、`byDay`（UTC 日期分桶）与 `errors`（top 10，`{ toolName, error, count, lastAt }`，次数降序、同次数按 lastAt 升序）。测试：gateway 扩展 stats 聚合断言 + 新增 `stats errors ordered and capped`、`stats buckets by day`。
+4. ~~审批面残余收口~~ → 已完成：`ToolApprovalManager.getPending()` 按 `createdAt` 升序返回（FIFO，网关 `approval.list` / UI 审批面板一致）；新增私有 `sweepExpired()` 防御性超时——`checkApproval` 与 `getPending` 入口先清扫已过 `expiresAt` 的 pending 请求（clearTimeout + resolve TIMEOUT + 发布 `AgentApprovalFailedEvent`），即使定时器因事件循环阻塞未触发也不会永久悬挂或占用 pending 上限。测试：agent 新增 `approval pending list is ordered oldest first`、`approval manager defensively sweeps requests that expired while the loop was blocked`。
+
+全量回归：agent 264 / agent-tools 190 / agent-gateway 76 / agent-ui 193 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。

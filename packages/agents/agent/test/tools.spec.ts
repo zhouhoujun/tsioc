@@ -354,6 +354,53 @@ export class BuiltinToolsTest {
         expect(denied.error).toBeUndefined();
     }
 
+    @Test('approval pending list is ordered oldest first')
+    async approvalManagerOrdersPendingFifo() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 1000 }
+        );
+
+        const first = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 5));
+        const second = approvals.checkApproval('shell.exec', { cmd: 'pwd' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 5));
+
+        const pending = approvals.getPending();
+        expect(pending.length).toEqual(2);
+        expect(pending[0].inputSummary).toContain('ls');
+        expect(pending[1].inputSummary).toContain('pwd');
+
+        approvals.approve(pending[0].id);
+        approvals.approve(pending[1].id);
+        expect((await first).decision).toEqual(ApprovalDecision.APPROVED);
+        expect((await second).decision).toEqual(ApprovalDecision.APPROVED);
+    }
+
+    @Test('approval manager defensively sweeps requests that expired while the loop was blocked')
+    async approvalManagerSweepsExpiredRequests() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 20, maxTimeoutMs: 20 }
+        );
+
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+
+        // Block the event loop past expiresAt so the per-request timer cannot
+        // run; sweepExpired is the only path that can clear the request.
+        const end = Date.now() + 80;
+        while (Date.now() < end) {
+            /* busy wait */
+        }
+
+        expect(approvals.getPending()).toEqual([]);
+        const result = await pendingPromise;
+        expect(result.decision).toEqual(ApprovalDecision.TIMEOUT);
+        expect(approvals.getPending()).toEqual([]);
+    }
+
     @Test('local tool registry returns resolved definitions with compatibility metadata')
     localToolRegistryReturnsResolvedDefinitions() {
         const registry = new LocalToolRegistry([new DescribedTool()], new InMemoryMemoryStore());

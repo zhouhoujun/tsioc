@@ -139,6 +139,9 @@ export class ToolApprovalManager {
         if (!this.requiresApproval(toolName, input)) {
             return { decision: ApprovalDecision.NOT_REQUIRED };
         }
+        // Defensive sweep: requests whose timer already fired but were not yet
+        // removed (e.g. event loop blocked) must not count against the cap.
+        this.sweepExpired();
         if (this.pending.size >= (this.options?.maxPendingApprovals ?? DEFAULT_MAX_PENDING_APPROVALS)) {
             return { decision: ApprovalDecision.DENIED };
         }
@@ -218,7 +221,37 @@ export class ToolApprovalManager {
     }
 
     getPending(): ApprovalRequestView[] {
-        return Array.from(this.pending.values()).map(({ request }) => this.toRequestView(request));
+        // Defensive sweep so clients never observe requests that expired while
+        // the event loop was busy; then present oldest requests first (FIFO).
+        this.sweepExpired();
+        return Array.from(this.pending.values())
+            .map(({ request }) => this.toRequestView(request))
+            .sort((a, b) => a.createdAt - b.createdAt);
+    }
+
+    /**
+     * Resolve and remove any pending request whose expiresAt has already
+     * passed. The per-request timer normally does this, but when the event
+     * loop is blocked (or a timer is delayed) a request can outlive its
+     * deadline; this is the defensive backstop. The awaiting checkApproval
+     * completion path publishes the audit/event for the resolved decision.
+     * Returns how many were swept.
+     */
+    private sweepExpired(): number {
+        const now = Date.now();
+        let swept = 0;
+        for (const [requestId, pending] of Array.from(this.pending.entries())) {
+            if (pending.request.expiresAt > now) {
+                continue;
+            }
+            clearTimeout(pending.timer);
+            this.pending.delete(requestId);
+            pending.resolve(ApprovalDecision.TIMEOUT);
+            this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval timeout')))
+                .catch(() => {});
+            swept++;
+        }
+        return swept;
     }
 
     private createRequest(toolName: string, input: any, sessionId: string): ApprovalRequest {
