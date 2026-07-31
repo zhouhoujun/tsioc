@@ -405,13 +405,15 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         if (!await this.sessions.has(sessionId)) {
             // Idempotent cancel: there is nothing to cancel for an unknown session.
-            return { sessionId, cancelled: false };
+            return { sessionId, cancelled: false, compensated: 0, toolCallIds: [] };
         }
         await this.ensureSessionAccess(sessionId, context);
-        const cancelled = await this.runtime.cancelTurn(sessionId);
+        const result = await this.runtime.cancelTurn(sessionId);
         return {
             sessionId,
-            cancelled
+            cancelled: result.cancelled,
+            compensated: result.compensated,
+            toolCallIds: result.toolCallIds
         };
     }
 

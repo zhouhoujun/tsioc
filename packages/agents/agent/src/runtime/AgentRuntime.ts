@@ -8,6 +8,12 @@ import { AgentTurnInput } from './AgentTurnInput';
 import { StreamChunk } from '../model/StreamChunk';
 import { SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 
+export interface CancelTurnResult {
+    cancelled: boolean;
+    compensated: number;
+    toolCallIds: string[];
+}
+
 @Abstract()
 export abstract class AgentRuntime {
     abstract runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult>;
@@ -31,15 +37,16 @@ export abstract class AgentRuntime {
 
     /**
      * Request cancellation of the currently running turn for a session.
-     * Returns true when a running turn was found and cancellation was requested;
-     * returns false when no turn is currently running (or it is already cancelling).
-     * When the session has registered child (sub-agent) sessions, cancellation
-     * cascades to them as well.
+     * Returns the outcome of the cancellation request: whether a running turn
+     * was found and cancelled, and how many side-effecting tool calls were
+     * rolled back as part of the cancellation (see the AgentTool compensation
+     * contract). When the session has registered child (sub-agent) sessions,
+     * cancellation cascades to them as well.
      * Override this in concrete runtimes that support turn cancellation.
      */
-    async cancelTurn(_sessionId: string): Promise<boolean> {
+    async cancelTurn(_sessionId: string): Promise<CancelTurnResult> {
         // no-op by default
-        return false;
+        return { cancelled: false, compensated: 0, toolCallIds: [] };
     }
 
     /**

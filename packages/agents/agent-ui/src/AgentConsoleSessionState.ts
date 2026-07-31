@@ -63,7 +63,7 @@ export interface AgentConsoleContextPreparationSnapshot extends ContextPreparati
 
 export interface AgentConsoleActivity {
     id: string;
-    kind: 'turn' | 'tool' | 'model' | 'error';
+    kind: 'turn' | 'tool' | 'model' | 'error' | 'rollback';
     message: string;
     createdAt: number;
 }

@@ -3,6 +3,7 @@ import { ApplicationContext, ApplicationEventMulticaster } from '@tsdi/core';
 import {
     AGENT_CONSOLE_APP_RPC,
     AgentRuntime,
+    AgentCompensationEvent,
     AgentContextPreparedEvent,
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
@@ -97,6 +98,16 @@ export class AgentConsoleEventBridge {
                     });
                 }
             });
+        });
+
+        bind(AgentCompensationEvent, (event: AgentCompensationEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            if (event.compensated > 0) {
+                this.state.pushActivity(
+                    'rollback',
+                    `Rolled back ${event.compensated} side-effecting tool call${event.compensated === 1 ? '' : 's'}`
+                );
+            }
         });
 
         bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {

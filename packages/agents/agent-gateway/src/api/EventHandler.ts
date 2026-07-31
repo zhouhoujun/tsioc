@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentCompensationEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -178,6 +178,16 @@ export class EventHandler {
         this.publish('error', {
             sessionId: event.sessionId,
             error: event.error.message
+        });
+    }
+
+    @OnEvent(AgentCompensationEvent)
+    onCompensation(event: AgentCompensationEvent): void {
+        this.publish('compensation', {
+            sessionId: event.sessionId,
+            reason: event.reason,
+            compensated: event.compensated,
+            toolCallIds: event.toolCallIds
         });
     }
 

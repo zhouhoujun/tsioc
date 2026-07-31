@@ -9,6 +9,7 @@ import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
     AgentApprovalRequestedEvent,
+    AgentCompensationEvent,
     InMemoryMemoryStore,
     AgentModelCompletedEvent,
     AgentStreamChunkEvent,
@@ -1452,6 +1453,48 @@ export class AgentConsoleComponentTest {
         expect(component.highlightedToolRun?.name).toEqual('write_file');
         expect(component.highlightedToolRun?.error).toEqual('permission denied');
         expect(component.lastError).toEqual('permission denied');
+    }
+
+    @Test('rollback activity is surfaced when a compensation event is emitted')
+    async rollbackActivitySurfacedFromCompensationEvent() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-rollback' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentCompensationEvent(
+            this,
+            'chat-rollback',
+            'cancelled',
+            2,
+            ['tc-a', 'tc-b']
+        ));
+
+        expect(component.activities.some(activity =>
+            activity.kind === 'rollback' && activity.message.includes('Rolled back 2')
+        )).toEqual(true);
+    }
+
+    @Test('compensation events for other sessions are ignored')
+    async rollbackActivityIgnoredForOtherSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-rollback' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentCompensationEvent(
+            this,
+            'other-session',
+            'error',
+            3,
+            ['tc-x']
+        ));
+
+        expect(component.activities.some(activity => activity.kind === 'rollback')).toEqual(false);
     }
 
     @Test('shared console component projects session state')
@@ -4394,6 +4437,33 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessionCount).toEqual(2);
         expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-c', 'chat-a']);
         expect(projects[0].sessions[0].current).toEqual(true);
+    }
+
+    @Test('session service cancelTurn falls back to the local runtime when no rpc is configured')
+    async sessionServiceCancelTurnFallsBackToLocalRuntime() {
+        const runtime = {
+            cancelTurn: async () => ({ cancelled: true, compensated: 2, toolCallIds: ['tc-a', 'tc-b'] })
+        } as any;
+        const service = new AgentConsoleSessionService(undefined, undefined, runtime);
+
+        expect(await service.cancelTurn('chat-1')).toEqual(true);
+    }
+
+    @Test('session service cancelTurn reports false for an idle local runtime')
+    async sessionServiceCancelTurnIdleLocalRuntime() {
+        const runtime = {
+            cancelTurn: async () => ({ cancelled: false, compensated: 0, toolCallIds: [] })
+        } as any;
+        const service = new AgentConsoleSessionService(undefined, undefined, runtime);
+
+        expect(await service.cancelTurn('chat-1')).toEqual(false);
+    }
+
+    @Test('session service cancelTurn reports false without a session')
+    async sessionServiceCancelTurnWithoutSession() {
+        const service = new AgentConsoleSessionService(undefined, undefined, undefined);
+
+        expect(await service.cancelTurn('')).toEqual(false);
     }
 
     @Test('session service prefers project id grouping when metadata exists')

@@ -185,7 +185,8 @@ export class AgentConsoleSessionService {
             return result?.cancelled === true;
         }
         if (this.runtime && typeof this.runtime.cancelTurn === 'function') {
-            return this.runtime.cancelTurn(sessionId);
+            const result = await this.runtime.cancelTurn(sessionId);
+            return result.cancelled === true;
         }
         return false;
     }

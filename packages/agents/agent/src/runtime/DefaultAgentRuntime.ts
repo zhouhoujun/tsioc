@@ -1,12 +1,12 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
-import { AgentRuntime } from './AgentRuntime';
+import { AgentRuntime, CancelTurnResult } from './AgentRuntime';
 import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage } from './AgentMessage';
-import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
@@ -186,12 +186,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return result;
         } catch (error) {
             if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
-                await this.rollbackTurnCompensations(input.sessionId);
+                await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
                 await this.app.publishEvent(new AgentTurnCancelledEvent(this, input.sessionId));
                 throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(input.sessionId);
             }
             const err = error instanceof Error ? error : new Error(String(error));
-            await this.rollbackTurnCompensations(input.sessionId);
+            await this.rollbackTurnCompensations(input.sessionId, 'error');
             await this.app.publishEvent(new AgentErrorEvent(this, input.sessionId, err));
             throw err;
         }
@@ -226,12 +226,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield { type: 'done' };
             } catch (error) {
                 if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
-                    await this.rollbackTurnCompensations(sessionId);
+                    await this.rollbackTurnCompensations(sessionId, 'cancelled');
                     await this.app.publishEvent(new AgentTurnCancelledEvent(this, sessionId));
                     throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(sessionId);
                 }
                 const err = error instanceof Error ? error : new Error(String(error));
-                await this.rollbackTurnCompensations(sessionId);
+                await this.rollbackTurnCompensations(sessionId, 'error');
                 await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
                 throw err;
             }
@@ -290,10 +290,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.sessions.search(query, options);
     }
 
-    async cancelTurn(sessionId: string): Promise<boolean> {
+    async cancelTurn(sessionId: string): Promise<CancelTurnResult> {
         const controller = this.sessionTurnAborts.get(sessionId);
         if (!controller || controller.signal.aborted) {
-            return false;
+            return { cancelled: false, compensated: 0, toolCallIds: [] };
         }
         // Drop any pending approval requests for the session so the UI never
         // keeps stale entries after the turn is cancelled.
@@ -303,8 +303,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         // spawned workers do not keep running after their parent is cancelled.
         await this.cancelChildTurns(sessionId);
         // Undo the side effects the turn already applied, newest first.
-        await this.rollbackTurnCompensations(sessionId);
-        return true;
+        const rollback = await this.rollbackTurnCompensations(sessionId, 'cancelled');
+        return { cancelled: true, ...rollback };
     }
 
     registerChildSession(parentSessionId: string, childSessionId: string): void {
@@ -336,7 +336,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             this.toolApprovalManager?.cancelBySession(childSessionId);
             controller.abort();
-            await this.rollbackTurnCompensations(childSessionId);
+            await this.rollbackTurnCompensations(childSessionId, 'cancelled');
             await this.cancelChildTurns(childSessionId);
         }
     }
@@ -364,22 +364,29 @@ export class DefaultAgentRuntime extends AgentRuntime {
     /**
      * Roll back the turn's successful side-effecting tool calls in reverse
      * order. Each entry is passed to the tool's compensate() hook with the
-     * snapshot captured before the call ran. Returns the number of entries
-     * compensated; failures during rollback are collected but do not stop
-     * the remaining entries.
+     * snapshot captured before the call ran. Returns how many entries were
+     * compensated and their tool call ids; failures during rollback are
+     * collected but do not stop the remaining entries. When at least one
+     * entry is compensated, an AgentCompensationEvent is published so
+     * listeners can surface the rollback.
      */
-    protected async rollbackTurnCompensations(sessionId: string): Promise<number> {
+    protected async rollbackTurnCompensations(
+        sessionId: string,
+        reason: 'cancelled' | 'error'
+    ): Promise<{ compensated: number; toolCallIds: string[] }> {
         const stack = this.sessionCompensationStacks.get(sessionId);
         if (!stack?.length) {
             this.sessionCompensationStacks.delete(sessionId);
-            return 0;
+            return { compensated: 0, toolCallIds: [] };
         }
+        const toolCallIds: string[] = [];
         let compensated = 0;
         for (const entry of [...stack].reverse()) {
             const tool = this.toolRegistry.getTool(entry.toolName);
             if (!tool?.compensate) {
                 continue;
             }
+            toolCallIds.push(entry.toolCallId);
             try {
                 await tool.compensate(entry.captured, {
                     sessionId,
@@ -391,7 +398,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
         this.sessionCompensationStacks.delete(sessionId);
-        return compensated;
+        if (compensated > 0) {
+            await this.app.publishEvent(new AgentCompensationEvent(this, sessionId, reason, compensated, toolCallIds)).catch(() => {});
+        }
+        return { compensated, toolCallIds };
     }
 
     protected endTurnAbortScope(sessionId: string): void {

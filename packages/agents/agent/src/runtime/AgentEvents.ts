@@ -186,6 +186,18 @@ export class AgentTurnCancelledEvent extends ApplicationEvent {
     }
 }
 
+export class AgentCompensationEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly reason: 'cancelled' | 'error',
+        readonly compensated: number,
+        readonly toolCallIds: string[]
+    ) {
+        super(source);
+    }
+}
+
 export class AgentTurnDiagnosticsEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly diagnostics: AgentTurnDiagnostics) {
         super(source);

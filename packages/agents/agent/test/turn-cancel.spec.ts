@@ -9,7 +9,7 @@ import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { AgentTurnCancelledError } from '../src/runtime/AgentTurnCancelledError';
-import { AgentApprovalFailedEvent, AgentErrorEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
+import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
 import { ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 
 class FakeApp {
@@ -95,7 +95,7 @@ export class TurnCancellationTest {
         await waitFor(() => adapter.requests.length > 0);
 
         const cancelled = await runtime.cancelTurn('s1');
-        expect(cancelled).toEqual(true);
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
 
         let error: any;
         try {
@@ -125,7 +125,7 @@ export class TurnCancellationTest {
         );
 
         const cancelled = await runtime.cancelTurn('s1');
-        expect(cancelled).toEqual(false);
+        expect(cancelled).toEqual({ cancelled: false, compensated: 0, toolCallIds: [] });
 
         // a second cancel after an active cancel also reports false
         const adapter = new AbortAwareBlockingModelAdapter();
@@ -141,8 +141,8 @@ export class TurnCancellationTest {
         );
         const turn = cancelRuntime.runTurn('s1', 'hello');
         await waitFor(() => adapter.requests.length > 0);
-        expect(await cancelRuntime.cancelTurn('s1')).toEqual(true);
-        expect(await cancelRuntime.cancelTurn('s1')).toEqual(false);
+        expect(await cancelRuntime.cancelTurn('s1')).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
+        expect(await cancelRuntime.cancelTurn('s1')).toEqual({ cancelled: false, compensated: 0, toolCallIds: [] });
         await turn.catch(() => undefined);
     }
 
@@ -169,7 +169,7 @@ export class TurnCancellationTest {
         await waitFor(() => adapter.requests.length > 0);
 
         const cancelled = await runtime.cancelTurn('s1');
-        expect(cancelled).toEqual(true);
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
 
         let error: any;
         try {
@@ -209,7 +209,7 @@ export class TurnCancellationTest {
         await waitFor(() => adapter.requests.filter(r => r.sessionId === 'child-1').length > 0);
 
         const cancelled = await runtime.cancelTurn('parent-1');
-        expect(cancelled).toEqual(true);
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
 
         await parentTurn;
         expect(parentError).toBeInstanceOf(AgentTurnCancelledError);
@@ -287,7 +287,7 @@ export class TurnCancellationTest {
         expect(approvalManager.getPending().some(r => r.sessionId === 's1')).toEqual(true);
 
         const cancelled = await runtime.cancelTurn('s1');
-        expect(cancelled).toEqual(true);
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
 
         expect(approvalManager.getPending().filter(r => r.sessionId === 's1')).toEqual([]);
         const failedEvent = app.events.find(event => event instanceof AgentApprovalFailedEvent) as AgentApprovalFailedEvent | undefined;
@@ -321,7 +321,7 @@ export class TurnCancellationTest {
         await waitFor(() => adapter.requests.length >= 2);
 
         const cancelled = await runtime.cancelTurn('s1');
-        expect(cancelled).toEqual(true);
+        expect(cancelled).toEqual({ cancelled: true, compensated: 1, toolCallIds: ['tc-1'] });
 
         let error: any;
         try {
@@ -337,6 +337,12 @@ export class TurnCancellationTest {
             ...tool.captured[0],
             existingIds: ['pre-existing-id']
         });
+
+        const compensationEvent = app.events.find(event => event instanceof AgentCompensationEvent) as AgentCompensationEvent | undefined;
+        expect(compensationEvent?.sessionId).toEqual('s1');
+        expect(compensationEvent?.reason).toEqual('cancelled');
+        expect(compensationEvent?.compensated).toEqual(1);
+        expect(compensationEvent?.toolCallIds).toEqual(['tc-1']);
     }
 
     @Test('a failing turn rolls back successful side-effecting tool calls before publishing AgentErrorEvent')
@@ -366,6 +372,11 @@ export class TurnCancellationTest {
 
         expect(tool.compensated.length).toEqual(1);
         expect(tool.compensated[0].existingIds).toEqual(['pre-existing-id']);
+
+        const compensationEvent = app.events.find(event => event instanceof AgentCompensationEvent) as AgentCompensationEvent | undefined;
+        expect(compensationEvent?.reason).toEqual('error');
+        expect(compensationEvent?.compensated).toEqual(1);
+        expect(compensationEvent?.toolCallIds).toEqual(['tc-1']);
     }
 
     @Test('rollback compensates successful tool calls in reverse order')

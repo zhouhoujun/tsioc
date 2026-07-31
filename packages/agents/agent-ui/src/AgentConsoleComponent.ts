@@ -2744,6 +2744,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             void this.refreshPendingApprovals();
             return;
         }
+        if (eventType === 'compensation') {
+            const compensated = Number(chunk?.compensated || 0);
+            if (compensated > 0) {
+                this.state.pushActivity(
+                    'rollback',
+                    `Rolled back ${compensated} side-effecting tool call${compensated === 1 ? '' : 's'}`
+                );
+            }
+            return;
+        }
         const content = String(chunk?.content || '').trim();
         if (!content) {
             return;

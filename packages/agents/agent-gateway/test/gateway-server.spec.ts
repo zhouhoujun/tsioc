@@ -15,7 +15,7 @@ import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -2858,6 +2858,24 @@ export class StdioAppRpcServerTest {
         expect(failed?.data?.error).toEqual('cancelled');
     }
 
+    @Test('compensation events are forwarded through the SSE event handler')
+    async compensationEventsForwardedThroughSse() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const events = new EventHandler(owners);
+
+        events.onCompensation(new AgentCompensationEvent(events, 's-1', 'cancelled', 2, ['tc-a', 'tc-b']));
+
+        const history = events.getHistory('s-1');
+        const record = history.events.find(item => item.type === 'compensation');
+        expect(record?.data?.sessionId).toEqual('s-1');
+        expect(record?.data?.reason).toEqual('cancelled');
+        expect(record?.data?.compensated).toEqual(2);
+        expect(record?.data?.toolCallIds).toEqual(['tc-a', 'tc-b']);
+    }
+
     @Test('run.cancel is idempotent for unknown and inactive sessions')
     async runCancelIsIdempotent() {
         const store = new InMemorySessionStore();
@@ -2867,7 +2885,7 @@ export class StdioAppRpcServerTest {
         await owners.create('s-1', 'user-1');
         const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         const events = new EventHandler(owners);
-        const runtime = { searchSessions: async () => [], cancelTurn: async () => false } as any;
+        const runtime = { searchSessions: async () => [], cancelTurn: async () => ({ cancelled: false, compensated: 0, toolCallIds: [] }) } as any;
         const rpc = new AppRpcServer(
             runtime,
             store,
@@ -2907,6 +2925,8 @@ export class StdioAppRpcServerTest {
             params: { sessionId: 's-1' }
         }, { principalId: 'user-1' });
         expect((idleSecond as any).result.cancelled).toEqual(false);
+        expect((idleSecond as any).result.compensated).toEqual(0);
+        expect((idleSecond as any).result.toolCallIds).toEqual([]);
         expect((idleSecond as any).error).toBeUndefined();
     }
 }
