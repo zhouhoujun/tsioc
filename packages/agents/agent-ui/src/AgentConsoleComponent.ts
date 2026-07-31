@@ -131,7 +131,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const groups = await this.sessionService.listProjectSessions(this.state.sessionId);
         const groupedSessions = this.flattenProjectSessions(groups);
         if (groupedSessions.length) {
-            this.state.setSessions(groupedSessions);
+        this.state.setSessions(groupedSessions);
             this.refreshProjectContext();
             this.refreshProjects();
             return;
@@ -147,8 +147,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             updatedAt: item.lastActiveAt,
             messageCount: item.messageCount,
             summary: item.summary,
+            projectKey: item.projectKey,
             projectId: item.projectId,
-            projectLabel: item.projectId || item.workspace
+            primaryThreadId: item.primaryThreadId,
+            sessionRole: item.sessionRole,
+            rootRequest: item.rootRequest,
+            focusSummary: item.focusSummary,
+            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id
         })));
         this.refreshProjectContext();
         this.refreshProjects();
@@ -157,7 +162,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected refreshProjects(): void {
         const seen = new Map<string, { key: string; label: string; lastActive: number; count: number }>();
         for (const s of this.state.sessions) {
-            const key = String(s.projectKey || s.projectId || s.workspace || '').trim();
+            const key = String(s.projectKey || s.projectId || s.workspace || s.primaryThreadId || '').trim();
             if (!key) continue;
             const existing = seen.get(key);
             if (existing) {
@@ -168,7 +173,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             } else {
                 seen.set(key, {
                     key,
-                    label: s.projectLabel || key,
+                    label: s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || key,
                     lastActive: s.updatedAt || 0,
                     count: 1
                 });
@@ -261,6 +266,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const workspace = String(anchor.workspace || '').trim();
         if (workspace) {
             return this.state.sessions.filter(item => String(item.workspace || '').trim() === workspace);
+        }
+        const primaryThreadId = String((anchor as any).primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return this.state.sessions.filter(item => String((item as any).primaryThreadId || '').trim() === primaryThreadId);
         }
         return [anchor];
     }

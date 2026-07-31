@@ -472,6 +472,8 @@ class SessionServiceStub extends AgentConsoleSessionService {
                 ? `project:${String(session.projectId).trim()}`
                 : String(session.workspace || '').trim()
                     ? `workspace:${String(session.workspace).trim()}`
+                    : String(session.primaryThreadId || '').trim()
+                        ? `thread:${String(session.primaryThreadId).trim()}`
                     : `session:${session.id}`;
             const bucket = buckets.get(projectKey) || [];
             bucket.push(session);
@@ -480,8 +482,9 @@ class SessionServiceStub extends AgentConsoleSessionService {
         return Array.from(buckets.entries()).map(([projectKey, sessions]) => ({
             projectKey,
             projectId: sessions[0]?.projectId,
-            label: sessions[0]?.projectId || sessions[0]?.workspace || sessions[0]?.id,
+            label: sessions[0]?.projectId || sessions[0]?.workspace || sessions[0]?.primaryThreadId || sessions[0]?.id,
             workspace: String(sessions[0]?.workspace || ''),
+            primaryThreadId: sessions[0]?.primaryThreadId,
             sessionCount: sessions.length,
             lastActiveAt: Math.max(...sessions.map(item => item.lastActiveAt || 0), 0),
             sessions: sessions.map(item => ({
@@ -3623,6 +3626,38 @@ export class AgentConsoleComponentTest {
         expect(projects[0].label).toEqual('exam-system');
         expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-a', 'chat-b']);
         expect(projects[0].sessions[1].current).toEqual(true);
+    }
+
+    @Test('session fallback groups by primary thread when no project list exists')
+    async sessionFallbackGroupsByPrimaryThreadWhenNoProjectListExists() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [];
+        sessionService.sessions = [
+            {
+                id: 'chat-a',
+                current: true,
+                workspace: '',
+                primaryThreadId: 'thread-1',
+                lastActiveAt: 10
+            },
+            {
+                id: 'chat-b',
+                current: false,
+                workspace: '',
+                primaryThreadId: 'thread-1',
+                lastActiveAt: 20
+            }
+        ];
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.projectKey).toEqual('thread:thread-1');
+        expect(component.sessionState.projectLabel).toEqual('thread-1');
+        expect(component.sessionState.projectSessionCount).toEqual(2);
+        expect(component.sessionState.projects.map(item => item.key)).toEqual(['thread:thread-1']);
     }
 
     @Test('sessions command refreshes grouped project sessions into the panel state')

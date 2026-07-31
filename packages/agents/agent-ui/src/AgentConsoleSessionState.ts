@@ -42,6 +42,10 @@ export interface AgentConsoleSessionItem {
     summary?: string;
     projectKey?: string;
     projectId?: string;
+    primaryThreadId?: string;
+    sessionRole?: string;
+    rootRequest?: string;
+    focusSummary?: string;
     projectLabel?: string;
     projectSessionCount?: number;
 }
