@@ -238,6 +238,7 @@ export interface AgentConsoleOptions {
     sessionHint?: string;
     messagesHint?: string;
     toolsHint?: string;
+    toolRunsHint?: string;
     approvalsHint?: string;
     reviewDetailHint?: string;
     messageDetailHint?: string;
@@ -280,6 +281,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
+    toolRunsHint: 'up/down move   pg jump   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
     reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|summary|approve-all|clear-all   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
@@ -334,6 +336,7 @@ export class AgentConsoleSessionState {
     tools: AgentConsoleToolItem[] = [];
     toolsFocused = false;
     selectedToolName = '';
+    selectedToolRunIndex = 0;
     approvalsFocused = false;
     selectedApprovalId = '';
     reviewOpen = false;
@@ -1303,6 +1306,22 @@ export class AgentConsoleSessionState {
         ].filter(Boolean).join('\n');
     }
 
+    protected buildSelectedToolRunCopyText(): string {
+        const selected = this.selectedToolRun;
+        if (!selected) {
+            return '';
+        }
+        return [
+            `${selected.name} [${selected.status}]`,
+            selected.durationMs != null ? `duration=${selected.durationMs}ms` : '',
+            selected.attemptCount && selected.attemptCount > 1 ? `attempt=#${selected.attemptCount}` : '',
+            selected.executionMode ? `mode=${selected.executionMode}` : '',
+            selected.inputSummary ? `in=${selected.inputSummary}` : '',
+            selected.outputSummary ? `out=${selected.outputSummary}` : '',
+            selected.error ? `error=${selected.error}` : ''
+        ].filter(Boolean).join('\n');
+    }
+
     setScheduledTasks(tasks: ScheduledAgentTask[]): void {
         this.scheduledTasks = tasks.slice();
         if (!this.scheduledTasks.length) {
@@ -1608,6 +1627,45 @@ export class AgentConsoleSessionState {
 
     get selectedTool(): AgentConsoleToolItem | undefined {
         return this.tools.find(item => item.name === this.selectedToolName);
+    }
+
+    moveToolRunSelection(delta: number): void {
+        if (!this.toolRuns.length) {
+            return;
+        }
+        const nextIndex = (this.selectedToolRunIndex + delta + this.toolRuns.length) % this.toolRuns.length;
+        this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
+        this.notify();
+    }
+
+    moveToolRunSelectionPage(delta: number, pageSize?: number): void {
+        if (!this.toolRuns.length) {
+            return;
+        }
+        const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
+        const nextIndex = this.selectedToolRunIndex + (delta * Math.max(1, resolvedPageSize));
+        this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
+        this.notify();
+    }
+
+    selectFirstToolRun(): void {
+        if (!this.toolRuns.length) {
+            return;
+        }
+        this.selectedToolRunIndex = 0;
+        this.notify();
+    }
+
+    selectLastToolRun(): void {
+        if (!this.toolRuns.length) {
+            return;
+        }
+        this.selectedToolRunIndex = this.toolRuns.length - 1;
+        this.notify();
+    }
+
+    get selectedToolRun(): AgentConsoleToolRun | undefined {
+        return this.toolRuns[this.selectedToolRunIndex];
     }
 
     setApprovalsFocused(focused: boolean): void {
@@ -2668,6 +2726,7 @@ export class AgentConsoleSessionState {
         const next = this.toolRuns.filter(item => item.name !== run.name);
         next.unshift(run);
         this.toolRuns = next.slice(0, this.consoleOptions.storedToolRunsLimit);
+        this.selectedToolRunIndex = Math.max(0, Math.min(this.selectedToolRunIndex, this.toolRuns.length - 1));
         this.notify();
     }
 
@@ -3488,6 +3547,37 @@ export class AgentConsoleSessionState {
                     return true;
                 case 'end':
                     this.selectLastTool();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.toolRunsFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.buildSelectedToolRunCopyText(), 'tool run');
+                    return true;
+                case 'down':
+                    this.moveToolRunSelection(1);
+                    return true;
+                case 'up':
+                    this.moveToolRunSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveToolRunSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveToolRunSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstToolRun();
+                    return true;
+                case 'end':
+                    this.selectLastToolRun();
                     return true;
                 default:
                     return false;

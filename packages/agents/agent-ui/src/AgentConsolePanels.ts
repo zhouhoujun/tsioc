@@ -1786,7 +1786,10 @@ export class AgentConsoleToolsPanelComponent {
     imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
-        <label class="tool-run-item" v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
+        <label v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="toolRunsHintLabel">{{toolRunsHintLabel}}</label>
+        <label v-style="listStyle" v-show="toolRunListLabel">{{toolRunListLabel}}</label>
+        <label v-style="detailStyle" v-show="selectedToolRunDetailLabel">{{selectedToolRunDetailLabel}}</label>
     </div>
     `
 })
@@ -1812,8 +1815,12 @@ export class AgentConsoleToolRunsPanelComponent {
         return this.state.highlightedToolRun;
     }
 
+    get selectedToolRun(): AgentConsoleToolRun | undefined {
+        return this.state.selectedToolRun;
+    }
+
     get shellStyle() {
-        return this.toolRunsSummaryLabel ? this.activeThemeStyles.toolRunsShell : {};
+        return this.toolRuns.length ? this.activeThemeStyles.toolRunsShell : {};
     }
 
     get titleStyle() {
@@ -1824,53 +1831,113 @@ export class AgentConsoleToolRunsPanelComponent {
         return this.activeThemeStyles.toolRunsAccent;
     }
 
-    get toolRunLabels(): string[] {
-        return this.toolRuns.slice(0, this.state.consoleOptions.toolRunsVisibleItems).map(run => {
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get visibleToolRunStart(): number {
+        const start = resolveConsoleListWindow(
+            this.toolRuns.length,
+            this.state.selectedToolRunIndex,
+            this.state.consoleOptions.toolRunsVisibleItems
+        ).start;
+        return start;
+    }
+
+    get visibleToolRuns(): AgentConsoleToolRun[] {
+        return this.toolRuns.slice(
+            this.visibleToolRunStart,
+            this.visibleToolRunStart + this.state.consoleOptions.toolRunsVisibleItems
+        );
+    }
+
+    get toolRunItems(): Array<{ label: string; style: Record<string, string> }> {
+        if (!this.toolRuns.length) {
+            return [];
+        }
+        const start = this.visibleToolRunStart;
+        return this.visibleToolRuns.map((run, offset) => {
+            const index = start + offset;
+            const selected = index === this.state.selectedToolRunIndex;
             const duration = run.durationMs == null ? '' : ` ${run.durationMs}ms`;
             const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
-            const inputPreview = run.inputSummary ? ` ${this.summarize(run.inputSummary, 40)}` : '';
-            return `${run.name} ${run.status}${duration}${attempt}${inputPreview}`;
+            return {
+                label: `${selected ? '›' : ' '} ${run.name} [${run.status}]${duration}${attempt}`,
+                style: selected
+                    ? this.activeThemeStyles.sessionsSelected
+                    : this.activeThemeStyles.statusValue
+            };
         });
+    }
+
+    get toolRunLabels(): string[] {
+        return this.toolRunItems.map(item => item.label);
+    }
+
+    get toolRunListLabel(): string {
+        if (!this.toolRuns.length) {
+            return '';
+        }
+        return this.toolRunLabels.join('\n');
+    }
+
+    get toolRunsSummaryLabel(): string {
+        if (!this.toolRuns.length) {
+            return '';
+        }
+        const running = this.toolRuns.filter(run => run.status === 'running').length;
+        const parts = [`tool runs ${this.toolRuns.length}`];
+        if (running) {
+            parts.push(`running ${running}`);
+        }
+        const selected = this.selectedToolRun;
+        if (selected) {
+            const duration = selected.durationMs != null ? ` ${selected.durationMs}ms` : '';
+            parts.push(`${selected.name} ${selected.status}${duration}`);
+        }
+        return parts.join(' · ');
+    }
+
+    get toolRunsHintLabel(): string {
+        return this.state.toolRunsFocused ? this.state.consoleOptions.toolRunsHint : '';
+    }
+
+    get selectedToolRunDetailLabel(): string {
+        const selected = this.selectedToolRun;
+        if (!selected) {
+            return '';
+        }
+        const lines: string[] = [];
+        const attempt = selected.attemptCount && selected.attemptCount > 1 ? ` attempt #${selected.attemptCount}` : '';
+        const duration = selected.durationMs != null ? ` duration ${selected.durationMs}ms` : '';
+        lines.push(`${selected.name} [${selected.status}]${duration}${attempt}`);
+        if (selected.executionMode) {
+            lines.push(`mode ${selected.executionMode}`);
+        }
+        if (selected.inputSummary) {
+            lines.push(`in ${this.summarize(selected.inputSummary)}`);
+        }
+        if (selected.outputSummary) {
+            lines.push(`out ${this.summarize(selected.outputSummary)}`);
+        }
+        if (selected.error) {
+            lines.push(`error ${this.summarize(selected.error)}`);
+        }
+        return lines.join('\n');
     }
 
     protected summarize(value: string, maxLength?: number): string {
         const text = String(value || '').replace(/\s+/g, ' ').trim();
         const limit = maxLength ?? this.state?.consoleOptions?.toolRunSummaryMaxLength ?? 96;
         return text.length > limit ? `${text.slice(0, limit)}...` : text;
-    }
-
-    get toolRunsSummary(): string {
-        return this.toolRunLabels.join(' | ');
-    }
-
-    get highlightedToolRunName(): string {
-        return this.highlightedToolRun ? this.highlightedToolRun.name : '';
-    }
-
-    get highlightedToolRunStatus(): string {
-        return this.highlightedToolRun ? this.highlightedToolRun.status : '';
-    }
-
-    get highlightedToolRunInput(): string {
-        if (!this.highlightedToolRun) {
-            return this.state.consoleOptions.emptyValueLabel;
-        }
-        return this.highlightedToolRun.inputSummary || this.state.consoleOptions.emptyValueLabel;
-    }
-
-    get highlightedToolRunOutput(): string {
-        if (!this.highlightedToolRun) {
-            return this.state.consoleOptions.emptyValueLabel;
-        }
-        return this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || this.state.consoleOptions.emptyValueLabel;
-    }
-
-    get toolRunsSummaryLabel(): string {
-        if (!this.highlightedToolRun || this.highlightedToolRun.status !== 'running') {
-            return '';
-        }
-        const detail = this.highlightedToolRun.inputSummary || this.highlightedToolRun.message || this.highlightedToolRun.name;
-        return `└ ${this.summarize(detail || this.highlightedToolRun.name)}`;
     }
 }
 

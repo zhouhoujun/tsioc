@@ -652,7 +652,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showToolRunsPanel(): boolean {
-        return false;
+        return this.state.toolRunsFocused;
     }
 
     get showSelectPanel(): boolean {
@@ -2207,35 +2207,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     this.notify('No tool runs available.');
                     return true;
                 }
+                this.state.setSessionsFocused(false);
+                this.state.setMessagesFocused(false);
+                this.state.setProjectsFocused(false);
+                this.state.setToolsFocused(false);
+                this.state.setApprovalsFocused(false);
+                this.state.setTasksFocused(false);
+                this.state.setJobsFocused(false);
+                this.state.closeMessageDetail();
                 this.state.closeReview();
-                {
-                    const selectedRun = await this.select(
-                        'Tool runs',
-                        this.state.toolRuns.map((r, i) => ({
-                            label: `${r.name} [${r.status}]${r.durationMs != null ? ` ${r.durationMs}ms` : ''}${r.attemptCount && r.attemptCount > 1 ? ` #${r.attemptCount}` : ''}`,
-                            value: String(i),
-                            detail: r.inputSummary || r.outputSummary || r.error || ''
-                        })),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (selectedRun != null) {
-                        const idx = parseInt(selectedRun, 10);
-                        const run = this.state.toolRuns[idx];
-                        if (run) {
-                            this.notify(
-                                [
-                                    `${run.name} [${run.status}]`,
-                                    run.durationMs != null ? `${run.durationMs}ms` : '',
-                                    run.attemptCount ? `attempt #${run.attemptCount}` : '',
-                                    run.error ? `error: ${run.error}` : '',
-                                    run.inputSummary ? `in: ${this.state.summarize(run.inputSummary)}` : '',
-                                    run.outputSummary ? `out: ${this.state.summarize(run.outputSummary)}` : ''
-                                ].filter(Boolean).join(' | ')
-                            );
-                        }
-                    }
-                }
+                this.state.setToolRunsFocused(true);
                 return true;
             case '/search':
                 if (!parsed.args || !parsed.args.trim()) {

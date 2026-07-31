@@ -421,6 +421,51 @@ export class AgentConsoleRendererTest {
         expect(toolLines.some(line => line.includes('Permission denied'))).toBe(true);
     }
 
+    @Test('renders focused tool runs panel with selected run details')
+    async renderFocusedToolRunsPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.clearToolActivity();
+        ref.instance.sessionState.setToolRunsFocused(false);
+        ref.instance.sessionState.upsertToolRun({
+            name: 'read_file', status: 'success', durationMs: 100, message: 'ok', inputSummary: 'read a.ts', outputSummary: 'content', updatedAt: 1
+        });
+        ref.instance.sessionState.upsertToolRun({
+            name: 'terminal', status: 'running', message: 'npm test', inputSummary: 'npm test', updatedAt: 2
+        });
+        ref.instance.sessionState.setToolRunsFocused(true);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const runsPanel = ref.hostView.query(AgentConsoleToolRunsPanelComponent) as ComponentRef<AgentConsoleToolRunsPanelComponent>;
+        const runLines = renderer.renderToLines(runsPanel.hostView.rootNodes[0]);
+
+        expect(ref.instance.showToolRunsPanel).toBe(true);
+        expect(runLines.some(line => line.includes('tool runs 2'))).toBe(true);
+        expect(runLines.some(line => line.includes('running 1'))).toBe(true);
+        expect(runLines.some(line => line.includes('› terminal'))).toBe(true);
+        expect(runLines.some(line => line.includes('terminal [running]'))).toBe(true);
+        expect(runLines.some(line => line.includes('in npm test'))).toBe(true);
+    }
+
+    @Test('tool runs panel stays hidden until focused')
+    async toolRunsPanelHiddenUntilFocused() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.clearToolActivity();
+        ref.instance.sessionState.setToolRunsFocused(false);
+        ref.instance.sessionState.upsertToolRun({
+            name: 'read_file', status: 'success', durationMs: 100, message: 'ok', updatedAt: 1
+        });
+        await ref.render();
+
+        const runsPanel = ref.hostView.query(AgentConsoleToolRunsPanelComponent) as ComponentRef<AgentConsoleToolRunsPanelComponent>;
+
+        expect(ref.instance.showToolRunsPanel).toBe(false);
+        expect(runsPanel.instance.toolRunsSummaryLabel.includes('tool runs 1')).toBe(true);
+
+        ref.instance.sessionState.setToolRunsFocused(true);
+        expect(ref.instance.showToolRunsPanel).toBe(true);
+    }
+
     @Test('renders focused approval list with selected request details')
     async renderFocusedApprovalList() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
