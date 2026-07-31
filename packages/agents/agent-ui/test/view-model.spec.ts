@@ -4404,6 +4404,35 @@ export class AgentConsoleComponentTest {
         expect(projects[0].rootRequest).toEqual('Latest request');
     }
 
+    @Test('session service preserves grouped session role metadata from indexed projects')
+    async sessionServicePreservesGroupedSessionRoleMetadataFromIndexedProjects() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a',
+            primaryThreadId: 'thread-1',
+            sessionRole: 'worker'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 5,
+            updatedAt: 5,
+            workspace: '/tmp/project-b',
+            primaryThreadId: 'thread-1',
+            sessionRole: 'review'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-a');
+
+        expect(projects[0].projectKey).toEqual('thread:thread-1');
+        expect(projects[0].sessionRole).toEqual('review');
+    }
+
     @Test('project context prefers latest active session metadata in fallback groups')
     async projectContextPrefersLatestActiveSessionMetadataInFallbackGroups() {
         const runtime = new RuntimeStub();

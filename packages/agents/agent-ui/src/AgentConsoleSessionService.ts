@@ -97,6 +97,10 @@ export class AgentConsoleSessionService {
                     projectId: String(project?.projectId || '').trim() || undefined,
                     label: String(project?.label || '').trim() || undefined,
                     workspace: String(project?.workspace || '').trim(),
+                    primaryThreadId: String(project?.primaryThreadId || '').trim() || undefined,
+                    sessionRole: String(project?.sessionRole || '').trim() || undefined,
+                    rootRequest: String(project?.rootRequest || '').trim() || undefined,
+                    focusSummary: String(project?.focusSummary || '').trim() || undefined,
                     sessionCount: Number(project?.sessionCount || 0),
                     lastActiveAt: Number(project?.lastActiveAt || 0),
                     sessions: Array.isArray(project?.sessions)
@@ -298,7 +302,17 @@ export class AgentConsoleSessionService {
     }
 
     protected groupProjectIndexes(
-        projects: Array<{ projectKey: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: number }>,
+        projects: Array<{
+            projectKey: string;
+            projectId?: string;
+            workspace?: string;
+            primaryThreadId?: string;
+            sessionRole?: string;
+            rootRequest?: string;
+            focusSummary?: string;
+            sessionIds: string[];
+            lastActiveAt?: number;
+        }>,
         sessions: AgentConsoleSessionChoice[]
     ): AgentConsoleSessionProjectGroup[] {
         const sessionMap = new Map(sessions.map(session => [session.id, session]));
@@ -311,14 +325,16 @@ export class AgentConsoleSessionService {
                 const workspace = String(project.workspace || '').trim();
                 const projectId = String(project.projectId || '').trim() || undefined;
                 const primaryThreadId = String(project.primaryThreadId || '').trim() || undefined;
-                const focusSummary = String(representative?.focusSummary || '').trim() || undefined;
-                const rootRequest = String(representative?.rootRequest || '').trim() || undefined;
+                const sessionRole = String(representative?.sessionRole || project.sessionRole || '').trim() || undefined;
+                const focusSummary = String(representative?.focusSummary || project.focusSummary || '').trim() || undefined;
+                const rootRequest = String(representative?.rootRequest || project.rootRequest || '').trim() || undefined;
                 return {
                     projectKey: String(project.projectKey || '').trim() || undefined,
                     projectId,
                     label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || representative?.id || 'session',
                     workspace,
                     primaryThreadId,
+                    sessionRole,
                     rootRequest,
                     focusSummary,
                     sessions: this.sortSessionChoices(groupedSessions),
