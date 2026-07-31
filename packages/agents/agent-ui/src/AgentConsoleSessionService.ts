@@ -300,12 +300,16 @@ export class AgentConsoleSessionService {
                 const workspace = String(project.workspace || '').trim();
                 const projectId = String(project.projectId || '').trim() || undefined;
                 const primaryThreadId = String(project.primaryThreadId || '').trim() || undefined;
+                const focusSummary = String(groupedSessions[0]?.focusSummary || '').trim() || undefined;
+                const rootRequest = String(groupedSessions[0]?.rootRequest || '').trim() || undefined;
                 return {
                     projectKey: String(project.projectKey || '').trim() || undefined,
                     projectId,
-                    label: projectId || workspace || primaryThreadId || groupedSessions[0]?.id || 'session',
+                    label: projectId || focusSummary || workspace || primaryThreadId || rootRequest || groupedSessions[0]?.id || 'session',
                     workspace,
                     primaryThreadId,
+                    rootRequest,
+                    focusSummary,
                     sessions: this.sortSessionChoices(groupedSessions),
                     sessionCount: groupedSessions.length,
                     lastActiveAt: Number(project.lastActiveAt || Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0))

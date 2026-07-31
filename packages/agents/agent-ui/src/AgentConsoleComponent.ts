@@ -177,7 +177,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             } else {
                 seen.set(key, {
                     key,
-                    label: s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || key,
+                    label: s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || s.rootRequest || key,
                     lastActive: s.updatedAt || 0,
                     count: 1
                 });
@@ -201,15 +201,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
+        rootRequest?: string;
+        focusSummary?: string;
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
         return groups.flatMap(group => {
             const projectKey = String(group.projectKey || '').trim() || undefined;
             const projectId = String(group.projectId || '').trim() || undefined;
-            const projectLabel = String(group.label || group.projectId || group.workspace || '').trim()
+            const projectLabel = String(group.label || group.projectId || group.focusSummary || group.workspace || group.primaryThreadId || group.rootRequest || '').trim()
                 || undefined;
             const primaryThreadId = String(group.primaryThreadId || '').trim() || undefined;
+            const rootRequest = String(group.rootRequest || '').trim() || undefined;
+            const focusSummary = String(group.focusSummary || '').trim() || undefined;
             return group.sessions.map(item => ({
                 id: item.id,
                 current: !!item.current,
@@ -220,6 +224,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 projectKey,
                 projectId,
                 primaryThreadId: item.primaryThreadId || primaryThreadId,
+                rootRequest: item.rootRequest || rootRequest,
+                focusSummary: item.focusSummary || focusSummary,
                 projectLabel,
                 projectSessionCount: group.sessionCount
             }));
@@ -242,7 +248,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             .find(Boolean) || '';
         this.state.setProjectContext({
             projectKey: anchor ? this.resolveSessionProjectKey(anchor) : undefined,
-            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.workspace || anchor?.primaryThreadId || anchor?.id,
+            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.focusSummary || anchor?.workspace || anchor?.primaryThreadId || anchor?.rootRequest || anchor?.id,
             projectSummary: summary,
             projectSessionCount: anchor?.projectSessionCount || projectSessions.length
         });
@@ -258,6 +264,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
+        rootRequest?: string;
+        focusSummary?: string;
         projectLabel?: string;
         projectSessionCount?: number;
     }> {

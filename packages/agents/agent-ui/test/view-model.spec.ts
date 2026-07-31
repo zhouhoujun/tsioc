@@ -3628,6 +3628,34 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessions[1].current).toEqual(true);
     }
 
+    @Test('session service preserves focus summary labels from indexed project sessions')
+    async sessionServicePreservesFocusSummaryLabelsFromIndexedProjects() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '',
+            focusSummary: 'Investigate flaky worker startup'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '',
+            focusSummary: 'Investigate flaky worker startup'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-b');
+
+        expect(projects.map(project => project.projectKey)).toEqual(['session:chat-a', 'session:chat-b']);
+        expect(projects[0].label).toEqual('Investigate flaky worker startup');
+        expect(projects[1].label).toEqual('Investigate flaky worker startup');
+    }
+
     @Test('session fallback groups by primary thread when no project list exists')
     async sessionFallbackGroupsByPrimaryThreadWhenNoProjectListExists() {
         const runtime = new RuntimeStub();
@@ -3703,6 +3731,43 @@ export class AgentConsoleComponentTest {
             { id: 'chat-c', projectKey: 'workspace:/tmp/project-c', projectLabel: '/tmp/project-c' }
         ]);
         expect(component.sessionState.sessionsFocused).toEqual(true);
+    }
+
+    @Test('sessions command preserves focus summary labels from grouped sessions')
+    async sessionsCommandPreservesFocusSummaryLabelsFromGroupedSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'session:chat-a',
+            label: 'Investigate flaky worker startup',
+            workspace: '',
+            focusSummary: 'Investigate flaky worker startup',
+            sessionCount: 1,
+            lastActiveAt: 2,
+            sessions: [{
+                id: 'chat-a',
+                messageCount: 2,
+                lastActiveAt: 2,
+                focusSummary: 'Investigate flaky worker startup'
+            }]
+        }];
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).handleCommand('/sessions');
+
+        expect(component.sessionState.sessions.map(item => ({
+            id: item.id,
+            projectLabel: item.projectLabel,
+            focusSummary: item.focusSummary
+        }))).toEqual([
+            {
+                id: 'chat-a',
+                projectLabel: 'Investigate flaky worker startup',
+                focusSummary: 'Investigate flaky worker startup'
+            }
+        ]);
+        expect(component.sessionState.projects.map(item => item.label)).toEqual(['Investigate flaky worker startup']);
     }
 
     @Test('openSession aggregates project summary, todo, and coding tasks across related sessions')
