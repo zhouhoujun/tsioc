@@ -1799,6 +1799,31 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.approvalsFocused).toEqual(false);
     }
 
+    @Test('openSession clears focused transient panels before switching sessions')
+    async openSessionClearsFocusedTransientPanelsBeforeSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+
+        component.sessionState.setProjectsFocused(true);
+        component.sessionState.setToolRunsFocused(true);
+        component.sessionState.setTasksFocused(true);
+        component.sessionState.setJobsFocused(true);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.projectsFocused).toEqual(false);
+        expect(component.sessionState.toolRunsFocused).toEqual(false);
+        expect(component.sessionState.tasksFocused).toEqual(false);
+        expect(component.sessionState.jobsFocused).toEqual(false);
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();

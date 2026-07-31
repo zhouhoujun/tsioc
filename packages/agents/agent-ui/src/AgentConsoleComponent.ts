@@ -361,8 +361,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.configure({ sessionId: target.id });
             this.state.setMessagesFocused(false);
             this.state.setSessionsFocused(false);
+            this.state.setProjectsFocused(false);
             this.state.setToolsFocused(false);
+            this.state.setToolRunsFocused(false);
             this.state.setApprovalsFocused(false);
+            this.state.setTasksFocused(false);
+            this.state.setJobsFocused(false);
             this.state.setPendingApprovals([]);
             this.state.clearReview();
             this.state.clearPlanTodos();
