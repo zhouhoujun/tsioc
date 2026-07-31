@@ -99,6 +99,7 @@ export interface AgentConsoleApprovalRequest {
     inputSummary?: string;
     createdAt: number;
     timeoutMs: number;
+    expiresAt: number;
 }
 
 export interface AgentConsoleScheduledTaskItem {

@@ -2166,7 +2166,8 @@ export class AgentConsoleComponentTest {
             hasInput: true,
             inputSummary: '{"path":"notes.txt"}',
             createdAt: Date.now(),
-            timeoutMs: 30000
+            timeoutMs: 30000,
+            expiresAt: Date.now() + 30000
         }];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals);
 
@@ -2392,7 +2393,8 @@ export class AgentConsoleComponentTest {
             hasInput: true,
             inputSummary: '{"path":"notes.txt"}',
             createdAt: Date.now(),
-            timeoutMs: 30000
+            timeoutMs: 30000,
+            expiresAt: Date.now() + 30000
         }, {
             id: 'approval-2',
             toolName: 'edit_file',
@@ -2402,7 +2404,8 @@ export class AgentConsoleComponentTest {
             hasInput: true,
             inputSummary: '{"path":"src/app.ts"}',
             createdAt: Date.now(),
-            timeoutMs: 30000
+            timeoutMs: 30000,
+            expiresAt: Date.now() + 30000
         }];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals);
         await component.onInit();
@@ -2431,7 +2434,8 @@ export class AgentConsoleComponentTest {
             hasInput: true,
             inputSummary: '{"path":"notes.txt"}',
             createdAt: Date.now(),
-            timeoutMs: 30000
+            timeoutMs: 30000,
+            expiresAt: Date.now() + 30000
         }];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, approvals);
         await component.onInit();

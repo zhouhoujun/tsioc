@@ -19,6 +19,8 @@ import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, Agent
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
+import { StatsHandler } from '../src/api/StatsHandler';
+import { InMemoryAuditSink } from '../../agent/src/harness/InMemoryAuditSink';
 import { ReadFileTool } from '../../agent-tools/src';
 import { AgentGatewayModule, provideAgentGateway } from '../src';
 
@@ -679,6 +681,144 @@ export class ApprovalHandlerTest {
         expect(approvalManager.getPending().length).toEqual(1);
         approvalManager.cancelBySession('s-1');
         await pendingCheck;
+    }
+
+    @Test('approval list without sessionId is scoped to owned sessions and exposes expiresAt')
+    async approvalListScopesByOwnership() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await store.get('s-2');
+        await owners.create('s-1', 'user-1');
+        await owners.create('s-2', 'user-2');
+        const approvalManager = new ToolApprovalManager(
+            { publishEvent: async () => {} } as any,
+            { requires: () => true, reason: () => 'approval required' } as any,
+            { defaultTimeoutMs: 60000 }
+        );
+        const handler = new ApprovalHandler(approvalManager as any, owners);
+
+        const pendingCheck1 = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
+        const pendingCheck2 = approvalManager.checkApproval('write_file', { path: '/tmp/y' }, 's-2');
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+
+        const route = handler.getRoutes().find(route => route.path === '/api/approvals' && route.method === 'GET')!;
+        const listFor = async (principalId: string): Promise<any[]> => {
+            let body = '';
+            const res = {
+                writeHead: () => res,
+                end: (value?: string) => {
+                    body = value ?? '';
+                    return res;
+                }
+            } as any;
+            const req = {} as any;
+            setRequestAuth(req, { token: 'token-x', principalId });
+            await route.handler(req, res, {} as any);
+            return JSON.parse(body).requests;
+        };
+
+        const ownedByUser1 = await listFor('user-1');
+        expect(ownedByUser1.length).toEqual(1);
+        expect(ownedByUser1[0].sessionId).toEqual('s-1');
+        expect(ownedByUser1[0].expiresAt).toBeGreaterThanOrEqual(ownedByUser1[0].createdAt);
+        expect(ownedByUser1[0].expiresAt).toEqual(ownedByUser1[0].createdAt + ownedByUser1[0].timeoutMs);
+
+        const ownedByUser2 = await listFor('user-2');
+        expect(ownedByUser2.length).toEqual(1);
+        expect(ownedByUser2[0].sessionId).toEqual('s-2');
+
+        approvalManager.cancelBySession('s-1');
+        approvalManager.cancelBySession('s-2');
+        await pendingCheck1;
+        await pendingCheck2;
+    }
+}
+
+@Suite('StatsHandler')
+export class StatsHandlerTest {
+    @Test('aggregates audit records scoped to owned sessions')
+    async aggregatesAuditRecordsScopedToOwnedSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await store.get('s-2');
+        await owners.create('s-1', 'user-1');
+        await owners.create('s-2', 'user-2');
+        const sink = new InMemoryAuditSink();
+        await sink.append({ id: 'a1', sessionId: 's-1', toolName: 'read_file', toolCallId: 't1', status: 'success', durationMs: 10, createdAt: 100 });
+        await sink.append({ id: 'a2', sessionId: 's-1', toolName: 'write_file', toolCallId: 't2', status: 'error', error: 'boom', durationMs: 30, createdAt: 200 });
+        await sink.append({ id: 'a3', sessionId: 's-2', toolName: 'write_file', toolCallId: 't3', status: 'success', createdAt: 300 });
+        await sink.append({ id: 'a4', sessionId: 's-1', toolName: 'write_file', toolCallId: 't4', status: 'skipped', createdAt: 400, metadata: { kind: 'approval', decision: 'denied' } });
+
+        const handler = new StatsHandler(sink, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/stats' && route.method === 'GET')!;
+
+        const fetchStats = async (principalId: string): Promise<any> => {
+            let body = '';
+            const res = {
+                writeHead: () => res,
+                end: (value?: string) => {
+                    body = value ?? '';
+                    return res;
+                }
+            } as any;
+            const req = {} as any;
+            setRequestAuth(req, { token: 'token-x', principalId });
+            await route.handler(req, res, {} as any);
+            return JSON.parse(body);
+        };
+
+        const stats = await fetchStats('user-1');
+        expect(stats.runs).toEqual(3);
+        expect(stats.ok).toEqual(1);
+        expect(stats.fail).toEqual(1);
+        expect(stats.skipped).toEqual(1);
+        expect(stats.successRate).toEqual(33.3);
+        expect(stats.avgDurationMs).toEqual(20);
+        expect(stats.sessions).toEqual(1);
+        expect(stats.timeRange.from).toEqual(100);
+        expect(stats.timeRange.to).toEqual(400);
+        expect(stats.byTool['read_file'].ok).toEqual(1);
+        expect(stats.byTool['write_file'].fail).toEqual(1);
+        expect(stats.byTool['write_file'].skipped).toEqual(1);
+        expect(stats.byKind['approval'].runs).toEqual(1);
+        expect(stats.byKind['approval'].skipped).toEqual(1);
+        expect(stats.byKind['execution'].runs).toEqual(2);
+
+        const user2Stats = await fetchStats('user-2');
+        expect(user2Stats.runs).toEqual(1);
+        expect(user2Stats.ok).toEqual(1);
+    }
+
+    @Test('stats route forbids access to sessions owned by others')
+    async statsRouteForbidsOthersSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const sink = new InMemoryAuditSink();
+        const handler = new StatsHandler(sink, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/stats' && route.method === 'GET')!;
+
+        let status = 0;
+        let body = '';
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+        const req = {} as any;
+        (req as any).url = '/api/stats?sessionId=s-1';
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
     }
 }
 

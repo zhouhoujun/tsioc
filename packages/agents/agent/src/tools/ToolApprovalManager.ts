@@ -2,6 +2,7 @@ import { Injectable, Optional, Inject, token } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
+import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 
 export interface ApprovalStrategy {
     requires(toolName: string, input: any): boolean;
@@ -36,6 +37,7 @@ export interface ApprovalRequest {
     summary: string;
     createdAt: number;
     timeoutMs: number;
+    expiresAt: number;
 }
 
 export interface ApprovalRequestView {
@@ -48,6 +50,7 @@ export interface ApprovalRequestView {
     inputSummary?: string;
     createdAt: number;
     timeoutMs: number;
+    expiresAt: number;
 }
 
 export interface ApprovalResult {
@@ -118,7 +121,9 @@ export class ToolApprovalManager {
         @Optional() @Inject(AgentApprovalStrategy, { defaultValue: null })
         private strategy?: ApprovalStrategy,
         @Optional() @Inject(AgentApprovalOptions, { defaultValue: null })
-        private options?: ApprovalManagerOptions
+        private options?: ApprovalManagerOptions,
+        @Optional()
+        private auditSink?: AuditSink
     ) {
     }
 
@@ -144,6 +149,7 @@ export class ToolApprovalManager {
                 .catch(() => {});
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), false))
                 .catch(() => {});
+            this.recordApprovalAudit(request, ApprovalDecision.DENIED);
             return { decision: ApprovalDecision.DENIED, request };
         }
 
@@ -162,6 +168,7 @@ export class ToolApprovalManager {
 
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
             .catch(() => {});
+        this.recordApprovalAudit(request, decision);
         return { decision, request };
     }
 
@@ -222,6 +229,7 @@ export class ToolApprovalManager {
             this.options?.defaultTimeoutMs ?? DEFAULT_APPROVAL_TIMEOUT_MS,
             this.options?.maxTimeoutMs ?? DEFAULT_MAX_APPROVAL_TIMEOUT_MS
         );
+        const createdAt = Date.now();
         return {
             id: randomUUID(),
             toolName,
@@ -231,8 +239,9 @@ export class ToolApprovalManager {
             sessionId,
             reason,
             summary: inputSummary ? `${reason} Summary: ${inputSummary}` : reason,
-            createdAt: Date.now(),
-            timeoutMs
+            createdAt,
+            timeoutMs,
+            expiresAt: createdAt + timeoutMs
         };
     }
 
@@ -246,7 +255,8 @@ export class ToolApprovalManager {
             hasInput: request.hasInput,
             inputSummary: request.inputSummary,
             createdAt: request.createdAt,
-            timeoutMs: request.timeoutMs
+            timeoutMs: request.timeoutMs,
+            expiresAt: request.expiresAt
         };
     }
 
@@ -256,6 +266,44 @@ export class ToolApprovalManager {
             toolName: request.toolName,
             sessionId: request.sessionId
         };
+    }
+
+    /**
+     * Write the resolved approval decision into the audit sink so approval
+     * activity is visible through the same audit surface as tool executions.
+     * The record keeps the gated tool name and marks metadata.kind =
+     * 'approval' so aggregated stats can separate decisions from executions.
+     */
+    private recordApprovalAudit(request: ApprovalRequest, decision: ApprovalDecision): void {
+        if (!this.auditSink) {
+            return;
+        }
+        const record: AgentAuditRecord = {
+            id: randomUUID(),
+            sessionId: request.sessionId,
+            toolName: request.toolName,
+            toolCallId: `approval:${request.id}`,
+            status: decision === ApprovalDecision.APPROVED
+                ? 'success'
+                : decision === ApprovalDecision.DENIED
+                    ? 'skipped'
+                    : 'error',
+            inputSummary: request.inputSummary,
+            error: decision === ApprovalDecision.TIMEOUT
+                ? 'Approval request timed out'
+                : decision === ApprovalDecision.CANCELLED
+                    ? 'Approval request cancelled by turn cancellation'
+                    : undefined,
+            createdAt: Date.now(),
+            metadata: {
+                kind: 'approval',
+                approvalId: request.id,
+                decision,
+                timeoutMs: request.timeoutMs,
+                expiresAt: request.expiresAt
+            }
+        };
+        this.auditSink.append(record).catch(() => {});
     }
 }
 

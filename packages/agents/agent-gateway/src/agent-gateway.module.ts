@@ -16,6 +16,7 @@ import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
 import { ApprovalHandler } from './api/ApprovalHandler';
+import { StatsHandler } from './api/StatsHandler';
 import { AppRpcHandler } from './api/AppRpcHandler';
 import { AppRpcServer } from './app-rpc/AppRpcServer';
 import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
@@ -42,6 +43,7 @@ import { createAgentGatewayProviders } from './provider';
         EventHandler,
         AuditHandler,
         ApprovalHandler,
+        StatsHandler,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,
@@ -62,6 +64,7 @@ import { createAgentGatewayProviders } from './provider';
         EventHandler,
         AuditHandler,
         ApprovalHandler,
+        StatsHandler,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,

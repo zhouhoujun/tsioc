@@ -31,12 +31,20 @@ export class ApprovalHandler {
             if (sessionId) {
                 requests = requests.filter(request => request.sessionId === sessionId);
             }
-            if (this.owners && req && sessionId) {
+            if (this.owners && req) {
                 const principalId = getRequestPrincipalId(req);
-                if (!await this.owners.isOwner(sessionId, principalId)) {
-                    res.writeHead(403, { 'Content-Type': 'application/json' })
-                        .end(JSON.stringify({ error: 'forbidden' }));
-                    return;
+                if (sessionId) {
+                    if (!await this.owners.isOwner(sessionId, principalId)) {
+                        res.writeHead(403, { 'Content-Type': 'application/json' })
+                            .end(JSON.stringify({ error: 'forbidden' }));
+                        return;
+                    }
+                } else {
+                    // Without a sessionId scope the result to sessions owned by the
+                    // authenticated principal instead of exposing every pending request.
+                    const sessionIds = [...new Set(requests.map(request => request.sessionId))];
+                    const owned = new Set(await this.owners.listOwned(sessionIds, principalId));
+                    requests = requests.filter(request => owned.has(request.sessionId));
                 }
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })

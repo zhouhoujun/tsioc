@@ -16,6 +16,7 @@ import { WeatherAdapter } from '../../agent-tools/utility/weather.tool';
 import { LlmTaskAdapter } from '../../agent-tools/llm/llm-task.tool';
 import { PipelineAdapter } from '../../agent-tools/pipeline/pipeline.tool';
 import { resolveDefaultToolSandboxPolicy } from '../src/harness/ToolSandboxPolicy';
+import { InMemoryAuditSink } from '../src/harness/InMemoryAuditSink';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -280,6 +281,40 @@ export class BuiltinToolsTest {
         expect(pending[0].timeoutMs).toEqual(1000);
         approvals.reject(pending[0].id);
         expect((await pendingPromise).decision).toEqual(ApprovalDecision.DENIED);
+    }
+
+    @Test('approval decisions are written to the audit sink')
+    async approvalDecisionsWrittenToAuditSink() {
+        const sink = new InMemoryAuditSink();
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 1000 },
+            sink
+        );
+
+        const approvedPending = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        approvals.approve(approvals.getPending()[0].id);
+        expect((await approvedPending).decision).toEqual(ApprovalDecision.APPROVED);
+
+        const deniedPending = approvals.checkApproval('shell.exec', { cmd: 'pwd' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        approvals.reject(approvals.getPending()[0].id);
+        expect((await deniedPending).decision).toEqual(ApprovalDecision.DENIED);
+
+        const records = await sink.list('s1');
+        expect(records.length).toEqual(2);
+        const approved = records.find(record => record.status === 'success')!;
+        expect(approved.toolName).toEqual('shell.exec');
+        expect(approved.toolCallId).toContain('approval:');
+        expect(approved.metadata?.kind).toEqual('approval');
+        expect(approved.metadata?.decision).toEqual('approved');
+        expect(approved.metadata?.expiresAt).toBeGreaterThanOrEqual(approved.createdAt);
+
+        const denied = records.find(record => record.status === 'skipped')!;
+        expect(denied.metadata?.decision).toEqual('denied');
+        expect(denied.error).toBeUndefined();
     }
 
     @Test('local tool registry returns resolved definitions with compatibility metadata')

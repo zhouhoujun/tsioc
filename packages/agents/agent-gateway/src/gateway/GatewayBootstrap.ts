@@ -6,6 +6,7 @@ import { SessionHandler } from '../api/SessionHandler';
 import { MemoryHandler } from '../api/MemoryHandler';
 import { ToolsHandler } from '../api/ToolsHandler';
 import { ApprovalHandler } from '../api/ApprovalHandler';
+import { StatsHandler } from '../api/StatsHandler';
 import { EventHandler } from '../api/EventHandler';
 import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
@@ -28,6 +29,7 @@ export class GatewayBootstrap {
         private memory: MemoryHandler,
         private tools: ToolsHandler,
         @Optional() private approvals?: ApprovalHandler | null,
+        @Optional() private stats?: StatsHandler | null,
         @Optional() private rpc?: AppRpcHandler | null,
         @Optional() private events?: EventHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
@@ -44,6 +46,7 @@ export class GatewayBootstrap {
             ...this.memory.getRoutes(),
             ...this.tools.getRoutes(),
             ...(this.approvals?.getRoutes() ?? []),
+            ...(this.stats?.getRoutes() ?? []),
             ...(this.rpc?.getRoutes() ?? []),
             ...(this.events?.getRoutes() ?? []),
             ...(this.chatWs?.getRoutes() ?? [])

@@ -547,7 +547,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 `Tool: ${request.toolName}`,
                 `Reason: ${request.reason}`,
                 request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-                `Timeout: ${request.timeoutMs}ms`
+                `Timeout: ${request.timeoutMs}ms`,
+                request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
             ].join('\n')
         })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), this.state.consoleOptions.selectHint);
         return requests.find(request => request.id === selected);
@@ -569,7 +570,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 `Tool: ${request.toolName}`,
                 `Reason: ${request.reason}`,
                 request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-                `Timeout: ${request.timeoutMs}ms`
+                `Timeout: ${request.timeoutMs}ms`,
+                request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
             ].join('\n');
             const action = await this.select(`Approval ${request.id.slice(0, 8)}`, [
                 {
