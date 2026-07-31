@@ -266,8 +266,11 @@ class AppRpcStub {
     codingTasksBySession = new Map<string, any[]>();
     codingTaskFailuresBySession = new Set<string>();
     codingTaskDetails = new Map<string, any>();
+    codingTaskDetailHandlers = new Map<string, () => Promise<any>>();
     codingTaskDiffs = new Map<string, any>();
+    codingTaskDiffHandlers = new Map<string, () => Promise<any>>();
     reviewAnnotationCacheByKey = new Map<string, Record<string, any>>();
+    reviewAnnotationLoadHandlers = new Map<string, () => Promise<any>>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -318,12 +321,23 @@ class AppRpcStub {
             };
         }
         if (method === 'coding_task.get') {
+            const handler = this.codingTaskDetailHandlers.get(params?.taskId);
+            if (handler) {
+                return {
+                    sessionId: params?.sessionId || 'console',
+                    task: await handler()
+                };
+            }
             return {
                 sessionId: params?.sessionId || 'console',
                 task: this.codingTaskDetails.get(params?.taskId) || null
             };
         }
         if (method === 'coding_task.diff') {
+            const handler = this.codingTaskDiffHandlers.get(params?.taskId);
+            if (handler) {
+                return await handler();
+            }
             return this.codingTaskDiffs.get(params?.taskId) || {
                 sessionId: params?.sessionId || 'console',
                 taskId: params?.taskId,
@@ -338,6 +352,10 @@ class AppRpcStub {
             return { ok: true };
         }
         if (method === 'review_annotations.load') {
+            const handler = this.reviewAnnotationLoadHandlers.get(params?.cacheKey);
+            if (handler) {
+                return await handler();
+            }
             const cacheKey = String(params?.cacheKey || params?.sessionId || 'console').trim();
             return this.reviewAnnotationCacheByKey.get(cacheKey) || null;
         }
@@ -2442,6 +2460,53 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewWorkers.length).toEqual(1);
         expect(component.sessionState.reviewDetailLines.join('\n')).toContain('diff --git a/src/a.ts b/src/a.ts');
         expect(component.notice).toEqual('');
+    }
+
+    @Test('openCodingTaskReview ignores stale results from earlier review loads')
+    async openCodingTaskReviewIgnoresStaleResultsFromEarlierReviewLoads() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const delayedDiff = createDeferred<any>();
+        appRpc.codingTaskDiffHandlers.set('task-a', () => delayedDiff.promise);
+        appRpc.codingTaskDiffs.set('task-b', {
+            sessionId: 'chat-b',
+            taskId: 'task-b',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'task b diff',
+                text: 'diff --git a/src/b.ts b/src/b.ts\n+task b'
+            },
+            workers: []
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        component.sessionState.setTaskRecords([
+            { id: 'task-a', title: 'Task A', sourceSessionId: 'chat-a', status: 'running' } as any,
+            { id: 'task-b', title: 'Task B', sourceSessionId: 'chat-b', status: 'completed' } as any
+        ]);
+
+        const firstOpen = (component as any).openCodingTaskReview('task-a');
+        await Promise.resolve();
+
+        await (component as any).openCodingTaskReview('task-b');
+        expect(component.sessionState.reviewTask?.id).toEqual('task-b');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('task b diff');
+
+        delayedDiff.resolve({
+            sessionId: 'chat-a',
+            taskId: 'task-a',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'task a diff',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+task a'
+            },
+            workers: []
+        });
+        await firstOpen;
+
+        expect(component.sessionState.reviewTask?.id).toEqual('task-b');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('task b diff');
+        expect(component.sessionState.reviewDetailLines.join('\n')).not.toContain('task a diff');
     }
 
     @Test('review command preselects the active review task in selector')

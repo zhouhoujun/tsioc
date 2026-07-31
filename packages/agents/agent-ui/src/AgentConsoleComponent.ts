@@ -46,6 +46,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected draftLines: string[] = [];
     protected destroyed = false;
     protected openSessionRequestId = 0;
+    protected openReviewRequestId = 0;
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
@@ -395,6 +396,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (requestId !== this.openSessionRequestId) {
             return;
         }
+        this.openReviewRequestId++;
         this.state.batch(() => {
             this.state.configure({ sessionId: target.id });
             this.state.setMessagesFocused(false);
@@ -947,20 +949,33 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async restoreReviewAnnotationsCacheFromDisk(): Promise<void> {
+        return this.restoreReviewAnnotationsCacheFromDiskForScope();
+    }
+
+    protected async restoreReviewAnnotationsCacheFromDiskForScope(scope?: {
+        cacheKey?: string;
+        selectedTaskId?: string;
+        sessionId?: string;
+        requestId?: number;
+    }): Promise<void> {
         if (!this.appRpc) {
             return;
         }
-        const cacheKey = this.getReviewAnnotationsCacheKey();
+        const cacheKey = String(scope?.cacheKey || this.getReviewAnnotationsCacheKey() || '').trim();
         if (!cacheKey) {
             return;
         }
+        const sessionId = String(scope?.sessionId || this.resolveReviewAnnotationsSessionId() || '').trim();
+        const selectedTaskId = String(scope?.selectedTaskId || this.state.selectedReviewTaskId || '').trim();
         try {
             const cache = await this.appRpc.request('review_annotations.load', {
-                sessionId: this.resolveReviewAnnotationsSessionId(),
+                sessionId,
                 cacheKey
             });
+            if (scope?.requestId != null && scope.requestId !== this.openReviewRequestId) {
+                return;
+            }
             if (cache) {
-                const selectedTaskId = String(this.state.selectedReviewTaskId || '').trim();
                 if (selectedTaskId || cacheKey) {
                     const annotations = this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {};
                     const cacheEntryKey = cacheKey || selectedTaskId;
@@ -1149,6 +1164,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('Review is unavailable without app RPC.');
             return false;
         }
+        const requestId = ++this.openReviewRequestId;
 
         const resolvedTask = taskRecord ?? this.state.taskRecords.find(task => task?.id === resolvedTaskId) ?? null;
         const sessionId = this.resolveCodingTaskSessionId(resolvedTask);
@@ -1156,11 +1172,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             resolvedTask ? Promise.resolve(resolvedTask) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
             this.appRpc.request('coding_task.diff', { sessionId, taskId: resolvedTaskId })
         ]);
+        if (requestId !== this.openReviewRequestId) {
+            return true;
+        }
 
         if (!loadedTask && !diffResult?.diff && !Array.isArray(diffResult?.workers)) {
             this.notify(`Coding task "${resolvedTaskId}" was not found.`);
             return false;
         }
+
+        const reviewTask = loadedTask || {
+            id: resolvedTaskId,
+            title: resolvedTaskId,
+            sourceSessionId: sessionId,
+            status: 'unknown',
+            metadata: {
+                executionMode: diffResult?.executionMode ?? null
+            }
+        };
 
         this.state.batch(() => {
             this.state.setSessionsFocused(false);
@@ -1170,15 +1199,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setApprovalsFocused(false);
             this.state.setMessagesFocused(false);
             this.state.closeMessageDetail();
-            this.state.openReview(loadedTask || {
-                id: resolvedTaskId,
-                title: resolvedTaskId,
-                sourceSessionId: sessionId,
-                status: 'unknown',
-                metadata: {
-                    executionMode: diffResult?.executionMode ?? null
-                }
-            }, {
+            this.state.openReview(reviewTask, {
                 diff: diffResult?.diff ?? null,
                 workers: Array.isArray(diffResult?.workers) ? diffResult.workers : [],
                 executionMode: diffResult?.executionMode ?? null
@@ -1186,7 +1207,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setNotice('');
             this.state.setLastError('');
         });
-        await this.restoreReviewAnnotationsCacheFromDisk();
+        await this.restoreReviewAnnotationsCacheFromDiskForScope({
+            cacheKey: `${String(reviewTask?.sourceSessionId || reviewTask?.sessionId || sessionId || '').trim()}:${resolvedTaskId}`.replace(/^:/, ''),
+            selectedTaskId: resolvedTaskId,
+            sessionId: String(reviewTask?.sourceSessionId || reviewTask?.sessionId || sessionId || '').trim(),
+            requestId
+        });
         return true;
     }
 
