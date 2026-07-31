@@ -526,16 +526,20 @@ class WorkspaceSessionStoreStub {
                 ? `project:${String(state.projectId).trim()}`
                 : String(state.workspace || '').trim()
                     ? `workspace:${String(state.workspace).trim()}`
+                    : String(state.primaryThreadId || '').trim()
+                        ? `thread:${String(state.primaryThreadId).trim()}`
                     : `session:${state.sessionId}`;
             const existing = buckets.get(projectKey) || {
                 projectKey,
                 projectId: state.projectId,
                 workspace: state.workspace,
+                primaryThreadId: state.primaryThreadId,
                 sessionIds: [],
                 lastActiveAt: 0
             };
             existing.sessionIds.push(state.sessionId);
             existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, state.updatedAt || state.createdAt || 0);
+            existing.primaryThreadId = existing.primaryThreadId || state.primaryThreadId;
             buckets.set(projectKey, existing);
         }
         return Array.from(buckets.values());
