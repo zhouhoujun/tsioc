@@ -673,17 +673,34 @@ class InputHistoryStoreStub extends AgentConsoleInputHistoryStore {
     entries: string[] = [];
     saveCalls: string[][] = [];
     workspaces: string[] = [];
+    sessionIds: string[] = [];
+    entriesByScope = new Map<string, string[]>();
 
-    override async load(workspace?: string): Promise<string[]> {
-        this.workspaces.push(String(workspace || ''));
-        return this.entries.slice();
+    protected scopeKey(workspace?: string, sessionId?: string): string {
+        return `${String(workspace || '')}::${String(sessionId || '')}`;
     }
 
-    override async save(entries: string[], workspace?: string): Promise<void> {
+    setScopedEntries(workspace: string | undefined, sessionId: string | undefined, entries: string[]): void {
+        this.entriesByScope.set(this.scopeKey(workspace, sessionId), entries.slice());
+    }
+
+    override async load(workspace?: string, sessionId?: string): Promise<string[]> {
+        this.workspaces.push(String(workspace || ''));
+        this.sessionIds.push(String(sessionId || ''));
+        const scoped = this.entriesByScope.get(this.scopeKey(workspace, sessionId));
+        if (scoped) {
+            return scoped.slice();
+        }
+        return this.entriesByScope.size ? [] : this.entries.slice();
+    }
+
+    override async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
         const next = entries.slice();
         this.saveCalls.push(next);
         this.workspaces.push(String(workspace || ''));
+        this.sessionIds.push(String(sessionId || ''));
         this.entries = next;
+        this.entriesByScope.set(this.scopeKey(workspace, sessionId), next);
     }
 }
 
@@ -1927,6 +1944,49 @@ export class AgentConsoleComponentTest {
 
         expect(component.sessionId).toEqual('chat-c');
         expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
+    }
+
+    @Test('openSession persists and restores session-scoped input history')
+    async openSessionPersistsAndRestoresSessionScopedInputHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const historyStore = new InputHistoryStoreStub();
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 3 },
+            { id: 'chat-b', current: false, lastActiveAt: 2 },
+            { id: 'chat-c', current: false, lastActiveAt: 1 }
+        ];
+        historyStore.setScopedEntries('/tmp/workspace-history', 'chat-b', ['history-b']);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            undefined,
+            { ui: { title: 'Console', console: { workspace: '/tmp/workspace-history' } } },
+            historyStore
+        );
+
+        component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-history' });
+        component.sessionState.setInputHistoryEntries(['history-a']);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-b']);
+        expect(historyStore.saveCalls[0]).toEqual(['history-a']);
+        expect(historyStore.sessionIds[0]).toEqual('chat-a');
+
+        await (component as any).openSession('chat-c');
+
+        expect(component.sessionId).toEqual('chat-c');
+        expect(component.sessionState.getInputHistoryEntries()).toEqual([]);
+        expect(historyStore.saveCalls[1]).toEqual(['history-b']);
+        expect(historyStore.sessionIds[2]).toEqual('chat-b');
     }
 
     @Test('clear command starts a new session after submit')

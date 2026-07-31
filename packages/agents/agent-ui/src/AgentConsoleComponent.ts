@@ -383,13 +383,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
     }
 
-    protected async openSession(sessionId?: string): Promise<void> {
+    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean }): Promise<void> {
         if (this.isTurnInProgress()) {
             this.notifyBusyState('Wait for the current turn to finish before switching sessions.');
             return;
         }
         if (!this.sessionService) {
             return;
+        }
+        if (options?.persistCurrentHistory !== false) {
+            await this.persistInputHistory();
         }
         const requestId = ++this.openSessionRequestId;
         const target = await this.sessionService.ensureSession(sessionId);
@@ -429,7 +432,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshTools(target.id),
             this.refreshPendingApprovals(target.id),
             this.refreshTodoPlan(target.id, projectSessions),
-            this.loadCodingTasks(target.id, projectSessionIds)
+            this.loadCodingTasks(target.id, projectSessionIds),
+            this.restoreInputHistory(target.id)
         ]);
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
@@ -896,12 +900,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         this.ensureWorkspaceMentionResolver();
-        await this.bootstrapStateFromAppRpc();
-        await this.openSession(this.state.sessionId);
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
-        await this.restoreInputHistory();
+        await this.bootstrapStateFromAppRpc();
+        await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
         await this.refreshTools();
         await this.refreshScheduledTasks();
         this.state.setTasksCount(this.scheduler.getTasks().length);
@@ -1125,15 +1128,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
     }
 
-    protected async restoreInputHistory(): Promise<void> {
+    protected async restoreInputHistory(sessionId = this.state.sessionId): Promise<void> {
         if (!this.inputHistoryStore) {
             return;
         }
         try {
             const workspace = this.resolveHistoryWorkspace();
-            const sessionId = this.state.sessionId;
             const entries = await this.inputHistoryStore.load(workspace, sessionId);
-            if (entries.length) {
+            if (sessionId === this.state.sessionId) {
                 this.state.setInputHistoryEntries(entries);
             }
         } catch {
