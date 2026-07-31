@@ -32,6 +32,10 @@ export class DefaultMemoryStore extends MemoryStore {
         return this.resolveStore().delete(id, sessionId, scope);
     }
 
+    async deleteBySession(sessionId: string): Promise<number> {
+        return this.resolveStore().deleteBySession(sessionId);
+    }
+
     private resolveStore(): MemoryStore {
         if (this.resolved) {
             return this.resolved;

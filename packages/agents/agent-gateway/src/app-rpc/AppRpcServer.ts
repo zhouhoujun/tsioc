@@ -370,6 +370,7 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context);
         await this.owners.unbind(sessionId);
         await this.sessions.delete(sessionId);
+        await this.memory.deleteBySession(sessionId);
         return { deleted: true, sessionId };
     }
 

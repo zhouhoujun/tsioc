@@ -392,6 +392,32 @@ export class SessionHandlerTest {
         expect(await store.has('s1')).toEqual(false);
     }
 
+    @Test('session delete route removes session-scoped memory records')
+    async sessionDeleteRouteRemovesSessionMemory() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        await memory.put({ id: 'todo-1', sessionId: 's1', key: 'agent.todo.plan', value: 'plan', scope: 'session', createdAt: 1 });
+        await memory.put({ id: 'ann-1', sessionId: 's1', key: 'agent-ui.review.annotations-cache', value: '{}', scope: 'session', createdAt: 2 });
+        await memory.put({ id: 'shared-1', key: 'team', value: 'agents', scope: 'global', createdAt: 3 });
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners, memory);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id' && route.method === 'DELETE')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, { id: 's1' });
+        expect(await store.has('s1')).toEqual(false);
+        const remaining = await memory.getAll('s1');
+        expect(remaining.map((r: any) => r.id)).toEqual(['shared-1']);
+    }
+
     @Test('lists persisted owned sessions without track call')
     async listsPersistedOwnedSessionsWithoutTrack() {
         const store = new InMemorySessionStore();

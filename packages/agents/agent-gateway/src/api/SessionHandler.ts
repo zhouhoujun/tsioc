@@ -1,6 +1,6 @@
 import * as http from 'http';
-import { Injectable } from '@tsdi/ioc';
-import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent } from '@tsdi/agent';
+import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo, SessionProjectGroup } from '../contracts/SessionInfo';
@@ -19,7 +19,8 @@ export class SessionHandler {
     constructor(
         private runtime: AgentRuntime,
         private sessions: SessionStore,
-        private owners: SessionOwnerStore
+        private owners: SessionOwnerStore,
+        @Optional() private memory?: MemoryStore | null
     ) {
     }
 
@@ -93,6 +94,9 @@ export class SessionHandler {
             }
             await this.owners.unbind(sessionId);
             await this.sessions.delete(sessionId);
+            if (this.memory) {
+                await this.memory.deleteBySession(sessionId);
+            }
             this.sessionIds.delete(sessionId);
             this.activeSessionIds.delete(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })

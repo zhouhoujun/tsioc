@@ -70,4 +70,13 @@ export class TypeOrmMemoryStore extends MemoryStore {
         const result = await repo.delete({ id } as any);
         return result.affected ?? 0;
     }
+
+    async deleteBySession(sessionId: string): Promise<number> {
+        const repo = this.adapter.getRepository(AgentMemoryEntity);
+        const records = await repo.find({ where: { sessionId, scope: 'session' } as any });
+        for (const record of records) {
+            await repo.delete({ id: record.id } as any);
+        }
+        return records.length;
+    }
 }

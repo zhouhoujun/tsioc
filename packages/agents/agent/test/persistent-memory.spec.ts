@@ -71,4 +71,22 @@ describe('Persistent memory store', () => {
             await ctx.close();
         }
     });
+
+    it('deleteBySession removes session-scoped records but keeps global ones', async () => {
+        const ctx = await Application.run(PersistentMemoryTestModule);
+        try {
+            const store = ctx.get(TypeOrmMemoryStore) as TypeOrmMemoryStore;
+            await store.put({ id: 'g1', key: 'team', value: 'agents', scope: 'global', createdAt: 1 });
+            await store.put({ id: 's1', sessionId: 'session-1', key: 'topic', value: 'router', scope: 'session', createdAt: 2 });
+            await store.put({ id: 's2', sessionId: 'session-2', key: 'topic', value: 'cache', scope: 'session', createdAt: 3 });
+
+            expect(await store.deleteBySession('session-1')).toEqual(1);
+            expect((await store.getAll('session-1')).map((r: any) => r.id)).toEqual(['g1']);
+            expect((await store.getAll('session-2')).map((r: any) => r.id)).toEqual(['g1', 's2']);
+            expect(await store.deleteBySession('session-2')).toEqual(1);
+            expect((await store.getAll('session-2')).map((r: any) => r.id)).toEqual(['g1']);
+        } finally {
+            await ctx.close();
+        }
+    });
 });

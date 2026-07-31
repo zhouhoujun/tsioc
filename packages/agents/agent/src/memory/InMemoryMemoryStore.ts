@@ -43,4 +43,15 @@ export class InMemoryMemoryStore extends MemoryStore {
         });
         return before - this.records.length;
     }
+
+    async deleteBySession(sessionId: string): Promise<number> {
+        const before = this.records.length;
+        this.records = this.records.filter(record => {
+            if (record.scope === 'global') {
+                return true;
+            }
+            return record.sessionId !== sessionId;
+        });
+        return before - this.records.length;
+    }
 }

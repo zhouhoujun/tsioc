@@ -28,6 +28,10 @@ class CapturingMemoryStore extends MemoryStore {
     async delete(_id: string, _sessionId?: string, _scope?: AgentMemoryRecord['scope']): Promise<number> {
         return 0;
     }
+
+    async deleteBySession(_sessionId: string): Promise<number> {
+        return 0;
+    }
 }
 
 @Suite('Agent memory retriever')

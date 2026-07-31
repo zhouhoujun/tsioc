@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
+import { In } from 'typeorm';
 import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
@@ -237,25 +238,44 @@ export class TypeOrmSessionStore extends SessionStore {
             return [];
         }
         const limit = options.limit ?? 50;
-        const rows = await this.adapter.getRepository(AgentMessageEntity).find({
-            order: { createdAt: 'DESC' } as any,
+        const maxSessions = options.maxSessions ?? 200;
+
+        // Scan the most recently active sessions first, capped by maxSessions,
+        // matching the abstract contract (session-level activity ordering + cap).
+        const sessionRows = await this.adapter.getRepository(AgentSessionEntity).find({
+            order: { updatedAt: 'DESC' as any },
+            take: maxSessions
+        });
+        const sessionByKey = new Map(sessionRows.map(row => [row.sessionId, row]));
+
+        const messageRows = await this.adapter.getRepository(AgentMessageEntity).find({
+            where: sessionRows.length ? { sessionId: In(sessionRows.map(row => row.sessionId)) } as any : { sessionId: '__no-sessions__' } as any,
+            order: { createdAt: 'DESC' as any },
             take: TypeOrmSessionStore.SEARCH_SCAN_LIMIT
         });
-        const buckets = new Map<string, SessionSearchMatch>();
-        for (const row of rows) {
+
+        const buckets = new Map<string, SessionSearchMatch & { count: number }>();
+        for (const row of messageRows) {
             if (!String(row.content || '').toLowerCase().includes(normalizedQuery)) {
                 continue;
             }
             const existing = buckets.get(row.sessionId);
+            const session = sessionByKey.get(row.sessionId);
+            const updatedAt = Number(session?.updatedAt || session?.createdAt || row.createdAt || 0);
             if (existing) {
                 existing.count++;
+                if (updatedAt > (existing.updatedAt ?? 0)) {
+                    existing.updatedAt = updatedAt;
+                }
                 continue;
             }
             buckets.set(row.sessionId, {
                 sessionId: row.sessionId,
                 count: 1,
                 snippet: `[${row.role}] ${String(row.content || '')}`,
-                updatedAt: Number(row.createdAt)
+                updatedAt,
+                summary: session?.summary ?? undefined,
+                workspace: session?.workspace ?? undefined
             });
         }
         const results = Array.from(buckets.values());

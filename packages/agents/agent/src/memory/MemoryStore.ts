@@ -19,4 +19,11 @@ export abstract class MemoryStore {
     abstract search(query: string, sessionId?: string): Promise<AgentMemoryRecord[]>;
     abstract getAll(sessionId?: string): Promise<AgentMemoryRecord[]>;
     abstract delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number>;
+
+    /**
+     * Delete all session-scoped memory records owned by a session.
+     * Global records (shared across sessions) are never removed.
+     * Returns the number of deleted records.
+     */
+    abstract deleteBySession(sessionId: string): Promise<number>;
 }

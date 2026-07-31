@@ -159,4 +159,36 @@ describe('Persistent session store', () => {
             await ctx.close();
         }
     });
+
+    it('searches message content across sessions honoring maxSessions and returning metadata', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-1', { id: '1', role: 'user', content: 'pipeline analysis', createdAt: 1 });
+            await store.setSummary('session-1', 'router pipeline');
+            await store.setWorkspace('session-1', '/tmp/project-a');
+            await store.append('session-2', { id: '2', role: 'user', content: 'cache design', createdAt: 2 });
+            await store.setSummary('session-2', 'cache layer');
+            await store.setWorkspace('session-2', '/tmp/project-b');
+            await store.append('session-3', { id: '3', role: 'user', content: 'pipeline retry', createdAt: 3 });
+
+            const results = await store.search('pipeline');
+            const ids = results.map((r: any) => r.sessionId).sort();
+            expect(ids).toEqual(['session-1', 'session-3']);
+            const first = results.find((r: any) => r.sessionId === 'session-1');
+            expect(first).toBeTruthy();
+            expect(first!.count).toEqual(1);
+            expect(first!.summary).toEqual('router pipeline');
+            expect(first!.workspace).toEqual('/tmp/project-a');
+            expect(first!.snippet).toContain('pipeline analysis');
+
+            const limited = await store.search('pipeline', { limit: 1 });
+            expect(limited.length).toEqual(1);
+
+            expect(await store.search('missing')).toEqual([]);
+            expect(await store.search('   ')).toEqual([]);
+        } finally {
+            await ctx.close();
+        }
+    });
 });
