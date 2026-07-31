@@ -173,13 +173,14 @@ function createAgentCli(): Command {
                         return { id, summary: state.summary || '', messages: state.messages?.length || 0, updatedAt: state.updatedAt };
                     })
                 );
+                const orderedSessions = sortProjectSessions(sessions);
                 if (options.json) {
-                    process.stdout.write(JSON.stringify({ project: match, sessions }, null, 2) + '\n');
+                    process.stdout.write(JSON.stringify({ project: match, sessions: orderedSessions }, null, 2) + '\n');
                     return;
                 }
                 process.stdout.write(`${formatProjectSessionsHeader(match)}\n`);
-                process.stdout.write(`Sessions: ${sessions.length}\n\n`);
-                for (const session of sessions) {
+                process.stdout.write(`Sessions: ${orderedSessions.length}\n\n`);
+                for (const session of orderedSessions) {
                     const updated = session.updatedAt ? new Date(session.updatedAt).toISOString() : '-';
                     const summary = (session.summary || '').slice(0, 80);
                     process.stdout.write(`  ${session.id}  |  ${session.messages} msgs  |  ${updated}  |  ${summary}\n`);
@@ -273,6 +274,16 @@ function formatProjectSessionsHeader(project: {
     return `Project: ${label}  [${key}]  |  workspace ${workspace}`;
 }
 
+function sortProjectSessions<T extends { id: string; updatedAt?: number }>(sessions: T[]): T[] {
+    return sessions.slice().sort((left, right) => {
+        const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
+        if (activityDelta !== 0) {
+            return activityDelta;
+        }
+        return left.id.localeCompare(right.id);
+    });
+}
+
 if (require.main === module) {
     const argv = normalizeCliArgv(process.argv);
     void createAgentCli().parseAsync(argv);
@@ -283,5 +294,6 @@ export {
     normalizeCliArgv,
     formatProjectListLine,
     formatProjectSessionsHeader,
-    resolveProjectDisplayLabel
+    resolveProjectDisplayLabel,
+    sortProjectSessions
 };

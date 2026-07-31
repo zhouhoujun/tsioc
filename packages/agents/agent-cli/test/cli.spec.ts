@@ -13,6 +13,7 @@ import {
     resolveCliConfig,
     resolveCliModelConfig,
     resolveProjectDisplayLabel,
+    sortProjectSessions,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     normalizeCliArgv,
@@ -185,6 +186,19 @@ export class AgentCliTest {
             focusSummary: 'Latest summary',
             workspace: '/tmp/project-a'
         } as any)).toBe('Project: exam-system  [project:exam-system]  |  workspace /tmp/project-a');
+    }
+
+    @Test('sorts project sessions by latest activity then id')
+    sortsProjectSessionsByLatestActivityThenId() {
+        expect(sortProjectSessions([
+            { id: 'chat-b', updatedAt: 10 },
+            { id: 'chat-a', updatedAt: 10 },
+            { id: 'chat-c', updatedAt: 20 }
+        ])).toEqual([
+            { id: 'chat-c', updatedAt: 20 },
+            { id: 'chat-a', updatedAt: 10 },
+            { id: 'chat-b', updatedAt: 10 }
+        ]);
     }
 
     @Test('normalizes option-only argv to chat command')
