@@ -299,7 +299,7 @@ export class AppRpcServer {
             this.sessionHandler.track(sessionId);
         }
         const principalId = this.resolveHistoryPrincipalId(context);
-        const record = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId);
+        const record = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId, sessionId);
         return record ? this.normalizeInputHistoryEntries(this.parseInputHistoryEntries(record.value)) : [];
     }
 
@@ -312,8 +312,8 @@ export class AppRpcServer {
         }
         const principalId = this.resolveHistoryPrincipalId(context);
         const entries = this.normalizeInputHistoryEntries(params?.entries);
-        const existing = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId);
-        const id = this.createConsoleInputHistoryRecordId(workspace, principalId);
+        const existing = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId, sessionId);
+        const id = this.createConsoleInputHistoryRecordId(workspace, principalId, sessionId);
         await this.memory.delete(id, undefined, 'global');
         await this.memory.put({
             id,
@@ -325,6 +325,7 @@ export class AppRpcServer {
             metadata: {
                 workspace,
                 principalId,
+                sessionId: sessionId || '',
                 kind: 'console-input-history'
             },
             createdAt: existing?.createdAt || Date.now(),
@@ -998,16 +999,18 @@ export class AppRpcServer {
         return String(context?.principalId || '').trim() || 'anonymous';
     }
 
-    private createConsoleInputHistoryRecordId(workspace: string, principalId: string): string {
-        return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}`;
+    private createConsoleInputHistoryRecordId(workspace: string, principalId: string, sessionId?: string): string {
+        return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
     }
 
-    private findConsoleInputHistoryRecord(records: any[], workspace: string, principalId: string): any | undefined {
+    private findConsoleInputHistoryRecord(records: any[], workspace: string, principalId: string, sessionId?: string): any | undefined {
+        const resolvedSessionId = String(sessionId || '').trim();
         return (records || [])
             .filter(record => record?.scope === 'global'
                 && record?.key === AppRpcServer.CONSOLE_INPUT_HISTORY_KEY
                 && record?.metadata?.workspace === workspace
-                && String(record?.metadata?.principalId || '').trim() === principalId)
+                && String(record?.metadata?.principalId || '').trim() === principalId
+                && String(record?.metadata?.sessionId || '').trim() === resolvedSessionId)
             .sort((left, right) => (right?.updatedAt || right?.createdAt || 0) - (left?.updatedAt || left?.createdAt || 0))[0];
     }
 

@@ -9,6 +9,7 @@ import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
     AgentApprovalRequestedEvent,
+    InMemoryMemoryStore,
     AgentModelCompletedEvent,
     AgentStreamChunkEvent,
     AgentToolCompletedEvent,
@@ -1293,6 +1294,19 @@ export class AgentConsoleComponentTest {
         expect(state.input).toEqual('second');
         expect(state.navigateInputHistory(-1)).toEqual(true);
         expect(state.input).toEqual('first');
+    }
+
+    @Test('input history store keeps local memory entries isolated per session')
+    async inputHistoryStoreKeepsLocalMemoryEntriesIsolatedPerSession() {
+        const memory = new InMemoryMemoryStore();
+        const store = new AgentConsoleInputHistoryStore(undefined, memory as any);
+
+        await store.save(['session-a'], '/tmp/shared-workspace', 'chat-a');
+        await store.save(['session-b'], '/tmp/shared-workspace', 'chat-b');
+
+        expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-a']);
+        expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b']);
+        expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual([]);
     }
 
     @Test('tracks detailed tool runs and highlights running tool')

@@ -13,20 +13,22 @@ export class AgentConsoleInputHistoryStore {
 
     async load(workspace?: string, sessionId?: string): Promise<string[]> {
         const resolvedWorkspace = String(workspace || '').trim() || 'default';
+        const resolvedSessionId = String(sessionId || '').trim();
         if (this.appRpc) {
             const result = await this.appRpc.request('app.inputHistory.get', {
                 workspace: resolvedWorkspace,
-                sessionId
+                sessionId: resolvedSessionId || undefined
             });
             return this.normalizeEntries(result);
         }
         if (!this.memory) {
             return [];
         }
-        const record = (await this.memory.getAll(sessionId))
+        const record = (await this.memory.getAll(resolvedSessionId || undefined))
             .filter(item => item.scope === 'global'
                 && item.key === AgentConsoleInputHistoryStore.HISTORY_KEY
-                && item.metadata?.workspace === resolvedWorkspace)
+                && item.metadata?.workspace === resolvedWorkspace
+                && String(item.metadata?.sessionId || '').trim() === resolvedSessionId)
             .sort((left, right) => (right.updatedAt || right.createdAt || 0) - (left.updatedAt || left.createdAt || 0))[0];
         if (!record) {
             return [];
@@ -36,11 +38,12 @@ export class AgentConsoleInputHistoryStore {
 
     async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
         const resolvedWorkspace = String(workspace || '').trim() || 'default';
+        const resolvedSessionId = String(sessionId || '').trim();
         const normalized = this.normalizeEntries(entries);
         if (this.appRpc) {
             await this.appRpc.request('app.inputHistory.put', {
                 workspace: resolvedWorkspace,
-                sessionId,
+                sessionId: resolvedSessionId || undefined,
                 entries: normalized
             });
             return;
@@ -48,8 +51,8 @@ export class AgentConsoleInputHistoryStore {
         if (!this.memory) {
             return;
         }
-        const id = this.createRecordId(resolvedWorkspace);
-        const records = await this.memory.getAll(sessionId);
+        const id = this.createRecordId(resolvedWorkspace, resolvedSessionId);
+        const records = await this.memory.getAll(resolvedSessionId || undefined);
         const existing = records.find(item => item.id === id && item.scope === 'global');
         await this.memory.delete(id, undefined, 'global');
         await this.memory.put({
@@ -61,6 +64,7 @@ export class AgentConsoleInputHistoryStore {
             category: 'workspace',
             metadata: {
                 workspace: resolvedWorkspace,
+                sessionId: resolvedSessionId,
                 kind: 'console-input-history'
             },
             createdAt: existing?.createdAt || Date.now(),
@@ -68,8 +72,8 @@ export class AgentConsoleInputHistoryStore {
         });
     }
 
-    protected createRecordId(workspace: string): string {
-        return `agent-ui:console-input-history:${encodeURIComponent(workspace)}`;
+    protected createRecordId(workspace: string, sessionId?: string): string {
+        return `agent-ui:console-input-history:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
     }
 
     protected parseEntries(value: unknown): string[] {

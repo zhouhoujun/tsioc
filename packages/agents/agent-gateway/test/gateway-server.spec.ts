@@ -1740,6 +1740,85 @@ export class AppRpcServerTest {
         expect((workspaceB as any).result).toEqual(['other']);
     }
 
+    @Test('stores console input history per session within the same workspace through json-rpc')
+    async storesConsoleInputHistoryPerSessionWithinSharedWorkspace() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                bootstrapTurn: {
+                    sessionId: 'rpc-history-a'
+                }
+            } as any
+        );
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 20,
+            method: 'app.inputHistory.put',
+            params: {
+                sessionId: 'rpc-history-a',
+                workspace: '/tmp/shared-workspace',
+                entries: ['session a']
+            }
+        }, { principalId: 'user-1' });
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 21,
+            method: 'app.inputHistory.put',
+            params: {
+                sessionId: 'rpc-history-b',
+                workspace: '/tmp/shared-workspace',
+                entries: ['session b']
+            }
+        }, { principalId: 'user-1' });
+
+        const sessionA = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 22,
+            method: 'app.inputHistory.get',
+            params: {
+                sessionId: 'rpc-history-a',
+                workspace: '/tmp/shared-workspace'
+            }
+        }, { principalId: 'user-1' });
+
+        const sessionB = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 23,
+            method: 'app.inputHistory.get',
+            params: {
+                sessionId: 'rpc-history-b',
+                workspace: '/tmp/shared-workspace'
+            }
+        }, { principalId: 'user-1' });
+
+        expect((sessionA as any).result).toEqual(['session a']);
+        expect((sessionB as any).result).toEqual(['session b']);
+    }
+
     @Test('lists audit records through json-rpc and applies filters')
     async listsAuditRecordsThroughJsonRpc() {
         const store = new InMemorySessionStore();
