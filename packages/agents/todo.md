@@ -2,9 +2,9 @@
 
 ## 结论
 
-当前主干能力已齐，剩下主要是语义一致性、持久化边界和少量运行时行为修正。
+主干能力已齐。此前列出的 P0 语义问题已在 `9c8459fcc`（Fix agents orchestration semantics）及后续 commit 中修复并有测试覆盖；P1 的归属口径、标注持久化、代表项选择也已基本统一。剩余主要是 P2 的持久化边界、跨会话聚合视图与 dashboard 补强，以及少量运行时行为修正。
 
-## 已经完成
+## 已经完成（含验证依据）
 
 - 上下文压缩与状态展示
 - `parallel_spawn` / `orchestrate` 的基础 DAG 编排
@@ -12,30 +12,34 @@
 - `/projects`、`/toolruns` 等面板入口
 - review 标注的 best-effort 记忆恢复
 
+### P0（已修复 + 测试覆盖）
+
+- `DefaultApprovalAdapter` 匹配逻辑已修正：`pendingRequests(sessionId)` 按 `sessionId` 过滤，`cancelRequest(toolName, sessionId)` 按 `toolName + sessionId` 匹配。测试：`default approval adapter scopes requests by session`（agent-tools `tools.spec.ts`）。
+- `/api/sessions/running` 已是真 running 语义：`SessionHandler` 用 `activeSessionIds` 跟踪 `AgentTurnStartedEvent` / `AgentTurnCompletedEvent` / `AgentErrorEvent`。测试：`lists only actively running sessions`（agent-gateway `gateway-server.spec.ts`，62 passing）。
+- `orchestrate` 已真正消费 `maxTurns`（透传进 `SpawnAgentInput`），依赖失败有严格 skip 语义（`status !== 'completed'` → `skipped` + 原因）。测试：`orchestrate skips dependent tasks after failure and forwards maxTurns`、`lightweight agent runner continues until report or maxTurns`。
+
+### P1（已基本统一）
+
+- project/thread 归属模型已统一：`SessionStore`（抽象 + InMemory + TypeOrm）、`SessionInfo` 契约、UI `AgentConsoleSessionService`、CLI `cli.ts` 使用同一组字段（`projectKey / projectId / primaryThreadId / sessionRole / rootRequest / focusSummary`）与同一解析优先级。
+- review annotation 已按 session memory 持久化：`AppRpcServer` 提供 `review_annotations.save/load`，`runtime.putMemory(..., 'session')` 落库，并按 appRpc 实例隔离易变缓存。
+- 代表项选择已按活跃度对齐：项目索引、CLI 项目标签、console 分组统一按 `lastActiveAt` / 最新活跃 session 排序。
+
 ## 还需要继续打磨
-
-### P0
-
-- `DefaultApprovalAdapter` 的匹配逻辑不对，`pendingRequests(sessionId)` / `cancelRequest(toolName, sessionId)` 现在按错字段匹配。
-- `/api/sessions/running` 不是“running”语义，只是“有消息的 session”。
-- `orchestrate` 还没真正吃到 `maxTurns`，依赖失败也没有严格的 skip 语义。
-
-### P1
-
-- project/thread 归属模型还没统一，CLI、网关、UI、store 的分组口径不完全一致。
-- review annotation 现在是当前 console/session 范围内的缓存，跨 session / 重启仍不够稳。
-- `projectSummary`、todo 聚合、会话摘要的“代表项”选择偏启发式，容易选错最新活跃 session。
 
 ### P2
 
-- `todo` 现在还是内存态，如果要当正式工件，得接入 session/project 持久层。
-- `/projects` 和 `/search` 还能继续补跨会话聚合视图。
-- dashboard 的任务历史、取消、统计和实时刷新还能继续补强。
+- `todo` 的持久化已接 `MemoryStore`（`todo-store.ts`，`TODO_MEMORY_KEY='agent.todo.plan'`），但生产注入链未验证 —— 确认 gateway/runtime 装配时确实注入了 `MemoryStore`，否则仍是内存态。
+- `/projects` 和 `/search` 还能继续补跨会话聚合视图（当前搜索只覆盖已加载 session 的元数据，未覆盖消息内容）。
+- dashboard 的任务历史、取消、统计和实时刷新还能继续补强（实时刷新已由 `notify()` 覆盖；统计已加 dashboard 的 `runs/ok/fail/success%/avg` 行；缺取消运行中工具的运行时机制 —— 需在设计层面引入 turn 循环的中断/abort 信号）。
+- `/api/sessions/running` 的 `onError` 清理路径已复核：`AgentErrorEvent` 处理器同样执行 `activeSessionIds.delete(sessionId)`，错误中断不会残留 running 状态。
+
+### 运行时行为
+
+- ~~`LightweightAgentRunner` 未显式传 `maxTurns` 时默认只跑 1 轮，与工具 schema 声明的 `default: 10` 不一致~~ → 已修复：默认 10（`DEFAULT_MAX_TURNS`），新增回归测试 `lightweight agent runner defaults to documented turn budget when maxTurns is not provided`。
 
 ## 建议顺序
 
-1. 修 `approval`
-2. 修 `/api/sessions/running`
-3. 修 `orchestrate`
-4. 统一 project/thread identity
-5. 决定 `todo` 是否持久化
+1. 验证 `todo` 持久化的生产注入链（`agent-tools.module.ts` / provider 装配）
+2. `/search` 跨会话聚合（含消息内容检索）
+3. dashboard 补强：运行中工具的取消（需先设计运行时 abort 机制）
+4. 需要时再做 `/toolruns` 面板（当前 `showToolRunsPanel` 为 `false`，列表入口在 `/toolruns` 命令）

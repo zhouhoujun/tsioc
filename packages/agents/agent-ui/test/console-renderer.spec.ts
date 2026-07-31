@@ -167,6 +167,48 @@ export class AgentConsoleRendererTest {
         expect(dashboardPanel.instance.dashboardDetailLabel.includes('task task-1 · Patch handlers · running')).toBe(true);
     }
 
+    @Test('dashboard shows tool run stats with success rate and average duration')
+    async dashboardShowsToolRunStats() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.upsertToolRun({
+            name: 'read_file', status: 'success', durationMs: 100, message: 'ok', updatedAt: 1
+        });
+        ref.instance.sessionState.upsertToolRun({
+            name: 'write_file', status: 'error', durationMs: 300, message: 'denied', error: 'denied', updatedAt: 2
+        });
+        ref.instance.sessionState.upsertToolRun({
+            name: 'search', status: 'success', durationMs: 200, message: 'found', updatedAt: 3
+        });
+        ref.instance.sessionState.upsertToolRun({
+            name: 'terminal', status: 'running', message: 'npm test', updatedAt: 4
+        });
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        const stats = dashboardPanel.instance.dashboardStatsLabel;
+
+        expect(stats.includes('runs 4')).toBe(true);
+        expect(stats.includes('ok 2')).toBe(true);
+        expect(stats.includes('fail 1')).toBe(true);
+        expect(stats.includes('running 1')).toBe(true);
+        expect(stats.includes('success 67%')).toBe(true);
+        expect(stats.includes('avg 200ms')).toBe(true);
+    }
+
+    @Test('dashboard omits tool run stats when no runs exist')
+    async dashboardOmitsToolRunStatsWithoutRuns() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.clearToolActivity();
+        ref.instance.sessionState.setStatus('running');
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.dashboardStatsLabel).toBe('');
+    }
+
     @Test('root output keeps dashboard visible for coding tasks without plan todos')
     async rootOutputKeepsDashboardVisibleForCodingTasksWithoutPlanTodos() {
         const ctx = await Application.run(AgentConsoleComponent, {

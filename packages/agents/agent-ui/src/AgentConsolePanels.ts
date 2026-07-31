@@ -238,6 +238,7 @@ export class AgentConsoleStatusPanelComponent {
     <div class="console-panel console-dashboard-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{dashboardSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="dashboardCountersLabel">{{dashboardCountersLabel}}</label>
+        <label v-style="statsStyle" v-show="dashboardStatsLabel">{{dashboardStatsLabel}}</label>
         <label v-style="detailStyle" v-show="dashboardDetailLabel">{{dashboardDetailLabel}}</label>
     </div>
     `
@@ -272,6 +273,10 @@ export class AgentConsoleDashboardPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
+    get statsStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
     get dashboardSummaryLabel(): string {
         const parts = [
             this.state.status || 'idle',
@@ -290,7 +295,6 @@ export class AgentConsoleDashboardPanelComponent {
         const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
         const activeApprovals = this.state.pendingApprovals.length;
         const activeTools = this.state.runningTools.length;
-        const toolRuns = this.state.toolRuns.length;
         const activities = this.state.activities.length;
         const totalTokens = this.state.tokenUsage.totalTokens || 0;
         return [
@@ -298,9 +302,37 @@ export class AgentConsoleDashboardPanelComponent {
             `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}`,
             `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}`,
             `tools ${formatCompactNumber(activeTools)}`,
-            `runs ${formatCompactNumber(toolRuns)}`,
             `activity ${formatCompactNumber(activities)}`,
             totalTokens ? `tokens ${formatCompactNumber(totalTokens)}` : ''
+        ].filter(Boolean).join(' · ');
+    }
+
+    get dashboardStatsLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const runs = this.state.toolRuns;
+        if (!runs.length) {
+            return '';
+        }
+        const completed = runs.filter(run => run.status !== 'running');
+        const running = runs.length - completed.length;
+        const success = completed.filter(run => run.status === 'success').length;
+        const failed = completed.length - success;
+        const durations = completed
+            .map(run => run.durationMs)
+            .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+        const avgDuration = durations.length
+            ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
+            : 0;
+        const successRate = completed.length ? Math.round((success / completed.length) * 100) : 0;
+        return [
+            `runs ${runs.length}`,
+            `ok ${success}`,
+            `fail ${failed}`,
+            running ? `running ${running}` : '',
+            completed.length ? `success ${successRate}%` : '',
+            durations.length ? `avg ${avgDuration}ms` : ''
         ].filter(Boolean).join(' · ');
     }
 
