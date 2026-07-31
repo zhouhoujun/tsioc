@@ -152,6 +152,40 @@ export class AgentConsoleRendererTest {
         expect(dashboardPanel.instance.dashboardDetailLabel.includes('task task-1 · Patch handlers · running')).toBe(true);
     }
 
+    @Test('root output keeps dashboard visible for coding tasks without plan todos')
+    async rootOutputKeepsDashboardVisibleForCodingTasksWithoutPlanTodos() {
+        const ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+            ref.instance.sessionState.setStatus('idle');
+            ref.instance.sessionState.setReviewTasks([{
+                id: 'task-1',
+                title: 'Patch handlers',
+                sourceSessionId: 'chat-a',
+                status: 'running',
+                updatedAt: 20
+            } as any, {
+                id: 'task-2',
+                title: 'Review diff',
+                sourceSessionId: 'chat-b',
+                status: 'completed',
+                updatedAt: 10
+            } as any]);
+            await ref.render();
+            await Promise.resolve();
+
+            const renderer = ctx.get(ConsoleRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToLines(root);
+            expect(lines.some(line => line.toLowerCase().includes('dashboard'))).toBe(true);
+            expect(lines.some(line => line.includes('tasks 1/2'))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('renders message history before jobs panel in root output')
     async renderMessagesBeforeJobsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
