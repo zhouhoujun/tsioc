@@ -1,5 +1,5 @@
 import { MemoryStore } from '@tsdi/agent';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -40,7 +40,7 @@ export class TodoStore {
     protected static readonly TODO_MEMORY_KEY = 'agent.todo.plan';
     private sessions = new Map<string, TodoItem[]>();
 
-    constructor(@Optional() private memoryStore?: MemoryStore | null) {
+    constructor(@Optional() @Inject(MemoryStore) private memoryStore?: MemoryStore | null) {
     }
 
     async read(sessionId: string): Promise<TodoItem[]> {

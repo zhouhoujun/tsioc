@@ -91,7 +91,7 @@ import { createAgentProviders } from './provider';
         { provide: SessionStore, useExisting: DefaultSessionStore },
         InMemoryMemoryStore,
         DefaultMemoryStore,
-        { provide: MemoryStore, useExisting: DefaultMemoryStore },
+        { provide: MemoryStore, useExisting: DefaultMemoryStore, asDefault: true },
         DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
         { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
