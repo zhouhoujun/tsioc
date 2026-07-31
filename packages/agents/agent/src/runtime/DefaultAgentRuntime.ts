@@ -58,6 +58,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
     protected sessionTurnAborts = new Map<string, AbortController>();
+    protected sessionChildSessions = new Map<string, Set<string>>();
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
     constructor(
@@ -283,8 +284,47 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!controller || controller.signal.aborted) {
             return false;
         }
+        // Drop any pending approval requests for the session so the UI never
+        // keeps stale entries after the turn is cancelled.
+        this.toolApprovalManager?.cancelBySession(sessionId);
         controller.abort();
+        // Cascade cancellation to any running child (sub-agent) sessions so
+        // spawned workers do not keep running after their parent is cancelled.
+        await this.cancelChildTurns(sessionId);
         return true;
+    }
+
+    registerChildSession(parentSessionId: string, childSessionId: string): void {
+        const children = this.sessionChildSessions.get(parentSessionId) ?? new Set<string>();
+        children.add(childSessionId);
+        this.sessionChildSessions.set(parentSessionId, children);
+    }
+
+    unregisterChildSession(parentSessionId: string, childSessionId: string): void {
+        const children = this.sessionChildSessions.get(parentSessionId);
+        if (!children) {
+            return;
+        }
+        children.delete(childSessionId);
+        if (!children.size) {
+            this.sessionChildSessions.delete(parentSessionId);
+        }
+    }
+
+    protected async cancelChildTurns(sessionId: string): Promise<void> {
+        const children = this.sessionChildSessions.get(sessionId);
+        if (!children?.size) {
+            return;
+        }
+        for (const childSessionId of Array.from(children)) {
+            const controller = this.sessionTurnAborts.get(childSessionId);
+            if (!controller || controller.signal.aborted) {
+                continue;
+            }
+            this.toolApprovalManager?.cancelBySession(childSessionId);
+            controller.abort();
+            await this.cancelChildTurns(childSessionId);
+        }
     }
 
     protected beginTurnAbortScope(sessionId: string): void {
@@ -960,6 +1000,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 const reason = approval.decision === ApprovalDecision.TIMEOUT
                     ? `Tool "${toolCall.name}" approval timed out.`
                     : `Tool "${toolCall.name}" was rejected.`;
+                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                    ...sandboxReceipt,
+                    status: 'skipped',
+                    durationMs: 0,
+                    error: reason
+                }, reason, { sessionId, reason });
+            }
+            if (approval.decision === ApprovalDecision.CANCELLED || this.isTurnAborted(sessionId)) {
+                this.throwIfTurnCancelled(sessionId);
+                const reason = `Tool "${toolCall.name}" approval was cancelled.`;
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
                     ...sandboxReceipt,
                     status: 'skipped',

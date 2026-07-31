@@ -57,7 +57,11 @@ export class LightweightAgentRunner extends NestedAgentRunner {
 
     private async runSingle(request: NestedAgentRunRequest): Promise<NestedAgentRunResult> {
         const sessionId = request.sessionId || `sub-${randomUUID()}`;
+        const parentSessionId = request.parentSessionId;
 
+        if (parentSessionId) {
+            this.runtime!.registerChildSession(parentSessionId, sessionId);
+        }
         if (request.toolsets?.length) {
             this.runtime!.setSessionToolFilter(sessionId, request.toolsets);
         }
@@ -82,11 +86,11 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             const userCount = messages.filter(m => m.role === 'user').length;
             const toolCount = messages.filter(m => m.role === 'tool').length;
 
-            if (request.parentSessionId && this.sessions) {
+            if (parentSessionId && this.sessions) {
                 try {
                     const subMessages = await this.runtime!.getMessages(sessionId);
                     for (const msg of subMessages) {
-                        await this.sessions.append(request.parentSessionId, msg);
+                        await this.sessions.append(parentSessionId, msg);
                     }
                 } catch (err) {
                     // session merge must not break the sub-agent result
@@ -104,6 +108,9 @@ export class LightweightAgentRunner extends NestedAgentRunner {
                 report
             };
         } finally {
+            if (parentSessionId) {
+                this.runtime!.unregisterChildSession(parentSessionId, sessionId);
+            }
             if (request.toolsets?.length) {
                 this.runtime!.clearSessionToolFilter(sessionId);
             }

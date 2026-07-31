@@ -33,11 +33,30 @@ export abstract class AgentRuntime {
      * Request cancellation of the currently running turn for a session.
      * Returns true when a running turn was found and cancellation was requested;
      * returns false when no turn is currently running (or it is already cancelling).
+     * When the session has registered child (sub-agent) sessions, cancellation
+     * cascades to them as well.
      * Override this in concrete runtimes that support turn cancellation.
      */
     async cancelTurn(_sessionId: string): Promise<boolean> {
         // no-op by default
         return false;
+    }
+
+    /**
+     * Register a child (sub-agent) session under a parent session so that
+     * cancelling the parent turn also cancels the child turn.
+     * Override this in concrete runtimes that support session hierarchies.
+     */
+    registerChildSession(_parentSessionId: string, _childSessionId: string): void {
+        // no-op by default
+    }
+
+    /**
+     * Remove a previously registered child session link.
+     * Override this in concrete runtimes that support session hierarchies.
+     */
+    unregisterChildSession(_parentSessionId: string, _childSessionId: string): void {
+        // no-op by default
     }
 
     abstract synthesizeExperiences(options?: SynthesisOptions): SynthesisReport;

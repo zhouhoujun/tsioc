@@ -5659,7 +5659,9 @@ export class AgentToolsPackageTest {
             runTurn: async (_sessionId: string, _prompt: string) => {
                 return { message: { content: 'done', metadata: {} } };
             },
-            getMessages: async () => subMessages
+            getMessages: async () => subMessages,
+            registerChildSession: () => {},
+            unregisterChildSession: () => {}
         };
         const mockSessions = {
             append: async (_sessionId: string, msg: any) => {
@@ -5684,7 +5686,9 @@ export class AgentToolsPackageTest {
             runTurn: async (_sessionId: string, _prompt: string) => {
                 return { message: { content: 'done', metadata: {} } };
             },
-            getMessages: async () => [{ role: 'user', content: 'x', id: '1', ts: 1 }]
+            getMessages: async () => [{ role: 'user', content: 'x', id: '1', ts: 1 }],
+            registerChildSession: () => {},
+            unregisterChildSession: () => {}
         };
         const mockSessions = {
             append: async (_sessionId: string, _msg: any) => {
@@ -5723,6 +5727,60 @@ export class AgentToolsPackageTest {
 
         expect(error?.message).toContain('turn failed');
         expect(clearSessions.length).toBe(1);
+    }
+
+    @Test('lightweight agent runner registers and unregisters child sessions under parent')
+    async lightweightAgentRunnerRegistersChildSessions() {
+        const registered: Array<[string, string]> = [];
+        const unregistered: Array<[string, string]> = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'Summary: done', metadata: {} } };
+            },
+            getMessages: async () => [
+                { role: 'user', content: 'test', id: '1', ts: Date.now() },
+                { role: 'assistant', content: 'result', id: '2', ts: Date.now() }
+            ],
+            registerChildSession: (parent: string, child: string) => registered.push([parent, child]),
+            unregisterChildSession: (parent: string, child: string) => unregistered.push([parent, child])
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const result = await runner.run({ prompt: 'analyze', parentSessionId: 'parent-1' });
+
+        expect(result.sessionId).toContain('sub-');
+        expect(registered).toEqual([['parent-1', result.sessionId]]);
+        expect(unregistered).toEqual([['parent-1', result.sessionId]]);
+    }
+
+    @Test('lightweight agent runner registers child even when turn fails')
+    async lightweightAgentRunnerRegistersChildOnError() {
+        const registered: Array<[string, string]> = [];
+        const unregistered: Array<[string, string]> = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async () => {
+                throw new Error('turn failed');
+            },
+            getMessages: async () => [],
+            registerChildSession: (parent: string, child: string) => registered.push([parent, child]),
+            unregisterChildSession: (parent: string, child: string) => unregistered.push([parent, child])
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        let error: Error | undefined;
+        try {
+            await runner.run({ prompt: 'test', parentSessionId: 'parent-1' });
+        } catch (err) {
+            error = err as Error;
+        }
+
+        expect(error?.message).toContain('turn failed');
+        expect(registered.length).toBe(1);
+        expect(unregistered.length).toBe(1);
+        expect(registered[0][0]).toEqual('parent-1');
+        expect(unregistered[0]).toEqual(registered[0]);
     }
 }
 

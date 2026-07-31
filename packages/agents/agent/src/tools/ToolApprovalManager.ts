@@ -21,7 +21,8 @@ export enum ApprovalDecision {
     APPROVED = 'approved',
     DENIED = 'denied',
     TIMEOUT = 'timeout',
-    NOT_REQUIRED = 'not_required'
+    NOT_REQUIRED = 'not_required',
+    CANCELLED = 'cancelled'
 }
 
 export interface ApprovalRequest {
@@ -185,6 +186,28 @@ export class ToolApprovalManager {
         this.pending.delete(requestId);
         pending.resolve(ApprovalDecision.DENIED);
         return true;
+    }
+
+    /**
+     * Cancel all pending approval requests for a session (e.g. when the owning
+     * turn is cancelled). Each pending request is resolved as CANCELLED and an
+     * AgentApprovalFailedEvent is emitted so listeners can drop the stale entry.
+     * Returns the number of requests cancelled.
+     */
+    cancelBySession(sessionId: string): number {
+        let cancelled = 0;
+        for (const [requestId, pending] of Array.from(this.pending.entries())) {
+            if (pending.request.sessionId !== sessionId) {
+                continue;
+            }
+            clearTimeout(pending.timer);
+            this.pending.delete(requestId);
+            pending.resolve(ApprovalDecision.CANCELLED);
+            this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval cancelled by turn cancellation')))
+                .catch(() => {});
+            cancelled++;
+        }
+        return cancelled;
     }
 
     getPending(): ApprovalRequestView[] {
