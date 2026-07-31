@@ -1976,7 +1976,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     );
                     if (!project) return true;
                     const projectSessions = this.state.sessions.filter(
-                        s => String(s.projectKey || s.projectId || s.workspace || '').trim() === project
+                        s => String(s.projectKey || s.projectId || s.workspace || s.primaryThreadId || '').trim() === project
                     );
                     if (!projectSessions.length) {
                         this.notify('No sessions in this project.');

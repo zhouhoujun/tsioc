@@ -963,7 +963,7 @@ export class AgentConsoleSessionsPanelComponent {
     }
 
     protected projectHeaderLabel(session: AgentConsoleSessionItem): string {
-        const label = String(session.projectLabel || session.projectId || session.workspace || '').trim();
+        const label = String(session.projectLabel || session.projectId || session.workspace || session.primaryThreadId || '').trim();
         const displayLabel = this.workspaceLabel(label) || label || session.id;
         const count = Math.max(1, Number(session.projectSessionCount || 0));
         return `project ${displayLabel} · ${count} session${count === 1 ? '' : 's'}`;
