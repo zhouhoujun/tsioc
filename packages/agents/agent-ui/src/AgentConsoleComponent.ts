@@ -9,10 +9,10 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, ToolApprovalManager, ToolRegistry, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
-import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -43,6 +43,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected static readonly STREAM_MESSAGE_FLUSH_MS = 160;
     protected static readonly STREAM_PENDING_NOTICE_MS = 8000;
     protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
+    protected static readonly SEARCH_SESSION_LIMIT = 100;
+    protected static readonly SEARCH_CONCURRENCY = 6;
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
@@ -2240,25 +2242,91 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 {
-                    const query = parsed.args.trim().toLowerCase();
-                    const matches = this.state.sessions.filter(s => {
+                    const rawQuery = parsed.args.trim();
+                    let agentResults: SessionSearchMatch[] = [];
+                    try {
+                        agentResults = await (this.sessionService?.searchSessions(rawQuery) ?? Promise.resolve([]));
+                    } catch {
+                        agentResults = [];
+                    }
+                    if (agentResults.length) {
+                        const currentId = this.state.sessionId;
+                        const sessionId = await this.select(
+                            `Search: "${rawQuery}" (${agentResults.length})`,
+                            agentResults.map(result => ({
+                                label: `${result.sessionId}${result.sessionId === currentId ? ' [current]' : ''} (${result.count} msg)`,
+                                value: result.sessionId,
+                                detail: result.snippet || result.summary || result.workspace || ''
+                            })),
+                            0,
+                            this.state.consoleOptions.selectHint
+                        );
+                        if (sessionId) {
+                            await this.openSession(sessionId);
+                        }
+                        return true;
+                    }
+                    const query = rawQuery.toLowerCase();
+                    let sessions = this.state.sessions.slice();
+                    if (!sessions.length && this.sessionService) {
+                        const loaded = await this.sessionService.listSessions(this.state.sessionId);
+                        sessions = loaded.map(item => ({
+                            id: item.id,
+                            current: !!item.current,
+                            workspace: item.workspace,
+                            updatedAt: item.lastActiveAt,
+                            messageCount: item.messageCount,
+                            summary: item.summary,
+                            projectKey: item.projectKey,
+                            projectId: item.projectId,
+                            primaryThreadId: item.primaryThreadId,
+                            sessionRole: item.sessionRole,
+                            rootRequest: item.rootRequest,
+                            focusSummary: item.focusSummary,
+                            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id
+                        }));
+                    }
+                    if (!sessions.length) {
+                        this.notify('No sessions to search.');
+                        return true;
+                    }
+                    const metadataMatches = sessions.filter(s => {
                         const id = (s.id || '').toLowerCase();
                         const summary = (s.summary || '').toLowerCase();
                         const ws = (s.workspace || '').toLowerCase();
                         const proj = (s.projectLabel || s.projectKey || s.projectId || '').toLowerCase();
                         return id.includes(query) || summary.includes(query) || ws.includes(query) || proj.includes(query);
                     });
-                    if (!matches.length) {
-                        this.notify(`No sessions matching "${parsed.args.trim()}".`);
+                    this.notify(`Searching ${sessions.length} session${sessions.length === 1 ? '' : 's'} for "${rawQuery}"…`);
+                    const contentHits = await this.searchSessionContent(query, sessions);
+                    const seen = new Set<string>();
+                    const merged: AgentConsoleSessionItem[] = [];
+                    for (const s of metadataMatches) {
+                        if (!seen.has(s.id)) {
+                            seen.add(s.id);
+                            merged.push(s);
+                        }
+                    }
+                    for (const s of sessions) {
+                        if (!seen.has(s.id) && contentHits.has(s.id)) {
+                            seen.add(s.id);
+                            merged.push(s);
+                        }
+                    }
+                    if (!merged.length) {
+                        this.notify(`No sessions matching "${rawQuery}".`);
                         return true;
                     }
                     const sessionId = await this.select(
-                        `Search: "${parsed.args.trim()}" (${matches.length})`,
-                        matches.map(s => ({
-                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
-                            value: s.id,
-                            detail: s.summary || s.workspace || ''
-                        })),
+                        `Search: "${rawQuery}" (${merged.length})`,
+                        merged.map(s => {
+                            const hit = contentHits.get(s.id);
+                            return {
+                                label: `${s.id}${s.current ? ' [current]' : ''}${hit ? ` (${hit.count} msg)` : ''} (${s.messageCount ?? '?'})`,
+                                value: s.id,
+                                detail: hit ? hit.snippet : (s.summary || s.workspace || '')
+                            };
+                        }),
                         0,
                         this.state.consoleOptions.selectHint
                     );
@@ -2888,6 +2956,57 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
         const messages = await (this.sessionService?.loadMessages(sessionId) || this.runtime.getMessages(sessionId));
         return this.normalizeLoadedMessages(messages);
+    }
+
+    protected async searchSessionContent(
+        query: string,
+        sessions: AgentConsoleSessionItem[]
+    ): Promise<Map<string, { count: number; snippet: string }>> {
+        const hits = new Map<string, { count: number; snippet: string }>();
+        const candidates = sessions.slice(0, AgentConsoleComponent.SEARCH_SESSION_LIMIT);
+        const results = await this.mapWithConcurrency(
+            candidates,
+            AgentConsoleComponent.SEARCH_CONCURRENCY,
+            async (session) => {
+                const messages = await this.loadSessionMessages(session.id);
+                const matched = messages.filter(message => String(message.content || '').toLowerCase().includes(query));
+                return { sessionId: session.id, matched };
+            }
+        );
+        for (const entry of results) {
+            if (!entry.result || !entry.result.matched.length) {
+                continue;
+            }
+            const first = entry.result.matched[0];
+            hits.set(entry.result.sessionId, {
+                count: entry.result.matched.length,
+                snippet: `[${first.role}] ${this.state.summarize(String(first.content || ''))}`
+            });
+        }
+        return hits;
+    }
+
+    protected async mapWithConcurrency<T, R>(
+        items: T[],
+        limit: number,
+        worker: (item: T, index: number) => Promise<R>
+    ): Promise<Array<{ item: T; result?: R; error?: unknown }>> {
+        const outputs: Array<{ item: T; result?: R; error?: unknown }> = [];
+        let next = 0;
+        const run = async () => {
+            while (next < items.length) {
+                const index = next++;
+                const item = items[index];
+                try {
+                    const result = await worker(item, index);
+                    outputs.push({ item, result });
+                } catch (error) {
+                    outputs.push({ item, error });
+                }
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+        return outputs;
     }
 
     protected normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMessage[] {

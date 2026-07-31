@@ -1,5 +1,5 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, SessionStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
 export interface AgentConsoleSessionChoice {
     id: string;
@@ -147,6 +147,20 @@ export class AgentConsoleSessionService {
         if (this.sessionStore) {
             const state = await this.sessionStore.get(sessionId);
             return Array.isArray(state.messages) ? state.messages : [];
+        }
+        return [];
+    }
+
+    async searchSessions(query: string, context?: any): Promise<SessionSearchMatch[]> {
+        if (this.appRpc) {
+            const results = await this.appRpc.request('session.search', { query }, context);
+            return Array.isArray(results) ? results : [];
+        }
+        if (this.runtime) {
+            return this.runtime.searchSessions(query);
+        }
+        if (this.sessionStore) {
+            return this.sessionStore.search(query);
         }
         return [];
     }

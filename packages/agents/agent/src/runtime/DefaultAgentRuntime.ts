@@ -14,7 +14,7 @@ import { StreamChunk } from '../model/StreamChunk';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
-import { SessionStore } from '../memory/SessionStore';
+import { SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AGENT_OPTIONS } from '../tokens';
@@ -258,6 +258,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async getMessages(sessionId: string): Promise<AgentMessage[]> {
         return (await this.sessions.get(sessionId)).messages;
+    }
+
+    async searchSessions(query: string, options?: SessionSearchOptions): Promise<SessionSearchMatch[]> {
+        return this.sessions.search(query, options);
     }
 
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {

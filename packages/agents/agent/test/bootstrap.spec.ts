@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext, RunContext, Runner } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { AgentModule, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink } from '../src';
+import { AgentModule, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink, SessionSearchMatch, SessionSearchOptions } from '../src';
 
 @Injectable()
 class CustomBootstrapRuntime extends AgentRuntime {
@@ -42,6 +42,10 @@ class CustomBootstrapRuntime extends AgentRuntime {
     }
 
     async getMessages(_sessionId: string): Promise<AgentMessage[]> {
+        return [];
+    }
+
+    async searchSessions(_query: string, _options?: SessionSearchOptions): Promise<SessionSearchMatch[]> {
         return [];
     }
 

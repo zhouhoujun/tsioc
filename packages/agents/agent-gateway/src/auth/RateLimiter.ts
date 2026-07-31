@@ -18,8 +18,7 @@ export class RateLimiter {
     constructor(
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
     ) {
-        // Periodic cleanup
-        setInterval(() => this.evictExpired(), this.config.rateLimitWindowMs ?? 60_000);
+        setInterval(() => this.evictExpired(), this.config.rateLimitWindowMs ?? 60_000).unref();
     }
 
     /** Check if a request from the given IP is within rate limits */

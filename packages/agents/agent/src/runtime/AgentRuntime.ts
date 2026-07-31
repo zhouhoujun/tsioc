@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { RunContext } from '@tsdi/core';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
+import { SessionSearchMatch, SessionSearchOptions } from '../memory/SessionStore';
 import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
 import { AgentTurnInput } from './AgentTurnInput';
@@ -25,6 +26,8 @@ export abstract class AgentRuntime {
     abstract searchMemory(sessionId: string, query: string): Promise<AgentMemoryRecord[]>;
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
+
+    abstract searchSessions(query: string, options?: SessionSearchOptions): Promise<SessionSearchMatch[]>;
 
     abstract synthesizeExperiences(options?: SynthesisOptions): SynthesisReport;
 

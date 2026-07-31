@@ -133,6 +133,7 @@ export class AppRpcServer {
                         'session.list',
                         'session.list_projects',
                         'session.messages',
+                        'session.search',
                         'session.delete',
                         'run.turn',
                         'run.turn_stream',
@@ -172,6 +173,8 @@ export class AppRpcServer {
                 return this.listSessionProjects(context);
             case 'session.messages':
                 return this.getSessionMessages(this.requireSessionId(params), context);
+            case 'session.search':
+                return this.searchSessions(params, context);
             case 'session.delete':
                 return this.deleteSession(this.requireSessionId(params), context);
             case 'run.turn':
@@ -345,6 +348,19 @@ export class AppRpcServer {
     private async getSessionMessages(sessionId: string, context: AppRpcRequestContext): Promise<any> {
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.getMessages(sessionId);
+    }
+
+    private async searchSessions(params: any, context: AppRpcRequestContext): Promise<any> {
+        const query = this.requireString(params?.query, 'session.search query');
+        const requestedLimit = typeof params?.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : undefined;
+        const limit = requestedLimit ? Math.min(requestedLimit, 100) : undefined;
+        const results = await this.runtime.searchSessions(query, { limit });
+        if (!context.principalId) {
+            return results;
+        }
+        const ownedIds = await this.owners.listOwned(results.map(result => result.sessionId), context.principalId);
+        const owned = new Set(ownedIds);
+        return results.filter(result => owned.has(result.sessionId));
     }
 
     private async deleteSession(sessionId: string, context: AppRpcRequestContext): Promise<any> {

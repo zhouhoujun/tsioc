@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionStore } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
@@ -7,6 +7,8 @@ import { AgentMessageEntity, AgentSessionEntity } from './entities';
 
 @Injectable()
 export class TypeOrmSessionStore extends SessionStore {
+    protected static readonly SEARCH_SCAN_LIMIT = 2000;
+
     constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
         super();
     }
@@ -227,6 +229,38 @@ export class TypeOrmSessionStore extends SessionStore {
     async clear(): Promise<void> {
         await this.adapter.getRepository(AgentMessageEntity).clear();
         await this.adapter.getRepository(AgentSessionEntity).clear();
+    }
+
+    async search(query: string, options: SessionSearchOptions = {}): Promise<SessionSearchMatch[]> {
+        const normalizedQuery = String(query || '').toLowerCase().trim();
+        if (!normalizedQuery) {
+            return [];
+        }
+        const limit = options.limit ?? 50;
+        const rows = await this.adapter.getRepository(AgentMessageEntity).find({
+            order: { createdAt: 'DESC' } as any,
+            take: TypeOrmSessionStore.SEARCH_SCAN_LIMIT
+        });
+        const buckets = new Map<string, SessionSearchMatch>();
+        for (const row of rows) {
+            if (!String(row.content || '').toLowerCase().includes(normalizedQuery)) {
+                continue;
+            }
+            const existing = buckets.get(row.sessionId);
+            if (existing) {
+                existing.count++;
+                continue;
+            }
+            buckets.set(row.sessionId, {
+                sessionId: row.sessionId,
+                count: 1,
+                snippet: `[${row.role}] ${String(row.content || '')}`,
+                updatedAt: Number(row.createdAt)
+            });
+        }
+        const results = Array.from(buckets.values());
+        results.sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
+        return results.slice(0, limit);
     }
 
     protected resolveProjectKey(state: { sessionId: string; projectId?: string | null; workspace?: string | null }): string {
