@@ -122,8 +122,6 @@ function createAgentCli(): Command {
         .option('--root <dir>', 'Agent config root.')
         .option('--json', 'Output JSON.')
         .action(async (options: any) => {
-            const config = new AgentUiConfigService(configReader, options);
-            const resolved = config.resolve(options);
             const ctx = await runAgentApplication(options, {});
             try {
                 const sessionStore = ctx.get(SessionStore);
@@ -137,13 +135,7 @@ function createAgentCli(): Command {
                     return;
                 }
                 for (const project of projects) {
-                    const key = project.projectKey || '-';
-                    const workspace = project.workspace || '-';
-                    const count = project.sessionIds.length;
-                    const lastActive = project.lastActiveAt
-                        ? new Date(project.lastActiveAt).toISOString()
-                        : '-';
-                    process.stdout.write(`${key}  |  workspace ${workspace}  |  ${count} session${count === 1 ? '' : 's'}  |  last ${lastActive}\n`);
+                    process.stdout.write(`${formatProjectListLine(project)}\n`);
                 }
             } finally {
                 await ctx.close();
@@ -156,13 +148,11 @@ function createAgentCli(): Command {
         .option('--root <dir>', 'Agent config root.')
         .option('--json', 'Output JSON.')
         .action(async (projectKey: string, options: any) => {
-            const config = new AgentUiConfigService(configReader, options);
-            const resolved = config.resolve(options);
             const ctx = await runAgentApplication(options, {});
             try {
                 const sessionStore = ctx.get(SessionStore);
                 const projects = await sessionStore.listProjects();
-                const match = projects.find((p: { projectKey?: string; workspace?: string; sessionIds: string[]; lastActiveAt?: string }) => p.projectKey === projectKey);
+                const match = projects.find((p: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: string }) => p.projectKey === projectKey);
                 if (!match) {
                     process.stdout.write(`Project not found: ${projectKey}\n`);
                     return;
@@ -177,7 +167,7 @@ function createAgentCli(): Command {
                     process.stdout.write(JSON.stringify({ project: match, sessions }, null, 2) + '\n');
                     return;
                 }
-                process.stdout.write(`Project: ${projectKey}  (${match.workspace || '-'})\n`);
+                process.stdout.write(`${formatProjectSessionsHeader(match)}\n`);
                 process.stdout.write(`Sessions: ${sessions.length}\n\n`);
                 for (const session of sessions) {
                     const updated = session.updatedAt ? new Date(session.updatedAt).toISOString() : '-';
@@ -227,6 +217,28 @@ function createAgentCli(): Command {
     return program;
 }
 
+function resolveProjectDisplayLabel(project?: { projectId?: string; primaryThreadId?: string; workspace?: string; projectKey?: string } | null): string {
+    return String(project?.projectId || project?.primaryThreadId || project?.workspace || project?.projectKey || '-').trim() || '-';
+}
+
+function formatProjectListLine(project: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string; sessionIds: string[]; lastActiveAt?: number }): string {
+    const key = String(project.projectKey || '-').trim() || '-';
+    const label = resolveProjectDisplayLabel(project);
+    const workspace = String(project.workspace || '-').trim() || '-';
+    const count = project.sessionIds.length;
+    const lastActive = project.lastActiveAt
+        ? new Date(project.lastActiveAt).toISOString()
+        : '-';
+    return `${label}  [${key}]  |  workspace ${workspace}  |  ${count} session${count === 1 ? '' : 's'}  |  last ${lastActive}`;
+}
+
+function formatProjectSessionsHeader(project: { projectKey?: string; projectId?: string; workspace?: string; primaryThreadId?: string }): string {
+    const label = resolveProjectDisplayLabel(project);
+    const key = String(project.projectKey || '-').trim() || '-';
+    const workspace = String(project.workspace || '-').trim() || '-';
+    return `Project: ${label}  [${key}]  |  workspace ${workspace}`;
+}
+
 if (require.main === module) {
     const argv = normalizeCliArgv(process.argv);
     void createAgentCli().parseAsync(argv);
@@ -234,5 +246,8 @@ if (require.main === module) {
 
 export {
     createAgentCli,
-    normalizeCliArgv
+    normalizeCliArgv,
+    formatProjectListLine,
+    formatProjectSessionsHeader,
+    resolveProjectDisplayLabel
 };

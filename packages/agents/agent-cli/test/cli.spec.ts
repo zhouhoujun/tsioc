@@ -8,8 +8,11 @@ import { MemoryStore, SessionStore } from '@tsdi/agent';
 import {
     createAgentCli,
     ensureAgentWorkspaceConfig,
+    formatProjectListLine,
+    formatProjectSessionsHeader,
     resolveCliConfig,
     resolveCliModelConfig,
+    resolveProjectDisplayLabel,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     normalizeCliArgv,
@@ -145,6 +148,33 @@ export class AgentCliTest {
         const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
         expect(hasToolsCmd).toBe(true);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('formats project list lines with project and thread labels')
+    formatsProjectListLines() {
+        expect(resolveProjectDisplayLabel({
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-1',
+            workspace: '/tmp/project-a',
+            projectKey: 'project:exam-system'
+        } as any)).toBe('exam-system');
+
+        expect(formatProjectListLine({
+            projectKey: 'thread:thread-9',
+            primaryThreadId: 'thread-9',
+            workspace: '',
+            sessionIds: ['s1', 's2'],
+            lastActiveAt: 1
+        } as any)).toContain('thread-9  [thread:thread-9]');
+    }
+
+    @Test('formats project sessions header with stable project label')
+    formatsProjectSessionsHeader() {
+        expect(formatProjectSessionsHeader({
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            workspace: '/tmp/project-a'
+        } as any)).toBe('Project: exam-system  [project:exam-system]  |  workspace /tmp/project-a');
     }
 
     @Test('normalizes option-only argv to chat command')
