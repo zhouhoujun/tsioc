@@ -418,6 +418,37 @@ export class SessionHandlerTest {
         expect(data[0].id).toEqual('s1');
     }
 
+    @Test('lists owned sessions with thread project keys before workspace fallback')
+    async listsOwnedSessionsPreferThreadProjectKeyOverWorkspace() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await store.setWorkspace('s1', '/tmp/project-a');
+        await store.setProjectMetadata('s1', {
+            primaryThreadId: 'thread-1'
+        });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].projectKey).toEqual('thread:thread-1');
+        expect(data[0].workspace).toEqual('/tmp/project-a');
+    }
+
     @Test('lists only actively running sessions')
     async listsOnlyActivelyRunningSessions() {
         const store = new InMemorySessionStore();

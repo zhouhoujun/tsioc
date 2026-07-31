@@ -11,6 +11,11 @@ import {
 @Injectable()
 export class LightweightAgentRunner extends NestedAgentRunner {
     private started = false;
+    private static readonly CONTINUE_PROMPT = [
+        'Continue the delegated task from the current session state.',
+        'If the task is complete, return the final result using these labels: Summary:, Diff:, Completed:, Next steps:, Risks:, Artifacts:.',
+        'Do not restart from scratch.'
+    ].join(' ');
 
     constructor(
         @Optional() private runtime?: AgentRuntime | null,
@@ -61,13 +66,20 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             : request.prompt;
 
         try {
-            const result = await this.runtime!.runTurn(sessionId, prompt);
+            const maxTurns = typeof request.maxTurns === 'number' && request.maxTurns > 0
+                ? Math.floor(request.maxTurns)
+                : 1;
+            let result = await this.runtime!.runTurn(sessionId, prompt);
+            let report = parseDelegatedAgentReport(result.message.content);
+
+            for (let turn = 1; turn < maxTurns && !report; turn++) {
+                result = await this.runtime!.runTurn(sessionId, LightweightAgentRunner.CONTINUE_PROMPT);
+                report = parseDelegatedAgentReport(result.message.content);
+            }
 
             const messages = await this.runtime!.getMessages(sessionId);
             const userCount = messages.filter(m => m.role === 'user').length;
             const toolCount = messages.filter(m => m.role === 'tool').length;
-
-            const report = parseDelegatedAgentReport(result.message.content);
 
             if (request.parentSessionId && this.sessions) {
                 try {

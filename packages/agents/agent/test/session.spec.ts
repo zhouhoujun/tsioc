@@ -115,6 +115,27 @@ export class SessionStoreTest {
         }]);
     }
 
+    @Test('prefers primary thread over workspace when grouping projects')
+    async prefersPrimaryThreadOverWorkspaceWhenGroupingProjects() {
+        const store = new InMemorySessionStore();
+        await store.append('session-thread', { id: '1', role: 'user', content: 'thread', createdAt: 1 });
+        await store.setWorkspace('session-thread', '/tmp/project-a');
+        await store.setProjectMetadata('session-thread', {
+            primaryThreadId: 'thread-9',
+            sessionRole: 'worker'
+        });
+
+        const projects = await store.listProjects();
+        expect(projects).toEqual([{
+            projectKey: 'thread:thread-9',
+            projectId: undefined,
+            workspace: '/tmp/project-a',
+            primaryThreadId: 'thread-9',
+            sessionIds: ['session-thread'],
+            lastActiveAt: expect.any(Number)
+        }]);
+    }
+
     @Test('falls back from project id to workspace and session when grouping')
     async fallsBackWhenGroupingProjects() {
         const store = new InMemorySessionStore();

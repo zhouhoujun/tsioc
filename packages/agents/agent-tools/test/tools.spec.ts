@@ -5510,6 +5510,43 @@ export class AgentToolsPackageTest {
         expect(seenPrompt).toContain('do the thing');
     }
 
+    @Test('lightweight agent runner continues until report or maxTurns')
+    async lightweightAgentRunnerContinuesUntilReportOrMaxTurns() {
+        const prompts: string[] = [];
+        let callCount = 0;
+        const mockRuntime = {
+            start: async () => { },
+            runTurn: async (_sessionId: string, prompt: string) => {
+                prompts.push(prompt);
+                callCount++;
+                return {
+                    message: {
+                        content: callCount === 1
+                            ? 'Still investigating.'
+                            : 'Summary: completed analysis\nNext steps: verify',
+                        metadata: {}
+                    }
+                };
+            },
+            getMessages: async () => [
+                { role: 'user', content: 'first', id: '1', ts: 1 },
+                { role: 'assistant', content: 'working', id: '2', ts: 2 },
+                { role: 'user', content: 'continue', id: '3', ts: 3 },
+                { role: 'assistant', content: 'done', id: '4', ts: 4 }
+            ]
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const result = await runner.run({ prompt: 'analyze project', maxTurns: 3 });
+
+        expect(callCount).toBe(2);
+        expect(prompts[0]).toEqual('analyze project');
+        expect(prompts[1]).toContain('Continue the delegated task from the current session state.');
+        expect(result.turnCount).toBe(2);
+        expect(result.report?.summary).toEqual('completed analysis');
+        expect(result.report?.nextSteps).toEqual(['verify']);
+    }
+
     @Test('lightweight agent runner uses custom session id')
     async lightweightAgentRunnerUsesCustomSessionId() {
         let seenSessionId = '';

@@ -133,13 +133,13 @@ export class InMemorySessionStore extends SessionStore {
         if (projectId) {
             return `project:${projectId}`;
         }
-        const workspace = String(state.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
-        }
         const primaryThreadId = String(state.primaryThreadId || '').trim();
         if (primaryThreadId) {
             return `thread:${primaryThreadId}`;
+        }
+        const workspace = String(state.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
         }
         return `session:${state.sessionId}`;
     }

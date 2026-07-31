@@ -48,6 +48,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected openSessionRequestId = 0;
     protected openReviewRequestId = 0;
     protected activateModelRequestId = 0;
+    protected taskViewContextVersion = 0;
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
@@ -334,13 +335,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (projectId) {
             return `project:${projectId}`;
         }
-        const workspace = String(session?.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
-        }
         const primaryThreadId = String(session?.primaryThreadId || '').trim();
         if (primaryThreadId) {
             return `thread:${primaryThreadId}`;
+        }
+        const workspace = String(session?.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
         }
         return '';
     }
@@ -358,6 +359,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected resolveCodingTaskSessionId(task?: Record<string, any> | null): string {
         const sessionId = String(task?.sourceSessionId || task?.sessionId || '').trim();
         return sessionId || this.state.sessionId;
+    }
+
+    protected captureTaskViewContext(): { sessionId: string; version: number } {
+        return {
+            sessionId: this.state.sessionId,
+            version: this.taskViewContextVersion
+        };
+    }
+
+    protected isTaskViewContextCurrent(context: { sessionId: string; version: number }): boolean {
+        return context.sessionId === this.state.sessionId && context.version === this.taskViewContextVersion;
     }
 
     protected resolveFocusedCodingTask(): Record<string, any> | null {
@@ -404,6 +416,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         this.openReviewRequestId++;
+        this.taskViewContextVersion++;
         this.state.batch(() => {
             this.state.configure({ sessionId: target.id });
             this.state.setMessagesFocused(false);
@@ -1164,7 +1177,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return String(this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
     }
 
-    protected async openCodingTaskReview(taskId: string, taskRecord?: Record<string, any> | null): Promise<boolean> {
+    protected async openCodingTaskReview(
+        taskId: string,
+        taskRecord?: Record<string, any> | null,
+        options?: { returnFalseOnStale?: boolean }
+    ): Promise<boolean> {
         const resolvedTaskId = String(taskId || '').trim();
         if (!resolvedTaskId) {
             this.notify('Review task id is required.');
@@ -1174,6 +1191,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('Review is unavailable without app RPC.');
             return false;
         }
+        const taskViewContextVersion = ++this.taskViewContextVersion;
         const requestId = ++this.openReviewRequestId;
 
         const resolvedTask = taskRecord ?? this.state.taskRecords.find(task => task?.id === resolvedTaskId) ?? null;
@@ -1182,8 +1200,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             resolvedTask ? Promise.resolve(resolvedTask) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
             this.appRpc.request('coding_task.diff', { sessionId, taskId: resolvedTaskId })
         ]);
-        if (requestId !== this.openReviewRequestId) {
-            return true;
+        if (requestId !== this.openReviewRequestId || taskViewContextVersion !== this.taskViewContextVersion) {
+            return options?.returnFalseOnStale ? false : true;
         }
 
         if (!loadedTask && !diffResult?.diff && !Array.isArray(diffResult?.workers)) {
@@ -1560,12 +1578,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return filteredTasks.find((task: any) => task.id === selectedTaskId) || null;
     }
 
-    protected async openCodingTaskInspector(taskId?: string): Promise<boolean> {
+    protected async openCodingTaskInspector(taskId?: string, options?: { returnFalseOnStale?: boolean }): Promise<boolean> {
         if (!this.appRpc) {
             this.notify('Task inspector is unavailable without app RPC.');
             return true;
         }
+        const taskViewContextVersion = ++this.taskViewContextVersion;
         const tasks = await this.loadCodingTasks();
+        if (taskViewContextVersion !== this.taskViewContextVersion) {
+            return options?.returnFalseOnStale ? false : true;
+        }
         if (!tasks.length) {
             this.notify('No coding tasks available.');
             return true;
@@ -1625,13 +1647,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
 
         const sessionId = this.resolveCodingTaskSessionId(selectedTask);
+        const taskViewContext = this.captureTaskViewContext();
         const result = await this.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
         if (result?.rolledBack !== true) {
             this.notify(`Rollback failed for ${resolvedTaskId}.`);
             return true;
         }
+        if (!this.isTaskViewContextCurrent(taskViewContext)) {
+            return true;
+        }
 
-        await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null);
+        const opened = await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null, { returnFalseOnStale: true });
+        if (!opened || sessionId !== this.state.sessionId) {
+            return true;
+        }
         this.notify(`Rolled back ${resolvedTaskId}.`);
         return true;
     }
@@ -1668,13 +1697,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
 
         const sessionId = this.resolveCodingTaskSessionId(selectedTask);
+        const taskViewContext = this.captureTaskViewContext();
         const result = await this.appRpc.request('coding_task.retry_failed', { sessionId, taskId: resolvedTaskId });
         if (result?.retried !== true || !result?.task?.id) {
             this.notify(`Retry failed for ${resolvedTaskId}.`);
             return true;
         }
+        if (!this.isTaskViewContextCurrent(taskViewContext)) {
+            return true;
+        }
 
-        await this.openCodingTaskReview(result.task.id, result.task);
+        const opened = await this.openCodingTaskReview(result.task.id, result.task, { returnFalseOnStale: true });
+        if (!opened || sessionId !== this.state.sessionId) {
+            return true;
+        }
         this.notify(`Retried failed workers from ${resolvedTaskId} as ${result.task.id}.`);
         return true;
     }
@@ -1821,13 +1857,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
 
         const sessionId = this.resolveCodingTaskSessionId(targetTask);
+        const taskViewContext = this.captureTaskViewContext();
         const result = await this.appRpc.request('coding_task.cancel', { sessionId, taskId: resolvedTaskId });
         if (result?.cancelled !== true) {
             this.notify(`Cancel failed for ${resolvedTaskId}.`);
             return true;
         }
+        if (!this.isTaskViewContextCurrent(taskViewContext)) {
+            return true;
+        }
 
-        await this.openCodingTaskInspector(resolvedTaskId);
+        const opened = await this.openCodingTaskInspector(resolvedTaskId, { returnFalseOnStale: true });
+        if (!opened || sessionId !== this.state.sessionId) {
+            return true;
+        }
         this.notify(`Cancelled ${resolvedTaskId}.`);
         return true;
     }

@@ -276,13 +276,13 @@ export class AgentConsoleSessionService {
         if (projectId) {
             return `project:${projectId}`;
         }
-        const workspace = String(session.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
-        }
         const primaryThreadId = String(session.primaryThreadId || '').trim();
         if (primaryThreadId) {
             return `thread:${primaryThreadId}`;
+        }
+        const workspace = String(session.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
         }
         return `session:${session.id}`;
     }

@@ -271,6 +271,9 @@ class AppRpcStub {
     codingTaskDetailHandlers = new Map<string, () => Promise<any>>();
     codingTaskDiffs = new Map<string, any>();
     codingTaskDiffHandlers = new Map<string, () => Promise<any>>();
+    codingTaskCancelHandlers = new Map<string, () => Promise<any>>();
+    codingTaskRetryHandlers = new Map<string, () => Promise<any>>();
+    codingTaskRollbackHandlers = new Map<string, () => Promise<any>>();
     reviewAnnotationCacheByKey = new Map<string, Record<string, any>>();
     reviewAnnotationLoadHandlers = new Map<string, () => Promise<any>>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
@@ -366,6 +369,10 @@ class AppRpcStub {
             return this.reviewAnnotationCacheByKey.get(cacheKey) || null;
         }
         if (method === 'coding_task.cancel') {
+            const handler = this.codingTaskCancelHandlers.get(params?.taskId);
+            if (handler) {
+                return await handler();
+            }
             const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
             return {
                 sessionId: params?.sessionId || 'console',
@@ -378,6 +385,10 @@ class AppRpcStub {
             };
         }
         if (method === 'coding_task.retry_failed') {
+            const handler = this.codingTaskRetryHandlers.get(params?.taskId);
+            if (handler) {
+                return await handler();
+            }
             const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
             const retryTask = task ? {
                 ...task,
@@ -434,6 +445,10 @@ class AppRpcStub {
             };
         }
         if (method === 'coding_task.rollback') {
+            const handler = this.codingTaskRollbackHandlers.get(params?.taskId);
+            if (handler) {
+                return await handler();
+            }
             const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
             return {
                 sessionId: params?.sessionId || 'console',
@@ -519,10 +534,10 @@ class SessionServiceStub extends AgentConsoleSessionService {
         for (const session of this.sessions) {
             const projectKey = String(session.projectId || '').trim()
                 ? `project:${String(session.projectId).trim()}`
-                : String(session.workspace || '').trim()
-                    ? `workspace:${String(session.workspace).trim()}`
-                    : String(session.primaryThreadId || '').trim()
-                        ? `thread:${String(session.primaryThreadId).trim()}`
+                : String(session.primaryThreadId || '').trim()
+                    ? `thread:${String(session.primaryThreadId).trim()}`
+                    : String(session.workspace || '').trim()
+                        ? `workspace:${String(session.workspace).trim()}`
                     : `session:${session.id}`;
             const bucket = buckets.get(projectKey) || [];
             bucket.push(session);
@@ -580,10 +595,10 @@ class WorkspaceSessionStoreStub {
         for (const state of this.sessions.values()) {
             const projectKey = String(state.projectId || '').trim()
                 ? `project:${String(state.projectId).trim()}`
-                : String(state.workspace || '').trim()
-                    ? `workspace:${String(state.workspace).trim()}`
-                    : String(state.primaryThreadId || '').trim()
-                        ? `thread:${String(state.primaryThreadId).trim()}`
+                : String(state.primaryThreadId || '').trim()
+                    ? `thread:${String(state.primaryThreadId).trim()}`
+                    : String(state.workspace || '').trim()
+                        ? `workspace:${String(state.workspace).trim()}`
                     : `session:${state.sessionId}`;
             const existing = buckets.get(projectKey) || {
                 projectKey,
@@ -2471,6 +2486,52 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Cancelled task-1.');
     }
 
+    @Test('cancel coding task ignores stale results after switching sessions')
+    async cancelCodingTaskIgnoresStaleResultsAfterSwitchingSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const appRpc = new AppRpcStub();
+        const deferred = createDeferred<any>();
+        const task = createCancelableTask();
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 2 },
+            { id: 'chat-b', current: false, lastActiveAt: 1 }
+        ];
+        appRpc.state = {
+            sessionId: 'chat-a',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            modelProfile: 'flash',
+            workspace: '/tmp/workspace',
+            title: 'Console'
+        };
+        appRpc.codingTasksBySession.set('chat-a', [task]);
+        appRpc.codingTasksBySession.set('chat-b', [{ ...createReviewTask(), id: 'task-b', title: 'Task B' }]);
+        appRpc.codingTaskCancelHandlers.set('task-1', () => deferred.promise);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+
+        await component.onInit();
+        const pending = (component as any).cancelCodingTask('task-1');
+        await Promise.resolve();
+
+        await (component as any).openSession('chat-b');
+        deferred.resolve({
+            sessionId: 'chat-a',
+            taskId: 'task-1',
+            cancelled: true,
+            task: {
+                ...task,
+                status: 'cancelled'
+            }
+        });
+        await pending;
+
+        expect(component.sessionId).toEqual('chat-b');
+        expect(component.sessionState.tasksFocused).toEqual(false);
+        expect(component.notice).toEqual('');
+    }
+
     @Test('review focus retry action retries failed workers for active coding task')
     async reviewFocusRetryActionRetriesFailedWorkersForActiveCodingTask() {
         const runtime = new RuntimeStub();
@@ -2495,6 +2556,68 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
         expect(component.notice).toEqual('Retried failed workers from task-1 as task-1-retry.');
+    }
+
+    @Test('retry command ignores stale results after opening another review')
+    async retryCommandIgnoresStaleResultsAfterOpeningAnotherReview() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const deferred = createDeferred<any>();
+        const reviewTask = createRetryableTask();
+        const reviewTaskB = {
+            ...createReviewTask(),
+            id: 'task-b',
+            title: 'Task B'
+        };
+        const retriedTask = {
+            ...reviewTask,
+            id: 'task-1-retry',
+            title: `Retry failed workers: ${reviewTask.title}`,
+            status: 'completed'
+        };
+        appRpc.codingTaskRetryHandlers.set('task-1', () => deferred.promise);
+        appRpc.codingTaskDetails.set('task-b', reviewTaskB);
+        appRpc.codingTaskDiffs.set('task-b', {
+            sessionId: 'console',
+            taskId: 'task-b',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'task b diff',
+                text: 'diff --git a/src/b.ts b/src/b.ts\n+task b'
+            },
+            workers: reviewTaskB.result.workers
+        });
+        appRpc.codingTaskDetails.set('task-1-retry', retriedTask);
+        appRpc.codingTaskDiffs.set('task-1-retry', {
+            sessionId: 'console',
+            taskId: 'task-1-retry',
+            executionMode: 'parallel',
+            diff: {
+                summary: 'stale retry diff',
+                text: 'diff --git a/src/retry.ts b/src/retry.ts\n+stale retry'
+            },
+            workers: retriedTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        await component.onInit();
+        const pending = (component as any).retryFailedCodingTask('task-1');
+        await Promise.resolve();
+
+        await (component as any).openCodingTaskReview('task-b');
+        deferred.resolve({
+            sessionId: 'console',
+            taskId: 'task-1',
+            retried: true,
+            task: retriedTask
+        });
+        await pending;
+
+        expect(component.sessionState.reviewTask?.id).toEqual('task-b');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('task b diff');
+        expect(component.notice).toEqual('');
+        expect(appRpc.calls.some(call => call.method === 'coding_task.diff' && call.params?.taskId === 'task-1-retry')).toEqual(false);
     }
 
     @Test('review focus lineage navigation jumps between parent and child tasks')
@@ -2932,6 +3055,45 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.rollback' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.notice).toEqual('Rolled back task-1.');
+    }
+
+    @Test('rollback command ignores stale results after opening task inspector')
+    async rollbackCommandIgnoresStaleResultsAfterOpeningTaskInspector() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const deferred = createDeferred<any>();
+        const reviewTask = createReviewTask();
+        const otherTask = {
+            ...createReviewTask(),
+            id: 'task-b',
+            title: 'Task B',
+            updatedAt: 3
+        };
+        appRpc.codingTasks = [reviewTask, otherTask];
+        appRpc.codingTaskRollbackHandlers.set('task-1', () => deferred.promise);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        await component.onInit();
+        const pending = (component as any).rollbackCodingTask('task-1');
+        await Promise.resolve();
+
+        await (component as any).openCodingTaskInspector('task-b');
+        deferred.resolve({
+            sessionId: 'console',
+            taskId: 'task-1',
+            rolledBack: true,
+            task: {
+                ...reviewTask,
+                status: 'rolled_back'
+            }
+        });
+        await pending;
+
+        expect(component.sessionState.tasksFocused).toEqual(true);
+        expect(component.sessionState.reviewOpen).toEqual(false);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-b');
+        expect(component.notice).toEqual('');
     }
 
     @Test('model command switches configured named profile')
@@ -4179,6 +4341,35 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.projectLabel).toEqual('thread-1');
         expect(component.sessionState.projectSessionCount).toEqual(2);
         expect(component.sessionState.projects.map(item => item.key)).toEqual(['thread:thread-1']);
+    }
+
+    @Test('session service prefers primary thread grouping over workspace')
+    async sessionServicePrefersPrimaryThreadGroupingOverWorkspace() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a',
+            primaryThreadId: 'thread-1'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-b',
+            primaryThreadId: 'thread-1'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-b');
+
+        expect(projects.map(project => project.projectKey)).toEqual(['thread:thread-1']);
+        expect(projects[0].primaryThreadId).toEqual('thread-1');
+        expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-a', 'chat-b']);
+        expect(projects[0].sessions[1].current).toEqual(true);
     }
 
     @Test('sessions command refreshes grouped project sessions into the panel state')
