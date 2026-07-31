@@ -162,7 +162,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected refreshProjects(): void {
         const seen = new Map<string, { key: string; label: string; lastActive: number; count: number }>();
         for (const s of this.state.sessions) {
-            const key = String(s.projectKey || s.projectId || s.workspace || s.primaryThreadId || '').trim();
+            const key = this.resolveSessionProjectKey(s);
             if (!key) continue;
             const existing = seen.get(key);
             if (existing) {
@@ -237,7 +237,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             .map(item => String(item.summary || '').trim())
             .find(Boolean) || '';
         this.state.setProjectContext({
-            projectKey: anchor?.projectKey,
+            projectKey: anchor ? this.resolveSessionProjectKey(anchor) : undefined,
             projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.workspace || anchor?.primaryThreadId || anchor?.id,
             projectSummary: summary,
             projectSessionCount: anchor?.projectSessionCount || projectSessions.length
@@ -263,9 +263,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!anchor) {
             return [];
         }
-        const projectKey = String(anchor.projectKey || '').trim();
+        const projectKey = this.resolveSessionProjectKey(anchor);
         if (projectKey) {
-            return this.state.sessions.filter(item => String(item.projectKey || '').trim() === projectKey);
+            return this.state.sessions.filter(item => this.resolveSessionProjectKey(item) === projectKey);
         }
         const workspace = String(anchor.workspace || '').trim();
         if (workspace) {
@@ -276,6 +276,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return this.state.sessions.filter(item => String(item.primaryThreadId || '').trim() === primaryThreadId);
         }
         return [anchor];
+    }
+
+    protected resolveSessionProjectKey(session?: {
+        projectKey?: string;
+        projectId?: string;
+        workspace?: string;
+        primaryThreadId?: string;
+    } | null): string {
+        const projectKey = String(session?.projectKey || '').trim();
+        if (projectKey) {
+            return projectKey;
+        }
+        const projectId = String(session?.projectId || '').trim();
+        if (projectId) {
+            return `project:${projectId}`;
+        }
+        const workspace = String(session?.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
+        }
+        const primaryThreadId = String(session?.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
+        }
+        return '';
     }
 
     protected resolveCurrentProjectSessionIds(): string[] {
@@ -833,14 +858,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         const cacheKey = this.getReviewAnnotationsCacheKey();
+        const selectedTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
         if (!cacheKey) {
             return;
         }
         try {
+            const annotations = selectedTaskId
+                ? this.extractReviewAnnotations(cache, selectedTaskId) || {}
+                : {};
             await this.appRpc.request('review_annotations.save', {
                 sessionId: this.resolveReviewAnnotationsSessionId(),
                 cacheKey,
-                cache
+                cache: annotations
             });
         } catch {
             // annotation persistence is best-effort
@@ -861,18 +890,42 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 cacheKey
             });
             if (cache) {
-                this.state.setAnnotationCache(cache);
                 const selectedTaskId = String(this.state.selectedReviewTaskId || '').trim();
                 if (selectedTaskId) {
-                    this.state.reviewFileAnnotations = {
-                        ...((cache as Record<string, Record<string, any>>)[selectedTaskId] || {})
-                    };
+                    const annotations = this.extractReviewAnnotations(cache, selectedTaskId) || {};
+                    this.state.setAnnotationCache({
+                        ...this.state.getAnnotationCache(),
+                        [selectedTaskId]: annotations
+                    });
+                    this.state.reviewFileAnnotations = { ...annotations };
                     this.state.notify();
                 }
             }
         } catch {
             // annotation restore is best-effort
         }
+    }
+
+    protected extractReviewAnnotations(
+        cache: Record<string, Record<string, any>> | Record<string, any> | null | undefined,
+        selectedTaskId: string
+    ): Record<string, any> | undefined {
+        const direct = cache && typeof cache === 'object' ? (cache as Record<string, any>)[selectedTaskId] : undefined;
+        if (this.looksLikeReviewAnnotationMap(direct)) {
+            return direct;
+        }
+        if (this.looksLikeReviewAnnotationMap(cache)) {
+            return cache as Record<string, any>;
+        }
+        return undefined;
+    }
+
+    protected looksLikeReviewAnnotationMap(value: unknown): value is Record<string, any> {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return false;
+        }
+        const entries = Object.values(value as Record<string, any>);
+        return entries.every(entry => !!entry && typeof entry === 'object' && typeof entry.status === 'string');
     }
 
     protected ensureWorkspaceMentionResolver(): void {
@@ -1980,7 +2033,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     );
                     if (!project) return true;
                     const projectSessions = this.state.sessions.filter(
-                        s => String(s.projectKey || s.projectId || s.workspace || s.primaryThreadId || '').trim() === project
+                        s => this.resolveSessionProjectKey(s) === project
                     );
                     if (!projectSessions.length) {
                         this.notify('No sessions in this project.');
@@ -2625,7 +2678,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             result: await this.appRpc!.request('todo.get', { sessionId: session.id })
         })));
         const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
-        let sourceSessionId = this.state.sessionId;
+        let sourceSessionId: string | undefined;
         for (const entry of results) {
             const todos = Array.isArray(entry.result?.todos)
                 ? entry.result.todos.map((item: any) => ({
@@ -2637,7 +2690,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!todos.length) {
                 continue;
             }
-            sourceSessionId = entry.sessionId;
+            sourceSessionId ||= entry.sessionId;
             for (const todo of todos) {
                 if (!merged.has(todo.id)) {
                     merged.set(todo.id, todo);
@@ -2646,7 +2699,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
         const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
-        this.state.setPlanTodos(nextTodos, sourceSessionId);
+        this.state.setPlanTodos(nextTodos, sourceSessionId || this.state.sessionId);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
