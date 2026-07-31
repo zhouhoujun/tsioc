@@ -4275,7 +4275,7 @@ export class AgentToolsPackageTest {
 
     @Test('group tool registration includes new groups')
     groupedToolRegistrationIncludesNewGroups() {
-        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent', 'parallel_spawn']);
+        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent', 'parallel_spawn', 'orchestrate']);
         expect(AGENT_TOOL_GROUPS.code_execution).toEqual(['execute_code']);
         expect(AGENT_TOOL_GROUPS.knowledge).toEqual(['knowledge_search', 'knowledge_store']);
         expect(AGENT_TOOL_GROUPS.git).toEqual(['git_operations']);

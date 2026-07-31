@@ -1108,7 +1108,11 @@ export class RuntimeLoopTest {
             followUpRecoveryCount: 1,
             followUpContextRewritten: true,
             finalAssistantWasClarification: false,
-            repeatedClarificationDetected: false
+            repeatedClarificationDetected: false,
+            compactionCount: 0,
+            compactionLevel: undefined,
+            compressionRatio: undefined,
+            totalTokenSavings: 0
         });
     }
 
@@ -1134,7 +1138,11 @@ export class RuntimeLoopTest {
             followUpRecoveryCount: 0,
             followUpContextRewritten: false,
             finalAssistantWasClarification: false,
-            repeatedClarificationDetected: false
+            repeatedClarificationDetected: false,
+            compactionCount: 0,
+            compactionLevel: undefined,
+            compressionRatio: undefined,
+            totalTokenSavings: 0
         });
     }
 
@@ -1162,7 +1170,11 @@ export class RuntimeLoopTest {
             followUpRecoveryCount: 0,
             followUpContextRewritten: true,
             finalAssistantWasClarification: true,
-            repeatedClarificationDetected: true
+            repeatedClarificationDetected: true,
+            compactionCount: 0,
+            compactionLevel: undefined,
+            compressionRatio: undefined,
+            totalTokenSavings: 0
         });
     }
 
