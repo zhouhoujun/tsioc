@@ -40,6 +40,7 @@ import { TextBrowserTool } from '../browser/text-browser.tool';
 import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
 import { SessionsListTool } from '../sessions/sessions-list.tool';
 import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
+import { TodoStore } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
 import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
@@ -144,6 +145,7 @@ function provideCodingTaskToolFactory() {
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
+        TodoStore,
         TodoTool,
         AskUserTool,
         EscalateTool,

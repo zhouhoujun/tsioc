@@ -1,3 +1,6 @@
+import { MemoryStore } from '@tsdi/agent';
+import { Injectable, Optional } from '@tsdi/ioc';
+
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface TodoItem {
@@ -31,14 +34,37 @@ function normalizeItem(input: any): TodoItem {
     };
 }
 
+@Injectable()
 export class TodoStore {
+    protected static readonly TODO_MEMORY_ID_PREFIX = 'agent-todo';
+    protected static readonly TODO_MEMORY_KEY = 'agent.todo.plan';
     private sessions = new Map<string, TodoItem[]>();
 
-    read(sessionId: string): TodoItem[] {
-        return (this.sessions.get(sessionId) ?? []).map(item => ({ ...item }));
+    constructor(@Optional() private memoryStore?: MemoryStore | null) {
     }
 
-    replace(sessionId: string, todos: any[]): TodoItem[] {
+    async read(sessionId: string): Promise<TodoItem[]> {
+        if (!this.memoryStore) {
+            return (this.sessions.get(sessionId) ?? []).map(item => ({ ...item }));
+        }
+        const records = await this.memoryStore.getAll(sessionId);
+        const recordId = this.resolveRecordId(sessionId);
+        const record = records
+            .filter(item => item.scope === 'session' && item.sessionId === sessionId)
+            .filter(item => item.id === recordId || item.key === TodoStore.TODO_MEMORY_KEY)
+            .sort((left, right) => Number(right.updatedAt || right.createdAt || 0) - Number(left.updatedAt || left.createdAt || 0))[0];
+        if (!record) {
+            return [];
+        }
+        try {
+            const parsed = JSON.parse(String(record.value || '[]'));
+            return Array.isArray(parsed) ? parsed.map(item => normalizeItem(item)) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    async replace(sessionId: string, todos: any[]): Promise<TodoItem[]> {
         const next = new Map<string, TodoItem>();
         for (const raw of todos ?? []) {
             const item = normalizeItem(raw);
@@ -46,12 +72,12 @@ export class TodoStore {
             next.set(item.id, item);
         }
         const values = Array.from(next.values());
-        this.sessions.set(sessionId, values);
+        await this.persist(sessionId, values);
         return this.read(sessionId);
     }
 
-    merge(sessionId: string, todos: any[]): TodoItem[] {
-        const current = this.read(sessionId);
+    async merge(sessionId: string, todos: any[]): Promise<TodoItem[]> {
+        const current = await this.read(sessionId);
         const index = new Map(current.map((item, idx) => [item.id, idx] as const));
         const deduped = new Map<string, TodoItem>();
         for (const raw of todos ?? []) {
@@ -74,12 +100,12 @@ export class TodoStore {
                 status: item.status
             };
         }
-        this.sessions.set(sessionId, current);
+        await this.persist(sessionId, current);
         return this.read(sessionId);
     }
 
-    summarize(sessionId: string): TodoSummary {
-        const todos = this.read(sessionId);
+    async summarize(sessionId: string): Promise<TodoSummary> {
+        const todos = await this.read(sessionId);
         return todos.reduce<TodoSummary>((summary, item) => ({
             ...summary,
             total: summary.total + 1,
@@ -91,5 +117,34 @@ export class TodoStore {
             completed: 0,
             cancelled: 0
         });
+    }
+
+    protected async persist(sessionId: string, todos: TodoItem[]): Promise<void> {
+        if (!this.memoryStore) {
+            this.sessions.set(sessionId, todos.map(item => ({ ...item })));
+            return;
+        }
+        const recordId = this.resolveRecordId(sessionId);
+        await this.memoryStore.delete(recordId, sessionId, 'session');
+        if (!todos.length) {
+            return;
+        }
+        const now = Date.now();
+        await this.memoryStore.put({
+            id: recordId,
+            sessionId,
+            key: TodoStore.TODO_MEMORY_KEY,
+            value: JSON.stringify(todos),
+            scope: 'session',
+            namespace: 'agent',
+            category: 'conversation',
+            createdAt: now,
+            updatedAt: now,
+            metadata: { kind: 'todo-plan' }
+        });
+    }
+
+    protected resolveRecordId(sessionId: string): string {
+        return `${TodoStore.TODO_MEMORY_ID_PREFIX}:${String(sessionId || '').trim()}`;
     }
 }

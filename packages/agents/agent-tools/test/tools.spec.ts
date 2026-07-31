@@ -2201,6 +2201,27 @@ export class AgentToolsPackageTest {
         expect(isolated.todos).toEqual([]);
     }
 
+    @Test('todo store persists items through memory-backed instances')
+    async todoStorePersistsItemsThroughMemoryBackedInstances() {
+        const memory = new InMemoryMemoryStore();
+        const storeA = new TodoStore(memory);
+        await storeA.replace('todo-1', [
+            { id: '1', content: 'persisted', status: 'pending' },
+            { id: '2', content: 'active', status: 'in_progress' }
+        ]);
+
+        const storeB = new TodoStore(memory);
+        const todos = await storeB.read('todo-1');
+        const summary = await storeB.summarize('todo-1');
+
+        expect(todos.map(item => item.content)).toEqual(['persisted', 'active']);
+        expect(summary.total).toEqual(2);
+        expect(summary.in_progress).toEqual(1);
+
+        await storeB.replace('todo-1', []);
+        expect(await storeA.read('todo-1')).toEqual([]);
+    }
+
     @Test('schedule tool creates lists and cancels session tasks')
     async scheduleToolManagesTasksBySession() {
         const scheduler = new FakeScheduler();

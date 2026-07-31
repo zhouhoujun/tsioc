@@ -40,17 +40,17 @@ export class TodoTool implements AgentTool {
             throw new Error('Invalid todo input: todos must be an array.');
         }
         if (input.merge) {
-            this.store.merge(sessionId, input.todos);
+            await this.store.merge(sessionId, input.todos);
         } else {
-            this.store.replace(sessionId, input.todos);
+            await this.store.replace(sessionId, input.todos);
         }
         return this.buildResult(sessionId);
     }
 
-    private buildResult(sessionId: string): any {
+    private async buildResult(sessionId: string): Promise<any> {
         return {
-            todos: this.store.read(sessionId),
-            summary: this.store.summarize(sessionId)
+            todos: await this.store.read(sessionId),
+            summary: await this.store.summarize(sessionId)
         };
     }
 }
