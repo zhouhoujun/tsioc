@@ -560,6 +560,35 @@ export class SessionHandlerTest {
         await route.handler(req, res, {} as any);
         expect(JSON.parse(body)).toEqual([]);
     }
+
+    @Test('cancelled turns are removed from the running sessions list')
+    async cancelledTurnsAreRemovedFromRunningSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/running' && route.method === 'GET')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        handler.onTurnStarted({ sessionId: 's1' } as any);
+        await route.handler(req, res, {} as any);
+        expect(JSON.parse(body)).toEqual(['s1']);
+
+        handler.onTurnCancelled({ sessionId: 's1' } as any);
+        await route.handler(req, res, {} as any);
+        expect(JSON.parse(body)).toEqual([]);
+    }
 }
 
 @Suite('ApprovalHandler')
@@ -2687,5 +2716,57 @@ export class StdioAppRpcServerTest {
         }, new Error('cancelled')));
         const failed = events.getHistory('s-1').events.find(record => record.type === 'approval_failed');
         expect(failed?.data?.error).toEqual('cancelled');
+    }
+
+    @Test('run.cancel is idempotent for unknown and inactive sessions')
+    async runCancelIsIdempotent() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        const events = new EventHandler(owners);
+        const runtime = { searchSessions: async () => [], cancelTurn: async () => false } as any;
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {} as any,
+            null,
+            null
+        );
+
+        // unknown session: benign no-op instead of an error
+        const unknown = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 30,
+            method: 'run.cancel',
+            params: { sessionId: 'missing' }
+        }, { principalId: 'user-1' });
+        expect((unknown as any).result.cancelled).toEqual(false);
+
+        // known session without an active turn: benign no-op
+        const idle = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 31,
+            method: 'run.cancel',
+            params: { sessionId: 's-1' }
+        }, { principalId: 'user-1' });
+        expect((idle as any).result.cancelled).toEqual(false);
+
+        // repeating the cancel after it already resolved reports false again
+        const idleSecond = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 32,
+            method: 'run.cancel',
+            params: { sessionId: 's-1' }
+        }, { principalId: 'user-1' });
+        expect((idleSecond as any).result.cancelled).toEqual(false);
+        expect((idleSecond as any).error).toBeUndefined();
     }
 }

@@ -1,6 +1,6 @@
 import * as http from 'http';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent } from '@tsdi/agent';
+import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo, SessionProjectGroup } from '../contracts/SessionInfo';
@@ -48,6 +48,12 @@ export class SessionHandler {
 
     @EventHandler(AgentErrorEvent)
     onError(event: AgentErrorEvent): void {
+        this.track(event.sessionId);
+        this.activeSessionIds.delete(event.sessionId);
+    }
+
+    @EventHandler(AgentTurnCancelledEvent)
+    onTurnCancelled(event: AgentTurnCancelledEvent): void {
         this.track(event.sessionId);
         this.activeSessionIds.delete(event.sessionId);
     }

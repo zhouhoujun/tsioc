@@ -403,6 +403,10 @@ export class AppRpcServer {
 
     private async cancelTurn(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
+        if (!await this.sessions.has(sessionId)) {
+            // Idempotent cancel: there is nothing to cancel for an unknown session.
+            return { sessionId, cancelled: false };
+        }
         await this.ensureSessionAccess(sessionId, context);
         const cancelled = await this.runtime.cancelTurn(sessionId);
         return {
