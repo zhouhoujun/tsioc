@@ -220,6 +220,10 @@ The same data is reachable interactively:
   day-bucketed `summary_quality.trend` points (`buildSummaryQualityTrend`
   reduction in `@tsdi/agent`), one line per provider with bucket date range,
   average total, and fallback rate
+- the always-on dashboard panel (`AgentConsoleDashboardPanelComponent`)
+  renders a `quality · <digest>` line from `AgentConsoleSessionState
+  summaryQualityDigest`, refreshed via `summary_quality.stats` on startup and
+  after each turn, so quality trends stay visible without typing a command
 
 This closes the last tracked gap: provider-specific summary quality is now
 measured, persisted, and inspectable instead of being a subjective one-off read.

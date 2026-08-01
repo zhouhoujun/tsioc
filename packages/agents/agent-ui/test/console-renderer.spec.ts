@@ -209,6 +209,38 @@ export class AgentConsoleRendererTest {
         expect(dashboardPanel.instance.dashboardStatsLabel).toBe('');
     }
 
+    @Test('dashboard shows summary quality digest when recorded')
+    async dashboardShowsSummaryQualityDigest() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setSummaryQualityDigest(
+            'deepseek · 12 summary records · avg 84.2 · fallback 8.3% | anthropic · 5 summary records · avg 91.0 · fallback 0.0%'
+        );
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.shouldShow).toBe(true);
+        const quality = dashboardPanel.instance.dashboardQualityLabel;
+        expect(quality.startsWith('quality · ')).toBe(true);
+        expect(quality.includes('deepseek')).toBe(true);
+        expect(quality.includes('avg 84.2')).toBe(true);
+        expect(quality.includes('anthropic')).toBe(true);
+        expect(quality.includes('avg 91.0')).toBe(true);
+    }
+
+    @Test('dashboard omits quality line when no digest recorded')
+    async dashboardOmitsSummaryQualityDigestWithoutRecords() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setSummaryQualityDigest('');
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.dashboardQualityLabel).toBe('');
+    }
+
     @Test('root output keeps dashboard visible for coding tasks without plan todos')
     async rootOutputKeepsDashboardVisibleForCodingTasksWithoutPlanTodos() {
         const ctx = await Application.run(AgentConsoleComponent, {

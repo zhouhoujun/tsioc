@@ -2619,6 +2619,49 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('No summary quality trend');
     }
 
+    @Test('refresh turn artifacts loads summary quality digest through rpc')
+    async refreshTurnArtifactsLoadsSummaryQualityDigest() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityAggregates = [{
+            provider: 'deepseek',
+            recordCount: 12,
+            avgTotal: 84.2,
+            fallbackRate: 8.3,
+            timeRange: { from: 1720000000000, to: 1720086400000 }
+        }, {
+            provider: 'anthropic',
+            recordCount: 3,
+            avgTotal: 71,
+            fallbackRate: 33.3,
+            timeRange: {}
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.stats' && !call.params?.provider)).toEqual(true);
+        expect(component.sessionState.summaryQualityDigest).toContain('deepseek');
+        expect(component.sessionState.summaryQualityDigest).toContain('avg 84.2');
+        expect(component.sessionState.summaryQualityDigest).toContain('anthropic');
+    }
+
+    @Test('refresh turn artifacts clears summary quality digest when nothing recorded')
+    async refreshTurnArtifactsClearsSummaryQualityDigestWhenEmpty() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityAggregates = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setSummaryQualityDigest('stale digest');
+
+        await (component as any).refreshTurnArtifacts();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.stats')).toEqual(true);
+        expect(component.sessionState.summaryQualityDigest).toBe('');
+    }
+
     @Test('approval resolve routes through rpc when no local approval manager')
     async approvalResolveRoutesThroughRpc() {
         const runtime = new RuntimeStub();

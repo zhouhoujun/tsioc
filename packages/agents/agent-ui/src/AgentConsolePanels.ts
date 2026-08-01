@@ -239,6 +239,7 @@ export class AgentConsoleStatusPanelComponent {
         <label v-style="accentStyle">{{dashboardSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="dashboardCountersLabel">{{dashboardCountersLabel}}</label>
         <label v-style="statsStyle" v-show="dashboardStatsLabel">{{dashboardStatsLabel}}</label>
+        <label v-style="qualityStyle" v-show="dashboardQualityLabel">{{dashboardQualityLabel}}</label>
         <label v-style="detailStyle" v-show="dashboardDetailLabel">{{dashboardDetailLabel}}</label>
     </div>
     `
@@ -334,6 +335,17 @@ export class AgentConsoleDashboardPanelComponent {
             completed.length ? `success ${successRate}%` : '',
             durations.length ? `avg ${avgDuration}ms` : ''
         ].filter(Boolean).join(' · ');
+    }
+
+    get qualityStyle() {
+        return this.activeThemeStyles.statusNoticeValue;
+    }
+
+    get dashboardQualityLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.summaryQualityDigest ? `quality · ${this.state.summaryQualityDigest}` : '';
     }
 
     get dashboardDetailLabel(): string {

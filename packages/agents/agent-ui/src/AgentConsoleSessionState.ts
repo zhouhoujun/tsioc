@@ -324,6 +324,7 @@ export class AgentConsoleSessionState {
     projectLabel = '';
     projectSummary = '';
     projectSessionCount = 0;
+    summaryQualityDigest = '';
     projects: AgentConsoleProjectItem[] = [];
     projectsFocused = false;
     toolRunsFocused = false;
@@ -472,6 +473,11 @@ export class AgentConsoleSessionState {
         this.projectLabel = String(context?.projectLabel || '').trim();
         this.projectSummary = String(context?.projectSummary || '').trim();
         this.projectSessionCount = Math.max(0, Number(context?.projectSessionCount || 0));
+        this.notify();
+    }
+
+    setSummaryQualityDigest(digest: string): void {
+        this.summaryQualityDigest = String(digest || '').trim();
         this.notify();
     }
 

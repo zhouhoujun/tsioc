@@ -181,3 +181,13 @@
    - 帮助文案更新：`/quality` 描述改为 `quality stats / list / trend by provider`。
 
 全量回归：agent 317 / agent-gateway 91 / agent-ui 202 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P16 打磨（已完成）
+
+1. ~~summary quality 接入常驻 dashboard~~ → 已完成：quality 观测从命令面（`/quality` 系列）扩展到常驻 dashboard 面板：
+   - **state**：`AgentConsoleSessionState` 新增 `summaryQualityDigest` 字段 + `setSummaryQualityDigest(digest)`（带 notify）。
+   - **组件**：新增 `refreshSummaryQualityDigest()`（无 sessionService 清空；经 `getSummaryQualityStats()` RPC 拉全量聚合，复用 `formatSummaryQualityAggregate` 以 ` | ` 连接写入 state；空/异常清空），挂入 `onInit` 与 `refreshTurnArtifacts`（turn 完成后随面板数据一并刷新）。
+   - **dashboard 面板**：`AgentConsoleDashboardPanelComponent` 新增 `quality · <digest>` 行（stats 与 detail 之间），`dashboardQualityLabel` 仅在 `shouldShow` 且 digest 非空时输出。
+   - 测试：console-renderer.spec.ts +2（有 digest 渲染 quality 行、无 digest 省略）；view-model.spec.ts +2（onInit/refreshTurnArtifacts 经 RPC 拉取 digest、空数据清空旧 digest）。
+
+全量回归：agent-ui 206 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

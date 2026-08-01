@@ -1129,6 +1129,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
         await this.refreshTools();
         await this.refreshScheduledTasks();
+        await this.refreshSummaryQualityDigest();
         this.state.setTasksCount(this.scheduler.getTasks().length);
     }
 
@@ -3288,8 +3289,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshTools(),
             this.refreshScheduledTasks(),
             this.refreshTodoPlan(),
-            this.loadCodingTasks()
+            this.loadCodingTasks(),
+            this.refreshSummaryQualityDigest()
         ]);
+    }
+
+    protected async refreshSummaryQualityDigest(): Promise<void> {
+        if (!this.sessionService) {
+            this.state.setSummaryQualityDigest('');
+            return;
+        }
+        try {
+            const aggregates = await this.sessionService.getSummaryQualityStats();
+            if (!aggregates.length) {
+                this.state.setSummaryQualityDigest('');
+                return;
+            }
+            this.state.setSummaryQualityDigest(
+                aggregates
+                    .map(item => this.formatSummaryQualityAggregate(item))
+                    .join(' | ')
+            );
+        } catch (error: any) {
+            this.state.setSummaryQualityDigest('');
+            void error;
+        }
     }
 
     protected async refreshTodoPlan(
