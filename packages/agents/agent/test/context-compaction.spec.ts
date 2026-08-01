@@ -714,6 +714,58 @@ export class ContextCompactionTest {
         expect(result).toContain('Current: 补充项目主线和跨会话聚合策略');
         expect(result).not.toContain('Goal: 继续');
     }
+
+    @Test('LLMSessionSummarizer fallback distinguishes modified files from mentioned files')
+    async llmFallbackDistinguishesModifiedFromMentionedFiles() {
+        const summarizer = new LLMSessionSummarizer(null);
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Refactor the auth flow and keep docs/plan.md in mind.', createdAt: 1 },
+            { id: '2', role: 'assistant', content: 'I created src/new-module.ts and updated src/auth/login.ts.', createdAt: 2 },
+            {
+                id: '3',
+                role: 'tool',
+                name: 'write_file',
+                content: '{"path":"src/auth/login.ts","status":"ok"}',
+                createdAt: 3
+            },
+            {
+                id: '4',
+                role: 'tool',
+                name: 'read_file',
+                content: '{"files":["src/util.ts","docs/plan.md"]}',
+                createdAt: 4
+            }
+        ];
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Files:');
+        expect(result).toContain('modified: src/new-module.ts, src/auth/login.ts');
+        expect(result).toContain('mentioned: docs/plan.md, src/util.ts');
+        expect(result).not.toContain('mentioned: src/auth/login.ts');
+        expect(result).not.toContain('mentioned: src/new-module.ts');
+    }
+
+    @Test('LLMSessionSummarizer keeps modified/mentioned annotation from model output')
+    async llmKeepsModifiedMentionedAnnotationFromModelOutput() {
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Fix routing in src/app.ts and keep docs/readme.md in scope.', createdAt: 1 }
+        ];
+
+        const summarizer = new LLMSessionSummarizer(new StaticSummaryModelAdapter(
+            [
+                'Goal: Fix routing in src/app.ts.',
+                'Decisions: Inspect the router branch first.',
+                'Files: modified: src/app.ts | mentioned: docs/readme.md',
+                'Errors: No errors recorded.',
+                'Open state: Patch the router and verify the result.'
+            ].join('\n')
+        ) as any);
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Files: modified: src/app.ts | mentioned: docs/readme.md');
+        expect(result).toContain('Goal: Fix routing in src/app.ts.');
+    }
+
     /* --- language-aware token estimation --- */
 
     @Test('estimateTokens handles CJK-heavy text more accurately than length/4')

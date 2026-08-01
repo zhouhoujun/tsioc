@@ -5,10 +5,15 @@ import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 
-const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths, 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. Use concise factual phrases. Do not infer or add information not present in the conversation.';
+const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths (modified), and files merely mentioned or read (mentioned), 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. In the Files: line list paths as "modified: a, b | mentioned: c, d" to distinguish edited files from merely referenced ones. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 const SUMMARY_LABELS = ['Goal', 'Decisions', 'Files', 'Errors', 'Open state'] as const;
 type SummaryLabel = typeof SUMMARY_LABELS[number];
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
+// Strong-signal tool names that mutate files on disk; matched against tool message names and
+// assistant toolCall metadata so write operations are separated from mere references.
+const WRITE_TOOL_NAME_RE = /\b(?:write|write_file|edit|edit_file|apply_patch|create_file|delete_file|rename_file|move_file|update_file|save_file|remove_file|add_file|touch|mkdir|rm)\b/i;
+// Past-tense verbs in assistant/tool text that report an actual file mutation.
+const WRITE_VERB_RE = /\b(?:created|modified|updated|deleted|wrote|edited|fixed|patched|added|removed|renamed|moved|saved)\b/i;
 
 @Injectable()
 export class LLMSessionSummarizer extends SessionSummarizer {
@@ -138,19 +143,58 @@ export class LLMSessionSummarizer extends SessionSummarizer {
     }
 
     private resolveFiles(messages: AgentMessage[]): string {
-        const files = new Set<string>();
+        const { modified, mentioned } = this.resolveFileChanges(messages);
+        const parts: string[] = [];
+        if (modified.length) {
+            parts.push(`modified: ${modified.join(', ')}`);
+        }
+        if (mentioned.length) {
+            parts.push(`mentioned: ${mentioned.join(', ')}`);
+        }
+        return parts.join(' | ');
+    }
+
+    private resolveFileChanges(messages: AgentMessage[]): { modified: string[]; mentioned: string[] } {
+        const modified = new Set<string>();
+        const mentioned = new Set<string>();
         const fileRe = /(?:@[A-Za-z0-9_-]+\/)?[A-Za-z0-9_./\\-]+\.(?:[jt]sx?|[cm]js|json|ya?ml|css|html|md|vue|svelte|py|java|go|rs|swift|kt|dart)/g;
+        const addFile = (set: Set<string>, path: string): void => {
+            const normalized = path.replace(/\\/g, '/');
+            if (modified.has(normalized) || mentioned.has(normalized)) {
+                return;
+            }
+            if (modified.size + mentioned.size >= 6) {
+                return;
+            }
+            set.add(normalized);
+        };
+
         for (const message of messages) {
-            const matches = message.content.match(fileRe) || [];
+            if (message.role === 'system') {
+                continue;
+            }
+            const target = this.isWriteOperation(message) ? modified : mentioned;
+            const matches = String(message.content || '').match(fileRe) || [];
             for (const match of matches) {
-                const normalized = match.replace(/\\/g, '/');
-                files.add(normalized);
-                if (files.size >= 6) {
-                    return [...files].join(', ');
-                }
+                addFile(target, match);
             }
         }
-        return [...files].join(', ');
+
+        return { modified: [...modified], mentioned: [...mentioned] };
+    }
+
+    private isWriteOperation(message: AgentMessage): boolean {
+        if (message.role === 'tool') {
+            return !!message.name && WRITE_TOOL_NAME_RE.test(message.name);
+        }
+        if (message.role === 'assistant') {
+            const toolNames = (message.metadata?.toolCalls || []).map((tc: any) => String(tc?.name || ''));
+            if (toolNames.some((name: string) => WRITE_TOOL_NAME_RE.test(name))) {
+                return true;
+            }
+            return WRITE_VERB_RE.test(message.content);
+        }
+        return false;
     }
 
     private resolveErrors(messages: AgentMessage[]): string {

@@ -122,3 +122,13 @@
    - 测试：agent 新增 `turn-diagnostics.spec.ts` 7 条（in-memory promptCache 不可变快照 / 过滤分页 / 多 session 聚合与比率与 timeRange / typeorm 持久化+重载+聚合 / 模块无 ORM 回退 / 有 ORM 持久化 / runtime 每 turn 落库 2 条）；gateway 新增 5 条（列表 / 403 / 400 / 单 session 聚合 / 无 sessionId 聚合 owned sessions）。
 
 全量回归：agent 297 / agent-gateway 87 passing；agent、agent-gateway tsc 干净。
+
+## P10 打磨（已完成）
+
+1. ~~context-compaction 架构文档「Current Gaps」：modified files vs mentioned files 语义区分~~ → 已完成，保持五字段输出契约不变，`Files:` 行内部分类：
+   - **prompt 契约**：`COMPACTION_SYSTEM_PROMPT` 第 3) 点与 Files 行指示更新——列出 `modified: a, b | mentioned: c, d`，区分已编辑文件与仅提及/读取的文件。
+   - **fallback 提取**：`resolveFiles` 重写为基于新增 `resolveFileChanges`（返回 `{ modified, mentioned }`）的格式化输出；新增 `isWriteOperation` 启发式——tool 消息按工具名强信号正则（`write`/`write_file`/`edit`/`edit_file`/`apply_patch`/`create_file`/`delete_file`/`rename_file`/`move_file`/`update_file`/`save_file`/`remove_file`/`add_file`/`touch`/`mkdir`/`rm`）判定写操作；assistant 消息按 `metadata.toolCalls` 工具名或文本过去式动词（`created|modified|updated|deleted|wrote|edited|fixed|patched|added|removed|renamed|moved|saved`）判定；写操作消息的路径归 `modified`，其余归 `mentioned`（去重 + 总上限 6 保持）。归一化层对 LLM 输出原样保留其标注。
+   - 测试：`context-compaction.spec.ts` 新增 2 条——fallback 下 `write_file`/`read_file` 与 assistant 陈述文本的 modified/mentioned 分流断言（含「modified 不泄漏进 mentioned」负向断言）、LLM 结构化输出保留 `modified: ... | mentioned: ...` 标注。
+   - 文档：架构文档「Summary Schema」补充 Files 行语义说明；「Current Gaps」列表删除已闭合 4 项（compaction-history / empty-response-rate / repeated-question-rate / modified-vs-mentioned），仅剩 provider-specific summary quality scoring。
+
+全量回归：agent 299 / agent-gateway 87 passing；agent、agent-gateway、agent-channels、agent-providers tsc 干净。

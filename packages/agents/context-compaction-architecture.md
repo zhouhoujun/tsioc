@@ -136,6 +136,11 @@ The fallback extractor favors:
 - explicit tool/runtime errors
 - latest turn state as `Open state`
 
+The `Files` line distinguishes write operations from mere references:
+
+- `modified: a.ts, b.ts` — paths from write-style tool calls (`write_file`, `edit`, `apply_patch`, ...) or assistant text reporting past-tense mutations (`created`, `updated`, `deleted`, ...)
+- `mentioned: c.ts` — every other path reference (reads, user text, tool results)
+
 ## Runtime Observability
 
 Each history-preparation pass emits a `ContextPreparationReport` through `AgentContextPreparedEvent`.
@@ -187,11 +192,7 @@ The current design specifically protects these regression cases:
 
 ## Current Gaps
 
-- no aggregated empty-response-rate metric yet
-- no aggregated repeated-question-rate metric yet
 - no provider-specific summary quality scoring
-- no semantic distinction yet between "modified files" and "mentioned files"
-- no persistent compaction-history store for later diagnostics
 
 ## Implementation Anchors
 
