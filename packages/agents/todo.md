@@ -199,3 +199,12 @@
    - 测试：gateway `SummaryQualityHandlerTest` +2——provider+maxBuckets 分桶断言（深seek 两桶 avgTotal/fallbackRate/维度均值）、无过滤时跨 provider 输出。
 
 全量回归：agent 317 / agent-gateway 93 / agent-ui 206 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P18 打磨（已完成）
+
+1. ~~`/quality trend` 命令面支持粒度参数~~ → 已完成：RPC/HTTP 已支持 `bucketSize`/`maxBuckets`，但命令面 `openSummaryQualityTrend(provider?)` 只传 provider。本次补齐：
+   - **组件**：`openSummaryQualityTrend(provider?, bucketSize?, maxBuckets?)` 透传三参；新增 `parseSummaryQualityTrendArgs`——解析 `/quality trend [provider] [bucketSize] [maxBuckets]`，`bucketSize` 支持 `Nd`（天数→毫秒）或纯毫秒数字，非法/非正 token 忽略为 undefined；命令分支接入。
+   - **帮助**：commandHints 新增 `/quality trend [provider] [bucketSize] [maxBuckets]` 条目。
+   - 测试：view-model +3——`7d`/`60` 透传断言、纯毫秒 bucketSize、`0d abc` 非法 token 忽略。
+
+全量回归：agent-ui 209 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

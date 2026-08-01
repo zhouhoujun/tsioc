@@ -184,12 +184,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
-    protected async openSummaryQualityTrend(provider?: string): Promise<boolean> {
+    protected async openSummaryQualityTrend(
+        provider?: string,
+        bucketSize?: number,
+        maxBuckets?: number
+    ): Promise<boolean> {
         if (!this.sessionService) {
             this.notify('Summary quality is unavailable without app RPC.');
             return true;
         }
-        const trend = await this.sessionService.getSummaryQualityTrend({ provider });
+        const trend = await this.sessionService.getSummaryQualityTrend({ provider, bucketSize, maxBuckets });
         if (!trend.length) {
             this.notify(
                 provider
@@ -1329,6 +1333,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    /**
+     * Parses `/quality trend` trailing tokens: optional provider, optional
+     * bucket size (`Nd` for days or a millisecond number), optional max bucket
+     * count. Returns undefined for absent or invalid numeric tokens.
+     */
+    protected parseSummaryQualityTrendArgs(
+        args: string
+    ): { provider?: string; bucketSize?: number; maxBuckets?: number } {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const provider = tokens[0] || undefined;
+        let bucketSize: number | undefined;
+        let maxBuckets: number | undefined;
+        const dayToken = tokens[1]?.match(/^(\d+)d$/i);
+        if (dayToken) {
+            const days = Number(dayToken[1]);
+            if (Number.isFinite(days) && days > 0) {
+                bucketSize = days * 24 * 60 * 60 * 1000;
+            }
+        } else if (tokens[1] && /^\d+$/.test(tokens[1])) {
+            const value = Number(tokens[1]);
+            if (Number.isFinite(value) && value > 0) {
+                bucketSize = value;
+            }
+        }
+        if (tokens[2] && /^\d+$/.test(tokens[2])) {
+            const value = Number(tokens[2]);
+            if (Number.isFinite(value) && value > 0) {
+                maxBuckets = value;
+            }
+        }
+        return { provider, bucketSize, maxBuckets };
+    }
+
     protected resolveUniqueCommandPrefix(input: string): { command: string; matches: string[] } {
         const matches = this.state.commandHints.filter(item => item.startsWith(input));
         return {
@@ -2151,6 +2188,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
+                    { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2308,8 +2346,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return this.openSummaryQualityRecords(provider);
                 }
                 if (arg === 'trend' || arg.startsWith('trend ')) {
-                    const provider = arg.slice(5).trim() || undefined;
-                    return this.openSummaryQualityTrend(provider);
+                    const { provider, bucketSize, maxBuckets } = this.parseSummaryQualityTrendArgs(arg.slice(5));
+                    return this.openSummaryQualityTrend(provider, bucketSize, maxBuckets);
                 }
                 const provider = arg || undefined;
                 const aggregates = this.sessionService

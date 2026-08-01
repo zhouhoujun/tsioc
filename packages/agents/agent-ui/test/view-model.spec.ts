@@ -2619,6 +2619,63 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('No summary quality trend');
     }
 
+    @Test('quality trend command forwards bucket size and max buckets through rpc')
+    async qualityTrendCommandForwardsBucketParams() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality trend deepseek 7d 60';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'summary_quality.trend');
+        expect(call).toBeTruthy();
+        expect(call!.params?.provider).toEqual('deepseek');
+        expect(call!.params?.bucketSize).toEqual(7 * 24 * 60 * 60 * 1000);
+        expect(call!.params?.maxBuckets).toEqual(60);
+    }
+
+    @Test('quality trend command accepts millisecond bucket size')
+    async qualityTrendCommandAcceptsMillisecondBucketSize() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality trend anthropic 3600000';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'summary_quality.trend');
+        expect(call).toBeTruthy();
+        expect(call!.params?.provider).toEqual('anthropic');
+        expect(call!.params?.bucketSize).toEqual(3600000);
+        expect(call!.params?.maxBuckets).toBeUndefined();
+    }
+
+    @Test('quality trend command ignores invalid numeric tokens')
+    async qualityTrendCommandIgnoresInvalidTokens() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality trend deepseek 0d abc';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'summary_quality.trend');
+        expect(call).toBeTruthy();
+        expect(call!.params?.provider).toEqual('deepseek');
+        expect(call!.params?.bucketSize).toBeUndefined();
+        expect(call!.params?.maxBuckets).toBeUndefined();
+    }
+
     @Test('refresh turn artifacts loads summary quality digest through rpc')
     async refreshTurnArtifactsLoadsSummaryQualityDigest() {
         const runtime = new RuntimeStub();

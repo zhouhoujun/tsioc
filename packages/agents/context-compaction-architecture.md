@@ -218,10 +218,12 @@ The same data is reachable interactively:
 - console `/quality list [provider]` opens a browsable record selector over
   `summary_quality.list` (limit 200), with per-record dimension scores,
   fallback flag, and creation time in the option detail
-- console `/quality trend [provider]` renders an 8-level sparkline over
-  day-bucketed `summary_quality.trend` points (`buildSummaryQualityTrend`
-  reduction in `@tsdi/agent`), one line per provider with bucket date range,
-  average total, and fallback rate
+- console `/quality trend [provider] [bucketSize] [maxBuckets]` renders an
+  8-level sparkline over day-bucketed `summary_quality.trend` points
+  (`buildSummaryQualityTrend` reduction in `@tsdi/agent`), one line per
+  provider with bucket date range, average total, and fallback rate;
+  `bucketSize` accepts `Nd` days or milliseconds, `maxBuckets` caps the
+  returned buckets
 - the always-on dashboard panel (`AgentConsoleDashboardPanelComponent`)
   renders a `quality · <digest>` line from `AgentConsoleSessionState
   summaryQualityDigest`, refreshed via `summary_quality.stats` on startup and
