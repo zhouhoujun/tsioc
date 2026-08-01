@@ -6,7 +6,7 @@ import { createHash } from 'crypto';
 import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
-import { AgentAuditLogEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity } from './memory/entities';
+import { AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity } from './memory/entities';
 
 
 
@@ -16,7 +16,7 @@ import { AgentAuditLogEntity, AgentMemoryEntity, AgentMessageEntity, AgentSchedu
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
             synchronize: true,
-            entities: [AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity]
+            entities: [AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity]
         } as TypeormOptions)
     ]
 })
@@ -67,7 +67,7 @@ function resolveAgentOrmStorageLocation(root: string, fileName: string): string 
 
 function createAgentOrmProviders(options: TypeormOptions): Provider[] {
     options.entities ??= [];
-    options.entities.push(AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity);
+    options.entities.push(AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity);
     return provideTypeOrm(options);
 }
 

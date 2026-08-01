@@ -33,6 +33,7 @@ import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
 import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
+import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -82,7 +83,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected approvalManagerInput?: ToolApprovalManager,
         @Optional() protected injectedContextManager?: AgentContextManager,
         @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever,
-        @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator
+        @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
+        @Optional() protected compactionHistoryStore?: CompactionHistoryStore
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -613,6 +615,42 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentContextPreparedEvent(this, sessionId, report));
         } catch {
             // context observability must not break turn execution
+        }
+        await this.recordCompactionHistory(sessionId, report);
+    }
+
+    private async recordCompactionHistory(sessionId: string, report: ContextPreparationReport): Promise<void> {
+        if (!this.compactionHistoryStore) {
+            return;
+        }
+        const modified = report.strategy !== 'unchanged' || report.toolMessagesCompacted > 0;
+        if (!modified) {
+            return;
+        }
+        const record: CompactionHistoryRecord = {
+            id: randomUUID(),
+            sessionId,
+            strategy: report.strategy,
+            compactionTriggered: report.compactionTriggered,
+            level: report.level,
+            summaryInserted: report.summaryInserted,
+            beforeMessageCount: report.beforeMessageCount,
+            afterMessageCount: report.afterMessageCount,
+            beforeTokens: report.beforeTokens,
+            afterTokens: report.afterTokens,
+            compactedMessageCount: report.compactedMessageCount,
+            preservedAnchorCount: report.preservedAnchorCount,
+            recentMessageCount: report.recentMessageCount,
+            prunedMessageCount: report.prunedMessageCount,
+            toolMessagesCompacted: report.toolMessagesCompacted,
+            compressionRatio: report.compressionRatio,
+            cumulativeTokenSavings: report.cumulativeTokenSavings,
+            createdAt: Date.now()
+        };
+        try {
+            await this.compactionHistoryStore.append(record);
+        } catch {
+            // compaction history persistence must not break turn execution
         }
     }
 

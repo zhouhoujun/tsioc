@@ -215,3 +215,63 @@ export class AgentAuditLogEntity {
     @Column({ type: 'bigint' })
     createdAt!: number;
 }
+
+@Entity()
+export class AgentCompactionHistoryEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column({ type: 'varchar' })
+    strategy!: string;
+
+    @Column()
+    compactionTriggered!: boolean;
+
+    @Column({ type: 'varchar' })
+    level!: string;
+
+    @Column()
+    summaryInserted!: boolean;
+
+    @Column({ type: 'int' })
+    beforeMessageCount!: number;
+
+    @Column({ type: 'int' })
+    afterMessageCount!: number;
+
+    @Column({ type: 'int' })
+    beforeTokens!: number;
+
+    @Column({ type: 'int' })
+    afterTokens!: number;
+
+    @Column({ type: 'int' })
+    compactedMessageCount!: number;
+
+    @Column({ type: 'int' })
+    preservedAnchorCount!: number;
+
+    @Column({ type: 'int' })
+    recentMessageCount!: number;
+
+    @Column({ type: 'int' })
+    prunedMessageCount!: number;
+
+    @Column({ type: 'int' })
+    toolMessagesCompacted!: number;
+
+    @Column({ type: 'int' })
+    compressionRatio!: number;
+
+    @Column({ type: 'int' })
+    cumulativeTokenSavings!: number;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any> | null;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
+}

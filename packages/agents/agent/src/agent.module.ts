@@ -43,6 +43,10 @@ import { AuditSink } from './harness/AuditSink';
 import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
 import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
 import { DefaultAuditSink } from './harness/DefaultAuditSink';
+import { CompactionHistoryStore } from './harness/CompactionHistoryStore';
+import { InMemoryCompactionHistoryStore } from './harness/InMemoryCompactionHistoryStore';
+import { TypeOrmCompactionHistoryStore } from './harness/TypeOrmCompactionHistoryStore';
+import { DefaultCompactionHistoryStore } from './harness/DefaultCompactionHistoryStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
@@ -68,6 +72,10 @@ import { createAgentProviders } from './provider';
         TypeOrmAuditSink,
         DefaultAuditSink,
         { provide: AuditSink, useExisting: DefaultAuditSink },
+        InMemoryCompactionHistoryStore,
+        TypeOrmCompactionHistoryStore,
+        DefaultCompactionHistoryStore,
+        { provide: CompactionHistoryStore, useExisting: DefaultCompactionHistoryStore },
         NodeChildProcessSandboxExecutor,
         { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,

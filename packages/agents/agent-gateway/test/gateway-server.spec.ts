@@ -15,6 +15,7 @@ import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
+import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
@@ -1553,6 +1554,142 @@ export class AuditHandlerTest {
 
         await route.handler(req, res, {} as any);
         expect(status).toEqual(403);
+    }
+}
+
+@Suite('CompactionHistoryHandler')
+export class CompactionHistoryHandlerTest {
+    @Test('lists compaction history records for owned session and supports level filtering')
+    async listsCompactionHistoryForOwnedSession() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        const compactionHistory = {
+            async list(sessionId?: string, options?: { limit?: number; offset?: number }) {
+                const records = [{
+                    id: 'c1',
+                    sessionId: 's1',
+                    strategy: 'compacted',
+                    compactionTriggered: true,
+                    level: 'light',
+                    summaryInserted: true,
+                    beforeMessageCount: 20,
+                    afterMessageCount: 10,
+                    beforeTokens: 8000,
+                    afterTokens: 4000,
+                    compactedMessageCount: 10,
+                    preservedAnchorCount: 2,
+                    recentMessageCount: 4,
+                    prunedMessageCount: 0,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 50,
+                    cumulativeTokenSavings: 4000,
+                    createdAt: 1
+                }, {
+                    id: 'c2',
+                    sessionId: 's1',
+                    strategy: 'compacted',
+                    compactionTriggered: true,
+                    level: 'deep',
+                    summaryInserted: true,
+                    beforeMessageCount: 30,
+                    afterMessageCount: 8,
+                    beforeTokens: 12000,
+                    afterTokens: 3000,
+                    compactedMessageCount: 22,
+                    preservedAnchorCount: 2,
+                    recentMessageCount: 4,
+                    prunedMessageCount: 0,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 75,
+                    cumulativeTokenSavings: 9000,
+                    createdAt: 2
+                }, {
+                    id: 'c3',
+                    sessionId: 's2',
+                    strategy: 'pruned',
+                    compactionTriggered: true,
+                    level: 'light',
+                    summaryInserted: false,
+                    beforeMessageCount: 15,
+                    afterMessageCount: 10,
+                    beforeTokens: 5000,
+                    afterTokens: 3000,
+                    compactedMessageCount: 0,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: 4,
+                    prunedMessageCount: 5,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 40,
+                    cumulativeTokenSavings: 2000,
+                    createdAt: 3
+                }];
+                return records.filter(record => !sessionId || record.sessionId === sessionId);
+            }
+        } as any;
+        const handler = new CompactionHistoryHandler(compactionHistory, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/compaction-history' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/compaction-history?sessionId=s1&level=deep' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.length).toEqual(1);
+        expect(data.records[0].id).toEqual('c2');
+        expect(data.records[0].compressionRatio).toEqual(75);
+        expect(data.records[0].level).toEqual('deep');
+    }
+
+    @Test('rejects compaction history access for another principal')
+    async rejectsForeignCompactionHistoryAccess() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new CompactionHistoryHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/compaction-history' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/compaction-history?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
+    }
+
+    @Test('requires sessionId for compaction history access')
+    async requiresSessionId() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const handler = new CompactionHistoryHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/compaction-history' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/compaction-history' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(400);
     }
 }
 

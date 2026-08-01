@@ -104,3 +104,12 @@
    - 测试：agent `runtime-loop.spec.ts` 新增 `turn diagnostics carry prompt cache provider metadata from the final response`（断言 diagnostics.promptCache 完整透传）；gateway RPC 流测试扩展 diagnostics 载荷与 `content` 断言（`prompt cache partial (applied, 512 cached tokens)`）+ 结构化字段断言；agent-ui view-model 测试扩展 `prompt cache partial (applied, 512 cached tokens)` 活动断言。
 
 全量回归：agent 283 / agent-tools 190 / agent-gateway 79 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P8 打磨（已完成）
+
+1. ~~context-compaction 架构文档「Current Gaps」第 5 项：持久化 compaction-history store~~ → 已完成，镜像 AuditSink 家族模式：
+   - **agent**：新增 `CompactionHistoryStore` 抽象类 + `CompactionHistoryRecord` 接口（strategy / compactionTriggered / level / summaryInserted / before·after message & token 计数 / compacted / preserved / recent / pruned / toolMessagesCompacted / compressionRatio / cumulativeTokenSavings / createdAt / metadata）+ `InMemoryCompactionHistoryStore`（不可变快照、session 过滤、limit/offset）+ `TypeOrmCompactionHistoryStore`（`AgentCompactionHistoryEntity` 持久化，limit 默认 200）+ `DefaultCompactionHistoryStore`（注册 `TypeormAdapter` 时透明切持久化，否则回退 InMemory，同 `DefaultAuditSink`）。`AgentOrmModule` entities 注册追加 entity；`AgentModule` providers 注册三实现 + `{ provide: CompactionHistoryStore, useExisting: DefaultCompactionHistoryStore }`；index 导出。`DefaultAgentRuntime` 新增 `@Optional() compactionHistoryStore` 注入，`recordCompactionHistory` 在 `publishContextPreparedEvent` 后写入——仅当本次准备实际修改了历史（`strategy !== 'unchanged' || toolMessagesCompacted > 0`）才落库，写入失败不阻断 turn。
+   - **gateway**：新增 `CompactionHistoryHandler`（镜像 `AuditHandler`）——`GET /api/compaction-history?sessionId=&level=&limit=`，owner 鉴权（403）、缺 sessionId 400、limit 解析上限 200、level 过滤，模块 providers + exports 注册。
+   - 测试：agent 新增 `compaction-history.spec.ts` 7 条（in-memory 不可变快照 / session 过滤与 limit / typeorm 持久化重载 / 模块无 ORM 回退 / 有 ORM 持久化 / runtime 压缩时落库 / runtime 未修改历史不落库）；gateway 新增 3 条（level 过滤列表 / 403 非 owner / 400 缺 sessionId）。
+
+全量回归：agent 290 / agent-tools 190 / agent-gateway 82 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
