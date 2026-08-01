@@ -47,6 +47,10 @@ import { CompactionHistoryStore } from './harness/CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from './harness/InMemoryCompactionHistoryStore';
 import { TypeOrmCompactionHistoryStore } from './harness/TypeOrmCompactionHistoryStore';
 import { DefaultCompactionHistoryStore } from './harness/DefaultCompactionHistoryStore';
+import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
+import { InMemoryTurnDiagnosticsStore } from './harness/InMemoryTurnDiagnosticsStore';
+import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
+import { DefaultTurnDiagnosticsStore } from './harness/DefaultTurnDiagnosticsStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
@@ -76,6 +80,10 @@ import { createAgentProviders } from './provider';
         TypeOrmCompactionHistoryStore,
         DefaultCompactionHistoryStore,
         { provide: CompactionHistoryStore, useExisting: DefaultCompactionHistoryStore },
+        InMemoryTurnDiagnosticsStore,
+        TypeOrmTurnDiagnosticsStore,
+        DefaultTurnDiagnosticsStore,
+        { provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore },
         NodeChildProcessSandboxExecutor,
         { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,

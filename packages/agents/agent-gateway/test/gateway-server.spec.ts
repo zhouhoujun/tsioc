@@ -16,6 +16,7 @@ import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
 import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
+import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
@@ -1690,6 +1691,207 @@ export class CompactionHistoryHandlerTest {
 
         await route.handler(req, res, {} as any);
         expect(status).toEqual(400);
+    }
+}
+
+@Suite('TurnDiagnosticsHandler')
+export class TurnDiagnosticsHandlerTest {
+    @Test('lists turn diagnostics records for owned session')
+    async listsTurnDiagnosticsForOwnedSession() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        const diagnostics = {
+            async list(sessionId?: string, options?: { limit?: number; offset?: number }) {
+                const records = [{
+                    id: 't1',
+                    sessionId: 's1',
+                    createdAt: 1,
+                    emptyResponseRetryCount: 0,
+                    followUpRecoveryCount: 0,
+                    followUpContextRewritten: false,
+                    finalAssistantWasClarification: false,
+                    repeatedClarificationDetected: false,
+                    compactionCount: 0,
+                    totalTokenSavings: 0,
+                    compressionRatio: null,
+                    compactionLevel: null,
+                    promptCache: null
+                }, {
+                    id: 't2',
+                    sessionId: 's1',
+                    createdAt: 2,
+                    emptyResponseRetryCount: 2,
+                    followUpRecoveryCount: 1,
+                    followUpContextRewritten: true,
+                    finalAssistantWasClarification: true,
+                    repeatedClarificationDetected: true,
+                    compactionCount: 1,
+                    totalTokenSavings: 4000,
+                    compressionRatio: 50,
+                    compactionLevel: 'light',
+                    promptCache: null
+                }];
+                return records.filter(record => !sessionId || record.sessionId === sessionId);
+            },
+            async aggregate() {
+                return { totalTurns: 0 };
+            }
+        } as any;
+        const handler = new TurnDiagnosticsHandler(diagnostics, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/turn-diagnostics?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.length).toEqual(2);
+        expect(data.records[1].repeatedClarificationDetected).toEqual(true);
+        expect(data.records[1].compactionLevel).toEqual('light');
+    }
+
+    @Test('rejects turn diagnostics access for another principal')
+    async rejectsForeignTurnDiagnosticsAccess() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/turn-diagnostics?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
+    }
+
+    @Test('requires sessionId for turn diagnostics access')
+    async requiresSessionId() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/turn-diagnostics' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(400);
+    }
+
+    @Test('aggregates turn diagnostics scoped to an owned session')
+    async aggregatesScopedStats() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const diagnostics = {
+            async aggregate(sessionIds?: string[]) {
+                return {
+                    sessionIds,
+                    totalTurns: 3,
+                    emptyResponseCount: 1,
+                    emptyResponseRate: 33.3,
+                    repeatedClarificationCount: 1,
+                    repeatedQuestionRate: 33.3,
+                    finalClarificationCount: 1,
+                    clarificationRate: 33.3,
+                    followUpRecoveryCount: 4,
+                    followUpRecoveryRate: 133.3,
+                    compactionCount: 1,
+                    totalTokenSavings: 4000,
+                    timeRange: { from: 1, to: 3 }
+                };
+            }
+        } as any;
+        const handler = new TurnDiagnosticsHandler(diagnostics, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/stats' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/turn-diagnostics/stats?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.aggregate.totalTurns).toEqual(3);
+        expect(data.aggregate.emptyResponseRate).toEqual(33.3);
+        expect(data.aggregate.sessionIds).toEqual(['s1']);
+    }
+
+    @Test('aggregates turn diagnostics across owned sessions without sessionId')
+    async aggregatesOwnedStats() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        let requestedSessionIds: string[] | undefined;
+        const diagnostics = {
+            async list() {
+                return [{ sessionId: 's1', id: 't1' }, { sessionId: 's2', id: 't2' }];
+            },
+            async aggregate(sessionIds?: string[]) {
+                requestedSessionIds = sessionIds;
+                return {
+                    sessionIds,
+                    totalTurns: 1,
+                    emptyResponseCount: 0,
+                    emptyResponseRate: 0,
+                    repeatedClarificationCount: 0,
+                    repeatedQuestionRate: 0,
+                    finalClarificationCount: 0,
+                    clarificationRate: 0,
+                    followUpRecoveryCount: 0,
+                    followUpRecoveryRate: 0,
+                    compactionCount: 0,
+                    totalTokenSavings: 0
+                };
+            }
+        } as any;
+        const handler = new TurnDiagnosticsHandler(diagnostics, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/stats' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/turn-diagnostics/stats' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(requestedSessionIds).toEqual(['s1']);
+        expect(data.aggregate.totalTurns).toEqual(1);
     }
 }
 

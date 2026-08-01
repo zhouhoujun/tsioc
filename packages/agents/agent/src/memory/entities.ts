@@ -66,7 +66,7 @@ export class AgentMessageEntity {
     toolCallId!: string;
 
     @Column({ type: 'simple-json', nullable: true })
-    metadata!: Record<string, any>;
+    metadata!: Record<string, any> | null;
 
     @Column({ type: 'bigint' })
     createdAt!: number;
@@ -274,4 +274,49 @@ export class AgentCompactionHistoryEntity {
 
     @Column({ type: 'bigint' })
     createdAt!: number;
+}
+
+@Entity()
+export class AgentTurnDiagnosticsEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
+
+    @Column({ type: 'int' })
+    emptyResponseRetryCount!: number;
+
+    @Column({ type: 'int' })
+    followUpRecoveryCount!: number;
+
+    @Column()
+    followUpContextRewritten!: boolean;
+
+    @Column()
+    finalAssistantWasClarification!: boolean;
+
+    @Column()
+    repeatedClarificationDetected!: boolean;
+
+    @Column({ type: 'int' })
+    compactionCount!: number;
+
+    @Column({ type: 'int' })
+    totalTokenSavings!: number;
+
+    @Column({ type: 'int', nullable: true })
+    compressionRatio!: number | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    compactionLevel!: string | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    promptCache!: Record<string, any> | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any> | null;
 }

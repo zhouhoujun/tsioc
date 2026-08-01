@@ -34,6 +34,7 @@ import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
+import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -84,7 +85,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected injectedContextManager?: AgentContextManager,
         @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever,
         @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
-        @Optional() protected compactionHistoryStore?: CompactionHistoryStore
+        @Optional() protected compactionHistoryStore?: CompactionHistoryStore,
+        @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -185,6 +187,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeSummarize(input.sessionId);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
+            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics);
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
@@ -224,6 +227,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeSummarize(sessionId);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
+                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics);
                 await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
                 await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
                 yield { type: 'done' };
@@ -651,6 +655,32 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.compactionHistoryStore.append(record);
         } catch {
             // compaction history persistence must not break turn execution
+        }
+    }
+
+    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
+        if (!this.turnDiagnosticsStore || !diagnostics) {
+            return;
+        }
+        const record: TurnDiagnosticsRecord = {
+            id: randomUUID(),
+            sessionId,
+            createdAt: Date.now(),
+            emptyResponseRetryCount: diagnostics.emptyResponseRetryCount,
+            followUpRecoveryCount: diagnostics.followUpRecoveryCount,
+            followUpContextRewritten: diagnostics.followUpContextRewritten,
+            finalAssistantWasClarification: diagnostics.finalAssistantWasClarification,
+            repeatedClarificationDetected: diagnostics.repeatedClarificationDetected,
+            compactionCount: diagnostics.compactionCount,
+            totalTokenSavings: diagnostics.totalTokenSavings,
+            compressionRatio: diagnostics.compressionRatio,
+            compactionLevel: diagnostics.compactionLevel,
+            promptCache: diagnostics.promptCache
+        };
+        try {
+            await this.turnDiagnosticsStore.append(record);
+        } catch {
+            // turn diagnostics persistence must not break turn execution
         }
     }
 

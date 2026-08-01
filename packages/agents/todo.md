@@ -113,3 +113,12 @@
    - 测试：agent 新增 `compaction-history.spec.ts` 7 条（in-memory 不可变快照 / session 过滤与 limit / typeorm 持久化重载 / 模块无 ORM 回退 / 有 ORM 持久化 / runtime 压缩时落库 / runtime 未修改历史不落库）；gateway 新增 3 条（level 过滤列表 / 403 非 owner / 400 缺 sessionId）。
 
 全量回归：agent 290 / agent-tools 190 / agent-gateway 82 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P9 打磨（已完成）
+
+1. ~~context-compaction 架构文档「Current Gaps」：aggregated empty-response-rate / repeated-question-rate metric~~ → 已完成，镜像 CompactionHistoryStore 家族模式：
+   - **agent**：新增 `TurnDiagnosticsStore` 抽象类 + `TurnDiagnosticsRecord`（扁平快照 `AgentTurnDiagnostics` 全字段 + promptCache）+ `TurnDiagnosticsAggregate`（totalTurns / emptyResponseCount·Rate / repeatedClarificationCount·Rate / finalClarificationCount·Rate / followUpRecoveryCount·Rate / compactionCount / totalTokenSavings / timeRange，比率保留 1 位小数）+ 共享 `aggregateTurnDiagnostics` 归约函数（InMemory 与 TypeORM 行为一致）；`InMemoryTurnDiagnosticsStore` / `TypeOrmTurnDiagnosticsStore`（`AgentTurnDiagnosticsEntity` 持久化，`aggregate` 按 sessionIds `In` 过滤）/ `DefaultTurnDiagnosticsStore`（注册 `TypeormAdapter` 时透明切持久化，否则回退 InMemory）。`AgentOrmModule` entities 注册追加 entity；`AgentModule` providers 注册三实现 + `{ provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore }`；index 导出。`DefaultAgentRuntime` 新增 `@Optional() turnDiagnosticsStore` 注入（构造第 15 参），`recordTurnDiagnostics` 在 `runTurn` / `runStreamingTurn` 的 `publishTurnDiagnosticsEvent` 后为每个完成的 turn 落库，写入失败不阻断 turn。
+   - **gateway**：新增 `TurnDiagnosticsHandler` 双 route——`GET /api/turn-diagnostics?sessionId=&limit=`（列表，owner 鉴权 403 / 缺 sessionId 400 / limit 上限 200）与 `GET /api/turn-diagnostics/stats?sessionId=`（单 session 聚合经 owner 校验；无 sessionId 时经 `SessionOwnerStore.listOwned` 收敛到 principal 的 owned sessions 再聚合，杜绝跨会话泄漏）。模块 providers + exports 注册。
+   - 测试：agent 新增 `turn-diagnostics.spec.ts` 7 条（in-memory promptCache 不可变快照 / 过滤分页 / 多 session 聚合与比率与 timeRange / typeorm 持久化+重载+聚合 / 模块无 ORM 回退 / 有 ORM 持久化 / runtime 每 turn 落库 2 条）；gateway 新增 5 条（列表 / 403 / 400 / 单 session 聚合 / 无 sessionId 聚合 owned sessions）。
+
+全量回归：agent 297 / agent-gateway 87 passing；agent、agent-gateway tsc 干净。

@@ -16,6 +16,7 @@ import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
+import { TurnDiagnosticsHandler } from './api/TurnDiagnosticsHandler';
 import { ApprovalHandler } from './api/ApprovalHandler';
 import { StatsHandler } from './api/StatsHandler';
 import { AppRpcHandler } from './api/AppRpcHandler';
@@ -44,6 +45,7 @@ import { createAgentGatewayProviders } from './provider';
         EventHandler,
         AuditHandler,
         CompactionHistoryHandler,
+        TurnDiagnosticsHandler,
         ApprovalHandler,
         StatsHandler,
         AppRpcServer,
@@ -66,6 +68,7 @@ import { createAgentGatewayProviders } from './provider';
         EventHandler,
         AuditHandler,
         CompactionHistoryHandler,
+        TurnDiagnosticsHandler,
         ApprovalHandler,
         StatsHandler,
         AppRpcServer,
