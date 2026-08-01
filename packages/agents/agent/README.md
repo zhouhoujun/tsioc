@@ -162,8 +162,8 @@ while complex prompts are routed to `deepseek-v4-pro`.
 | Scheduler manual recovery / recover action | Implemented | `src/scheduler/IntervalAgentScheduler.ts`, `src/scheduler/AgentScheduler.ts` |
 | Cross-session durable session / memory state | Implemented | `src/memory/TypeOrmSessionStore.ts`, `src/memory/TypeOrmMemoryStore.ts` |
 | Gateway audit visibility | Implemented in sibling package | `packages/agents/agent-gateway/src/api/AuditHandler.ts` |
-| Tool compensation / rollback | Partial / future phase | planned follow-up |
-| Strong sandbox isolation | Partial / future phase | policy hooks only, no universal sandbox runtime |
+| Tool compensation / rollback | Implemented | `src/runtime/DefaultAgentRuntime.ts`, tool `compensate()` hooks (`src/tools/AgentTool.ts`) |
+| Strong sandbox isolation | Partial / future phase | policy hooks + capability defaults (`src/harness/ToolSandboxPolicy.ts`), no universal sandbox runtime |
 
 ## Control-plane notes
 

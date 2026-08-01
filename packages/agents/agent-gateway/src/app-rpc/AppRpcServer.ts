@@ -571,6 +571,7 @@ export class AppRpcServer {
         if (!event) {
             return null;
         }
+        const data = record.data || {};
         return {
             jsonrpc: '2.0',
             method: 'run.turn_stream.chunk',
@@ -584,7 +585,10 @@ export class AppRpcServer {
                 content: event.content,
                 ...(event.toolName ? { toolName: event.toolName } : {}),
                 ...(event.toolCallId ? { toolCallId: event.toolCallId } : {}),
-                ...(event.approvalId ? { approvalId: event.approvalId } : {})
+                ...(event.approvalId ? { approvalId: event.approvalId } : {}),
+                ...(data.report ? { report: data.report } : {}),
+                ...(data.diagnostics ? { diagnostics: data.diagnostics } : {}),
+                ...(data.compensated ? { compensated: data.compensated } : {})
             }
         };
     }
@@ -684,9 +688,55 @@ export class AppRpcServer {
                     toolName: String(data?.request?.toolName || ''),
                     content: `${data?.request?.toolName || 'tool'} approval failed: ${data?.error || 'unknown error'}`
                 };
+            case 'compensation':
+                return {
+                    eventType: 'compensation',
+                    label: 'rollback',
+                    status: 'success',
+                    content: `Rolled back ${Number(data?.compensated || 0)} side-effecting tool call${Number(data?.compensated || 0) === 1 ? '' : 's'}`
+                };
+            case 'context_prepared':
+                return {
+                    eventType: 'context_prepared',
+                    label: 'model',
+                    status: 'success',
+                    content: this.describeContextPreparedEvent(data)
+                };
+            case 'turn_diagnostics':
+                return {
+                    eventType: 'turn_diagnostics',
+                    label: 'state',
+                    status: 'success',
+                    content: this.describeTurnDiagnosticsEvent(data)
+                };
             default:
                 return null;
         }
+    }
+
+    private describeContextPreparedEvent(data: any): string {
+        const report = data?.report || {};
+        const strategy = String(report.strategy || 'unchanged');
+        const before = Number(report.beforeTokens ?? 0);
+        const after = Number(report.afterTokens ?? 0);
+        const savings = Number(report.compressionRatio ?? 0);
+        if (strategy === 'unchanged' && !before && !after) {
+            return 'Context unchanged';
+        }
+        if (strategy === 'unchanged') {
+            return `Context unchanged (${before} tokens)`;
+        }
+        return `Context ${strategy}: ${before}→${after} tokens (${savings}% saved)`;
+    }
+
+    private describeTurnDiagnosticsEvent(data: any): string {
+        const diagnostics = data?.diagnostics || {};
+        const compactionCount = Number(diagnostics.compactionCount ?? 0);
+        const totalSavings = Number(diagnostics.totalTokenSavings ?? 0);
+        if (!compactionCount && !totalSavings) {
+            return 'Turn diagnostics: no compaction performed';
+        }
+        return `Turn diagnostics: ${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`;
     }
 
     private describeToolInvocationEvent(data: any): string {

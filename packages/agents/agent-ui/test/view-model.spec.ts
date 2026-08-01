@@ -1112,6 +1112,109 @@ export class AgentConsoleComponentTest {
         expect(eventMessages.map(message => message.content)).toContain('weather · Chengdu, Sichuan, CN 41.3°C Mainly clear');
     }
 
+    @Test('submit surfaces context prepared and turn diagnostics rpc stream events')
+    async submitSurfacesContextPreparedAndTurnDiagnosticsStreamEvents() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.streamChunks = [
+            { type: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' },
+            {
+                type: 'event',
+                eventType: 'context_prepared',
+                label: 'model',
+                status: 'success',
+                content: 'Context pruned: 8000→5000 tokens (38% saved)',
+                report: {
+                    strategy: 'pruned',
+                    beforeTokens: 8000,
+                    afterTokens: 5000,
+                    compressionRatio: 38
+                }
+            },
+            {
+                type: 'event',
+                eventType: 'turn_diagnostics',
+                label: 'state',
+                status: 'success',
+                content: 'Turn diagnostics: 1 compaction, 3000 tokens saved',
+                diagnostics: { compactionCount: 1, totalTokenSavings: 3000 }
+            },
+            { type: 'text', content: 'Patched handler' },
+            {
+                type: 'done',
+                message: {
+                    id: 'done-1',
+                    role: 'assistant',
+                    content: 'Patched handler',
+                    createdAt: 2,
+                    metadata: { usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 } }
+                }
+            }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = 'fix it';
+        await component.submit();
+
+        expect(component.sessionState.contextPreparationSummary).toContain('pruned');
+        expect(component.sessionState.contextPreparationSummary).toContain('8000');
+        expect(component.activities.some(activity =>
+            activity.kind === 'model' && activity.message.includes('Context pruned: 8000→5000')
+        )).toEqual(true);
+        expect(component.activities.some(activity =>
+            activity.message.includes('1 compaction') && activity.message.includes('3000 tokens saved')
+        )).toEqual(true);
+    }
+
+    @Test('submit falls back to described content when rpc chunks omit structured data')
+    async submitFallsBackToDescribedContentForObservabilityEvents() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.streamChunks = [
+            { type: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' },
+            {
+                type: 'event',
+                eventType: 'context_prepared',
+                label: 'model',
+                status: 'success',
+                content: 'Context unchanged (5000 tokens)'
+            },
+            {
+                type: 'event',
+                eventType: 'turn_diagnostics',
+                label: 'state',
+                status: 'success',
+                content: 'Turn diagnostics: no compaction performed'
+            },
+            { type: 'text', content: 'ok' },
+            {
+                type: 'done',
+                message: {
+                    id: 'done-1',
+                    role: 'assistant',
+                    content: 'ok',
+                    createdAt: 2,
+                    metadata: { usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 } }
+                }
+            }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = 'next';
+        await component.submit();
+
+        expect(component.activities.some(activity =>
+            activity.kind === 'model' && activity.message.includes('Context unchanged')
+        )).toEqual(true);
+        expect(component.activities.some(activity =>
+            activity.message.includes('no compaction performed')
+        )).toEqual(true);
+    }
+
     @Test('submit scopes repeated stream event keys per turn')
     async submitScopesRepeatedStreamEventKeysPerTurn() {
         const runtime = new RuntimeStub();

@@ -2754,6 +2754,40 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             return;
         }
+        if (eventType === 'context_prepared') {
+            if (chunk?.report) {
+                this.state.batch(() => {
+                    this.state.setContextPreparation(chunk.report);
+                    this.state.pushActivity(
+                        'model',
+                        `Context ${chunk.report.strategy}: ${chunk.report.beforeTokens}→${chunk.report.afterTokens}`
+                    );
+                });
+                return;
+            }
+            const contextContent = String(chunk?.content || '').trim();
+            if (contextContent) {
+                this.state.pushActivity('model', contextContent);
+            }
+            return;
+        }
+        if (eventType === 'turn_diagnostics') {
+            const diagnostics = chunk?.diagnostics || {};
+            const compactionCount = Number(diagnostics.compactionCount ?? 0);
+            const totalSavings = Number(diagnostics.totalTokenSavings ?? 0);
+            if (compactionCount > 0 || totalSavings > 0) {
+                this.state.pushActivity(
+                    'model',
+                    `Turn diagnostics: ${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`
+                );
+                return;
+            }
+            const diagnosticsContent = String(chunk?.content || '').trim();
+            if (diagnosticsContent) {
+                this.state.pushActivity('model', diagnosticsContent);
+            }
+            return;
+        }
         const content = String(chunk?.content || '').trim();
         if (!content) {
             return;

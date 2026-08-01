@@ -82,3 +82,15 @@
 4. ~~审批面残余收口~~ → 已完成：`ToolApprovalManager.getPending()` 按 `createdAt` 升序返回（FIFO，网关 `approval.list` / UI 审批面板一致）；新增私有 `sweepExpired()` 防御性超时——`checkApproval` 与 `getPending` 入口先清扫已过 `expiresAt` 的 pending 请求（clearTimeout + resolve TIMEOUT + 发布 `AgentApprovalFailedEvent`），即使定时器因事件循环阻塞未触发也不会永久悬挂或占用 pending 上限。测试：agent 新增 `approval pending list is ordered oldest first`、`approval manager defensively sweeps requests that expired while the loop was blocked`。
 
 全量回归：agent 264 / agent-tools 190 / agent-gateway 76 / agent-ui 193 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P6 打磨（已完成）
+
+1. ~~M5 可观测事件全链路透传（runtime → SSE → RPC → UI）~~ → 已完成：
+   - **gateway 转发**：`EventHandler` 新增 `AgentContextPreparedEvent` / `AgentTurnDiagnosticsEvent` 两个 @OnEvent 处理器，SSE 发布 `context_prepared` / `turn_diagnostics`（载荷带 sessionId + report/diagnostics 原文），位于补偿事件处理器之后。
+   - **RPC 描述**：`AppRpcServer.describeStreamEvent` 新增 `compensation`（label rollback / success）、`context_prepared`（label model）、`turn_diagnostics`（label state）分支与 `describeContextPreparedEvent` / `describeTurnDiagnosticsEvent` 助手（无统计数据时给兜底文案）；`toStreamEventChunk` 透传 `data.report` / `data.diagnostics` / `data.compensated` 结构化字段。
+   - **UI 消费**：`AgentConsoleComponent.consumeStreamEventChunk` 对 `context_prepared` 结构化呈现（`Context {strategy}: {beforeTokens}→{afterTokens}` 活动 + `setContextPreparation`），对 `turn_diagnostics` 呈现（`Turn diagnostics: {n} compaction(s), {tokens} tokens saved`）；两类事件在 RPC 流缺失结构化数据时均回退到描述文案。
+   - 测试：gateway 新增 SSE 转发 2 条 + RPC 流 1 条（`streams context prepared and turn diagnostics events through rpc stream`）；agent-ui view-model 新增 2 条（结构化呈现 + 描述文案回退）。
+2. ~~M5 沙箱兼容性矩阵回归~~ → 已完成：新建 `agent/test/sandbox-compat.spec.ts`（Suite 'Sandbox compatibility matrix'，18 条测试）固化 toolset→capability 映射（12 项）、各能力默认策略（readonly_fs / workspace_write 为 null；process_exec / vcs_exec 为 process 隔离 + 全网络 + 受限 env + 资源上限；network_fetch 出站受限；gui_capture 禁网；code_exec 最强策略 `process` 隔离 + 禁网 + 写路径 + 禁密钥）、execution hints 推断与显式覆盖、sandbox state 标志、策略解析优先级、`withSandboxWorkingDirectory`、env 过滤、命令名提取、`assertSandboxCommand` 拦截、workspace 显式优先。
+3. ~~README control-plane matrix 状态刷新~~ → 已完成：`agent/README.md` 两行更新——`Tool compensation / rollback` → `Implemented`（`src/runtime/DefaultAgentRuntime.ts` + `src/tools/AgentTool.ts` 的 compensate 钩子）；sandbox 行改为「policy hooks + capability defaults（`src/harness/ToolSandboxPolicy.ts`），无通用沙箱运行时」的准确描述。
+
+全量回归：agent 282 / agent-tools 190 / agent-gateway 79 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。

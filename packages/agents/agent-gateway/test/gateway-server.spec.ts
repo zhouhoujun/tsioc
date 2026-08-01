@@ -15,7 +15,7 @@ import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -2643,6 +2643,81 @@ export class AppRpcHandlerTest {
             }
         });
     }
+
+    @Test('streams context prepared and turn diagnostics events through rpc stream')
+    async streamsContextPreparedAndTurnDiagnosticsEvents() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('rpc-diag');
+        await owners.create('rpc-diag', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            async *runStreamingTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                yield { type: 'text', content: 'ok' };
+                events.onContextPrepared(new AgentContextPreparedEvent(events, sessionId, {
+                    strategy: 'pruned',
+                    compactionTriggered: false,
+                    level: 'light',
+                    summaryInserted: false,
+                    beforeMessageCount: 20,
+                    afterMessageCount: 15,
+                    beforeTokens: 8000,
+                    afterTokens: 5000,
+                    compactedMessageCount: 0,
+                    preservedAnchorCount: 2,
+                    recentMessageCount: 6,
+                    prunedMessageCount: 5,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 38,
+                    cumulativeTokenSavings: 3000
+                }));
+                events.onTurnDiagnostics(new AgentTurnDiagnosticsEvent(events, sessionId, {
+                    emptyResponseRetryCount: 0,
+                    followUpRecoveryCount: 0,
+                    followUpContextRewritten: false,
+                    finalAssistantWasClarification: false,
+                    repeatedClarificationDetected: false,
+                    compactionCount: 1,
+                    totalTokenSavings: 3000,
+                    compressionRatio: 38,
+                    compactionLevel: 'none'
+                }));
+                yield { type: 'done' };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const frames: any[] = [];
+        for await (const frame of rpc.streamPayload({
+            jsonrpc: '2.0',
+            id: 21,
+            method: 'run.turn_stream',
+            params: { sessionId: 'rpc-diag', input: 'hello' }
+        }, { principalId: 'user-1' })) {
+            frames.push(frame);
+        }
+
+        const contextPrepared = frames.find(frame =>
+            frame.params?.chunkType === 'event' && frame.params?.eventType === 'context_prepared');
+        expect(contextPrepared?.params?.label).toEqual('model');
+        expect(contextPrepared?.params?.status).toEqual('success');
+        expect(contextPrepared?.params?.content).toContain('Context pruned: 8000→5000');
+        expect(contextPrepared?.params?.report?.strategy).toEqual('pruned');
+        expect(contextPrepared?.params?.report?.compressionRatio).toEqual(38);
+
+        const turnDiagnostics = frames.find(frame =>
+            frame.params?.chunkType === 'event' && frame.params?.eventType === 'turn_diagnostics');
+        expect(turnDiagnostics?.params?.label).toEqual('state');
+        expect(turnDiagnostics?.params?.content).toContain('1 compaction');
+        expect(turnDiagnostics?.params?.diagnostics?.compactionCount).toEqual(1);
+        expect(turnDiagnostics?.params?.diagnostics?.totalTokenSavings).toEqual(3000);
+    }
 }
 
 @Suite('StdioAppRpcServer')
@@ -2950,6 +3025,69 @@ export class StdioAppRpcServerTest {
         expect(record?.data?.reason).toEqual('cancelled');
         expect(record?.data?.compensated).toEqual(2);
         expect(record?.data?.toolCallIds).toEqual(['tc-a', 'tc-b']);
+    }
+
+    @Test('context prepared events are forwarded through the SSE event handler')
+    async contextPreparedEventsForwardedThroughSse() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const events = new EventHandler(owners);
+
+        events.onContextPrepared(new AgentContextPreparedEvent(events, 's-1', {
+            strategy: 'compacted',
+            compactionTriggered: true,
+            level: 'deep',
+            summaryInserted: true,
+            beforeMessageCount: 30,
+            afterMessageCount: 12,
+            beforeTokens: 12000,
+            afterTokens: 4000,
+            compactedMessageCount: 18,
+            preservedAnchorCount: 2,
+            recentMessageCount: 6,
+            prunedMessageCount: 0,
+            toolMessagesCompacted: 8,
+            compressionRatio: 67,
+            cumulativeTokenSavings: 9000
+        }));
+
+        const history = events.getHistory('s-1');
+        const record = history.events.find(item => item.type === 'context_prepared');
+        expect(record?.data?.sessionId).toEqual('s-1');
+        expect(record?.data?.report?.strategy).toEqual('compacted');
+        expect(record?.data?.report?.beforeTokens).toEqual(12000);
+        expect(record?.data?.report?.afterTokens).toEqual(4000);
+        expect(record?.data?.report?.compressionRatio).toEqual(67);
+    }
+
+    @Test('turn diagnostics events are forwarded through the SSE event handler')
+    async turnDiagnosticsEventsForwardedThroughSse() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('s-1');
+        await owners.create('s-1', 'user-1');
+        const events = new EventHandler(owners);
+
+        events.onTurnDiagnostics(new AgentTurnDiagnosticsEvent(events, 's-1', {
+            emptyResponseRetryCount: 0,
+            followUpRecoveryCount: 1,
+            followUpContextRewritten: true,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false,
+            compactionCount: 2,
+            totalTokenSavings: 8000,
+            compressionRatio: 60,
+            compactionLevel: 'standard'
+        }));
+
+        const history = events.getHistory('s-1');
+        const record = history.events.find(item => item.type === 'turn_diagnostics');
+        expect(record?.data?.sessionId).toEqual('s-1');
+        expect(record?.data?.diagnostics?.compactionCount).toEqual(2);
+        expect(record?.data?.diagnostics?.totalTokenSavings).toEqual(8000);
+        expect(record?.data?.diagnostics?.compressionRatio).toEqual(60);
     }
 
     @Test('run.cancel is idempotent for unknown and inactive sessions')
