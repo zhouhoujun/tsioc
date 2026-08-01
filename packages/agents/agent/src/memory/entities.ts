@@ -320,3 +320,42 @@ export class AgentTurnDiagnosticsEntity {
     @Column({ type: 'simple-json', nullable: true })
     metadata!: Record<string, any> | null;
 }
+
+@Entity()
+export class AgentSummaryQualityEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    provider!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    model!: string | null;
+
+    @Column({ type: 'int' })
+    total!: number;
+
+    @Column({ type: 'int' })
+    fieldCompleteness!: number;
+
+    @Column({ type: 'int' })
+    annotationQuality!: number;
+
+    @Column({ type: 'int' })
+    lengthBalance!: number;
+
+    @Column({ type: 'int' })
+    truncationScore!: number;
+
+    @Column()
+    fallbackUsed!: boolean;
+
+    @Column({ type: 'int' })
+    summaryLength!: number;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any> | null;
+}

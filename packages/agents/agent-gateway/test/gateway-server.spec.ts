@@ -17,6 +17,7 @@ import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
 import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
+import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
@@ -1691,6 +1692,100 @@ export class CompactionHistoryHandlerTest {
 
         await route.handler(req, res, {} as any);
         expect(status).toEqual(400);
+    }
+}
+
+@Suite('SummaryQualityHandler')
+export class SummaryQualityHandlerTest {
+    @Test('lists summary quality records with provider and limit filtering')
+    async listsSummaryQualityRecords() {
+        const quality = {
+            async list(options?: { provider?: string; limit?: number }) {
+                const provider = options?.provider;
+                const limit = options?.limit ?? 200;
+                return [
+                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
+                    { id: 'q2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 }
+                ].filter(record => !provider || record.provider === provider).slice(0, limit);
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality?provider=deepseek&limit=1' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.length).toEqual(1);
+        expect(data.records[0].id).toEqual('q1');
+        expect(data.records[0].provider).toEqual('deepseek');
+        expect(data.records[0].model).toEqual('deepseek-v4-flash');
+        expect(data.records[0].fallbackUsed).toEqual(false);
+    }
+
+    @Test('lists all summary quality records when no filter is provided')
+    async listsAllSummaryQualityRecords() {
+        const quality = {
+            async list() {
+                return [
+                    { id: 'q1', provider: 'deepseek', model: null, total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 }
+                ];
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.length).toEqual(1);
+        expect(data.records[0].model).toEqual(null);
+    }
+
+    @Test('aggregates summary quality stats with optional provider scope')
+    async aggregatesSummaryQualityStats() {
+        const quality = {
+            async aggregate(provider?: string) {
+                return provider
+                    ? [{ provider, recordCount: 2, avgTotal: 80, minTotal: 60, maxTotal: 100, avgFieldCompleteness: 90, avgAnnotationQuality: 75, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 100, timeRange: { from: 1, to: 2 } }]
+                    : [
+                        { provider: 'deepseek', recordCount: 2, avgTotal: 80, minTotal: 60, maxTotal: 100, avgFieldCompleteness: 90, avgAnnotationQuality: 75, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 50, timeRange: { from: 1, to: 2 } },
+                        { provider: 'anthropic', recordCount: 1, avgTotal: 70, minTotal: 70, maxTotal: 70, avgFieldCompleteness: 80, avgAnnotationQuality: 50, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 100, timeRange: { from: 2, to: 2 } }
+                    ];
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality/stats' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality/stats?provider=anthropic' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.aggregates.length).toEqual(1);
+        expect(data.aggregates[0].provider).toEqual('anthropic');
+        expect(data.aggregates[0].fallbackRate).toEqual(100);
     }
 }
 

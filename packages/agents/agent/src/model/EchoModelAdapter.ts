@@ -5,6 +5,8 @@ import { ModelResponse } from './ModelResponse';
 
 @Injectable()
 export class EchoModelAdapter extends ModelAdapter {
+    readonly provider = 'echo';
+
     async complete(request: ModelRequest): Promise<ModelResponse> {
         const lastUser = [...request.messages].reverse().find(msg => msg.role === 'user');
         return {

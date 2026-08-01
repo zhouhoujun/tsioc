@@ -132,3 +132,16 @@
    - 文档：架构文档「Summary Schema」补充 Files 行语义说明；「Current Gaps」列表删除已闭合 4 项（compaction-history / empty-response-rate / repeated-question-rate / modified-vs-mentioned），仅剩 provider-specific summary quality scoring。
 
 全量回归：agent 299 / agent-gateway 87 passing；agent、agent-gateway、agent-channels、agent-providers tsc 干净。
+
+## P11 打磨（已完成）
+
+1. ~~context-compaction 架构文档「Current Gaps」最后一项：provider-specific summary quality scoring~~ → 已完成，采用**确定性结构化评分**（可测、不引入主观标准），摘要有两条路径共用同一 scorer：
+   - **scorer**：新增 `SummaryQualityScorer.ts`——`scoreSummaryQuality(summary, { fallbackUsed?, summaryLength? })` 输出 `SummaryQualityScore`（total / fieldCompleteness / annotationQuality / lengthBalance / truncationScore / fallbackUsed / missingFields / summaryLength）。规则：五字段（Goal/Decisions/Files/Errors/Open state）每缺 1 个 -20；Files 行同时含 `modified:` 与 `mentioned:` 标注 100、仅其一 50、无 0；字段值 <15 字符 -10、>250 字符 -5；summary 长度 ≥2000/≥1500/≥1000 分别降为 30/60/85；总分 = 0.4×完整率 + 0.2×注解 + 0.2×长度 + 0.2×截断（round），fallback 生成再 ×0.7。空 summary 全 0。
+   - **store 家族**：`SummaryQualityStore` 抽象（append / list({provider, limit, offset}) / aggregate(provider?)）+ `SummaryQualityRecord` + `SummaryQualityAggregate`（recordCount / avg·min·maxTotal / 各维度平均 / fallbackRate / timeRange）+ 共享 `aggregateSummaryQuality`；`InMemorySummaryQualityStore`（不可变快照）/ `TypeOrmSummaryQualityStore`（新 entity `AgentSummaryQualityEntity`，注册进 `orm.module.ts`）/ `DefaultSummaryQualityStore`（`ApplicationContext` 探测 `TypeormAdapter` 透明切换）。`AgentModule` providers 三实现 + `{ provide: SummaryQualityStore, useExisting: DefaultSummaryQualityStore }`；index 导出。
+   - **provider 字段**：`ModelAdapter` 新增 `readonly provider?: string`（Echo='echo' / Anthropic='anthropic' / OpenAI 构造时由 `options.provider` 归一化 / Routed 由 `options.provider + baseUrl` 经 `normalizeProvider`）。注意 `AgentModelOptions.model` 是 string——provider 取自顶层字段，getter 覆盖基类属性会触发 TS2611，统一改为构造时初始化属性。
+   - **集成**：`LLMSessionSummarizer.summarize()` 两条路径（model / naiveFallback）共用 `recordQuality`——`provider` 取 `modelAdapter?.provider ?? 'unknown'`，异步 `store.append(...).catch(() => undefined)` 不阻断主流程。
+   - **gateway**：新增 `SummaryQualityHandler` 双 route——`GET /api/summary-quality?provider=&limit=`（列表，limit 上限 200）与 `GET /api/summary-quality/stats?provider=`（聚合）；无 session 概念故不做 owner 鉴权；module providers + exports 注册。
+   - 测试：agent 新增 `summary-quality.spec.ts` 15 条（scorer 7：满分/缺字段/无标注/fallback 降权/空 summary/单标注半价/超长截断；store 5：in-memory 快照+过滤分页 / 聚合分组+timeRange / typeorm 持久化+重载+聚合 / 模块无 ORM 回退 / 有 ORM 持久化；summarizer 集成 3：有 store 落库含 provider / fallback 标记 / 无 store 不抛错）；gateway 新增 3 条（列表过滤 / 全量列表 / stats 聚合）。
+   - 文档：架构文档新增「Summary Quality Scoring」章节（评分维度 + store 家族 + gateway API）；「Current Gaps」清空（None tracked），Implementation Anchors 补充 scorer/store 与两个新 spec。
+
+全量回归：agent 314 / agent-gateway 90 passing；agent、agent-gateway、agent-channels、agent-providers tsc 干净。

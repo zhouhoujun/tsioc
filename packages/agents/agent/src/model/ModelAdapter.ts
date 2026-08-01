@@ -5,6 +5,13 @@ import { StreamChunk } from './StreamChunk';
 
 @Abstract()
 export abstract class ModelAdapter {
+    /**
+     * Normalized provider name reported by this adapter (for example
+     * `deepseek`, `openai-compatible`, `anthropic`, or `echo`). Used to tag
+     * provider-specific diagnostics such as summary quality scores.
+     */
+    readonly provider?: string;
+
     abstract complete(request: ModelRequest): Promise<ModelResponse>;
 
     /**

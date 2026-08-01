@@ -111,6 +111,8 @@ const MAX_RETRIES = 3;
 const BASE_RETRY_MS = 1000;
 
 export class AnthropicModelAdapter extends ModelAdapter {
+    readonly provider = 'anthropic';
+
     constructor(protected readonly options: AgentModelOptions) {
         super();
     }

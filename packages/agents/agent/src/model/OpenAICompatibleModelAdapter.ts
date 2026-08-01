@@ -118,8 +118,11 @@ const BASE_RETRY_MS = 1000;
 export class OpenAICompatibleModelAdapter extends ModelAdapter {
     protected appArgs?: ApplicationArguments;
 
+    readonly provider: string;
+
     constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
         super();
+        this.provider = String(this.options.provider || '').trim().toLowerCase() || 'openai-compatible';
         this.appArgs = appArgs;
     }
 

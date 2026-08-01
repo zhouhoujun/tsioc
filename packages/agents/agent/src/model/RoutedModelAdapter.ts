@@ -21,8 +21,11 @@ const DEFAULT_MODERATE_MAX = 3;
 export class RoutedModelAdapter extends ModelAdapter {
     private readonly adapters = new Map<string, ModelAdapter>();
 
+    readonly provider: string;
+
     constructor(private readonly options: AgentModelOptions) {
         super();
+        this.provider = this.normalizeProvider(this.options.provider, this.options.baseUrl);
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {

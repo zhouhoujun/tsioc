@@ -4,6 +4,8 @@ import { SessionSummarizer } from './SessionSummarizer';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
+import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
+import { SummaryQualityRecord, SummaryQualityStore } from '../harness/SummaryQualityStore';
 
 const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths (modified), and files merely mentioned or read (mentioned), 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. In the Files: line list paths as "modified: a, b | mentioned: c, d" to distinguish edited files from merely referenced ones. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 const SUMMARY_LABELS = ['Goal', 'Decisions', 'Files', 'Errors', 'Open state'] as const;
@@ -19,49 +21,89 @@ const WRITE_VERB_RE = /\b(?:created|modified|updated|deleted|wrote|edited|fixed|
 export class LLMSessionSummarizer extends SessionSummarizer {
     constructor(
         @Optional() @Inject(ModelAdapter)
-        private modelAdapter?: ModelAdapter | null
+        private modelAdapter?: ModelAdapter | null,
+        @Optional() @Inject(SummaryQualityStore)
+        private summaryQualityStore?: SummaryQualityStore | null
     ) {
         super();
     }
 
     async summarize(messages: AgentMessage[]): Promise<string> {
+        let fallbackUsed = false;
+        let summary: string;
         if (!this.modelAdapter || messages.length === 0) {
-            return this.naiveFallback(messages);
-        }
+            fallbackUsed = true;
+            summary = this.naiveFallback(messages);
+        } else {
+            const conversationText = this.formatMessagesForSummarization(messages);
 
-        const conversationText = this.formatMessagesForSummarization(messages);
+            const request: ModelRequest = {
+                sessionId: 'summarizer',
+                messages: [
+                    {
+                        id: 'summarize-sys',
+                        role: 'system',
+                        content: COMPACTION_SYSTEM_PROMPT,
+                        createdAt: 0
+                    },
+                    {
+                        id: 'summarize-user',
+                        role: 'user',
+                        content: `Compress this conversation:\n\n${conversationText}`,
+                        createdAt: 0
+                    }
+                ],
+                tools: [],
+                memory: [],
+                summary: undefined
+            };
 
-        const request: ModelRequest = {
-            sessionId: 'summarizer',
-            messages: [
-                {
-                    id: 'summarize-sys',
-                    role: 'system',
-                    content: COMPACTION_SYSTEM_PROMPT,
-                    createdAt: 0
-                },
-                {
-                    id: 'summarize-user',
-                    role: 'user',
-                    content: `Compress this conversation:\n\n${conversationText}`,
-                    createdAt: 0
+            try {
+                const response = await this.modelAdapter.complete(request);
+                if (response.message && response.message.trim()) {
+                    summary = this.normalizeStructuredSummary(response.message, messages);
+                } else {
+                    fallbackUsed = true;
+                    summary = this.naiveFallback(messages);
                 }
-            ],
-            tools: [],
-            memory: [],
-            summary: undefined
-        };
-
-        try {
-            const response = await this.modelAdapter.complete(request);
-            if (response.message && response.message.trim()) {
-                return this.normalizeStructuredSummary(response.message, messages);
+            } catch {
+                fallbackUsed = true;
+                summary = this.naiveFallback(messages);
             }
-        } catch {
-            // fall through to naive fallback
         }
 
-        return this.naiveFallback(messages);
+        this.recordQuality(summary, fallbackUsed);
+        return summary;
+    }
+
+    private recordQuality(summary: string, fallbackUsed: boolean): void {
+        if (!summary || !this.summaryQualityStore) {
+            return;
+        }
+        try {
+            const score = scoreSummaryQuality(summary, { fallbackUsed });
+            const record: SummaryQualityRecord = {
+                id: `sq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                provider: this.modelAdapter?.provider ?? 'unknown',
+                model: this.resolveModelName(),
+                total: score.total,
+                fieldCompleteness: score.fieldCompleteness,
+                annotationQuality: score.annotationQuality,
+                lengthBalance: score.lengthBalance,
+                truncationScore: score.truncationScore,
+                fallbackUsed: score.fallbackUsed,
+                summaryLength: score.summaryLength,
+                createdAt: Date.now()
+            };
+            void this.summaryQualityStore.append(record).catch(() => undefined);
+        } catch {
+            // scoring or persistence must never break summarization
+        }
+    }
+
+    private resolveModelName(): string | undefined {
+        const adapter = this.modelAdapter as any;
+        return adapter?.options?.model || adapter?.model || undefined;
     }
 
     private formatMessagesForSummarization(messages: AgentMessage[]): string {

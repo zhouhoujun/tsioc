@@ -51,6 +51,10 @@ import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
 import { InMemoryTurnDiagnosticsStore } from './harness/InMemoryTurnDiagnosticsStore';
 import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
 import { DefaultTurnDiagnosticsStore } from './harness/DefaultTurnDiagnosticsStore';
+import { SummaryQualityStore } from './harness/SummaryQualityStore';
+import { InMemorySummaryQualityStore } from './harness/InMemorySummaryQualityStore';
+import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
+import { DefaultSummaryQualityStore } from './harness/DefaultSummaryQualityStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
@@ -84,6 +88,10 @@ import { createAgentProviders } from './provider';
         TypeOrmTurnDiagnosticsStore,
         DefaultTurnDiagnosticsStore,
         { provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore },
+        InMemorySummaryQualityStore,
+        TypeOrmSummaryQualityStore,
+        DefaultSummaryQualityStore,
+        { provide: SummaryQualityStore, useExisting: DefaultSummaryQualityStore },
         NodeChildProcessSandboxExecutor,
         { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,

@@ -179,6 +179,33 @@ Each completed turn also emits `AgentTurnDiagnosticsEvent` with:
 
 This keeps empty-response and repeated-clarification signals available without coupling aggregation logic into the runtime.
 
+## Summary Quality Scoring
+
+Every produced summary is scored deterministically by `scoreSummaryQuality` in
+`packages/agents/agent/src/harness/SummaryQualityScorer.ts`:
+
+- `fieldCompleteness` — five summary fields (Goal, Decisions, Files, Errors, Open state); each missing field costs 20 points
+- `annotationQuality` — Files line carries both `modified:` and `mentioned:` annotations (100), exactly one (50), or none (0)
+- `lengthBalance` — individual field values below 15 chars or above 250 chars are penalized
+- `truncationScore` — very long summaries (>= 1000 chars) are downgraded because they indicate a compaction or token cap was hit
+- `total` — weighted 0.4 / 0.2 / 0.2 / 0.2 across the four dimensions; fallback-generated summaries are multiplied by 0.7
+
+`LLMSessionSummarizer` records a `SummaryQualityRecord` for each summary through
+`SummaryQualityStore` (provider, model, per-dimension scores, fallback flag,
+summary length). The store family follows the same pattern as the other harness
+stores: in-memory default, durable TypeORM-backed store when a `TypeormAdapter`
+is registered, and a `DefaultSummaryQualityStore` that picks between them.
+
+Per-provider aggregates (record count, average/min/max total, average per-dimension
+scores, fallback rate, time range) are available through `aggregateSummaryQuality`
+and are exposed by the gateway's `SummaryQualityHandler`:
+
+- `GET /api/summary-quality` — record list with optional `provider` and `limit`
+- `GET /api/summary-quality/stats` — provider-scoped aggregates
+
+This closes the last tracked gap: provider-specific summary quality is now
+measured, persisted, and inspectable instead of being a subjective one-off read.
+
 ## Current Guarantees
 
 The current design specifically protects these regression cases:
@@ -192,7 +219,8 @@ The current design specifically protects these regression cases:
 
 ## Current Gaps
 
-- no provider-specific summary quality scoring
+None tracked. Summary quality scoring (per provider) and compaction history are
+now persisted through dedicated stores and exposed through gateway APIs.
 
 ## Implementation Anchors
 
@@ -200,5 +228,8 @@ The current design specifically protects these regression cases:
 - `packages/agents/agent/src/memory/LLMSessionSummarizer.ts`
 - `packages/agents/agent/src/runtime/DefaultAgentRuntime.ts`
 - `packages/agents/agent/src/runtime/AgentEvents.ts`
+- `packages/agents/agent/src/harness/SummaryQualityScorer.ts`
+- `packages/agents/agent/src/harness/SummaryQualityStore.ts`
 - `packages/agents/agent/test/context-compaction.spec.ts`
+- `packages/agents/agent/test/summary-quality.spec.ts`
 - `packages/agents/agent/test/runtime-loop.spec.ts`
