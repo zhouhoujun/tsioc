@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { SummaryQualityRecord, SummaryQualityStore } from '@tsdi/agent';
+import { buildSummaryQualityTrend, SummaryQualityRecord, SummaryQualityStore } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 
 @Injectable()
@@ -29,6 +29,26 @@ export class SummaryQualityHandler {
                 .end(JSON.stringify({ aggregates }));
         };
 
+        const qualityTrend: RouteHandler = async (req, res) => {
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? '/api/summary-quality/trend', `http://${host}`);
+            const provider = url.searchParams.get('provider')?.trim() || undefined;
+            const limitRaw = url.searchParams.get('limit')?.trim();
+            const limit = limitRaw && /^\d+$/.test(limitRaw) ? Math.min(Math.max(0, parseInt(limitRaw, 10)), 500) : 500;
+            const bucketSizeRaw = url.searchParams.get('bucketSize')?.trim();
+            const bucketSize = bucketSizeRaw && /^\d+$/.test(bucketSizeRaw) && parseInt(bucketSizeRaw, 10) > 0
+                ? parseInt(bucketSizeRaw, 10)
+                : undefined;
+            const maxBucketsRaw = url.searchParams.get('maxBuckets')?.trim();
+            const maxBuckets = maxBucketsRaw && /^\d+$/.test(maxBucketsRaw)
+                ? Math.min(Math.max(1, parseInt(maxBucketsRaw, 10)), 90)
+                : undefined;
+            const records = await this.quality.list({ provider, limit });
+            const trend = buildSummaryQualityTrend(records, { provider, bucketSize, maxBuckets });
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ trend: trend.map(point => this.toTrendPoint(point)) }));
+        };
+
         return [
             {
                 method: 'GET',
@@ -39,8 +59,29 @@ export class SummaryQualityHandler {
                 method: 'GET',
                 path: '/api/summary-quality/stats',
                 handler: aggregateStats
+            },
+            {
+                method: 'GET',
+                path: '/api/summary-quality/trend',
+                handler: qualityTrend
             }
         ];
+    }
+
+    private toTrendPoint(point: ReturnType<typeof buildSummaryQualityTrend>[number]): Record<string, any> {
+        return {
+            provider: point.provider,
+            bucketStart: point.bucketStart,
+            recordCount: point.recordCount,
+            avgTotal: point.avgTotal,
+            minTotal: point.minTotal,
+            maxTotal: point.maxTotal,
+            avgFieldCompleteness: point.avgFieldCompleteness,
+            avgAnnotationQuality: point.avgAnnotationQuality,
+            avgLengthBalance: point.avgLengthBalance,
+            avgTruncationScore: point.avgTruncationScore,
+            fallbackRate: point.fallbackRate
+        };
     }
 
     private toView(record: SummaryQualityRecord): Record<string, any> {

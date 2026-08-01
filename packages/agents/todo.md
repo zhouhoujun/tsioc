@@ -191,3 +191,11 @@
    - 测试：console-renderer.spec.ts +2（有 digest 渲染 quality 行、无 digest 省略）；view-model.spec.ts +2（onInit/refreshTurnArtifacts 经 RPC 拉取 digest、空数据清空旧 digest）。
 
 全量回归：agent-ui 206 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P17 打磨（已完成）
+
+1. ~~HTTP 面补齐 summary quality trend 路由~~ → 已完成：P15 只给 RPC 加了 `summary_quality.trend`，HTTP 面（`SummaryQualityHandler`）停留在 list + stats。本次对齐：
+   - **handler**：`SummaryQualityHandler` 新增 `GET /api/summary-quality/trend` 路由（provider 精确过滤；limit clamp [0,500] 默认 500；bucketSize 仅接受正整数；maxBuckets clamp [1,90]），复用 `buildSummaryQualityTrend`（`@tsdi/agent`）归约，输出 11 字段 trend point view（同 RPC 映射）。HTTP 与 RPC 参数语义一致。
+   - 测试：gateway `SummaryQualityHandlerTest` +2——provider+maxBuckets 分桶断言（深seek 两桶 avgTotal/fallbackRate/维度均值）、无过滤时跨 provider 输出。
+
+全量回归：agent 317 / agent-gateway 93 / agent-ui 206 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

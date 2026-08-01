@@ -1787,6 +1787,75 @@ export class SummaryQualityHandlerTest {
         expect(data.aggregates[0].provider).toEqual('anthropic');
         expect(data.aggregates[0].fallbackRate).toEqual(100);
     }
+
+    @Test('builds summary quality trend with provider and bucketing params')
+    async buildsSummaryQualityTrendOverHttp() {
+        const quality = {
+            async list(options?: { provider?: string; limit?: number }) {
+                const provider = options?.provider;
+                const day = 24 * 60 * 60 * 1000;
+                return [
+                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 75, fieldCompleteness: 90, annotationQuality: 70, lengthBalance: 80, truncationScore: 100, fallbackUsed: true, summaryLength: 230, createdAt: 1 },
+                    { id: 'q2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 240, createdAt: day + 1 },
+                    { id: 'q3', provider: 'anthropic', model: null, total: 50, fieldCompleteness: 60, annotationQuality: 40, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 190, createdAt: day + 2 }
+                ].filter(record => !provider || record.provider === provider).slice(0, options?.limit ?? 500);
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality/trend' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality/trend?provider=deepseek&maxBuckets=7' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(Array.isArray(data.trend)).toEqual(true);
+        expect(data.trend.length).toEqual(2);
+        expect(data.trend[0].provider).toEqual('deepseek');
+        expect(data.trend[0].recordCount).toEqual(1);
+        expect(data.trend[0].avgTotal).toEqual(75);
+        expect(data.trend[0].fallbackRate).toEqual(100);
+        expect(data.trend[1].bucketStart).toEqual(24 * 60 * 60 * 1000);
+        expect(data.trend[1].avgTotal).toEqual(90);
+        expect(data.trend[1].fallbackRate).toEqual(0);
+        expect(data.trend[0].avgAnnotationQuality).toEqual(70);
+        expect(typeof data.trend[0].minTotal).toEqual('number');
+        expect(typeof data.trend[0].maxTotal).toEqual('number');
+    }
+
+    @Test('builds summary quality trend across all providers when no filter provided')
+    async buildsSummaryQualityTrendOverHttpAllProviders() {
+        const quality = {
+            async list(options?: { provider?: string; limit?: number }) {
+                return [
+                    { id: 'q1', provider: 'deepseek', model: null, total: 80, fieldCompleteness: 90, annotationQuality: 80, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: 1 },
+                    { id: 'q2', provider: 'anthropic', model: null, total: 60, fieldCompleteness: 70, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 200, createdAt: 1 }
+                ].slice(0, options?.limit ?? 500);
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality/trend' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality/trend' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.trend.length).toEqual(2);
+        expect(new Set(data.trend.map((point: any) => point.provider))).toEqual(new Set(['deepseek', 'anthropic']));
+    }
 }
 
 @Suite('TurnDiagnosticsHandler')

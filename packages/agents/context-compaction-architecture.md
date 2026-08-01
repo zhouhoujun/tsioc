@@ -204,6 +204,8 @@ and are exposed by the gateway's `SummaryQualityHandler`:
 
 - `GET /api/summary-quality` — record list with optional `provider` and `limit`
 - `GET /api/summary-quality/stats` — provider-scoped aggregates
+- `GET /api/summary-quality/trend` — day-bucketed trend points (optional
+  `provider`, `limit` clamped to 500, `bucketSize`, `maxBuckets` clamped to 90)
 
 The same data is reachable interactively:
 
