@@ -5,7 +5,7 @@ import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
-import { CompactionHistoryRecord, CompactionHistoryStore } from '../src/harness/CompactionHistoryStore';
+import { CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory } from '../src/harness/CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from '../src/harness/InMemoryCompactionHistoryStore';
 import { TypeOrmCompactionHistoryStore } from '../src/harness/TypeOrmCompactionHistoryStore';
 import { AgentCompactionHistoryEntity } from '../src/memory/entities';
@@ -121,6 +121,71 @@ export class CompactionHistoryStoreTest {
         expect((await store.list('s1')).length).toEqual(2);
         expect((await store.list()).length).toEqual(3);
         expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('c-b');
+    }
+
+    @Test('aggregate compaction history groups by session with token totals')
+    async aggregateGroupsBySession() {
+        const aggregates = aggregateCompactionHistory([
+            makeRecord({ id: 'a1', sessionId: 's1', strategy: 'compacted', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, compactionTriggered: true, createdAt: 1 }),
+            makeRecord({ id: 'a2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, compressionRatio: 10, compactionTriggered: false, strategy: 'pruned', createdAt: 2 }),
+            makeRecord({ id: 'a3', sessionId: 's2', beforeTokens: 2000, afterTokens: 500, compressionRatio: 75, compactionTriggered: true, createdAt: 3 })
+        ]);
+        expect(aggregates.length).toEqual(2);
+        const s1 = aggregates[0];
+        expect(s1.sessionId).toEqual('s1');
+        expect(s1.recordCount).toEqual(2);
+        expect(s1.compactedCount).toEqual(1);
+        expect(s1.prunedCount).toEqual(1);
+        expect(s1.avgCompressionRatio).toEqual(30);
+        expect(s1.totalTokensBefore).toEqual(9000);
+        expect(s1.totalTokensAfter).toEqual(4900);
+        expect(s1.totalTokensSaved).toEqual(4100);
+        expect(s1.timeRange?.from).toEqual(1);
+        expect(s1.timeRange?.to).toEqual(2);
+        const s2 = aggregates[1];
+        expect(s2.sessionId).toEqual('s2');
+        expect(s2.totalTokensSaved).toEqual(1500);
+    }
+
+    @Test('aggregate compaction history scopes to a single session')
+    async aggregateScopesToSession() {
+        const aggregates = aggregateCompactionHistory([
+            makeRecord({ id: 'a1', sessionId: 's1', createdAt: 1 }),
+            makeRecord({ id: 'a2', sessionId: 's2', createdAt: 2 })
+        ], 's2');
+        expect(aggregates.length).toEqual(1);
+        expect(aggregates[0].sessionId).toEqual('s2');
+    }
+
+    @Test('in-memory compaction history store aggregates across sessions')
+    async inMemoryAggregates() {
+        const store = new InMemoryCompactionHistoryStore();
+        await store.append(makeRecord({ id: 'm1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, createdAt: 1 }));
+        await store.append(makeRecord({ id: 'm2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, createdAt: 2 }));
+        const aggregates = await store.aggregate('s1');
+        expect(aggregates.length).toEqual(1);
+        expect(aggregates[0].totalTokensSaved).toEqual(4100);
+        expect(aggregates[0].recordCount).toEqual(2);
+    }
+
+    @Test('typeorm compaction history store aggregates persisted records')
+    async typeOrmAggregates() {
+        const ctx = await Application.run(CompactionHistoryOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const store = new TypeOrmCompactionHistoryStore(adapter);
+            await store.append(makeRecord({ id: 'db-agg-1', sessionId: 's-agg', beforeTokens: 8000, afterTokens: 4000, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'db-agg-2', sessionId: 's-agg', beforeTokens: 2000, afterTokens: 500, createdAt: 2 }));
+            await store.append(makeRecord({ id: 'db-agg-3', sessionId: 's-other', beforeTokens: 5000, afterTokens: 1000, createdAt: 3 }));
+            const scoped = await store.aggregate('s-agg');
+            expect(scoped.length).toEqual(1);
+            expect(scoped[0].totalTokensSaved).toEqual(5500);
+            expect(scoped[0].recordCount).toEqual(2);
+            const all = await store.aggregate();
+            expect(all.length).toEqual(2);
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('typeorm compaction history store persists and reloads records')

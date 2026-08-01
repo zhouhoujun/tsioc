@@ -274,8 +274,23 @@ The console makes it interactive without leaving the session:
   renders one line per record, e.g.
   `compacted · L3 · 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
 
+Mirroring the summary quality stats surface, per-session aggregates are also
+available:
+
+- the store family exposes `aggregate(sessionId?)` — a shared reducer
+  `aggregateCompactionHistory` groups records by session and summarizes
+  `recordCount`, `compactedCount` / `prunedCount`, `avgCompressionRatio`
+  (one decimal), `totalTokensBefore` / `totalTokensAfter` /
+  `totalTokensSaved`, and `timeRange`
+- HTTP `GET /api/compaction-history/stats?sessionId=...` and RPC
+  `compaction_history.stats` return those aggregates; `sessionId` is optional
+  and, when provided, is owner-checked through `ensureSessionAccess`
+- the UI loads them on init and after each turn into a dashboard compaction
+  digest line (same label surface as the summary quality digest)
+
 This gives operators a stable, per-session audit trail of when compaction ran,
-how aggressive it was, and how many tokens it saved.
+how aggressive it was, how many tokens it saved, and how that savings profile
+distributes across sessions.
 
 ## Current Guarantees
 

@@ -166,7 +166,8 @@ export class AppRpcServer {
                         'summary_quality.list',
                         'summary_quality.stats',
                         'summary_quality.trend',
-                        'compaction_history.list'
+                        'compaction_history.list',
+                        'compaction_history.stats'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -244,6 +245,8 @@ export class AppRpcServer {
                 return this.getSummaryQualityTrend(params, context);
             case 'compaction_history.list':
                 return this.listCompactionHistory(params, context);
+            case 'compaction_history.stats':
+                return this.getCompactionHistoryStats(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1094,6 +1097,32 @@ export class AppRpcServer {
                     createdAt: record.createdAt,
                     metadata: record.metadata ?? null
                 }))
+        };
+    }
+
+    private async getCompactionHistoryStats(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.compactionHistory) {
+            return { aggregates: [] };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const aggregates = await this.compactionHistory.aggregate(sessionId);
+        return {
+            aggregates: aggregates.map(aggregate => ({
+                sessionId: aggregate.sessionId,
+                recordCount: aggregate.recordCount,
+                compactedCount: aggregate.compactedCount,
+                prunedCount: aggregate.prunedCount,
+                avgCompressionRatio: aggregate.avgCompressionRatio,
+                totalTokensBefore: aggregate.totalTokensBefore,
+                totalTokensAfter: aggregate.totalTokensAfter,
+                totalTokensSaved: aggregate.totalTokensSaved,
+                timeRange: aggregate.timeRange ?? null
+            }))
         };
     }
 

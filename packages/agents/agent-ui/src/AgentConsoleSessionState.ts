@@ -325,6 +325,7 @@ export class AgentConsoleSessionState {
     projectSummary = '';
     projectSessionCount = 0;
     summaryQualityDigest = '';
+    compactionDigest = '';
     projects: AgentConsoleProjectItem[] = [];
     projectsFocused = false;
     toolRunsFocused = false;
@@ -478,6 +479,11 @@ export class AgentConsoleSessionState {
 
     setSummaryQualityDigest(digest: string): void {
         this.summaryQualityDigest = String(digest || '').trim();
+        this.notify();
+    }
+
+    setCompactionDigest(digest: string): void {
+        this.compactionDigest = String(digest || '').trim();
         this.notify();
     }
 

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { CompactionHistoryRecord, CompactionHistoryStore } from './CompactionHistoryStore';
+import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore } from './CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from './InMemoryCompactionHistoryStore';
 import { TypeOrmCompactionHistoryStore } from './TypeOrmCompactionHistoryStore';
 
@@ -24,6 +24,11 @@ export class DefaultCompactionHistoryStore extends CompactionHistoryStore {
     async list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<CompactionHistoryRecord[]> {
         const store = this.resolveStore();
         return store.list(sessionId, options);
+    }
+
+    async aggregate(sessionId?: string): Promise<CompactionHistoryAggregate[]> {
+        const store = this.resolveStore();
+        return store.aggregate(sessionId);
     }
 
     private resolveStore(): CompactionHistoryStore {

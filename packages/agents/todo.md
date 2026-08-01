@@ -229,3 +229,15 @@
    - 测试：gateway +3（listsCompactionHistoryThroughRpc / rejectsForeignCompactionHistoryThroughRpc / compactionHistoryWithoutStore），view-model +2（compactionsCommandListsHistory / compactionsCommandReportsEmptyHistory）——后者依赖 `SessionServiceStub.listCompactionHistory` override（走 rpcRef）与 `AppRpcStub.compactionHistoryRecords` 示例数据。
 
 全量回归：agent 320、agent-gateway 98、agent-ui 211 passing；四包 tsc 干净。
+
+## P21 打磨（已完成）
+
+1. ~~compaction history stats 聚合（镜像 summary quality stats 面）~~ → 已完成：P20 补齐了 compaction 历史查询面，但缺少按会话聚合的统计视图。本次补齐：
+   - **store**（`@tsdi/agent`）：新增 `CompactionHistoryAggregate` 接口（sessionId/recordCount/compactedCount/prunedCount/avgCompressionRatio/totalTokensBefore/totalTokensAfter/totalTokensSaved/timeRange）与共享 reduce `aggregateCompactionHistory(records, sessionId?)`——按 session 分组、汇总 token 总量、平均压缩比保留一位小数、按 `sessionId` 排序；`CompactionHistoryStore` 新增抽象 `aggregate(sessionId?)`，`InMemoryCompactionHistoryStore` / `DefaultCompactionHistoryStore` / `TypeOrmCompactionHistoryStore` 三实现均补齐。
+   - **RPC**（`@tsdi/agent-gateway`）：新增 `compaction_history.stats` 方法 `getCompactionHistoryStats`——`sessionId` 可选（传入时经 `ensureSessionAccess` 做 owner 校验）；无 store 时返回空 `aggregates`；响应 9 字段（sessionId/recordCount/compactedCount/prunedCount/avgCompressionRatio/totalTokensBefore/totalTokensAfter/totalTokensSaved/timeRange）；capabilities 声明。
+   - **HTTP**（`@tsdi/agent-gateway`）：`CompactionHistoryHandler` 新增 `GET /api/compaction-history/stats`，`sessionId` 可选、提供时校验 owner。
+   - **UI service**（`@tsdi/agent-ui`）：`AgentConsoleSessionService.getCompactionHistoryStats(sessionId?, context?)`。
+   - **UI 组件**：`formatCompactionHistoryAggregate` 一行摘要（`${id} · ${count} compaction(s) · ${compacted} triggered · saved ${tokens} tokens · avg ${ratio}%`，id 超 16 字符截断 14 + `…`）；`refreshCompactionDigest()` 挂入 `refreshTurnArtifacts` 的 `Promise.allSettled` 并在 `onInit` 启动时与 quality digest 并列加载；dashboard 新增 compaction 行（`dashboardCompactionLabel`）。
+   - 测试：agent +3（aggregateGroupsBySession / aggregateScopesToSession / inMemoryAggregates / typeOrmAggregates），gateway +5（compactionHistoryStatsThroughRpc / rejectsForeignCompactionHistoryStatsThroughRpc / compactionHistoryStatsWithoutStore / HTTP stats 跨会话聚合 / HTTP foreign 403），view-model +2（refreshTurnArtifactsLoadsCompactionDigest / refreshTurnArtifactsClearsCompactionDigestWhenEmpty）——后者依赖 `AppRpcStub.compactionHistoryAggregates` 与 `SessionServiceStub.getCompactionHistoryStats` override（走 rpcRef）。
+
+全量回归：agent 324、agent-gateway 103、agent-ui 213 passing；四包 tsc 干净。

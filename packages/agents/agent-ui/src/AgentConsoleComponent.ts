@@ -126,6 +126,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}%${range}`;
     }
 
+    protected formatCompactionHistoryAggregate(aggregate: Record<string, any>): string {
+        const sessionId = String(aggregate.sessionId ?? 'unknown');
+        const count = Number(aggregate.recordCount ?? 0);
+        const compacted = Number(aggregate.compactedCount ?? 0);
+        const tokensSaved = Number(aggregate.totalTokensSaved ?? 0);
+        const avgRatio = Number(aggregate.avgCompressionRatio ?? 0).toFixed(1);
+        const from = Number(aggregate.timeRange?.from ?? 0);
+        const to = Number(aggregate.timeRange?.to ?? 0);
+        const range = from || to
+            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+            : '';
+        const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
+        return `${id} · ${count} ${count === 1 ? 'compaction' : 'compactions'} · ${compacted} triggered · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%${range}`;
+    }
+
     protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
         if (!this.sessionService) {
             this.notify('Summary quality is unavailable without app RPC.');
@@ -1183,6 +1198,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.refreshTools();
         await this.refreshScheduledTasks();
         await this.refreshSummaryQualityDigest();
+        await this.refreshCompactionDigest();
         this.state.setTasksCount(this.scheduler.getTasks().length);
     }
 
@@ -3384,8 +3400,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshScheduledTasks(),
             this.refreshTodoPlan(),
             this.loadCodingTasks(),
-            this.refreshSummaryQualityDigest()
+            this.refreshSummaryQualityDigest(),
+            this.refreshCompactionDigest()
         ]);
+    }
+
+    protected async refreshCompactionDigest(): Promise<void> {
+        if (!this.sessionService) {
+            this.state.setCompactionDigest('');
+            return;
+        }
+        try {
+            const aggregates = await this.sessionService.getCompactionHistoryStats();
+            if (!aggregates.length) {
+                this.state.setCompactionDigest('');
+                return;
+            }
+            this.state.setCompactionDigest(
+                aggregates
+                    .map(item => this.formatCompactionHistoryAggregate(item))
+                    .join(' | ')
+            );
+        } catch (error: any) {
+            this.state.setCompactionDigest('');
+            void error;
+        }
     }
 
     protected async refreshSummaryQualityDigest(): Promise<void> {

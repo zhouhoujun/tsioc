@@ -284,6 +284,7 @@ class AppRpcStub {
     summaryQualityRecords: any[] = [];
     summaryQualityTrend: any[] = [];
     compactionHistoryRecords: any[] = [];
+    compactionHistoryAggregates: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -430,6 +431,13 @@ class AppRpcStub {
                 ? this.compactionHistoryRecords.filter(item => item.sessionId === sessionId)
                 : this.compactionHistoryRecords;
             return { records: records.slice(0, params?.limit ?? 200) };
+        }
+        if (method === 'compaction_history.stats') {
+            const sessionId = params?.sessionId;
+            const aggregates = sessionId
+                ? this.compactionHistoryAggregates.filter(item => item.sessionId === sessionId)
+                : this.compactionHistoryAggregates;
+            return { aggregates };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -608,6 +616,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
         if (rpc) {
             const result = await rpc.request('compaction_history.list', { sessionId, ...options });
             return Array.isArray(result?.records) ? result.records : [];
+        }
+        return [];
+    }
+
+    override async getCompactionHistoryStats(sessionId?: string): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('compaction_history.stats', sessionId ? { sessionId } : {});
+            return Array.isArray(result?.aggregates) ? result.aggregates : [];
         }
         return [];
     }
@@ -2790,6 +2807,58 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'summary_quality.stats')).toEqual(true);
         expect(component.sessionState.summaryQualityDigest).toBe('');
+    }
+
+    @Test('refresh turn artifacts loads compaction digest through rpc')
+    async refreshTurnArtifactsLoadsCompactionDigest() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryAggregates = [{
+            sessionId: 'session-1',
+            recordCount: 2,
+            compactedCount: 2,
+            prunedCount: 0,
+            avgCompressionRatio: 62.5,
+            totalTokensBefore: 20000,
+            totalTokensAfter: 7500,
+            totalTokensSaved: 12500,
+            timeRange: { from: 1720000000000, to: 1720086400000 }
+        }, {
+            sessionId: 'session-2',
+            recordCount: 1,
+            compactedCount: 1,
+            prunedCount: 0,
+            avgCompressionRatio: 50,
+            totalTokensBefore: 8000,
+            totalTokensAfter: 4000,
+            totalTokensSaved: 4000,
+            timeRange: {}
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        expect(appRpc.calls.some(call => call.method === 'compaction_history.stats' && !call.params?.sessionId)).toEqual(true);
+        expect(component.sessionState.compactionDigest).toContain('session-1');
+        expect(component.sessionState.compactionDigest).toContain('2 compactions');
+        expect(component.sessionState.compactionDigest).toContain('saved 12.5K tokens');
+        expect(component.sessionState.compactionDigest).toContain('session-2');
+    }
+
+    @Test('refresh turn artifacts clears compaction digest when nothing recorded')
+    async refreshTurnArtifactsClearsCompactionDigestWhenEmpty() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryAggregates = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setCompactionDigest('stale digest');
+
+        await (component as any).refreshTurnArtifacts();
+
+        expect(appRpc.calls.some(call => call.method === 'compaction_history.stats')).toEqual(true);
+        expect(component.sessionState.compactionDigest).toBe('');
     }
 
     @Test('approval resolve routes through rpc when no local approval manager')

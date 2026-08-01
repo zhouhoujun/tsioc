@@ -58,8 +58,35 @@ export class CompactionHistoryHandler {
                 .end(JSON.stringify({ records }));
         };
 
+        const compactionHistoryStats: RouteHandler = async (req, res) => {
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? '/api/compaction-history/stats', `http://${host}`);
+            const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
+            const principalId = getRequestPrincipalId(req);
+            if (sessionId && !await this.owners.isOwner(sessionId, principalId)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ error: 'forbidden' }));
+                return;
+            }
+            const aggregates = (await this.compactionHistory.aggregate(sessionId))
+                .map(aggregate => ({
+                    sessionId: aggregate.sessionId,
+                    recordCount: aggregate.recordCount,
+                    compactedCount: aggregate.compactedCount,
+                    prunedCount: aggregate.prunedCount,
+                    avgCompressionRatio: aggregate.avgCompressionRatio,
+                    totalTokensBefore: aggregate.totalTokensBefore,
+                    totalTokensAfter: aggregate.totalTokensAfter,
+                    totalTokensSaved: aggregate.totalTokensSaved,
+                    timeRange: aggregate.timeRange ?? null
+                }));
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ aggregates }));
+        };
+
         return [
-            { method: 'GET', path: '/api/compaction-history', handler: listCompactionHistory }
+            { method: 'GET', path: '/api/compaction-history', handler: listCompactionHistory },
+            { method: 'GET', path: '/api/compaction-history/stats', handler: compactionHistoryStats }
         ];
     }
 }

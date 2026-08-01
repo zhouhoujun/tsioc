@@ -243,6 +243,19 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.records) ? result.records : [];
     }
 
+    /**
+     * Fetches per-session compaction aggregates over RPC. `sessionId` is
+     * optional: when provided the result is scoped to that session (and the
+     * caller must own it), otherwise all sessions are aggregated.
+     */
+    async getCompactionHistoryStats(sessionId?: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('compaction_history.stats', sessionId ? { sessionId } : {}, context);
+        return Array.isArray(result?.aggregates) ? result.aggregates : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string
