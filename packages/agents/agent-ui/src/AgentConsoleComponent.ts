@@ -301,6 +301,71 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/diagnostics list [sessionId]`: browses recorded turn diagnostics
+     * records for the given session (or all owned sessions when omitted) as a
+     * selectable list.
+     */
+    protected async openTurnDiagnosticsList(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Turn diagnostics are unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
+        if (!resolvedSessionId) {
+            this.notify('No session selected. Run /diagnostics list <sessionId>.');
+            return true;
+        }
+        const records = await this.sessionService.listTurnDiagnostics(resolvedSessionId);
+        if (!records.length) {
+            this.notify(`No turn diagnostics recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        const options = records.map(record => this.buildTurnDiagnosticsRecordOption(record));
+        await this.select(
+            `Turn diagnostics records (${resolvedSessionId})`,
+            options,
+            0,
+            `${records.length} record${records.length === 1 ? '' : 's'}`
+        );
+        return true;
+    }
+
+    protected buildTurnDiagnosticsRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
+        const id = String(record.id ?? '');
+        const sessionId = String(record.sessionId ?? 'unknown');
+        const createdAt = Number(record.createdAt ?? 0);
+        const compacted = Number(record.compactionCount ?? 0);
+        const saved = Number(record.totalTokenSavings ?? 0);
+        const description = [
+            createdAt ? new Date(createdAt).toLocaleDateString() : '',
+            `${compacted} compact${compacted === 1 ? '' : 's'}`,
+            saved > 0 ? `saved ${formatCompactNumber(saved)} tokens` : '',
+            record.repeatedClarificationDetected ? 'repeated' : '',
+            record.finalAssistantWasClarification ? 'clarif' : ''
+        ].filter(Boolean).join(' · ') || 'turn diagnostics record';
+        return {
+            label: `${sessionId} · ${createdAt ? new Date(createdAt).toLocaleString() : 'unknown time'}`,
+            value: id || `${sessionId}:${createdAt}`,
+            description,
+            detail: [
+                `Record: ${id || '-'}`,
+                `Session: ${sessionId}`,
+                `Created: ${createdAt ? new Date(createdAt).toLocaleString() : '-'}`,
+                `Empty response retries: ${Number(record.emptyResponseRetryCount ?? 0)}`,
+                `Repeated clarification: ${record.repeatedClarificationDetected ? 'yes' : 'no'}`,
+                `Final clarification: ${record.finalAssistantWasClarification ? 'yes' : 'no'}`,
+                `Context rewritten: ${record.followUpContextRewritten ? 'yes' : 'no'}`,
+                `Follow-up recoveries: ${Number(record.followUpRecoveryCount ?? 0)}`,
+                `Compactions: ${compacted}`,
+                `Token savings: ${formatCompactNumber(saved)}`,
+                record.compressionRatio != null ? `Compression ratio: ${record.compressionRatio}%` : '',
+                record.compactionLevel ? `Compaction level: ${record.compactionLevel}` : '',
+                record.promptCache ? `Prompt cache: ${String(record.promptCache.provider ?? '')} ${String(record.promptCache.appliedStrategy ?? '')}` : ''
+            ].filter(Boolean).join('\n')
+        };
+    }
+
+    /**
      * Opens `/diagnostics trend [sessionId] [bucketSize] [maxBuckets]`:
      * renders one sparkline line per session showing how token savings and
      * compaction activity evolve over time buckets.
@@ -2480,6 +2545,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
                     { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
+                    { label: '/diagnostics list', value: '/diagnostics list', description: 'turn diagnostics records [sessionId]' },
                     { label: '/diagnostics trend', value: '/diagnostics trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
@@ -2683,6 +2749,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     if (arg === 'trend' || arg.startsWith('trend ')) {
                         const { sessionId, bucketSize, maxBuckets } = this.parseTurnDiagnosticsTrendArgs(arg.slice(5));
                         return this.openTurnDiagnosticsTrend(sessionId, bucketSize, maxBuckets);
+                    }
+                    if (arg === 'list' || arg.startsWith('list ')) {
+                        const sessionId = arg.slice(4).trim() || undefined;
+                        return this.openTurnDiagnosticsList(sessionId);
                     }
                     const sessionId = arg || undefined;
                     return this.openTurnDiagnostics(sessionId);

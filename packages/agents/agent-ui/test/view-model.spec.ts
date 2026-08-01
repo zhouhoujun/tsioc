@@ -3141,6 +3141,92 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('No turn diagnostics trend recorded yet.');
     }
 
+    @Test('diagnostics list command opens record selector through rpc')
+    async diagnosticsListCommandOpensRecordSelectorThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsRecords = [{
+            id: 'diag-rec-1',
+            sessionId: 'session-1',
+            createdAt: 1720000000000,
+            emptyResponseRetryCount: 1,
+            followUpRecoveryCount: 2,
+            followUpContextRewritten: true,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: true,
+            compactionCount: 2,
+            totalTokenSavings: 4000,
+            compressionRatio: 50,
+            compactionLevel: 'L3',
+            promptCache: { provider: 'deepseek', applied: true, appliedStrategy: 'partial', cachedTokens: 512 }
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/diagnostics list session-1';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.list' && call.params?.sessionId === 'session-1')).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toEqual('Turn diagnostics records (session-1)');
+        expect(component.sessionState.selectMenu?.options[0].label).toContain('session-1');
+        expect(component.sessionState.selectMenu?.options[0].description).toContain('2 compacts');
+        expect(component.sessionState.selectMenu?.options[0].description).toContain('saved 4K tokens');
+        expect(component.sessionState.selectMenu?.options[0].detail).toContain('Compaction level: L3');
+        expect(component.sessionState.selectMenu?.options[0].detail).toContain('Prompt cache: deepseek partial');
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
+    @Test('diagnostics list command falls back to current session without args')
+    async diagnosticsListCommandUsesCurrentSession() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsRecords = [{
+            id: 'diag-rec-2',
+            sessionId: 'console',
+            createdAt: 1720000000000,
+            emptyResponseRetryCount: 0,
+            followUpRecoveryCount: 0,
+            followUpContextRewritten: false,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false,
+            compactionCount: 0,
+            totalTokenSavings: 0
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/diagnostics list';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.list' && call.params?.sessionId === 'console')).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toContain('console');
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
+    @Test('diagnostics list command reports empty records')
+    async diagnosticsListCommandReportsEmptyRecords() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsRecords = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/diagnostics list session-1';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.list' && call.params?.sessionId === 'session-1')).toEqual(true);
+        expect(component.notice).toContain("No turn diagnostics recorded for session 'session-1'.");
+    }
+
     @Test('approval resolve routes through rpc when no local approval manager')
     async approvalResolveRoutesThroughRpc() {
         const runtime = new RuntimeStub();

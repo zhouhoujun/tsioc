@@ -286,3 +286,13 @@
    - 测试：console-renderer.spec.ts +2（有 digest 渲染 diagnostics 行、无 digest 省略）；view-model.spec.ts +2（onInit 经 RPC 拉取 digest、空数据清空旧 digest）。注意：onInit 新增的 digest 拉取会产生无 sessionId 的 `turn_diagnostics.stats` 调用，P23 既有测试 `diagnosticsCommandReportsEmptyStats` 的 `find` 首匹配断言改为匹配带 sessionId 的调用。
 
 全量回归：agent 334、agent-gateway 117、agent-ui 224 passing；三包 tsc 干净。
+
+## P26 打磨（已完成）
+
+1. ~~`/diagnostics list` 记录列表视图（镜像 P14 `/quality list` 可浏览 select 菜单模式）~~ → 已完成：P23 补了 `turn_diagnostics.list` RPC 与 `listTurnDiagnostics` service 方法，但 UI 命令面从未消费 list（`/diagnostics` 只用 stats、`/diagnostics trend` 用 trend）。本次补齐：
+   - **组件**：新增 `openTurnDiagnosticsList(sessionId?)`——无参数时回退 `state.sessionId`（与 `/compactions` 的 P20 语义一致，gateway RPC 的 list 要求 sessionId 必填，无 session 时提示 `Run /diagnostics list <sessionId>.`）；经 `listTurnDiagnostics(resolvedSessionId)` 拉记录，渲染为可浏览 select 菜单（title `Turn diagnostics records (<sessionId>)`，hint `N records`）。
+   - **option builder**：`buildTurnDiagnosticsRecordOption`——label `{sessionId} · {本地化时间}`，description 日期 + `N compact(s)` + `saved N tokens` + repeated/clarif 标记，detail 全字段（Record/Session/Created/Empty response retries/Repeated clarification/Final clarification/Context rewritten/Follow-up recoveries/Compactions/Token savings/Compression ratio/Compaction level/Prompt cache）。
+   - **命令分支**：`/diagnostics` case 增 `list` / `list <sessionId>` 分支（trend 分支之后、stats 分支之前）；help 菜单补 `/diagnostics list` 条目。
+   - 测试：view-model +3（diagnosticsListCommandOpensRecordSelectorThroughRpc 含 limit/sessionId 断言与 label/description/detail 渲染 / diagnosticsListCommandUsesCurrentSession 无参回退当前会话 / diagnosticsListCommandReportsEmptyRecords 空提示）——依赖 `AppRpcStub.turnDiagnosticsRecords` 与既有 `turn_diagnostics.list` 分支。
+
+全量回归：agent 334、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。
