@@ -277,6 +277,52 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/diagnostics [sessionId]`: shows aggregated turn diagnostics
+     * (empty-response rate, repeated-question rate, compaction totals, token
+     * savings) for the given session, or for every session owned by the
+     * principal when no session id is provided.
+     */
+    protected async openTurnDiagnostics(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Turn diagnostics are unavailable without app RPC.');
+            return true;
+        }
+        const aggregate = await this.sessionService.getTurnDiagnosticsStats(sessionId);
+        if (!aggregate || !Number(aggregate.totalTurns)) {
+            this.notify(
+                sessionId
+                    ? `No turn diagnostics recorded for session '${sessionId}'.`
+                    : 'No turn diagnostics recorded yet.'
+            );
+            return true;
+        }
+        this.notify(this.formatTurnDiagnosticsAggregate(aggregate, sessionId));
+        return true;
+    }
+
+    /**
+     * Renders one compact aggregate line for turn diagnostics, for example:
+     * `session-1 · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens · 12/1–12/2`
+     */
+    protected formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, sessionId?: string): string {
+        const id = sessionId
+            ? (sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId)
+            : 'all sessions';
+        const parts = [
+            `${id} · ${Number(aggregate.totalTurns ?? 0)} turns`,
+            `empty ${Number(aggregate.emptyResponseRate ?? 0)}%`,
+            `repeated ${Number(aggregate.repeatedQuestionRate ?? 0)}%`,
+            `clarif ${Number(aggregate.clarificationRate ?? 0)}%`,
+            `${Number(aggregate.compactionCount ?? 0)} compact(s)`,
+            `saved ${formatCompactNumber(Number(aggregate.totalTokenSavings ?? 0))} tokens`
+        ];
+        const range = aggregate.timeRange
+            ? ` · ${new Date(aggregate.timeRange.from).toLocaleDateString()}–${new Date(aggregate.timeRange.to).toLocaleDateString()}`
+            : '';
+        return parts.join(' · ') + range;
+    }
+
+    /**
      * Renders one compact line per session with an 8-level sparkline over time
      * buckets (`avgCompressionRatio` mapped to ▁▂▃▄▅▆▇█), the bucket date
      * range, the total tokens saved, and the averaged compression ratio, for
@@ -2355,6 +2401,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
                     { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
+                    { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2547,6 +2594,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     }
                 }
                 return this.openCompactionHistory(parsed.args);
+            case '/diagnostics':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                {
+                    const sessionId = parsed.args?.trim() || undefined;
+                    return this.openTurnDiagnostics(sessionId);
+                }
             case '/copy': {
                 if (parsed.args) {
                     switch (parsed.args) {

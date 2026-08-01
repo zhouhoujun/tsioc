@@ -286,6 +286,8 @@ class AppRpcStub {
     compactionHistoryRecords: any[] = [];
     compactionHistoryAggregates: any[] = [];
     compactionHistoryTrend: any[] = [];
+    turnDiagnosticsAggregate: Record<string, any> | null = null;
+    turnDiagnosticsRecords: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -446,6 +448,20 @@ class AppRpcStub {
                 ? this.compactionHistoryTrend.filter(item => item.sessionId === sessionId)
                 : this.compactionHistoryTrend;
             return { trend };
+        }
+        if (method === 'turn_diagnostics.list') {
+            const sessionId = params?.sessionId;
+            const records = sessionId
+                ? this.turnDiagnosticsRecords.filter(item => item.sessionId === sessionId)
+                : this.turnDiagnosticsRecords;
+            return { records: records.slice(0, params?.limit ?? 200) };
+        }
+        if (method === 'turn_diagnostics.stats') {
+            const sessionId = params?.sessionId;
+            const aggregate = sessionId
+                ? (this.turnDiagnosticsAggregate && this.turnDiagnosticsAggregate.sessionIds?.includes(sessionId) ? this.turnDiagnosticsAggregate : null)
+                : this.turnDiagnosticsAggregate;
+            return { aggregate };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -644,6 +660,24 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return Array.isArray(result?.trend) ? result.trend : [];
         }
         return [];
+    }
+
+    override async listTurnDiagnostics(sessionId: string, options?: { limit?: number }): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('turn_diagnostics.list', { sessionId, ...options });
+            return Array.isArray(result?.records) ? result.records : [];
+        }
+        return [];
+    }
+
+    override async getTurnDiagnosticsStats(sessionId?: string): Promise<Record<string, any> | null> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('turn_diagnostics.stats', sessionId ? { sessionId } : {});
+            return result?.aggregate ?? null;
+        }
+        return null;
     }
 
     override async ensureSession(sessionId?: string): Promise<AgentConsoleSessionChoice> {
@@ -2939,6 +2973,63 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'compaction_history.trend')).toEqual(true);
         expect(component.notice).toContain('No compaction history trend recorded yet.');
+    }
+
+    @Test('diagnostics command shows aggregated turn diagnostics through rpc')
+    async diagnosticsCommandShowsAggregateThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsAggregate = {
+            sessionIds: ['session-1'],
+            totalTurns: 12,
+            emptyResponseCount: 1,
+            emptyResponseRate: 8.3,
+            repeatedClarificationCount: 2,
+            repeatedQuestionRate: 16.7,
+            finalClarificationCount: 0,
+            clarificationRate: 0,
+            followUpRecoveryCount: 2,
+            followUpRecoveryRate: 16.7,
+            compactionCount: 3,
+            totalTokenSavings: 25000,
+            timeRange: { from: 0, to: 172800000 }
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/diagnostics';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.stats' && !call.params?.sessionId)).toEqual(true);
+        expect(component.notice).toContain('all sessions');
+        expect(component.notice).toContain('12 turns');
+        expect(component.notice).toContain('empty 8.3%');
+        expect(component.notice).toContain('repeated 16.7%');
+        expect(component.notice).toContain('3 compact(s)');
+        expect(component.notice).toContain('saved 25K tokens');
+    }
+
+    @Test('diagnostics command passes session id and reports empty stats')
+    async diagnosticsCommandReportsEmptyStats() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsAggregate = null;
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/diagnostics session-1';
+        await component.submit();
+
+        const statsCall = appRpc.calls.find(call => call.method === 'turn_diagnostics.stats');
+        expect(statsCall).toBeTruthy();
+        expect(statsCall!.params.sessionId).toEqual('session-1');
+        expect(component.notice).toContain("No turn diagnostics recorded for session 'session-1'.");
+
+        component.input = '/diagnostics';
+        await component.submit();
+        expect(component.notice).toContain('No turn diagnostics recorded yet.');
     }
 
     @Test('approval resolve routes through rpc when no local approval manager')

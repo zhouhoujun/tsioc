@@ -269,6 +269,31 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.trend) ? result.trend : [];
     }
 
+    /**
+     * Fetches persisted turn diagnostics records over RPC. `sessionId` is
+     * required and the caller must own the session.
+     */
+    async listTurnDiagnostics(sessionId: string, options?: { limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('turn_diagnostics.list', { sessionId, ...options }, context);
+        return Array.isArray(result?.records) ? result.records : [];
+    }
+
+    /**
+     * Fetches aggregated turn diagnostics over RPC. `sessionId` is optional:
+     * when provided the aggregate is scoped to that session (and the caller
+     * must own it), otherwise it covers every session owned by the principal.
+     */
+    async getTurnDiagnosticsStats(sessionId?: string, context?: any): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        const result = await this.appRpc.request('turn_diagnostics.stats', sessionId ? { sessionId } : {}, context);
+        return result?.aggregate ?? null;
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

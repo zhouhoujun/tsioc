@@ -253,3 +253,13 @@
    - 测试：agent +5（trendBucketsByTimePerSession / trendHonorsBucketSizeAndCap / trendScopesToSession / inMemoryTrends / typeOrmTrends），gateway +5（compactionHistoryTrendThroughRpc 含 capabilities / rejectsForeignCompactionHistoryTrendThroughRpc / compactionHistoryTrendWithoutStore / HTTP trend 2 天桶 / HTTP foreign 403），view-model +3（sparkline 渲染与汇总 / 参数透传 2d→毫秒桶 / 空趋势提示）——依赖 `AppRpcStub.compactionHistoryTrend` 与 `SessionServiceStub.getCompactionHistoryTrend` override。
 
 全量回归：agent 329、agent-gateway 108、agent-ui 216 passing；三包 tsc 干净。
+
+## P23 打磨（已完成）
+
+1. ~~turn diagnostics 补 RPC 面 + UI `/diagnostics` 命令~~ → 已完成：P9 只暴露了 HTTP 路由（`TurnDiagnosticsHandler`），RPC 面无方法、控制台无命令。本次补齐（镜像 P20/P12 的 compaction history / summary quality 消费面模式）：
+   - **RPC**（`@tsdi/agent-gateway`）：`AppRpcServer` 注入 `@Optional() turnDiagnostics?: TurnDiagnosticsStore | null`（构造第 13 参，位于 `compactionHistory` 之后）；capabilities 增 `turn_diagnostics.list` / `turn_diagnostics.stats`；`listTurnDiagnostics`——`sessionId` 必填且经 `ensureSessionAccess` 做 owner 校验，`limit` clamp `[0,200]` 默认 200，响应记录 view 字段（含 compressionRatio / compactionLevel / promptCache 透传）；`getTurnDiagnosticsStats`——`sessionId` 可选（传入时校验 owner，无参数时经 `owners.listOwned(sessionIds, principalId)` 收敛到本主会话再聚合，杜绝跨会话泄漏，与 HTTP stats 同语义）；无 store 时返回 `{ records: [] }` / `{ aggregate: null }`。
+   - **UI service**（`@tsdi/agent-ui`）：`AgentConsoleSessionService.listTurnDiagnostics(sessionId, options?, context?)` 与 `getTurnDiagnosticsStats(sessionId?, context?)`（经 appRpc 请求，无 RPC 时降级空数组 / null）。
+   - **UI 命令**：`/diagnostics [sessionId]`——无 sessionId 时经 stats RPC 拉取全会话聚合；`formatTurnDiagnosticsAggregate` 输出一行摘要（`${id} · ${n} turns · empty ${rate}% · repeated ${rate}% · clarif ${rate}% · ${n} compact(s) · saved ${tokens} tokens · 日期范围`，id 超 16 字符截断 14 + `…`，`all sessions` 作为无 sessionId 时的 id）；空统计给可读提示（有/无 sessionId 两种文案）；commandHints 增 `/diagnostics` 条目（state 数组 + help 菜单）。
+   - 测试：gateway +5（turnDiagnosticsStatsThroughRpc 含 capabilities 与字段断言 / rejectsForeignTurnDiagnosticsThroughRpc / turnDiagnosticsStatsScopesToOwnedSessions / turnDiagnosticsWithoutStore / turnDiagnosticsListThroughRpc），view-model +2（diagnosticsCommandShowsAggregateThroughRpc / diagnosticsCommandReportsEmptyStats）——依赖 `AppRpcStub.turnDiagnosticsAggregate`/`turnDiagnosticsRecords` 与 `SessionServiceStub.getTurnDiagnosticsStats`/`listTurnDiagnostics` override（走 rpcRef）。
+
+全量回归：agent 329、agent-gateway 113、agent-ui 218 passing；三包 tsc 干净。（agent-ui 全量首次运行 `componentResolvesWorkspaceMentionSuggestionsFromAppFileAdapter` 偶发失败，连续两次复跑均 218 passing，为既有异步 file-adapter 测试的 flaky，与本次改动无关。）

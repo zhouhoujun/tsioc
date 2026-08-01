@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -23,7 +23,8 @@ export class AppRpcServer {
         @Optional() private audit?: AuditSink | null,
         @Optional() private approvalManager?: ToolApprovalManager | null,
         @Optional() private summaryQuality?: SummaryQualityStore | null,
-        @Optional() private compactionHistory?: CompactionHistoryStore | null
+        @Optional() private compactionHistory?: CompactionHistoryStore | null,
+        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null
     ) {
     }
 
@@ -168,7 +169,9 @@ export class AppRpcServer {
                         'summary_quality.trend',
                         'compaction_history.list',
                         'compaction_history.stats',
-                        'compaction_history.trend'
+                        'compaction_history.trend',
+                        'turn_diagnostics.list',
+                        'turn_diagnostics.stats'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -250,6 +253,10 @@ export class AppRpcServer {
                 return this.getCompactionHistoryStats(params, context);
             case 'compaction_history.trend':
                 return this.getCompactionHistoryTrend(params, context);
+            case 'turn_diagnostics.list':
+                return this.listTurnDiagnostics(params, context);
+            case 'turn_diagnostics.stats':
+                return this.getTurnDiagnosticsStats(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1157,6 +1164,51 @@ export class AppRpcServer {
                 totalTokensSaved: point.totalTokensSaved
             }))
         };
+    }
+
+    private async listTurnDiagnostics(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.turnDiagnostics) {
+            return { records: [] };
+        }
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 200) : 200;
+        const records = await this.turnDiagnostics.list(sessionId, { limit });
+        return {
+            records: records.map(record => ({
+                id: record.id,
+                sessionId: record.sessionId,
+                createdAt: record.createdAt,
+                emptyResponseRetryCount: record.emptyResponseRetryCount,
+                followUpRecoveryCount: record.followUpRecoveryCount,
+                followUpContextRewritten: record.followUpContextRewritten,
+                finalAssistantWasClarification: record.finalAssistantWasClarification,
+                repeatedClarificationDetected: record.repeatedClarificationDetected,
+                compactionCount: record.compactionCount,
+                totalTokenSavings: record.totalTokenSavings,
+                compressionRatio: record.compressionRatio ?? null,
+                compactionLevel: record.compactionLevel ?? null,
+                promptCache: record.promptCache ?? null
+            }))
+        };
+    }
+
+    private async getTurnDiagnosticsStats(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.turnDiagnostics) {
+            return { aggregate: null };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+            return { aggregate: await this.turnDiagnostics.aggregate([sessionId]) };
+        }
+        const all = await this.turnDiagnostics.list();
+        const sessionIds = [...new Set(all.map(record => record.sessionId))];
+        const owned = await this.owners.listOwned(sessionIds, context.principalId);
+        return { aggregate: await this.turnDiagnostics.aggregate(owned) };
     }
 
     private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {        const sessionId = this.requireSessionId(params);

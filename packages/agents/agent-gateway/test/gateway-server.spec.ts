@@ -3750,6 +3750,203 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((response as any).result.trend).toEqual([]);
     }
+
+    @Test('returns turn diagnostics stats through json-rpc')
+    async turnDiagnosticsStatsThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list(sessionId?: string) {
+                return sessionId === 'rpc-diag'
+                    ? [{ id: 'd1', sessionId: 'rpc-diag', createdAt: 1, emptyResponseRetryCount: 1, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: true, compactionCount: 2, totalTokenSavings: 4000, compressionRatio: 50, compactionLevel: 'L3', promptCache: { provider: 'deepseek', supported: true, applied: true, appliedStrategy: 'partial', appliedScopes: ['history'], cachedTokens: 512 } }]
+                    : [];
+            },
+            async aggregate(sessionIds?: string[]) {
+                return {
+                    sessionIds,
+                    totalTurns: 2,
+                    emptyResponseCount: 1,
+                    emptyResponseRate: 50,
+                    repeatedClarificationCount: 1,
+                    repeatedQuestionRate: 50,
+                    finalClarificationCount: 0,
+                    clarificationRate: 0,
+                    followUpRecoveryCount: 1,
+                    followUpRecoveryRate: 50,
+                    compactionCount: 2,
+                    totalTokenSavings: 4000,
+                    timeRange: { from: 1, to: 2 }
+                };
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.stats',
+            params: { sessionId: 'rpc-diag' }
+        }, { principalId: 'user-1' });
+        const aggregate = (response as any).result.aggregate;
+        expect(aggregate.totalTurns).toEqual(2);
+        expect(aggregate.emptyResponseRate).toEqual(50);
+        expect(aggregate.repeatedQuestionRate).toEqual(50);
+        expect(aggregate.compactionCount).toEqual(2);
+        expect(aggregate.totalTokenSavings).toEqual(4000);
+        expect(aggregate.timeRange).toEqual({ from: 1, to: 2 });
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('turn_diagnostics.list');
+        expect((capsResponse as any).result.methods).toContain('turn_diagnostics.stats');
+    }
+
+    @Test('rejects foreign turn diagnostics access through json-rpc')
+    async rejectsForeignTurnDiagnosticsThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [];
+            },
+            async aggregate() {
+                return {};
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const statsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.stats',
+            params: { sessionId: 'rpc-diag-locked' }
+        }, { principalId: 'user-2' });
+        expect((statsResponse as any).error.code).toEqual(-32003);
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'turn_diagnostics.list',
+            params: { sessionId: 'rpc-diag-locked' }
+        }, { principalId: 'user-2' });
+        expect((listResponse as any).error.code).toEqual(-32003);
+    }
+
+    @Test('aggregates turn diagnostics across owned sessions through json-rpc')
+    async turnDiagnosticsStatsScopesToOwnedSessions() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-1', 'user-1');
+        await owners.create('rpc-diag-2', 'user-2');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [
+                    { id: 'd1', sessionId: 'rpc-diag-1', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0 },
+                    { id: 'd2', sessionId: 'rpc-diag-2', createdAt: 2, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0 }
+                ];
+            },
+            async aggregate(sessionIds?: string[]) {
+                return { sessionIds, totalTurns: sessionIds?.length ?? 0 };
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.stats',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((response as any).result.aggregate.sessionIds).toEqual(['rpc-diag-1']);
+    }
+
+    @Test('returns empty turn diagnostics when no store is configured')
+    async turnDiagnosticsWithoutStore() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-empty-diag', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.list',
+            params: { sessionId: 'rpc-empty-diag' }
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.records).toEqual([]);
+
+        const statsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'turn_diagnostics.stats',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((statsResponse as any).result.aggregate).toEqual(null);
+    }
+
+    @Test('returns turn diagnostics records through json-rpc')
+    async turnDiagnosticsListThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-list', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list(sessionId?: string, options?: { limit?: number }) {
+                const limit = options?.limit ?? 200;
+                return [
+                    { id: 'd1', sessionId: 'rpc-diag-list', createdAt: 1, emptyResponseRetryCount: 1, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: true, compactionCount: 2, totalTokenSavings: 4000, compressionRatio: 50, compactionLevel: 'L3', promptCache: { provider: 'deepseek', supported: true, applied: true, appliedStrategy: 'partial', appliedScopes: ['history'], cachedTokens: 512 } },
+                    { id: 'd2', sessionId: 'rpc-diag-list', createdAt: 2, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: true, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0 }
+                ].filter(record => !sessionId || record.sessionId === sessionId).slice(0, limit);
+            },
+            async aggregate() {
+                return {};
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.list',
+            params: { sessionId: 'rpc-diag-list', limit: 1 }
+        }, { principalId: 'user-1' });
+        const records = (response as any).result.records;
+        expect(records.length).toEqual(1);
+        expect(records[0].id).toEqual('d1');
+        expect(records[0].sessionId).toEqual('rpc-diag-list');
+        expect(records[0].emptyResponseRetryCount).toEqual(1);
+        expect(records[0].repeatedClarificationDetected).toEqual(true);
+        expect(records[0].compactionCount).toEqual(2);
+        expect(records[0].totalTokenSavings).toEqual(4000);
+        expect(records[0].compressionRatio).toEqual(50);
+        expect(records[0].compactionLevel).toEqual('L3');
+        expect(records[0].promptCache).toEqual({ provider: 'deepseek', supported: true, applied: true, appliedStrategy: 'partial', appliedScopes: ['history'], cachedTokens: 512 });
+    }
 }
 export class AppRpcHandlerTest {
     @Test('formats invalid rpc requests as json-rpc errors')
