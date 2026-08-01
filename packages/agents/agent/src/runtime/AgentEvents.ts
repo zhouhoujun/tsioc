@@ -1,6 +1,7 @@
 import { ApplicationEvent } from '@tsdi/core';
 import { ModelResponse } from '../model/ModelResponse';
 import { StreamChunkType } from '../model/StreamChunk';
+import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 import { AgentMessage } from './AgentMessage';
 import { ScheduledAgentTask } from '../scheduler/ScheduledAgentTask';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
@@ -41,6 +42,8 @@ export interface AgentTurnDiagnostics {
     compressionRatio?: number;
     /** Latest compaction level applied. */
     compactionLevel?: string;
+    /** Prompt cache provider support / applied policy observed from the final model response. */
+    promptCache?: PromptCacheRuntimeMetadata;
 }
 
 function summarizeEventInput(input: any): string | undefined {

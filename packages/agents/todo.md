@@ -94,3 +94,13 @@
 3. ~~README control-plane matrix 状态刷新~~ → 已完成：`agent/README.md` 两行更新——`Tool compensation / rollback` → `Implemented`（`src/runtime/DefaultAgentRuntime.ts` + `src/tools/AgentTool.ts` 的 compensate 钩子）；sandbox 行改为「policy hooks + capability defaults（`src/harness/ToolSandboxPolicy.ts`），无通用沙箱运行时」的准确描述。
 
 全量回归：agent 282 / agent-tools 190 / agent-gateway 79 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。
+
+## P7 打磨（已完成）
+
+1. ~~M5-RUNTIME-3 收尾：prompt cache provider support / applied policy 接入可观测链~~ → 已完成：模型适配器原本就在响应 `metadata.promptCache` 构建 `PromptCacheRuntimeMetadata`（provider / supported / applied / appliedStrategy / appliedScopes / 缓存 token 观测），但 runtime 从未消费，导致 provider 缓存支持度在 SSE / RPC / UI 全程不可见。本次打通：
+   - **agent**：`AgentTurnDiagnostics` 新增可选 `promptCache?: PromptCacheRuntimeMetadata`；`DefaultAgentRuntime` 新增 `capturePromptCacheDiagnostics`，在 `handleModelResponse`（直接回答路径）与两条 turn 的 finalResponse 路径（`completeTurn` / `completeStreamingTurn`）把最终响应的 promptCache 元数据写入 diagnostics。
+   - **gateway**：`describeTurnDiagnosticsEvent` 在压缩摘要基础上追加 `prompt cache {supported} ({applied}[, N cached tokens])`（无压缩且无缓存活动时给「no compaction or prompt cache activity」兜底）；`toStreamEventChunk` 随 diagnostics 透传结构化 promptCache 字段。
+   - **UI**：`consumeStreamEventChunk` 的 `turn_diagnostics` 处理器按结构化的压缩 + prompt cache 摘要拼接活动文案，缺结构化数据时回退描述内容。
+   - 测试：agent `runtime-loop.spec.ts` 新增 `turn diagnostics carry prompt cache provider metadata from the final response`（断言 diagnostics.promptCache 完整透传）；gateway RPC 流测试扩展 diagnostics 载荷与 `content` 断言（`prompt cache partial (applied, 512 cached tokens)`）+ 结构化字段断言；agent-ui view-model 测试扩展 `prompt cache partial (applied, 512 cached tokens)` 活动断言。
+
+全量回归：agent 283 / agent-tools 190 / agent-gateway 79 / agent-ui 195 / agent-cli 26 passing；agent-channels、agent-providers tsc 干净。

@@ -2682,7 +2682,17 @@ export class AppRpcHandlerTest {
                     compactionCount: 1,
                     totalTokenSavings: 3000,
                     compressionRatio: 38,
-                    compactionLevel: 'none'
+                    compactionLevel: 'none',
+                    promptCache: {
+                        requested: { enabled: true, strategy: 'auto', scopes: ['system', 'summary', 'memory'] },
+                        provider: 'anthropic',
+                        supported: 'partial',
+                        applied: true,
+                        appliedStrategy: 'ephemeral',
+                        appliedScopes: ['system'],
+                        observedCachedPromptTokens: 512,
+                        observedCreatedPromptTokens: 128
+                    }
                 }));
                 yield { type: 'done' };
             },
@@ -2715,8 +2725,12 @@ export class AppRpcHandlerTest {
             frame.params?.chunkType === 'event' && frame.params?.eventType === 'turn_diagnostics');
         expect(turnDiagnostics?.params?.label).toEqual('state');
         expect(turnDiagnostics?.params?.content).toContain('1 compaction');
+        expect(turnDiagnostics?.params?.content).toContain('prompt cache partial (applied, 512 cached tokens)');
         expect(turnDiagnostics?.params?.diagnostics?.compactionCount).toEqual(1);
         expect(turnDiagnostics?.params?.diagnostics?.totalTokenSavings).toEqual(3000);
+        expect(turnDiagnostics?.params?.diagnostics?.promptCache?.supported).toEqual('partial');
+        expect(turnDiagnostics?.params?.diagnostics?.promptCache?.applied).toEqual(true);
+        expect(turnDiagnostics?.params?.diagnostics?.promptCache?.observedCachedPromptTokens).toEqual(512);
     }
 }
 

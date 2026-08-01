@@ -259,6 +259,29 @@ class RepeatedClarificationModelAdapter extends EchoModelAdapter {
     }
 }
 
+class PromptCacheModelAdapter extends EchoModelAdapter {
+    async complete(): Promise<any> {
+        return {
+            message: 'cached answer',
+            stopReason: 'end',
+            metadata: {
+                provider: 'anthropic',
+                model: 'claude-3-5-sonnet',
+                promptCache: {
+                    requested: { enabled: true, strategy: 'auto', scopes: ['system', 'summary', 'memory'] },
+                    provider: 'anthropic',
+                    supported: 'partial',
+                    applied: true,
+                    appliedStrategy: 'ephemeral',
+                    appliedScopes: ['system'],
+                    observedCachedPromptTokens: 512,
+                    observedCreatedPromptTokens: 128
+                }
+            }
+        };
+    }
+}
+
 class StreamingToolLoopModelAdapter extends EchoModelAdapter {
     private count = 0;
     private releaseSecondChunk?: () => void;
@@ -1176,6 +1199,36 @@ export class RuntimeLoopTest {
             compressionRatio: undefined,
             totalTokenSavings: 0
         });
+    }
+
+    @Test('turn diagnostics carry prompt cache provider metadata from the final response')
+    async turnDiagnosticsCarryPromptCacheMetadata() {
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            new PromptCacheModelAdapter(),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+
+        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        expect(diagnostics?.diagnostics.promptCache).toEqual({
+            requested: { enabled: true, strategy: 'auto', scopes: ['system', 'summary', 'memory'] },
+            provider: 'anthropic',
+            supported: 'partial',
+            applied: true,
+            appliedStrategy: 'ephemeral',
+            appliedScopes: ['system'],
+            observedCachedPromptTokens: 512,
+            observedCreatedPromptTokens: 128
+        });
+        expect(diagnostics?.diagnostics.compactionCount).toEqual(0);
+        expect(diagnostics?.diagnostics.totalTokenSavings).toEqual(0);
     }
 
     @Test('publishes memory retrieval lifecycle events on success')

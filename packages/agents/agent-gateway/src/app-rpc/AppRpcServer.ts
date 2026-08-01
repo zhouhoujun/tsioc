@@ -733,10 +733,21 @@ export class AppRpcServer {
         const diagnostics = data?.diagnostics || {};
         const compactionCount = Number(diagnostics.compactionCount ?? 0);
         const totalSavings = Number(diagnostics.totalTokenSavings ?? 0);
-        if (!compactionCount && !totalSavings) {
-            return 'Turn diagnostics: no compaction performed';
+        const parts: string[] = [];
+        if (compactionCount || totalSavings) {
+            parts.push(`${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`);
         }
-        return `Turn diagnostics: ${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`;
+        const promptCache = diagnostics.promptCache;
+        if (promptCache) {
+            const support = String(promptCache.supported || 'none');
+            const applied = promptCache.applied ? 'applied' : 'not applied';
+            const cachedTokens = promptCache.observedCachedPromptTokens ?? 0;
+            parts.push(`prompt cache ${support} (${applied}${cachedTokens ? `, ${cachedTokens} cached tokens` : ''})`);
+        }
+        if (!parts.length) {
+            return 'Turn diagnostics: no compaction or prompt cache activity';
+        }
+        return `Turn diagnostics: ${parts.join('; ')}`;
     }
 
     private describeToolInvocationEvent(data: any): string {

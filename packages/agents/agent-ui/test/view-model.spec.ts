@@ -1138,7 +1138,20 @@ export class AgentConsoleComponentTest {
                 label: 'state',
                 status: 'success',
                 content: 'Turn diagnostics: 1 compaction, 3000 tokens saved',
-                diagnostics: { compactionCount: 1, totalTokenSavings: 3000 }
+                diagnostics: {
+                    compactionCount: 1,
+                    totalTokenSavings: 3000,
+                    promptCache: {
+                        requested: { enabled: true, strategy: 'auto', scopes: ['system', 'summary', 'memory'] },
+                        provider: 'anthropic',
+                        supported: 'partial',
+                        applied: true,
+                        appliedStrategy: 'ephemeral',
+                        appliedScopes: ['system'],
+                        observedCachedPromptTokens: 512,
+                        observedCreatedPromptTokens: 128
+                    }
+                }
             },
             { type: 'text', content: 'Patched handler' },
             {
@@ -1165,6 +1178,9 @@ export class AgentConsoleComponentTest {
         )).toEqual(true);
         expect(component.activities.some(activity =>
             activity.message.includes('1 compaction') && activity.message.includes('3000 tokens saved')
+        )).toEqual(true);
+        expect(component.activities.some(activity =>
+            activity.message.includes('prompt cache partial (applied, 512 cached tokens)')
         )).toEqual(true);
     }
 

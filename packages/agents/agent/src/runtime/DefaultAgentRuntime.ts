@@ -12,6 +12,7 @@ import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
 import { StreamChunk } from '../model/StreamChunk';
+import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
@@ -473,6 +474,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+        this.capturePromptCacheDiagnostics(turnContext, finalResponse);
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
         return { sessionId, message: finalMessage };
     }
@@ -519,6 +521,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const finalResponse = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, finalRequest));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+        this.capturePromptCacheDiagnostics(turnContext, finalResponse);
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
         return { sessionId, message: finalMessage };
     }
@@ -635,6 +638,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentTurnDiagnosticsEvent(this, sessionId, { ...diagnostics }));
         } catch {
             // diagnostics observability must not break turn execution
+        }
+    }
+
+    private capturePromptCacheDiagnostics(turnContext: TurnExecutionContext, response: ModelResponse): void {
+        const diagnostics = turnContext.diagnostics;
+        if (!diagnostics) {
+            return;
+        }
+        const promptCache = response.metadata?.promptCache;
+        if (promptCache) {
+            diagnostics.promptCache = promptCache as PromptCacheRuntimeMetadata;
         }
     }
 
@@ -909,6 +923,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
 
         const message = await this.createAssistantMessageFromResponse(sessionId, response);
+        this.capturePromptCacheDiagnostics(turnContext, response);
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, message, turnContext);
         return {
             message

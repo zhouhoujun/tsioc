@@ -2775,11 +2775,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const diagnostics = chunk?.diagnostics || {};
             const compactionCount = Number(diagnostics.compactionCount ?? 0);
             const totalSavings = Number(diagnostics.totalTokenSavings ?? 0);
+            const promptCache = diagnostics.promptCache;
+            const parts: string[] = [];
             if (compactionCount > 0 || totalSavings > 0) {
-                this.state.pushActivity(
-                    'model',
-                    `Turn diagnostics: ${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`
-                );
+                parts.push(`${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`);
+            }
+            if (promptCache) {
+                const support = String(promptCache.supported || 'none');
+                const applied = promptCache.applied ? 'applied' : 'not applied';
+                const cachedTokens = Number(promptCache.observedCachedPromptTokens ?? 0);
+                parts.push(`prompt cache ${support} (${applied}${cachedTokens ? `, ${cachedTokens} cached tokens` : ''})`);
+            }
+            if (parts.length) {
+                this.state.pushActivity('model', `Turn diagnostics: ${parts.join('; ')}`);
                 return;
             }
             const diagnosticsContent = String(chunk?.content || '').trim();
