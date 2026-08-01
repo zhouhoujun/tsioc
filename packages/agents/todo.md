@@ -155,3 +155,10 @@
    - 说明：EchoModelAdapter 无 `model` 字段（`resolveModelName` 对 echo provider 返回 undefined）——RPC/UI 输出中 model 为 null，属已知小缺口，留待后续。
 
 全量回归：agent 314 / agent-gateway 90 / agent-ui 197 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P13 打磨（已完成）
+
+1. ~~echo provider 的 model 名称缺口~~ → 已完成：`EchoModelAdapter` 之前只有 `provider = 'echo'` 没有 `model` 字段，`LLMSessionSummarizer.resolveModelName()`（`adapter?.options?.model || adapter?.model`）对 echo 适配器返回 undefined，导致 `summary_quality.list` 输出中 model 为 null。补上 `readonly model = 'echo'`。测试：`summary-quality.spec.ts` 集成测试新增 `records[0].model === 'echo'` 断言。
+   - CLI 面复核结论：`tsdi-agent chat` 委托给 agent-ui（已支持 `/quality` 命令），`tsdi-agent rpc-stdio` 走 `StdioAppRpcServer`（复用 `AppRpcServer` 的 `summary_quality.list`/`summary_quality.stats` capabilities）——CLI 交互面无需新增消费者，闭环在 P12 已覆盖。
+
+全量回归：agent 314 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

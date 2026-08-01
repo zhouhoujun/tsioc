@@ -192,7 +192,9 @@ Every produced summary is scored deterministically by `scoreSummaryQuality` in
 
 `LLMSessionSummarizer` records a `SummaryQualityRecord` for each summary through
 `SummaryQualityStore` (provider, model, per-dimension scores, fallback flag,
-summary length). The store family follows the same pattern as the other harness
+summary length). The model name is resolved from the adapter's `options.model` or
+its `model` field (`EchoModelAdapter` reports `echo`), falling back to undefined.
+The store family follows the same pattern as the other harness
 stores: in-memory default, durable TypeORM-backed store when a `TypeormAdapter`
 is registered, and a `DefaultSummaryQualityStore` that picks between them.
 

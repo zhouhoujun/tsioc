@@ -295,6 +295,7 @@ export class SummaryQualityIntegrationTest {
         const records = await store.list();
         expect(records.length).toEqual(1);
         expect(records[0].provider).toEqual('echo');
+        expect(records[0].model).toEqual('echo');
         expect(records[0].total).toEqual(100);
         expect(records[0].fallbackUsed).toEqual(false);
     }
