@@ -3093,6 +3093,51 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((capsResponse as any).result.methods).toContain('summary_quality.list');
         expect((capsResponse as any).result.methods).toContain('summary_quality.stats');
+        expect((capsResponse as any).result.methods).toContain('summary_quality.trend');
+    }
+
+    @Test('builds a time-bucketed summary quality trend through json-rpc')
+    async buildsSummaryQualityTrend() {
+        const day = 24 * 60 * 60 * 1000;
+        const quality = {
+            async list(options?: { provider?: string; limit?: number }) {
+                const provider = options?.provider;
+                const limit = options?.limit ?? 200;
+                return [
+                    { id: 't1', provider: 'deepseek', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
+                    { id: 't2', provider: 'deepseek', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 },
+                    { id: 't3', provider: 'deepseek', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: day + 1 },
+                    { id: 't4', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 70, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 200, createdAt: day + 2 }
+                ].filter(record => !provider || record.provider === provider).slice(0, limit);
+            }
+        } as any;
+        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+
+        const trendResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'summary_quality.trend',
+            params: { provider: 'deepseek' }
+        }, { principalId: 'user-1' });
+        const deepseek = (trendResponse as any).result.trend;
+        expect(deepseek.length).toEqual(2);
+        expect(deepseek[0].bucketStart).toEqual(0);
+        expect(deepseek[0].recordCount).toEqual(2);
+        expect(deepseek[0].avgTotal).toEqual(75);
+        expect(deepseek[0].fallbackRate).toEqual(50);
+        expect(deepseek[1].bucketStart).toEqual(day);
+        expect(deepseek[1].recordCount).toEqual(1);
+        expect(deepseek[1].avgTotal).toEqual(80);
+
+        const allTrend = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'summary_quality.trend',
+            params: {}
+        }, { principalId: 'user-1' });
+        const providers = (allTrend as any).result.trend;
+        expect(providers.filter((point: { provider: string }) => point.provider === 'deepseek').length).toEqual(2);
+        expect(providers.filter((point: { provider: string }) => point.provider === 'anthropic').length).toEqual(1);
     }
 
     @Test('summary quality rpc returns empty payloads when no store is configured')
@@ -3114,6 +3159,14 @@ export class AppRpcServerTest {
             params: {}
         }, { principalId: 'user-1' });
         expect((statsResponse as any).result.aggregates).toEqual([]);
+
+        const trendResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'summary_quality.trend',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((trendResponse as any).result.trend).toEqual([]);
     }
 }
 export class AppRpcHandlerTest {

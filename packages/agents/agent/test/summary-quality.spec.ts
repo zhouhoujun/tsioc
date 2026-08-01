@@ -5,7 +5,7 @@ import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
-import { SummaryQualityRecord, SummaryQualityStore, aggregateSummaryQuality } from '../src/harness/SummaryQualityStore';
+import { SummaryQualityRecord, SummaryQualityStore, aggregateSummaryQuality, buildSummaryQualityTrend } from '../src/harness/SummaryQualityStore';
 import { scoreSummaryQuality } from '../src/harness/SummaryQualityScorer';
 import { InMemorySummaryQualityStore } from '../src/harness/InMemorySummaryQualityStore';
 import { TypeOrmSummaryQualityStore } from '../src/harness/TypeOrmSummaryQualityStore';
@@ -216,6 +216,56 @@ export class SummaryQualityStoreTest {
             makeRecord({ id: 'r2', provider: 'deepseek', total: 80, createdAt: 2 })
         ]);
         expect(raw[0].avgTotal).toEqual(85);
+    }
+
+    @Test('build summary quality trend buckets records per provider over time')
+    async trendBucketsRecordsPerProvider() {
+        const day = 24 * 60 * 60 * 1000;
+        const trend = buildSummaryQualityTrend([
+            makeRecord({ id: 't1', provider: 'deepseek', total: 90, fallbackUsed: false, createdAt: 1 }),
+            makeRecord({ id: 't2', provider: 'deepseek', total: 80, fallbackUsed: false, createdAt: 2 }),
+            makeRecord({ id: 't3', provider: 'deepseek', total: 60, fallbackUsed: true, createdAt: day + 1 }),
+            makeRecord({ id: 't4', provider: 'anthropic', total: 70, fallbackUsed: false, createdAt: day + 2 })
+        ]);
+
+        expect(trend.length).toEqual(3);
+        const deepseek = trend.filter(point => point.provider === 'deepseek');
+        expect(deepseek.length).toEqual(2);
+        expect(deepseek[0].bucketStart).toEqual(0);
+        expect(deepseek[0].recordCount).toEqual(2);
+        expect(deepseek[0].avgTotal).toEqual(85);
+        expect(deepseek[0].minTotal).toEqual(80);
+        expect(deepseek[0].maxTotal).toEqual(90);
+        expect(deepseek[0].fallbackRate).toEqual(0);
+        expect(deepseek[1].bucketStart).toEqual(day);
+        expect(deepseek[1].recordCount).toEqual(1);
+        expect(deepseek[1].avgTotal).toEqual(60);
+        expect(deepseek[1].fallbackRate).toEqual(100);
+        expect(trend.filter(point => point.provider === 'anthropic')[0].recordCount).toEqual(1);
+    }
+
+    @Test('build summary quality trend filters by provider and caps recent buckets')
+    async trendFiltersAndCapsBuckets() {
+        const day = 24 * 60 * 60 * 1000;
+        const records = [0, 1, 2, 3].map(offset => makeRecord({
+            id: `cap-${offset}`,
+            provider: 'deepseek',
+            total: 100 - offset * 10,
+            createdAt: offset * day
+        }));
+
+        const scoped = buildSummaryQualityTrend(records, { provider: 'anthropic' });
+        expect(scoped).toEqual([]);
+
+        const capped = buildSummaryQualityTrend(records, { maxBuckets: 2 });
+        expect(capped.length).toEqual(2);
+        expect(capped.map(point => point.bucketStart)).toEqual([day * 2, day * 3]);
+        expect(capped[1].avgTotal).toEqual(70);
+    }
+
+    @Test('build summary quality trend returns empty for no records')
+    async trendEmptyForNoRecords() {
+        expect(buildSummaryQualityTrend([])).toEqual([]);
     }
 
     @Test('typeorm summary quality store persists reloads and aggregates records')

@@ -184,6 +184,63 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    protected async openSummaryQualityTrend(provider?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Summary quality is unavailable without app RPC.');
+            return true;
+        }
+        const trend = await this.sessionService.getSummaryQualityTrend({ provider });
+        if (!trend.length) {
+            this.notify(
+                provider
+                    ? `No summary quality trend recorded for provider '${provider}'.`
+                    : 'No summary quality trend recorded yet.'
+            );
+            return true;
+        }
+        this.notify(this.formatSummaryQualityTrend(trend).join(' | '));
+        return true;
+    }
+
+    /**
+     * Renders one compact line per provider with an 8-level sparkline over time
+     * buckets (`avgTotal` mapped to ▁▂▃▄▅▆▇█), the bucket date range, the
+     * averaged total, and the fallback rate, for example:
+     * `deepseek ▃▅▇ (2d · 12/1–12/2 · avg 75.0 · fb 33.3%)`
+     */
+    protected formatSummaryQualityTrend(trend: Array<Record<string, any>>): string[] {
+        const byProvider = new Map<string, Array<Record<string, any>>>();
+        for (const point of trend) {
+            const provider = String(point.provider ?? 'unknown');
+            const group = byProvider.get(provider) ?? [];
+            group.push(point);
+            byProvider.set(provider, group);
+        }
+        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        const spark = (value: number): string => {
+            const index = Math.min(7, Math.max(0, Math.floor((Number(value) || 0) / 100 * 8)));
+            return sparkChars[index];
+        };
+        const lines: string[] = [];
+        for (const [provider, points] of byProvider) {
+            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
+            const totals = sorted.map(point => Number(point.avgTotal ?? 0));
+            const avgTotal = totals.length
+                ? (totals.reduce((sum, value) => sum + value, 0) / totals.length).toFixed(1)
+                : '0.0';
+            const fallbackRate = totals.length
+                ? (sorted.reduce((sum, point) => sum + Number(point.fallbackRate ?? 0), 0) / sorted.length).toFixed(1)
+                : '0.0';
+            const from = Number(sorted[0]?.bucketStart ?? 0);
+            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
+            const range = from || to
+                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+                : '';
+            lines.push(`${provider} ${sorted.map(point => spark(Number(point.avgTotal ?? 0))).join('')} (${sorted.length}d${range} · avg ${avgTotal} · fb ${fallbackRate}%)`);
+        }
+        return lines.sort((a, b) => a.localeCompare(b));
+    }
+
     protected resolveReviewAnnotationsSessionId(): string {
         return String(
             this.state.reviewTask?.sourceSessionId
@@ -2092,7 +2149,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
-                    { label: '/quality', value: '/quality', description: 'summary quality by provider' },
+                    { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2248,6 +2305,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 if (arg === 'list' || arg.startsWith('list ')) {
                     const provider = arg.slice(4).trim() || undefined;
                     return this.openSummaryQualityRecords(provider);
+                }
+                if (arg === 'trend' || arg.startsWith('trend ')) {
+                    const provider = arg.slice(5).trim() || undefined;
+                    return this.openSummaryQualityTrend(provider);
                 }
                 const provider = arg || undefined;
                 const aggregates = this.sessionService

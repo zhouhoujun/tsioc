@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildSummaryQualityTrend, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -163,7 +163,8 @@ export class AppRpcServer {
                         'review_annotations.save',
                         'review_annotations.load',
                         'summary_quality.list',
-                        'summary_quality.stats'
+                        'summary_quality.stats',
+                        'summary_quality.trend'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -237,6 +238,8 @@ export class AppRpcServer {
                 return this.listSummaryQuality(params, context);
             case 'summary_quality.stats':
                 return this.getSummaryQualityStats(params, context);
+            case 'summary_quality.trend':
+                return this.getSummaryQualityTrend(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1008,6 +1011,38 @@ export class AppRpcServer {
             : undefined;
         const aggregates = await this.summaryQuality.aggregate(provider);
         return { aggregates };
+    }
+
+    private async getSummaryQualityTrend(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.summaryQuality) {
+            return { trend: [] };
+        }
+        const provider = typeof params?.provider === 'string' && params.provider.trim()
+            ? params.provider.trim()
+            : undefined;
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 500) : 500;
+        const bucketSizeRaw = Number(params?.bucketSize);
+        const bucketSize = Number.isFinite(bucketSizeRaw) && bucketSizeRaw > 0 ? bucketSizeRaw : undefined;
+        const maxBucketsRaw = Number(params?.maxBuckets);
+        const maxBuckets = Number.isFinite(maxBucketsRaw) ? Math.min(Math.max(1, Math.floor(maxBucketsRaw)), 90) : undefined;
+        const records = await this.summaryQuality.list({ provider, limit });
+        const trend = buildSummaryQualityTrend(records, { provider, bucketSize, maxBuckets });
+        return {
+            trend: trend.map(point => ({
+                provider: point.provider,
+                bucketStart: point.bucketStart,
+                recordCount: point.recordCount,
+                avgTotal: point.avgTotal,
+                minTotal: point.minTotal,
+                maxTotal: point.maxTotal,
+                avgFieldCompleteness: point.avgFieldCompleteness,
+                avgAnnotationQuality: point.avgAnnotationQuality,
+                avgLengthBalance: point.avgLengthBalance,
+                avgTruncationScore: point.avgTruncationScore,
+                fallbackRate: point.fallbackRate
+            }))
+        };
     }
 
     private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {        const sessionId = this.requireSessionId(params);

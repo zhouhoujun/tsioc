@@ -227,6 +227,14 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.aggregates) ? result.aggregates : [];
     }
 
+    async getSummaryQualityTrend(options?: { provider?: string; limit?: number; bucketSize?: number; maxBuckets?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('summary_quality.trend', options ?? {}, context);
+        return Array.isArray(result?.trend) ? result.trend : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

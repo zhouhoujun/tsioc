@@ -282,6 +282,7 @@ class AppRpcStub {
     deniedApprovals: string[] = [];
     summaryQualityAggregates: any[] = [];
     summaryQualityRecords: any[] = [];
+    summaryQualityTrend: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -414,6 +415,13 @@ class AppRpcStub {
                 ? this.summaryQualityAggregates.filter(item => item.provider === provider)
                 : this.summaryQualityAggregates;
             return { aggregates };
+        }
+        if (method === 'summary_quality.trend') {
+            const provider = params?.provider;
+            const trend = provider
+                ? this.summaryQualityTrend.filter(item => item.provider === provider)
+                : this.summaryQualityTrend;
+            return { trend };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -574,6 +582,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
         if (rpc) {
             const result = await rpc.request('summary_quality.stats', provider ? { provider } : {});
             return Array.isArray(result?.aggregates) ? result.aggregates : [];
+        }
+        return [];
+    }
+
+    override async getSummaryQualityTrend(options?: { provider?: string; limit?: number; bucketSize?: number; maxBuckets?: number }): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('summary_quality.trend', options ?? {});
+            return Array.isArray(result?.trend) ? result.trend : [];
         }
         return [];
     }
@@ -2561,6 +2578,45 @@ export class AgentConsoleComponentTest {
 
         expect(component.notice).toContain('deepseek');
         expect(component.notice).toContain('anthropic');
+    }
+
+    @Test('quality trend command renders sparkline through rpc')
+    async qualityTrendCommandRendersSparkline() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const day = 24 * 60 * 60 * 1000;
+        appRpc.summaryQualityTrend = [
+            { provider: 'deepseek', bucketStart: 0, recordCount: 2, avgTotal: 75, minTotal: 60, maxTotal: 90, fallbackRate: 50 },
+            { provider: 'deepseek', bucketStart: day, recordCount: 1, avgTotal: 90, minTotal: 90, maxTotal: 90, fallbackRate: 0 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality trend deepseek';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.trend' && call.params?.provider === 'deepseek')).toEqual(true);
+        expect(component.notice).toContain('deepseek');
+        expect(component.notice).toContain('▇');
+        expect(component.notice).toContain('█');
+        expect(component.notice).toContain('avg 82.5');
+    }
+
+    @Test('quality trend command reports empty trend')
+    async qualityTrendCommandReportsEmptyTrend() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality trend';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.trend' && !call.params?.provider)).toEqual(true);
+        expect(component.notice).toContain('No summary quality trend');
     }
 
     @Test('approval resolve routes through rpc when no local approval manager')

@@ -79,6 +79,82 @@ export function aggregateSummaryQuality(records: SummaryQualityRecord[], provide
 }
 
 /**
+ * One time-bucketed trend point for a provider. `bucketStart` is the start of
+ * the bucket window (aligned to `bucketSize`), and the averages mirror the
+ * aggregate shape so the console can render a per-provider quality sparkline.
+ */
+export interface SummaryQualityTrendPoint {
+    provider: string;
+    bucketStart: number;
+    recordCount: number;
+    avgTotal: number;
+    minTotal: number;
+    maxTotal: number;
+    avgFieldCompleteness: number;
+    avgAnnotationQuality: number;
+    avgLengthBalance: number;
+    avgTruncationScore: number;
+    fallbackRate: number;
+}
+
+const DEFAULT_TREND_BUCKET_SIZE = 24 * 60 * 60 * 1000;
+const DEFAULT_TREND_MAX_BUCKETS = 30;
+
+/**
+ * Buckets scored records into chronological windows (one day by default) per
+ * provider, producing trend points that show how summary quality evolves over
+ * time. Only non-empty buckets are returned, limited to the most recent
+ * `maxBuckets` windows. Shared by the gateway RPC and console rendering so both
+ * surfaces see the same shape.
+ */
+export function buildSummaryQualityTrend(
+    records: SummaryQualityRecord[],
+    options?: { provider?: string; bucketSize?: number; maxBuckets?: number }
+): SummaryQualityTrendPoint[] {
+    const scoped = options?.provider ? records.filter(record => record.provider === options.provider) : records;
+    const bucketSize = Number.isFinite(options?.bucketSize) && (options?.bucketSize as number) > 0
+        ? options?.bucketSize as number
+        : DEFAULT_TREND_BUCKET_SIZE;
+    const maxBuckets = Number.isFinite(options?.maxBuckets) && (options?.maxBuckets as number) > 0
+        ? Math.min(Math.floor(options?.maxBuckets as number), 90)
+        : DEFAULT_TREND_MAX_BUCKETS;
+
+    const avg = (values: number[]): number => values.length > 0 ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : 0;
+    const byProvider = new Map<string, Map<number, SummaryQualityRecord[]>>();
+    for (const record of scoped) {
+        const bucketStart = Math.floor(record.createdAt / bucketSize) * bucketSize;
+        const providerBuckets = byProvider.get(record.provider) ?? new Map<number, SummaryQualityRecord[]>();
+        const group = providerBuckets.get(bucketStart) ?? [];
+        group.push(record);
+        providerBuckets.set(bucketStart, group);
+        byProvider.set(record.provider, providerBuckets);
+    }
+
+    const points: SummaryQualityTrendPoint[] = [];
+    for (const [providerName, providerBuckets] of byProvider) {
+        const bucketStarts = [...providerBuckets.keys()].sort((a, b) => a - b).slice(-maxBuckets);
+        for (const bucketStart of bucketStarts) {
+            const group = providerBuckets.get(bucketStart) as SummaryQualityRecord[];
+            const totals = group.map(record => record.total);
+            points.push({
+                provider: providerName,
+                bucketStart,
+                recordCount: group.length,
+                avgTotal: avg(totals),
+                minTotal: Math.min(...totals),
+                maxTotal: Math.max(...totals),
+                avgFieldCompleteness: avg(group.map(record => record.fieldCompleteness)),
+                avgAnnotationQuality: avg(group.map(record => record.annotationQuality)),
+                avgLengthBalance: avg(group.map(record => record.lengthBalance)),
+                avgTruncationScore: avg(group.map(record => record.truncationScore)),
+                fallbackRate: Math.round((group.filter(record => record.fallbackUsed).length / group.length) * 1000) / 10
+            });
+        }
+    }
+    return points.sort((a, b) => a.provider.localeCompare(b.provider) || a.bucketStart - b.bucketStart);
+}
+
+/**
  * Persistent store for summary quality records, mirroring the
  * {@link TurnDiagnosticsStore} pattern: an abstract contract with in-memory,
  * TypeORM, and environment-aware default implementations.

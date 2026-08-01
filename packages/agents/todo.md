@@ -171,3 +171,13 @@
    - 测试：agent-ui view-model 新增 3 条——`quality list command opens record selector through rpc`（launch-then-cancel select 模式 + limit/provider 断言）、`quality list command reports empty records`、`quality aggregates join multiple providers into a single notice`。
 
 全量回归：agent 314 / agent-ui 200 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P15 打磨（已完成）
+
+1. ~~summary quality 补时间趋势视图~~ → 已完成：
+   - **agent 侧归约**：`buildSummaryQualityTrend(records, { provider?, bucketSize?, maxBuckets? })` 按天（默认 24h 桶）分桶各 provider 的质量记录，输出 `{ provider, bucketStart, recordCount, avgTotal, minTotal, maxTotal, ...维度均值, fallbackRate }`，只保留最近 `maxBuckets`（默认 30，上限 90）个非空桶，与 `aggregateSummaryQuality` 同构。单测 +3。
+   - **gateway RPC**：`summary_quality.trend`（capabilities + dispatch + `getSummaryQualityTrend` handler，limit clamp [0,500]、bucketSize/maxBuckets 校验），gateway 单测 +1（含无 store 空载荷分支）。gateway 91 passing。
+   - **console**：`/quality trend [provider]` 渲染 8 级 sparkline（`▁▂▃▄▅▆▇█`，avgTotal 0-100 映射），每 provider 一行：`provider ▃▅▇ (Nd · 日期区间 · avg X.X · fb Y%)`，多 provider 用 ` | ` 连接（单条 notice，不触发覆盖 bug）；无数据时提示。UI 单测 +2（sparkline 渲染 + 空趋势），含 `SessionServiceStub.getSummaryQualityTrend` override（否则落入基类走 null appRpc 返回空）。
+   - 帮助文案更新：`/quality` 描述改为 `quality stats / list / trend by provider`。
+
+全量回归：agent 317 / agent-gateway 91 / agent-ui 202 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
