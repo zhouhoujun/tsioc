@@ -3337,6 +3337,119 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((trendResponse as any).result.trend).toEqual([]);
     }
+
+    @Test('lists compaction history for owned session through json-rpc')
+    async listsCompactionHistoryThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-compaction', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const compactionHistory = {
+            async list(sessionId?: string, options?: { limit?: number; offset?: number }) {
+                return [{
+                    id: 'c1',
+                    sessionId: 'rpc-compaction',
+                    strategy: 'compacted',
+                    compactionTriggered: true,
+                    level: 'light',
+                    summaryInserted: true,
+                    beforeMessageCount: 20,
+                    afterMessageCount: 10,
+                    beforeTokens: 8000,
+                    afterTokens: 4000,
+                    compactedMessageCount: 10,
+                    preservedAnchorCount: 2,
+                    recentMessageCount: 4,
+                    prunedMessageCount: 0,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 50,
+                    cumulativeTokenSavings: 4000,
+                    createdAt: 1
+                }, {
+                    id: 'c2',
+                    sessionId: 'rpc-compaction',
+                    strategy: 'compacted',
+                    compactionTriggered: true,
+                    level: 'deep',
+                    summaryInserted: true,
+                    beforeMessageCount: 30,
+                    afterMessageCount: 8,
+                    beforeTokens: 12000,
+                    afterTokens: 3000,
+                    compactedMessageCount: 22,
+                    preservedAnchorCount: 2,
+                    recentMessageCount: 4,
+                    prunedMessageCount: 0,
+                    toolMessagesCompacted: 0,
+                    compressionRatio: 75,
+                    cumulativeTokenSavings: 9000,
+                    createdAt: 2
+                }].filter(record => record.sessionId === sessionId);
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.list',
+            params: { sessionId: 'rpc-compaction', level: 'deep' }
+        }, { principalId: 'user-1' });
+        const records = (response as any).result.records;
+        expect(records.length).toEqual(1);
+        expect(records[0].id).toEqual('c2');
+        expect(records[0].level).toEqual('deep');
+        expect(records[0].compressionRatio).toEqual(75);
+        expect(records[0].cumulativeTokenSavings).toEqual(9000);
+    }
+
+    @Test('rejects foreign compaction history access through json-rpc')
+    async rejectsForeignCompactionHistoryThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-compaction-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const compactionHistory = {
+            async list() {
+                return [];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.list',
+            params: { sessionId: 'rpc-compaction-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+    }
+
+    @Test('returns empty compaction history when no store is configured')
+    async compactionHistoryWithoutStore() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-empty', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.list',
+            params: { sessionId: 'rpc-empty' }
+        }, { principalId: 'user-1' });
+        expect((response as any).result.records).toEqual([]);
+    }
 }
 export class AppRpcHandlerTest {
     @Test('formats invalid rpc requests as json-rpc errors')

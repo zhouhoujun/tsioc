@@ -283,6 +283,7 @@ class AppRpcStub {
     summaryQualityAggregates: any[] = [];
     summaryQualityRecords: any[] = [];
     summaryQualityTrend: any[] = [];
+    compactionHistoryRecords: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -422,6 +423,13 @@ class AppRpcStub {
                 ? this.summaryQualityTrend.filter(item => item.provider === provider)
                 : this.summaryQualityTrend;
             return { trend };
+        }
+        if (method === 'compaction_history.list') {
+            const sessionId = params?.sessionId;
+            const records = sessionId
+                ? this.compactionHistoryRecords.filter(item => item.sessionId === sessionId)
+                : this.compactionHistoryRecords;
+            return { records: records.slice(0, params?.limit ?? 200) };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -591,6 +599,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
         if (rpc) {
             const result = await rpc.request('summary_quality.trend', options ?? {});
             return Array.isArray(result?.trend) ? result.trend : [];
+        }
+        return [];
+    }
+
+    override async listCompactionHistory(sessionId: string, options?: { level?: string; limit?: number }): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('compaction_history.list', { sessionId, ...options });
+            return Array.isArray(result?.records) ? result.records : [];
         }
         return [];
     }
@@ -2674,6 +2691,62 @@ export class AgentConsoleComponentTest {
         expect(call!.params?.provider).toEqual('deepseek');
         expect(call!.params?.bucketSize).toBeUndefined();
         expect(call!.params?.maxBuckets).toBeUndefined();
+    }
+
+    @Test('compactions command lists compaction history for current session')
+    async compactionsCommandListsHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryRecords = [{
+            id: 'c1',
+            sessionId: 'session-1',
+            strategy: 'compacted',
+            compactionTriggered: true,
+            level: 'light',
+            summaryInserted: true,
+            beforeMessageCount: 20,
+            afterMessageCount: 10,
+            beforeTokens: 8000,
+            afterTokens: 4000,
+            compactedMessageCount: 10,
+            preservedAnchorCount: 2,
+            recentMessageCount: 4,
+            prunedMessageCount: 0,
+            toolMessagesCompacted: 0,
+            compressionRatio: 50,
+            cumulativeTokenSavings: 4000,
+            createdAt: 1
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compactions session-1';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'compaction_history.list');
+        expect(call).toBeTruthy();
+        expect(call!.params?.sessionId).toEqual('session-1');
+        expect(component.notice).toContain('compacted');
+        expect(component.notice).toContain('20→10 msgs');
+        expect(component.notice).toContain('tokens');
+        expect(component.notice).toContain('50%');
+    }
+
+    @Test('compactions command reports empty history')
+    async compactionsCommandReportsEmptyHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryRecords = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compactions session-1';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'compaction_history.list')).toEqual(true);
+        expect(component.notice).toContain('No compaction history');
     }
 
     @Test('refresh turn artifacts loads summary quality digest through rpc')

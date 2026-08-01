@@ -219,3 +219,13 @@
    - 测试：agent +3（aggregate scopes to model / in-memory filters by model / trend filters by model），gateway +2（RPC model 过滤、HTTP trend model 过滤）。
 
 全量回归：agent 320、agent-gateway 95、agent-ui 209 passing；四包 tsc 干净。
+
+## P20 打磨（已完成）
+
+1. ~~compaction history 补 RPC 面 + UI `/compactions` 命令~~ → 已完成：HTTP 已有 compaction 历史查询（`CompactionHistoryHandler`），但 RPC 面无方法、控制台无命令。本次补齐：
+   - **RPC**（`@tsdi/agent-gateway`）：新增 `compaction_history.list` 方法 `listCompactionHistory`——`sessionId` 必填且经 `ensureSessionAccess` 做 owner 校验，支持 `level` 过滤与 `limit` clamp `[0,200]`；响应 18 字段（id/sessionId/strategy/compactionTriggered/level/summaryInserted/beforeMessageCount/afterMessageCount/beforeTokens/afterTokens/compactedMessageCount/preservedAnchorCount/recentMessageCount/prunedMessageCount/toolMessagesCompacted/compressionRatio/cumulativeTokenSavings/createdAt/metadata）；capabilities 声明；`AppRpcServer` 构造第 12 参注入 `@Optional() compactionHistory?: CompactionHistoryStore | null`。
+   - **UI service**（`@tsdi/agent-ui`）：`AgentConsoleSessionService.listCompactionHistory(sessionId, options?, context?)`。
+   - **UI 命令**：`/compactions [sessionId]`——默认取当前 `state.sessionId`，无 session 时提示；空记录提示；`formatCompactionHistoryRecord` 输出一行摘要，如 `compacted · L3 · 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`；commandHints 新增 `/compactions [sessionId]` 条目。
+   - 测试：gateway +3（listsCompactionHistoryThroughRpc / rejectsForeignCompactionHistoryThroughRpc / compactionHistoryWithoutStore），view-model +2（compactionsCommandListsHistory / compactionsCommandReportsEmptyHistory）——后者依赖 `SessionServiceStub.listCompactionHistory` override（走 rpcRef）与 `AppRpcStub.compactionHistoryRecords` 示例数据。
+
+全量回归：agent 320、agent-gateway 98、agent-ui 211 passing；四包 tsc 干净。

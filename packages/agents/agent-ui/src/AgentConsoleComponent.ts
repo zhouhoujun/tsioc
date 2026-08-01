@@ -1,4 +1,4 @@
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { FileAdapter } from '@tsdi/common';
 import {
@@ -204,6 +204,55 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.notify(this.formatSummaryQualityTrend(trend).join(' | '));
         return true;
+    }
+
+    /**
+     * Opens `/compactions [sessionId]`: lists compaction history records for the
+     * current (or given) session as one digest line per record with strategy,
+     * level, message/token counts, and compression ratio.
+     */
+    protected async openCompactionHistory(args: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Compaction history is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = args.trim() || this.state.sessionId;
+        if (!sessionId) {
+            this.notify('No session selected. Run /compactions <sessionId>.');
+            return true;
+        }
+        const records = await this.sessionService.listCompactionHistory(sessionId);
+        if (!records.length) {
+            this.notify(`No compaction history recorded for session '${sessionId}'.`);
+            return true;
+        }
+        this.notify(
+            records
+                .map(record => this.formatCompactionHistoryRecord(record))
+                .join(' | ')
+        );
+        return true;
+    }
+
+    /**
+     * Renders one compact line per compaction record, for example:
+     * `compacted L3 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
+     */
+    protected formatCompactionHistoryRecord(record: Record<string, any>): string {
+        const parts = [
+            record.compactionTriggered ? 'compacted' : record.strategy,
+            record.level ? `L${record.level}` : ''
+        ].filter(Boolean);
+        if (typeof record.beforeMessageCount === 'number' && typeof record.afterMessageCount === 'number') {
+            parts.push(`${record.beforeMessageCount}→${record.afterMessageCount} msgs (${record.compactedMessageCount ?? 0})`);
+        }
+        if (typeof record.beforeTokens === 'number' && typeof record.afterTokens === 'number') {
+            parts.push(`${formatCompactNumber(record.beforeTokens)}→${formatCompactNumber(record.afterTokens)} tokens (${record.compressionRatio ?? 0}%)`);
+        }
+        if (typeof record.cumulativeTokenSavings === 'number' && record.cumulativeTokenSavings > 0) {
+            parts.push(`saved ${formatCompactNumber(record.cumulativeTokenSavings)} total`);
+        }
+        return parts.join(' · ');
     }
 
     /**
@@ -2189,6 +2238,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
+                    { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2368,6 +2418,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 );
                 return true;
             }
+            case '/compactions':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openCompactionHistory(parsed.args);
             case '/copy': {
                 if (parsed.args) {
                     switch (parsed.args) {

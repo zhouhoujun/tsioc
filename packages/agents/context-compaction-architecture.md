@@ -242,6 +242,41 @@ The same data is reachable interactively:
 This closes the last tracked gap: provider-specific summary quality is now
 measured, persisted, and inspectable instead of being a subjective one-off read.
 
+## Compaction History Observability
+
+Every compaction event is recorded through `CompactionHistoryStore`
+(`packages/agents/agent/src/harness/CompactionHistoryStore.ts`) with the same
+store family pattern as quality: in-memory default, durable TypeORM-backed
+store when a `TypeormAdapter` is registered, and a `DefaultCompactionHistoryStore`
+that picks between them. The record carries the full preparation report plus
+token savings:
+
+- `strategy` / `compactionTriggered` / `summaryInserted`
+- `level`, `beforeMessageCount` / `afterMessageCount`,
+  `beforeTokens` / `afterTokens`
+- `compactedMessageCount` / `preservedAnchorCount` / `recentMessageCount` /
+  `prunedMessageCount` / `toolMessagesCompacted`
+- `compressionRatio`, `cumulativeTokenSavings`, `createdAt`, `metadata`
+
+The gateway exposes it two ways:
+
+- HTTP `GET /api/compaction-history?sessionId=...` via `CompactionHistoryHandler`
+  (optional `level` / `limit` query params, limit clamped to 200)
+- RPC `compaction_history.list` via `AppRpcServer` (declared in capabilities,
+  injected `CompactionHistoryStore` is optional; requires `sessionId` and an
+  owner match through `ensureSessionAccess`, supports `level` filter and a
+  `limit` clamped to `[0, 200]`)
+
+The console makes it interactive without leaving the session:
+
+- `/compactions [sessionId]` in `@tsdi/agent-ui` fetches
+  `compaction_history.list` over RPC (defaults to the current session id) and
+  renders one line per record, e.g.
+  `compacted · L3 · 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
+
+This gives operators a stable, per-session audit trail of when compaction ran,
+how aggressive it was, and how many tokens it saved.
+
 ## Current Guarantees
 
 The current design specifically protects these regression cases:

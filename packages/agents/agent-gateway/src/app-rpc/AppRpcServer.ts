@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildSummaryQualityTrend, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -22,7 +22,8 @@ export class AppRpcServer {
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
         @Optional() private audit?: AuditSink | null,
         @Optional() private approvalManager?: ToolApprovalManager | null,
-        @Optional() private summaryQuality?: SummaryQualityStore | null
+        @Optional() private summaryQuality?: SummaryQualityStore | null,
+        @Optional() private compactionHistory?: CompactionHistoryStore | null
     ) {
     }
 
@@ -164,7 +165,8 @@ export class AppRpcServer {
                         'review_annotations.load',
                         'summary_quality.list',
                         'summary_quality.stats',
-                        'summary_quality.trend'
+                        'summary_quality.trend',
+                        'compaction_history.list'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -240,6 +242,8 @@ export class AppRpcServer {
                 return this.getSummaryQualityStats(params, context);
             case 'summary_quality.trend':
                 return this.getSummaryQualityTrend(params, context);
+            case 'compaction_history.list':
+                return this.listCompactionHistory(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1051,6 +1055,45 @@ export class AppRpcServer {
                 avgTruncationScore: point.avgTruncationScore,
                 fallbackRate: point.fallbackRate
             }))
+        };
+    }
+
+    private async listCompactionHistory(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.compactionHistory) {
+            return { records: [] };
+        }
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const levelRaw = typeof params?.level === 'string' && params.level.trim()
+            ? params.level.trim()
+            : undefined;
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 200) : 200;
+        const records = await this.compactionHistory.list(sessionId, { limit });
+        return {
+            records: records
+                .filter(record => !levelRaw || record.level === levelRaw)
+                .map(record => ({
+                    id: record.id,
+                    sessionId: record.sessionId,
+                    strategy: record.strategy,
+                    compactionTriggered: record.compactionTriggered,
+                    level: record.level,
+                    summaryInserted: record.summaryInserted,
+                    beforeMessageCount: record.beforeMessageCount,
+                    afterMessageCount: record.afterMessageCount,
+                    beforeTokens: record.beforeTokens,
+                    afterTokens: record.afterTokens,
+                    compactedMessageCount: record.compactedMessageCount,
+                    preservedAnchorCount: record.preservedAnchorCount,
+                    recentMessageCount: record.recentMessageCount,
+                    prunedMessageCount: record.prunedMessageCount,
+                    toolMessagesCompacted: record.toolMessagesCompacted,
+                    compressionRatio: record.compressionRatio,
+                    cumulativeTokenSavings: record.cumulativeTokenSavings,
+                    createdAt: record.createdAt,
+                    metadata: record.metadata ?? null
+                }))
         };
     }
 

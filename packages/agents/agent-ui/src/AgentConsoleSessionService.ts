@@ -235,6 +235,14 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.trend) ? result.trend : [];
     }
 
+    async listCompactionHistory(sessionId: string, options?: { level?: string; limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('compaction_history.list', { sessionId, ...options }, context);
+        return Array.isArray(result?.records) ? result.records : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string
