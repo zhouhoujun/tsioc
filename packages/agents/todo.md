@@ -145,3 +145,13 @@
    - 文档：架构文档新增「Summary Quality Scoring」章节（评分维度 + store 家族 + gateway API）；「Current Gaps」清空（None tracked），Implementation Anchors 补充 scorer/store 与两个新 spec。
 
 全量回归：agent 314 / agent-gateway 90 passing；agent、agent-gateway、agent-channels、agent-providers tsc 干净。
+
+## P12 打磨（已完成）
+
+1. ~~summary quality 观测闭环：gateway RPC + 控制台 /quality 命令~~ → 已完成，P11 只暴露了 HTTP 路由，UI/CLI 无任何消费者。本次把观测数据接入交互面：
+   - **gateway RPC**：`AppRpcServer` 注入 `@Optional() summaryQuality?: SummaryQualityStore | null`（构造第 11 参，位置参数构造不受影响）；capabilities methods 增 `summary_quality.list` / `summary_quality.stats`；dispatch 增两个 case；`listSummaryQuality`（provider 精确过滤 + limit 解析 `Number()` clamp [0,200] 默认 200、记录映射 13 字段 view、无 store 返回 `{ records: [] }`）与 `getSummaryQualityStats`（可选 provider → `aggregate(provider)`，无 store 返回 `{ aggregates: [] }`）。
+   - **agent-ui**：`AgentConsoleSessionService` 新增 `listSummaryQuality(options?)` / `getSummaryQualityStats(provider?)`（经 appRpc 请求，无 RPC 时降级空数组）；`AgentConsoleComponent` 新增 `/quality [provider]` 命令（turn 进行中拦截、经 RPC 取聚合、逐条输出 `{provider} · {count} summary records · avg {total} · fallback {rate}% · {dateRange}`，空数据给可读提示），登记进 `/help` 菜单与 `commandHints`。
+   - 测试：gateway 新增 2 条（`lists and aggregates summary quality through json-rpc`：provider+limit 过滤、capabilities 声明、view 字段；`summary quality rpc returns empty payloads when no store is configured`）；agent-ui 新增 2 条（`quality command shows summary quality aggregates through rpc`、`quality command reports empty stats when nothing recorded`），`SessionServiceStub`/`AppRpcStub` 补充 `summary_quality.list`/`summary_quality.stats` 桩。
+   - 说明：EchoModelAdapter 无 `model` 字段（`resolveModelName` 对 echo provider 返回 undefined）——RPC/UI 输出中 model 为 null，属已知小缺口，留待后续。
+
+全量回归：agent 314 / agent-gateway 90 / agent-ui 197 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

@@ -203,6 +203,14 @@ and are exposed by the gateway's `SummaryQualityHandler`:
 - `GET /api/summary-quality` — record list with optional `provider` and `limit`
 - `GET /api/summary-quality/stats` — provider-scoped aggregates
 
+The same data is reachable interactively:
+
+- gateway RPC `summary_quality.list` / `summary_quality.stats` (declared in
+  `AppRpcServer` capabilities, injected `SummaryQualityStore` is optional)
+- console `/quality [provider]` command in `@tsdi/agent-ui`, which fetches the
+  provider-scoped aggregates over RPC and renders a one-line digest per provider
+  (record count, average total, fallback rate, date range)
+
 This closes the last tracked gap: provider-specific summary quality is now
 measured, persisted, and inspectable instead of being a subjective one-off read.
 

@@ -211,6 +211,22 @@ export class AgentConsoleSessionService {
         return result ?? null;
     }
 
+    async listSummaryQuality(options?: { provider?: string; limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('summary_quality.list', options ?? {}, context);
+        return Array.isArray(result?.records) ? result.records : [];
+    }
+
+    async getSummaryQualityStats(provider?: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('summary_quality.stats', provider ? { provider } : {}, context);
+        return Array.isArray(result?.aggregates) ? result.aggregates : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

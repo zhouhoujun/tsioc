@@ -113,6 +113,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.notify(message);
     }
 
+    protected formatSummaryQualityAggregate(aggregate: Record<string, any>): string {
+        const provider = String(aggregate.provider ?? 'unknown');
+        const count = Number(aggregate.recordCount ?? 0);
+        const avgTotal = Number(aggregate.avgTotal ?? 0).toFixed(1);
+        const fallbackRate = Number(aggregate.fallbackRate ?? 0).toFixed(1);
+        const from = Number(aggregate.timeRange?.from ?? 0);
+        const to = Number(aggregate.timeRange?.to ?? 0);
+        const range = from || to
+            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+            : '';
+        return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}%${range}`;
+    }
+
     protected resolveReviewAnnotationsSessionId(): string {
         return String(
             this.state.reviewTask?.sourceSessionId
@@ -2021,6 +2034,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
+                    { label: '/quality', value: '/quality', description: 'summary quality by provider' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2165,6 +2179,28 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeMessageDetail();
                 this.state.closeReview();
                 this.state.setApprovalsFocused(true);
+                return true;
+            }
+            case '/quality': {
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                const provider = parsed.args?.trim() || undefined;
+                const aggregates = this.sessionService
+                    ? await this.sessionService.getSummaryQualityStats(provider)
+                    : [];
+                if (!aggregates.length) {
+                    this.notify(
+                        provider
+                            ? `No summary quality stats recorded for provider '${provider}'.`
+                            : 'No summary quality stats recorded yet.'
+                    );
+                    return true;
+                }
+                for (const aggregate of aggregates) {
+                    this.notify(this.formatSummaryQualityAggregate(aggregate));
+                }
                 return true;
             }
             case '/copy': {

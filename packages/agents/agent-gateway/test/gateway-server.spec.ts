@@ -3041,9 +3041,81 @@ export class AppRpcServerTest {
         }]);
         expect(streamedPrincipals).toEqual(['user-1']);
     }
-}
 
-@Suite('AppRpcHandler')
+    @Test('lists and aggregates summary quality through json-rpc')
+    async listsAndAggregatesSummaryQuality() {
+        const quality = {
+            async list(options?: { provider?: string; limit?: number }) {
+                const provider = options?.provider;
+                const limit = options?.limit ?? 200;
+                return [
+                    { id: 'sq1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
+                    { id: 'sq2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 }
+                ].filter(record => !provider || record.provider === provider).slice(0, limit);
+            },
+            async aggregate(provider?: string) {
+                return provider
+                    ? [{ provider, recordCount: 2, avgTotal: 81, minTotal: 70, maxTotal: 92, avgFieldCompleteness: 90, avgAnnotationQuality: 75, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 50, timeRange: { from: 1, to: 2 } }]
+                    : [
+                        { provider: 'deepseek', recordCount: 1, avgTotal: 92, minTotal: 92, maxTotal: 92, avgFieldCompleteness: 100, avgAnnotationQuality: 100, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 0, timeRange: { from: 1, to: 1 } },
+                        { provider: 'anthropic', recordCount: 1, avgTotal: 70, minTotal: 70, maxTotal: 70, avgFieldCompleteness: 80, avgAnnotationQuality: 50, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 100, timeRange: { from: 2, to: 2 } }
+                    ];
+            }
+        } as any;
+        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'summary_quality.list',
+            params: { provider: 'deepseek', limit: 1 }
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.records.length).toEqual(1);
+        expect((listResponse as any).result.records[0].provider).toEqual('deepseek');
+        expect((listResponse as any).result.records[0].model).toEqual('deepseek-v4-flash');
+        expect((listResponse as any).result.records[0].fallbackUsed).toEqual(false);
+
+        const statsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'summary_quality.stats',
+            params: { provider: 'anthropic' }
+        }, { principalId: 'user-1' });
+        expect((statsResponse as any).result.aggregates.length).toEqual(1);
+        expect((statsResponse as any).result.aggregates[0].provider).toEqual('anthropic');
+        expect((statsResponse as any).result.aggregates[0].fallbackRate).toEqual(50);
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('summary_quality.list');
+        expect((capsResponse as any).result.methods).toContain('summary_quality.stats');
+    }
+
+    @Test('summary quality rpc returns empty payloads when no store is configured')
+    async summaryQualityWithoutStore() {
+        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any);
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'summary_quality.list',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.records).toEqual([]);
+
+        const statsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'summary_quality.stats',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((statsResponse as any).result.aggregates).toEqual([]);
+    }
+}
 export class AppRpcHandlerTest {
     @Test('formats invalid rpc requests as json-rpc errors')
     async formatsInvalidRpcRequests() {

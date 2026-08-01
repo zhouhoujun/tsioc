@@ -280,6 +280,8 @@ class AppRpcStub {
     approvalRequests: any[] = [];
     approvedApprovals: string[] = [];
     deniedApprovals: string[] = [];
+    summaryQualityAggregates: any[] = [];
+    summaryQualityRecords: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -398,6 +400,20 @@ class AppRpcStub {
                 this.approvalRequests = this.approvalRequests.filter(item => item.id !== requestId);
             }
             return { requestId, applied: !!request, decision: 'denied' };
+        }
+        if (method === 'summary_quality.list') {
+            const provider = params?.provider;
+            const records = provider
+                ? this.summaryQualityRecords.filter(item => item.provider === provider)
+                : this.summaryQualityRecords;
+            return { records: records.slice(0, params?.limit ?? 200) };
+        }
+        if (method === 'summary_quality.stats') {
+            const provider = params?.provider;
+            const aggregates = provider
+                ? this.summaryQualityAggregates.filter(item => item.provider === provider)
+                : this.summaryQualityAggregates;
+            return { aggregates };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -542,6 +558,24 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return result ?? null;
         }
         return null;
+    }
+
+    override async listSummaryQuality(options?: { provider?: string; limit?: number }): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('summary_quality.list', options ?? {});
+            return Array.isArray(result?.records) ? result.records : [];
+        }
+        return [];
+    }
+
+    override async getSummaryQualityStats(provider?: string): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('summary_quality.stats', provider ? { provider } : {});
+            return Array.isArray(result?.aggregates) ? result.aggregates : [];
+        }
+        return [];
     }
 
     override async ensureSession(sessionId?: string): Promise<AgentConsoleSessionChoice> {
@@ -2413,6 +2447,51 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.approvalsFocused).toEqual(true);
         expect(component.sessionState.selectedApproval?.id).toEqual('approval-rpc-1');
         expect(appRpc.calls.some(call => call.method === 'approval.list' && call.params?.sessionId === 'console')).toEqual(true);
+    }
+
+    @Test('quality command shows summary quality aggregates through rpc')
+    async qualityCommandShowsAggregatesThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityAggregates = [{
+            provider: 'deepseek',
+            recordCount: 12,
+            avgTotal: 84.2,
+            minTotal: 60,
+            maxTotal: 98,
+            avgFieldCompleteness: 92,
+            avgAnnotationQuality: 80,
+            avgLengthBalance: 90,
+            avgTruncationScore: 88,
+            fallbackRate: 8.3,
+            timeRange: { from: 1720000000000, to: 1720086400000 }
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality deepseek';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.stats' && call.params?.provider === 'deepseek')).toEqual(true);
+        expect(component.notice).toContain('deepseek');
+        expect(component.notice).toContain('12');
+    }
+
+    @Test('quality command reports empty stats when nothing recorded')
+    async qualityCommandReportsEmptyStats() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityAggregates = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.stats' && !call.params?.provider)).toEqual(true);
+        expect(component.notice).toContain('No summary quality stats');
     }
 
     @Test('approval resolve routes through rpc when no local approval manager')

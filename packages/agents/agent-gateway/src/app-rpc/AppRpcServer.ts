@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -21,7 +21,8 @@ export class AppRpcServer {
         private events: EventHandler,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
         @Optional() private audit?: AuditSink | null,
-        @Optional() private approvalManager?: ToolApprovalManager | null
+        @Optional() private approvalManager?: ToolApprovalManager | null,
+        @Optional() private summaryQuality?: SummaryQualityStore | null
     ) {
     }
 
@@ -160,7 +161,9 @@ export class AppRpcServer {
                         'coding_task.retry_failed',
                         'coding_task.rollback',
                         'review_annotations.save',
-                        'review_annotations.load'
+                        'review_annotations.load',
+                        'summary_quality.list',
+                        'summary_quality.stats'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -230,6 +233,10 @@ export class AppRpcServer {
                 return this.saveReviewAnnotations(params, context);
             case 'review_annotations.load':
                 return this.loadReviewAnnotations(params, context);
+            case 'summary_quality.list':
+                return this.listSummaryQuality(params, context);
+            case 'summary_quality.stats':
+                return this.getSummaryQualityStats(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -965,8 +972,45 @@ export class AppRpcServer {
         };
     }
 
-    private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+    private async listSummaryQuality(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.summaryQuality) {
+            return { records: [] };
+        }
+        const provider = typeof params?.provider === 'string' && params.provider.trim()
+            ? params.provider.trim()
+            : undefined;
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 200) : 200;
+        const records = await this.summaryQuality.list({ provider, limit });
+        return {
+            records: records.map(record => ({
+                id: record.id,
+                provider: record.provider,
+                model: record.model ?? null,
+                total: record.total,
+                fieldCompleteness: record.fieldCompleteness,
+                annotationQuality: record.annotationQuality,
+                lengthBalance: record.lengthBalance,
+                truncationScore: record.truncationScore,
+                fallbackUsed: record.fallbackUsed,
+                summaryLength: record.summaryLength,
+                createdAt: record.createdAt
+            }))
+        };
+    }
+
+    private async getSummaryQualityStats(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.summaryQuality) {
+            return { aggregates: [] };
+        }
+        const provider = typeof params?.provider === 'string' && params.provider.trim()
+            ? params.provider.trim()
+            : undefined;
+        const aggregates = await this.summaryQuality.aggregate(provider);
+        return { aggregates };
+    }
+
+    private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {        const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'list' }, context);
         return {
