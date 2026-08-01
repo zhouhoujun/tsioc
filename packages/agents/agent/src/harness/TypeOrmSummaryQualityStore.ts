@@ -27,10 +27,17 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
         }));
     }
 
-    async list(options?: { provider?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]> {
+    async list(options?: { provider?: string; model?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]> {
         const repo = this.adapter.getRepository(AgentSummaryQualityEntity);
+        const where: any = {};
+        if (options?.provider) {
+            where.provider = options.provider;
+        }
+        if (options?.model) {
+            where.model = options.model;
+        }
         const records = await repo.find({
-            where: options?.provider ? ({ provider: options.provider } as any) : undefined,
+            where: Object.keys(where).length > 0 ? where : undefined,
             order: { createdAt: 'ASC', id: 'ASC' } as any,
             skip: options?.offset ?? 0,
             take: options?.limit ?? 200
@@ -38,13 +45,20 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
         return records.map(record => this.toRecord(record));
     }
 
-    async aggregate(provider?: string): Promise<SummaryQualityAggregate[]> {
+    async aggregate(provider?: string, model?: string): Promise<SummaryQualityAggregate[]> {
         const repo = this.adapter.getRepository(AgentSummaryQualityEntity);
+        const where: any = {};
+        if (provider) {
+            where.provider = provider;
+        }
+        if (model) {
+            where.model = model;
+        }
         const records = await repo.find({
-            where: provider ? ({ provider } as any) : undefined,
+            where: Object.keys(where).length > 0 ? where : undefined,
             order: { createdAt: 'ASC', id: 'ASC' } as any
         });
-        return aggregateSummaryQuality(records.map(record => this.toRecord(record)), provider);
+        return aggregateSummaryQuality(records.map(record => this.toRecord(record)), provider, model);
     }
 
     private toRecord(record: AgentSummaryQualityEntity): SummaryQualityRecord {

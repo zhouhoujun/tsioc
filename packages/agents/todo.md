@@ -208,3 +208,14 @@
    - 测试：view-model +3——`7d`/`60` 透传断言、纯毫秒 bucketSize、`0d abc` 非法 token 忽略。
 
 全量回归：agent-ui 209 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P19 打磨（已完成）
+
+1. ~~quality 消费面支持按 model 过滤~~ → 已完成：`model` 字段（P13 落库）此前只能展示不能过滤，本次贯通 store → RPC → HTTP 三面：
+   - **store**（`@tsdi/agent`）：`SummaryQualityStore.list({ provider, model, limit })`、`aggregate(provider, model)`、`aggregateSummaryQuality(records, provider, model)`、`buildSummaryQualityTrend(records, { provider, model, ... })` 全部支持 model 过滤；InMemory/TypeORM/Default 三实现透传。
+   - **RPC**：`summary_quality.list` / `.stats` / `.trend` 解析 `model` 参数。
+   - **HTTP**：`/api/summary-quality`、`/api/summary-quality/stats`、`/api/summary-quality/trend` 解析 `model` query 参数。
+   - 控制台 `/quality` 保持 provider-only（聚合视图本就按 provider 分组，不做模型级命令）。
+   - 测试：agent +3（aggregate scopes to model / in-memory filters by model / trend filters by model），gateway +2（RPC model 过滤、HTTP trend model 过滤）。
+
+全量回归：agent 320、agent-gateway 95、agent-ui 209 passing；四包 tsc 干净。

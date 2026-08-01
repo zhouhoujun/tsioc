@@ -12,9 +12,10 @@ export class SummaryQualityHandler {
             const host = req.headers?.host ?? 'localhost';
             const url = new URL(req.url ?? '/api/summary-quality', `http://${host}`);
             const provider = url.searchParams.get('provider')?.trim() || undefined;
+            const model = url.searchParams.get('model')?.trim() || undefined;
             const limitRaw = url.searchParams.get('limit')?.trim();
             const limit = limitRaw && /^\d+$/.test(limitRaw) ? Math.min(parseInt(limitRaw, 10), 200) : 200;
-            const records = (await this.quality.list({ provider, limit }))
+            const records = (await this.quality.list({ provider, model, limit }))
                 .map(record => this.toView(record));
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ records }));
@@ -24,7 +25,8 @@ export class SummaryQualityHandler {
             const host = req.headers?.host ?? 'localhost';
             const url = new URL(req.url ?? '/api/summary-quality/stats', `http://${host}`);
             const provider = url.searchParams.get('provider')?.trim() || undefined;
-            const aggregates = await this.quality.aggregate(provider);
+            const model = url.searchParams.get('model')?.trim() || undefined;
+            const aggregates = await this.quality.aggregate(provider, model);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ aggregates }));
         };
@@ -33,6 +35,7 @@ export class SummaryQualityHandler {
             const host = req.headers?.host ?? 'localhost';
             const url = new URL(req.url ?? '/api/summary-quality/trend', `http://${host}`);
             const provider = url.searchParams.get('provider')?.trim() || undefined;
+            const model = url.searchParams.get('model')?.trim() || undefined;
             const limitRaw = url.searchParams.get('limit')?.trim();
             const limit = limitRaw && /^\d+$/.test(limitRaw) ? Math.min(Math.max(0, parseInt(limitRaw, 10)), 500) : 500;
             const bucketSizeRaw = url.searchParams.get('bucketSize')?.trim();
@@ -43,8 +46,8 @@ export class SummaryQualityHandler {
             const maxBuckets = maxBucketsRaw && /^\d+$/.test(maxBucketsRaw)
                 ? Math.min(Math.max(1, parseInt(maxBucketsRaw, 10)), 90)
                 : undefined;
-            const records = await this.quality.list({ provider, limit });
-            const trend = buildSummaryQualityTrend(records, { provider, bucketSize, maxBuckets });
+            const records = await this.quality.list({ provider, model, limit });
+            const trend = buildSummaryQualityTrend(records, { provider, model, bucketSize, maxBuckets });
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ trend: trend.map(point => this.toTrendPoint(point)) }));
         };

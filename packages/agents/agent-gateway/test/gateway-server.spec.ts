@@ -1856,6 +1856,40 @@ export class SummaryQualityHandlerTest {
         expect(data.trend.length).toEqual(2);
         expect(new Set(data.trend.map((point: any) => point.provider))).toEqual(new Set(['deepseek', 'anthropic']));
     }
+
+    @Test('filters summary quality trend by model over http')
+    async filtersSummaryQualityTrendByModelOverHttp() {
+        const quality = {
+            async list(options?: { provider?: string; model?: string; limit?: number }) {
+                const day = 24 * 60 * 60 * 1000;
+                return [
+                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
+                    { id: 'q2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: day + 1 },
+                    { id: 'q3', provider: 'deepseek', model: 'deepseek-v3', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: 3 }
+                ].filter(record => (!options?.provider || record.provider === options.provider)
+                    && (!options?.model || record.model === options.model)).slice(0, options?.limit ?? 500);
+            }
+        } as any;
+        const handler = new SummaryQualityHandler(quality);
+        const route = handler.getRoutes().find(route => route.path === '/api/summary-quality/trend' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/summary-quality/trend?provider=deepseek&model=deepseek-v4-flash' } as any;
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.trend.length).toEqual(2);
+        expect(data.trend.every((point: any) => point.provider === 'deepseek')).toEqual(true);
+        expect(data.trend[0].avgTotal).toEqual(92);
+        expect(data.trend[1].avgTotal).toEqual(60);
+        expect(data.trend[1].fallbackRate).toEqual(100);
+    }
 }
 
 @Suite('TurnDiagnosticsHandler')
@@ -3207,6 +3241,72 @@ export class AppRpcServerTest {
         const providers = (allTrend as any).result.trend;
         expect(providers.filter((point: { provider: string }) => point.provider === 'deepseek').length).toEqual(2);
         expect(providers.filter((point: { provider: string }) => point.provider === 'anthropic').length).toEqual(1);
+    }
+
+    @Test('filters summary quality rpc by model')
+    async filtersSummaryQualityByModel() {
+        const quality = {
+            async list(options?: { provider?: string; model?: string; limit?: number }) {
+                const day = 24 * 60 * 60 * 1000;
+                const limit = options?.limit ?? 200;
+                return [
+                    { id: 'fm1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
+                    { id: 'fm2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: day + 1 },
+                    { id: 'fm3', provider: 'deepseek', model: 'deepseek-v3', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: 3 }
+                ].filter(record => (!options?.provider || record.provider === options.provider)
+                    && (!options?.model || record.model === options.model)).slice(0, limit);
+            },
+            async aggregate(provider?: string, model?: string) {
+                const records = [
+                    { id: 'fm1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fallbackUsed: false, createdAt: 1 },
+                    { id: 'fm2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fallbackUsed: true, createdAt: 2 },
+                    { id: 'fm3', provider: 'deepseek', model: 'deepseek-v3', total: 80, fallbackUsed: false, createdAt: 3 }
+                ].filter(record => (!provider || record.provider === provider) && (!model || record.model === model));
+                return [{
+                    provider: 'deepseek',
+                    recordCount: records.length,
+                    avgTotal: Math.round(records.reduce((sum, record) => sum + record.total, 0) / records.length),
+                    minTotal: Math.min(...records.map(record => record.total)),
+                    maxTotal: Math.max(...records.map(record => record.total)),
+                    avgFieldCompleteness: 90,
+                    avgAnnotationQuality: 80,
+                    avgLengthBalance: 100,
+                    avgTruncationScore: 100,
+                    fallbackRate: Math.round(records.filter(record => record.fallbackUsed).length / records.length * 100),
+                    timeRange: { from: 1, to: 3 }
+                }];
+            }
+        } as any;
+        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'summary_quality.list',
+            params: { provider: 'deepseek', model: 'deepseek-v4-flash' }
+        }, { principalId: 'user-1' });
+        const records = (listResponse as any).result.records;
+        expect(records.length).toEqual(2);
+        expect(records.every((record: { model: string }) => record.model === 'deepseek-v4-flash')).toEqual(true);
+
+        const statsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'summary_quality.stats',
+            params: { provider: 'deepseek', model: 'deepseek-v3' }
+        }, { principalId: 'user-1' });
+        expect((statsResponse as any).result.aggregates[0].recordCount).toEqual(1);
+        expect((statsResponse as any).result.aggregates[0].avgTotal).toEqual(80);
+
+        const trendResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'summary_quality.trend',
+            params: { provider: 'deepseek', model: 'deepseek-v4-flash' }
+        }, { principalId: 'user-1' });
+        expect((trendResponse as any).result.trend.length).toEqual(2);
+        expect((trendResponse as any).result.trend[0].avgTotal).toEqual(92);
+        expect((trendResponse as any).result.trend[1].avgTotal).toEqual(60);
     }
 
     @Test('summary quality rpc returns empty payloads when no store is configured')

@@ -43,10 +43,17 @@ export interface SummaryQualityAggregate {
 /**
  * Shared reduction used by every store implementation so in-memory and
  * TypeORM aggregation behave identically. Returns one aggregate per provider,
- * filtered to a single provider when one is given.
+ * optionally scoped to a single provider and/or model.
  */
-export function aggregateSummaryQuality(records: SummaryQualityRecord[], provider?: string): SummaryQualityAggregate[] {
-    const scoped = provider ? records.filter(record => record.provider === provider) : records;
+export function aggregateSummaryQuality(
+    records: SummaryQualityRecord[],
+    provider?: string,
+    model?: string
+): SummaryQualityAggregate[] {
+    let scoped = provider ? records.filter(record => record.provider === provider) : records;
+    if (model) {
+        scoped = scoped.filter(record => record.model === model);
+    }
     const byProvider = new Map<string, SummaryQualityRecord[]>();
     for (const record of scoped) {
         const group = byProvider.get(record.provider) ?? [];
@@ -109,9 +116,12 @@ const DEFAULT_TREND_MAX_BUCKETS = 30;
  */
 export function buildSummaryQualityTrend(
     records: SummaryQualityRecord[],
-    options?: { provider?: string; bucketSize?: number; maxBuckets?: number }
+    options?: { provider?: string; model?: string; bucketSize?: number; maxBuckets?: number }
 ): SummaryQualityTrendPoint[] {
-    const scoped = options?.provider ? records.filter(record => record.provider === options.provider) : records;
+    let scoped = options?.provider ? records.filter(record => record.provider === options.provider) : records;
+    if (options?.model) {
+        scoped = scoped.filter(record => record.model === options.model);
+    }
     const bucketSize = Number.isFinite(options?.bucketSize) && (options?.bucketSize as number) > 0
         ? options?.bucketSize as number
         : DEFAULT_TREND_BUCKET_SIZE;
@@ -162,6 +172,6 @@ export function buildSummaryQualityTrend(
 @Abstract()
 export abstract class SummaryQualityStore {
     abstract append(record: SummaryQualityRecord): Promise<void>;
-    abstract list(options?: { provider?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]>;
-    abstract aggregate(provider?: string): Promise<SummaryQualityAggregate[]>;
+    abstract list(options?: { provider?: string; model?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]>;
+    abstract aggregate(provider?: string, model?: string): Promise<SummaryQualityAggregate[]>;
 }

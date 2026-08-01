@@ -202,10 +202,20 @@ Per-provider aggregates (record count, average/min/max total, average per-dimens
 scores, fallback rate, time range) are available through `aggregateSummaryQuality`
 and are exposed by the gateway's `SummaryQualityHandler`:
 
-- `GET /api/summary-quality` — record list with optional `provider` and `limit`
-- `GET /api/summary-quality/stats` — provider-scoped aggregates
+- `GET /api/summary-quality` — record list with optional `provider`, `model`,
+  and `limit`
+- `GET /api/summary-quality/stats` — provider-scoped aggregates (optional
+  `model` filter narrows to a single model within the provider)
 - `GET /api/summary-quality/trend` — day-bucketed trend points (optional
-  `provider`, `limit` clamped to 500, `bucketSize`, `maxBuckets` clamped to 90)
+  `provider`, `model`, `limit` clamped to 500, `bucketSize`, `maxBuckets`
+  clamped to 90)
+
+The `model` filter (added when model names were persisted) flows through the
+whole surface: `SummaryQualityStore.list({ model })` and
+`aggregate(provider, model)` in `@tsdi/agent`, the `summary_quality.list` /
+`summary_quality.stats` / `summary_quality.trend` RPC params, and the HTTP
+query string, so quality can be compared per concrete model (for example
+`deepseek-v4-flash` vs `deepseek-v3`) inside one provider.
 
 The same data is reachable interactively:
 

@@ -21,14 +21,14 @@ export class DefaultSummaryQualityStore extends SummaryQualityStore {
         await store.append(record);
     }
 
-    async list(options?: { provider?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]> {
+    async list(options?: { provider?: string; model?: string; limit?: number; offset?: number }): Promise<SummaryQualityRecord[]> {
         const store = this.resolveStore();
         return store.list(options);
     }
 
-    async aggregate(provider?: string): Promise<SummaryQualityAggregate[]> {
+    async aggregate(provider?: string, model?: string): Promise<SummaryQualityAggregate[]> {
         const store = this.resolveStore();
-        return store.aggregate(provider);
+        return store.aggregate(provider, model);
     }
 
     private resolveStore(): SummaryQualityStore {

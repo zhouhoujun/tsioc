@@ -218,6 +218,41 @@ export class SummaryQualityStoreTest {
         expect(raw[0].avgTotal).toEqual(85);
     }
 
+    @Test('aggregate summary quality scopes to a single model')
+    async aggregateScopesToModel() {
+        const store = new InMemorySummaryQualityStore();
+        await store.append(makeRecord({ id: 'm-1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, fallbackUsed: false, createdAt: 1 }));
+        await store.append(makeRecord({ id: 'm-2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fallbackUsed: true, createdAt: 2 }));
+        await store.append(makeRecord({ id: 'm-3', provider: 'deepseek', model: 'deepseek-v3', total: 90, fallbackUsed: false, createdAt: 3 }));
+
+        const aggregates = await store.aggregate('deepseek', 'deepseek-v4-flash');
+        expect(aggregates.length).toEqual(1);
+        expect(aggregates[0].recordCount).toEqual(2);
+        expect(aggregates[0].avgTotal).toEqual(80);
+        expect(aggregates[0].fallbackRate).toEqual(50);
+
+        const raw = aggregateSummaryQuality([
+            makeRecord({ id: 'm-4', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, createdAt: 4 }),
+            makeRecord({ id: 'm-5', provider: 'deepseek', model: 'deepseek-v3', total: 70, createdAt: 5 })
+        ], undefined, 'deepseek-v3');
+        expect(raw.length).toEqual(1);
+        expect(raw[0].avgTotal).toEqual(70);
+    }
+
+    @Test('in-memory summary quality store filters records by model')
+    async inMemoryFiltersByModel() {
+        const store = new InMemorySummaryQualityStore();
+        await store.append(makeRecord({ id: 'q-a', provider: 'deepseek', model: 'deepseek-v4-flash', createdAt: 1 }));
+        await store.append(makeRecord({ id: 'q-b', provider: 'deepseek', model: 'deepseek-v3', createdAt: 2 }));
+
+        const flash = await store.list({ provider: 'deepseek', model: 'deepseek-v4-flash' });
+        expect(flash.length).toEqual(1);
+        expect(flash[0].id).toEqual('q-a');
+
+        const all = await store.list({ provider: 'deepseek' });
+        expect(all.length).toEqual(2);
+    }
+
     @Test('build summary quality trend buckets records per provider over time')
     async trendBucketsRecordsPerProvider() {
         const day = 24 * 60 * 60 * 1000;
@@ -261,6 +296,27 @@ export class SummaryQualityStoreTest {
         expect(capped.length).toEqual(2);
         expect(capped.map(point => point.bucketStart)).toEqual([day * 2, day * 3]);
         expect(capped[1].avgTotal).toEqual(70);
+    }
+
+    @Test('build summary quality trend filters by model')
+    async trendFiltersByModel() {
+        const day = 24 * 60 * 60 * 1000;
+        const records = [
+            makeRecord({ id: 'tm-1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 90, fallbackUsed: false, createdAt: 1 }),
+            makeRecord({ id: 'tm-2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 80, fallbackUsed: true, createdAt: day + 1 }),
+            makeRecord({ id: 'tm-3', provider: 'deepseek', model: 'deepseek-v3', total: 70, fallbackUsed: false, createdAt: 2 })
+        ];
+
+        const scoped = buildSummaryQualityTrend(records, { provider: 'deepseek', model: 'deepseek-v4-flash' });
+        expect(scoped.length).toEqual(2);
+        expect(scoped[0].recordCount).toEqual(1);
+        expect(scoped[0].avgTotal).toEqual(90);
+        expect(scoped[1].recordCount).toEqual(1);
+        expect(scoped[1].avgTotal).toEqual(80);
+        expect(scoped[1].fallbackRate).toEqual(100);
+
+        const noMatch = buildSummaryQualityTrend(records, { model: 'unknown-model' });
+        expect(noMatch).toEqual([]);
     }
 
     @Test('build summary quality trend returns empty for no records')

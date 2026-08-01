@@ -982,9 +982,12 @@ export class AppRpcServer {
         const provider = typeof params?.provider === 'string' && params.provider.trim()
             ? params.provider.trim()
             : undefined;
+        const model = typeof params?.model === 'string' && params.model.trim()
+            ? params.model.trim()
+            : undefined;
         const limitRaw = Number(params?.limit);
         const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 200) : 200;
-        const records = await this.summaryQuality.list({ provider, limit });
+        const records = await this.summaryQuality.list({ provider, model, limit });
         return {
             records: records.map(record => ({
                 id: record.id,
@@ -1009,7 +1012,10 @@ export class AppRpcServer {
         const provider = typeof params?.provider === 'string' && params.provider.trim()
             ? params.provider.trim()
             : undefined;
-        const aggregates = await this.summaryQuality.aggregate(provider);
+        const model = typeof params?.model === 'string' && params.model.trim()
+            ? params.model.trim()
+            : undefined;
+        const aggregates = await this.summaryQuality.aggregate(provider, model);
         return { aggregates };
     }
 
@@ -1020,14 +1026,17 @@ export class AppRpcServer {
         const provider = typeof params?.provider === 'string' && params.provider.trim()
             ? params.provider.trim()
             : undefined;
+        const model = typeof params?.model === 'string' && params.model.trim()
+            ? params.model.trim()
+            : undefined;
         const limitRaw = Number(params?.limit);
         const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 500) : 500;
         const bucketSizeRaw = Number(params?.bucketSize);
         const bucketSize = Number.isFinite(bucketSizeRaw) && bucketSizeRaw > 0 ? bucketSizeRaw : undefined;
         const maxBucketsRaw = Number(params?.maxBuckets);
         const maxBuckets = Number.isFinite(maxBucketsRaw) ? Math.min(Math.max(1, Math.floor(maxBucketsRaw)), 90) : undefined;
-        const records = await this.summaryQuality.list({ provider, limit });
-        const trend = buildSummaryQualityTrend(records, { provider, bucketSize, maxBuckets });
+        const records = await this.summaryQuality.list({ provider, model, limit });
+        const trend = buildSummaryQualityTrend(records, { provider, model, bucketSize, maxBuckets });
         return {
             trend: trend.map(point => ({
                 provider: point.provider,
