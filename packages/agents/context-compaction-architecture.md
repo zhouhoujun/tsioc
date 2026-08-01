@@ -212,6 +212,9 @@ The same data is reachable interactively:
 - console `/quality [provider]` command in `@tsdi/agent-ui`, which fetches the
   provider-scoped aggregates over RPC and renders a one-line digest per provider
   (record count, average total, fallback rate, date range)
+- console `/quality list [provider]` opens a browsable record selector over
+  `summary_quality.list` (limit 200), with per-record dimension scores,
+  fallback flag, and creation time in the option detail
 
 This closes the last tracked gap: provider-specific summary quality is now
 measured, persisted, and inspectable instead of being a subjective one-off read.

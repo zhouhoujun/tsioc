@@ -126,6 +126,64 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}%${range}`;
     }
 
+    protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Summary quality is unavailable without app RPC.');
+            return true;
+        }
+        const records = await this.sessionService.listSummaryQuality({ provider, limit: 200 });
+        if (!records.length) {
+            this.notify(
+                provider
+                    ? `No summary quality records for provider '${provider}'.`
+                    : 'No summary quality records yet.'
+            );
+            return true;
+        }
+        const options = records.map(record => this.buildSummaryQualityRecordOption(record));
+        await this.select(
+            provider
+                ? `Summary quality records (${provider})`
+                : 'Summary quality records',
+            options,
+            0,
+            `${records.length} record${records.length === 1 ? '' : 's'}`
+        );
+        return true;
+    }
+
+    protected buildSummaryQualityRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
+        const id = String(record.id ?? '');
+        const model = record.model ? String(record.model) : 'unknown';
+        const total = Number(record.total ?? 0);
+        const createdAt = Number(record.createdAt ?? 0);
+        return {
+            label: `${record.provider ?? 'unknown'} · ${model} · ${total}`,
+            value: id || `${record.provider ?? 'unknown'}:${total}`,
+            description: [
+                createdAt ? new Date(createdAt).toLocaleDateString() : '',
+                `fields ${Number(record.fieldCompleteness ?? 0)}`,
+                `annotation ${Number(record.annotationQuality ?? 0)}`,
+                `length ${Number(record.lengthBalance ?? 0)}`,
+                `truncation ${Number(record.truncationScore ?? 0)}`,
+                record.fallbackUsed ? 'fallback' : ''
+            ].filter(Boolean).join(' · ') || 'summary quality record',
+            detail: [
+                `Record: ${id || '-'}`,
+                `Provider: ${record.provider ?? 'unknown'}`,
+                `Model: ${model}`,
+                `Total: ${total}`,
+                `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
+                `Annotation: ${Number(record.annotationQuality ?? 0)}`,
+                `Length: ${Number(record.lengthBalance ?? 0)}`,
+                `Truncation: ${Number(record.truncationScore ?? 0)}`,
+                `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
+                `Summary length: ${Number(record.summaryLength ?? 0)}`,
+                createdAt ? `Created: ${new Date(createdAt).toLocaleString()}` : ''
+            ].filter(Boolean).join('\n')
+        };
+    }
+
     protected resolveReviewAnnotationsSessionId(): string {
         return String(
             this.state.reviewTask?.sourceSessionId
@@ -2186,7 +2244,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     this.notifyBusyState();
                     return true;
                 }
-                const provider = parsed.args?.trim() || undefined;
+                const arg = parsed.args?.trim() || '';
+                if (arg === 'list' || arg.startsWith('list ')) {
+                    const provider = arg.slice(4).trim() || undefined;
+                    return this.openSummaryQualityRecords(provider);
+                }
+                const provider = arg || undefined;
                 const aggregates = this.sessionService
                     ? await this.sessionService.getSummaryQualityStats(provider)
                     : [];
@@ -2198,9 +2261,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     );
                     return true;
                 }
-                for (const aggregate of aggregates) {
-                    this.notify(this.formatSummaryQualityAggregate(aggregate));
-                }
+                this.notify(
+                    aggregates
+                        .map(item => this.formatSummaryQualityAggregate(item))
+                        .join(' | ')
+                );
                 return true;
             }
             case '/copy': {

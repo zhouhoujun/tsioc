@@ -162,3 +162,12 @@
    - CLI 面复核结论：`tsdi-agent chat` 委托给 agent-ui（已支持 `/quality` 命令），`tsdi-agent rpc-stdio` 走 `StdioAppRpcServer`（复用 `AppRpcServer` 的 `summary_quality.list`/`summary_quality.stats` capabilities）——CLI 交互面无需新增消费者，闭环在 P12 已覆盖。
 
 全量回归：agent 314 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。
+
+## P14 打磨（已完成）
+
+1. ~~/quality 命令补全记录列表视图 + 修复多聚合覆盖 bug~~ → 已完成：
+   - **列表视图**：`/quality list [provider]` 经 `summary_quality.list` RPC（limit 200）拉取记录，渲染为可浏览 select 菜单（label `provider · model · total`，description 维度评分 + fallback 标记，detail 全字段含 createdAt 本地化时间）。
+   - **bug 修复**：P12 的 `/quality` 聚合输出用循环 `notify()` 逐条覆盖 notice（单行渲染），多 provider 时只剩最后一条；改为 `aggregates.map(...).join(' | ')` 单条 notice。
+   - 测试：agent-ui view-model 新增 3 条——`quality list command opens record selector through rpc`（launch-then-cancel select 模式 + limit/provider 断言）、`quality list command reports empty records`、`quality aggregates join multiple providers into a single notice`。
+
+全量回归：agent 314 / agent-ui 200 passing；agent、agent-gateway、agent-ui、agent-providers tsc 干净。

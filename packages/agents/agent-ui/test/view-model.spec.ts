@@ -2494,6 +2494,75 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('No summary quality stats');
     }
 
+    @Test('quality list command opens record selector through rpc')
+    async qualityListCommandOpensRecordSelector() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityRecords = [{
+            id: 'sq-rec-1',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            total: 92,
+            fieldCompleteness: 100,
+            annotationQuality: 100,
+            lengthBalance: 100,
+            truncationScore: 100,
+            fallbackUsed: false,
+            summaryLength: 230,
+            createdAt: 1720000000000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality list deepseek';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.list' && call.params?.provider === 'deepseek' && call.params?.limit === 200)).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toEqual('Summary quality records (deepseek)');
+        expect(component.sessionState.selectMenu?.options[0].label).toContain('deepseek-v4-flash');
+        expect(component.sessionState.selectMenu?.options[0].label).toContain('92');
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+    }
+
+    @Test('quality list command reports empty records')
+    async qualityListCommandReportsEmptyRecords() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityRecords = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality list';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'summary_quality.list' && !call.params?.provider)).toEqual(true);
+        expect(component.notice).toContain('No summary quality records');
+    }
+
+    @Test('quality aggregates join multiple providers into a single notice')
+    async qualityAggregatesJoinMultipleProviders() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.summaryQualityAggregates = [
+            { provider: 'deepseek', recordCount: 12, avgTotal: 84.2, fallbackRate: 8.3, timeRange: {} },
+            { provider: 'anthropic', recordCount: 3, avgTotal: 71, fallbackRate: 33.3, timeRange: {} }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/quality';
+        await component.submit();
+
+        expect(component.notice).toContain('deepseek');
+        expect(component.notice).toContain('anthropic');
+    }
+
     @Test('approval resolve routes through rpc when no local approval manager')
     async approvalResolveRoutesThroughRpc() {
         const runtime = new RuntimeStub();
