@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, aggregateTurnDiagnostics } from './TurnDiagnosticsStore';
+import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsTrendPoint, aggregateTurnDiagnostics, buildTurnDiagnosticsTrend } from './TurnDiagnosticsStore';
 
 @Injectable()
 export class InMemoryTurnDiagnosticsStore extends TurnDiagnosticsStore {
@@ -20,6 +20,10 @@ export class InMemoryTurnDiagnosticsStore extends TurnDiagnosticsStore {
 
     async aggregate(sessionIds?: string[]): Promise<TurnDiagnosticsAggregate> {
         return aggregateTurnDiagnostics(this.records, sessionIds);
+    }
+
+    async trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]> {
+        return buildTurnDiagnosticsTrend(this.records, { sessionIds, bucketSize: options?.bucketSize, maxBuckets: options?.maxBuckets });
     }
 
     private cloneRecord(record: TurnDiagnosticsRecord): TurnDiagnosticsRecord {

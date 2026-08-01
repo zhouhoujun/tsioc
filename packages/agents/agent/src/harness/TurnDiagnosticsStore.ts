@@ -55,8 +55,7 @@ export interface TurnDiagnosticsAggregate {
  * TypeORM aggregation behave identically. Scopes to `sessionIds` when provided
  * and non-empty; otherwise aggregates every record.
  */
-export function aggregateTurnDiagnostics(records: TurnDiagnosticsRecord[], sessionIds?: string[]): TurnDiagnosticsAggregate {
-    const scoped = sessionIds && sessionIds.length > 0
+export function aggregateTurnDiagnostics(records: TurnDiagnosticsRecord[], sessionIds?: string[]): TurnDiagnosticsAggregate {    const scoped = sessionIds && sessionIds.length > 0
         ? records.filter(record => sessionIds.includes(record.sessionId))
         : records;
     const totalTurns = scoped.length;
@@ -91,6 +90,85 @@ export function aggregateTurnDiagnostics(records: TurnDiagnosticsRecord[], sessi
 }
 
 /**
+ * One time-bucketed trend point for a session. `bucketStart` is the start of
+ * the bucket window (aligned to `bucketSize`), and the rates mirror the
+ * aggregate shape so the console can render a per-session sparkline.
+ */
+export interface TurnDiagnosticsTrendPoint {
+    sessionId: string;
+    bucketStart: number;
+    /** Number of turns recorded in the bucket. */
+    recordCount: number;
+    emptyResponseCount: number;
+    repeatedClarificationCount: number;
+    followUpRecoveryCount: number;
+    compactionCount: number;
+    totalTokenSavings: number;
+    /** Average compression ratio across records that carry one, as a percentage. */
+    avgCompressionRatio: number;
+}
+
+const DEFAULT_TREND_BUCKET_SIZE = 24 * 60 * 60 * 1000;
+const DEFAULT_TREND_MAX_BUCKETS = 30;
+
+/**
+ * Buckets turn diagnostics records into chronological windows (one day by
+ * default) per session, producing trend points that show how token savings and
+ * compaction evolve over time. Only non-empty buckets are returned, limited to
+ * the most recent `maxBuckets` windows. Scopes to `sessionIds` when provided
+ * and non-empty. Shared by the gateway RPC/HTTP and console rendering so every
+ * surface sees the same shape.
+ */
+export function buildTurnDiagnosticsTrend(
+    records: TurnDiagnosticsRecord[],
+    options?: { sessionIds?: string[]; bucketSize?: number; maxBuckets?: number }
+): TurnDiagnosticsTrendPoint[] {
+    const scoped = options?.sessionIds && options.sessionIds.length > 0
+        ? records.filter(record => options.sessionIds!.includes(record.sessionId))
+        : records;
+    const bucketSize = Number.isFinite(options?.bucketSize) && (options?.bucketSize as number) > 0
+        ? options?.bucketSize as number
+        : DEFAULT_TREND_BUCKET_SIZE;
+    const maxBuckets = Number.isFinite(options?.maxBuckets) && (options?.maxBuckets as number) > 0
+        ? Math.min(Math.floor(options?.maxBuckets as number), 90)
+        : DEFAULT_TREND_MAX_BUCKETS;
+
+    const avg = (values: number[]): number => values.length > 0 ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : 0;
+    const bySession = new Map<string, Map<number, TurnDiagnosticsRecord[]>>();
+    for (const record of scoped) {
+        const bucketStart = Math.floor(record.createdAt / bucketSize) * bucketSize;
+        const sessionBuckets = bySession.get(record.sessionId) ?? new Map<number, TurnDiagnosticsRecord[]>();
+        const group = sessionBuckets.get(bucketStart) ?? [];
+        group.push(record);
+        sessionBuckets.set(bucketStart, group);
+        bySession.set(record.sessionId, sessionBuckets);
+    }
+
+    const points: TurnDiagnosticsTrendPoint[] = [];
+    for (const [session, sessionBuckets] of bySession) {
+        const bucketStarts = [...sessionBuckets.keys()].sort((a, b) => a - b).slice(-maxBuckets);
+        for (const bucketStart of bucketStarts) {
+            const group = sessionBuckets.get(bucketStart) as TurnDiagnosticsRecord[];
+            const ratios = group
+                .map(record => record.compressionRatio)
+                .filter((ratio): ratio is number => typeof ratio === 'number' && Number.isFinite(ratio));
+            points.push({
+                sessionId: session,
+                bucketStart,
+                recordCount: group.length,
+                emptyResponseCount: group.filter(record => record.emptyResponseRetryCount > 0).length,
+                repeatedClarificationCount: group.filter(record => record.repeatedClarificationDetected).length,
+                followUpRecoveryCount: group.reduce((sum, record) => sum + record.followUpRecoveryCount, 0),
+                compactionCount: group.reduce((sum, record) => sum + record.compactionCount, 0),
+                totalTokenSavings: group.reduce((sum, record) => sum + record.totalTokenSavings, 0),
+                avgCompressionRatio: avg(ratios)
+            });
+        }
+    }
+    return points.sort((a, b) => a.sessionId.localeCompare(b.sessionId) || a.bucketStart - b.bucketStart);
+}
+
+/**
  * Persistent store for turn diagnostics, mirroring the {@link AuditSink}
  * pattern: an abstract contract with in-memory, TypeORM, and environment-aware
  * default implementations.
@@ -100,4 +178,6 @@ export abstract class TurnDiagnosticsStore {
     abstract append(record: TurnDiagnosticsRecord): Promise<void>;
     abstract list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<TurnDiagnosticsRecord[]>;
     abstract aggregate(sessionIds?: string[]): Promise<TurnDiagnosticsAggregate>;
+    /** Time-bucketed trend points, optionally scoped to a set of sessions. */
+    abstract trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]>;
 }

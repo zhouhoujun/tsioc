@@ -5,7 +5,7 @@ import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
-import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../src/harness/TurnDiagnosticsStore';
+import { TurnDiagnosticsRecord, TurnDiagnosticsStore, buildTurnDiagnosticsTrend } from '../src/harness/TurnDiagnosticsStore';
 import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
 import { TypeOrmTurnDiagnosticsStore } from '../src/harness/TypeOrmTurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../src/memory/entities';
@@ -170,6 +170,105 @@ export class TurnDiagnosticsStoreTest {
         expect(emptyAggregate.totalTurns).toEqual(0);
         expect(emptyAggregate.emptyResponseRate).toEqual(0);
         expect(emptyAggregate.timeRange).toBeUndefined();
+    }
+
+    @Test('build turn diagnostics trend buckets records by time per session')
+    async trendBucketsByTimePerSession() {
+        const day = 24 * 60 * 60 * 1000;
+        const records = [
+            makeRecord({ id: 't-1', sessionId: 's1', createdAt: day, totalTokenSavings: 3000, compactionCount: 1, emptyResponseRetryCount: 1 }),
+            makeRecord({ id: 't-2', sessionId: 's1', createdAt: day + 1, totalTokenSavings: 2000, compressionRatio: 60 }),
+            makeRecord({ id: 't-3', sessionId: 's1', createdAt: day * 2, totalTokenSavings: 5000, compactionCount: 2, repeatedClarificationDetected: true }),
+            makeRecord({ id: 't-4', sessionId: 's2', createdAt: day, totalTokenSavings: 1000 })
+        ];
+        const points = buildTurnDiagnosticsTrend(records);
+        const s1 = points.filter(point => point.sessionId === 's1').sort((a, b) => a.bucketStart - b.bucketStart);
+        const s2 = points.filter(point => point.sessionId === 's2');
+        expect(s1.length).toEqual(2);
+        expect(s1[0].bucketStart).toEqual(day);
+        expect(s1[0].recordCount).toEqual(2);
+        expect(s1[0].emptyResponseCount).toEqual(1);
+        expect(s1[0].compactionCount).toEqual(1);
+        expect(s1[0].totalTokenSavings).toEqual(5000);
+        expect(s1[0].avgCompressionRatio).toEqual(60);
+        expect(s1[1].bucketStart).toEqual(day * 2);
+        expect(s1[1].recordCount).toEqual(1);
+        expect(s1[1].repeatedClarificationCount).toEqual(1);
+        expect(s1[1].totalTokenSavings).toEqual(5000);
+        expect(s2.length).toEqual(1);
+        expect(s2[0].totalTokenSavings).toEqual(1000);
+    }
+
+    @Test('build turn diagnostics trend honors bucket size and max buckets cap')
+    async trendHonorsBucketSizeAndCap() {
+        const day = 24 * 60 * 60 * 1000;
+        const records = Array.from({ length: 5 }, (_, index) => makeRecord({
+            id: `t-${index}`,
+            sessionId: 's1',
+            createdAt: day * (index + 1),
+            totalTokenSavings: 1000
+        }));
+        const fine = buildTurnDiagnosticsTrend(records, { bucketSize: day / 2 });
+        expect(fine.length).toEqual(5);
+        expect(fine.every(point => point.recordCount === 1)).toEqual(true);
+        const capped = buildTurnDiagnosticsTrend(records, { maxBuckets: 2 });
+        const starts = capped.map(point => point.bucketStart).sort((a, b) => a - b);
+        expect(capped.length).toEqual(2);
+        expect(starts[0]).toEqual(day * 4);
+        expect(starts[1]).toEqual(day * 5);
+        const coerced = buildTurnDiagnosticsTrend(records, { maxBuckets: 500 });
+        expect(coerced.length).toEqual(5);
+    }
+
+    @Test('build turn diagnostics trend scopes to session ids')
+    async trendScopesToSessionIds() {
+        const day = 24 * 60 * 60 * 1000;
+        const records = [
+            makeRecord({ id: 't-1', sessionId: 's1', createdAt: day, totalTokenSavings: 1000 }),
+            makeRecord({ id: 't-2', sessionId: 's2', createdAt: day, totalTokenSavings: 2000 }),
+            makeRecord({ id: 't-3', sessionId: 's3', createdAt: day, totalTokenSavings: 3000 })
+        ];
+        const points = buildTurnDiagnosticsTrend(records, { sessionIds: ['s1', 's3'] });
+        expect(points.map(point => point.sessionId).sort()).toEqual(['s1', 's3']);
+        expect(points.find(point => point.sessionId === 's3')?.totalTokenSavings).toEqual(3000);
+    }
+
+    @Test('in-memory turn diagnostics store exposes trend')
+    async inMemoryTrends() {
+        const day = 24 * 60 * 60 * 1000;
+        const store = new InMemoryTurnDiagnosticsStore();
+        await store.append(makeRecord({ id: 't-1', sessionId: 's1', createdAt: day, totalTokenSavings: 1000 }));
+        await store.append(makeRecord({ id: 't-2', sessionId: 's1', createdAt: day + 1, totalTokenSavings: 2000 }));
+        await store.append(makeRecord({ id: 't-3', sessionId: 's2', createdAt: day, totalTokenSavings: 500 }));
+        const all = await store.trend();
+        expect(all.filter(point => point.sessionId === 's1').length).toEqual(1);
+        expect(all.find(point => point.sessionId === 's1')?.totalTokenSavings).toEqual(3000);
+        const scoped = await store.trend(['s2']);
+        expect(scoped.length).toEqual(1);
+        expect(scoped[0].sessionId).toEqual('s2');
+        expect(scoped[0].totalTokenSavings).toEqual(500);
+    }
+
+    @Test('typeorm turn diagnostics store exposes trend')
+    async typeOrmTrends() {
+        const ctx = await Application.run(TurnDiagnosticsOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const store = new TypeOrmTurnDiagnosticsStore(adapter);
+            const day = 24 * 60 * 60 * 1000;
+            await store.append(makeRecord({ id: 'db-tr-1', sessionId: 's-db', createdAt: 10, totalTokenSavings: 4000, compressionRatio: 50 }));
+            await store.append(makeRecord({ id: 'db-tr-2', sessionId: 's-db', createdAt: 20, totalTokenSavings: 2000 }));
+            const all = await store.trend();
+            expect(all.length).toEqual(1);
+            expect(all[0].sessionId).toEqual('s-db');
+            expect(all[0].recordCount).toEqual(2);
+            expect(all[0].totalTokenSavings).toEqual(6000);
+            expect(all[0].avgCompressionRatio).toEqual(50);
+            const scoped = await store.trend(['other']);
+            expect(scoped.length).toEqual(0);
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('typeorm turn diagnostics store persists reloads and aggregates records')

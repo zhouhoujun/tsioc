@@ -3947,6 +3947,152 @@ export class AppRpcServerTest {
         expect(records[0].compactionLevel).toEqual('L3');
         expect(records[0].promptCache).toEqual({ provider: 'deepseek', supported: true, applied: true, appliedStrategy: 'partial', appliedScopes: ['history'], cachedTokens: 512 });
     }
+
+    @Test('returns turn diagnostics trend through json-rpc')
+    async turnDiagnosticsTrendThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-trend', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [];
+            },
+            async aggregate() {
+                return {};
+            },
+            async trend(sessionIds?: string[], options?: any) {
+                return [{
+                    sessionId: 'rpc-diag-trend',
+                    bucketStart: 0,
+                    recordCount: 2,
+                    emptyResponseCount: 1,
+                    repeatedClarificationCount: 1,
+                    followUpRecoveryCount: 1,
+                    compactionCount: 2,
+                    totalTokenSavings: 4000,
+                    avgCompressionRatio: 50
+                }];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.trend',
+            params: { sessionId: 'rpc-diag-trend', maxBuckets: 7 }
+        }, { principalId: 'user-1' });
+        const trend = (response as any).result.trend;
+        expect(trend.length).toEqual(1);
+        expect(trend[0].sessionId).toEqual('rpc-diag-trend');
+        expect(trend[0].bucketStart).toEqual(0);
+        expect(trend[0].recordCount).toEqual(2);
+        expect(trend[0].emptyResponseCount).toEqual(1);
+        expect(trend[0].repeatedClarificationCount).toEqual(1);
+        expect(trend[0].compactionCount).toEqual(2);
+        expect(trend[0].totalTokenSavings).toEqual(4000);
+        expect(trend[0].avgCompressionRatio).toEqual(50);
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('turn_diagnostics.trend');
+    }
+
+    @Test('rejects foreign turn diagnostics trend through json-rpc')
+    async rejectsForeignTurnDiagnosticsTrendThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-trend-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [];
+            },
+            async aggregate() {
+                return {};
+            },
+            async trend() {
+                return [];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.trend',
+            params: { sessionId: 'rpc-diag-trend-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+    }
+
+    @Test('scopes turn diagnostics trend to owned sessions through json-rpc')
+    async turnDiagnosticsTrendScopesToOwnedSessions() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-diag-1', 'user-1');
+        await owners.create('rpc-diag-2', 'user-2');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [
+                    { id: 'd1', sessionId: 'rpc-diag-1', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0 },
+                    { id: 'd2', sessionId: 'rpc-diag-2', createdAt: 2, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0 }
+                ];
+            },
+            async aggregate() {
+                return {};
+            },
+            async trend(sessionIds?: string[]) {
+                return (sessionIds ?? []).map(id => ({ sessionId: id, bucketStart: 0, recordCount: 1, emptyResponseCount: 0, repeatedClarificationCount: 0, followUpRecoveryCount: 0, compactionCount: 0, totalTokenSavings: 0, avgCompressionRatio: 0 }));
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.trend',
+            params: {}
+        }, { principalId: 'user-1' });
+        const trend = (response as any).result.trend;
+        expect(trend.length).toEqual(1);
+        expect(trend[0].sessionId).toEqual('rpc-diag-1');
+    }
+
+    @Test('returns empty turn diagnostics trend when no store is configured')
+    async turnDiagnosticsTrendWithoutStore() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-empty-diag-trend', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'turn_diagnostics.trend',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((response as any).result.trend).toEqual([]);
+    }
 }
 export class AppRpcHandlerTest {
     @Test('formats invalid rpc requests as json-rpc errors')

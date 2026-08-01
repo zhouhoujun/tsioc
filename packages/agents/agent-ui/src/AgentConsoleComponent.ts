@@ -301,6 +301,33 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/diagnostics trend [sessionId] [bucketSize] [maxBuckets]`:
+     * renders one sparkline line per session showing how token savings and
+     * compaction activity evolve over time buckets.
+     */
+    protected async openTurnDiagnosticsTrend(
+        sessionId?: string,
+        bucketSize?: number,
+        maxBuckets?: number
+    ): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Turn diagnostics are unavailable without app RPC.');
+            return true;
+        }
+        const trend = await this.sessionService.getTurnDiagnosticsTrend(sessionId, { bucketSize, maxBuckets });
+        if (!trend.length) {
+            this.notify(
+                sessionId
+                    ? `No turn diagnostics trend recorded for session '${sessionId}'.`
+                    : 'No turn diagnostics trend recorded yet.'
+            );
+            return true;
+        }
+        this.notify(this.formatTurnDiagnosticsTrend(trend).join(' | '));
+        return true;
+    }
+
+    /**
      * Renders one compact aggregate line for turn diagnostics, for example:
      * `session-1 · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens · 12/1–12/2`
      */
@@ -320,6 +347,56 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             ? ` · ${new Date(aggregate.timeRange.from).toLocaleDateString()}–${new Date(aggregate.timeRange.to).toLocaleDateString()}`
             : '';
         return parts.join(' · ') + range;
+    }
+
+    /**
+     * Renders one compact line per session with an 8-level sparkline over time
+     * buckets (`totalTokenSavings` normalized to the session maximum mapped to
+     * ▁▂▃▄▅▆▇█), the bucket date range, the total turns, and the total tokens
+     * saved, for example:
+     * `session-1 ▃▅▇ (3d · 12/1–12/3 · 42 turns · saved 25k tokens)`
+     */
+    protected formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>): string[] {
+        const bySession = new Map<string, Array<Record<string, any>>>();
+        for (const point of trend) {
+            const sessionId = String(point.sessionId ?? 'unknown');
+            const group = bySession.get(sessionId) ?? [];
+            group.push(point);
+            bySession.set(sessionId, group);
+        }
+        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        const spark = (value: number, max: number): string => {
+            const ratio = max > 0 ? Math.min(1, Math.max(0, Number(value) || 0) / max) : 0;
+            const index = Math.min(7, Math.max(0, Math.floor(ratio * 8)));
+            return sparkChars[index];
+        };
+        const lines: string[] = [];
+        for (const [sessionId, points] of bySession) {
+            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
+            const savings = sorted.map(point => Number(point.totalTokenSavings ?? 0));
+            const maxSaving = Math.max(...savings, 1);
+            const turns = sorted.reduce((sum, point) => sum + Number(point.recordCount ?? 0), 0);
+            const tokensSaved = savings.reduce((sum, value) => sum + value, 0);
+            const from = Number(sorted[0]?.bucketStart ?? 0);
+            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
+            const range = from || to
+                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+                : '';
+            const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
+            lines.push(`${id} ${sorted.map(point => spark(Number(point.totalTokenSavings ?? 0), maxSaving)).join('')} (${sorted.length}d${range} · ${turns} turns · saved ${formatCompactNumber(tokensSaved)} tokens)`);
+        }
+        return lines.sort((a, b) => a.localeCompare(b));
+    }
+
+    /**
+     * Parses `/diagnostics trend` trailing tokens: optional session id,
+     * optional bucket size (`Nd` for days or a millisecond number), optional
+     * max bucket count. Reuses the same token grammar as the compaction trend.
+     */
+    protected parseTurnDiagnosticsTrendArgs(
+        args: string
+    ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
+        return this.parseCompactionHistoryTrendArgs(args);
     }
 
     /**
@@ -2402,6 +2479,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
                     { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
+                    { label: '/diagnostics trend', value: '/diagnostics trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2600,7 +2678,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 {
-                    const sessionId = parsed.args?.trim() || undefined;
+                    const arg = parsed.args?.trim() || '';
+                    if (arg === 'trend' || arg.startsWith('trend ')) {
+                        const { sessionId, bucketSize, maxBuckets } = this.parseTurnDiagnosticsTrendArgs(arg.slice(5));
+                        return this.openTurnDiagnosticsTrend(sessionId, bucketSize, maxBuckets);
+                    }
+                    const sessionId = arg || undefined;
                     return this.openTurnDiagnostics(sessionId);
                 }
             case '/copy': {

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, aggregateTurnDiagnostics } from './TurnDiagnosticsStore';
+import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsTrendPoint, aggregateTurnDiagnostics, buildTurnDiagnosticsTrend } from './TurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../memory/entities';
 import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 
@@ -49,6 +49,15 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
             order: { createdAt: 'ASC', id: 'ASC' } as any
         });
         return aggregateTurnDiagnostics(records.map(record => this.toRecord(record)), sessionIds);
+    }
+
+    async trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]> {
+        const repo = this.adapter.getRepository(AgentTurnDiagnosticsEntity);
+        const records = await repo.find({
+            where: sessionIds && sessionIds.length > 0 ? ({ sessionId: In(sessionIds) } as any) : undefined,
+            order: { createdAt: 'ASC', id: 'ASC' } as any
+        });
+        return buildTurnDiagnosticsTrend(records.map(record => this.toRecord(record)), { sessionIds, bucketSize: options?.bucketSize, maxBuckets: options?.maxBuckets });
     }
 
     private toRecord(record: AgentTurnDiagnosticsEntity): TurnDiagnosticsRecord {

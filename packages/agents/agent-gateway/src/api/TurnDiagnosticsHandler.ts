@@ -58,9 +58,40 @@ export class TurnDiagnosticsHandler {
                 .end(JSON.stringify({ aggregate }));
         };
 
+        const trendStats: RouteHandler = async (req, res) => {
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? '/api/turn-diagnostics/trend', `http://${host}`);
+            const sessionId = url.searchParams.get('sessionId')?.trim();
+            const principalId = getRequestPrincipalId(req);
+            const bucketSizeRaw = url.searchParams.get('bucketSize')?.trim();
+            const bucketSize = bucketSizeRaw && /^\d+$/.test(bucketSizeRaw) && parseInt(bucketSizeRaw, 10) > 0
+                ? parseInt(bucketSizeRaw, 10)
+                : undefined;
+            const maxBucketsRaw = url.searchParams.get('maxBuckets')?.trim();
+            const maxBuckets = maxBucketsRaw && /^\d+$/.test(maxBucketsRaw) && parseInt(maxBucketsRaw, 10) > 0
+                ? Math.min(parseInt(maxBucketsRaw, 10), 90)
+                : undefined;
+            if (sessionId) {
+                if (!await this.owners.isOwner(sessionId, principalId)) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' })
+                        .end(JSON.stringify({ error: 'forbidden' }));
+                    return;
+                }
+                const trend = await this.diagnostics.trend([sessionId], { bucketSize, maxBuckets });
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ trend }));
+                return;
+            }
+            const owned = await this.listOwnedSessionIds(principalId);
+            const trend = await this.diagnostics.trend(owned, { bucketSize, maxBuckets });
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ trend }));
+        };
+
         return [
             { method: 'GET', path: '/api/turn-diagnostics', handler: listTurnDiagnostics },
-            { method: 'GET', path: '/api/turn-diagnostics/stats', handler: aggregateStats }
+            { method: 'GET', path: '/api/turn-diagnostics/stats', handler: aggregateStats },
+            { method: 'GET', path: '/api/turn-diagnostics/trend', handler: trendStats }
         ];
     }
 

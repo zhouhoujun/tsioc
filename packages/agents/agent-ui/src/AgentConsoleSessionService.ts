@@ -294,6 +294,20 @@ export class AgentConsoleSessionService {
         return result?.aggregate ?? null;
     }
 
+    /**
+     * Fetches time-bucketed turn diagnostics trends over RPC. `sessionId` is
+     * optional: when provided the trend is scoped to that session (and the
+     * caller must own it), otherwise every owned session gets its own trend
+     * line.
+     */
+    async getTurnDiagnosticsTrend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('turn_diagnostics.trend', { ...(sessionId ? { sessionId } : {}), ...options }, context);
+        return Array.isArray(result?.trend) ? result.trend : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

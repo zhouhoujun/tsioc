@@ -171,7 +171,8 @@ export class AppRpcServer {
                         'compaction_history.stats',
                         'compaction_history.trend',
                         'turn_diagnostics.list',
-                        'turn_diagnostics.stats'
+                        'turn_diagnostics.stats',
+                        'turn_diagnostics.trend'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -257,6 +258,8 @@ export class AppRpcServer {
                 return this.listTurnDiagnostics(params, context);
             case 'turn_diagnostics.stats':
                 return this.getTurnDiagnosticsStats(params, context);
+            case 'turn_diagnostics.trend':
+                return this.getTurnDiagnosticsTrend(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1209,6 +1212,43 @@ export class AppRpcServer {
         const sessionIds = [...new Set(all.map(record => record.sessionId))];
         const owned = await this.owners.listOwned(sessionIds, context.principalId);
         return { aggregate: await this.turnDiagnostics.aggregate(owned) };
+    }
+
+    private async getTurnDiagnosticsTrend(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.turnDiagnostics) {
+            return { trend: [] };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        const bucketSizeRaw = Number(params?.bucketSize);
+        const bucketSize = Number.isFinite(bucketSizeRaw) && bucketSizeRaw > 0 ? bucketSizeRaw : undefined;
+        const maxBucketsRaw = Number(params?.maxBuckets);
+        const maxBuckets = Number.isFinite(maxBucketsRaw) && maxBucketsRaw > 0 ? Math.min(Math.floor(maxBucketsRaw), 90) : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+            const trend = await this.turnDiagnostics.trend([sessionId], { bucketSize, maxBuckets });
+            return { trend: trend.map(point => this.toTurnDiagnosticsTrendView(point)) };
+        }
+        const all = await this.turnDiagnostics.list();
+        const sessionIds = [...new Set(all.map(record => record.sessionId))];
+        const owned = await this.owners.listOwned(sessionIds, context.principalId);
+        const trend = await this.turnDiagnostics.trend(owned, { bucketSize, maxBuckets });
+        return { trend: trend.map(point => this.toTurnDiagnosticsTrendView(point)) };
+    }
+
+    private toTurnDiagnosticsTrendView(point: import('@tsdi/agent').TurnDiagnosticsTrendPoint): Record<string, any> {
+        return {
+            sessionId: point.sessionId,
+            bucketStart: point.bucketStart,
+            recordCount: point.recordCount,
+            emptyResponseCount: point.emptyResponseCount,
+            repeatedClarificationCount: point.repeatedClarificationCount,
+            followUpRecoveryCount: point.followUpRecoveryCount,
+            compactionCount: point.compactionCount,
+            totalTokenSavings: point.totalTokenSavings,
+            avgCompressionRatio: point.avgCompressionRatio
+        };
     }
 
     private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {        const sessionId = this.requireSessionId(params);

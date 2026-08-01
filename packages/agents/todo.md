@@ -263,3 +263,16 @@
    - 测试：gateway +5（turnDiagnosticsStatsThroughRpc 含 capabilities 与字段断言 / rejectsForeignTurnDiagnosticsThroughRpc / turnDiagnosticsStatsScopesToOwnedSessions / turnDiagnosticsWithoutStore / turnDiagnosticsListThroughRpc），view-model +2（diagnosticsCommandShowsAggregateThroughRpc / diagnosticsCommandReportsEmptyStats）——依赖 `AppRpcStub.turnDiagnosticsAggregate`/`turnDiagnosticsRecords` 与 `SessionServiceStub.getTurnDiagnosticsStats`/`listTurnDiagnostics` override（走 rpcRef）。
 
 全量回归：agent 329、agent-gateway 113、agent-ui 218 passing；三包 tsc 干净。（agent-ui 全量首次运行 `componentResolvesWorkspaceMentionSuggestionsFromAppFileAdapter` 偶发失败，连续两次复跑均 218 passing，为既有异步 file-adapter 测试的 flaky，与本次改动无关。）
+
+## P24 打磨（已完成）
+
+1. ~~turn diagnostics 补趋势视图（镜像 P22 compaction history trend 面）~~ → 已完成：P23 补了 list + stats，但缺少跨时间的趋势视图，无法观察 token 节省与压缩活动随会话演进的形态。本次补齐：
+   - **store**（`@tsdi/agent`）：新增 `TurnDiagnosticsTrendPoint` 接口（sessionId/bucketStart/recordCount/emptyResponseCount/repeatedClarificationCount/followUpRecoveryCount/compactionCount/totalTokenSavings/avgCompressionRatio）与共享 builder `buildTurnDiagnosticsTrend(records, options?)`——按 session 分桶（默认桶宽 24h、上限 30 桶，均可覆盖）、桶内汇总计数与 token 节省、平均压缩比只对携带 compressionRatio 的记录求值保留一位小数、按 `sessionId` + `bucketStart` 排序、截尾到 `maxBuckets`（上限 90）；`TurnDiagnosticsStore` 新增抽象 `trend(sessionIds?: string[], options?)`（接受 sessionIds 数组，与 `aggregate` 签名一致），InMemory / TypeOrm（`In` 过滤后复用共享 builder）/ Default 三实现均补齐。
+   - **RPC**（`@tsdi/agent-gateway`）：新增 `turn_diagnostics.trend` 方法 `getTurnDiagnosticsTrend`——`sessionId` 可选（传入时经 `ensureSessionAccess` 做 owner 校验，无参数时经 `owners.listOwned(sessionIds, principalId)` 收敛到本主会话）；`bucketSize` 解析 >0、`maxBuckets` clamp [1,90]；无 store 时返回空 `trend`；响应 9 字段 view（`toTurnDiagnosticsTrendView`）；capabilities 声明。
+   - **HTTP**（`@tsdi/agent-gateway`）：`TurnDiagnosticsHandler` 新增 `GET /api/turn-diagnostics/trend`，`sessionId` 可选、提供时校验 owner，bucketSize/maxBuckets 同 RPC 语义（`/^\d+$/` 正则校验正整数）。
+   - **UI service**（`@tsdi/agent-ui`）：`AgentConsoleSessionService.getTurnDiagnosticsTrend(sessionId?, options?, context?)`（经 appRpc 请求 `turn_diagnostics.trend`，无 RPC 时降级空数组）。
+   - **UI 命令**：`/diagnostics trend [sessionId] [bucketSize] [maxBuckets]`——`parseTurnDiagnosticsTrendArgs` 委托 `parseCompactionHistoryTrendArgs`（同一 token 文法：sessionId、`Nd` 天桶或毫秒数、maxBuckets）；`openTurnDiagnosticsTrend` 按 session 分组渲染 8 级 sparkline（`totalTokenSavings` 按 session 内最大桶归一化映射 `▁▂▃▄▅▆▇█`）+ 桶数/日期范围 + turn 总数 + 节省 token 总量，空趋势给提示；help 菜单补 `/diagnostics trend` 条目。
+   - 测试：agent +5（trendBucketsByTimePerSession / trendHonorsBucketSizeAndCap / trendScopesToSessionIds / inMemoryTrends / typeOrmTrends），gateway +4（turnDiagnosticsTrendThroughRpc 含 capabilities / rejectsForeignTurnDiagnosticsTrendThroughRpc / turnDiagnosticsTrendScopesToOwnedSessions / turnDiagnosticsTrendWithoutStore），view-model +2（diagnosticsTrendCommandRendersSparklineThroughRpc 断言 `▅█` 与 `7 turns`/`saved 3K tokens` / diagnosticsTrendCommandReportsEmptyTrend 透传 sessionId）——依赖 `AppRpcStub.turnDiagnosticsTrend` 与 `SessionServiceStub.getTurnDiagnosticsTrend` override。
+   - 说明：sparkline 指标选 `totalTokenSavings`（每条记录必有、不为 undefined 拉低），而非 `avgCompressionRatio`（可选字段，多数无压缩的 turn 不带值）。
+
+全量回归：agent 334、agent-gateway 117、agent-ui 220 passing；三包 tsc 干净。

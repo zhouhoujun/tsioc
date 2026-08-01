@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore } from './TurnDiagnosticsStore';
+import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsTrendPoint } from './TurnDiagnosticsStore';
 import { InMemoryTurnDiagnosticsStore } from './InMemoryTurnDiagnosticsStore';
 import { TypeOrmTurnDiagnosticsStore } from './TypeOrmTurnDiagnosticsStore';
 
@@ -29,6 +29,11 @@ export class DefaultTurnDiagnosticsStore extends TurnDiagnosticsStore {
     async aggregate(sessionIds?: string[]): Promise<TurnDiagnosticsAggregate> {
         const store = this.resolveStore();
         return store.aggregate(sessionIds);
+    }
+
+    async trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]> {
+        const store = this.resolveStore();
+        return store.trend(sessionIds, options);
     }
 
     private resolveStore(): TurnDiagnosticsStore {
