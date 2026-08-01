@@ -1388,6 +1388,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.refreshScheduledTasks();
         await this.refreshSummaryQualityDigest();
         await this.refreshCompactionDigest();
+        await this.refreshTurnDiagnosticsDigest();
         this.state.setTasksCount(this.scheduler.getTasks().length);
     }
 
@@ -3647,8 +3648,27 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshTodoPlan(),
             this.loadCodingTasks(),
             this.refreshSummaryQualityDigest(),
-            this.refreshCompactionDigest()
+            this.refreshCompactionDigest(),
+            this.refreshTurnDiagnosticsDigest()
         ]);
+    }
+
+    protected async refreshTurnDiagnosticsDigest(): Promise<void> {
+        if (!this.sessionService) {
+            this.state.setTurnDiagnosticsDigest('');
+            return;
+        }
+        try {
+            const aggregate = await this.sessionService.getTurnDiagnosticsStats();
+            if (!aggregate || !Number(aggregate.totalTurns)) {
+                this.state.setTurnDiagnosticsDigest('');
+                return;
+            }
+            this.state.setTurnDiagnosticsDigest(this.formatTurnDiagnosticsAggregate(aggregate));
+        } catch (error: any) {
+            this.state.setTurnDiagnosticsDigest('');
+            void error;
+        }
     }
 
     protected async refreshCompactionDigest(): Promise<void> {

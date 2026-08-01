@@ -2929,6 +2929,52 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.compactionDigest).toBe('');
     }
 
+    @Test('refresh turn artifacts loads turn diagnostics digest through rpc')
+    async refreshTurnArtifactsLoadsTurnDiagnosticsDigest() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsAggregate = {
+            sessionIds: ['session-1'],
+            totalTurns: 12,
+            emptyResponseCount: 1,
+            emptyResponseRate: 8.3,
+            repeatedClarificationCount: 2,
+            repeatedQuestionRate: 16.7,
+            finalClarificationCount: 0,
+            clarificationRate: 0,
+            followUpRecoveryCount: 2,
+            followUpRecoveryRate: 16.7,
+            compactionCount: 3,
+            totalTokenSavings: 25000,
+            timeRange: { from: 0, to: 172800000 }
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.stats' && !call.params?.sessionId)).toEqual(true);
+        expect(component.sessionState.turnDiagnosticsDigest).toContain('12 turns');
+        expect(component.sessionState.turnDiagnosticsDigest).toContain('empty 8.3%');
+        expect(component.sessionState.turnDiagnosticsDigest).toContain('3 compact(s)');
+        expect(component.sessionState.turnDiagnosticsDigest).toContain('saved 25K tokens');
+    }
+
+    @Test('refresh turn artifacts clears turn diagnostics digest when nothing recorded')
+    async refreshTurnArtifactsClearsTurnDiagnosticsDigestWhenEmpty() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.turnDiagnosticsAggregate = null;
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setTurnDiagnosticsDigest('stale digest');
+
+        await (component as any).refreshTurnArtifacts();
+
+        expect(appRpc.calls.some(call => call.method === 'turn_diagnostics.stats')).toEqual(true);
+        expect(component.sessionState.turnDiagnosticsDigest).toBe('');
+    }
+
     @Test('compactions trend command renders per-session sparkline through rpc')
     async compactionsTrendCommandShowsSparkline() {
         const runtime = new RuntimeStub();
@@ -3039,7 +3085,7 @@ export class AgentConsoleComponentTest {
         component.input = '/diagnostics session-1';
         await component.submit();
 
-        const statsCall = appRpc.calls.find(call => call.method === 'turn_diagnostics.stats');
+        const statsCall = appRpc.calls.find(call => call.method === 'turn_diagnostics.stats' && call.params?.sessionId);
         expect(statsCall).toBeTruthy();
         expect(statsCall!.params.sessionId).toEqual('session-1');
         expect(component.notice).toContain("No turn diagnostics recorded for session 'session-1'.");

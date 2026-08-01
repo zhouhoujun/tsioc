@@ -276,3 +276,13 @@
    - 说明：sparkline 指标选 `totalTokenSavings`（每条记录必有、不为 undefined 拉低），而非 `avgCompressionRatio`（可选字段，多数无压缩的 turn 不带值）。
 
 全量回归：agent 334、agent-gateway 117、agent-ui 220 passing；三包 tsc 干净。
+
+## P25 打磨（已完成）
+
+1. ~~turn diagnostics 接入常驻 dashboard（镜像 P16/P21 的 quality / compaction digest 模式）~~ → 已完成：P23/P24 补了 RPC 与命令面，但 dashboard 面板只展示 quality 与 compaction 两行观测。本次补齐：
+   - **state**（`@tsdi/agent-ui`）：`AgentConsoleSessionState` 新增 `turnDiagnosticsDigest` 字段 + `setTurnDiagnosticsDigest(digest)` setter（带 notify，与 `setCompactionDigest` 并列）。
+   - **组件**：新增 `refreshTurnDiagnosticsDigest()`——无 sessionService 清空；经 `getTurnDiagnosticsStats()` RPC 拉全会话聚合，复用 `formatTurnDiagnosticsAggregate` 写入 state（`all sessions · N turns · empty X% · ...`），空/异常清空；挂入 `onInit`（与 quality/compaction digest 并列）与 `refreshTurnArtifacts` 的 `Promise.allSettled`（turn 完成后随面板数据一并刷新）。
+   - **dashboard 面板**：`AgentConsolePanels` 模板新增 `diagnostics · <digest>` 行（quality/compaction 行之后），`dashboardTurnDiagnosticsLabel` getter 仅在 `shouldShow` 且 digest 非空时输出。
+   - 测试：console-renderer.spec.ts +2（有 digest 渲染 diagnostics 行、无 digest 省略）；view-model.spec.ts +2（onInit 经 RPC 拉取 digest、空数据清空旧 digest）。注意：onInit 新增的 digest 拉取会产生无 sessionId 的 `turn_diagnostics.stats` 调用，P23 既有测试 `diagnosticsCommandReportsEmptyStats` 的 `find` 首匹配断言改为匹配带 sessionId 的调用。
+
+全量回归：agent 334、agent-gateway 117、agent-ui 224 passing；三包 tsc 干净。

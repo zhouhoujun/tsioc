@@ -241,6 +241,37 @@ export class AgentConsoleRendererTest {
         expect(dashboardPanel.instance.dashboardQualityLabel).toBe('');
     }
 
+    @Test('dashboard shows turn diagnostics digest when recorded')
+    async dashboardShowsTurnDiagnosticsDigest() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setTurnDiagnosticsDigest(
+            'all sessions · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens'
+        );
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.shouldShow).toBe(true);
+        const diagnostics = dashboardPanel.instance.dashboardTurnDiagnosticsLabel;
+        expect(diagnostics.startsWith('diagnostics · ')).toBe(true);
+        expect(diagnostics.includes('12 turns')).toBe(true);
+        expect(diagnostics.includes('empty 8.3%')).toBe(true);
+        expect(diagnostics.includes('saved 25K tokens')).toBe(true);
+    }
+
+    @Test('dashboard omits turn diagnostics line when no digest recorded')
+    async dashboardOmitsTurnDiagnosticsDigestWithoutRecords() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setTurnDiagnosticsDigest('');
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.dashboardTurnDiagnosticsLabel).toBe('');
+    }
+
     @Test('root output keeps dashboard visible for coding tasks without plan todos')
     async rootOutputKeepsDashboardVisibleForCodingTasksWithoutPlanTodos() {
         const ctx = await Application.run(AgentConsoleComponent, {
