@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory } from './CompactionHistoryStore';
+import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore, CompactionHistoryTrendPoint, aggregateCompactionHistory, buildCompactionHistoryTrend } from './CompactionHistoryStore';
 import { AgentCompactionHistoryEntity } from '../memory/entities';
 
 @Injectable()
@@ -52,6 +52,15 @@ export class TypeOrmCompactionHistoryStore extends CompactionHistoryStore {
             order: { createdAt: 'ASC', id: 'ASC' } as any
         });
         return aggregateCompactionHistory(records.map(record => this.toRecord(record)), sessionId);
+    }
+
+    async trend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }): Promise<CompactionHistoryTrendPoint[]> {
+        const repo = this.adapter.getRepository(AgentCompactionHistoryEntity);
+        const records = await repo.find({
+            where: sessionId ? ({ sessionId } as any) : undefined,
+            order: { createdAt: 'ASC', id: 'ASC' } as any
+        });
+        return buildCompactionHistoryTrend(records.map(record => this.toRecord(record)), { sessionId, ...options });
     }
 
     private toRecord(record: AgentCompactionHistoryEntity): CompactionHistoryRecord {

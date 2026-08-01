@@ -5,7 +5,7 @@ import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
-import { CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory } from '../src/harness/CompactionHistoryStore';
+import { CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory, buildCompactionHistoryTrend } from '../src/harness/CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from '../src/harness/InMemoryCompactionHistoryStore';
 import { TypeOrmCompactionHistoryStore } from '../src/harness/TypeOrmCompactionHistoryStore';
 import { AgentCompactionHistoryEntity } from '../src/memory/entities';
@@ -182,6 +182,91 @@ export class CompactionHistoryStoreTest {
             expect(scoped[0].totalTokensSaved).toEqual(5500);
             expect(scoped[0].recordCount).toEqual(2);
             const all = await store.aggregate();
+            expect(all.length).toEqual(2);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('build compaction history trend buckets records by time per session')
+    async trendBucketsByTimePerSession() {
+        const day = 24 * 60 * 60 * 1000;
+        const trend = buildCompactionHistoryTrend([
+            makeRecord({ id: 't1', sessionId: 's1', strategy: 'compacted', compactionTriggered: true, beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 * day }),
+            makeRecord({ id: 't2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, compressionRatio: 10, compactionTriggered: false, strategy: 'pruned', createdAt: 2 * day }),
+            makeRecord({ id: 't3', sessionId: 's2', beforeTokens: 2000, afterTokens: 500, compressionRatio: 75, compactionTriggered: true, createdAt: 3 * day })
+        ]);
+        expect(trend.length).toEqual(3);
+        const s1First = trend[0];
+        expect(s1First.sessionId).toEqual('s1');
+        expect(s1First.bucketStart).toEqual(1 * day);
+        expect(s1First.recordCount).toEqual(1);
+        expect(s1First.compactedCount).toEqual(1);
+        expect(s1First.prunedCount).toEqual(0);
+        expect(s1First.avgCompressionRatio).toEqual(50);
+        expect(s1First.totalTokensSaved).toEqual(4000);
+        const s1Second = trend[1];
+        expect(s1Second.bucketStart).toEqual(2 * day);
+        expect(s1Second.recordCount).toEqual(1);
+        expect(s1Second.avgCompressionRatio).toEqual(10);
+        const s2 = trend[2];
+        expect(s2.sessionId).toEqual('s2');
+        expect(s2.totalTokensSaved).toEqual(1500);
+    }
+
+    @Test('build compaction history trend honors bucket size and caps buckets')
+    async trendHonorsBucketSizeAndCap() {
+        const day = 24 * 60 * 60 * 1000;
+        const trend = buildCompactionHistoryTrend([
+            makeRecord({ id: 'b1', sessionId: 's1', createdAt: 1 * day }),
+            makeRecord({ id: 'b2', sessionId: 's1', createdAt: 2 * day }),
+            makeRecord({ id: 'b3', sessionId: 's1', createdAt: 3 * day }),
+            makeRecord({ id: 'b4', sessionId: 's1', createdAt: 4 * day })
+        ], { sessionId: 's1', bucketSize: 2 * day, maxBuckets: 2 });
+        expect(trend.length).toEqual(2);
+        expect(trend[0].bucketStart).toEqual(2 * day);
+        expect(trend[0].recordCount).toEqual(2);
+        expect(trend[1].bucketStart).toEqual(4 * day);
+        expect(trend[1].recordCount).toEqual(1);
+    }
+
+    @Test('build compaction history trend scopes to a single session')
+    async trendScopesToSession() {
+        const trend = buildCompactionHistoryTrend([
+            makeRecord({ id: 'a1', sessionId: 's1', createdAt: 1 }),
+            makeRecord({ id: 'a2', sessionId: 's2', createdAt: 2 })
+        ], { sessionId: 's2' });
+        expect(trend.length).toEqual(1);
+        expect(trend[0].sessionId).toEqual('s2');
+    }
+
+    @Test('in-memory compaction history store builds trends across sessions')
+    async inMemoryTrends() {
+        const store = new InMemoryCompactionHistoryStore();
+        await store.append(makeRecord({ id: 'mt1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 }));
+        await store.append(makeRecord({ id: 'mt2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, compressionRatio: 10, createdAt: 2 }));
+        const trend = await store.trend('s1');
+        expect(trend.length).toEqual(1);
+        expect(trend[0].recordCount).toEqual(2);
+        expect(trend[0].totalTokensSaved).toEqual(4100);
+        expect(trend[0].avgCompressionRatio).toEqual(30);
+    }
+
+    @Test('typeorm compaction history store builds trends from persisted records')
+    async typeOrmTrends() {
+        const ctx = await Application.run(CompactionHistoryOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const store = new TypeOrmCompactionHistoryStore(adapter);
+            await store.append(makeRecord({ id: 'db-trend-1', sessionId: 's-trend', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'db-trend-2', sessionId: 's-trend', beforeTokens: 2000, afterTokens: 500, compressionRatio: 75, createdAt: 2 }));
+            await store.append(makeRecord({ id: 'db-trend-3', sessionId: 's-other', beforeTokens: 5000, afterTokens: 1000, createdAt: 3 }));
+            const scoped = await store.trend('s-trend');
+            expect(scoped.length).toEqual(1);
+            expect(scoped[0].recordCount).toEqual(2);
+            expect(scoped[0].totalTokensSaved).toEqual(5500);
+            expect(scoped[0].avgCompressionRatio).toEqual(62.5);
+            const all = await store.trend();
             expect(all.length).toEqual(2);
         } finally {
             await ctx.close();

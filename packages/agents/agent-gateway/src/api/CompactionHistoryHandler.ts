@@ -84,9 +84,40 @@ export class CompactionHistoryHandler {
                 .end(JSON.stringify({ aggregates }));
         };
 
+        const compactionHistoryTrend: RouteHandler = async (req, res) => {
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? '/api/compaction-history/trend', `http://${host}`);
+            const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
+            const principalId = getRequestPrincipalId(req);
+            if (sessionId && !await this.owners.isOwner(sessionId, principalId)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ error: 'forbidden' }));
+                return;
+            }
+            const bucketSizeRaw = Number(url.searchParams.get('bucketSize')?.trim());
+            const bucketSize = Number.isFinite(bucketSizeRaw) && bucketSizeRaw > 0 ? bucketSizeRaw : undefined;
+            const maxBucketsRaw = Number(url.searchParams.get('maxBuckets')?.trim());
+            const maxBuckets = Number.isFinite(maxBucketsRaw) ? Math.min(Math.max(1, Math.floor(maxBucketsRaw)), 90) : undefined;
+            const trend = (await this.compactionHistory.trend(sessionId, { bucketSize, maxBuckets }))
+                .map(point => ({
+                    sessionId: point.sessionId,
+                    bucketStart: point.bucketStart,
+                    recordCount: point.recordCount,
+                    compactedCount: point.compactedCount,
+                    prunedCount: point.prunedCount,
+                    avgCompressionRatio: point.avgCompressionRatio,
+                    totalTokensBefore: point.totalTokensBefore,
+                    totalTokensAfter: point.totalTokensAfter,
+                    totalTokensSaved: point.totalTokensSaved
+                }));
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ trend }));
+        };
+
         return [
             { method: 'GET', path: '/api/compaction-history', handler: listCompactionHistory },
-            { method: 'GET', path: '/api/compaction-history/stats', handler: compactionHistoryStats }
+            { method: 'GET', path: '/api/compaction-history/stats', handler: compactionHistoryStats },
+            { method: 'GET', path: '/api/compaction-history/trend', handler: compactionHistoryTrend }
         ];
     }
 }

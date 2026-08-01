@@ -1747,6 +1747,64 @@ export class CompactionHistoryHandlerTest {
         await route.handler(req, res, {} as any);
         expect(status).toEqual(403);
     }
+
+    @Test('returns compaction history trend across sessions')
+    async returnsCompactionHistoryTrend() {
+        const day = 24 * 60 * 60 * 1000;
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const handler = new CompactionHistoryHandler({
+            list: async () => [],
+            aggregate: async () => [],
+            async trend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }) {
+                const bucketSize = options?.bucketSize ?? day;
+                return [
+                    { sessionId: 's1', bucketStart: 2 * day, recordCount: 2, compactedCount: 1, prunedCount: 1, avgCompressionRatio: 30, totalTokensBefore: 9000, totalTokensAfter: 4900, totalTokensSaved: 4100 }
+                ].filter(point => !sessionId || point.sessionId === sessionId);
+            }
+        } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/compaction-history/trend' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/compaction-history/trend?bucketSize=172800000' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.trend.length).toEqual(1);
+        expect(data.trend[0].sessionId).toEqual('s1');
+        expect(data.trend[0].bucketStart).toEqual(2 * day);
+        expect(data.trend[0].totalTokensSaved).toEqual(4100);
+        expect(data.trend[0].avgCompressionRatio).toEqual(30);
+    }
+
+    @Test('rejects foreign compaction history trend access')
+    async rejectsForeignCompactionHistoryTrend() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new CompactionHistoryHandler({ list: async () => [], aggregate: async () => [], trend: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/compaction-history/trend' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/compaction-history/trend?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
+    }
 }
 
 @Suite('SummaryQualityHandler')
@@ -3589,6 +3647,108 @@ export class AppRpcServerTest {
             params: {}
         }, { principalId: 'user-1' });
         expect((response as any).result.aggregates).toEqual([]);
+    }
+
+    @Test('returns compaction history trend through json-rpc with bucket options')
+    async compactionHistoryTrendThroughRpc() {
+        const day = 24 * 60 * 60 * 1000;
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-trend', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const compactionHistory = {
+            async list() {
+                return [];
+            },
+            async aggregate() {
+                return [];
+            },
+            async trend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }) {
+                const bucketSize = options?.bucketSize ?? day;
+                return [
+                    { sessionId: 'rpc-trend', bucketStart: bucketSize, recordCount: 1, compactedCount: 1, prunedCount: 0, avgCompressionRatio: 50, totalTokensBefore: 8000, totalTokensAfter: 4000, totalTokensSaved: 4000 }
+                ].filter(point => !sessionId || point.sessionId === sessionId);
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.trend',
+            params: { sessionId: 'rpc-trend', bucketSize: 2 * day, maxBuckets: 10 }
+        }, { principalId: 'user-1' });
+        const trend = (response as any).result.trend;
+        expect(trend.length).toEqual(1);
+        expect(trend[0].sessionId).toEqual('rpc-trend');
+        expect(trend[0].bucketStart).toEqual(2 * day);
+        expect(trend[0].recordCount).toEqual(1);
+        expect(trend[0].avgCompressionRatio).toEqual(50);
+        expect(trend[0].totalTokensSaved).toEqual(4000);
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('compaction_history.list');
+        expect((capsResponse as any).result.methods).toContain('compaction_history.stats');
+        expect((capsResponse as any).result.methods).toContain('compaction_history.trend');
+    }
+
+    @Test('rejects foreign compaction history trend access through json-rpc')
+    async rejectsForeignCompactionHistoryTrendThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-trend-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const compactionHistory = {
+            async list() {
+                return [];
+            },
+            async aggregate() {
+                return [];
+            },
+            async trend() {
+                return [];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.trend',
+            params: { sessionId: 'rpc-trend-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+    }
+
+    @Test('returns empty compaction history trend when no store is configured')
+    async compactionHistoryTrendWithoutStore() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-empty-trend', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'compaction_history.trend',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((response as any).result.trend).toEqual([]);
     }
 }
 export class AppRpcHandlerTest {

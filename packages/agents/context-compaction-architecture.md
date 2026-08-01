@@ -292,6 +292,25 @@ This gives operators a stable, per-session audit trail of when compaction ran,
 how aggressive it was, how many tokens it saved, and how that savings profile
 distributes across sessions.
 
+Mirroring the summary quality trend surface, a time-bucketed trend view is also
+available:
+
+- the store family exposes `trend(sessionId?, options?)` — the shared builder
+  `buildCompactionHistoryTrend` buckets records per session (default 24h buckets,
+  up to 30, both overridable) and summarizes the same fields as the aggregate
+  plus per-bucket `avgCompressionRatio`
+- HTTP `GET /api/compaction-history/trend?sessionId=...&bucketSize=...&maxBuckets=...`
+  and RPC `compaction_history.trend` return those trend points; `sessionId` is
+  optional and, when provided, is owner-checked through `ensureSessionAccess`;
+  `maxBuckets` is clamped to `[1, 90]`
+- the console `/compactions trend [sessionId] [bucketSize] [maxBuckets]` renders
+  an 8-level sparkline over the bucketed compression ratios per session, plus
+  the bucket date range, total tokens saved, and averaged compression ratio
+
+This lets operators observe how compaction aggressiveness and token savings
+evolve over the lifetime of a session instead of only seeing the all-time
+aggregate.
+
 ## Current Guarantees
 
 The current design specifically protects these regression cases:
@@ -316,6 +335,7 @@ now persisted through dedicated stores and exposed through gateway APIs.
 - `packages/agents/agent/src/runtime/AgentEvents.ts`
 - `packages/agents/agent/src/harness/SummaryQualityScorer.ts`
 - `packages/agents/agent/src/harness/SummaryQualityStore.ts`
+- `packages/agents/agent/src/harness/CompactionHistoryStore.ts`
 - `packages/agents/agent/test/context-compaction.spec.ts`
 - `packages/agents/agent/test/summary-quality.spec.ts`
 - `packages/agents/agent/test/runtime-loop.spec.ts`

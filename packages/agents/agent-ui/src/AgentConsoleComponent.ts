@@ -250,6 +250,72 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/compactions trend [sessionId] [bucketSize] [maxBuckets]`:
+     * renders one sparkline line per session showing how compaction token
+     * savings and compression evolve over time buckets.
+     */
+    protected async openCompactionHistoryTrend(
+        sessionId?: string,
+        bucketSize?: number,
+        maxBuckets?: number
+    ): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Compaction history is unavailable without app RPC.');
+            return true;
+        }
+        const trend = await this.sessionService.getCompactionHistoryTrend(sessionId, { bucketSize, maxBuckets });
+        if (!trend.length) {
+            this.notify(
+                sessionId
+                    ? `No compaction history trend recorded for session '${sessionId}'.`
+                    : 'No compaction history trend recorded yet.'
+            );
+            return true;
+        }
+        this.notify(this.formatCompactionHistoryTrend(trend).join(' | '));
+        return true;
+    }
+
+    /**
+     * Renders one compact line per session with an 8-level sparkline over time
+     * buckets (`avgCompressionRatio` mapped to ▁▂▃▄▅▆▇█), the bucket date
+     * range, the total tokens saved, and the averaged compression ratio, for
+     * example:
+     * `session-1 ▃▅▇ (2d · 12/1–12/2 · saved 25k tokens · avg 62.5%)`
+     */
+    protected formatCompactionHistoryTrend(trend: Array<Record<string, any>>): string[] {
+        const bySession = new Map<string, Array<Record<string, any>>>();
+        for (const point of trend) {
+            const sessionId = String(point.sessionId ?? 'unknown');
+            const group = bySession.get(sessionId) ?? [];
+            group.push(point);
+            bySession.set(sessionId, group);
+        }
+        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        const spark = (value: number): string => {
+            const index = Math.min(7, Math.max(0, Math.floor((Number(value) || 0) / 100 * 8)));
+            return sparkChars[index];
+        };
+        const lines: string[] = [];
+        for (const [sessionId, points] of bySession) {
+            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
+            const ratios = sorted.map(point => Number(point.avgCompressionRatio ?? 0));
+            const avgRatio = ratios.length
+                ? (ratios.reduce((sum, value) => sum + value, 0) / ratios.length).toFixed(1)
+                : '0.0';
+            const tokensSaved = sorted.reduce((sum, point) => sum + Number(point.totalTokensSaved ?? 0), 0);
+            const from = Number(sorted[0]?.bucketStart ?? 0);
+            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
+            const range = from || to
+                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+                : '';
+            const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
+            lines.push(`${id} ${sorted.map(point => spark(Number(point.avgCompressionRatio ?? 0))).join('')} (${sorted.length}d${range} · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%)`);
+        }
+        return lines.sort((a, b) => a.localeCompare(b));
+    }
+
+    /**
      * Renders one compact line per compaction record, for example:
      * `compacted L3 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
      */
@@ -1431,6 +1497,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return { provider, bucketSize, maxBuckets };
     }
 
+    /**
+     * Parses `/compactions trend` trailing tokens: optional session id,
+     * optional bucket size (`Nd` for days or a millisecond number), optional
+     * max bucket count. Returns undefined for absent or invalid numeric tokens.
+     */
+    protected parseCompactionHistoryTrendArgs(
+        args: string
+    ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const sessionId = tokens[0] || undefined;
+        let bucketSize: number | undefined;
+        let maxBuckets: number | undefined;
+        const dayToken = tokens[1]?.match(/^(\d+)d$/i);
+        if (dayToken) {
+            const days = Number(dayToken[1]);
+            if (Number.isFinite(days) && days > 0) {
+                bucketSize = days * 24 * 60 * 60 * 1000;
+            }
+        } else if (tokens[1] && /^\d+$/.test(tokens[1])) {
+            const value = Number(tokens[1]);
+            if (Number.isFinite(value) && value > 0) {
+                bucketSize = value;
+            }
+        }
+        if (tokens[2] && /^\d+$/.test(tokens[2])) {
+            const value = Number(tokens[2]);
+            if (Number.isFinite(value) && value > 0) {
+                maxBuckets = value;
+            }
+        }
+        return { sessionId, bucketSize, maxBuckets };
+    }
+
     protected resolveUniqueCommandPrefix(input: string): { command: string; matches: string[] } {
         const matches = this.state.commandHints.filter(item => item.startsWith(input));
         return {
@@ -2255,6 +2354,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
+                    { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2438,6 +2538,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
                     return true;
+                }
+                {
+                    const arg = parsed.args?.trim() || '';
+                    if (arg === 'trend' || arg.startsWith('trend ')) {
+                        const { sessionId, bucketSize, maxBuckets } = this.parseCompactionHistoryTrendArgs(arg.slice(5));
+                        return this.openCompactionHistoryTrend(sessionId, bucketSize, maxBuckets);
+                    }
                 }
                 return this.openCompactionHistory(parsed.args);
             case '/copy': {

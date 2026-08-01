@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory } from './CompactionHistoryStore';
+import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore, CompactionHistoryTrendPoint, aggregateCompactionHistory, buildCompactionHistoryTrend } from './CompactionHistoryStore';
 
 @Injectable()
 export class InMemoryCompactionHistoryStore extends CompactionHistoryStore {
@@ -20,6 +20,10 @@ export class InMemoryCompactionHistoryStore extends CompactionHistoryStore {
 
     async aggregate(sessionId?: string): Promise<CompactionHistoryAggregate[]> {
         return aggregateCompactionHistory(this.records, sessionId);
+    }
+
+    async trend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }): Promise<CompactionHistoryTrendPoint[]> {
+        return buildCompactionHistoryTrend(this.records, { sessionId, ...options });
     }
 
     private cloneRecord(record: CompactionHistoryRecord): CompactionHistoryRecord {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -167,7 +167,8 @@ export class AppRpcServer {
                         'summary_quality.stats',
                         'summary_quality.trend',
                         'compaction_history.list',
-                        'compaction_history.stats'
+                        'compaction_history.stats',
+                        'compaction_history.trend'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -247,6 +248,8 @@ export class AppRpcServer {
                 return this.listCompactionHistory(params, context);
             case 'compaction_history.stats':
                 return this.getCompactionHistoryStats(params, context);
+            case 'compaction_history.trend':
+                return this.getCompactionHistoryTrend(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1122,6 +1125,36 @@ export class AppRpcServer {
                 totalTokensAfter: aggregate.totalTokensAfter,
                 totalTokensSaved: aggregate.totalTokensSaved,
                 timeRange: aggregate.timeRange ?? null
+            }))
+        };
+    }
+
+    private async getCompactionHistoryTrend(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.compactionHistory) {
+            return { trend: [] };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const bucketSizeRaw = Number(params?.bucketSize);
+        const bucketSize = Number.isFinite(bucketSizeRaw) && bucketSizeRaw > 0 ? bucketSizeRaw : undefined;
+        const maxBucketsRaw = Number(params?.maxBuckets);
+        const maxBuckets = Number.isFinite(maxBucketsRaw) ? Math.min(Math.max(1, Math.floor(maxBucketsRaw)), 90) : undefined;
+        const trend = await this.compactionHistory.trend(sessionId, { bucketSize, maxBuckets });
+        return {
+            trend: trend.map(point => ({
+                sessionId: point.sessionId,
+                bucketStart: point.bucketStart,
+                recordCount: point.recordCount,
+                compactedCount: point.compactedCount,
+                prunedCount: point.prunedCount,
+                avgCompressionRatio: point.avgCompressionRatio,
+                totalTokensBefore: point.totalTokensBefore,
+                totalTokensAfter: point.totalTokensAfter,
+                totalTokensSaved: point.totalTokensSaved
             }))
         };
     }

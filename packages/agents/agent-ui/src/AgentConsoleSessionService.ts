@@ -256,6 +256,19 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.aggregates) ? result.aggregates : [];
     }
 
+    /**
+     * Fetches time-bucketed compaction trends over RPC. `sessionId` is
+     * optional: when provided the trend is scoped to that session (and the
+     * caller must own it), otherwise every session gets its own trend line.
+     */
+    async getCompactionHistoryTrend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('compaction_history.trend', { ...(sessionId ? { sessionId } : {}), ...options }, context);
+        return Array.isArray(result?.trend) ? result.trend : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

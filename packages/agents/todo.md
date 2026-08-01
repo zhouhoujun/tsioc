@@ -241,3 +241,15 @@
    - 测试：agent +3（aggregateGroupsBySession / aggregateScopesToSession / inMemoryAggregates / typeOrmAggregates），gateway +5（compactionHistoryStatsThroughRpc / rejectsForeignCompactionHistoryStatsThroughRpc / compactionHistoryStatsWithoutStore / HTTP stats 跨会话聚合 / HTTP foreign 403），view-model +2（refreshTurnArtifactsLoadsCompactionDigest / refreshTurnArtifactsClearsCompactionDigestWhenEmpty）——后者依赖 `AppRpcStub.compactionHistoryAggregates` 与 `SessionServiceStub.getCompactionHistoryStats` override（走 rpcRef）。
 
 全量回归：agent 324、agent-gateway 103、agent-ui 213 passing；四包 tsc 干净。
+
+## P22 打磨（已完成）
+
+1. ~~compaction history trend（镜像 summary quality trend 面）~~ → 已完成：P21 补了聚合统计，但缺少跨时间的趋势视图，无法观察压缩比/token 节省随会话演进的形态。本次补齐：
+   - **store**（`@tsdi/agent`）：新增 `CompactionHistoryTrendPoint` 接口（sessionId/bucketStart/recordCount/compactedCount/prunedCount/avgCompressionRatio/totalTokensBefore/totalTokensAfter/totalTokensSaved）与共享 builder `buildCompactionHistoryTrend(records, options?)`——按 session 分桶（默认桶宽 24h、上限 30 桶，均可覆盖）、桶内汇总 token 总量、平均压缩比保留一位小数、按 `sessionId` + `bucketStart` 排序、截尾到 `maxBuckets`（上限 90）；`CompactionHistoryStore` 新增抽象 `trend(sessionId?, options?)`，三实现均补齐（TypeOrm 先查后映射复用共享 builder）。
+   - **RPC**（`@tsdi/agent-gateway`）：新增 `compaction_history.trend` 方法 `getCompactionHistoryTrend`——`sessionId` 可选（传入时经 `ensureSessionAccess` 做 owner 校验）；无 store 时返回空 `trend`；`bucketSize`/`maxBuckets` 解析并钳制（`maxBuckets` ∈ [1, 90]）；响应 9 字段；capabilities 声明。
+   - **HTTP**（`@tsdi/agent-gateway`）：`CompactionHistoryHandler` 新增 `GET /api/compaction-history/trend`，`sessionId` 可选、提供时校验 owner。
+   - **UI service**（`@tsdi/agent-ui`）：`AgentConsoleSessionService.getCompactionHistoryTrend(sessionId?, options?, context?)`。
+   - **UI 组件**：`parseCompactionHistoryTrendArgs`（sessionId、`Nd` 天桶或毫秒数、maxBuckets）；`openCompactionHistoryTrend` 按 session 分组渲染 8 级 sparkline（`avgCompressionRatio` 映射 `▁▂▃▄▅▆▇█`）+ 日期范围 + 节省 token + 平均压缩比，空趋势给提示；`/compactions trend` 命令分支；commandHints +1。
+   - 测试：agent +5（trendBucketsByTimePerSession / trendHonorsBucketSizeAndCap / trendScopesToSession / inMemoryTrends / typeOrmTrends），gateway +5（compactionHistoryTrendThroughRpc 含 capabilities / rejectsForeignCompactionHistoryTrendThroughRpc / compactionHistoryTrendWithoutStore / HTTP trend 2 天桶 / HTTP foreign 403），view-model +3（sparkline 渲染与汇总 / 参数透传 2d→毫秒桶 / 空趋势提示）——依赖 `AppRpcStub.compactionHistoryTrend` 与 `SessionServiceStub.getCompactionHistoryTrend` override。
+
+全量回归：agent 329、agent-gateway 108、agent-ui 216 passing；三包 tsc 干净。

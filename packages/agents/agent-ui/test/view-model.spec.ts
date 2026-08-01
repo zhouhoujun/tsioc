@@ -285,6 +285,7 @@ class AppRpcStub {
     summaryQualityTrend: any[] = [];
     compactionHistoryRecords: any[] = [];
     compactionHistoryAggregates: any[] = [];
+    compactionHistoryTrend: any[] = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -438,6 +439,13 @@ class AppRpcStub {
                 ? this.compactionHistoryAggregates.filter(item => item.sessionId === sessionId)
                 : this.compactionHistoryAggregates;
             return { aggregates };
+        }
+        if (method === 'compaction_history.trend') {
+            const sessionId = params?.sessionId;
+            const trend = sessionId
+                ? this.compactionHistoryTrend.filter(item => item.sessionId === sessionId)
+                : this.compactionHistoryTrend;
+            return { trend };
         }
         if (method === 'coding_task.cancel') {
             const handler = this.codingTaskCancelHandlers.get(params?.taskId);
@@ -625,6 +633,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
         if (rpc) {
             const result = await rpc.request('compaction_history.stats', sessionId ? { sessionId } : {});
             return Array.isArray(result?.aggregates) ? result.aggregates : [];
+        }
+        return [];
+    }
+
+    override async getCompactionHistoryTrend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('compaction_history.trend', { ...(sessionId ? { sessionId } : {}), ...options });
+            return Array.isArray(result?.trend) ? result.trend : [];
         }
         return [];
     }
@@ -2859,6 +2876,69 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'compaction_history.stats')).toEqual(true);
         expect(component.sessionState.compactionDigest).toBe('');
+    }
+
+    @Test('compactions trend command renders per-session sparkline through rpc')
+    async compactionsTrendCommandShowsSparkline() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const day = 24 * 60 * 60 * 1000;
+        appRpc.compactionHistoryTrend = [
+            { sessionId: 'session-1', bucketStart: 0, recordCount: 1, compactedCount: 1, prunedCount: 0, avgCompressionRatio: 50, totalTokensBefore: 8000, totalTokensAfter: 4000, totalTokensSaved: 4000 },
+            { sessionId: 'session-1', bucketStart: day, recordCount: 1, compactedCount: 1, prunedCount: 0, avgCompressionRatio: 75, totalTokensBefore: 4000, totalTokensAfter: 1000, totalTokensSaved: 3000 },
+            { sessionId: 'session-2', bucketStart: 0, recordCount: 1, compactedCount: 1, prunedCount: 0, avgCompressionRatio: 25, totalTokensBefore: 2000, totalTokensAfter: 1500, totalTokensSaved: 500 }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compactions trend';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'compaction_history.trend' && !call.params?.sessionId)).toEqual(true);
+        expect(component.notice).toContain('session-1');
+        expect(component.notice).toContain('▅▇');
+        expect(component.notice).toContain('saved 7K tokens');
+        expect(component.notice).toContain('avg 62.5%');
+        expect(component.notice).toContain('session-2');
+        expect(component.notice).toContain('saved 500 tokens');
+    }
+
+    @Test('compactions trend command passes session and bucket options through rpc')
+    async compactionsTrendCommandPassesOptions() {
+        const day = 24 * 60 * 60 * 1000;
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compactions trend session-1 2d 10';
+        await component.submit();
+
+        const trendCall = appRpc.calls.find(call => call.method === 'compaction_history.trend');
+        expect(trendCall).toBeTruthy();
+        expect(trendCall!.params.sessionId).toEqual('session-1');
+        expect(trendCall!.params.bucketSize).toEqual(2 * day);
+        expect(trendCall!.params.maxBuckets).toEqual(10);
+        expect(component.notice).toContain("No compaction history trend recorded for session 'session-1'.");
+    }
+
+    @Test('compactions trend command reports empty trend when nothing recorded')
+    async compactionsTrendCommandReportsEmpty() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactionHistoryTrend = [];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compactions trend';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'compaction_history.trend')).toEqual(true);
+        expect(component.notice).toContain('No compaction history trend recorded yet.');
     }
 
     @Test('approval resolve routes through rpc when no local approval manager')
