@@ -55,6 +55,10 @@ import { SummaryQualityStore } from './harness/SummaryQualityStore';
 import { InMemorySummaryQualityStore } from './harness/InMemorySummaryQualityStore';
 import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
 import { DefaultSummaryQualityStore } from './harness/DefaultSummaryQualityStore';
+import { DelegationGraphStore } from './harness/DelegationGraphStore';
+import { InMemoryDelegationGraphStore } from './harness/InMemoryDelegationGraphStore';
+import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
+import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
@@ -92,6 +96,10 @@ import { createAgentProviders } from './provider';
         TypeOrmSummaryQualityStore,
         DefaultSummaryQualityStore,
         { provide: SummaryQualityStore, useExisting: DefaultSummaryQualityStore },
+        InMemoryDelegationGraphStore,
+        TypeOrmDelegationGraphStore,
+        DefaultDelegationGraphStore,
+        { provide: DelegationGraphStore, useExisting: DefaultDelegationGraphStore },
         NodeChildProcessSandboxExecutor,
         { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,

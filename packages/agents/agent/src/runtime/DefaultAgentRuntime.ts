@@ -35,6 +35,7 @@ import { OutputGuard } from '../harness/OutputGuard';
 import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
+import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -86,7 +87,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever,
         @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
         @Optional() protected compactionHistoryStore?: CompactionHistoryStore,
-        @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore
+        @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore,
+        @Optional() protected delegationGraph?: DelegationGraphStore | null
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -314,13 +316,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { cancelled: true, ...rollback };
     }
 
-    registerChildSession(parentSessionId: string, childSessionId: string): void {
+    registerChildSession(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
         const children = this.sessionChildSessions.get(parentSessionId) ?? new Set<string>();
         children.add(childSessionId);
         this.sessionChildSessions.set(parentSessionId, children);
+        this.recordDelegationEdge(parentSessionId, childSessionId, metadata);
     }
 
-    unregisterChildSession(parentSessionId: string, childSessionId: string): void {
+    unregisterChildSession(parentSessionId: string, childSessionId: string, status?: DelegationEdgeStatus): void {
         const children = this.sessionChildSessions.get(parentSessionId);
         if (!children) {
             return;
@@ -329,6 +332,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!children.size) {
             this.sessionChildSessions.delete(parentSessionId);
         }
+        this.closeDelegationEdge(parentSessionId, childSessionId, status ?? 'completed');
     }
 
     protected async cancelChildTurns(sessionId: string): Promise<void> {
@@ -343,9 +347,34 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             this.toolApprovalManager?.cancelBySession(childSessionId);
             controller.abort();
+            this.closeDelegationEdge(sessionId, childSessionId, 'cancelled');
             await this.rollbackTurnCompensations(childSessionId, 'cancelled');
             await this.cancelChildTurns(childSessionId);
         }
+    }
+
+    private recordDelegationEdge(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
+        if (!this.delegationGraph) {
+            return;
+        }
+        this.delegationGraph.append({
+            parentSessionId,
+            childSessionId,
+            kind: 'nested',
+            status: 'active',
+            metadata
+        }).catch(() => {
+            // delegation graph persistence must not break session hierarchy tracking
+        });
+    }
+
+    private closeDelegationEdge(parentSessionId: string, childSessionId: string, status: DelegationEdgeStatus): void {
+        if (!this.delegationGraph) {
+            return;
+        }
+        this.delegationGraph.markClosed(parentSessionId, childSessionId, status).catch(() => {
+            // delegation graph persistence must not break session hierarchy tracking
+        });
     }
 
     protected beginTurnAbortScope(sessionId: string): void {

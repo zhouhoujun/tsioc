@@ -18,6 +18,7 @@ import { AuditHandler } from './api/AuditHandler';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from './api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from './api/SummaryQualityHandler';
+import { DelegationHandler } from './api/DelegationHandler';
 import { ApprovalHandler } from './api/ApprovalHandler';
 import { StatsHandler } from './api/StatsHandler';
 import { AppRpcHandler } from './api/AppRpcHandler';
@@ -48,6 +49,7 @@ import { createAgentGatewayProviders } from './provider';
         CompactionHistoryHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,
+        DelegationHandler,
         ApprovalHandler,
         StatsHandler,
         AppRpcServer,
@@ -72,6 +74,7 @@ import { createAgentGatewayProviders } from './provider';
         CompactionHistoryHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,
+        DelegationHandler,
         ApprovalHandler,
         StatsHandler,
         AppRpcServer,

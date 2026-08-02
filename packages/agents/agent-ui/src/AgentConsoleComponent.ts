@@ -393,6 +393,160 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/delegation tree [sessionId] [status] [depth]`: renders the
+     * persisted parent → child session tree rooted at the current (or given)
+     * session as an indented tree with edge kind/status/timestamps inline.
+     */
+    protected async openDelegationTree(sessionId?: string, status?: string, depth?: number): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Delegation graph is unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
+        if (!resolvedSessionId) {
+            this.notify('No session selected. Run /delegation tree <sessionId>.');
+            return true;
+        }
+        const tree = await this.sessionService.getDelegationTree(resolvedSessionId, { status, depth });
+        if (!tree) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        const lines = this.formatDelegationTree(tree);
+        if (!lines.length) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        this.notify(lines.join(' | '));
+        return true;
+    }
+
+    /**
+     * Opens `/delegation lineage [sessionId]`: renders the persisted chain of
+     * parent sessions above the current (or given) session, closest first.
+     */
+    protected async openDelegationLineage(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Delegation graph is unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
+        if (!resolvedSessionId) {
+            this.notify('No session selected. Run /delegation lineage <sessionId>.');
+            return true;
+        }
+        const lineage = await this.sessionService.getDelegationLineage(resolvedSessionId);
+        if (!lineage.length) {
+            this.notify(`No parent delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        this.notify(lineage.map(edge => this.formatDelegationEdge(edge)).join(' → '));
+        return true;
+    }
+
+    /**
+     * Renders one delegation edge as a compact digest line, for example:
+     * `parent-1 ⇢ child-1 · nested · completed · 12/1 10:00 → 12/1 10:05`.
+     */
+    protected formatDelegationEdge(edge: Record<string, any>): string {
+        const parent = this.shortenSessionId(String(edge.parentSessionId ?? '?'));
+        const child = this.shortenSessionId(String(edge.childSessionId ?? '?'));
+        const kind = String(edge.kind ?? '').trim();
+        const status = String(edge.status ?? '');
+        const createdAt = Number(edge.createdAt ?? 0);
+        const completedAt = Number(edge.completedAt ?? 0);
+        const parts = [
+            `${parent} ⇢ ${child}`,
+            kind ? `${kind} · ${status}` : status
+        ];
+        if (createdAt) {
+            const range = completedAt
+                ? `${new Date(createdAt).toLocaleString()} → ${new Date(completedAt).toLocaleString()}`
+                : new Date(createdAt).toLocaleString();
+            parts.push(range);
+        }
+        const goal = this.pickDelegationGoal(edge);
+        if (goal) {
+            parts.push(goal);
+        }
+        return parts.join(' · ');
+    }
+
+    /**
+     * Renders a delegation tree node recursively as one line per edge with
+     * tree branch prefixes (`└─`, `├─`) so the console digest stays readable.
+     */
+    protected formatDelegationTree(node: Record<string, any>): string[] {
+        const lines: string[] = [];
+        const visit = (current: Record<string, any>, prefix: string, isLast: boolean, isRoot: boolean): void => {
+            if (!isRoot) {
+                const edgeLine = this.formatDelegationEdge({
+                    parentSessionId: String(current.sessionId ?? ''),
+                    childSessionId: String(current.sessionId ?? ''),
+                    kind: current.kind,
+                    status: current.status,
+                    createdAt: current.createdAt,
+                    completedAt: current.completedAt,
+                    metadata: current.metadata
+                });
+                lines.push(`${prefix}${isLast ? '└─ ' : '├─ '}${edgeLine}`);
+            } else {
+                lines.push(`${prefix}${this.shortenSessionId(String(current.sessionId ?? '?'))}`);
+            }
+            const children = Array.isArray(current.children) ? current.children : [];
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                const childPrefix = `${prefix}${isRoot || isLast ? '   ' : '│  '}`;
+                visit(child, childPrefix, i === children.length - 1, false);
+            }
+        };
+        visit(node, '', true, true);
+        return lines;
+    }
+
+    protected pickDelegationGoal(edge: Record<string, any>): string {
+        const metadata = edge?.metadata;
+        if (!metadata || typeof metadata !== 'object') {
+            return '';
+        }
+        const goal = String(metadata.goal ?? '').trim();
+        if (!goal) {
+            return '';
+        }
+        return goal.length > 40 ? `${goal.slice(0, 38)}…` : goal;
+    }
+
+    protected shortenSessionId(sessionId: string): string {
+        return sessionId.length > 20 ? `${sessionId.slice(0, 18)}…` : sessionId;
+    }
+
+    /**
+     * Opens `/delegation [list] [sessionId]`: lists flat delegation edges
+     * touching the current (or given) session, newest edges first, as one
+     * digest line per edge.
+     */
+    protected async openDelegationList(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Delegation graph is unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId || undefined;
+        const edges = await this.sessionService.listDelegationEdges(
+            resolvedSessionId ? { sessionId: resolvedSessionId } : { limit: 200 }
+        );
+        if (!edges.length) {
+            this.notify(
+                resolvedSessionId
+                    ? `No delegation edges recorded for session '${resolvedSessionId}'.`
+                    : 'No delegation edges recorded yet.'
+            );
+            return true;
+        }
+        this.notify(edges.map(edge => this.formatDelegationEdge(edge)).join(' | '));
+        return true;
+    }
+
+    /**
      * Renders one compact aggregate line for turn diagnostics, for example:
      * `session-1 · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens · 12/1–12/2`
      */
@@ -2547,6 +2701,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
                     { label: '/diagnostics list', value: '/diagnostics list', description: 'turn diagnostics records [sessionId]' },
                     { label: '/diagnostics trend', value: '/diagnostics trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' },
+                    { label: '/delegation', value: '/delegation', description: 'delegation edges [sessionId]' },
+                    { label: '/delegation tree', value: '/delegation tree', description: 'delegation tree [sessionId] [status] [depth]' },
+                    { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -2756,6 +2913,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     }
                     const sessionId = arg || undefined;
                     return this.openTurnDiagnostics(sessionId);
+                }
+            case '/delegation':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                {
+                    const arg = parsed.args?.trim() || '';
+                    if (arg === 'tree' || arg.startsWith('tree ')) {
+                        const rest = arg.slice(4).trim();
+                        const tokens = rest.split(/\s+/).filter(Boolean);
+                        const sessionId = tokens[0];
+                        const status = tokens[1];
+                        const depthRaw = tokens[2] !== undefined && /^\d+$/.test(tokens[2]) ? parseInt(tokens[2], 10) : undefined;
+                        return this.openDelegationTree(sessionId, status, depthRaw);
+                    }
+                    if (arg === 'lineage' || arg.startsWith('lineage ')) {
+                        return this.openDelegationLineage(arg.slice(7).trim() || undefined);
+                    }
+                    return this.openDelegationList(arg || undefined);
                 }
             case '/copy': {
                 if (parsed.args) {

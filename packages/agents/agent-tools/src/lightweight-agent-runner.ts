@@ -60,7 +60,13 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         const parentSessionId = request.parentSessionId;
 
         if (parentSessionId) {
-            this.runtime!.registerChildSession(parentSessionId, sessionId);
+            this.runtime!.registerChildSession(parentSessionId, sessionId, {
+                kind: 'nested',
+                goal: request.prompt,
+                toolsets: request.toolsets,
+                model: request.model,
+                maxTurns: request.maxTurns
+            });
         }
         if (request.toolsets?.length) {
             this.runtime!.setSessionToolFilter(sessionId, request.toolsets);
@@ -70,6 +76,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
             : request.prompt;
 
+        let succeeded = false;
         try {
             const maxTurns = typeof request.maxTurns === 'number' && request.maxTurns > 0
                 ? Math.floor(request.maxTurns)
@@ -97,6 +104,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
                 }
             }
 
+            succeeded = true;
             return {
                 content: result.message.content,
                 sessionId,
@@ -109,7 +117,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             };
         } finally {
             if (parentSessionId) {
-                this.runtime!.unregisterChildSession(parentSessionId, sessionId);
+                this.runtime!.unregisterChildSession(parentSessionId, sessionId, succeeded ? 'completed' : 'failed');
             }
             if (request.toolsets?.length) {
                 this.runtime!.clearSessionToolFilter(sessionId);

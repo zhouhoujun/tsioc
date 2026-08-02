@@ -150,12 +150,33 @@ This gives operators a compact view of:
 
 ## Current Gaps
 
-- no persisted delegation graph linking a main task to spawned sub-agents
-- no cross-task worker lineage or parent-child task tree in UI
 - no policy layer yet for routing different worker classes to different models
+
+## Persisted Delegation Graph (P27)
+
+The delegation edges between a main task session and its spawned sub-agent sessions are now persisted:
+
+- **Store family** (`@tsdi/agent`): `DelegationGraphStore` abstract contract with `InMemoryDelegationGraphStore`, `TypeOrmDelegationGraphStore` (via `AgentDelegationEdgeEntity`), and `DefaultDelegationGraphStore` (probes for a `TypeormAdapter`, transparent fallback).
+- **Edge model**: composite key `(parentSessionId, childSessionId)`, `kind` (`nested`/`spawn_agent`/`parallel`), `status` (`active`/`completed`/`failed`/`cancelled`), `metadata` (goal/toolsets/model/maxTurns). `markClosed` is idempotent: first close wins, `cancelled` is not overwritten by a later `failed`.
+- **Runtime hooks**: `AgentRuntime.registerChildSession(parent, child, metadata?)` appends an edge; `unregisterChildSession(parent, child, status?)` closes it (default `completed`); `cancelChildTurns` closes with `cancelled`. `lightweight-agent-runner` records kind/goal/toolsets/model/maxTurns metadata and ends with `completed`/`failed`.
+- **Query surfaces**:
+  - gateway HTTP: `GET /api/delegation/{tree,lineage,children,list}` (`DelegationHandler`, session-owner guarded)
+  - gateway RPC: `delegation.tree/lineage/children/list` (`AppRpcServer`, `delegation.list` scopes to the caller's owned sessions when no sessionId is given)
+  - UI: `/delegation` command with `tree` / `lineage` / `list` subcommands
+- **Tree/lineage builders**: shared `buildDelegationTree` (status/depth filters, createdAt+id sibling ordering, cycle-safe by dropping back-edges) and `buildDelegationLineage` (walks to root, newest edge first, cycle-guarded).
 
 ## Implementation Anchors
 
+- `packages/agents/agent/src/harness/DelegationGraphStore.ts`
+- `packages/agents/agent/src/harness/InMemoryDelegationGraphStore.ts`
+- `packages/agents/agent/src/harness/TypeOrmDelegationGraphStore.ts`
+- `packages/agents/agent/src/harness/DefaultDelegationGraphStore.ts`
+- `packages/agents/agent/src/memory/entities.ts` (`AgentDelegationEdgeEntity`)
+- `packages/agents/agent/src/runtime/DefaultAgentRuntime.ts` (delegation graph wiring)
+- `packages/agents/agent-tools/src/lightweight-agent-runner.ts` (metadata + end status)
+- `packages/agents/agent-gateway/src/api/DelegationHandler.ts`
+- `packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts` (`delegation.*`)
+- `packages/agents/agent-ui/src/AgentConsoleComponent.ts` (`/delegation` command)
 - `packages/agents/agent-tools/src/nested-agent-runner.ts`
 - `packages/agents/agent-tools/agent/spawn-agent.tool.ts`
 - `packages/agents/agent-tools/coding/coding-task.tool.ts`

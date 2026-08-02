@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -24,7 +24,8 @@ export class AppRpcServer {
         @Optional() private approvalManager?: ToolApprovalManager | null,
         @Optional() private summaryQuality?: SummaryQualityStore | null,
         @Optional() private compactionHistory?: CompactionHistoryStore | null,
-        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null
+        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,
+        @Optional() private delegation?: DelegationGraphStore | null
     ) {
     }
 
@@ -172,7 +173,11 @@ export class AppRpcServer {
                         'compaction_history.trend',
                         'turn_diagnostics.list',
                         'turn_diagnostics.stats',
-                        'turn_diagnostics.trend'
+                        'turn_diagnostics.trend',
+                        'delegation.tree',
+                        'delegation.lineage',
+                        'delegation.children',
+                        'delegation.list'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -260,6 +265,14 @@ export class AppRpcServer {
                 return this.getTurnDiagnosticsStats(params, context);
             case 'turn_diagnostics.trend':
                 return this.getTurnDiagnosticsTrend(params, context);
+            case 'delegation.tree':
+                return this.getDelegationTree(params, context);
+            case 'delegation.lineage':
+                return this.getDelegationLineage(params, context);
+            case 'delegation.children':
+                return this.getDelegationChildren(params, context);
+            case 'delegation.list':
+                return this.getDelegationList(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1248,6 +1261,122 @@ export class AppRpcServer {
             compactionCount: point.compactionCount,
             totalTokenSavings: point.totalTokenSavings,
             avgCompressionRatio: point.avgCompressionRatio
+        };
+    }
+
+    private async getDelegationTree(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.delegation) {
+            return { tree: null };
+        }
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const status = this.parseDelegationStatus(params?.status);
+        const depthRaw = Number(params?.depth);
+        const depth = Number.isFinite(depthRaw) && depthRaw >= 0 ? Math.min(Math.floor(depthRaw), 100) : undefined;
+        const tree = await this.delegation.tree(sessionId, { status, depth });
+        return {
+            sessionId,
+            tree: this.toDelegationTreeView(tree)
+        };
+    }
+
+    private async getDelegationLineage(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.delegation) {
+            return { lineage: [] };
+        }
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 200) : undefined;
+        const lineage = await this.delegation.ancestors(sessionId, { limit });
+        return {
+            sessionId,
+            lineage: lineage.map(edge => this.toDelegationEdgeView(edge))
+        };
+    }
+
+    private async getDelegationChildren(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.delegation) {
+            return { children: [] };
+        }
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const status = this.parseDelegationStatus(params?.status);
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 200) : undefined;
+        const children = await this.delegation.children(sessionId, { status, limit });
+        return {
+            sessionId,
+            children: children.map(edge => this.toDelegationEdgeView(edge))
+        };
+    }
+
+    private async getDelegationList(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.delegation) {
+            return { edges: [] };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const limitRaw = Number(params?.limit);
+        const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 200) : 200;
+        const offsetRaw = Number(params?.offset);
+        const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? Math.floor(offsetRaw) : 0;
+        let edges = await this.delegation.list({ sessionId, limit, offset });
+        if (!sessionId && context.principalId) {
+            const involvedSessionIds = Array.from(new Set(edges.flatMap(edge => [edge.parentSessionId, edge.childSessionId])));
+            const ownedIds = await this.owners.listOwned(involvedSessionIds, context.principalId);
+            const owned = new Set(ownedIds);
+            edges = edges.filter(edge => owned.has(edge.parentSessionId) || owned.has(edge.childSessionId));
+        }
+        return {
+            edges: edges.map(edge => this.toDelegationEdgeView(edge))
+        };
+    }
+
+    private parseDelegationStatus(status: unknown): import('@tsdi/agent').DelegationEdgeStatus | import('@tsdi/agent').DelegationEdgeStatus[] | undefined {
+        const isStatus = (value: unknown): value is import('@tsdi/agent').DelegationEdgeStatus =>
+            typeof value === 'string' && ['active', 'completed', 'failed', 'cancelled'].includes(value);
+        if (typeof status === 'string') {
+            const values = status.split(',').map(value => value.trim()).filter(isStatus);
+            if (!values.length) {
+                return undefined;
+            }
+            return values.length === 1 ? values[0] : values;
+        }
+        if (Array.isArray(status)) {
+            const values = status.filter(isStatus);
+            return values.length ? values : undefined;
+        }
+        return undefined;
+    }
+
+    private toDelegationEdgeView(edge: import('@tsdi/agent').DelegationEdgeRecord): Record<string, any> {
+        return {
+            id: edge.id,
+            parentSessionId: edge.parentSessionId,
+            childSessionId: edge.childSessionId,
+            kind: edge.kind ?? null,
+            status: edge.status,
+            createdAt: edge.createdAt,
+            completedAt: edge.completedAt ?? null,
+            metadata: edge.metadata ?? null
+        };
+    }
+
+    private toDelegationTreeView(node: import('@tsdi/agent').DelegationTreeNode): Record<string, any> {
+        return {
+            sessionId: node.sessionId,
+            edgeId: node.edgeId ?? null,
+            kind: node.kind ?? null,
+            status: node.status ?? null,
+            createdAt: node.createdAt ?? null,
+            completedAt: node.completedAt ?? null,
+            metadata: node.metadata ?? null,
+            children: node.children.map(child => this.toDelegationTreeView(child))
         };
     }
 

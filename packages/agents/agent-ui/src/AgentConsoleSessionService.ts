@@ -308,6 +308,55 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.trend) ? result.trend : [];
     }
 
+    /**
+     * Fetches the delegation tree rooted at `sessionId` over RPC. The caller
+     * must own the session. Returns the tree node view from the gateway.
+     */
+    async getDelegationTree(sessionId: string, options?: { status?: string | string[]; depth?: number }, context?: any): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        const result = await this.appRpc.request('delegation.tree', { sessionId, ...options }, context);
+        return result?.tree ?? null;
+    }
+
+    /**
+     * Fetches the delegation lineage (ancestors up to the root) for
+     * `sessionId` over RPC. The caller must own the session.
+     */
+    async getDelegationLineage(sessionId: string, options?: { limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('delegation.lineage', { sessionId, ...options }, context);
+        return Array.isArray(result?.lineage) ? result.lineage : [];
+    }
+
+    /**
+     * Fetches the direct child delegation edges of `sessionId` over RPC. The
+     * caller must own the session.
+     */
+    async getDelegationChildren(sessionId: string, options?: { status?: string | string[]; limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('delegation.children', { sessionId, ...options }, context);
+        return Array.isArray(result?.children) ? result.children : [];
+    }
+
+    /**
+     * Fetches flat delegation edges over RPC. `sessionId` is optional: when
+     * provided only edges touching that session are returned (and the caller
+     * must own it), otherwise every edge owned by the principal is listed.
+     */
+    async listDelegationEdges(options?: { sessionId?: string; limit?: number; offset?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('delegation.list', options ?? {}, context);
+        return Array.isArray(result?.edges) ? result.edges : [];
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

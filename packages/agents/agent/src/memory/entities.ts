@@ -322,6 +322,33 @@ export class AgentTurnDiagnosticsEntity {
 }
 
 @Entity()
+export class AgentDelegationEdgeEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    parentSessionId!: string;
+
+    @Column()
+    childSessionId!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    kind!: string | null;
+
+    @Column({ type: 'varchar' })
+    status!: string;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    completedAt!: number | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any> | null;
+}
+
+@Entity()
 export class AgentSummaryQualityEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;

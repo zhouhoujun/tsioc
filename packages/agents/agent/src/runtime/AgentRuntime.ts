@@ -52,17 +52,20 @@ export abstract class AgentRuntime {
     /**
      * Register a child (sub-agent) session under a parent session so that
      * cancelling the parent turn also cancels the child turn.
+     * `metadata` (spawner context such as goal/toolsets/model) is persisted by
+     * runtimes backed by a delegation graph store.
      * Override this in concrete runtimes that support session hierarchies.
      */
-    registerChildSession(_parentSessionId: string, _childSessionId: string): void {
+    registerChildSession(_parentSessionId: string, _childSessionId: string, _metadata?: Record<string, any>): void {
         // no-op by default
     }
 
     /**
-     * Remove a previously registered child session link.
+     * Remove a previously registered child session link. `status` records how
+     * the child turn ended for persisted delegation edges.
      * Override this in concrete runtimes that support session hierarchies.
      */
-    unregisterChildSession(_parentSessionId: string, _childSessionId: string): void {
+    unregisterChildSession(_parentSessionId: string, _childSessionId: string, _status?: 'active' | 'completed' | 'failed' | 'cancelled'): void {
         // no-op by default
     }
 

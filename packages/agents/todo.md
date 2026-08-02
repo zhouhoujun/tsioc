@@ -296,3 +296,27 @@
    - 测试：view-model +3（diagnosticsListCommandOpensRecordSelectorThroughRpc 含 limit/sessionId 断言与 label/description/detail 渲染 / diagnosticsListCommandUsesCurrentSession 无参回退当前会话 / diagnosticsListCommandReportsEmptyRecords 空提示）——依赖 `AppRpcStub.turnDiagnosticsRecords` 与既有 `turn_diagnostics.list` 分支。
 
 全量回归：agent 334、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。
+
+## P27 打磨（已完成）
+
+1. ~~delegation graph 持久化 + 跨会话 lineage/tree 观测（闭合 multi-agent-delegation-architecture.md 的 delegation 持久化 gap）~~ → 已完成：主任务→子代理会话的父子边（parentSessionId, childSessionId）持久化落库，并提供 HTTP/RPC/UI 三面查询。本次交付：
+   - **store 家族**（`@tsdi/agent`，镜像 turn-diagnostics 的 store 模式）：
+     - `DelegationGraphStore.ts` 抽象契约：`append` / `markClosed`（幂等，首个 active 边优先，`cancelled` 不被后续 `failed` 覆盖）/ `children` / `ancestors` / `tree` / `list`；共享构建器 `buildDelegationTree`（status/depth 过滤、子级按 createdAt+id 排序、环安全——回边整体剪除，不渲染桩节点）与 `buildDelegationLineage`（向上走到根，环保护，新边在前）。
+     - `InMemoryDelegationGraphStore`：不可变快照 + metadata 深拷贝（append 与 cloneRecord 双保险），children 按 createdAt+id 排序（与 TypeOrm 查询一致）。
+     - `TypeOrmDelegationGraphStore`：经 `TypeormAdapter` repo 读写 `AgentDelegationEdgeEntity`（uuid PK、bigint 时间戳、simple-json metadata），`In(statuses)` 过滤，tree/lineage 全表拉取后走共享 builder，list 双边 OR where。
+     - `DefaultDelegationGraphStore`：`tryGetAdapter()` 探测有无 `TypeormAdapter` 透明切换（镜像 `DefaultTurnDiagnosticsStore`）。
+     - 实体：`memory/entities.ts` 新增 `AgentDelegationEdgeEntity`；`orm.module.ts` 实体数组注册；`agent.module.ts` 注册 provider（useExisting + asDefault）；`src/index.ts` 导出 4 个 store。
+   - **runtime 集成**：`AgentRuntime` 抽象基类 `registerChildSession(parent, child, metadata?)` / `unregisterChildSession(parent, child, status?)` 签名更新；`DefaultAgentRuntime` `@Optional` 注入 delegationGraph（无 provider 时透明降级为 no-op 语义，不破坏既有流程）——`registerChildSession` → `recordDelegationEdge`（append，kind `nested`）、`unregisterChildSession` → `closeDelegationEdge`（markClosed，默认 `completed`）、`cancelChildTurns` → markClosed(`cancelled`)；`lightweight-agent-runner.ts` `runSingle` register 传 metadata（kind/goal/toolsets/model/maxTurns），finally unregister 传 `succeeded ? 'completed' : 'failed'`。
+   - **gateway**（`@tsdi/agent-gateway`）：
+     - 新建 `api/DelegationHandler.ts`：4 条 HTTP 路由 `GET /api/delegation/{tree,lineage,children,list}`，`SessionOwnerStore.isOwner` 鉴权，`parseStatus`/`parseDepth`/`parseLimit` 参数校验（类型守卫，无 `as any`）；模块注册（providers+exports），不接线 GatewayBootstrap（与 CompactionHistory/TurnDiagnostics/SummaryQuality/Audit handler 一致的模块注册模式）。
+     - `AppRpcServer` 新增 `delegation.tree/lineage/children/list` 4 个 RPC：capabilities + dispatch case + `parseDelegationStatus` + `toDelegationEdgeView`/`toDelegationTreeView` 视图映射；`getDelegationList` 无 sessionId 时经 `SessionOwnerStore.listOwned` 按 principal 过滤防越权。
+   - **UI**（`@tsdi/agent-ui`）：
+     - `AgentConsoleSessionService` 新增 `getDelegationTree` / `getDelegationLineage` / `getDelegationChildren` / `listDelegationEdges`。
+     - `AgentConsoleComponent` 新增 `/delegation` 命令（`tree` / `lineage` / `list` 子命令）：`openDelegationTree(sessionId?, status?, depth?)`、`openDelegationLineage(sessionId?)`、`openDelegationList(sessionId?)`；格式化 `formatDelegationEdge`（`parent ⇢ child · kind · status · 时间 · goal`）、`formatDelegationTree`（`└─/├─` 递归缩进）、`pickDelegationGoal`（metadata.goal 40 字符截断）、`shortenSessionId`（18+…）；help 补 3 条。
+     - `AgentConsoleSessionState` commandHints 补 `/delegation`。
+   - 测试：`agent/test/delegation-graph.spec.ts` 14 用例——InMemory（append 生成 id/快照不可变/markClosed 幂等首胜/children 过滤排序/ancestors 环保护/tree 层级/tree status+depth 过滤/list 双边范围）+ 共享 builder（树环安全、lineage 停根）+ TypeOrm（持久化重载关闭、树与谱系）+ AgentModule DI（无 ORM 回退 InMemory、有 ORM 解析 durable store）。
+   - 修复：InMemory `children` 缺 createdAt 排序（补 sort，与 TypeOrm 一致）；共享树 builder 首次环实现只剪子孙不剪回边（改为 `nextVisited.has(child)` 时整体跳过该边）。
+
+全量回归：agent 348（334+14）、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。
+
+## P28 候选（未开始）
