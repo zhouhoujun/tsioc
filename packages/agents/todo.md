@@ -417,3 +417,22 @@
    - 文档：本条目；`project-session-thread-architecture.md` 新增「Worker Thread Terminal Status (P32)」节 + Next Step 更新。
 
 全量回归：agent 367（360+7）、agent-gateway 119（118+1）、agent-ui 234（232+2）passing；三包 tsc 干净。
+
+## P33 已完成：thread 级工件聚合（/threadplan + /threadreview，按 originThreadId/primaryThreadId 归并）
+
+1. 在既有持久化 seam 上实现 thread 级 todo/review 聚合——无需先做索引持久化，直接按 `originThreadId`/`primaryThreadId` 归并（`@tsdi/agent-ui`）：
+   - **线程归并解析**（`AgentConsoleComponent`）：
+     - `resolveThreadKeyForSession(session, sessions, visited)` 沿谱系求线程键：`primaryThreadId`（直接成员）→ `originThreadId`（worker 链接：已加载则递归解析 origin 会话键，否则按线程 id 处理）→ `session:<id>`（单飞）；visited 集合防环。
+     - `resolveThreadSessionsFor` / `resolveThreadSessionIdsFor` 镜像 project 级解析器：与锚点共享线程键的全部会话（含 `originThreadId` 链接的 worker 与 worker-of-worker 链）。
+     - `originThreadId` 进入控制台会话模型（`AgentConsoleSessionItem`），`refreshSessions` / `flattenProjectSessions` 两条桥接透传。
+   - **聚合核心**（与 project 路径共享）：
+     - 从 `refreshTodoPlan` 抽取 `mergeTodoPlanForSessions(sessionId, sessions)`；`refreshTodoPlan`（project 作用域）与 `refreshThreadTodoPlan`（thread 作用域）均委托之并标注 `planScope`（`'project'`/`'thread'`）。
+     - `loadThreadCodingTasks` 复用既有 `loadCodingTasks(sessionId, sessionIds)` 核心（线程解析 id）。
+   - **UI 面**：
+     - `/threadplan`：合并 thread 作用域 plan todos + coding tasks 并聚焦 tasks 面板；plan 摘要 thread 作用域下追加 `· thread` 后缀。
+     - `/threadreview`：coding-task review 选择器限定当前线程（`selectCodingTask` 增加可选 `sessionIds`）。
+     - 两命令注册进 `commandHints` 与 `/help`。
+   - **测试**：`view-model.spec.ts` +6（线程谱系分组、单飞会话回退、thread todo 合并含去重/活跃投影/异线程排除、thread coding-task 聚合、`/threadplan`、`/threadreview`）；`console-renderer.spec.ts` +1（`· thread` 作用域后缀）。
+   - 文档：本条目；`project-session-thread-architecture.md` 新增「Thread-Level Artifact Aggregation (P33)」节 + Next Step 更新（关闭 thread 级聚合 future option）。
+
+全量回归：agent 367（367+0）、agent-gateway 119（119+0）、agent-ui 241（234+7）passing；三包 tsc 干净。

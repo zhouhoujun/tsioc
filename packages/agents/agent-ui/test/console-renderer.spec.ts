@@ -106,6 +106,26 @@ export class AgentConsoleRendererTest {
         expect(messageIndex).toBeLessThan(planIndex);
     }
 
+    @Test('plan panel summary shows thread scope suffix when thread plan is active')
+    async planPanelSummaryShowsThreadScopeSuffix() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'thread plan request', createdAt: 1 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' },
+            { id: 'p2', content: 'Generate project structure', status: 'pending' }
+        ] as any, 'chat-a', 'thread');
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const root = ref.hostView.rootNodes[0] as ConsoleElement;
+        const lines = renderer.renderToLines(root);
+
+        expect(lines.some(line => line.includes('plan 2 · active 2 · thread'))).toBe(true);
+    }
+
     @Test('hides completed plan panel from root output')
     async hideCompletedPlanPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

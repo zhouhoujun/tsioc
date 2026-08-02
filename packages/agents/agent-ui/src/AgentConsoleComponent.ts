@@ -12,7 +12,7 @@ import { Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
-import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -776,6 +776,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             projectKey: item.projectKey,
             projectId: item.projectId,
             primaryThreadId: item.primaryThreadId,
+            originThreadId: item.originThreadId,
             sessionRole: item.sessionRole,
             rootRequest: item.rootRequest,
             focusSummary: item.focusSummary,
@@ -890,6 +891,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
+        originThreadId?: string;
         rootRequest?: string;
         focusSummary?: string;
         projectLabel?: string;
@@ -913,6 +915,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 projectKey,
                 projectId,
                 primaryThreadId: item.primaryThreadId || primaryThreadId,
+                originThreadId: String(item.originThreadId || '').trim() || undefined,
                 rootRequest: item.rootRequest || rootRequest,
                 focusSummary: item.focusSummary || focusSummary,
                 projectLabel,
@@ -1053,8 +1056,79 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return sessionId ? `session:${sessionId}` : '';
     }
 
+    protected resolveThreadKeyForSession(
+        session?: {
+            primaryThreadId?: string;
+            originThreadId?: string;
+            id?: string;
+        } | null,
+        sessions: Array<{
+            id: string;
+            primaryThreadId?: string;
+            originThreadId?: string;
+        }> = this.state.sessions,
+        visited = new Set<string>()
+    ): string {
+        const primaryThreadId = String(session?.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return `thread:${primaryThreadId}`;
+        }
+        const sessionId = String(session?.id || '').trim();
+        if (visited.has(sessionId)) {
+            return sessionId ? `session:${sessionId}` : '';
+        }
+        visited.add(sessionId);
+        const originThreadId = String(session?.originThreadId || '').trim();
+        if (originThreadId) {
+            const originSession = sessions.find(item => String(item.id || '').trim() === originThreadId);
+            if (originSession) {
+                const originKey = this.resolveThreadKeyForSession(originSession, sessions, visited);
+                if (originKey) {
+                    return originKey;
+                }
+            }
+            return `thread:${originThreadId}`;
+        }
+        return sessionId ? `session:${sessionId}` : '';
+    }
+
     protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
         const sessions = this.resolveProjectSessionsFor(sessionId);
+        const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
+        return ids.length ? ids : [sessionId];
+    }
+
+    protected resolveThreadSessionsFor(sessionId = this.state.sessionId): Array<{
+        id: string;
+        current: boolean;
+        workspace?: string;
+        updatedAt?: number;
+        messageCount?: number;
+        summary?: string;
+        projectKey?: string;
+        projectId?: string;
+        primaryThreadId?: string;
+        originThreadId?: string;
+        rootRequest?: string;
+        focusSummary?: string;
+        projectLabel?: string;
+        projectSessionCount?: number;
+    }> {
+        const anchor = this.state.sessions.find(item => item.id === sessionId)
+            || this.state.sessions.find(item => item.current)
+            || this.state.sessions[0];
+        if (!anchor) {
+            return [];
+        }
+        const threadKey = this.resolveThreadKeyForSession(anchor);
+        if (threadKey) {
+            return this.state.sessions.filter(item => this.resolveThreadKeyForSession(item) === threadKey);
+        }
+        return [anchor];
+    }
+
+    protected resolveThreadSessionIdsFor(sessionId = this.state.sessionId): string[] {
+        const sessions = this.resolveThreadSessionsFor(sessionId);
         const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
         return ids.length ? ids : [sessionId];
     }
@@ -2399,18 +2473,34 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async openThreadCodingTaskReviewSelector(): Promise<boolean> {
+        const selectedTask = await this.selectCodingTask({
+            title: 'Coding tasks (thread)',
+            unavailableNotice: 'Review is unavailable without app RPC.',
+            emptyNotice: 'No coding tasks available in this thread.',
+            selectedTaskId: String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim() || undefined,
+            sessionIds: this.resolveThreadSessionIdsFor()
+        });
+        if (!selectedTask) {
+            return true;
+        }
+        await this.openCodingTaskReview(selectedTask.id, selectedTask);
+        return true;
+    }
+
     protected async selectCodingTask(options: {
         title: string;
         unavailableNotice: string;
         emptyNotice: string;
         filter?: (task: any) => boolean;
         selectedTaskId?: string;
+        sessionIds?: string[];
     }): Promise<any | null> {
         if (!this.appRpc) {
             this.notify(options.unavailableNotice);
             return null;
         }
-        const tasks = await this.loadCodingTasks();
+        const tasks = await this.loadCodingTasks(undefined, options.sessionIds);
         const filteredTasks = typeof options.filter === 'function'
             ? tasks.filter(task => options.filter!(task))
             : tasks;
@@ -2749,6 +2839,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/messages', value: '/messages', description: 'messages' },
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
                     { label: '/tasks', value: '/tasks', description: 'task inspector' },
+                    { label: '/threadplan', value: '/threadplan', description: 'thread plan todos' },
+                    { label: '/threadreview', value: '/threadreview', description: 'thread coding task review' },
                     { label: '/review', value: '/review', description: 'coding task review' },
                     { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
@@ -2811,6 +2903,29 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 return this.openCodingTaskInspector(parsed.args);
+            case '/threadplan':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.refreshThreadTodoPlan();
+                await this.loadThreadCodingTasks();
+                if (!this.state.planTodos.length) {
+                    this.notify('No plan todos in this thread.');
+                }
+                this.state.setSessionsFocused(false);
+                this.state.setToolsFocused(false);
+                this.state.setApprovalsFocused(false);
+                this.state.setJobsFocused(false);
+                this.state.setMessagesFocused(false);
+                this.state.setTasksFocused(true);
+                return true;
+            case '/threadreview':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openThreadCodingTaskReviewSelector();
             case '/review':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -4066,15 +4181,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
-    protected async refreshTodoPlan(
-        sessionId = this.state.sessionId,
-        sessions = this.resolveProjectSessionsFor(sessionId)
-    ): Promise<void> {
+    protected async mergeTodoPlanForSessions(
+        sessionId: string,
+        sessions: Array<{ id: string; updatedAt?: number }>
+    ): Promise<{ todos: AgentConsolePlanTodoItem[]; sourceSessionId?: string } | null> {
         if (!this.appRpc) {
             if (sessionId === this.state.sessionId) {
                 this.state.clearPlanTodos();
             }
-            return;
+            return null;
         }
         const relatedSessions = sessions
             .slice()
@@ -4118,13 +4233,42 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             ? latestActiveTodoSessionId || latestAnyTodoSessionId
             : latestAnyTodoSessionId;
         if (sessionId !== this.state.sessionId) {
-            return;
+            return null;
         }
         if (!nextTodos.length) {
             this.state.clearPlanTodos();
+            return null;
+        }
+        return { todos: nextTodos, sourceSessionId: sourceSessionId || sessionId };
+    }
+
+    protected async refreshTodoPlan(
+        sessionId = this.state.sessionId,
+        sessions = this.resolveProjectSessionsFor(sessionId)
+    ): Promise<void> {
+        const merged = await this.mergeTodoPlanForSessions(sessionId, sessions);
+        if (!merged) {
             return;
         }
-        this.state.setPlanTodos(nextTodos, sourceSessionId || sessionId);
+        this.state.setPlanTodos(merged.todos, merged.sourceSessionId, 'project');
+    }
+
+    protected async refreshThreadTodoPlan(
+        sessionId = this.state.sessionId,
+        sessions = this.resolveThreadSessionsFor(sessionId)
+    ): Promise<void> {
+        const merged = await this.mergeTodoPlanForSessions(sessionId, sessions);
+        if (!merged) {
+            return;
+        }
+        this.state.setPlanTodos(merged.todos, merged.sourceSessionId, 'thread');
+    }
+
+    protected async loadThreadCodingTasks(
+        sessionId = this.state.sessionId,
+        sessionIds = this.resolveThreadSessionIdsFor(sessionId)
+    ): Promise<any[]> {
+        return this.loadCodingTasks(sessionId, sessionIds);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {

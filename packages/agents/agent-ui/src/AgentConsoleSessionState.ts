@@ -43,6 +43,7 @@ export interface AgentConsoleSessionItem {
     projectKey?: string;
     projectId?: string;
     primaryThreadId?: string;
+    originThreadId?: string;
     sessionRole?: string;
     rootRequest?: string;
     focusSummary?: string;
@@ -369,6 +370,7 @@ export class AgentConsoleSessionState {
     taskRecords: Record<string, any>[] = [];
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
+    planScope: 'project' | 'thread' | '' = '';
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
@@ -429,7 +431,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -1452,9 +1454,10 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
-    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string): void {
+    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread'): void {
         this.planTodos = todos.slice();
         this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
+        this.planScope = scope || '';
         this.notify();
     }
 
@@ -1463,11 +1466,12 @@ export class AgentConsoleSessionState {
     }
 
     clearPlanTodos(): void {
-        if (!this.planTodos.length) {
+        if (!this.planTodos.length && !this.planScope) {
             return;
         }
         this.planTodos = [];
         this.planTodoSourceSessionId = '';
+        this.planScope = '';
         this.notify();
     }
 

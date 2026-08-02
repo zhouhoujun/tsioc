@@ -6193,6 +6193,166 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.planTodoSourceSessionId).toEqual('');
     }
 
+    @Test('resolveThreadSessionsFor groups sessions by primaryThreadId and originThreadId lineage')
+    async resolveThreadSessionsForGroupsByPrimaryThreadIdAndOriginThreadIdLineage() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, new AppRpcStub());
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, primaryThreadId: 'thread-1' } as any,
+            { id: 'worker-b', current: false, updatedAt: 20, originThreadId: 'thread-1' } as any,
+            { id: 'worker-c', current: false, updatedAt: 5, originThreadId: 'worker-b' } as any,
+            { id: 'other-d', current: false, updatedAt: 30, primaryThreadId: 'thread-2' } as any
+        ]);
+
+        const threadSessions = (component as any).resolveThreadSessionsFor('chat-a');
+        expect(threadSessions.map((item: any) => item.id).sort()).toEqual(['chat-a', 'worker-b', 'worker-c']);
+        expect((component as any).resolveThreadSessionIdsFor('chat-a').sort()).toEqual(['chat-a', 'worker-b', 'worker-c']);
+    }
+
+    @Test('resolveThreadSessionsFor falls back to the anchor session when no thread lineage exists')
+    async resolveThreadSessionsForFallsBackToAnchorSession() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, new AppRpcStub());
+
+        component.sessionState.configure({ sessionId: 'solo-a' });
+        component.sessionState.setSessions([
+            { id: 'solo-a', current: true, updatedAt: 10, workspace: '/tmp/x' } as any,
+            { id: 'solo-b', current: false, updatedAt: 20, workspace: '/tmp/x' } as any
+        ]);
+
+        const threadSessions = (component as any).resolveThreadSessionsFor('solo-a');
+        expect(threadSessions.map((item: any) => item.id)).toEqual(['solo-a']);
+    }
+
+    @Test('refreshThreadTodoPlan merges thread-scoped plan todos and marks thread scope')
+    async refreshThreadTodoPlanMergesThreadScopedTodosAndMarksThreadScope() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'thread root todo', status: 'completed' }]);
+        appRpc.todoPlanBySession.set('worker-b', [{ id: 'todo-b', content: 'worker active todo', status: 'in_progress' }]);
+        appRpc.todoPlanBySession.set('worker-c', [
+            { id: 'todo-a', content: 'duplicate todo id', status: 'pending' },
+            { id: 'todo-c', content: 'worker c todo', status: 'pending' }
+        ]);
+        appRpc.todoPlanBySession.set('other-d', [{ id: 'todo-d', content: 'other thread todo', status: 'in_progress' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, primaryThreadId: 'thread-1' } as any,
+            { id: 'worker-b', current: false, updatedAt: 20, originThreadId: 'thread-1' } as any,
+            { id: 'worker-c', current: false, updatedAt: 5, originThreadId: 'worker-b' } as any,
+            { id: 'other-d', current: false, updatedAt: 30, primaryThreadId: 'thread-2' } as any
+        ]);
+
+        await (component as any).refreshThreadTodoPlan();
+
+        // active-only projection: completed root todo excluded; duplicate id deduped; other thread excluded
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b', 'todo-c']);
+        expect(component.sessionState.planTodos.some(item => item.id === 'todo-d')).toEqual(false);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('worker-b');
+        expect(component.sessionState.planScope).toEqual('thread');
+        const todoGetSessionIds = appRpc.calls
+            .filter(call => call.method === 'todo.get')
+            .map(call => String(call.params?.sessionId || ''))
+            .sort();
+        expect(todoGetSessionIds).toEqual(['chat-a', 'worker-b', 'worker-c']);
+
+        // project-scoped refresh flips the scope marker back
+        await (component as any).refreshTodoPlan();
+        expect(component.sessionState.planScope).toEqual('project');
+    }
+
+    @Test('loadThreadCodingTasks aggregates coding tasks within the thread only')
+    async loadThreadCodingTasksAggregatesWithinThreadOnly() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.codingTasksBySession.set('chat-a', [{ id: 'task-a', title: 'root task', updatedAt: 10, status: 'completed' }]);
+        appRpc.codingTasksBySession.set('worker-b', [{ id: 'task-b', title: 'worker task', updatedAt: 20, status: 'running' }]);
+        appRpc.codingTasksBySession.set('other-d', [{ id: 'task-d', title: 'other thread task', updatedAt: 30, status: 'running' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, primaryThreadId: 'thread-1' } as any,
+            { id: 'worker-b', current: false, updatedAt: 20, originThreadId: 'thread-1' } as any,
+            { id: 'other-d', current: false, updatedAt: 30, primaryThreadId: 'thread-2' } as any
+        ]);
+
+        await (component as any).loadThreadCodingTasks();
+
+        expect(component.sessionState.taskRecords.map((task: any) => task.id).sort()).toEqual(['task-a', 'task-b']);
+        const taskListSessionIds = appRpc.calls
+            .filter(call => call.method === 'coding_task.list')
+            .map(call => String(call.params?.sessionId || ''))
+            .sort();
+        expect(taskListSessionIds).toEqual(['chat-a', 'worker-b']);
+    }
+
+    @Test('threadplan command aggregates thread plan todos and focuses the tasks panel')
+    async threadPlanCommandAggregatesThreadTodosAndFocusesTasksPanel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'root todo', status: 'in_progress' }]);
+        appRpc.codingTasksBySession.set('worker-b', [{ id: 'task-b', title: 'worker task', updatedAt: 10, status: 'running' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, primaryThreadId: 'thread-1' } as any,
+            { id: 'worker-b', current: false, updatedAt: 20, originThreadId: 'thread-1' } as any
+        ]);
+
+        await (component as any).handleCommand('/threadplan');
+
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planScope).toEqual('thread');
+        expect(component.sessionState.tasksFocused).toEqual(true);
+    }
+
+    @Test('threadreview command opens review scoped to the current thread')
+    async threadReviewCommandOpensReviewScopedToCurrentThread() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.codingTasksBySession.set('chat-a', [{ id: 'task-a', title: 'root task', updatedAt: 10, status: 'completed' }]);
+        appRpc.codingTasksBySession.set('worker-b', [{ id: 'task-b', title: 'worker task', updatedAt: 20, status: 'running' }]);
+        appRpc.codingTasksBySession.set('other-d', [{ id: 'task-d', title: 'other thread task', updatedAt: 30, status: 'running' }]);
+        appRpc.codingTaskDetails.set('task-b', { id: 'task-b', title: 'worker task', sourceSessionId: 'worker-b', status: 'running' });
+        appRpc.codingTaskDiffs.set('task-b', {
+            sessionId: 'worker-b',
+            taskId: 'task-b',
+            executionMode: 'parallel',
+            diff: { summary: 'thread diff' },
+            workers: []
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        component.sessionState.configure({ sessionId: 'chat-a' });
+        component.sessionState.setSessions([
+            { id: 'chat-a', current: true, updatedAt: 10, primaryThreadId: 'thread-1' } as any,
+            { id: 'worker-b', current: false, updatedAt: 20, originThreadId: 'thread-1' } as any,
+            { id: 'other-d', current: false, updatedAt: 30, primaryThreadId: 'thread-2' } as any
+        ]);
+        (component as any).select = async (_title: string, options: Array<{ value: string }>) => options[0]?.value || null;
+
+        await (component as any).handleCommand('/threadreview');
+
+        const taskListSessionIds = appRpc.calls
+            .filter(call => call.method === 'coding_task.list')
+            .map(call => String(call.params?.sessionId || ''))
+            .sort();
+        expect(taskListSessionIds).toEqual(['chat-a', 'worker-b']);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-b');
+    }
+
     @Test('loadCodingTasks ignores failed project sessions and clears stale tasks')
     async loadCodingTasksIgnoresFailedProjectSessionsAndClearsStaleTasks() {
         const runtime = new RuntimeStub();

@@ -332,11 +332,32 @@ Relevant code today:
 - `packages/agents/agent-gateway/src/api/SessionHandler.ts` (`listSessionInfos` / `groupThreadInfos`)
 - `packages/agents/agent-ui/src/AgentConsoleSessionService.ts` (`toChoice` / `groupThreadChoices`)
 
+## Thread-Level Artifact Aggregation (P33)
+
+Implemented: the console can now aggregate plan todos and coding-task review artifacts at thread granularity, keyed by the `originThreadId` / `primaryThreadId` lineage seam that P31 established — no index persistence was needed.
+
+- Thread lineage resolution (`@tsdi/agent-ui` `AgentConsoleComponent`):
+  - `resolveThreadKeyForSession` walks the lineage: `primaryThreadId` (direct member) → `originThreadId` (worker link: resolves the origin session's key recursively when loaded, otherwise treats the origin as a thread id) → `session:<id>` (solo). A visited set guards against cyclic links.
+  - `resolveThreadSessionsFor(sessionId)` / `resolveThreadSessionIdsFor(sessionId)` mirror the project-scoped resolvers: every loaded session sharing the anchor's thread key, including workers linked through `originThreadId` and worker-of-worker chains.
+  - `originThreadId` now rides on the console session model (`AgentConsoleSessionItem`) and both `refreshSessions` / `flattenProjectSessions` bridges.
+- Aggregation cores (shared with the project path):
+  - `mergeTodoPlanForSessions(sessionId, sessions)` extracted from `refreshTodoPlan`; `refreshTodoPlan` (project scope) and `refreshThreadTodoPlan` (thread scope) both delegate and mark `planScope` (`'project'` / `'thread'`).
+  - `loadThreadCodingTasks` reuses the existing `loadCodingTasks(sessionId, sessionIds)` core with thread-resolved ids.
+- UI surface:
+  - `/threadplan` — merges thread-scoped plan todos + coding tasks and focuses the tasks panel; the plan summary shows a `· thread` suffix while thread-scoped.
+  - `/threadreview` — coding-task review selector scoped to the current thread (`selectCodingTask` gained an optional `sessionIds`).
+  - Both commands are registered in `commandHints` and `/help`.
+- Tests: `view-model.spec.ts` +6 (thread lineage grouping, solo-session fallback, thread todo merge with dedupe/active projection/exclusion of other threads, thread coding-task aggregation, `/threadplan`, `/threadreview`), `console-renderer.spec.ts` +1 (`· thread` scope suffix).
+
+Relevant code today:
+
+- `packages/agents/agent-ui/src/AgentConsoleComponent.ts` (`resolveThreadKeyForSession` / `resolveThreadSessionsFor` / `refreshThreadTodoPlan` / `loadThreadCodingTasks` / `/threadplan` + `/threadreview` cases)
+- `packages/agents/agent-ui/src/AgentConsoleSessionState.ts` (`planScope`, `setPlanTodos` scope param, `originThreadId` on the session item)
+
 ## Next Step
 
-The derived thread index (P30), worker auto-classification (P31), and terminal status write-back (P32) close the planned items of this architecture note: project-aware metadata, project/thread-level derived grouping, spawn-time auto-classification of `sessionRole`/`originThreadId`, and completion-state propagation are all live end-to-end (store → gateway → UI).
+The derived thread index (P30), worker auto-classification (P31), terminal status write-back (P32), and thread-level artifact aggregation (P33) close the planned items of this architecture note: project-aware metadata, project/thread-level derived grouping, spawn-time auto-classification of `sessionRole`/`originThreadId`, completion-state propagation, and thread-scoped todo/review aggregation are all live end-to-end (store → gateway → UI).
 
 Future options (not currently planned):
 
 - persist explicit project/thread indexes when the derived pass becomes a hotspot
-- thread-level aggregation of todo/review artifacts (needs the persistence seam above)

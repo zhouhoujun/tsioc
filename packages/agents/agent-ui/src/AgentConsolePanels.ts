@@ -1212,7 +1212,8 @@ export class AgentConsoleTasksPanelComponent {
         const projectSuffix = projectLabel ? ` · project ${projectLabel}` : '';
         if (this.shouldShowPlanTodos) {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
-            return `plan ${this.planTodos.length} · active ${activeCount}${projectSuffix}`;
+            const scopeSuffix = this.state.planScope === 'thread' ? ' · thread' : '';
+            return `plan ${this.planTodos.length} · active ${activeCount}${scopeSuffix}${projectSuffix}`;
         }
         const totalCount = this.state.reviewTaskChoices.length;
         const filteredCount = this.tasks.length;
