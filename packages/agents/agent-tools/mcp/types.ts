@@ -45,6 +45,36 @@ export interface McpClient {
     close?(): Promise<void> | void;
 }
 
+/**
+ * OAuth token persisted for a remote MCP server.
+ */
+export interface McpOAuthToken {
+    accessToken: string;
+    refreshToken?: string;
+    tokenType: string;
+    expiresAt?: number;
+    scope?: string;
+}
+
+/**
+ * Per-server authentication configuration for remote (Streamable HTTP) MCP servers.
+ */
+export interface McpServerAuthOptions {
+    type: 'none' | 'bearer' | 'oauth';
+    /** Static bearer token used as `Authorization: Bearer <token>`. */
+    bearerToken?: string;
+    /** OAuth client id used for authorization. */
+    clientId?: string;
+    /** OAuth scope requested during authorization. */
+    scope?: string;
+    /** Explicit token endpoint, skipping RFC 8414 discovery. */
+    tokenEndpoint?: string;
+    /** Explicit authorization endpoint, skipping RFC 8414 discovery. */
+    authorizationEndpoint?: string;
+    /** Explicit device authorization endpoint, skipping RFC 8414 discovery. */
+    deviceAuthorizationEndpoint?: string;
+}
+
 export interface AgentMcpServerOptions {
     id: string;
     title?: string;
@@ -52,6 +82,11 @@ export interface AgentMcpServerOptions {
     args?: string[];
     cwd?: string;
     env?: Record<string, string>;
+    /** Streamable HTTP endpoint for remote servers. */
+    url?: string;
+    /** Static headers applied to every Streamable HTTP request. */
+    headers?: Record<string, string>;
+    auth?: McpServerAuthOptions;
     timeoutMs?: number;
     client?: McpClient;
     tools?: McpToolDescriptor[];
@@ -63,6 +98,8 @@ export interface AgentMcpOptions {
     protocolVersion?: string;
     clientInfo?: McpClientInfo;
     providerId?: string;
+    /** Path to the OAuth credential store; defaults to `<agent-root>/mcp-credentials.json`. */
+    credentialsPath?: string;
 }
 
 export interface ResolvedAgentMcpOptions extends AgentMcpOptions {
@@ -70,6 +107,20 @@ export interface ResolvedAgentMcpOptions extends AgentMcpOptions {
     protocolVersion: string;
     clientInfo: McpClientInfo;
     providerId: string;
+    credentialsPath: string;
+}
+
+/**
+ * RFC 8414 OAuth 2.0 Authorization Server Metadata (subset used by MCP clients).
+ */
+export interface McpOAuthAuthorizationServerMetadata {
+    issuer?: string;
+    authorization_endpoint?: string;
+    token_endpoint?: string;
+    device_authorization_endpoint?: string;
+    code_challenge_methods_supported?: string[];
+    scopes_supported?: string[];
+    resource?: string;
 }
 
 export interface McpResolvedToolRef {
@@ -94,10 +145,13 @@ export const defaultAgentMcpOptions: ResolvedAgentMcpOptions = {
         name: 'tsdi-agent-tools-mcp',
         version: '6.0.31'
     },
-    providerId: '@tsdi/agent-tools/mcp'
+    providerId: '@tsdi/agent-tools/mcp',
+    credentialsPath: ''
 };
 
 export function mergeAgentMcpOptions(options?: AgentMcpOptions): ResolvedAgentMcpOptions {
+    const credentialsPath = options?.credentialsPath?.trim()
+        || resolveDefaultMcpCredentialsPath();
     return {
         ...defaultAgentMcpOptions,
         ...(options ?? {}),
@@ -107,7 +161,8 @@ export function mergeAgentMcpOptions(options?: AgentMcpOptions): ResolvedAgentMc
             ...(options?.clientInfo ?? {})
         },
         providerId: options?.providerId ?? defaultAgentMcpOptions.providerId,
-        protocolVersion: options?.protocolVersion ?? defaultAgentMcpOptions.protocolVersion
+        protocolVersion: options?.protocolVersion ?? defaultAgentMcpOptions.protocolVersion,
+        credentialsPath
     };
 }
 
@@ -125,10 +180,30 @@ export function validateAgentMcpOptions(options: ResolvedAgentMcpOptions): void 
             throw new Error(`Invalid MCP server configuration: duplicate server id '${id}'.`);
         }
         seen.add(id);
-        if (!server.client && !server.command) {
-            throw new Error(`Invalid MCP server configuration for '${id}': command or client is required.`);
+        if (!server.client && !server.command && !server.url) {
+            throw new Error(`Invalid MCP server configuration for '${id}': command, url, or client is required.`);
+        }
+        if (server.command && server.url) {
+            throw new Error(`Invalid MCP server configuration for '${id}': command and url are mutually exclusive.`);
+        }
+        if (server.url && !/^https?:\/\/.+/.test(server.url.trim())) {
+            throw new Error(`Invalid MCP server configuration for '${id}': url must be an absolute http(s) URL.`);
+        }
+        if (server.auth?.type === 'bearer' && !server.auth.bearerToken) {
+            throw new Error(`Invalid MCP server configuration for '${id}': bearer auth requires a bearerToken.`);
+        }
+        if (server.auth?.type === 'oauth' && !server.auth.clientId) {
+            throw new Error(`Invalid MCP server configuration for '${id}': oauth auth requires a clientId.`);
         }
     });
+}
+
+/**
+ * Resolve the default OAuth credential store path (see {@link mergeAgentMcpOptions}).
+ */
+export function resolveDefaultMcpCredentialsPath(): string {
+    const home = process.env.HOME || process.cwd();
+    return `${home}/.tsdi-agent/mcp-credentials.json`;
 }
 
 export function toMcpIdentifier(value: string): string {

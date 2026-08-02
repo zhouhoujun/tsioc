@@ -447,7 +447,7 @@
 
 ### Tier 1（高价值，中量改动，建议优先）
 
-1. ~~MCP 仅 stdio 单传输~~（现状：`agent-tools/mcp/StdioMcpClient` 只支持 spawn stdio；opencode 支持 local + remote(Streamable HTTP) + OAuth PKCE；Codex `mcp add` 支持 stdio 与 streamable HTTP）→ **待办**：`McpClient` 抽象增加 StreamableHttpMcpClient（tools/list、tools/call、resources、prompts 经 HTTP+SSE），配置模型支持 `url/headers/oauth`；远程 server 的 OAuth（发现授权端点 + PKCE + token 刷新，凭证存 `~/.tsdi-agent/mcp-credentials.json`）；CLI `mcp add/list/auth/logout` 命令族。
+1. ~~MCP 仅 stdio 单传输~~（现状：`agent-tools/mcp/StdioMcpClient` 只支持 spawn stdio；opencode 支持 local + remote(Streamable HTTP) + OAuth PKCE；Codex `mcp add` 支持 stdio 与 streamable HTTP）→ **已完成**：`McpClient` 抽象增加 StreamableHttpMcpClient（tools/list、tools/call、resources、prompts 经 HTTP+SSE，`Mcp-Session-Id` 复用 + cursor 分页 + 401 时单次 OAuth 重试）；配置模型支持 `url/headers/oauth`；远程 server 的 OAuth（RFC 8414 发现 + PKCE + device flow + token 刷新，凭证存 `~/.tsdi-agent/mcp-credentials.json`）；CLI `mcp add/list/auth/logout/remove` 命令族 + settings `mcp` 节接通；新增 `test/mcp-http.spec.ts` 12 用例，agent-tools 205 / agent-cli 26 全绿。
 2. ~~无 OS 级沙箱~~（现状：`ToolSandboxPolicy` 是 capability 策略矩阵 + 审批默认值，命令实际直接在本机执行；Codex 用 Seatbelt/bwrap+seccomp/Landlock 内核级隔离，`codex sandbox` 辅助命令；opencode 依赖权限系统）→ **待办**（分两阶段）：阶段一：`terminal`/`process` 工具支持可选 `sandboxExec` 包装器（Linux 探测 `bwrap` 或 `unshare`，macOS 探测 `sandbox-exec`，Windows/WSL2 降级提示），配置 `sandboxMode: 'off'|'workspace'|'network-block'`；阶段二：`/permissions` 式运行时切换 + 只读模式。
 3. ~~无 LSP 集成~~（现状：grep 全库无 lsp；opencode 自动为 LLM 加载 LSP，提供 definitions/references/diagnostics；Codex 靠 IDE 扩展）→ **待办**：`agent-tools/lsp/` 新工具组——`lsp_definition`/`lsp_references`/`lsp_diagnostics`/`lsp_symbols`（复用 opencode 同款 `lsp-tserver` 或 `vscode-languageserver-protocol` 做进程内 client，按文件扩展名惰性启动 server，`list` 不激活、调用时按需启动并回收）。
 4. ~~无 AGENTS.md 约定与 /init~~（现状：项目上下文只有 workspace mentions / 手动 focusSummary；Codex 有 `/init` 生成 AGENTS.md、opencode 有 `/init` + 提交到 git）→ **待办**：runtime 启动时读取 `AGENTS.md`（项目根向上查找）作为 system prompt 项目上下文节；新增 `/init` 命令（分析项目结构 → 生成 AGENTS.md 草稿 → 写盘）；CLI/UI 均可触发。
@@ -476,7 +476,7 @@
 
 ### 建议执行顺序
 
-1. Tier1-1 MCP 远程传输（生态缺口最大，改动集中在 agent-tools/mcp + CLI 命令族）
+1. ~~Tier1-1 MCP 远程传输~~（已完成，2026-08：agent-tools/mcp Streamable HTTP + OAuth + CLI `mcp` 命令族，205+26 测试全绿）
 2. Tier1-4 AGENTS.md + /init（小而高频，体验提升直接）
 3. Tier1-6 Plan 只读模式 + Tier1-2 沙箱阶段一（安全面，与既有 approval/policy 管线天然衔接）
 4. Tier1-5 文件 undo/redo（与既有 compensation 通道并行设计）

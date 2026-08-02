@@ -2,18 +2,30 @@ import { Inject, Injectable, OnDestroy, Optional } from '@tsdi/ioc';
 import { AGENT_MCP_OPTIONS } from './tokens';
 import { AgentMcpServerOptions, McpClient, McpResolvedToolRef, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, mergeAgentMcpOptions, toMcpToolName, validateAgentMcpOptions } from './types';
 import { StdioMcpClient } from './StdioMcpClient';
+import { StreamableHttpMcpClient } from './StreamableHttpMcpClient';
+import { McpOAuthClient } from './mcp-oauth';
 
 @Injectable()
 export class LocalMcpClientRegistry implements OnDestroy {
     private readonly options: ResolvedAgentMcpOptions;
     private readonly clients = new Map<string, McpClient>();
     private readonly toolCache = new Map<string, Promise<McpToolDescriptor[]>>();
+    private readonly oauth: McpOAuthClient;
 
     constructor(
         @Optional() @Inject(AGENT_MCP_OPTIONS, { defaultValue: null }) options?: any
     ) {
         this.options = mergeAgentMcpOptions(options ?? undefined);
         validateAgentMcpOptions(this.options);
+        this.oauth = new McpOAuthClient(this.options);
+    }
+
+    getOAuthStore() {
+        return this.oauth.getStore();
+    }
+
+    getOAuthClient(): McpOAuthClient {
+        return this.oauth;
     }
 
     getProviderId(): string {
@@ -120,7 +132,12 @@ export class LocalMcpClientRegistry implements OnDestroy {
             return existing;
         }
         const server = this.getServer(serverId);
-        const client = server.client ?? new StdioMcpClient(server, this.options);
+        let client = server.client;
+        if (!client && server.url) {
+            client = new StreamableHttpMcpClient(server, this.options, this.oauth);
+        } else if (!client) {
+            client = new StdioMcpClient(server, this.options);
+        }
         this.clients.set(serverId, client);
         return client;
     }

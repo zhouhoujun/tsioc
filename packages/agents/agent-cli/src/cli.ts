@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { runAgentApplication, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
 import { runAgentConsole } from './run-console';
+import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
@@ -9,7 +10,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'tools', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'tools', 'mcp', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -24,8 +25,11 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--timeout'
 ]);
 
-function normalizeCliArgv(argv: string[]): string[] {
-    const tail = argv.slice(2);
+function collectValues(value: string, previous: string[]): string[] {
+    return [...previous, value];
+}
+
+function normalizeCliArgv(argv: string[]): string[] {    const tail = argv.slice(2);
     if (!tail.length) {
         return [...argv, DEFAULT_COMMAND];
     }
@@ -207,10 +211,66 @@ function createAgentCli(): Command {
             }, null, 2) + '\n');
         });
 
+    const mcp = program
+        .command('mcp')
+        .description('Manage MCP servers (streamable HTTP + OAuth).');
+
+    mcp
+        .command('add <id>')
+        .description('Add or update an MCP server configuration.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .option('--url <url>', 'Remote server endpoint (streamable HTTP).')
+        .option('--command <cmd>', 'Local server command (stdio).')
+        .option('--header <name=value>', 'Static request header (repeatable).', collectValues, [])
+        .option('--bearer-token <token>', 'Static bearer token auth.')
+        .option('--client-id <id>', 'OAuth client id (triggers OAuth auth config).')
+        .option('--scope <scope>', 'OAuth scope.')
+        .option('--title <title>', 'Display title for the server.')
+        .action(async (id: string, options: any) => {
+            await runMcpAdd({ ...options, args: id });
+        });
+
+    mcp
+        .command('list')
+        .description('List configured MCP servers and their auth state.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .option('--json', 'Emit JSON output.')
+        .action((options: any) => {
+            runMcpList(options).catch(error => {
+                process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+                process.exitCode = 1;
+            });
+        });
+
+    mcp
+        .command('auth <id>')
+        .description('Run the OAuth authorization flow for a remote MCP server.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .option('--client-id <id>', 'OAuth client id override.')
+        .option('--scope <scope>', 'OAuth scope override.')
+        .action(async (id: string, options: any) => {
+            await runMcpAuth({ ...options, args: id });
+        });
+
+    mcp
+        .command('logout <id>')
+        .description('Remove stored OAuth credentials for an MCP server.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .action(async (id: string, options: any) => {
+            await runMcpLogout({ ...options, args: id });
+        });
+
+    mcp
+        .command('remove <id>')
+        .description('Remove an MCP server configuration.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .action(async (id: string, options: any) => {
+            await runMcpRemove({ ...options, args: id });
+        });
+
     program
         .command('rpc-stdio')
-        .description('Start the shared App Server over stdio using JSON-RPC 2.0 JSONL frames.')
-        .option('--session <id>', 'Default session ID for follow-up requests.')
+        .description('Start the shared App Server over stdio using JSON-RPC 2.0 JSONL frames.')        .option('--session <id>', 'Default session ID for follow-up requests.')
         .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
         .option('--workspace <dir>', 'Workspace directory for file tools.')
         .option('--tools <items>', 'Comma-separated tool names or groups to enable.')

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { AgentToolsOptions } from './options';
+import { AgentMcpOptions } from '../mcp/types';
 
 export const DEFAULT_AGENT_ROOT_DIRNAME = '.tsdi-agent';
 export const AGENT_SETTINGS_FILE = 'settings.json';
@@ -21,6 +22,7 @@ export interface AgentRootSettings {
         values?: string | string[];
         defaultEnabled?: boolean;
     };
+    mcp?: AgentMcpOptions;
     session?: string;
 }
 
@@ -113,6 +115,7 @@ export function resolveAgentToolDiscovery(root?: string): ResolvedAgentToolDisco
         tools: {
             file: { rootDir: toolsRoot },
             roots: resolved.toolsRoot ? [toolsRoot] : [],
+            ...(settings.mcp ? { mcp: settings.mcp } : {}),
             registration: {
                 preset: settings.tools?.defaultEnabled === false ? 'none' : 'default',
                 groups: {},
