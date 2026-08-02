@@ -75,6 +75,19 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
     }
 }
 
+async function waitForState(predicate: () => Promise<boolean>, timeoutMs = 3000): Promise<void> {
+    const startedAt = Date.now();
+    for (;;) {
+        if (await predicate()) {
+            return;
+        }
+        if (Date.now() - startedAt > timeoutMs) {
+            throw new Error('waitForState timed out');
+        }
+        await new Promise(resolve => setTimeout(resolve, 5));
+    }
+}
+
 @Suite('Agent turn cancellation')
 export class TurnCancellationTest {
     @Test('cancelTurn returns true for a running turn and the turn rejects with AgentTurnCancelledError')
@@ -258,6 +271,105 @@ export class TurnCancellationTest {
         // child-2 was still linked and must have been aborted by the parent.
         await childTwoTurn;
         expect(childTwoError).toBeInstanceOf(AgentTurnCancelledError);
+    }
+
+    @Test('registerChildSession annotates the child as a worker linked to the parent thread')
+    async registerChildSessionAnnotatesWorker() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        await store.setProjectMetadata('parent-1', { primaryThreadId: 'thread-p', sessionRole: 'main' });
+        runtime.registerChildSession('parent-1', 'child-1', { goal: 'analyze project' });
+
+        await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
+        const child = await store.get('child-1');
+        expect(child.originThreadId).toEqual('thread-p');
+        expect(child.focusSummary).toEqual('analyze project');
+    }
+
+    @Test('registerChildSession links the child to the parent session when the parent has no thread')
+    async registerChildSessionFallsBackToParentSessionId() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        runtime.registerChildSession('parent-1', 'child-1');
+
+        await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
+        const child = await store.get('child-1');
+        expect(child.originThreadId).toEqual('parent-1');
+        expect(child.focusSummary).toBeUndefined();
+    }
+
+    @Test('registerChildSession preserves a child with an explicit non-worker role')
+    async registerChildSessionPreservesExplicitChildMetadata() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        await store.setProjectMetadata('child-1', {
+            projectId: 'proj-a',
+            primaryThreadId: 'thread-c',
+            sessionRole: 'main',
+            rootRequest: 'explicit root',
+            focusSummary: 'explicit focus'
+        });
+        runtime.registerChildSession('parent-1', 'child-1', { goal: 'ignored' });
+
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const child = await store.get('child-1');
+        expect(child.sessionRole).toEqual('main');
+        expect(child.projectId).toEqual('proj-a');
+        expect(child.primaryThreadId).toEqual('thread-c');
+        expect(child.rootRequest).toEqual('explicit root');
+        expect(child.focusSummary).toEqual('explicit focus');
+        expect(child.originThreadId).toBeUndefined();
+    }
+
+    @Test('registerChildSession fills the origin thread for an existing worker-role child')
+    async registerChildSessionKeepsWorkerFieldsAndFillsOrigin() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        await store.setProjectMetadata('child-1', { sessionRole: 'worker', projectId: 'proj-a', focusSummary: 'mine' });
+        runtime.registerChildSession('parent-1', 'child-1', { goal: 'ignored' });
+
+        await waitForState(async () => (await store.get('child-1')).originThreadId !== undefined);
+        const child = await store.get('child-1');
+        expect(child.sessionRole).toEqual('worker');
+        expect(child.originThreadId).toEqual('parent-1');
+        expect(child.projectId).toEqual('proj-a');
+        expect(child.focusSummary).toEqual('mine');
     }
 
     @Test('cancelTurn drops pending approval requests for the session')

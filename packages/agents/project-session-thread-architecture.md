@@ -270,7 +270,7 @@ Relevant code today:
 - `packages/agents/agent/src/memory/SessionStore.ts`
 - `packages/agents/agent/src/memory/InMemorySessionStore.ts`
 - `packages/agents/agent/src/memory/TypeOrmSessionStore.ts`
-- `packages/agents/agents/agent-gateway/src/api/SessionHandler.ts`
+- `packages/agents/agent-gateway/src/api/SessionHandler.ts`
 - `packages/agents/todo.md`
 
 ## Thread Index (P30)
@@ -293,12 +293,29 @@ UI (`@tsdi/agent-ui`):
 - `AgentConsoleSessionService.listThreads()` prefers the gateway RPC, falls back to `store.listThreads()` (or client-side `groupThreadChoices` grouping).
 - New `/threads` command mirrors `/projects`: thread list → per-thread session list → open session; backed by `threads` / `threadsFocused` session state with the same focus-layer and escape handling.
 
+## Worker Session Auto-Classification (P31)
+
+Implemented: spawned worker sessions are auto-annotated at the framework chokepoint, closing the "auto-classify `sessionRole`/`originThreadId` from spawn runtime signals" future option.
+
+- `DefaultAgentRuntime.registerChildSession` now calls `annotateChildSession(parentSessionId, childSessionId, metadata)` after recording the delegation edge.
+- `annotateChildSession` (fire-and-forget, errors swallowed so annotation never breaks the delegation flow):
+  - marks the child with `sessionRole: 'worker'` (any registered child session is by definition a worker/sub-agent);
+  - links it back through `originThreadId` = parent `primaryThreadId`, falling back to the parent session id;
+  - defaults the child `focusSummary` to the delegation `goal` (thread title source);
+  - preserves existing explicit fields via read-modify-write and leaves a child with an explicit non-worker `sessionRole` untouched.
+- Both `InMemorySessionStore` and `TypeOrmSessionStore` `setProjectMetadata` auto-create the child session, so the annotation can fire before the child's first turn without ordering hazards; the derived thread index then surfaces the worker thread (`stage: implementation`, `originThreadId` set) without any explicit metadata.
+
+Relevant code today:
+
+- `packages/agents/agent/src/runtime/DefaultAgentRuntime.ts` (`registerChildSession` / `annotateChildSession`)
+- `packages/agents/agent-tools/src/lightweight-agent-runner.ts` (`runSingle` passes `goal` in the registration metadata)
+- `packages/agents/agent/test/turn-cancel.spec.ts` (worker annotation cases)
+
 ## Next Step
 
-The derived thread index (P30) closes the last unimplemented item of this architecture note: project-aware metadata, project-level derived grouping, and thread-level derived grouping are all live end-to-end (store → gateway → UI).
+The derived thread index (P30) plus worker auto-classification (P31) close the planned items of this architecture note: project-aware metadata, project/thread-level derived grouping, and spawn-time auto-classification of `sessionRole`/`originThreadId` are all live end-to-end (store → gateway → UI).
 
 Future options (not currently planned):
 
 - persist explicit project/thread indexes when the derived pass becomes a hotspot
-- auto-classify `sessionRole`/`originThreadId` from spawn/rollback runtime signals instead of explicit metadata only
 - thread-level aggregation of todo/review artifacts (needs the persistence seam above)

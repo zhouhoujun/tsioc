@@ -321,6 +321,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         children.add(childSessionId);
         this.sessionChildSessions.set(parentSessionId, children);
         this.recordDelegationEdge(parentSessionId, childSessionId, metadata);
+        this.annotateChildSession(parentSessionId, childSessionId, metadata);
     }
 
     unregisterChildSession(parentSessionId: string, childSessionId: string, status?: DelegationEdgeStatus): void {
@@ -375,6 +376,41 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.delegationGraph.markClosed(parentSessionId, childSessionId, status).catch(() => {
             // delegation graph persistence must not break session hierarchy tracking
         });
+    }
+
+    /**
+     * Best-effort thread annotation for spawned worker sessions: the child is
+     * marked with `sessionRole: 'worker'` and linked back to the parent's
+     * origin thread (the parent `primaryThreadId`, falling back to the parent
+     * session id), and its focus summary defaults to the delegation goal. This
+     * lets the derived thread index group delegated sessions without requiring
+     * explicit metadata. Existing explicit fields are preserved; a child with
+     * an explicit non-worker role is left untouched. The write is
+     * fire-and-forget: annotation must never break the delegation flow.
+     */
+    private annotateChildSession(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
+        void (async () => {
+            try {
+                const parent = await this.sessions.get(parentSessionId);
+                const child = await this.sessions.get(childSessionId);
+                const explicitRole = String(child.sessionRole || '').trim();
+                if (explicitRole && explicitRole !== 'worker') {
+                    return;
+                }
+                const originThreadId = String(parent.primaryThreadId || '').trim() || parentSessionId;
+                const goal = typeof metadata?.goal === 'string' ? metadata.goal.trim() : '';
+                await this.sessions.setProjectMetadata(childSessionId, {
+                    projectId: child.projectId ?? undefined,
+                    primaryThreadId: child.primaryThreadId ?? undefined,
+                    originThreadId,
+                    sessionRole: 'worker',
+                    rootRequest: child.rootRequest ?? undefined,
+                    focusSummary: child.focusSummary ?? (goal || undefined)
+                });
+            } catch {
+                // worker session annotation must not break the delegation flow
+            }
+        })();
     }
 
     protected beginTurnAbortScope(sessionId: string): void {

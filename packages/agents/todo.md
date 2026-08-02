@@ -385,3 +385,15 @@
    - 文档：本条目；`project-session-thread-architecture.md` 新增「Thread Index (P30)」节 + Implementation Anchors 补充 + 「Next Step」改为已闭合说明与未来选项。
 
 全量回归：agent 356（351+5）、agent-gateway 118（117+1）、agent-ui 232（231+1）passing；三包 tsc 干净。
+
+## P31 已完成：spawn 自动标注 worker 会话（关闭 project-session-thread-architecture.md Future option：auto-classify sessionRole/originThreadId）
+
+1. ~~project-session-thread-architecture.md Future options：auto-classify `sessionRole`/`originThreadId` from spawn/rollback runtime signals instead of explicit metadata only~~ → 已完成（`@tsdi/agent`）：
+   - **运行时**（`DefaultAgentRuntime`）：
+     - `registerChildSession` 在记录 delegation 边后新增 `annotateChildSession(parentSessionId, childSessionId, metadata)`——框架级收口点，所有 spawn 路径（LightweightAgentRunner / coding-task / 直接调用）统一生效。
+     - `annotateChildSession`（fire-and-forget，错误吞掉，标注永不阻断委派流）：子会话标注 `sessionRole: 'worker'`（注册为 child 即子代理）；`originThreadId` = 父会话 `primaryThreadId`，缺失回退父 session id；`focusSummary` 缺省取委派 `goal`（thread 标题来源）；读改写保留既有显式字段；子会话已有显式非 worker role 时跳过。
+   - **无顺序风险**：`InMemorySessionStore`/`TypeOrmSessionStore` 的 `setProjectMetadata` 均会自动建会话，标注可先于子会话首个 turn 触发；派生线程索引随之呈现 worker 线程（stage `implementation`、originThreadId 已链接）无需任何显式 metadata。
+   - 测试：`agent/test/turn-cancel.spec.ts` +4（父线程→origin 链接 + focusSummary；无线程父会话→回退 session id；显式非 worker role 完整保留；既有 worker 补 origin 且 projectId/focusSummary 保留）。新增 `waitForState` 异步轮询 helper。
+   - 文档：本条目；`project-session-thread-architecture.md` 新增「Worker Session Auto-Classification (P31)」节 + Future options 移除 auto-classify 项 + Next Step 更新；顺手修正 P30 节一处路径笔误（`packages/agents/agents/agent-gateway` → `packages/agents/agent-gateway`）。
+
+全量回归：agent 360（356+4）、agent-gateway 118（118+0）、agent-ui 232（232+0）passing；三包 tsc 干净。
