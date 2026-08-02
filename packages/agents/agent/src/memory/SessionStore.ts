@@ -15,6 +15,7 @@ export interface AgentSessionProjectMetadata {
     sessionRole?: AgentSessionRole;
     rootRequest?: string;
     focusSummary?: string;
+    threadStatus?: AgentThreadStatus;
 }
 
 export interface AgentSessionProjectIndex {
@@ -68,6 +69,7 @@ export interface AgentThreadSource {
     sessionRole?: AgentSessionRole | null;
     rootRequest?: string | null;
     focusSummary?: string | null;
+    threadStatus?: AgentThreadStatus | null;
     createdAt?: number | null;
     updatedAt?: number | null;
 }
@@ -114,7 +116,7 @@ export function deriveThreadIndexes(inputs: AgentThreadSource[]): AgentThreadInd
             existing.originThreadId = input.originThreadId ?? undefined;
             existing.currentSessionId = input.sessionId;
             const role = String(input.sessionRole || '').trim() || undefined;
-            existing.status = role === 'review' ? 'completed' : 'active';
+            existing.status = input.threadStatus ?? (role === 'review' ? 'completed' : 'active');
             existing.stage = role === 'review' ? 'review'
                 : role === 'worker' ? 'implementation'
                 : role === 'branch' ? 'discovery' : undefined;

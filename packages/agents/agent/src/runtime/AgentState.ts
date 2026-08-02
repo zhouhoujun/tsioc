@@ -1,5 +1,5 @@
 import { AgentMessage } from './AgentMessage';
-import { AgentSessionRole } from '../memory/SessionStore';
+import { AgentSessionRole, AgentThreadStatus } from '../memory/SessionStore';
 
 export interface AgentState {
     sessionId: string;
@@ -13,6 +13,7 @@ export interface AgentState {
     sessionRole?: AgentSessionRole;
     rootRequest?: string;
     focusSummary?: string;
+    threadStatus?: AgentThreadStatus;
     createdAt?: number;
     updatedAt?: number;
 }

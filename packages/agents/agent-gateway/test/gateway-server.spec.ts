@@ -412,6 +412,44 @@ export class SessionHandlerTest {
         expect(data[0].sessions.map((session: any) => session.id).sort()).toEqual(['s1', 's2']);
     }
 
+    @Test('lists worker threads with terminal status from session metadata')
+    async listsWorkerThreadsWithTerminalStatus() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('w1', { id: '1', role: 'user', content: 'work', createdAt: 1 });
+        await store.setWorkspace('w1', '/tmp/project-a');
+        await store.setProjectMetadata('w1', {
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-w',
+            sessionRole: 'worker',
+            threadStatus: 'blocked',
+            focusSummary: 'Worker focus'
+        });
+        await owners.create('w1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('w1');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/threads' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].threadId).toEqual('thread-w');
+        expect(data[0].status).toEqual('blocked');
+        expect(data[0].stage).toEqual('implementation');
+        expect(data[0].sessions[0].threadStatus).toEqual('blocked');
+    }
+
     @Test('rejects deleting another principals session')
     async rejectsDeletingForeignSession() {
         const store = new InMemorySessionStore();

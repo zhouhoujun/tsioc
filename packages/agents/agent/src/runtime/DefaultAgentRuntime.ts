@@ -16,7 +16,7 @@ import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
-import { SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
+import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AGENT_OPTIONS } from '../tokens';
@@ -334,6 +334,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.sessionChildSessions.delete(parentSessionId);
         }
         this.closeDelegationEdge(parentSessionId, childSessionId, status ?? 'completed');
+        this.annotateChildThreadStatus(childSessionId, status ?? 'completed');
     }
 
     protected async cancelChildTurns(sessionId: string): Promise<void> {
@@ -349,6 +350,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.toolApprovalManager?.cancelBySession(childSessionId);
             controller.abort();
             this.closeDelegationEdge(sessionId, childSessionId, 'cancelled');
+            this.annotateChildThreadStatus(childSessionId, 'cancelled');
             await this.rollbackTurnCompensations(childSessionId, 'cancelled');
             await this.cancelChildTurns(childSessionId);
         }
@@ -397,20 +399,58 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 if (explicitRole && explicitRole !== 'worker') {
                     return;
                 }
-                const originThreadId = String(parent.primaryThreadId || '').trim() || parentSessionId;
                 const goal = typeof metadata?.goal === 'string' ? metadata.goal.trim() : '';
-                await this.sessions.setProjectMetadata(childSessionId, {
-                    projectId: child.projectId ?? undefined,
-                    primaryThreadId: child.primaryThreadId ?? undefined,
-                    originThreadId,
+                await this.mergeProjectMetadata(childSessionId, {
+                    originThreadId: String(parent.primaryThreadId || '').trim() || parentSessionId,
                     sessionRole: 'worker',
-                    rootRequest: child.rootRequest ?? undefined,
-                    focusSummary: child.focusSummary ?? (goal || undefined)
+                    focusSummary: goal || undefined
                 });
             } catch {
                 // worker session annotation must not break the delegation flow
             }
         })();
+    }
+
+    /**
+     * Best-effort thread status annotation when a delegation edge closes:
+     * maps the edge outcome onto the worker thread status so the derived
+     * thread index reflects finished workers (`completed` → completed,
+     * `failed` → blocked, `cancelled` → abandoned). Fire-and-forget like the
+     * sibling annotations: it must never break the delegation flow.
+     */
+    private annotateChildThreadStatus(childSessionId: string, status: DelegationEdgeStatus): void {
+        const threadStatus = status === 'completed' ? 'completed'
+            : status === 'failed' ? 'blocked'
+            : status === 'cancelled' ? 'abandoned' : undefined;
+        if (!threadStatus) {
+            return;
+        }
+        void (async () => {
+            try {
+                await this.mergeProjectMetadata(childSessionId, { threadStatus });
+            } catch {
+                // worker thread status annotation must not break the delegation flow
+            }
+        })();
+    }
+
+    /**
+     * Read-modify-write merge of project metadata: existing explicit fields
+     * win, the patch only fills gaps. `setProjectMetadata` overwrites the
+     * whole metadata block, so without the merge the annotation would clear
+     * fields that were set earlier (e.g. a pre-existing projectId).
+     */
+    private async mergeProjectMetadata(sessionId: string, patch: AgentSessionProjectMetadata): Promise<void> {
+        const existing = await this.sessions.get(sessionId);
+        await this.sessions.setProjectMetadata(sessionId, {
+            projectId: existing.projectId ?? patch.projectId,
+            primaryThreadId: existing.primaryThreadId ?? patch.primaryThreadId,
+            originThreadId: existing.originThreadId ?? patch.originThreadId,
+            sessionRole: existing.sessionRole ?? patch.sessionRole,
+            rootRequest: existing.rootRequest ?? patch.rootRequest,
+            focusSummary: existing.focusSummary ?? patch.focusSummary,
+            threadStatus: existing.threadStatus ?? patch.threadStatus
+        });
     }
 
     protected beginTurnAbortScope(sessionId: string): void {

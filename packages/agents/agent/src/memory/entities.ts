@@ -35,6 +35,9 @@ export class AgentSessionEntity {
     @Column({ type: 'text', nullable: true })
     focusSummary!: string | null;
 
+    @Column({ type: 'text', nullable: true })
+    threadStatus!: string | null;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
 

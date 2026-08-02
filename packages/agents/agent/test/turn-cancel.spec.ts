@@ -372,6 +372,101 @@ export class TurnCancellationTest {
         expect(child.focusSummary).toEqual('mine');
     }
 
+    @Test('unregisterChildSession marks the worker thread completed by default')
+    async unregisterChildSessionMarksThreadCompleted() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        await store.setProjectMetadata('parent-1', { primaryThreadId: 'thread-p', sessionRole: 'main' });
+        runtime.registerChildSession('parent-1', 'child-1', { goal: 'polish ui' });
+        await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
+
+        runtime.unregisterChildSession('parent-1', 'child-1');
+
+        await waitForState(async () => (await store.get('child-1')).threadStatus === 'completed');
+        const child = await store.get('child-1');
+        expect(child.sessionRole).toEqual('worker');
+        expect(child.originThreadId).toEqual('thread-p');
+        expect(child.threadStatus).toEqual('completed');
+    }
+
+    @Test('unregisterChildSession maps a failed edge to a blocked worker thread')
+    async unregisterChildSessionMapsFailureToBlocked() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        runtime.registerChildSession('parent-1', 'child-1');
+        await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
+
+        runtime.unregisterChildSession('parent-1', 'child-1', 'failed');
+
+        await waitForState(async () => (await store.get('child-1')).threadStatus === 'blocked');
+        expect((await store.get('child-1')).threadStatus).toEqual('blocked');
+    }
+
+    @Test('unregisterChildSession maps a cancelled edge to an abandoned worker thread')
+    async unregisterChildSessionMapsCancelledToAbandoned() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        runtime.registerChildSession('parent-1', 'child-1');
+        await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
+
+        runtime.unregisterChildSession('parent-1', 'child-1', 'cancelled');
+
+        await waitForState(async () => (await store.get('child-1')).threadStatus === 'abandoned');
+        expect((await store.get('child-1')).threadStatus).toEqual('abandoned');
+    }
+
+    @Test('unregisterChildSession preserves an explicit terminal thread status')
+    async unregisterChildSessionPreservesExplicitThreadStatus() {
+        const app = new FakeApp();
+        const store = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            store,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+        await store.setProjectMetadata('child-1', { sessionRole: 'worker', threadStatus: 'completed' });
+        runtime.registerChildSession('parent-1', 'child-1');
+        await waitForState(async () => (await store.get('child-1')).originThreadId !== undefined);
+
+        runtime.unregisterChildSession('parent-1', 'child-1', 'failed');
+
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const child = await store.get('child-1');
+        expect(child.threadStatus).toEqual('completed');
+        expect(child.sessionRole).toEqual('worker');
+    }
+
     @Test('cancelTurn drops pending approval requests for the session')
     async cancelTurnDropsPendingApprovals() {
         const app = new FakeApp();

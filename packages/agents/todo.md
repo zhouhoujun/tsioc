@@ -397,3 +397,23 @@
    - 文档：本条目；`project-session-thread-architecture.md` 新增「Worker Session Auto-Classification (P31)」节 + Future options 移除 auto-classify 项 + Next Step 更新；顺手修正 P30 节一处路径笔误（`packages/agents/agents/agent-gateway` → `packages/agents/agent-gateway`）。
 
 全量回归：agent 360（356+4）、agent-gateway 118（118+0）、agent-ui 232（232+0）passing；三包 tsc 干净。
+
+## P32 已完成：worker 线程完成态写回（unregister 时按边终态标注，/threads 反映完成/失败 worker）
+
+1. 新增会话终态字段 `threadStatus`（nullable），边关闭时按 delegation 结果写回，派生线程索引据此呈现 `completed` / `blocked` / `abandoned`：
+   - **store 层**（`@tsdi/agent`）：
+     - `AgentSessionProjectMetadata` / `AgentThreadSource` / `AgentState` / `AgentSessionEntity` 新增 `threadStatus` 列；`InMemorySessionStore`/`TypeOrmSessionStore` 的 `get` + `setProjectMetadata` 往返。
+     - `deriveThreadIndexes` 状态映射：`input.threadStatus ??`（role 推导 `review`→`completed`，否则 `active`）；`stage` 仍由 `sessionRole` 推导。
+   - **运行时**（`DefaultAgentRuntime`）：
+     - 新增 `annotateChildThreadStatus(childSessionId, status)`（fire-and-forget + 吞错，与 P31 标注同模式）：`completed`→`completed`、`failed`→`blocked`、`cancelled`→`abandoned`。
+     - `unregisterChildSession(parent, child, status)` 与 `cancelChildTurns` 关闭边后调用。
+     - 提取共享 `mergeProjectMetadata(sessionId, patch)` 读改写助手（`annotateChildSession` 同步重构复用）：仅补缺口，显式 `threadStatus` 优先——与 P31 显式字段语义一致。
+   - **网关**（`@tsdi/agent-gateway`）：`SessionInfo.threadStatus` 契约字段；`listSessionInfos` 透传；`groupThreadInfos` 状态取 `representative.threadStatus ??`（role 推导回退）。
+   - **UI**（`@tsdi/agent-ui`）：`AgentConsoleSessionChoice.threadStatus`；`listSessions`/`listProjects`/`listThreads` RPC 映射 + `toChoice` 透传；`groupThreadChoices` 状态取代表项 `threadStatus`（索引路径经 `thread.status` 已透传）。
+   - **测试**：
+     - `agent/test/turn-cancel.spec.ts` +4（默认 completed、failed→blocked、cancelled→abandoned、显式终态保留）。
+     - `agent/test/session.spec.ts` +2（显式状态→线程 status 映射、缺省回退 role 推导）；`persistent-session.spec.ts` +1（TypeOrm threadStatus 往返 + 派生索引）。
+     - `agent-gateway/test/gateway-server.spec.ts` +1（worker 终态线程分组 + session 透传）；`agent-ui/test/view-model.spec.ts` +2（store 索引路径 + 无索引 choice 分组兜底；同步修正 `WorkspaceSessionStoreStub.listThreads` 推导加入 threadStatus 以镜像真实 store）。
+   - 文档：本条目；`project-session-thread-architecture.md` 新增「Worker Thread Terminal Status (P32)」节 + Next Step 更新。
+
+全量回归：agent 367（360+7）、agent-gateway 119（118+1）、agent-ui 234（232+2）passing；三包 tsc 干净。

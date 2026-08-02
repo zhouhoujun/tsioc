@@ -33,6 +33,7 @@ export class TypeOrmSessionStore extends SessionStore {
             sessionRole: session.sessionRole ?? undefined,
             rootRequest: session.rootRequest ?? undefined,
             focusSummary: session.focusSummary ?? undefined,
+            threadStatus: session.threadStatus ?? undefined,
             createdAt: Number(session.createdAt),
             updatedAt: Number(session.updatedAt),
             messages: messages.map(message => ({
@@ -207,6 +208,7 @@ export class TypeOrmSessionStore extends SessionStore {
         const normalizedSessionRole = String(metadata.sessionRole || '').trim() || null;
         const normalizedRootRequest = String(metadata.rootRequest || '').trim() || null;
         const normalizedFocusSummary = String(metadata.focusSummary || '').trim() || null;
+        const normalizedThreadStatus = String(metadata.threadStatus || '').trim() || null;
         if (!session) {
             session = repo.create({
                 sessionId,
@@ -216,6 +218,7 @@ export class TypeOrmSessionStore extends SessionStore {
                 sessionRole: normalizedSessionRole,
                 rootRequest: normalizedRootRequest,
                 focusSummary: normalizedFocusSummary,
+                threadStatus: normalizedThreadStatus,
                 createdAt: now,
                 updatedAt: now
             });
@@ -226,6 +229,7 @@ export class TypeOrmSessionStore extends SessionStore {
             session.sessionRole = normalizedSessionRole;
             session.rootRequest = normalizedRootRequest;
             session.focusSummary = normalizedFocusSummary;
+            session.threadStatus = normalizedThreadStatus;
             session.updatedAt = now;
         }
         await repo.save(session);

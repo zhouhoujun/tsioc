@@ -13,6 +13,7 @@ export interface SessionInfo {
     sessionRole?: string;
     rootRequest?: string;
     focusSummary?: string;
+    threadStatus?: string;
 }
 
 export interface SessionProjectGroup {

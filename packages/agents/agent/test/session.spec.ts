@@ -325,4 +325,48 @@ export class SessionStoreTest {
         const threads = await store.listThreads();
         expect(threads.map(thread => thread.threadId)).toEqual(['thread-new', 'thread-old']);
     }
+
+    @Test('listThreads maps an explicit thread status onto the derived thread')
+    async listThreadsMapsExplicitThreadStatus() {
+        const store = new InMemorySessionStore();
+        await store.append('session-worker', { id: '1', role: 'user', content: 'work', createdAt: 1 });
+        await store.setProjectMetadata('session-worker', {
+            projectId: 'proj-a',
+            primaryThreadId: 'thread-w',
+            sessionRole: 'worker',
+            threadStatus: 'blocked',
+            focusSummary: 'worker focus'
+        });
+
+        const threads = await store.listThreads();
+        expect(threads).toEqual([{
+            threadId: 'thread-w',
+            projectId: 'proj-a',
+            workspace: undefined,
+            title: 'worker focus',
+            rootRequest: undefined,
+            status: 'blocked',
+            stage: 'implementation',
+            originThreadId: undefined,
+            currentSessionId: 'session-worker',
+            sessionIds: ['session-worker'],
+            createdAt: expect.any(Number),
+            updatedAt: expect.any(Number),
+            lastActiveAt: expect.any(Number)
+        }]);
+    }
+
+    @Test('listThreads falls back to role-derived status when no thread status is set')
+    async listThreadsFallsBackToRoleDerivedStatus() {
+        const store = new InMemorySessionStore();
+        await store.append('session-main', { id: '1', role: 'user', content: 'root', createdAt: 1 });
+        await store.setProjectMetadata('session-main', {
+            primaryThreadId: 'thread-m',
+            sessionRole: 'main'
+        });
+
+        const threads = await store.listThreads();
+        expect(threads[0].status).toEqual('active');
+        expect(threads[0].stage).toBeUndefined();
+    }
 }

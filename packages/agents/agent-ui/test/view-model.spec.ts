@@ -831,7 +831,7 @@ class WorkspaceSessionStoreStub {
                 workspace: state.workspace,
                 title: state.focusSummary || state.rootRequest,
                 rootRequest: state.rootRequest,
-                status: state.sessionRole === 'review' ? 'completed' : 'active',
+                status: state.threadStatus ?? (state.sessionRole === 'review' ? 'completed' : 'active'),
                 stage: state.sessionRole === 'review' ? 'review'
                     : state.sessionRole === 'worker' ? 'implementation'
                     : state.sessionRole === 'branch' ? 'discovery' : undefined,
@@ -845,7 +845,7 @@ class WorkspaceSessionStoreStub {
                 existing.currentSessionId = state.sessionId;
                 existing.title = state.focusSummary || state.rootRequest;
                 existing.rootRequest = state.rootRequest;
-                existing.status = state.sessionRole === 'review' ? 'completed' : 'active';
+                existing.status = state.threadStatus ?? (state.sessionRole === 'review' ? 'completed' : 'active');
                 existing.stage = state.sessionRole === 'review' ? 'review'
                     : state.sessionRole === 'worker' ? 'implementation'
                     : state.sessionRole === 'branch' ? 'discovery' : undefined;
@@ -891,7 +891,8 @@ class WorkspaceSessionStoreStub {
             originThreadId: metadata?.originThreadId,
             sessionRole: metadata?.sessionRole,
             rootRequest: metadata?.rootRequest,
-            focusSummary: metadata?.focusSummary
+            focusSummary: metadata?.focusSummary,
+            threadStatus: metadata?.threadStatus
         });
         this.sessions.set(sessionId, state);
     }
@@ -5589,6 +5590,63 @@ export class AgentConsoleComponentTest {
         expect(threads[0].sessionCount).toEqual(2);
         expect(threads[0].sessions.map(session => session.id)).toEqual(['chat-b', 'chat-a']);
         expect(threads[0].sessions[0].current).toEqual(true);
+    }
+
+    @Test('session service maps worker thread status onto grouped threads')
+    async sessionServiceMapsWorkerThreadStatus() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-w', {
+            sessionId: 'chat-w',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-w',
+            sessionRole: 'worker',
+            threadStatus: 'abandoned',
+            focusSummary: 'Worker focus'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const threads = await service.listThreads('chat-w');
+
+        expect(threads.length).toEqual(1);
+        expect(threads[0].threadId).toEqual('thread-w');
+        expect(threads[0].status).toEqual('abandoned');
+        expect(threads[0].stage).toEqual('implementation');
+        expect(threads[0].sessions[0].threadStatus).toEqual('abandoned');
+    }
+
+    @Test('session service falls back to choice grouping with thread status when no thread index exists')
+    async sessionServiceFallsBackToChoiceGroupingWithThreadStatus() {
+        class StoreWithoutThreadIndexes extends WorkspaceSessionStoreStub {
+            async listThreads(): Promise<any[]> {
+                return [];
+            }
+        }
+        const store = new StoreWithoutThreadIndexes();
+        store.sessions.set('chat-w', {
+            sessionId: 'chat-w',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-w',
+            sessionRole: 'worker',
+            threadStatus: 'blocked',
+            focusSummary: 'Worker focus'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const threads = await service.listThreads('chat-w');
+
+        expect(threads.length).toEqual(1);
+        expect(threads[0].threadId).toEqual('thread-w');
+        expect(threads[0].status).toEqual('blocked');
+        expect(threads[0].stage).toEqual('implementation');
+        expect(threads[0].sessions[0].threadStatus).toEqual('blocked');
     }
 
     @Test('session service cancelTurn falls back to the local runtime when no rpc is configured')

@@ -123,6 +123,38 @@ describe('Persistent session store', () => {
         }
     });
 
+    it('persists thread status and derives thread index status', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-7', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('session-7', '/tmp/project-a');
+            await store.setProjectMetadata('session-7', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-7',
+                sessionRole: 'worker',
+                threadStatus: 'blocked',
+                focusSummary: 'worker focus'
+            });
+
+            const state = await store.get('session-7');
+            expect(state.threadStatus).toEqual('blocked');
+
+            const threads = await store.listThreads();
+            expect(threads).toContainEqual(expect.objectContaining({
+                threadId: 'thread-7',
+                status: 'blocked',
+                stage: 'implementation',
+                sessionIds: ['session-7']
+            }));
+
+            await store.setProjectMetadata('session-7', { sessionRole: 'worker', threadStatus: 'abandoned' });
+            expect((await store.get('session-7')).threadStatus).toEqual('abandoned');
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('listProjects prefers latest active session metadata for grouped projects', async () => {
         const ctx = await Application.run(PersistentSessionTestModule);
         const originalNow = Date.now;

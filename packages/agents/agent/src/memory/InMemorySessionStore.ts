@@ -26,6 +26,7 @@ export class InMemorySessionStore extends SessionStore {
             sessionRole: state.sessionRole,
             rootRequest: state.rootRequest,
             focusSummary: state.focusSummary,
+            threadStatus: state.threadStatus,
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
@@ -159,6 +160,7 @@ export class InMemorySessionStore extends SessionStore {
         state.sessionRole = String(metadata.sessionRole || '').trim() || undefined;
         state.rootRequest = String(metadata.rootRequest || '').trim() || undefined;
         state.focusSummary = String(metadata.focusSummary || '').trim() || undefined;
+        state.threadStatus = String(metadata.threadStatus || '').trim() || undefined;
         state.updatedAt = Date.now();
         state.createdAt ??= state.updatedAt;
         this.sessions.set(sessionId, state);

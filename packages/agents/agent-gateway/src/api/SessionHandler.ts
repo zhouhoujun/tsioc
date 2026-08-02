@@ -152,7 +152,8 @@ export class SessionHandler {
                 originThreadId: state.originThreadId ?? undefined,
                 sessionRole: state.sessionRole ?? undefined,
                 rootRequest: state.rootRequest ?? undefined,
-                focusSummary: state.focusSummary ?? undefined
+                focusSummary: state.focusSummary ?? undefined,
+                threadStatus: state.threadStatus ?? undefined
             });
         }
         return infos.sort((left, right) => {
@@ -258,7 +259,7 @@ export class SessionHandler {
                     workspace: String(representative?.workspace || '').trim(),
                     title: String(representative?.focusSummary || representative?.rootRequest || '').trim() || undefined,
                     rootRequest: String(representative?.rootRequest || '').trim() || undefined,
-                    status: role === 'review' ? 'completed' : 'active',
+                    status: representative?.threadStatus ?? (role === 'review' ? 'completed' : 'active'),
                     stage: role === 'review' ? 'review'
                         : role === 'worker' ? 'implementation'
                         : role === 'branch' ? 'discovery' : undefined,

@@ -311,9 +311,30 @@ Relevant code today:
 - `packages/agents/agent-tools/src/lightweight-agent-runner.ts` (`runSingle` passes `goal` in the registration metadata)
 - `packages/agents/agent/test/turn-cancel.spec.ts` (worker annotation cases)
 
+## Worker Thread Terminal Status (P32)
+
+Implemented: the delegation edge outcome is now written back onto the worker session at unregister time, so the derived thread index reflects finished workers (`completed` / `blocked` / `abandoned`) instead of leaving every worker thread permanently `active`.
+
+- New field: `threadStatus` (nullable) on the session — `AgentSessionProjectMetadata`, `AgentThreadSource`, `AgentState`, the `AgentSessionEntity` column, and both store round-trips (`InMemorySessionStore` / `TypeOrmSessionStore` `get` + `setProjectMetadata`).
+- Runtime (`@tsdi/agent`):
+  - `unregisterChildSession(parent, child, status)` and `cancelChildTurns` now call `annotateChildThreadStatus(child, status)` (fire-and-forget, errors swallowed like the P31 annotations).
+  - Edge status mapping: `completed` → `completed`, `failed` → `blocked`, `cancelled` → `abandoned`.
+  - The shared `mergeProjectMetadata(sessionId, patch)` read-modify-write helper (extracted from `annotateChildSession`) fills gaps only — an explicit `threadStatus` always wins, mirroring the P31 explicit-field semantics.
+- Derived index: `deriveThreadIndexes` maps `threadStatus ??` role-derived status (`review` → `completed`, else `active`); `stage` still comes from `sessionRole`.
+- Gateway: `SessionInfo.threadStatus` contract field; `listSessionInfos` maps it; `groupThreadInfos` uses it for the group status (fallback to role derivation).
+- UI: `AgentConsoleSessionChoice.threadStatus`; RPC and `toChoice` mappings; `groupThreadChoices` uses the representative `threadStatus`; the thread-index path already passed `thread.status` through.
+- Tests: `turn-cancel.spec.ts` +4 (default completed, failed → blocked, cancelled → abandoned, explicit terminal status preserved), `session.spec.ts` +2 (explicit status mapping + role fallback), `persistent-session.spec.ts` +1 (TypeORM round-trip + derive), `gateway-server.spec.ts` +1, `view-model.spec.ts` +2 (index path + choice-grouping fallback).
+
+Relevant code today:
+
+- `packages/agents/agent/src/runtime/DefaultAgentRuntime.ts` (`unregisterChildSession` / `annotateChildThreadStatus` / `mergeProjectMetadata`)
+- `packages/agents/agent/src/memory/SessionStore.ts` (`deriveThreadIndexes` status mapping)
+- `packages/agents/agent-gateway/src/api/SessionHandler.ts` (`listSessionInfos` / `groupThreadInfos`)
+- `packages/agents/agent-ui/src/AgentConsoleSessionService.ts` (`toChoice` / `groupThreadChoices`)
+
 ## Next Step
 
-The derived thread index (P30) plus worker auto-classification (P31) close the planned items of this architecture note: project-aware metadata, project/thread-level derived grouping, and spawn-time auto-classification of `sessionRole`/`originThreadId` are all live end-to-end (store → gateway → UI).
+The derived thread index (P30), worker auto-classification (P31), and terminal status write-back (P32) close the planned items of this architecture note: project-aware metadata, project/thread-level derived grouping, spawn-time auto-classification of `sessionRole`/`originThreadId`, and completion-state propagation are all live end-to-end (store → gateway → UI).
 
 Future options (not currently planned):
 

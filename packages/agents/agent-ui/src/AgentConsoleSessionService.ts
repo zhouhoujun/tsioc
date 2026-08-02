@@ -17,6 +17,7 @@ export interface AgentConsoleSessionChoice {
     sessionRole?: string;
     rootRequest?: string;
     focusSummary?: string;
+    threadStatus?: string;
 }
 
 export interface AgentConsoleSessionProjectGroup {
@@ -92,7 +93,8 @@ export class AgentConsoleSessionService {
                     originThreadId: item?.originThreadId,
                     sessionRole: item?.sessionRole,
                     rootRequest: item?.rootRequest,
-                    focusSummary: item?.focusSummary
+                    focusSummary: item?.focusSummary,
+                    threadStatus: item?.threadStatus
                 })).filter(item => !!item.id)
                 : [];
             return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
@@ -133,7 +135,8 @@ export class AgentConsoleSessionService {
                             originThreadId: item?.originThreadId,
                             sessionRole: item?.sessionRole,
                             rootRequest: item?.rootRequest,
-                            focusSummary: item?.focusSummary
+                            focusSummary: item?.focusSummary,
+                            threadStatus: item?.threadStatus
                         })).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
@@ -183,7 +186,8 @@ export class AgentConsoleSessionService {
                             primaryThreadId: item?.primaryThreadId,
                             sessionRole: item?.sessionRole,
                             rootRequest: item?.rootRequest,
-                            focusSummary: item?.focusSummary
+                            focusSummary: item?.focusSummary,
+                            threadStatus: item?.threadStatus
                         })).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
@@ -448,6 +452,7 @@ export class AgentConsoleSessionService {
         sessionRole?: string;
         rootRequest?: string;
         focusSummary?: string;
+        threadStatus?: string;
     }): AgentConsoleSessionChoice {
         return {
             id: sessionId,
@@ -462,7 +467,8 @@ export class AgentConsoleSessionService {
             originThreadId: state?.originThreadId,
             sessionRole: state?.sessionRole,
             rootRequest: state?.rootRequest,
-            focusSummary: state?.focusSummary
+            focusSummary: state?.focusSummary,
+            threadStatus: state?.threadStatus
         };
     }
 
@@ -676,7 +682,7 @@ export class AgentConsoleSessionService {
                     workspace,
                     title,
                     rootRequest,
-                    status: sessionRole === 'review' ? 'completed' : 'active',
+                    status: representative?.threadStatus ?? (sessionRole === 'review' ? 'completed' : 'active'),
                     stage: sessionRole === 'review' ? 'review'
                         : sessionRole === 'worker' ? 'implementation'
                         : sessionRole === 'branch' ? 'discovery' : undefined,
