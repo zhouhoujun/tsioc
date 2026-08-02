@@ -59,7 +59,7 @@ import { DelegationGraphStore } from './harness/DelegationGraphStore';
 import { InMemoryDelegationGraphStore } from './harness/InMemoryDelegationGraphStore';
 import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
 import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
-import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
+import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
 @Module({
@@ -101,7 +101,8 @@ import { createAgentProviders } from './provider';
         DefaultDelegationGraphStore,
         { provide: DelegationGraphStore, useExisting: DefaultDelegationGraphStore },
         NodeChildProcessSandboxExecutor,
-        { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
+        OsSandboxExecutor,
+        { provide: SandboxExecutor, useExisting: OsSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,
         SystemPromptBuilder,
         ToolApprovalManager,

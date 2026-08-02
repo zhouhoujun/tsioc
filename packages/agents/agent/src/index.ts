@@ -66,6 +66,7 @@ export * from './harness/TypeOrmDelegationGraphStore';
 export * from './harness/DefaultDelegationGraphStore';
 export * from './harness/ToolExecutionCoordinator';
 export * from './harness/SandboxExecutor';
+export * from './harness/sandbox-exec';
 export * from './harness/ToolSandboxPolicy';
 export * from './prompt/SystemPromptBuilder';
 export * from './prompt/PromptSection';

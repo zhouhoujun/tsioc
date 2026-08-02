@@ -37,8 +37,7 @@ export interface AgentToolOptions {
     /** Tool names/patterns requiring human approval before execution */
     requireApproval?: string[];
     /** Approval timeout in ms */
-    approvalTimeoutMs?: number;
-}
+    approvalTimeoutMs?: number;}
 
 export interface AgentSchedulerOptions {
     enabled?: boolean;
@@ -61,6 +60,11 @@ export interface AgentBootstrapTurnOptions {
     output?: string;
 }
 
+export interface AgentSandboxOptions {
+    /** OS-level sandbox mode for process-executing tools (default: 'off'). */
+    mode?: import('./harness/sandbox-exec').SandboxMode;
+}
+
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
@@ -71,6 +75,7 @@ export interface AgentOptions {
     ui?: AgentUIOptions;
     model?: AgentModelOptions;
     bootstrapTurn?: AgentBootstrapTurnOptions;
+    sandbox?: AgentSandboxOptions;
 }
 
 export const defaultAgentOptions: AgentOptions = {

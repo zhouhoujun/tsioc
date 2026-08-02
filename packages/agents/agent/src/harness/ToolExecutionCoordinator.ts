@@ -161,6 +161,16 @@ export class ToolExecutionCoordinator {
 
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
         const sandboxPolicy = this.resolveSandboxState(request).policy;
+        if (sandboxPolicy?.osSandbox && sandboxPolicy.enabled && this.sandboxExecutor?.isSupported()) {
+            const command = typeof request.toolCall.input?.command === 'string' ? request.toolCall.input.command : '';
+            if (command.trim()) {
+                const result = await this.sandboxExecutor.execute(command, [], {
+                    policy: sandboxPolicy,
+                    timeoutMs
+                });
+                return result;
+            }
+        }
         if (sandboxPolicy?.enabled && this.sandboxExecutor?.isSupported()) {
             return this.invokeInSandbox(request, sandboxPolicy, timeoutMs);
         }

@@ -1,4 +1,13 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { AgentOptions } from '../options';
+import { AGENT_OPTIONS } from '../tokens';
+import {
+    buildSandboxExecCommand,
+    detectSandboxExecTool,
+    SandboxExecProbe,
+    SandboxExecToolProbe,
+    SandboxMode
+} from './sandbox-exec';
 
 /**
  * Isolation level for sandbox execution.
@@ -43,6 +52,12 @@ export interface SandboxPolicy {
     allowedWritePaths?: string[];
     /** Denied filesystem paths */
     deniedWritePaths?: string[];
+    /**
+     * OS-level sandbox mode. When set to 'workspace' or 'network-block' and an
+     * OS sandbox tool (bwrap/unshare/sandbox-exec) is available, commands are
+     * wrapped with that tool before execution.
+     */
+    osSandbox?: import('./sandbox-exec').SandboxMode;
 }
 
 /**
@@ -378,6 +393,68 @@ export class NoopSandboxExecutor extends SandboxExecutor {
 
     async cleanup(): Promise<void> {
         // No-op
+    }
+}
+
+/**
+ * OS-sandbox-aware executor. When the effective sandbox mode (policy
+ * `osSandbox` or configured `AgentOptions.sandbox.mode`) is 'workspace' or
+ * 'network-block' and an OS sandbox tool is detected, commands are wrapped
+ * with the tool before running; otherwise it degrades to the
+ * `NodeChildProcessSandboxExecutor` behavior (env filtering + resource limits).
+ */
+@Injectable()
+export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
+    private detectionPromise?: Promise<SandboxExecProbe>;
+
+    constructor(
+        @Optional() @Inject(AGENT_OPTIONS) private agentOptions?: AgentOptions,
+        @Optional() private platform: NodeJS.Platform = process.platform,
+        @Optional() private probe?: SandboxExecToolProbe
+    ) {
+        super();
+    }
+
+    private get configuredMode(): SandboxMode {
+        return this.agentOptions?.sandbox?.mode ?? 'off';
+    }
+
+    private detectTool(): Promise<SandboxExecProbe> {
+        if (!this.detectionPromise) {
+            this.detectionPromise = detectSandboxExecTool(this.platform, this.probe);
+        }
+        return this.detectionPromise;
+    }
+
+    override isSupported(): boolean {
+        return super.isSupported();
+    }
+
+    override async execute(
+        command: string,
+        args: string[],
+        options: {
+            policy: SandboxPolicy;
+            env?: Record<string, string>;
+            timeoutMs?: number;
+        }
+    ): Promise<SandboxExecutionResult> {
+        const mode = options.policy.osSandbox ?? this.configuredMode;
+        if (mode !== 'off') {
+            const probe = await this.detectTool();
+            if (probe.tool) {
+                const shellCommand = args.length === 0 && /\s/.test(command);
+                const targetCommand = shellCommand ? 'sh' : command;
+                const targetArgs = shellCommand ? ['-c', command] : args;
+                const wrapped = buildSandboxExecCommand(probe.tool, mode, targetCommand, targetArgs, {
+                    workspace: options.policy.workingDirectory
+                });
+                if (wrapped) {
+                    return super.execute(wrapped.command, wrapped.args, options);
+                }
+            }
+        }
+        return super.execute(command, args, options);
     }
 }
 

@@ -9,6 +9,7 @@ export interface ResolvedAgentToolsSandboxPolicy {
     inheritEnv: boolean;
     allowedEnv?: string[];
     blockedEnv: string[];
+    mode?: import('@tsdi/agent').SandboxMode;
 }
 
 const DEFAULT_MAX_COMMAND_LENGTH = 4000;
@@ -25,7 +26,8 @@ export function resolveSandboxPolicy(options?: AgentToolsOptions): ResolvedAgent
         allowedEnv: Array.isArray(sandbox.allowedEnv) && sandbox.allowedEnv.length
             ? uniqueStrings(sandbox.allowedEnv)
             : undefined,
-        blockedEnv: uniqueStrings(sandbox.blockedEnv ?? [])
+        blockedEnv: uniqueStrings(sandbox.blockedEnv ?? []),
+        mode: sandbox.mode ?? 'off'
     };
 }
 

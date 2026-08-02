@@ -40,6 +40,8 @@ export interface AgentToolsSandboxOptions {
     inheritEnv?: boolean;
     allowedEnv?: string[];
     blockedEnv?: string[];
+    /** OS-level sandbox mode for process tools ('off' | 'workspace' | 'network-block'). */
+    mode?: import('@tsdi/agent').SandboxMode;
 }
 
 export interface AgentToolsCodeExecutionOptions {
