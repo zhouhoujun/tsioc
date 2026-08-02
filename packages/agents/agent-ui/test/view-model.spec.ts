@@ -121,6 +121,16 @@ class RuntimeStub {
         return this.planModeSessions.has(sessionId);
     }
 
+    async undoFileChange(): Promise<any> {
+        this.calls.push('undo:file');
+        return { filePath: '/ws/a.txt', restored: 'content' };
+    }
+
+    async redoFileChange(): Promise<any> {
+        this.calls.push('redo:file');
+        return { filePath: '/ws/a.txt', restored: 'content' };
+    }
+
     async runTurn(sessionId: string, input: string): Promise<any> {
         this.calls.push(`${sessionId}:${input}`);
         this.messages = [
@@ -7065,5 +7075,44 @@ export class AgentConsoleComponentTest {
 
         state.setPlanMode(false);
         expect(panel.inputPrompt).toEqual('>');
+    }
+
+    @Test('undo command reverts the last file change through the local runtime')
+    async undoCommandRevertsFileChange() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'uf-1';
+
+        await (component as any).handleCommand('/undo');
+
+        expect(runtime.calls).toContain('undo:file');
+        expect(state.notice).toContain('/ws/a.txt');
+        expect(state.notice).toContain('content');
+    }
+
+    @Test('redo command re-applies the last undone change through app rpc when remote')
+    async redoCommandRoutesThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'uf-2';
+
+        await (component as any).handleCommand('/redo');
+
+        const call = appRpc.calls.find(c => c.method === 'session.redo_file');
+        expect(call).toBeTruthy();
+        expect((call as any).params).toEqual({ sessionId: 'uf-2' });
+        expect(state.notice).toContain('Nothing');
+    }
+
+    @Test('undo command reports nothing when the runtime has no snapshots')
+    async undoCommandReportsNothing() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'uf-3';
+        runtime.undoFileChange = async () => ({ filePath: '', restored: 'none' });
+
+        await (component as any).handleCommand('/undo');
+
+        expect(state.notice).toEqual('Nothing to undo.');
     }
 }

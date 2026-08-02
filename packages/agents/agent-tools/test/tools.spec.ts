@@ -371,6 +371,42 @@ export class AgentToolsPackageTest {
         expect(error?.message).toContain('outside');
     }
 
+    @Test('write file captures a pre-write snapshot for undo')
+    async writeFileCapturesSnapshotForUndo() {
+        const workspace = await this.createWorkspace();
+        const tool = new WriteFileTool({ file: { rootDir: workspace } });
+        const target = path.join(workspace, 'src', 'snap.txt');
+        await fs.writeFile(target, 'original', 'utf8');
+
+        const snap = await tool.captureFileSnapshot({ path: 'src/snap.txt' }, createSessionContext());
+        expect(snap).toEqual({ filePath: target, before: 'original' });
+
+        const missing = await tool.captureFileSnapshot({ path: 'src/missing.txt' }, createSessionContext());
+        expect(missing).toEqual({ filePath: path.join(workspace, 'src', 'missing.txt'), before: null });
+    }
+
+    @Test('delete file captures the pre-delete content for undo')
+    async deleteFileCapturesContentForUndo() {
+        const workspace = await this.createWorkspace();
+        const tool = new DeleteFileTool({ file: { rootDir: workspace } });
+        const target = path.join(workspace, 'gone.txt');
+        await fs.writeFile(target, 'doomed', 'utf8');
+
+        const snap = await tool.captureFileSnapshot({ path: 'gone.txt' }, createSessionContext());
+        expect(snap).toEqual({ filePath: target, before: 'doomed' });
+    }
+
+    @Test('edit file captures the pre-edit content for undo')
+    async editFileCapturesContentForUndo() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+        const target = path.join(workspace, 'edit.txt');
+        await fs.writeFile(target, 'before', 'utf8');
+
+        const snap = await tool.captureFileSnapshot({ path: 'edit.txt' }, createSessionContext());
+        expect(snap).toEqual({ filePath: target, before: 'before' });
+    }
+
     @Test('mkdir creates nested directories and validates collisions')
     async mkdirCreatesNestedDirectoriesAndValidatesCollisions() {
         const workspace = await this.createWorkspace();

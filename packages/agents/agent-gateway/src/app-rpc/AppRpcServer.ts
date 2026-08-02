@@ -143,6 +143,8 @@ export class AppRpcServer {
                         'session.delete',
                         'session.plan_mode.set',
                         'session.plan_mode.get',
+                        'session.undo_file',
+                        'session.redo_file',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -208,6 +210,10 @@ export class AppRpcServer {
                 return this.setSessionPlanMode(params, context);
             case 'session.plan_mode.get':
                 return this.getSessionPlanMode(params, context);
+            case 'session.undo_file':
+                return this.undoFile(params, context);
+            case 'session.redo_file':
+                return this.redoFile(params, context);
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -452,6 +458,18 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
+    }
+
+    private async undoFile(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.runtime.undoFileChange(sessionId);
+    }
+
+    private async redoFile(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.runtime.redoFileChange(sessionId);
     }
 
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {

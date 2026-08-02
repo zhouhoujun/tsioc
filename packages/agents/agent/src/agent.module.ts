@@ -36,6 +36,7 @@ import { AgentClient } from './channels/AgentClient';
 import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
+import { FileSnapshotStore } from './harness/FileSnapshotStore';
 import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
 import { RateLimitManager } from './harness/RateLimitManager';
 import { OutputGuard } from './harness/OutputGuard';
@@ -103,6 +104,7 @@ import { createAgentProviders } from './provider';
         NodeChildProcessSandboxExecutor,
         OsSandboxExecutor,
         { provide: SandboxExecutor, useExisting: OsSandboxExecutor, asDefault: true },
+        FileSnapshotStore,
         ToolExecutionCoordinator,
         SystemPromptBuilder,
         ToolApprovalManager,

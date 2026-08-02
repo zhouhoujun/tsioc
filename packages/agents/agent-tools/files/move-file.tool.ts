@@ -5,6 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { readFileSnapshot } from './snapshot';
 
 @Injectable()
 export class MoveFileTool implements AgentTool {
@@ -32,6 +33,17 @@ export class MoveFileTool implements AgentTool {
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private options?: AgentToolsOptions
     ) {
+    }
+
+    async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
+        try {
+            const to = this.requirePath(input?.to, 'to');
+            const policy = resolveFilePolicy(this.options);
+            const toPath = resolveWorkspacePath(to, policy.rootDir);
+            return await readFileSnapshot(toPath);
+        } catch {
+            return null;
+        }
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {

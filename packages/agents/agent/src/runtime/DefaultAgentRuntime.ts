@@ -1,7 +1,9 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
-import { AgentRuntime, CancelTurnResult } from './AgentRuntime';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRuntime';
 import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
@@ -26,6 +28,7 @@ import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentContextManager, ContextPreparationReport, SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
+import { FileSnapshot, FileSnapshotStore } from '../harness/FileSnapshotStore';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
@@ -88,7 +91,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
         @Optional() protected compactionHistoryStore?: CompactionHistoryStore,
         @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore,
-        @Optional() protected delegationGraph?: DelegationGraphStore | null
+        @Optional() protected delegationGraph?: DelegationGraphStore | null,
+        @Optional() protected fileSnapshotStore?: FileSnapshotStore
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -514,6 +518,59 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentCompensationEvent(this, sessionId, reason, compensated, toolCallIds)).catch(() => {});
         }
         return { compensated, toolCallIds };
+    }
+
+    override async undoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
+        const snapshot = this.fileSnapshotStore?.undo(sessionId);
+        if (!snapshot) {
+            return { filePath: '', restored: 'none' };
+        }
+        await this.restoreFileSnapshot(snapshot, 'before');
+        return { filePath: snapshot.filePath, restored: snapshot.before === null ? 'deleted' : 'content', snapshot };
+    }
+
+    override async redoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
+        const snapshot = this.fileSnapshotStore?.redo(sessionId);
+        if (!snapshot) {
+            return { filePath: '', restored: 'none' };
+        }
+        await this.restoreFileSnapshot(snapshot, 'after');
+        return { filePath: snapshot.filePath, restored: snapshot.after === null ? 'deleted' : 'content', snapshot };
+    }
+
+    override listFileSnapshots(sessionId: string): FileSnapshot[] {
+        return this.fileSnapshotStore?.list(sessionId) ?? [];
+    }
+
+    private async pushFileSnapshot(sessionId: string, snapshot: FileSnapshot | null): Promise<void> {
+        if (!snapshot || !this.fileSnapshotStore) {
+            return;
+        }
+        try {
+            const resolved = await this.resolveFileSnapshotAfter(snapshot);
+            this.fileSnapshotStore.push(sessionId, resolved);
+        } catch {
+            // a snapshot failure must not break a successful tool call
+        }
+    }
+
+    private async resolveFileSnapshotAfter(snapshot: FileSnapshot): Promise<FileSnapshot> {
+        try {
+            const content = await fs.readFile(snapshot.filePath, 'utf8');
+            return { ...snapshot, after: content };
+        } catch {
+            return { ...snapshot, after: null };
+        }
+    }
+
+    private async restoreFileSnapshot(snapshot: FileSnapshot, which: 'before' | 'after'): Promise<void> {
+        const content = snapshot[which];
+        if (content === null) {
+            await fs.rm(snapshot.filePath, { force: true }).catch(() => undefined);
+            return;
+        }
+        await fs.mkdir(path.dirname(snapshot.filePath), { recursive: true });
+        await fs.writeFile(snapshot.filePath, content, 'utf8');
     }
 
     protected endTurnAbortScope(sessionId: string): void {
@@ -1326,6 +1383,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         // Phase 1 compensation: snapshot pre-call state so the side effects can
         // be undone when the turn is cancelled or fails.
         let compensationCapture: unknown;
+        let fileSnapshot: FileSnapshot | null = null;
         const tool = this.toolRegistry.getTool(toolCall.name);
         if (tool?.captureCompensation && tool.compensate) {
             try {
@@ -1337,6 +1395,27 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 });
             } catch {
                 compensationCapture = undefined;
+            }
+        }
+        if (tool?.captureFileSnapshot) {
+            try {
+                const captured = await tool.captureFileSnapshot(toolCallInput, {
+                    sessionId,
+                    memory: this.memory,
+                    principalId: turnContext.principalId,
+                    workspace: turnContext.workspace
+                });
+                if (captured) {
+                    fileSnapshot = {
+                        ...captured,
+                        timestamp: Date.now(),
+                        toolName: toolCall.name,
+                        toolCallId: toolCall.id,
+                        after: null
+                    };
+                }
+            } catch {
+                fileSnapshot = null;
             }
         }
 
@@ -1363,6 +1442,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
+            await this.pushFileSnapshot(sessionId, fileSnapshot);
             return {
                 toolCall,
                 content: truncated,
@@ -1391,6 +1471,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
+            await this.pushFileSnapshot(sessionId, fileSnapshot);
             return {
                 toolCall,
                 content: truncated,

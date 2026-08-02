@@ -2837,6 +2837,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/model', value: '/model', description: 'switch model' },
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
                     { label: '/status', value: '/status', description: 'show session status' },
+                    { label: '/undo', value: '/undo', description: 'revert the last file change' },
+                    { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
@@ -2895,6 +2897,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             case '/status':
                 await this.runStatusCommand();
+                return true;
+            case '/undo':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runUndoCommand();
+                return true;
+            case '/redo':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runRedoCommand();
                 return true;
             case '/tools':
                 if (parsed.args) {
@@ -4574,6 +4590,32 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const model = this.state.modelProfile || this.state.model || 'default';
         this.notify(`session ${sessionId} · model ${model} · plan mode ${planMode ? 'ON (read-only)' : 'off'}`);
+    }
+
+    protected async runUndoCommand(): Promise<void> {
+        await this.runFileUndoRedo('undo');
+    }
+
+    protected async runRedoCommand(): Promise<void> {
+        await this.runFileUndoRedo('redo');
+    }
+
+    protected async runFileUndoRedo(direction: 'undo' | 'redo'): Promise<void> {
+        const sessionId = this.state.sessionId;
+        try {
+            const result = this.appRpc
+                ? await this.appRpc.request(direction === 'undo' ? 'session.undo_file' : 'session.redo_file', { sessionId })
+                : direction === 'undo'
+                    ? await this.runtime.undoFileChange(sessionId)
+                    : await this.runtime.redoFileChange(sessionId);
+            if (!result || result.restored === 'none') {
+                this.notify(direction === 'undo' ? 'Nothing to undo.' : 'Nothing to redo.');
+                return;
+            }
+            this.notify(`${direction === 'undo' ? 'Undid' : 'Redid'} ${result.filePath} (${result.restored}).`);
+        } catch (error) {
+            this.notify(`Failed to ${direction}: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     protected async activateModelProfile(profileName: string): Promise<void> {

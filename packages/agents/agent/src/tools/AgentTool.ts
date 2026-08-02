@@ -1,5 +1,6 @@
 import { MemoryStore } from '../memory/MemoryStore';
 import { SandboxPolicy } from '../harness/SandboxExecutor';
+import { FileSnapshot } from '../harness/FileSnapshotStore';
 
 export interface AgentToolContext {
     sessionId: string;
@@ -116,4 +117,10 @@ export interface AgentTool extends AgentToolDefinition {
      * captureCompensation() snapshot beforehand.
      */
     compensate?(captured: unknown, context: AgentToolContext): Promise<void> | void;
+    /**
+     * Called by the runtime before invoke() so a file-mutating tool can
+     * capture the pre-change content for the persistent per-session undo/redo
+     * stack. Return null/undefined to skip recording.
+     */
+    captureFileSnapshot?(input: any, context: AgentToolContext): Promise<FileSnapshot | null> | FileSnapshot | null;
 }

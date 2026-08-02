@@ -4,6 +4,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { readFileSnapshot } from './snapshot';
 
 @Injectable()
 export class EditFileTool implements AgentTool {
@@ -32,6 +33,17 @@ export class EditFileTool implements AgentTool {
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private options?: AgentToolsOptions
     ) {
+    }
+
+    async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
+        try {
+            const requestedPath = this.requirePath(input?.path);
+            const policy = resolveFilePolicy(this.options);
+            const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
+            return await readFileSnapshot(absolutePath);
+        } catch {
+            return null;
+        }
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {

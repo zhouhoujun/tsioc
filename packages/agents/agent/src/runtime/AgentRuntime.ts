@@ -7,11 +7,18 @@ import { AgentTurnResult } from './AgentTurnResult';
 import { AgentTurnInput } from './AgentTurnInput';
 import { StreamChunk } from '../model/StreamChunk';
 import { SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
+import { FileSnapshot } from '../harness/FileSnapshotStore';
 
 export interface CancelTurnResult {
     cancelled: boolean;
     compensated: number;
     toolCallIds: string[];
+}
+
+export interface FileUndoRedoResult {
+    filePath: string;
+    restored: 'content' | 'deleted' | 'none';
+    snapshot?: FileSnapshot;
 }
 
 @Abstract()
@@ -126,5 +133,29 @@ export abstract class AgentRuntime {
     isPlanMode(_sessionId: string): boolean {
         // no-op by default
         return false;
+    }
+
+    /**
+     * Revert the most recent recorded file change for a session (restore the
+     * pre-change content). Override in runtimes backed by a FileSnapshotStore.
+     */
+    async undoFileChange(_sessionId: string): Promise<FileUndoRedoResult> {
+        return { filePath: '', restored: 'none' };
+    }
+
+    /**
+     * Re-apply the most recently undone file change for a session.
+     * Override in runtimes backed by a FileSnapshotStore.
+     */
+    async redoFileChange(_sessionId: string): Promise<FileUndoRedoResult> {
+        return { filePath: '', restored: 'none' };
+    }
+
+    /**
+     * List the undoable file snapshots recorded for a session (oldest first).
+     * Override in runtimes backed by a FileSnapshotStore.
+     */
+    listFileSnapshots(_sessionId: string): FileSnapshot[] {
+        return [];
     }
 }
