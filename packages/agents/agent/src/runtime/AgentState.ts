@@ -9,6 +9,7 @@ export interface AgentState {
     workspace?: string;
     projectId?: string;
     primaryThreadId?: string;
+    originThreadId?: string;
     sessionRole?: AgentSessionRole;
     rootRequest?: string;
     focusSummary?: string;

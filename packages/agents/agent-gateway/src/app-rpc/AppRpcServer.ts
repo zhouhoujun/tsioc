@@ -137,6 +137,7 @@ export class AppRpcServer {
                         'session.create',
                         'session.list',
                         'session.list_projects',
+                        'session.list_threads',
                         'session.messages',
                         'session.search',
                         'session.delete',
@@ -193,6 +194,8 @@ export class AppRpcServer {
                 return this.listSessions(context);
             case 'session.list_projects':
                 return this.listSessionProjects(context);
+            case 'session.list_threads':
+                return this.listSessionThreads(context);
             case 'session.messages':
                 return this.getSessionMessages(this.requireSessionId(params), context);
             case 'session.search':
@@ -399,6 +402,10 @@ export class AppRpcServer {
 
     private async listSessionProjects(context: AppRpcRequestContext): Promise<any[]> {
         return this.sessionHandler.groupSessionInfos(await this.sessionHandler.listSessionInfos(context.principalId));
+    }
+
+    private async listSessionThreads(context: AppRpcRequestContext): Promise<any[]> {
+        return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId));
     }
 
     private async getSessionMessages(sessionId: string, context: AppRpcRequestContext): Promise<any> {

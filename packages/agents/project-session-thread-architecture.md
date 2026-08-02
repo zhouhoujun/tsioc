@@ -270,12 +270,35 @@ Relevant code today:
 - `packages/agents/agent/src/memory/SessionStore.ts`
 - `packages/agents/agent/src/memory/InMemorySessionStore.ts`
 - `packages/agents/agent/src/memory/TypeOrmSessionStore.ts`
+- `packages/agents/agents/agent-gateway/src/api/SessionHandler.ts`
 - `packages/agents/todo.md`
+
+## Thread Index (P30)
+
+Implemented: derived thread index over the existing session store, with `originThreadId` branch linking. No new store schema — grouping is derived lazily from session metadata, matching the phased rollout in Storage Implications.
+
+Store layer (`@tsdi/agent`):
+
+- `SessionStore.deriveThreadIndexes(states)` — pure shared builder (mirrors `deriveProjectIndexes`): buckets sessions by resolved thread key (`primaryThreadId`, falling back to `session:<id>` for legacy sessions), picks the latest-active session as representative, and emits `AgentThreadIndex` (threadId/projectId/workspace/title/rootRequest/status/stage/originThreadId/currentSessionId/sessionIds/createdAt/updatedAt/lastActiveAt).
+- Representative metadata comes from the most recently active session; `status`/`stage` are derived from the representative `sessionRole` (`review` → `completed`/`review`, `worker` → `implementation`, `branch` → `discovery`).
+- `sessionIds` sort by activity desc then id asc; threads sort by activity desc then threadId asc.
+- `SessionStore.listThreads()` default contract returns `[]`; implemented by `InMemorySessionStore` and `TypeOrmSessionStore` (persisted records round-trip `originThreadId` through `AgentState`/entity).
+
+Gateway (`@tsdi/agent-gateway`):
+
+- `SessionHandler.listSessionInfos` maps `originThreadId`; new `groupThreadInfos(infos)` re-derives thread groups over owned `SessionInfo`; exposed as `GET /api/sessions/threads` (HTTP) and `session.list_threads` (JSON-RPC capability + dispatch).
+
+UI (`@tsdi/agent-ui`):
+
+- `AgentConsoleSessionService.listThreads()` prefers the gateway RPC, falls back to `store.listThreads()` (or client-side `groupThreadChoices` grouping).
+- New `/threads` command mirrors `/projects`: thread list → per-thread session list → open session; backed by `threads` / `threadsFocused` session state with the same focus-layer and escape handling.
 
 ## Next Step
 
-After this architecture definition, the next implementation step is:
+The derived thread index (P30) closes the last unimplemented item of this architecture note: project-aware metadata, project-level derived grouping, and thread-level derived grouping are all live end-to-end (store → gateway → UI).
 
-- add project-aware metadata fields and project-level derived grouping in the session store/service layer
+Future options (not currently planned):
 
-That maps directly to `AGENT-M4-STORE`.
+- persist explicit project/thread indexes when the derived pass becomes a hotspot
+- auto-classify `sessionRole`/`originThreadId` from spawn/rollback runtime signals instead of explicit metadata only
+- thread-level aggregation of todo/review artifacts (needs the persistence seam above)

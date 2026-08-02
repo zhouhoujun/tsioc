@@ -364,3 +364,24 @@
    - 文档：本条目；`review-panel-architecture.md`「Current Gaps」置为 none（全部闭合）、新增「Side-by-Side Rendering」节 + Keyboard `s` + Implementation Anchors 补实现锚点。
 
 全量回归：agent-ui 231（229+2）passing；tsc 干净。
+
+## P30 已完成：thread 派生索引 + originThreadId 分支链接（关闭 project-session-thread-architecture.md 最后一项 Next Step）
+
+1. ~~project-session-thread-architecture.md「Next Step」：project-aware metadata + derived grouping（AGENT-M4-STORE 映射项）~~ → 已完成，采用**派生 thread 索引**（不新增 store schema，按会话元数据惰性分组，符合 Storage Implications 的分阶段上线）：
+   - **store 层**（`@tsdi/agent`，镜像 `deriveProjectIndexes` 模式）：
+     - `SessionStore.deriveThreadIndexes(states)` 共享纯构建器：按 thread key 分桶（`primaryThreadId`，缺失回退 `session:<id>` 保证遗留会话可见），代表项=最新活跃会话；输出 `AgentThreadIndex`（threadId/projectId/workspace/title/rootRequest/status/stage/originThreadId/currentSessionId/sessionIds/createdAt/updatedAt/lastActiveAt）。
+     - 代表项元数据取最新活跃会话；`status`/`stage` 由代表项 `sessionRole` 推导（`review`→`completed`/`review`，`worker`→`implementation`，`branch`→`discovery`）。
+     - `sessionIds` 按 lastActiveAt desc 再 id asc；threads 按 lastActiveAt desc 再 threadId asc。
+     - `SessionStore.listThreads()` 默认契约返回 `[]`；`InMemorySessionStore`/`TypeOrmSessionStore` 实现（`AgentState`/entity 往返 `originThreadId`，持久化重载后可重建索引）。
+   - **网关**（`@tsdi/agent-gateway`）：
+     - `SessionHandler.listSessionInfos` 补 `originThreadId` 映射；新增 `groupThreadInfos(infos)` 基于 owner 过滤后的 `SessionInfo` 重建线程分组；暴露 `GET /api/sessions/threads`（HTTP）与 `session.list_threads`（JSON-RPC capability + dispatch）。
+   - **UI**（`@tsdi/agent-ui`）：
+     - `AgentConsoleSessionService.listThreads()` 优先网关 RPC，回退 `store.listThreads()`（再回退客户端 `groupThreadChoices` 分组）；`toChoice`/`listSessions` 补 originThreadId。
+     - 新增 `/threads` 命令（镜像 `/projects`：线程列表 → 线程内会话列表 → openSession）；`threads`/`threadsFocused` 会话状态，复用焦点层/Escape 处理。
+   - **测试**：
+     - `agent/test/session.spec.ts` +4（originThreadId 分桶、`session:` 回退、最新活跃代表项+review→completed 映射、活跃排序）；`persistent-session.spec.ts` +1（TypeOrm originThreadId 往返 + listThreads）。
+     - `agent-gateway/test/gateway-server.spec.ts` +1（`GET /api/sessions/threads` 路由分组断言）；`agent-ui/test/view-model.spec.ts` +1（service 线程分组 + 兜底排序）。
+     - 修复：`deriveThreadIndexes` 桶初始化器 `createdAt` 哨兵 `0` → `Number.MAX_SAFE_INTEGER`（否则 min-clamp 恒得 0）；3 处测试确定性修正（store 排序用例 append 顺序、gateway 线程用例 owner 移入 Date.now mock 窗口、UI 线程用例 chat-c 活跃度调整）。
+   - 文档：本条目；`project-session-thread-architecture.md` 新增「Thread Index (P30)」节 + Implementation Anchors 补充 + 「Next Step」改为已闭合说明与未来选项。
+
+全量回归：agent 356（351+5）、agent-gateway 118（117+1）、agent-ui 232（231+1）passing；三包 tsc 干净。

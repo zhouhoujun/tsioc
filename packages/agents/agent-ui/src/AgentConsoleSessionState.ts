@@ -57,6 +57,13 @@ export interface AgentConsoleProjectItem {
     lastActive?: number;
 }
 
+export interface AgentConsoleThreadItem {
+    key: string;
+    label: string;
+    sessionCount: number;
+    lastActive?: number;
+}
+
 export interface AgentConsoleContextPreparationSnapshot extends ContextPreparationReport {
     summary: string;
 }
@@ -338,6 +345,8 @@ export class AgentConsoleSessionState {
     turnDiagnosticsDigest = '';
     projects: AgentConsoleProjectItem[] = [];
     projectsFocused = false;
+    threads: AgentConsoleThreadItem[] = [];
+    threadsFocused = false;
     toolRunsFocused = false;
     contextPreparation?: AgentConsoleContextPreparationSnapshot | null = null;
     tasksCount = 0;
@@ -559,6 +568,7 @@ export class AgentConsoleSessionState {
         this.inputFocused = !this.sessionsFocused
             && !this.toolRunsFocused
             && !this.projectsFocused
+            && !this.threadsFocused
             && !this.tasksFocused
             && !this.jobsFocused
             && !this.toolsFocused
@@ -1253,6 +1263,20 @@ export class AgentConsoleSessionState {
 
     setProjectsFocused(focused: boolean): void {
         this.projectsFocused = focused;
+        if (focused && !this.selectedSessionId && this.sessions.length) {
+            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setThreads(threads: AgentConsoleThreadItem[]): void {
+        this.threads = threads.slice();
+        this.notify();
+    }
+
+    setThreadsFocused(focused: boolean): void {
+        this.threadsFocused = focused;
         if (focused && !this.selectedSessionId && this.sessions.length) {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
@@ -2509,6 +2533,10 @@ export class AgentConsoleSessionState {
             this.setProjectsFocused(false);
             return true;
         }
+        if (this.threadsFocused) {
+            this.setThreadsFocused(false);
+            return true;
+        }
         if (!this.inputFocused) {
             this.setInputFocused(true);
             return true;
@@ -3355,7 +3383,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused) {
+        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
             await this.dismissFocusLayer();
             return true;
         }

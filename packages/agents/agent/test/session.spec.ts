@@ -197,4 +197,132 @@ export class SessionStoreTest {
         expect(projects.find(project => project.projectKey === 'workspace:/tmp/project-a')?.sessionIds.slice().sort()).toEqual(['session-a', 'session-b']);
         expect(projects.find(project => project.projectKey === 'session:session-c')?.sessionIds).toEqual(['session-c']);
     }
+
+    @Test('stores origin thread id and lists threads by primary thread id')
+    async storesOriginThreadIdAndListsThreads() {
+        const store = new InMemorySessionStore();
+        await store.append('session-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.setWorkspace('session-1', '/tmp/project-a');
+        await store.setProjectMetadata('session-1', {
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-1',
+            originThreadId: 'root-0',
+            sessionRole: 'branch',
+            rootRequest: 'Build an exam system',
+            focusSummary: 'M4 grouping'
+        });
+
+        const state = await store.get('session-1');
+        expect(state.projectId).toEqual('exam-system');
+        expect(state.primaryThreadId).toEqual('thread-1');
+        expect(state.originThreadId).toEqual('root-0');
+        expect(state.sessionRole).toEqual('branch');
+        expect(state.rootRequest).toEqual('Build an exam system');
+        expect(state.focusSummary).toEqual('M4 grouping');
+
+        const threads = await store.listThreads();
+        expect(threads).toEqual([{
+            threadId: 'thread-1',
+            projectId: 'exam-system',
+            workspace: '/tmp/project-a',
+            title: 'M4 grouping',
+            rootRequest: 'Build an exam system',
+            status: 'active',
+            stage: 'discovery',
+            originThreadId: 'root-0',
+            currentSessionId: 'session-1',
+            sessionIds: ['session-1'],
+            createdAt: state.createdAt,
+            updatedAt: state.updatedAt,
+            lastActiveAt: state.updatedAt
+        }]);
+    }
+
+    @Test('falls back to session id when grouping threads')
+    async fallsBackToSessionIdWhenGroupingThreads() {
+        const store = new InMemorySessionStore();
+        await store.append('session-solo', { id: '1', role: 'user', content: 'solo', createdAt: 1 });
+
+        const threads = await store.listThreads();
+        expect(threads).toEqual([{
+            threadId: 'session:session-solo',
+            projectId: undefined,
+            workspace: undefined,
+            title: undefined,
+            rootRequest: undefined,
+            status: 'active',
+            stage: undefined,
+            originThreadId: undefined,
+            currentSessionId: 'session-solo',
+            sessionIds: ['session-solo'],
+            createdAt: expect.any(Number),
+            updatedAt: expect.any(Number),
+            lastActiveAt: expect.any(Number)
+        }]);
+    }
+
+    @Test('listThreads prefers latest active session metadata and maps review role to completed')
+    async listThreadsPrefersLatestActiveSessionAndMapsReviewRole() {
+        const store = new InMemorySessionStore();
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('session-a', { id: '1', role: 'user', content: 'a', createdAt: 1 });
+            await store.setWorkspace('session-a', '/tmp/project-a');
+            await store.setProjectMetadata('session-a', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-a',
+                sessionRole: 'main',
+                focusSummary: 'M4 grouping'
+            });
+            await store.append('session-b', { id: '2', role: 'user', content: 'b', createdAt: 2 });
+            await store.setWorkspace('session-b', '/tmp/project-a');
+            await store.setProjectMetadata('session-b', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-a',
+                originThreadId: 'thread-a',
+                sessionRole: 'review',
+                focusSummary: 'M4 review'
+            });
+        } finally {
+            Date.now = originalNow;
+        }
+
+        const threads = await store.listThreads();
+        expect(threads).toEqual([{
+            threadId: 'thread-a',
+            projectId: 'exam-system',
+            workspace: '/tmp/project-a',
+            title: 'M4 review',
+            rootRequest: undefined,
+            status: 'completed',
+            stage: 'review',
+            originThreadId: 'thread-a',
+            currentSessionId: 'session-b',
+            sessionIds: ['session-b', 'session-a'],
+            createdAt: expect.any(Number),
+            updatedAt: expect.any(Number),
+            lastActiveAt: expect.any(Number)
+        }]);
+    }
+
+    @Test('listThreads sorts threads by activity then thread id')
+    async listThreadsSortsByActivityThenThreadId() {
+        const store = new InMemorySessionStore();
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('session-old', { id: '1', role: 'user', content: 'old', createdAt: 1 });
+            await store.setProjectMetadata('session-old', { primaryThreadId: 'thread-old', sessionRole: 'worker' });
+            await store.append('session-new', { id: '2', role: 'user', content: 'new', createdAt: 2 });
+            await store.setProjectMetadata('session-new', { primaryThreadId: 'thread-new', sessionRole: 'worker' });
+        } finally {
+            Date.now = originalNow;
+        }
+
+        const threads = await store.listThreads();
+        expect(threads.map(thread => thread.threadId)).toEqual(['thread-new', 'thread-old']);
+    }
 }

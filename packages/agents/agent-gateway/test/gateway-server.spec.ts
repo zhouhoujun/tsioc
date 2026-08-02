@@ -347,6 +347,71 @@ export class SessionHandlerTest {
         expect(data[0].sessions.map((session: any) => session.id).sort()).toEqual(['s1', 's2']);
     }
 
+    @Test('lists owned sessions grouped by thread')
+    async listsOwnedSessionsGroupedByThread() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('s1', '/tmp/project-a');
+            await store.setProjectMetadata('s1', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-1',
+                originThreadId: 'root-0',
+                sessionRole: 'branch',
+                rootRequest: 'Build an exam system',
+                focusSummary: 'Thread work'
+            });
+            await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+            await store.setWorkspace('s2', '/tmp/project-a');
+            await store.setProjectMetadata('s2', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-1',
+                originThreadId: 'root-0',
+                sessionRole: 'review',
+                rootRequest: 'Build an exam system',
+                focusSummary: 'Thread review'
+            });
+            await owners.create('s1', 'user-1');
+            await owners.create('s2', 'user-1');
+        } finally {
+            Date.now = originalNow;
+        }
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+        handler.track('s2');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/threads' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].threadId).toEqual('thread-1');
+        expect(data[0].projectId).toEqual('exam-system');
+        expect(data[0].workspace).toEqual('/tmp/project-a');
+        expect(data[0].title).toEqual('Thread review');
+        expect(data[0].rootRequest).toEqual('Build an exam system');
+        expect(data[0].status).toEqual('completed');
+        expect(data[0].stage).toEqual('review');
+        expect(data[0].originThreadId).toEqual('root-0');
+        expect(data[0].currentSessionId).toEqual('s2');
+        expect(data[0].sessionCount).toEqual(2);
+        expect(data[0].sessions.map((session: any) => session.id).sort()).toEqual(['s1', 's2']);
+    }
+
     @Test('rejects deleting another principals session')
     async rejectsDeletingForeignSession() {
         const store = new InMemorySessionStore();
@@ -2400,6 +2465,28 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((projectResponse as any).result[0].workspace).toEqual('/tmp/project-rpc');
         expect((projectResponse as any).result[0].sessions[0].id).toEqual('rpc-s1');
+
+        await store.setProjectMetadata('rpc-s1', {
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-rpc',
+            originThreadId: 'root-rpc',
+            sessionRole: 'branch',
+            rootRequest: 'Build rpc system',
+            focusSummary: 'RPC thread'
+        });
+        const threadResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 6,
+            method: 'session.list_threads',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((threadResponse as any).result[0].threadId).toEqual('thread-rpc');
+        expect((threadResponse as any).result[0].projectId).toEqual('exam-system');
+        expect((threadResponse as any).result[0].title).toEqual('RPC thread');
+        expect((threadResponse as any).result[0].status).toEqual('active');
+        expect((threadResponse as any).result[0].stage).toEqual('discovery');
+        expect((threadResponse as any).result[0].originThreadId).toEqual('root-rpc');
+        expect((threadResponse as any).result[0].sessions[0].id).toEqual('rpc-s1');
 
         const toolResponse = await rpc.handle({
             jsonrpc: '2.0',

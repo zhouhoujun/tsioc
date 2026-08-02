@@ -24,6 +24,9 @@ export class AgentSessionEntity {
     primaryThreadId!: string | null;
 
     @Column({ type: 'text', nullable: true })
+    originThreadId!: string | null;
+
+    @Column({ type: 'text', nullable: true })
     sessionRole!: string | null;
 
     @Column({ type: 'text', nullable: true })

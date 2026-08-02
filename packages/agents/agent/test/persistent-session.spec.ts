@@ -160,6 +160,47 @@ describe('Persistent session store', () => {
         }
     });
 
+    it('persists origin thread id and lists thread indexes', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-6', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('session-6', '/tmp/project-a');
+            await store.setProjectMetadata('session-6', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-6',
+                originThreadId: 'root-0',
+                sessionRole: 'branch',
+                rootRequest: 'Build an exam system',
+                focusSummary: 'Thread branch work'
+            });
+
+            const state = await store.get('session-6');
+            expect(state.projectId).toEqual('exam-system');
+            expect(state.primaryThreadId).toEqual('thread-6');
+            expect(state.originThreadId).toEqual('root-0');
+            expect(state.sessionRole).toEqual('branch');
+            expect(state.rootRequest).toEqual('Build an exam system');
+            expect(state.focusSummary).toEqual('Thread branch work');
+
+            const threads = await store.listThreads();
+            expect(threads).toContainEqual(expect.objectContaining({
+                threadId: 'thread-6',
+                projectId: 'exam-system',
+                workspace: '/tmp/project-a',
+                title: 'Thread branch work',
+                rootRequest: 'Build an exam system',
+                status: 'active',
+                stage: 'discovery',
+                originThreadId: 'root-0',
+                currentSessionId: 'session-6',
+                sessionIds: ['session-6']
+            }));
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('searches message content across sessions honoring maxSessions and returning metadata', async () => {
         const ctx = await Application.run(PersistentSessionTestModule);
         try {

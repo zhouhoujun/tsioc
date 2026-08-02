@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionStore } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 
@@ -22,6 +22,7 @@ export class InMemorySessionStore extends SessionStore {
             workspace: state.workspace,
             projectId: state.projectId,
             primaryThreadId: state.primaryThreadId,
+            originThreadId: state.originThreadId,
             sessionRole: state.sessionRole,
             rootRequest: state.rootRequest,
             focusSummary: state.focusSummary,
@@ -104,6 +105,10 @@ export class InMemorySessionStore extends SessionStore {
         });
     }
 
+    async listThreads(): Promise<AgentThreadIndex[]> {
+        return deriveThreadIndexes(Array.from(this.sessions.values()));
+    }
+
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
         const state = await this.get(sessionId);
         state.messages.push(message);
@@ -150,6 +155,7 @@ export class InMemorySessionStore extends SessionStore {
         const state = await this.get(sessionId);
         state.projectId = String(metadata.projectId || '').trim() || undefined;
         state.primaryThreadId = String(metadata.primaryThreadId || '').trim() || undefined;
+        state.originThreadId = String(metadata.originThreadId || '').trim() || undefined;
         state.sessionRole = String(metadata.sessionRole || '').trim() || undefined;
         state.rootRequest = String(metadata.rootRequest || '').trim() || undefined;
         state.focusSummary = String(metadata.focusSummary || '').trim() || undefined;

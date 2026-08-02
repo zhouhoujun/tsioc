@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
@@ -29,6 +29,7 @@ export class TypeOrmSessionStore extends SessionStore {
             workspace: session.workspace ?? undefined,
             projectId: session.projectId ?? undefined,
             primaryThreadId: session.primaryThreadId ?? undefined,
+            originThreadId: session.originThreadId ?? undefined,
             sessionRole: session.sessionRole ?? undefined,
             rootRequest: session.rootRequest ?? undefined,
             focusSummary: session.focusSummary ?? undefined,
@@ -122,6 +123,11 @@ export class TypeOrmSessionStore extends SessionStore {
         });
     }
 
+    async listThreads(): Promise<AgentThreadIndex[]> {
+        const sessions = await this.adapter.getRepository(AgentSessionEntity).find();
+        return deriveThreadIndexes(sessions);
+    }
+
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
         const sessionRepo = this.adapter.getRepository(AgentSessionEntity);
         const messageRepo = this.adapter.getRepository(AgentMessageEntity);
@@ -197,6 +203,7 @@ export class TypeOrmSessionStore extends SessionStore {
         const now = Date.now();
         const normalizedProjectId = String(metadata.projectId || '').trim() || null;
         const normalizedPrimaryThreadId = String(metadata.primaryThreadId || '').trim() || null;
+        const normalizedOriginThreadId = String(metadata.originThreadId || '').trim() || null;
         const normalizedSessionRole = String(metadata.sessionRole || '').trim() || null;
         const normalizedRootRequest = String(metadata.rootRequest || '').trim() || null;
         const normalizedFocusSummary = String(metadata.focusSummary || '').trim() || null;
@@ -205,6 +212,7 @@ export class TypeOrmSessionStore extends SessionStore {
                 sessionId,
                 projectId: normalizedProjectId,
                 primaryThreadId: normalizedPrimaryThreadId,
+                originThreadId: normalizedOriginThreadId,
                 sessionRole: normalizedSessionRole,
                 rootRequest: normalizedRootRequest,
                 focusSummary: normalizedFocusSummary,
@@ -214,6 +222,7 @@ export class TypeOrmSessionStore extends SessionStore {
         } else {
             session.projectId = normalizedProjectId;
             session.primaryThreadId = normalizedPrimaryThreadId;
+            session.originThreadId = normalizedOriginThreadId;
             session.sessionRole = normalizedSessionRole;
             session.rootRequest = normalizedRootRequest;
             session.focusSummary = normalizedFocusSummary;

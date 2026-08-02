@@ -819,6 +819,45 @@ class WorkspaceSessionStoreStub {
         return Array.from(buckets.values());
     }
 
+    async listThreads(): Promise<any[]> {
+        const buckets = new Map<string, any>();
+        for (const state of this.sessions.values()) {
+            const threadId = String(state.primaryThreadId || '').trim()
+                ? String(state.primaryThreadId).trim()
+                : `session:${state.sessionId}`;
+            const existing = buckets.get(threadId) || {
+                threadId,
+                projectId: state.projectId,
+                workspace: state.workspace,
+                title: state.focusSummary || state.rootRequest,
+                rootRequest: state.rootRequest,
+                status: state.sessionRole === 'review' ? 'completed' : 'active',
+                stage: state.sessionRole === 'review' ? 'review'
+                    : state.sessionRole === 'worker' ? 'implementation'
+                    : state.sessionRole === 'branch' ? 'discovery' : undefined,
+                originThreadId: state.originThreadId,
+                currentSessionId: state.sessionId,
+                sessionIds: [],
+                lastActiveAt: 0
+            };
+            const lastActiveAt = state.updatedAt || state.createdAt || 0;
+            if (lastActiveAt > (existing.lastActiveAt || 0)) {
+                existing.currentSessionId = state.sessionId;
+                existing.title = state.focusSummary || state.rootRequest;
+                existing.rootRequest = state.rootRequest;
+                existing.status = state.sessionRole === 'review' ? 'completed' : 'active';
+                existing.stage = state.sessionRole === 'review' ? 'review'
+                    : state.sessionRole === 'worker' ? 'implementation'
+                    : state.sessionRole === 'branch' ? 'discovery' : undefined;
+                existing.originThreadId = state.originThreadId;
+            }
+            existing.sessionIds.push(state.sessionId);
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, lastActiveAt);
+            buckets.set(threadId, existing);
+        }
+        return Array.from(buckets.values());
+    }
+
     async append(sessionId: string, message: any): Promise<any> {
         const state = await this.get(sessionId);
         state.messages = [...(state.messages || []), message];
@@ -849,6 +888,7 @@ class WorkspaceSessionStoreStub {
         Object.assign(state, {
             projectId: metadata?.projectId,
             primaryThreadId: metadata?.primaryThreadId,
+            originThreadId: metadata?.originThreadId,
             sessionRole: metadata?.sessionRole,
             rootRequest: metadata?.rootRequest,
             focusSummary: metadata?.focusSummary
@@ -5496,6 +5536,59 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessionCount).toEqual(2);
         expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-c', 'chat-a']);
         expect(projects[0].sessions[0].current).toEqual(true);
+    }
+
+    @Test('session service groups sessions by thread')
+    async sessionServiceGroupsSessionsByThread() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-1',
+            originThreadId: 'root-0',
+            sessionRole: 'branch',
+            rootRequest: 'Build an exam system',
+            focusSummary: 'Thread work'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-1',
+            originThreadId: 'root-0',
+            sessionRole: 'review',
+            rootRequest: 'Build an exam system',
+            focusSummary: 'Thread review'
+        });
+        store.sessions.set('chat-c', {
+            sessionId: 'chat-c',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-c'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const threads = await service.listThreads('chat-b');
+
+        expect(threads.map(thread => thread.threadId)).toEqual(['thread-1', 'session:chat-c']);
+        expect(threads[0].projectId).toEqual('exam-system');
+        expect(threads[0].title).toEqual('Thread review');
+        expect(threads[0].rootRequest).toEqual('Build an exam system');
+        expect(threads[0].status).toEqual('completed');
+        expect(threads[0].stage).toEqual('review');
+        expect(threads[0].originThreadId).toEqual('root-0');
+        expect(threads[0].currentSessionId).toEqual('chat-b');
+        expect(threads[0].sessionCount).toEqual(2);
+        expect(threads[0].sessions.map(session => session.id)).toEqual(['chat-b', 'chat-a']);
+        expect(threads[0].sessions[0].current).toEqual(true);
     }
 
     @Test('session service cancelTurn falls back to the local runtime when no rpc is configured')

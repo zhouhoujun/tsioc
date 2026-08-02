@@ -3,7 +3,7 @@ import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
-import { SessionInfo, SessionProjectGroup } from '../contracts/SessionInfo';
+import { SessionInfo, SessionProjectGroup, SessionThreadGroup } from '../contracts/SessionInfo';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
@@ -71,6 +71,12 @@ export class SessionHandler {
                 .end(JSON.stringify(groups));
         };
 
+        const listThreads: RouteHandler = async (req, res) => {
+            const groups = this.groupThreadInfos(await this.listSessionInfos(getRequestPrincipalId(req)));
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(groups));
+        };
+
         const getMessages: RouteHandler = async (req, res, params) => {
             const sessionId = params['id'];
             if (!sessionId) {
@@ -119,6 +125,7 @@ export class SessionHandler {
         return [
             { method: 'GET', path: '/api/sessions', handler: listSessions },
             { method: 'GET', path: '/api/sessions/projects', handler: listProjects },
+            { method: 'GET', path: '/api/sessions/threads', handler: listThreads },
             { method: 'GET', path: '/api/sessions/running', handler: runningSessions },
             { method: 'GET', path: '/api/sessions/:id/messages', handler: getMessages },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
@@ -142,6 +149,7 @@ export class SessionHandler {
                 projectKey,
                 projectId: state.projectId ?? undefined,
                 primaryThreadId: state.primaryThreadId ?? undefined,
+                originThreadId: state.originThreadId ?? undefined,
                 sessionRole: state.sessionRole ?? undefined,
                 rootRequest: state.rootRequest ?? undefined,
                 focusSummary: state.focusSummary ?? undefined
@@ -222,6 +230,62 @@ export class SessionHandler {
                 }
                 return left.workspace.localeCompare(right.workspace);
             });
+    }
+
+    groupThreadInfos(infos: SessionInfo[]): SessionThreadGroup[] {
+        const buckets = new Map<string, SessionInfo[]>();
+        for (const info of infos) {
+            const threadId = this.resolveThreadId(info);
+            const bucket = buckets.get(threadId) ?? [];
+            bucket.push(info);
+            buckets.set(threadId, bucket);
+        }
+
+        return Array.from(buckets.entries())
+            .map(([threadId, sessions]) => {
+                const orderedSessions = sessions.slice().sort((left, right) => {
+                    const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                    if (activityDelta !== 0) {
+                        return activityDelta;
+                    }
+                    return left.id.localeCompare(right.id);
+                });
+                const representative = orderedSessions[0];
+                const role = String(representative?.sessionRole || '').trim() || undefined;
+                return {
+                    threadId,
+                    projectId: String(representative?.projectId || '').trim() || undefined,
+                    workspace: String(representative?.workspace || '').trim(),
+                    title: String(representative?.focusSummary || representative?.rootRequest || '').trim() || undefined,
+                    rootRequest: String(representative?.rootRequest || '').trim() || undefined,
+                    status: role === 'review' ? 'completed' : 'active',
+                    stage: role === 'review' ? 'review'
+                        : role === 'worker' ? 'implementation'
+                        : role === 'branch' ? 'discovery' : undefined,
+                    originThreadId: String(representative?.originThreadId || '').trim() || undefined,
+                    currentSessionId: representative?.id,
+                    sessionCount: sessions.length,
+                    createdAt: Math.min(...sessions.map(session => session.createdAt ?? 0), 0) || undefined,
+                    updatedAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0) || undefined,
+                    lastActiveAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0),
+                    sessions: orderedSessions
+                };
+            })
+            .sort((left, right) => {
+                const activityDelta = right.lastActiveAt - left.lastActiveAt;
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return left.threadId.localeCompare(right.threadId);
+            });
+    }
+
+    private resolveThreadId(state: { sessionId?: string; id?: string; primaryThreadId?: string | null }): string {
+        const primaryThreadId = String(state.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return primaryThreadId;
+        }
+        return `session:${String(state.sessionId || state.id || '').trim()}`;
     }
 
     private resolveProjectKey(state: { sessionId?: string; id?: string; projectId?: string | null; workspace?: string | null; primaryThreadId?: string | null }): string {

@@ -752,6 +752,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setSessions(groupedSessions);
             this.refreshProjectContext();
             this.refreshProjects();
+            this.refreshThreads();
             return;
         }
         const sessions = await this.sessionService.listSessions(currentSessionId);
@@ -761,6 +762,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!sessions.length) {
             this.state.setSessions([]);
             this.state.setProjects([]);
+            this.state.setThreads([]);
             this.state.setProjectContext();
             return;
         }
@@ -781,6 +783,54 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         })));
         this.refreshProjectContext();
         this.refreshProjects();
+        this.refreshThreads();
+    }
+
+    protected refreshThreads(): void {
+        const seen = new Map<string, {
+            key: string;
+            label: string;
+            lastActive: number;
+            count: number;
+            representativeLastActive: number;
+            representativeId: string;
+        }>();
+        for (const s of this.state.sessions) {
+            const key = this.resolveSessionThreadKey(s);
+            if (!key) continue;
+            const sessionLastActive = s.updatedAt || 0;
+            const sessionId = String(s.id || '');
+            const sessionLabel = s.projectLabel || s.focusSummary || s.rootRequest || s.workspace || s.primaryThreadId || key;
+            const existing = seen.get(key);
+            if (existing) {
+                existing.count += 1;
+                if (sessionLastActive > existing.lastActive) {
+                    existing.lastActive = sessionLastActive;
+                }
+                if (sessionLastActive > existing.representativeLastActive
+                    || (sessionLastActive === existing.representativeLastActive
+                        && (!existing.representativeId || sessionId.localeCompare(existing.representativeId) < 0))) {
+                    existing.label = sessionLabel;
+                    existing.representativeLastActive = sessionLastActive;
+                    existing.representativeId = sessionId;
+                }
+            } else {
+                seen.set(key, {
+                    key,
+                    label: sessionLabel,
+                    lastActive: sessionLastActive,
+                    count: 1,
+                    representativeLastActive: sessionLastActive,
+                    representativeId: sessionId
+                });
+            }
+        }
+        this.state.setThreads(Array.from(seen.values()).map(p => ({
+            key: p.key,
+            label: p.label,
+            sessionCount: p.count,
+            lastActive: p.lastActive || undefined
+        })));
     }
 
     protected refreshProjects(): void {
@@ -989,6 +1039,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return `workspace:${workspace}`;
         }
         return '';
+    }
+
+    protected resolveSessionThreadKey(session?: {
+        primaryThreadId?: string;
+        id?: string;
+    } | null): string {
+        const primaryThreadId = String(session?.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return primaryThreadId;
+        }
+        const sessionId = String(session?.id || '').trim();
+        return sessionId ? `session:${sessionId}` : '';
     }
 
     protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
@@ -3145,6 +3207,48 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     const sessionId = await this.select(
                         `Sessions in ${project}`,
                         projectSessions.map(s => ({
+                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
+                            value: s.id,
+                            detail: s.summary
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (!sessionId) return true;
+                    await this.openSession(sessionId);
+                }
+                return true;
+            case '/threads':
+                if (!this.state.threads.length) {
+                    await this.refreshSessions();
+                }
+                this.state.closeReview();
+                {
+                    if (!this.state.threads.length) {
+                        this.notify('No threads available.');
+                        return true;
+                    }
+                    const thread = await this.select(
+                        'Threads',
+                        this.state.threads.map(t => ({
+                            label: `${t.label} (${t.sessionCount})`,
+                            value: t.key,
+                            detail: t.lastActive ? `last active ${new Date(t.lastActive).toLocaleDateString()}` : undefined
+                        })),
+                        0,
+                        this.state.consoleOptions.selectHint
+                    );
+                    if (!thread) return true;
+                    const threadSessions = this.state.sessions.filter(
+                        s => this.resolveSessionThreadKey(s) === thread
+                    );
+                    if (!threadSessions.length) {
+                        this.notify('No sessions in this thread.');
+                        return true;
+                    }
+                    const sessionId = await this.select(
+                        `Sessions in ${thread}`,
+                        threadSessions.map(s => ({
                             label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
                             value: s.id,
                             detail: s.summary

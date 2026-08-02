@@ -13,6 +13,7 @@ export interface AgentConsoleSessionChoice {
     projectKey?: string;
     projectId?: string;
     primaryThreadId?: string;
+    originThreadId?: string;
     sessionRole?: string;
     rootRequest?: string;
     focusSummary?: string;
@@ -27,6 +28,21 @@ export interface AgentConsoleSessionProjectGroup {
     sessionRole?: string;
     rootRequest?: string;
     focusSummary?: string;
+    sessionCount: number;
+    lastActiveAt: number;
+    sessions: AgentConsoleSessionChoice[];
+}
+
+export interface AgentConsoleSessionThreadGroup {
+    threadId: string;
+    projectId?: string;
+    workspace: string;
+    title?: string;
+    rootRequest?: string;
+    status?: string;
+    stage?: string;
+    originThreadId?: string;
+    currentSessionId?: string;
     sessionCount: number;
     lastActiveAt: number;
     sessions: AgentConsoleSessionChoice[];
@@ -73,6 +89,7 @@ export class AgentConsoleSessionService {
                     projectKey: item?.projectKey,
                     projectId: item?.projectId,
                     primaryThreadId: item?.primaryThreadId,
+                    originThreadId: item?.originThreadId,
                     sessionRole: item?.sessionRole,
                     rootRequest: item?.rootRequest,
                     focusSummary: item?.focusSummary
@@ -113,6 +130,7 @@ export class AgentConsoleSessionService {
                             workspace: item?.workspace,
                             projectId: item?.projectId,
                             primaryThreadId: item?.primaryThreadId,
+                            originThreadId: item?.originThreadId,
                             sessionRole: item?.sessionRole,
                             rootRequest: item?.rootRequest,
                             focusSummary: item?.focusSummary
@@ -132,6 +150,55 @@ export class AgentConsoleSessionService {
             }
             const sessions = await this.listSessions(currentSessionId, context);
             return this.withCurrentProjectSessions(this.groupProjectChoices(sessions), currentSessionId);
+        }
+        return [];
+    }
+
+    async listThreads(currentSessionId?: string, context?: any): Promise<AgentConsoleSessionThreadGroup[]> {
+        if (this.appRpc) {
+            const threads = await this.appRpc.request('session.list_threads', undefined, context);
+            const groups = Array.isArray(threads)
+                ? threads.map((thread: any) => ({
+                    threadId: String(thread?.threadId || ''),
+                    projectId: String(thread?.projectId || '').trim() || undefined,
+                    workspace: String(thread?.workspace || '').trim(),
+                    title: String(thread?.title || '').trim() || undefined,
+                    rootRequest: String(thread?.rootRequest || '').trim() || undefined,
+                    status: String(thread?.status || '').trim() || undefined,
+                    stage: String(thread?.stage || '').trim() || undefined,
+                    originThreadId: String(thread?.originThreadId || '').trim() || undefined,
+                    currentSessionId: String(thread?.currentSessionId || '').trim() || undefined,
+                    sessionCount: Number(thread?.sessionCount || 0),
+                    lastActiveAt: Number(thread?.lastActiveAt || 0),
+                    sessions: Array.isArray(thread?.sessions)
+                        ? this.sortSessionChoices(thread.sessions.map((item: any) => ({
+                            id: String(item?.id || ''),
+                            createdAt: item?.createdAt,
+                            lastActiveAt: item?.lastActiveAt,
+                            messageCount: item?.messageCount,
+                            summary: item?.summary,
+                            workspace: item?.workspace,
+                            projectKey: item?.projectKey,
+                            projectId: item?.projectId,
+                            primaryThreadId: item?.primaryThreadId,
+                            sessionRole: item?.sessionRole,
+                            rootRequest: item?.rootRequest,
+                            focusSummary: item?.focusSummary
+                        })).filter((item: AgentConsoleSessionChoice) => !!item.id))
+                        : []
+                }))
+                : [];
+            return this.withCurrentThreads(this.sortThreadChoices(groups), currentSessionId);
+        }
+        if (this.sessionStore) {
+            const threadIndexes = typeof (this.sessionStore as any).listThreads === 'function'
+                ? await this.sessionStore.listThreads()
+                : undefined;
+            const sessions = await this.listSessions(currentSessionId, context);
+            if (Array.isArray(threadIndexes) && threadIndexes.length > 0) {
+                return this.withCurrentThreads(this.groupThreadIndexes(threadIndexes, sessions), currentSessionId);
+            }
+            return this.withCurrentThreads(this.groupThreadChoices(sessions), currentSessionId);
         }
         return [];
     }
@@ -377,6 +444,7 @@ export class AgentConsoleSessionService {
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
+        originThreadId?: string;
         sessionRole?: string;
         rootRequest?: string;
         focusSummary?: string;
@@ -391,6 +459,7 @@ export class AgentConsoleSessionService {
             projectKey: state?.projectKey,
             projectId: state?.projectId,
             primaryThreadId: state?.primaryThreadId,
+            originThreadId: state?.originThreadId,
             sessionRole: state?.sessionRole,
             rootRequest: state?.rootRequest,
             focusSummary: state?.focusSummary
@@ -575,6 +644,123 @@ export class AgentConsoleSessionService {
             return activityDelta;
         }
         return String(left.projectKey || '').localeCompare(String(right.projectKey || ''));
+    }
+
+    protected resolveThreadChoiceKey(session: AgentConsoleSessionChoice): string {
+        const primaryThreadId = String(session.primaryThreadId || '').trim();
+        if (primaryThreadId) {
+            return primaryThreadId;
+        }
+        return `session:${session.id}`;
+    }
+
+    protected groupThreadChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionThreadGroup[] {
+        const buckets = new Map<string, AgentConsoleSessionChoice[]>();
+        for (const session of sessions) {
+            const threadId = this.resolveThreadChoiceKey(session);
+            const bucket = buckets.get(threadId) ?? [];
+            bucket.push(session);
+            buckets.set(threadId, bucket);
+        }
+        return Array.from(buckets.entries())
+            .map(([threadId, groupedSessions]) => {
+                const representative = this.selectProjectRepresentative(groupedSessions);
+                const workspace = String(representative?.workspace || '').trim();
+                const projectId = String(representative?.projectId || '').trim() || undefined;
+                const title = String(representative?.focusSummary || representative?.rootRequest || '').trim() || undefined;
+                const rootRequest = String(representative?.rootRequest || '').trim() || undefined;
+                const sessionRole = String(representative?.sessionRole || '').trim() || undefined;
+                return {
+                    threadId,
+                    projectId,
+                    workspace,
+                    title,
+                    rootRequest,
+                    status: sessionRole === 'review' ? 'completed' : 'active',
+                    stage: sessionRole === 'review' ? 'review'
+                        : sessionRole === 'worker' ? 'implementation'
+                        : sessionRole === 'branch' ? 'discovery' : undefined,
+                    originThreadId: String(representative?.originThreadId || '').trim() || undefined,
+                    currentSessionId: representative?.id,
+                    sessions: this.sortSessionChoices(groupedSessions),
+                    sessionCount: groupedSessions.length,
+                    lastActiveAt: Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0)
+                };
+            })
+            .sort((left, right) => this.compareThreadChoices(left, right));
+    }
+
+    protected groupThreadIndexes(
+        threads: Array<{
+            threadId: string;
+            projectId?: string;
+            workspace?: string;
+            title?: string;
+            rootRequest?: string;
+            status?: string;
+            stage?: string;
+            originThreadId?: string;
+            currentSessionId?: string;
+            sessionIds: string[];
+            lastActiveAt?: number;
+        }>,
+        sessions: AgentConsoleSessionChoice[]
+    ): AgentConsoleSessionThreadGroup[] {
+        const sessionMap = new Map(sessions.map(session => [session.id, session]));
+        return threads
+            .map(thread => {
+                const groupedSessions = thread.sessionIds
+                    .map(sessionId => sessionMap.get(sessionId))
+                    .filter((session): session is AgentConsoleSessionChoice => !!session);
+                const representative = this.selectProjectRepresentative(groupedSessions);
+                const workspace = String(thread.workspace || representative?.workspace || '').trim();
+                const projectId = String(thread.projectId || '').trim() || undefined;
+                const title = String(thread.title || representative?.focusSummary || representative?.rootRequest || '').trim() || undefined;
+                const rootRequest = String(thread.rootRequest || representative?.rootRequest || '').trim() || undefined;
+                const sessionRole = String(representative?.sessionRole || '').trim() || undefined;
+                return {
+                    threadId: String(thread.threadId || '').trim(),
+                    projectId,
+                    workspace,
+                    title,
+                    rootRequest,
+                    status: String(thread.status || (sessionRole === 'review' ? 'completed' : 'active') || '').trim() || undefined,
+                    stage: String(thread.stage || '').trim() || undefined,
+                    originThreadId: String(thread.originThreadId || representative?.originThreadId || '').trim() || undefined,
+                    currentSessionId: String(thread.currentSessionId || representative?.id || '').trim() || undefined,
+                    sessions: this.sortSessionChoices(groupedSessions),
+                    sessionCount: groupedSessions.length,
+                    lastActiveAt: Number(thread.lastActiveAt || Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0))
+                };
+            })
+            .filter(group => group.sessionCount > 0)
+            .sort((left, right) => this.compareThreadChoices(left, right));
+    }
+
+    protected withCurrentThreads(
+        groups: AgentConsoleSessionThreadGroup[],
+        currentSessionId?: string
+    ): AgentConsoleSessionThreadGroup[] {
+        const currentId = String(currentSessionId || '').trim();
+        return groups.map(group => ({
+            ...group,
+            sessions: group.sessions.map(session => ({
+                ...session,
+                current: !!currentId && session.id === currentId
+            }))
+        }));
+    }
+
+    protected sortThreadChoices(groups: AgentConsoleSessionThreadGroup[]): AgentConsoleSessionThreadGroup[] {
+        return groups.slice().sort((left, right) => this.compareThreadChoices(left, right));
+    }
+
+    protected compareThreadChoices(left: AgentConsoleSessionThreadGroup, right: AgentConsoleSessionThreadGroup): number {
+        const activityDelta = right.lastActiveAt - left.lastActiveAt;
+        if (activityDelta !== 0) {
+            return activityDelta;
+        }
+        return left.threadId.localeCompare(right.threadId);
     }
 
     protected createSessionId(): string {
