@@ -78,6 +78,7 @@ import { BackupTool } from '../backup/backup.tool';
 import { ModelRoutingTool } from '../model-routing/model-routing.tool';
 import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
+import { LspDefinitionTool, LspReferencesTool, LspDiagnosticsTool, LspSymbolsTool } from '../lsp/lsp.tools';
 
 function provideCodingTaskTool(): Provider {
     return {
@@ -188,7 +189,11 @@ const toolItems = {
     backup: BackupTool,
     model_routing: ModelRoutingTool,
     poll: PollTool,
-    ai_cli: AiCliTool
+    ai_cli: AiCliTool,
+    lsp_definition: LspDefinitionTool,
+    lsp_references: LspReferencesTool,
+    lsp_diagnostics: LspDiagnosticsTool,
+    lsp_symbols: LspSymbolsTool
 } as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
 
 const toolGroups = {
@@ -225,7 +230,8 @@ const toolGroups = {
     backup: ['backup'],
     model_routing: ['model_routing'],
     poll: ['poll'],
-    ai_cli: ['ai_cli']
+    ai_cli: ['ai_cli'],
+    lsp: ['lsp_definition', 'lsp_references', 'lsp_diagnostics', 'lsp_symbols']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
 const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
@@ -265,7 +271,8 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     backup: 'Session, memory, and configuration backup and restore.',
     model_routing: 'Model routing rule configuration and resolution.',
     poll: 'Poll creation, voting, and consensus management.',
-    ai_cli: 'External AI coding CLI tool invocation (Claude Code, OpenCode, Gemini CLI, Codex CLI).'
+    ai_cli: 'External AI coding CLI tool invocation (Claude Code, OpenCode, Gemini CLI, Codex CLI).',
+    lsp: 'Language Server Protocol queries (definition, references, diagnostics, document symbols).'
 };
 const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'media', 'agent', 'code_execution', 'git', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
 
@@ -388,6 +395,10 @@ export function withSchedulingAgentTools(): Provider[] {
 
 export function withTerminalAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.terminal.map(name => toolItems[name]));
+}
+
+export function withLspAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.lsp.map(name => toolItems[name]));
 }
 
 export function withAgentDelegationTools(): Provider[] {

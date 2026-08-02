@@ -143,6 +143,7 @@ export type AgentToolGroup =
     | 'backup'
     | 'model_routing'
     | 'poll'
+    | 'lsp'
     | 'ai_cli';
 
 export type AgentToolItem =
@@ -220,12 +221,22 @@ export type AgentToolItem =
     | 'backup'
     | 'model_routing'
     | 'poll'
+    | 'lsp_definition'
+    | 'lsp_references'
+    | 'lsp_diagnostics'
+    | 'lsp_symbols'
     | 'ai_cli';
 
 export interface AgentToolsRegistrationOptions {
     preset?: 'default' | 'none' | 'all';
     groups?: Partial<Record<AgentToolGroup, boolean>>;
     items?: Partial<Record<AgentToolItem, boolean>>;
+}
+
+export interface AgentToolsLspOptions {
+    /** File-extension ('.ts', '.py', ...) to LSP server launch options. */
+    servers?: Record<string, import('../lsp/types').LspServerOptions>;
+    timeoutMs?: number;
 }
 
 export interface AgentToolsOptions {
@@ -246,6 +257,7 @@ export interface AgentToolsOptions {
     delegation?: AgentToolsDelegationOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
+    lsp?: AgentToolsLspOptions;
     registration?: AgentToolsRegistrationOptions;
 }
 

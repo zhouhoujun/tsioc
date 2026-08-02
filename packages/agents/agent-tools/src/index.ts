@@ -18,6 +18,7 @@ export * from '../utility';
 
 export * from '../planning';
 export * from '../http';
+export * from '../lsp';
 export * from '../registry';
 export * from '../scheduling';
 export * from '../terminal';

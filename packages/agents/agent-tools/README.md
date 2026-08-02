@@ -35,6 +35,7 @@ npm run test:coverage
 - `registry`: tool registry introspection tools
 - `scheduling`: scheduled prompt tools
 - `terminal`: opt-in shell execution tools
+- `lsp`: Language Server Protocol tools (definition, references, diagnostics, document symbols)
 - `memory`: memory recall, export, inspection, and deletion tools
 - `project`: project summary, risk, and handoff intelligence tools
 
@@ -67,6 +68,11 @@ npm run test:coverage
 - `HttpRequestTool`
 - `ToolSearchTool`
 - `ToolInspectTool`
+- `LspDefinitionTool`
+- `LspReferencesTool`
+- `LspDiagnosticsTool`
+- `LspSymbolsTool`
+- `LspClient`, `LspServerManager`
 - `ScheduleTool`
 - `MemoryListTool`
 - `MemoryRecallTool`
@@ -84,6 +90,29 @@ npm run test:coverage
 - `tool_inspect` is read-only and does not activate deferred tools.
 - Manifest-backed MCP tools registered as `mcp.<serverId>.<toolName>` stay session-gated and must be activated before either direct invocation or `mcp.call_tool` bridging.
 - Dynamic MCP tools are not callable through `mcp.call_tool` unless they are explicitly listed in `allowedTools` for that server.
+
+## LSP tools
+
+`lsp_definition`, `lsp_references`, `lsp_diagnostics`, and `lsp_symbols` query a
+Language Server Protocol server over stdio (JSON-RPC 2.0 with Content-Length
+framing). Servers are launched lazily per file extension and reused for the
+process lifetime; nothing is spawned by `tool_search`/`tool_inspect`.
+
+Configure servers through `agentTools`:
+
+```ts
+provideAgentTools({ lsp: { servers: {
+  '.ts': { command: 'typescript-language-server', args: ['--stdio'] },
+  '.py': { command: 'pyright-langserver', args: ['--stdio'] }
+} } })
+```
+
+- Tools are read-only (`execution.readOnly: true`).
+- `lsp_diagnostics` prefers pull diagnostics when the server advertises
+  `diagnosticProvider`; otherwise it falls back to cached
+  `textDocument/publishDiagnostics` notifications.
+- When no server is configured for a file's extension, the tools return
+  `{ available: false }` with a configuration hint.
 
 ## Tool security matrix
 

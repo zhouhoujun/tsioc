@@ -22,6 +22,7 @@ const TOOLSET_CAPABILITY_MAP: Record<string, AgentToolSandboxCapability> = {
     git: 'vcs_exec',
     ai_cli: 'process_exec',
     code_execution: 'code_exec',
+    lsp: 'readonly_fs',
     http: 'network_fetch',
     web: 'network_fetch',
     browser: 'network_fetch',
