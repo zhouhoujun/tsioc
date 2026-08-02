@@ -141,6 +141,8 @@ export class AppRpcServer {
                         'session.messages',
                         'session.search',
                         'session.delete',
+                        'session.plan_mode.set',
+                        'session.plan_mode.get',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -202,6 +204,10 @@ export class AppRpcServer {
                 return this.searchSessions(params, context);
             case 'session.delete':
                 return this.deleteSession(this.requireSessionId(params), context);
+            case 'session.plan_mode.set':
+                return this.setSessionPlanMode(params, context);
+            case 'session.plan_mode.get':
+                return this.getSessionPlanMode(params, context);
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -432,6 +438,20 @@ export class AppRpcServer {
         await this.sessions.delete(sessionId);
         await this.memory.deleteBySession(sessionId);
         return { deleted: true, sessionId };
+    }
+
+    private async setSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const enabled = params?.enabled === true;
+        this.runtime.setPlanMode(sessionId, enabled);
+        return { sessionId, enabled };
+    }
+
+    private async getSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
     }
 
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {

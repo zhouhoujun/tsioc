@@ -707,8 +707,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 dateTime: new Date().toISOString()
             });
             if (systemPrompt) {
+                const modeHint = this.isPlanMode(sessionId)
+                    ? `\n\n## Session mode\nThis session is in PLAN MODE (read-only). Do not call tools that write, modify, or execute with side effects - such calls are denied by the runtime. Propose a plan and wait for the user to switch out of plan mode.`
+                    : '';
                 messages = [
-                    this.createMessage('system', systemPrompt),
+                    this.createMessage('system', systemPrompt + modeHint),
                     ...messages
                 ];
             }
@@ -974,6 +977,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     clearSessionModelProfile(sessionId: string): void {
         this.sessionModelProfiles.delete(sessionId);
+    }
+
+    protected sessionPlanModes = new Set<string>();
+
+    setPlanMode(sessionId: string, enabled: boolean): void {
+        if (enabled) {
+            this.sessionPlanModes.add(sessionId);
+        } else {
+            this.sessionPlanModes.delete(sessionId);
+        }
+    }
+
+    isPlanMode(sessionId: string): boolean {
+        return this.sessionPlanModes.has(sessionId);
     }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
@@ -1254,6 +1271,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 durationMs: 0,
                 error: `Tool "${toolCall.name}" definition was not found.`
             }, `Tool "${toolCall.name}" definition was not found.`);
+        }
+
+        if (this.isPlanMode(sessionId) && !definition.execution?.readOnly) {
+            const reason = `Tool "${toolCall.name}" is disabled in plan mode (read-only session).`;
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
         }
 
         const activationError = await this.ensureToolActivation(sessionId, definition);

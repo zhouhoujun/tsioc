@@ -4341,6 +4341,101 @@ export class AppRpcHandlerTest {
         expect(turnDiagnostics?.params?.diagnostics?.promptCache?.applied).toEqual(true);
         expect(turnDiagnostics?.params?.diagnostics?.promptCache?.observedCachedPromptTokens).toEqual(512);
     }
+
+    @Test('plan mode rpc toggles runtime state through json-rpc')
+    async planModeRpcTogglesRuntimeState() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const planModes = new Set<string>();
+        const runtime = {
+            setPlanMode(sessionId: string, enabled: boolean) {
+                if (enabled) {
+                    planModes.add(sessionId);
+                } else {
+                    planModes.delete(sessionId);
+                }
+            },
+            isPlanMode(sessionId: string) {
+                return planModes.has(sessionId);
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const createResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.create',
+            params: { sessionId: 'pm-s1' }
+        }, { principalId: 'user-1' });
+        expect((createResponse as any).result.sessionId).toEqual('pm-s1');
+
+        const setOn = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.plan_mode.set',
+            params: { sessionId: 'pm-s1', enabled: true }
+        }, { principalId: 'user-1' });
+        expect((setOn as any).result).toEqual({ sessionId: 'pm-s1', enabled: true });
+
+        const getOn = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'session.plan_mode.get',
+            params: { sessionId: 'pm-s1' }
+        }, { principalId: 'user-1' });
+        expect((getOn as any).result).toEqual({ sessionId: 'pm-s1', enabled: true });
+
+        const setOff = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'session.plan_mode.set',
+            params: { sessionId: 'pm-s1', enabled: false }
+        }, { principalId: 'user-1' });
+        expect((setOff as any).result).toEqual({ sessionId: 'pm-s1', enabled: false });
+
+        const getOff = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'session.plan_mode.get',
+            params: { sessionId: 'pm-s1' }
+        }, { principalId: 'user-1' });
+        expect((getOff as any).result).toEqual({ sessionId: 'pm-s1', enabled: false });
+    }
+
+    @Test('plan mode rpc rejects foreign session access')
+    async planModeRpcRejectsForeignSession() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('pm-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            setPlanMode() {},
+            isPlanMode() {
+                return false;
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.plan_mode.set',
+            params: { sessionId: 'pm-locked', enabled: true }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+        expect((response as any).error.message).toEqual('Forbidden');
+    }
 }
 
 @Suite('StdioAppRpcServer')

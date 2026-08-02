@@ -336,6 +336,7 @@ export class AgentConsoleSessionState {
     provider = '';
     model = '';
     modelProfile = '';
+    planMode = false;
     workspace = '';
     projectKey = '';
     projectLabel = '';
@@ -431,7 +432,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/init', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/status', '/init', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -535,6 +536,11 @@ export class AgentConsoleSessionState {
 
     setModelProfile(modelProfile: string): void {
         this.modelProfile = modelProfile;
+        this.notify();
+    }
+
+    setPlanMode(enabled: boolean): void {
+        this.planMode = enabled;
         this.notify();
     }
 

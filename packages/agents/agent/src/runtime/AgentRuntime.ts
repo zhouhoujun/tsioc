@@ -107,4 +107,24 @@ export abstract class AgentRuntime {
     clearSessionModelProfile(_sessionId: string): void {
         // no-op by default
     }
+
+    /**
+     * Enable or disable read-only plan mode for a session. While enabled, tools
+     * that are not declared read-only are denied before execution, so the agent
+     * may inspect state, search memory, and propose changes without mutating
+     * anything.
+     * Override this in concrete runtimes that support session-scoped plan mode.
+     */
+    setPlanMode(_sessionId: string, _enabled: boolean): void {
+        // no-op by default
+    }
+
+    /**
+     * Whether the given session is currently in read-only plan mode.
+     * Override this in concrete runtimes that support session-scoped plan mode.
+     */
+    isPlanMode(_sessionId: string): boolean {
+        // no-op by default
+        return false;
+    }
 }

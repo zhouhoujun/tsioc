@@ -560,7 +560,8 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get inputPrompt(): string {
-        return this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
+        const base = this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
+        return this.state?.planMode ? `${base} · plan` : base;
     }
 
     get inputPlaceholderLabel(): string {

@@ -106,6 +106,20 @@ class TestFileAdapter extends FileAdapter {
 class RuntimeStub {
     calls: string[] = [];
     messages = [{ id: '1', role: 'assistant', content: 'ready', createdAt: 1 } as any];
+    planModeSessions = new Set<string>();
+
+    setPlanMode(sessionId: string, enabled: boolean): void {
+        this.calls.push(`plan:${sessionId}:${enabled}`);
+        if (enabled) {
+            this.planModeSessions.add(sessionId);
+        } else {
+            this.planModeSessions.delete(sessionId);
+        }
+    }
+
+    isPlanMode(sessionId: string): boolean {
+        return this.planModeSessions.has(sessionId);
+    }
 
     async runTurn(sessionId: string, input: string): Promise<any> {
         this.calls.push(`${sessionId}:${input}`);
@@ -6976,5 +6990,80 @@ export class AgentConsoleComponentTest {
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
+    }
+
+    @Test('plan command toggles read-only plan mode through the local runtime')
+    async planCommandTogglesLocalPlanMode() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'pm-1';
+
+        await (component as any).handleCommand('/plan');
+        expect(state.planMode).toEqual(true);
+        expect(runtime.planModeSessions.has('pm-1')).toEqual(true);
+        expect(state.notice).toContain('Plan mode enabled');
+
+        await (component as any).handleCommand('/plan');
+        expect(state.planMode).toEqual(false);
+        expect(runtime.planModeSessions.has('pm-1')).toEqual(false);
+        expect(state.notice).toContain('Plan mode disabled');
+    }
+
+    @Test('plan command accepts explicit on/off arguments')
+    async planCommandAcceptsExplicitArgs() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'pm-2';
+
+        await (component as any).handleCommand('/plan on');
+        expect(state.planMode).toEqual(true);
+
+        await (component as any).handleCommand('/plan off');
+        expect(state.planMode).toEqual(false);
+
+        await (component as any).handleCommand('/plan true');
+        expect(state.planMode).toEqual(true);
+    }
+
+    @Test('plan command routes through app rpc when remote')
+    async planCommandRoutesThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'pm-3';
+
+        await (component as any).handleCommand('/plan');
+        const call = appRpc.calls.find(c => c.method === 'session.plan_mode.set');
+        expect(call).toBeTruthy();
+        expect((call as any).params).toEqual({ sessionId: 'pm-3', enabled: true });
+        expect(state.planMode).toEqual(true);
+    }
+
+    @Test('status command reports session, model and plan mode')
+    async statusCommandReportsSessionState() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'st-1';
+        state.setModelProfile('fast');
+        state.setPlanMode(true);
+
+        await (component as any).handleCommand('/status');
+
+        expect(state.notice).toContain('st-1');
+        expect(state.notice).toContain('fast');
+        expect(state.notice).toContain('ON (read-only)');
+    }
+
+    @Test('input panel prompt shows a plan-mode badge when enabled')
+    async inputPromptShowsPlanBadge() {
+        const state = new AgentConsoleSessionState();
+        state.inputPrompt = '>';
+        const panel = new AgentConsoleInputPanelComponent(state);
+        expect(panel.inputPrompt).toEqual('>');
+
+        state.setPlanMode(true);
+        expect(panel.inputPrompt).toEqual('> · plan');
+
+        state.setPlanMode(false);
+        expect(panel.inputPrompt).toEqual('>');
     }
 }

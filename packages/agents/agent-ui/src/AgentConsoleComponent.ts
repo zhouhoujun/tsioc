@@ -2835,6 +2835,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case '/help':
                 const helpSelection = await this.select('Help', [
                     { label: '/model', value: '/model', description: 'switch model' },
+                    { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
+                    { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
@@ -2883,6 +2885,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 await this.runInitCommand(parsed.args);
+                return true;
+            case '/plan':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runPlanCommand(parsed.args);
+                return true;
+            case '/status':
+                await this.runStatusCommand();
                 return true;
             case '/tools':
                 if (parsed.args) {
@@ -4527,6 +4539,41 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         } catch (error) {
             this.notify(`Failed to create AGENTS.md: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    protected async runPlanCommand(args: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        const raw = String(args || '').trim().toLowerCase();
+        let enabled: boolean;
+        if (raw === 'on' || raw === '1' || raw === 'true') {
+            enabled = true;
+        } else if (raw === 'off' || raw === '0' || raw === 'false') {
+            enabled = false;
+        } else {
+            enabled = !this.state.planMode;
+        }
+        try {
+            if (this.appRpc) {
+                await this.appRpc.request('session.plan_mode.set', { sessionId, enabled });
+            } else {
+                this.runtime.setPlanMode(sessionId, enabled);
+            }
+            this.state.setPlanMode(enabled);
+            this.notify(enabled ? 'Plan mode enabled — write tools will be denied.' : 'Plan mode disabled.');
+        } catch (error) {
+            this.notify(`Failed to set plan mode: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    protected async runStatusCommand(): Promise<void> {
+        const sessionId = this.state.sessionId;
+        let planMode = this.state.planMode;
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
+            planMode = result?.enabled === true;
+        }
+        const model = this.state.modelProfile || this.state.model || 'default';
+        this.notify(`session ${sessionId} · model ${model} · plan mode ${planMode ? 'ON (read-only)' : 'off'}`);
     }
 
     protected async activateModelProfile(profileName: string): Promise<void> {
