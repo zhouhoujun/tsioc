@@ -293,7 +293,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     toolRunsHint: 'up/down move   pg jump   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: ', . group   [ ] file   { } hunk jump   f fold hunk   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|summary|approve-all|clear-all   esc',
+    reviewDetailHint: ', . group   [ ] file   { } hunk jump   f fold hunk   s side-by-side   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|summary|approve-all|clear-all   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -369,6 +369,7 @@ export class AgentConsoleSessionState {
     selectedReviewHunkIndex = 0;
     foldedReviewHunks: Set<string> = new Set();
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
+    reviewSideBySide = false;
     reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
     protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
     onReviewAnnotationsPersist?: (cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>) => void;
@@ -1850,6 +1851,7 @@ export class AgentConsoleSessionState {
         this.selectedReviewHunkIndex = 0;
         this.foldedReviewHunks.clear();
         this.selectedReviewPatchFilter = 'all';
+        this.reviewSideBySide = false;
         this.reviewFileAnnotations = {};
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
@@ -3125,6 +3127,9 @@ export class AgentConsoleSessionState {
     }
 
     protected renderReviewPatchLines(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
+        if (this.reviewSideBySide) {
+            return this.renderReviewPatchSideBySide(section, groupKey);
+        }
         const hunks = this.parseReviewHunks(section);
         if (!hunks.length) {
             return this.filterReviewPatchLines(section.lines);
@@ -3144,6 +3149,73 @@ export class AgentConsoleSessionState {
         }
         lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor)));
         return lines;
+    }
+
+    protected renderReviewPatchSideBySide(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
+        const hunks = this.parseReviewHunks(section);
+        if (!hunks.length) {
+            return this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines));
+        }
+        const lines: string[] = [];
+        let cursor = 0;
+        for (let hunkIndex = 0; hunkIndex < hunks.length; hunkIndex++) {
+            const hunk = hunks[hunkIndex];
+            lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor, hunk.startIndex)));
+            lines.push(hunk.header);
+            if (this.isReviewHunkFolded(groupKey, section.path, hunkIndex)) {
+                lines.push(this.buildReviewFoldedHunkSummary(hunk));
+            } else {
+                lines.push(...this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines.slice(hunk.startIndex + 1, hunk.endIndex))));
+            }
+            cursor = hunk.endIndex;
+        }
+        lines.push(...this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines.slice(cursor))));
+        return lines;
+    }
+
+    protected buildSideBySidePatchRows(lines: string[]): string[] {
+        const rows: string[] = [];
+        let oldLines: string[] = [];
+        let newLines: string[] = [];
+        const flush = () => {
+            if (!oldLines.length && !newLines.length) {
+                return;
+            }
+            const oldWidth = Math.max(0, ...oldLines.map(line => line.length));
+            const newWidth = Math.max(0, ...newLines.map(line => line.length));
+            const rowCount = Math.max(oldLines.length, newLines.length);
+            for (let index = 0; index < rowCount; index++) {
+                const oldCell = oldLines[index] ?? '';
+                const newCell = newLines[index] ?? '';
+                rows.push(`${oldCell.padEnd(oldWidth)} │ ${newCell.padEnd(newWidth)}`);
+            }
+            oldLines = [];
+            newLines = [];
+        };
+        for (const line of lines) {
+            if (line.startsWith('-') && !line.startsWith('---')) {
+                oldLines.push(line.slice(1));
+            } else if (line.startsWith('+') && !line.startsWith('+++')) {
+                newLines.push(line.slice(1));
+            } else if (line.startsWith(' ')) {
+                oldLines.push(line.slice(1));
+                newLines.push(line.slice(1));
+            } else {
+                flush();
+                rows.push(line);
+            }
+        }
+        flush();
+        return rows;
+    }
+
+    toggleReviewSideBySide(): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        this.reviewSideBySide = !this.reviewSideBySide;
+        this.clampReviewDetailScroll();
+        this.notify();
     }
 
     protected buildReviewFoldedHunkSummary(hunk: AgentConsoleReviewHunk): string {
@@ -3399,6 +3471,9 @@ export class AgentConsoleSessionState {
                     return true;
                 case 'f':
                     this.toggleReviewHunkFold();
+                    return true;
+                case 's':
+                    this.toggleReviewSideBySide();
                     return true;
                 case 'r':
                     if (this.canRetryFocusedCodingTask()) {

@@ -725,6 +725,49 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('@@ -10,2 +11,2 @@'))).toBe(true);
     }
 
+    @Test('renders side-by-side review hunks in the coding task review panel')
+    async renderCodingTaskReviewPanelWithSideBySide() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({
+            id: 'task-sxs',
+            title: 'Side by side',
+            status: 'completed'
+        }, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 file diff(s) captured',
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '--- a/src/a.ts',
+                    '+++ b/src/a.ts',
+                    '@@ -1,2 +1,2 @@',
+                    '-old first',
+                    '+new first'
+                ].join('\n')
+            },
+            workers: []
+        });
+        await ref.render();
+        await Promise.resolve();
+
+        ref.instance.sessionState.reviewSideBySide = true;
+        await ref.render();
+        await Promise.resolve();
+
+        const pairIndex = ref.instance.sessionState.reviewDetailLines.findIndex(line => line.includes('old first'));
+        ref.instance.sessionState.reviewDetailScroll = Math.max(0, pairIndex);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const reviewPanel = ref.hostView.query(AgentConsoleReviewPanelComponent) as ComponentRef<AgentConsoleReviewPanelComponent>;
+        const reviewLines = renderer.renderToLines(reviewPanel.hostView.rootNodes[0]);
+
+        expect(reviewLines.some(line => line.includes('old first │ new first'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('-old first'))).toBe(false);
+        expect(reviewLines.some(line => line.includes('+new first'))).toBe(false);
+    }
+
     @Test('renders coding task inspector panel with task summary')
     async renderCodingTaskInspectorPanel() {
         const ctx = await Application.run(AgentConsoleComponent, {

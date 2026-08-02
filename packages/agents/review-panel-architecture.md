@@ -111,6 +111,7 @@ Review focus currently uses:
 - `[` / `]`: previous or next file within the current group
 - `{` / `}`: jump to previous or next hunk in the current file patch
 - `f`: fold or expand the current hunk
+- `s`: toggle side-by-side patch rendering
 - `a`: switch patch filter to additions only
 - `u`: reset patch filter to full patch
 - arrow keys / page keys: scroll current review viewport
@@ -163,6 +164,22 @@ Fold state:
   to the first hunk when the group or file selection changes
 - `jumpReviewHunk` scrolls to the rendered position of the target hunk header
 
+## Side-by-Side Rendering
+
+`reviewSideBySide` (toggled with `s`) switches the patch body from unified
+columns to paired rows:
+
+- `renderReviewPatchLines` delegates to `renderReviewPatchSideBySide` when enabled
+- within a hunk, consecutive `-` and `+` lines are aligned by position into
+  `old │ new` rows; context lines appear in both columns
+- `@@` headers and `diff --git` / `---` / `+++` metadata stay full-width
+- pair columns are padded per run (`buildSideBySidePatchRows`) so changed cells
+  line up; long rows reuse the existing horizontal pan
+  (`reviewDetailColumnScroll` / `reviewDetailMaxColumn`)
+- the additions filter and hunk folding still apply in side-by-side mode
+  (folded hunks keep their summary row; additions mode leaves the old column empty)
+- `clearReview()` resets the toggle alongside the patch filter
+
 ## Filter Dimensions
 
 The review experience now has two filter families:
@@ -214,7 +231,7 @@ Common flows the panel is designed to support:
 
 ## Current Gaps
 
-- No side-by-side patch rendering in TUI.
+- none (review panel gaps are closed)
 
 ## Implementation Anchors
 
@@ -228,6 +245,9 @@ Implemented anchors:
 - hunk folding and `f` / `{` / `}` keys: `AgentConsoleSessionState.ts`
   (`parseReviewHunks`, `renderReviewPatchLines`, `toggleReviewHunkFold`,
   `jumpReviewHunk`, `foldedReviewHunks`)
+- side-by-side rendering and `s` key: `AgentConsoleSessionState.ts`
+  (`renderReviewPatchSideBySide`, `buildSideBySidePatchRows`,
+  `toggleReviewSideBySide`, `reviewSideBySide`)
 - per-file risk scoring: `computeFileRiskScore()`
 - persistent review annotations: `review_annotations.save/load` RPC in
   `AgentConsoleComponent.ts` plus `reviewAnnotationCache` in session state

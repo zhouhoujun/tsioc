@@ -353,3 +353,14 @@
    - 文档：本条目；`review-panel-architecture.md`「Current Gaps」删除折叠项与已实现的 risk scoring / annotation 持久化两项（commit `ab49719cb`/`120deaf89` 早已实现），仅剩 side-by-side；新增「Hunk Folding」节 + State Mapping hunk scope + Keyboard `{`/`}`/`f` + Implementation Anchors 补实现锚点。
 
 全量回归：agent-ui 229（227+2）passing；tsc 干净。
+
+## P29 已完成：review 面板 side-by-side patch 渲染（关闭最后一项 Current Gap）
+
+1. ~~review-panel-architecture.md「Current Gaps」：No side-by-side patch rendering in TUI~~ → 已完成（`@tsdi/agent-ui`）：
+   - **状态**：`reviewSideBySide`（`s` 键切换，`clearReview()` 随 patch filter 一起重置；`toggleReviewSideBySide()` 切换并夹紧滚动）。
+   - **渲染**：`renderReviewPatchLines` 在 side-by-side 开启时委托 `renderReviewPatchSideBySide`（保留 hunk 折叠/过滤/跳跃语义——折叠 hunk 仍渲染摘要行）；hunk 内连续 `-`/`+` 行按位置配对成 `old │ new` 行（`buildSideBySidePatchRows` 按 run 对齐列宽，上下文行双列同现）；`@@` 头与 `diff --git`/`---`/`+++` 元数据保持整行；长行复用既有横向滚动（`reviewDetailColumnScroll`/`reviewDetailMaxColumn`）。
+   - **键盘**：`handleFocusKey` review 分支新增 `case 's'`；`reviewDetailHint` 补 `s side-by-side`。
+   - 测试：`view-model.spec.ts` +1（`reviewDetailTogglesSideBySide`——unified 无 `│`、sxs 去前缀对齐、additions 过滤下旧列留空、折叠摘要仍可见、`s` 复位）；`console-renderer.spec.ts` +1（渲染 `old first │ new first` 配对行、前缀行不出现）。
+   - 文档：本条目；`review-panel-architecture.md`「Current Gaps」置为 none（全部闭合）、新增「Side-by-Side Rendering」节 + Keyboard `s` + Implementation Anchors 补实现锚点。
+
+全量回归：agent-ui 231（229+2）passing；tsc 干净。

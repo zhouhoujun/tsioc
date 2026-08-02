@@ -5307,6 +5307,66 @@ export class AgentConsoleComponentTest {
         expect(state.selectedReviewHunkIndex).toEqual(0);
     }
 
+    @Test('review detail toggles side-by-side patch rendering with the s key')
+    async reviewDetailTogglesSideBySide() {
+        const state = new AgentConsoleSessionState();
+        state.openReview(createReviewTask() as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 file diff(s) captured',
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '--- a/src/a.ts',
+                    '+++ b/src/a.ts',
+                    '@@ -1,3 +1,3 @@',
+                    '-old first',
+                    '+new first',
+                    'context line',
+                    '-old removed',
+                    '+added',
+                    '+extra'
+                ].join('\n')
+            },
+            workers: []
+        });
+
+        const unified = state.reviewDetailLines.join('\n');
+        expect(unified).toContain('-old first');
+        expect(unified).toContain('+new first');
+        expect(unified).not.toContain('│');
+
+        await state.handleFocusKey('s');
+        expect(state.reviewSideBySide).toEqual(true);
+        const sxs = state.reviewDetailLines;
+        const joined = sxs.join('\n');
+        const pairRows = sxs.filter(line => line.includes('│'));
+        expect(pairRows.length).toBeGreaterThan(0);
+        expect(joined).not.toContain('-old first');
+        expect(joined).not.toContain('+new first');
+        expect(joined).toContain('old first');
+        expect(joined).toContain('new first');
+        expect(joined).toContain('context line');
+        expect(joined).toContain('diff --git a/src/a.ts b/src/a.ts');
+        expect(joined).toContain('@@ -1,3 +1,3 @@');
+
+        // additions filter keeps pair rows with an empty old column
+        await state.handleFocusKey('a');
+        const filtered = state.reviewDetailLines.join('\n');
+        expect(filtered).toContain('│');
+        expect(filtered).not.toContain('old first');
+        expect(filtered).toContain('new first');
+
+        // fold summary still renders in side-by-side mode
+        await state.handleFocusKey('u');
+        await state.handleFocusKey('}');
+        await state.handleFocusKey('f');
+        const folded = state.reviewDetailLines.join('\n');
+        expect(folded).toContain('folded hunk');
+
+        await state.handleFocusKey('s');
+        expect(state.reviewSideBySide).toEqual(false);
+    }
+
     @Test('review detail keeps large diffs scoped to the selected file')
     reviewDetailKeepsLargeDiffsScopedToSelectedFile() {
         const state = new AgentConsoleSessionState();
