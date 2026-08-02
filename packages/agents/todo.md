@@ -436,3 +436,49 @@
    - 文档：本条目；`project-session-thread-architecture.md` 新增「Thread-Level Artifact Aggregation (P33)」节 + Next Step 更新（关闭 thread 级聚合 future option）。
 
 全量回归：agent 367（367+0）、agent-gateway 119（119+0）、agent-ui 241（234+7）passing；三包 tsc 干净。
+
+## P34 规划：对比 Codex / opencode 的差距清单与打磨计划（待办，未开始）
+
+### 对比结论（2026-08 调研）
+
+**已具备（与主流持平或超出）**：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 P28）、prompt cache 支持、上下文压缩 + turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计）、审批流（expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级，非 OS 级）、40+ 工具组（files/git/terminal/browser 轻量/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli 等）、MCP stdio client + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation + dashboard digests）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化）、console TUI（~15 面板 / ~30 命令 / 主题 / workspace mentions / review hunk 折叠 + side-by-side）、CLI（chat/run 一次性/rpc-stdio/tools list + fast/strong 自适应配置）。
+
+**对比 Codex（developers.openai.com/codex，CLI v0.14x）与 opencode（opencode.ai/docs）识别出的差距**，按下表分级：
+
+### Tier 1（高价值，中量改动，建议优先）
+
+1. ~~MCP 仅 stdio 单传输~~（现状：`agent-tools/mcp/StdioMcpClient` 只支持 spawn stdio；opencode 支持 local + remote(Streamable HTTP) + OAuth PKCE；Codex `mcp add` 支持 stdio 与 streamable HTTP）→ **待办**：`McpClient` 抽象增加 StreamableHttpMcpClient（tools/list、tools/call、resources、prompts 经 HTTP+SSE），配置模型支持 `url/headers/oauth`；远程 server 的 OAuth（发现授权端点 + PKCE + token 刷新，凭证存 `~/.tsdi-agent/mcp-credentials.json`）；CLI `mcp add/list/auth/logout` 命令族。
+2. ~~无 OS 级沙箱~~（现状：`ToolSandboxPolicy` 是 capability 策略矩阵 + 审批默认值，命令实际直接在本机执行；Codex 用 Seatbelt/bwrap+seccomp/Landlock 内核级隔离，`codex sandbox` 辅助命令；opencode 依赖权限系统）→ **待办**（分两阶段）：阶段一：`terminal`/`process` 工具支持可选 `sandboxExec` 包装器（Linux 探测 `bwrap` 或 `unshare`，macOS 探测 `sandbox-exec`，Windows/WSL2 降级提示），配置 `sandboxMode: 'off'|'workspace'|'network-block'`；阶段二：`/permissions` 式运行时切换 + 只读模式。
+3. ~~无 LSP 集成~~（现状：grep 全库无 lsp；opencode 自动为 LLM 加载 LSP，提供 definitions/references/diagnostics；Codex 靠 IDE 扩展）→ **待办**：`agent-tools/lsp/` 新工具组——`lsp_definition`/`lsp_references`/`lsp_diagnostics`/`lsp_symbols`（复用 opencode 同款 `lsp-tserver` 或 `vscode-languageserver-protocol` 做进程内 client，按文件扩展名惰性启动 server，`list` 不激活、调用时按需启动并回收）。
+4. ~~无 AGENTS.md 约定与 /init~~（现状：项目上下文只有 workspace mentions / 手动 focusSummary；Codex 有 `/init` 生成 AGENTS.md、opencode 有 `/init` + 提交到 git）→ **待办**：runtime 启动时读取 `AGENTS.md`（项目根向上查找）作为 system prompt 项目上下文节；新增 `/init` 命令（分析项目结构 → 生成 AGENTS.md 草稿 → 写盘）；CLI/UI 均可触发。
+5. ~~无文件级 undo/redo~~（现状：补偿/回滚只覆盖工具副作用（memory 等），写文件无快照；opencode 有 `/undo` `/redo` 可多次回退；Codex 靠 `codex apply` + git diff）→ **待办**：`filesystem_write` 工具（write/edit/move/copy/delete）接入文件快照栈——写前读原内容入 per-session undo 栈（限深如 50、上限大小如 5MB），`/undo` `/redo` 命令恢复/重放，UI 通知变更；与既有 compensation 通道并存（文件类走快照栈，其余走 compensate）。
+6. ~~无只读 Plan agent 模式~~（现状：`definition.execution?.readOnly` 是工具级标志，无会话级 plan 模式；opencode 有 Plan 主 agent（Tab 切换，edit deny、bash ask）；Codex 有 read-only sandbox + `/permissions`）→ **待办**：会话级 `planMode` 状态（`/plan` 开关，`/status` 展示），plan 模式下写工具（filesystem_write/terminal/process/http_request 等）一律 deny（返回「plan mode」拒绝信息），读工具照常；UI 显示模式角标。
+
+### Tier 2（中价值，按需）
+
+7. ~~Playwright 级浏览器自动化~~（现状：`browser_open`/`text_browser` 是轻量文本浏览；Codex 有 Browser/Computer Use；opencode 有 playwright 技能）→ **待办**：`agent-tools/browser/` 增加可选 `playwright_browser` 工具（无头 Chromium navigate/click/type/screenshot/extract），作为 deferred 工具组随 `withBrowserAgentTools` 可选装配，不经审批不可激活。
+8. ~~无会话分享/导出~~（opencode `/share` 生成分享链接；Codex 有会话存档/删除）→ **待办**：`/export` 命令导出会话 transcript（JSONL/JSON 格式，含消息/工具调用/元数据），gateway 增 `session.export` RPC + `GET /api/sessions/:id/export`（owner 鉴权）。
+9. ~~无图像输入~~（Codex `-i` 附图像；opencode 拖拽图像入 prompt）→ **待办**：`AgentMessage`/`ModelRequest` 支持 content 图像段（base64 data-url），`RoutedModelAdapter` 透传给支持图像的多模态 provider；CLI `run --image <path>`；UI 无终端图像粘贴时至少支持 `/attach <path>` 命令。
+10. ~~非交互 exec 缺 JSON 事件流~~（现状：`tsdi-agent run` 只返回最终文本；Codex `exec --json` 输出 JSONL：thread.started/turn.started/turn.completed/item.*/error）→ **待办**：`tsdi-agent run --json` 输出 JSONL 事件流（复用 gateway `EventHandler` 的 SSE 事件序列化），`--output-last-message` 兼容。
+11. ~~无 usage 聚合视图~~（Codex `/usage` daily/weekly/cumulative）→ **待办**：gateway 复用 audit + turn-diagnostics token 数据新增 `GET /api/usage`（按天/周/累计 token + turn 数），UI `/usage` 命令 + dashboard 行。
+12. ~~无用户可配置生命周期 hooks~~（opencode plugin hooks：chat.params/tool.execute.before/after/permission.ask；Claude Code PreToolUse/PostToolUse；现状框架只有内部 interceptor 管线）→ **待办**：`agent` 提供 hook 注册 API（`beforeTurn/afterTurn/beforeTool/afterTool/onApproval`），支持从配置加载 shell 命令 hook（镜像 Claude Code 的 `~/.tsdi-agent/hooks.json`），事件→子进程执行→stdout 注入上下文。
+
+### Tier 3（大改动 / 远期，仅记录）
+
+- 桌面/IDE/Web 多面（opencode desktop + IDE 扩展 + web console）——需新 UI 工程，暂不排期。
+- GitHub/GitLab 应用集成（Codex GitHub Action、opencode GitHub 集成、隐藏自动化 agent）——依赖平台 OAuth。
+- 多代理 v2（可配置子代理模型/reasoning/并发度、子任务加密）——现有 delegation 基础上扩展。
+- 每命令级模型路由（opencode command 可指定 model）——现有 profile 路由是会话/worker 级，命令级是超集。
+- 语音实时输入（Codex streaming realtime V3）——已有 TTS/STT 工具，但非实时双向。
+- vim mode / keymap 定制（opencode）——TUI 输入层扩展。
+- shell completion / doctor / update 命令族（Codex）——CLI 完善项。
+- 远程会话（SSH 运行 opencode）——传输层新面。
+
+### 建议执行顺序
+
+1. Tier1-1 MCP 远程传输（生态缺口最大，改动集中在 agent-tools/mcp + CLI 命令族）
+2. Tier1-4 AGENTS.md + /init（小而高频，体验提升直接）
+3. Tier1-6 Plan 只读模式 + Tier1-2 沙箱阶段一（安全面，与既有 approval/policy 管线天然衔接）
+4. Tier1-5 文件 undo/redo（与既有 compensation 通道并行设计）
+5. Tier1-3 LSP 工具组（独立新包面，需选型 lsp client）
+6. Tier2 按需（7 浏览器 / 8 导出 / 9 图像 / 10 JSON 事件 / 11 usage / 12 hooks）
