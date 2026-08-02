@@ -59,3 +59,4 @@ export { IdentitySection, IdentityConfig } from './sections/IdentitySection';
 export { ToolsSection } from './sections/ToolsSection';
 export { DateTimeSection } from './sections/DateTimeSection';
 export { MemorySection } from './sections/MemorySection';
+export { ProjectContextSection } from './sections/ProjectContextSection';

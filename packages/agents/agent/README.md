@@ -40,6 +40,7 @@ npm run test:coverage
 - `src/tools`: tool contracts, registry, approval manager, and builtin tools
 - `src/memory`: session store, memory store, summarizer, and ORM-backed implementations
 - `src/prompt`: system prompt builder and prompt sections
+- `src/project`: AGENTS.md discovery and initialization helpers
 - `src/harness`: tool execution coordinator, schema validation, rate limiting, output guarding, and audit sinks
 - `src/scheduler`: scheduled task abstractions and interval scheduler
 - `src/channels`: local request/server/client primitives
@@ -62,6 +63,7 @@ npm run test:coverage
 - Session persistence through `SessionStore` implementations, with in-memory and TypeORM-backed options.
 - Memory retrieval through `MemoryStore`, including session-scoped and global records.
 - Prompt and context assembly that merges recent history, summaries, tools, and retrieved memories before each model call.
+- Project context injection from an `AGENTS.md` file (walked upward from the working directory) via `ProjectContextSection`, plus `initAgentsDoc()` for scaffolding one — used by the `/init` command.
 - Built-in tool registry and approval pipeline for integrating local tools into model-driven workflows.
 
 ## Model routing configuration

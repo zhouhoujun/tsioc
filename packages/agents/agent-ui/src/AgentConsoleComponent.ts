@@ -9,7 +9,7 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
@@ -2835,6 +2835,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case '/help':
                 const helpSelection = await this.select('Help', [
                     { label: '/model', value: '/model', description: 'switch model' },
+                    { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
@@ -2875,6 +2876,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 await this.openModelSwitcher();
+                return true;
+            case '/init':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runInitCommand(parsed.args);
                 return true;
             case '/tools':
                 if (parsed.args) {
@@ -4504,6 +4512,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         );
         if (selected) {
             await this.activateModelProfile(selected);
+        }
+    }
+
+    protected async runInitCommand(args: string): Promise<void> {
+        const force = String(args || '').trim().split(/\s+/).includes('--force');
+        try {
+            const result = await initAgentsDoc({ force });
+            if (result.created) {
+                this.notify(`Created ${result.file}`);
+            } else {
+                this.notify(`AGENTS.md ${result.reason}`);
+            }
+        } catch (error) {
+            this.notify(`Failed to create AGENTS.md: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

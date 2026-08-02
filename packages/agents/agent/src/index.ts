@@ -4,6 +4,8 @@ export * from './provider';
 export * from './agent.module';
 export * from './orm.module';
 export * from './AgentWorkspacePath';
+export * from './project/agents-doc';
+export * from './project/init-agents-doc';
 
 export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
@@ -71,6 +73,7 @@ export * from './prompt/sections/IdentitySection';
 export * from './prompt/sections/ToolsSection';
 export * from './prompt/sections/DateTimeSection';
 export * from './prompt/sections/MemorySection';
+export * from './prompt/sections/ProjectContextSection';
 
 export * from './memory/MemoryStore';
 export * from './memory/SessionStore';
