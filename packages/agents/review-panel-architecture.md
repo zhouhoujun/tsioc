@@ -27,7 +27,11 @@ The review panel is driven by four layers of state:
    - source: parsed unified diff sections within the selected group
    - purpose: choose the current file patch without expanding every file body
 
-4. Patch filter layer
+4. Hunk layer
+   - source: `@@`-delimited hunks parsed within the selected file section
+   - purpose: fold/expand individual hunks so noisy patches stay scannable
+
+5. Patch filter layer
    - values: `all`, `additions`
    - purpose: let reviewers focus on added lines when scanning noisy patches
 
@@ -47,6 +51,10 @@ Current state lives in `AgentConsoleSessionState`:
   - `reviewFileSections`
   - `selectedReviewFileIndex`
   - `selectedReviewFileSection`
+- hunk scope
+  - `selectedReviewHunkIndex`
+  - `foldedReviewHunks` (keyed by `groupKey:path#hunkIndex`)
+  - `isReviewHunkFolded()`
 - patch filter
   - `selectedReviewPatchFilter`
 
@@ -84,6 +92,7 @@ The panel is intentionally hierarchical:
 
 5. Current patch body
    - only the currently selected file patch is expanded
+   - individual hunks can be folded independently
 
 This keeps large tasks bounded to:
 
@@ -100,6 +109,8 @@ Review focus currently uses:
 
 - `,` / `.`: previous or next group
 - `[` / `]`: previous or next file within the current group
+- `{` / `}`: jump to previous or next hunk in the current file patch
+- `f`: fold or expand the current hunk
 - `a`: switch patch filter to additions only
 - `u`: reset patch filter to full patch
 - arrow keys / page keys: scroll current review viewport
@@ -126,6 +137,31 @@ This structure is reused for:
 
 - aggregate task diff
 - worker diff/output when it contains unified diff text
+
+## Hunk Folding
+
+Hunks are derived from a section's lines at render time:
+
+- `parseReviewHunks(section)` splits `lines` on `@@` headers
+- each hunk records `header`, `context`, `startIndex`, `endIndex`, `additions`, `deletions`
+- hunk context resolves the trailing function/class label after the second `@@`
+
+Rendering (`renderReviewPatchLines`) walks hunks in order:
+
+- section header lines (`diff --git`, `index`, `---`, `+++`) render before the first hunk
+- an unfolded hunk renders its full body
+- a folded hunk renders only its `@@` header plus a summary row
+  (`⋯ folded hunk +N -M · context (f expand)`)
+- the additions patch filter applies to hunk bodies; folded summaries stay visible
+
+Fold state:
+
+- `foldedReviewHunks` is keyed by `groupKey:path#hunkIndex` so folds survive
+  group/file switches and task reopens
+- `clearReview()` resets fold state
+- `selectedReviewHunkIndex` drives `{`/`}` jumps and the `f` toggle, and resets
+  to the first hunk when the group or file selection changes
+- `jumpReviewHunk` scrolls to the rendered position of the target hunk header
 
 ## Filter Dimensions
 
@@ -178,10 +214,7 @@ Common flows the panel is designed to support:
 
 ## Current Gaps
 
-- No semantic diff folding beyond unified diff sections.
 - No side-by-side patch rendering in TUI.
-- No per-file risk scoring yet.
-- No persistent review annotations or approvals attached to diff groups.
 
 ## Implementation Anchors
 
@@ -189,3 +222,12 @@ Common flows the panel is designed to support:
 - `packages/agents/agent-ui/src/AgentConsolePanels.ts`
 - `packages/agents/agent-ui/test/view-model.spec.ts`
 - `packages/agents/agent-ui/test/console-renderer.spec.ts`
+
+Implemented anchors:
+
+- hunk folding and `f` / `{` / `}` keys: `AgentConsoleSessionState.ts`
+  (`parseReviewHunks`, `renderReviewPatchLines`, `toggleReviewHunkFold`,
+  `jumpReviewHunk`, `foldedReviewHunks`)
+- per-file risk scoring: `computeFileRiskScore()`
+- persistent review annotations: `review_annotations.save/load` RPC in
+  `AgentConsoleComponent.ts` plus `reviewAnnotationCache` in session state

@@ -336,3 +336,20 @@
    - 文档：本条目；架构文档「Current Gaps」删除 policy gap，新增「Worker Model Routing Policy (P28)」段 + Implementation Anchors 补充。
 
 全量回归：agent 351（348+3）、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。
+
+## P29 已完成：review 面板 hunk 级语义折叠
+
+1. ~~review-panel-architecture.md「Current Gaps」：No semantic diff folding beyond unified diff sections~~ → 已完成，采用 **hunk 级折叠**（`@@` 头粒度）：
+   - **hunk 模型**（`@tsdi/agent-ui`）：
+     - 新增 `AgentConsoleReviewHunk` 接口（header/context/startIndex/endIndex/additions/deletions）。
+     - `parseReviewHunks(section)` 按 `@@` 头把 section.lines 切分为 hunks，逐行累计 `+`/`-` 计数（排除 `+++`/`---` 标记）；`resolveReviewHunkContext` 从第二个 `@@` 后提取函数/类上下文标签。
+   - **折叠状态**：
+     - `selectedReviewHunkIndex`（`{`/`}` 跳跃与 `f` 切换的目标，group/file 切换时重置为 0）。
+     - `foldedReviewHunks: Set<string>`，键 `groupKey:path#hunkIndex` —— 跨 group/file 切换与任务重开存活，`clearReview()` 清空。
+     - `toggleReviewHunkFold()` 折叠/展开当前 hunk 并夹紧滚动。
+   - **渲染**：`renderReviewPatchLines(section, groupKey)` 顺序遍历 hunks——section 头（diff --git/index/---/+++）只在首 hunk 前渲染；展开 hunk 渲染正文；折叠 hunk 只渲染 `@@` 头 + 摘要行（`⋯ folded hunk +N -M · context (f expand)`，不走 additions 过滤、折叠时仍可见）；无 hunk 的 section 回退原 `filterReviewPatchLines`。
+   - **键盘**：`handleFocusKey` review 分支新增 `case 'f'`（toggleReviewHunkFold）；`jumpReviewHunk` 重写为基于 `selectedReviewHunkIndex` 循环跳跃 + 定位渲染后 hunk 头（`diff --git` 行之后数 `@@`）滚动到视口；`reviewDetailHint` 默认串补 `{ } hunk jump   f fold hunk`。
+   - 测试：`view-model.spec.ts` +1（`reviewDetailFoldsAndExpandsHunks`——折叠隐藏 hunk 正文保留头与摘要、additions 过滤下摘要仍可见、展开恢复、切文件重置 hunk index）；`console-renderer.spec.ts` +1（渲染折叠摘要行、hunk 头在视口、折叠体不出现）。
+   - 文档：本条目；`review-panel-architecture.md`「Current Gaps」删除折叠项与已实现的 risk scoring / annotation 持久化两项（commit `ab49719cb`/`120deaf89` 早已实现），仅剩 side-by-side；新增「Hunk Folding」节 + State Mapping hunk scope + Keyboard `{`/`}`/`f` + Implementation Anchors 补实现锚点。
+
+全量回归：agent-ui 229（227+2）passing；tsc 干净。

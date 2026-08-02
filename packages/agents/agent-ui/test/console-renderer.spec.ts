@@ -681,6 +681,50 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('diff --git a/src/b.ts b/src/b.ts'))).toBe(false);
     }
 
+    @Test('renders folded review hunks in the coding task review panel')
+    async renderCodingTaskReviewPanelWithFoldedHunks() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({
+            id: 'task-fold',
+            title: 'Folded hunks',
+            status: 'completed'
+        }, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 file diff(s) captured',
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '--- a/src/a.ts',
+                    '+++ b/src/a.ts',
+                    '@@ -1,2 +1,3 @@',
+                    '-old first',
+                    '+new first',
+                    '@@ -10,2 +11,2 @@',
+                    '-old second',
+                    '+new second'
+                ].join('\n')
+            },
+            workers: []
+        });
+        await ref.render();
+        await Promise.resolve();
+
+        ref.instance.sessionState.selectedReviewHunkIndex = 1;
+        ref.instance.sessionState.toggleReviewHunkFold();
+        const foldIndex = ref.instance.sessionState.reviewDetailLines.findIndex(line => line.includes('folded hunk'));
+        ref.instance.sessionState.reviewDetailScroll = Math.max(0, foldIndex - 1);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const reviewPanel = ref.hostView.query(AgentConsoleReviewPanelComponent) as ComponentRef<AgentConsoleReviewPanelComponent>;
+        const reviewLines = renderer.renderToLines(reviewPanel.hostView.rootNodes[0]);
+
+        expect(reviewLines.some(line => line.includes('folded hunk +1 -1'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('-old second'))).toBe(false);
+        expect(reviewLines.some(line => line.includes('@@ -10,2 +11,2 @@'))).toBe(true);
+    }
+
     @Test('renders coding task inspector panel with task summary')
     async renderCodingTaskInspectorPanel() {
         const ctx = await Application.run(AgentConsoleComponent, {

@@ -5239,6 +5239,74 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('Worker Failures: worker-1: patch rejected');
     }
 
+    @Test('review detail folds and expands hunks with the f key')
+    async reviewDetailFoldsAndExpandsHunks() {
+        const state = new AgentConsoleSessionState();
+        state.openReview(createReviewTask() as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 file diff(s) captured',
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '--- a/src/a.ts',
+                    '+++ b/src/a.ts',
+                    '@@ -1,2 +1,3 @@',
+                    '-old first',
+                    '+new first',
+                    'context first',
+                    '@@ -10,2 +11,2 @@',
+                    '-old second',
+                    '+new second',
+                    'context second',
+                    'diff --git a/src/b.ts b/src/b.ts',
+                    '--- a/src/b.ts',
+                    '+++ b/src/b.ts',
+                    '@@ -1,1 +1,2 @@',
+                    '-b old',
+                    '+b new'
+                ].join('\n')
+            },
+            workers: []
+        });
+
+        const unfolded = state.reviewDetailLines.join('\n');
+        expect(unfolded).toContain('@@ -1,2 +1,3 @@');
+        expect(unfolded).toContain('-old first');
+        expect(unfolded).toContain('-old second');
+
+        // jump to the second hunk and fold it
+        await state.handleFocusKey('}');
+        expect(state.selectedReviewHunkIndex).toEqual(1);
+        await state.handleFocusKey('f');
+        const folded = state.reviewDetailLines.join('\n');
+        expect(folded).toContain('@@ -10,2 +11,2 @@');
+        expect(folded).not.toContain('-old second');
+        expect(folded).not.toContain('+new second');
+        expect(folded).not.toContain('context second');
+        expect(folded).toContain('folded hunk +1 -1');
+        expect(folded).toContain('-old first');
+
+        // the folded summary survives the additions patch filter
+        await state.handleFocusKey('a');
+        const filtered = state.reviewDetailLines.join('\n');
+        expect(filtered).toContain('folded hunk +1 -1');
+        expect(filtered).not.toContain('-old second');
+        await state.handleFocusKey('u');
+
+        // expanding restores the hunk body
+        await state.handleFocusKey('f');
+        const expanded = state.reviewDetailLines.join('\n');
+        expect(expanded).toContain('-old second');
+        expect(expanded).toContain('+new second');
+        expect(expanded).not.toContain('folded hunk');
+
+        // switching file resets the hunk index
+        expect(state.selectedReviewHunkIndex).toEqual(1);
+        await state.handleFocusKey(']');
+        expect(state.selectedReviewFileIndex).toEqual(1);
+        expect(state.selectedReviewHunkIndex).toEqual(0);
+    }
+
     @Test('review detail keeps large diffs scoped to the selected file')
     reviewDetailKeepsLargeDiffsScopedToSelectedFile() {
         const state = new AgentConsoleSessionState();
