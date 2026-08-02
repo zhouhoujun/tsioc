@@ -51,6 +51,15 @@ export class RoutedModelAdapter extends ModelAdapter {
     private selectAdapter(request: ModelRequest): ResolvedRouteSelection {
         const input = this.extractInput(request);
         const complexity = this.estimateComplexity(input);
+        const explicitProfile = this.resolveExplicitProfile(request.profile);
+        if (explicitProfile) {
+            return {
+                adapter: this.getOrCreateAdapter(explicitProfile.config),
+                config: explicitProfile.config,
+                profileName: explicitProfile.profileName,
+                complexity
+            };
+        }
         const explicitRoute = this.matchRoute(input, complexity);
         const explicitConfig = explicitRoute ? this.resolveRouteConfig(explicitRoute) : null;
         if (explicitConfig) {
@@ -171,6 +180,18 @@ export class RoutedModelAdapter extends ModelAdapter {
         }
 
         return true;
+    }
+
+    private resolveExplicitProfile(profileName?: string): { config: AgentModelConfig; profileName: string } | null {
+        if (!profileName?.trim()) {
+            return null;
+        }
+        const topLevel = this.pickConfig(this.options);
+        const profile = this.options.profiles?.[profileName.trim()];
+        if (!profile) {
+            throw new Error(`Unknown model profile '${profileName.trim()}'.`);
+        }
+        return { config: this.mergeConfigs(topLevel, profile), profileName: profileName.trim() };
     }
 
     private resolveRouteConfig(route: AgentModelRoute): AgentModelConfig | null {

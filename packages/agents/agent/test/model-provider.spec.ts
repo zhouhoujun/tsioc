@@ -838,4 +838,83 @@ export class ModelProviderTest {
         expect(received[1]?.usage?.totalTokens).toEqual(7);
         expect(received[1]?.metadata?.fallback).toEqual('non_stream');
     }
+
+    @Test('routes explicit request profile to the matching profile skipping complexity matching')
+    async routesExplicitRequestProfile() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'strong answer' },
+                            finish_reason: 'stop'
+                        }],
+                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                strong: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-pro',
+                    baseUrl: 'https://deepseek.example',
+                    apiKey: 'deepseek-key'
+                }
+            },
+            complexityRouting: {
+                complex: 'strong'
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            tools: [],
+            profile: 'strong',
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: 'simple prompt that would normally stay on the default model',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].body.model).toEqual('deepseek-v4-pro');
+        expect(result.metadata?.model).toEqual('deepseek-v4-pro');
+        expect(result.metadata?.routing?.profile).toEqual('strong');
+    }
+
+    @Test('throws for an unknown explicit request profile')
+    async throwsForUnknownExplicitProfile() {
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                strong: { provider: 'deepseek', model: 'deepseek-v4-pro' }
+            }
+        });
+
+        await expect(adapter.complete({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            tools: [],
+            profile: 'missing-profile',
+            messages: [{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 }]
+        })).rejects.toThrow(/Unknown model profile 'missing-profile'/);
+    }
 }

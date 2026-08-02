@@ -319,4 +319,20 @@
 
 全量回归：agent 348（334+14）、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。
 
-## P28 候选（未开始）
+## P28 已完成：worker-class → model 路由策略
+
+1. ~~multi-agent-delegation-architecture.md「Current Gaps」最后一项：no policy layer yet for routing different worker classes to different models~~ → 已完成，采用**显式会话模型 profile**（`ModelRequest.profile`），优先级高于 complexity/routes 匹配：
+   - **model 层**（`@tsdi/agent`）：
+     - `ModelRequest` 新增 `profile?: string`：调用方显式指定模型 profile，跳过 complexity 估算与 route 匹配。
+     - `RoutedModelAdapter.selectAdapter` 在 `matchRoute` 之前解析 `request.profile`：`resolveExplicitProfile` 从 `options.profiles` 取配置（trim 后查找，缺失抛 `` `Unknown model profile 'X'.` ``，镜像既有 route.profile 报错文案），成功后 `mergeConfigs(topLevel, profile)` 合并出最终配置，`metadata.routing.profile` 记录命中。
+   - **runtime**（`@tsdi/agent`）：
+     - `AgentRuntime` 抽象基类新增 `setSessionModelProfile(sessionId, profileName)` / `clearSessionModelProfile(sessionId)`（no-op 默认，JSDoc 注明 delegation 用途）。
+     - `DefaultAgentRuntime` 实现：`sessionModelProfiles` Map 记录会话级 profile，`prepareModelRequest` 命中时注入 `request.profile`（与 signal 一起，所有 complete/stream/重试/follow-up 路径统一生效）。
+   - **策略配置**（`@tsdi/agent-tools`）：
+     - `AgentToolsOptions.delegation.workerModelProfiles?: Record<string, string>`：worker-class → profile 名映射（`spawn_agent` / `llm_task`）；`defaultAgentToolsOptions.delegation = {}`，`mergeAgentToolsOptions` 对 workerModelProfiles 逐键深合并。
+     - `NestedAgentRunRequest.workerClass?: string`；`DelegatingSpawnAgentAdapter.spawn/spawnParallel` 传 `workerClass: 'spawn_agent'`、`DelegatingLlmTaskAdapter.execute` 传 `workerClass: 'llm_task'`。
+     - `LightweightAgentRunner` 构造经 `@Optional() @Inject(AGENT_TOOLS_OPTIONS)` 注入 options；`runSingle` 按 `request.workerClass ?? 'spawn_agent'` 查映射，命中则在 turn 前 `setSessionModelProfile`、finally `clearSessionModelProfile`（与 toolset filter 生命周期一致）。
+   - 测试：`agent/test/model-provider.spec.ts` +2（显式 profile 跳过 complexity 路由、未知 profile 报错）；`agent/test/turn-diagnostics.spec.ts` +1（runtime 注入/清除会话 profile，捕获 adapter 收到的 request.profile）；`agent-tools/test/tools.spec.ts` +3（workerClass 命中 set/clear、未映射不调用、无 workerClass 不调用）。
+   - 文档：本条目；架构文档「Current Gaps」删除 policy gap，新增「Worker Model Routing Policy (P28)」段 + Implementation Anchors 补充。
+
+全量回归：agent 351（348+3）、agent-gateway 117、agent-ui 227 passing；三包 tsc 干净。

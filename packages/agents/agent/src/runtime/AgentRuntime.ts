@@ -87,4 +87,24 @@ export abstract class AgentRuntime {
     clearSessionToolFilter(_sessionId: string): void {
         // no-op by default
     }
+
+    /**
+     * Set an explicit model profile for a specific session. While set, every
+     * model request for the session routes to that profile and skips
+     * complexity/routes matching. Delegation workers use this to pin a
+     * worker class (spawn_agent / llm_task) to a specific model profile.
+     * Override this in concrete runtimes that support session-scoped model routing.
+     */
+    setSessionModelProfile(_sessionId: string, _profileName: string): void {
+        // no-op by default
+    }
+
+    /**
+     * Clear a previously set model profile for a session, restoring default
+     * complexity/routes based routing.
+     * Override this in concrete runtimes that support session-scoped model routing.
+     */
+    clearSessionModelProfile(_sessionId: string): void {
+        // no-op by default
+    }
 }

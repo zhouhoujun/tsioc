@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime, SessionStore } from '@tsdi/agent';
+import { AGENT_TOOLS_OPTIONS } from './tokens';
+import { AgentToolsOptions } from './options';
 import {
     NestedAgentRunner,
     NestedAgentRunRequest,
@@ -20,7 +22,8 @@ export class LightweightAgentRunner extends NestedAgentRunner {
 
     constructor(
         @Optional() private runtime?: AgentRuntime | null,
-        @Optional() private sessions?: SessionStore | null
+        @Optional() private sessions?: SessionStore | null,
+        @Optional() @Inject(AGENT_TOOLS_OPTIONS) private options?: AgentToolsOptions | null
     ) {
         super();
     }
@@ -55,9 +58,17 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         });
     }
 
+    private resolveWorkerModelProfile(request: NestedAgentRunRequest): string | undefined {
+        if (!request.workerClass) {
+            return undefined;
+        }
+        return this.options?.delegation?.workerModelProfiles?.[request.workerClass];
+    }
+
     private async runSingle(request: NestedAgentRunRequest): Promise<NestedAgentRunResult> {
         const sessionId = request.sessionId || `sub-${randomUUID()}`;
         const parentSessionId = request.parentSessionId;
+        const workerProfile = this.resolveWorkerModelProfile(request);
 
         if (parentSessionId) {
             this.runtime!.registerChildSession(parentSessionId, sessionId, {
@@ -70,6 +81,9 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         }
         if (request.toolsets?.length) {
             this.runtime!.setSessionToolFilter(sessionId, request.toolsets);
+        }
+        if (workerProfile) {
+            this.runtime!.setSessionModelProfile(sessionId, workerProfile);
         }
 
         const prompt = request.systemPrompt
@@ -121,6 +135,9 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             }
             if (request.toolsets?.length) {
                 this.runtime!.clearSessionToolFilter(sessionId);
+            }
+            if (workerProfile) {
+                this.runtime!.clearSessionModelProfile(sessionId);
             }
         }
     }

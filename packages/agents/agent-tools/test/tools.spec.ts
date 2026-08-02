@@ -5685,6 +5685,94 @@ export class AgentToolsPackageTest {
         expect(clearSessions[0]).toEqual(filterSessions[0].split(':')[0]);
     }
 
+    @Test('lightweight agent runner applies and clears session model profile for worker class')
+    async lightweightAgentRunnerAppliesWorkerModelProfile() {
+        const setProfiles: string[] = [];
+        const clearSessions: string[] = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'Summary: done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionModelProfile: (sessionId: string, profileName: string) => {
+                setProfiles.push(`${sessionId}:${profileName}`);
+            },
+            clearSessionModelProfile: (sessionId: string) => {
+                clearSessions.push(sessionId);
+            }
+        };
+
+        const runner = new LightweightAgentRunner(
+            mockRuntime as any,
+            undefined,
+            {
+                delegation: {
+                    workerModelProfiles: {
+                        spawn_agent: 'strong',
+                        llm_task: 'fast'
+                    }
+                }
+            } as any
+        );
+        const result = await runner.run({ prompt: 'test', workerClass: 'spawn_agent' });
+
+        expect(setProfiles.length).toBe(1);
+        expect(setProfiles[0]).toContain(':strong');
+        expect(clearSessions.length).toBe(1);
+        expect(clearSessions[0]).toEqual(setProfiles[0].split(':')[0]);
+    }
+
+    @Test('lightweight agent runner skips model profile when worker class has no mapping')
+    async lightweightAgentRunnerSkipsUnmappedWorkerProfile() {
+        let profileSet = false;
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionModelProfile: () => {
+                profileSet = true;
+            },
+            clearSessionModelProfile: () => {
+                profileSet = true;
+            }
+        };
+
+        const runner = new LightweightAgentRunner(
+            mockRuntime as any,
+            undefined,
+            { delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any
+        );
+        await runner.run({ prompt: 'test', workerClass: 'llm_task' });
+
+        expect(profileSet).toBe(false);
+    }
+
+    @Test('lightweight agent runner does not call profile when no worker class')
+    async lightweightAgentRunnerSkipsProfileWhenNoWorkerClass() {
+        let profileSet = false;
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionModelProfile: () => {
+                profileSet = true;
+            },
+            clearSessionModelProfile: () => {
+                profileSet = true;
+            }
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        await runner.run({ prompt: 'test' });
+
+        expect(profileSet).toBe(false);
+    }
+
     @Test('lightweight agent runner does not call filter when no toolsets')
     async lightweightAgentRunnerSkipsFilterWhenNoToolsets() {
         let filterCalled = false;

@@ -461,6 +461,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected prepareModelRequest(sessionId: string, request: ModelRequest): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.getTurnAbortSignal(sessionId);
+        const profile = this.sessionModelProfiles.get(sessionId);
+        if (profile) {
+            request.profile = profile;
+        }
         return request;
     }
 
@@ -884,6 +888,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     clearSessionToolFilter(sessionId: string): void {
         this.sessionToolFilters.delete(sessionId);
+    }
+
+    protected sessionModelProfiles = new Map<string, string>();
+
+    setSessionModelProfile(sessionId: string, profileName: string): void {
+        this.sessionModelProfiles.set(sessionId, profileName);
+    }
+
+    clearSessionModelProfile(sessionId: string): void {
+        this.sessionModelProfiles.delete(sessionId);
     }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {

@@ -14,6 +14,12 @@ export interface NestedAgentRunRequest {
     maxTokens?: number;
     maxTurns?: number;
     parentSessionId?: string;
+    /**
+     * Worker class used to resolve the session's model profile through the
+     * delegation policy (`AgentToolsOptions.delegation.workerModelProfiles`).
+     * Defaults to the adapter-specific class ('spawn_agent' / 'llm_task').
+     */
+    workerClass?: string;
 }
 
 export interface DelegatedAgentReport {
@@ -159,7 +165,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             sessionId,
             toolsets: input.toolsets,
             maxTurns: input.maxTurns,
-            parentSessionId: input.sessionId
+            parentSessionId: input.sessionId,
+            workerClass: 'spawn_agent'
         });
         return this.toSpawnAgentResult(result, sessionId);
     }
@@ -173,7 +180,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             sessionId: `spawn-${randomUUID()}`,
             toolsets: input.toolsets,
             maxTurns: input.maxTurns,
-            parentSessionId: input.sessionId
+            parentSessionId: input.sessionId,
+            workerClass: 'spawn_agent'
         }));
         const results = await this.requireRunner().runParallel(requests);
         return results.map((result, index) => this.toSpawnAgentResult(result, requests[index].sessionId));
@@ -222,7 +230,8 @@ export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
             systemPrompt: request.system,
             model: request.model,
             temperature: request.temperature,
-            maxTokens: request.maxTokens
+            maxTokens: request.maxTokens,
+            workerClass: 'llm_task'
         });
         return {
             content: result.content,

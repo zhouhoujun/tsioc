@@ -63,6 +63,18 @@ class StaticModelAdapter extends EchoModelAdapter {
     }
 }
 
+class CapturingProfileModelAdapter extends EchoModelAdapter {
+    profiles: Array<string | undefined> = [];
+
+    async complete(request: any): Promise<any> {
+        this.profiles.push(request?.profile);
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
 class EmptyToolRegistry extends ToolRegistry {
     getTools() { return []; }
     getTool() { return undefined; }
@@ -364,5 +376,38 @@ export class TurnDiagnosticsStoreTest {
         expect(records.every(record => record.sessionId === 's1')).toEqual(true);
         expect(records.every(record => record.emptyResponseRetryCount >= 0)).toEqual(true);
         expect(records[records.length - 1].createdAt).toBeGreaterThanOrEqual(records[0].createdAt);
+    }
+
+    @Test('runtime injects session model profile into model requests until cleared')
+    async runtimeInjectsSessionModelProfile() {
+        const adapter = new CapturingProfileModelAdapter();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined
+        );
+
+        await runtime.runTurn('s1', 'first turn');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
+
+        runtime.setSessionModelProfile('s1', 'strong');
+        await runtime.runTurn('s1', 'second turn');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
+
+        runtime.clearSessionModelProfile('s1');
+        await runtime.runTurn('s1', 'third turn');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
     }
 }

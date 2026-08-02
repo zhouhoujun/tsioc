@@ -150,7 +150,30 @@ This gives operators a compact view of:
 
 ## Current Gaps
 
-- no policy layer yet for routing different worker classes to different models
+None tracked.
+
+## Worker Model Routing Policy (P28)
+
+Delegated workers can now be routed to a specific model profile per worker class:
+
+- **Explicit request profile**: `ModelRequest.profile` selects a named profile from `AgentOptions.model.profiles` before complexity estimation or explicit route matching runs. Unknown profile names fail fast with `Unknown model profile 'X'.`; the resolved config is merged over the top-level model config.
+- **Runtime session profile**: `AgentRuntime.setSessionModelProfile(sessionId, profileName)` / `clearSessionModelProfile(sessionId)` give the delegation runner a per-session override that `DefaultAgentRuntime.prepareModelRequest` injects into every model request for that session.
+- **Worker-class policy** (`@tsdi/agent-tools`): `AgentToolsOptions.delegation.workerModelProfiles` maps worker classes (`spawn_agent`, `llm_task`) to profile names. `DelegatingSpawnAgentAdapter` and `DelegatingLlmTaskAdapter` stamp `workerClass` on the nested run request; `LightweightAgentRunner` resolves the mapping, sets the session profile before the turn loop, and clears it in `finally` (same lifecycle as the toolset filter).
+
+Example:
+
+```ts
+provideTools(
+  withAgentToolsOptions({
+    delegation: {
+      workerModelProfiles: {
+        spawn_agent: 'strong', // sub-agents run on the strong model
+        llm_task: 'fast'       // lightweight LLM tasks stay on the fast model
+      }
+    }
+  })
+)
+```
 
 ## Persisted Delegation Graph (P27)
 
@@ -167,6 +190,12 @@ The delegation edges between a main task session and its spawned sub-agent sessi
 
 ## Implementation Anchors
 
+- `packages/agents/agent/src/model/ModelRequest.ts` (`profile`)
+- `packages/agents/agent/src/model/RoutedModelAdapter.ts` (`resolveExplicitProfile`)
+- `packages/agents/agent/src/runtime/AgentRuntime.ts` (`setSessionModelProfile` / `clearSessionModelProfile`)
+- `packages/agents/agent/src/runtime/DefaultAgentRuntime.ts` (`prepareModelRequest` profile injection)
+- `packages/agents/agent-tools/src/options.ts` (`delegation.workerModelProfiles`)
+- `packages/agents/agent-tools/src/lightweight-agent-runner.ts` (worker-class profile application)
 - `packages/agents/agent/src/harness/DelegationGraphStore.ts`
 - `packages/agents/agent/src/harness/InMemoryDelegationGraphStore.ts`
 - `packages/agents/agent/src/harness/TypeOrmDelegationGraphStore.ts`

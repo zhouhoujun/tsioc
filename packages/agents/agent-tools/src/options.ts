@@ -96,6 +96,17 @@ export interface AgentToolsCodingTaskOptions {
     parallelWorkerRetries?: number;
 }
 
+/**
+ * Delegation worker model routing policy. Maps a worker class
+ * (`spawn_agent`, `llm_task`, or custom) to a named model profile registered
+ * on the agent's model options (`AgentModelOptions.profiles`). Delegation
+ * workers pin that profile for their session instead of relying on
+ * complexity/routes matching.
+ */
+export interface AgentToolsDelegationOptions {
+    workerModelProfiles?: Record<string, string>;
+}
+
 export type AgentToolGroup =
     | 'filesystem'
     | 'filesystem_write'
@@ -230,6 +241,7 @@ export interface AgentToolsOptions {
     weather?: AgentToolsWeatherOptions;
     schedule?: AgentToolsScheduleOptions;
     codingTask?: AgentToolsCodingTaskOptions;
+    delegation?: AgentToolsDelegationOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
     registration?: AgentToolsRegistrationOptions;
@@ -273,6 +285,7 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
         parallelWorkerTimeoutMs: 30000,
         parallelWorkerRetries: 1
     },
+    delegation: {},
     registration: {
         preset: 'default',
         groups: {},
@@ -332,6 +345,14 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         codingTask: {
             ...(defaultAgentToolsOptions.codingTask ?? {}),
             ...(options?.codingTask ?? {})
+        },
+        delegation: {
+            ...(defaultAgentToolsOptions.delegation ?? {}),
+            ...(options?.delegation ?? {}),
+            workerModelProfiles: {
+                ...(defaultAgentToolsOptions.delegation?.workerModelProfiles ?? {}),
+                ...(options?.delegation?.workerModelProfiles ?? {})
+            }
         },
         roots: (options?.roots ?? []).slice(),
         mcp: options?.mcp ? {

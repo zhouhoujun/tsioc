@@ -14,4 +14,11 @@ export interface ModelRequest {
      * their own timeout controller; other adapters simply ignore it.
      */
     signal?: AbortSignal;
+    /**
+     * Optional named model profile override. When set, the routed model
+     * adapter resolves this profile explicitly and skips complexity/routes
+     * matching. Used by delegation workers (spawn_agent / llm_task) to route
+     * different worker classes to different models.
+     */
+    profile?: string;
 }
