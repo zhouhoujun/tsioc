@@ -9,7 +9,7 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
@@ -977,7 +977,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const workspace = String(anchor.workspace || '').trim();
         if (workspace) {
-            return this.state.sessions.filter(item => String(item.workspace || '').trim() === workspace);
+            const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+            return this.state.sessions.filter(item => normalizeAgentWorkspaceIdentity(item.workspace) === workspaceKey);
         }
         const primaryThreadId = String(anchor.primaryThreadId || '').trim();
         if (primaryThreadId) {
@@ -1038,8 +1039,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return `thread:${primaryThreadId}`;
         }
         const workspace = String(session?.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
+        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+        if (workspaceKey) {
+            return `workspace:${workspaceKey}`;
         }
         return '';
     }
@@ -4546,7 +4548,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async runInitCommand(args: string): Promise<void> {
         const force = String(args || '').trim().split(/\s+/).includes('--force');
         try {
-            const result = await initAgentsDoc({ force });
+            const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace });
             if (result.created) {
                 this.notify(`Created ${result.file}`);
             } else {

@@ -1,6 +1,6 @@
 import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
-import * as path from 'path';
+import { basenameAgentPath } from '@tsdi/agent';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -1052,7 +1052,7 @@ export class AgentConsoleSessionsPanelComponent {
         if (!text) {
             return '';
         }
-        return path.basename(text) || text;
+        return basenameAgentPath(text) || text;
     }
 
     protected projectHeaderLabel(session: AgentConsoleSessionItem): string {

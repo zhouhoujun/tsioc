@@ -1,6 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
-import { statSync } from 'fs';
-import { basename, dirname } from 'path';
+import { ApplicationArguments } from '@tsdi/core';
+import { FileAdapter } from '@tsdi/common';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { basenameAgentPath, dirnameAgentPath } from '../../AgentWorkspacePath';
 import { PromptSection, PromptSectionContext } from '../PromptSection';
 import { DEFAULT_AGENTS_DOC_NAME, findAgentsDoc, readAgentsDoc } from '../../project/agents-doc';
 
@@ -26,6 +27,13 @@ export class ProjectContextSection extends PromptSection {
     protected projectRoot: string | undefined;
     protected cache: AgentsDocCacheEntry | null = null;
 
+    constructor(
+        @Optional() private fileAdapter?: FileAdapter | null,
+        @Optional() @Inject(ApplicationArguments) private appArgs?: ApplicationArguments | null
+    ) {
+        super();
+    }
+
     name(): string {
         return 'project-context';
     }
@@ -37,31 +45,34 @@ export class ProjectContextSection extends PromptSection {
     }
 
     protected readCachedContent(file: string): string {
-        let mtimeMs = 0;
-        try {
-            mtimeMs = statSync(file).mtimeMs;
-        } catch {
-            return '';
-        }
-        if (this.cache && this.cache.file === file && this.cache.mtimeMs === mtimeMs) {
-            return this.cache.content;
-        }
-        const content = readAgentsDoc(file);
-        this.cache = { file, mtimeMs, content };
-        return content;
+        return this.cache?.file === file ? this.cache.content : '';
     }
 
     async render(context: PromptSectionContext): Promise<string> {
-        const startDir = this.projectRoot ?? process.cwd();
-        const file = findAgentsDoc(startDir, this.fileName);
+        void context;
+        const startDir = this.projectRoot ?? this.appArgs?.cwd ?? '.';
+        const file = findAgentsDoc(startDir, this.fileName, {
+            exists: this.fileAdapter ? target => this.fileAdapter!.existsSync(target) : undefined,
+            stopAt: this.projectRoot
+        });
         if (!file) {
             return '';
         }
-        const content = this.readCachedContent(file);
+        const stat = this.fileAdapter?.stat ? await this.fileAdapter.stat(file) : null;
+        const mtimeMs = Number((stat as any)?.mtimeMs || 0);
+        if (this.cache && this.cache.file === file && this.cache.mtimeMs === mtimeMs) {
+            return this.cache.content.trim()
+                ? `## Project Context (${basenameAgentPath(dirnameAgentPath(file)) || file})\n\n${this.cache.content.trim()}`
+                : '';
+        }
+        const content = this.fileAdapter
+            ? await this.fileAdapter.readText(file).catch(() => '')
+            : readAgentsDoc(file);
+        this.cache = { file, mtimeMs, content };
         if (!content.trim()) {
             return '';
         }
-        const label = basename(dirname(file)) || file;
+        const label = basenameAgentPath(dirnameAgentPath(file)) || file;
         return `## Project Context (${label})\n\n${content.trim()}`;
     }
 }

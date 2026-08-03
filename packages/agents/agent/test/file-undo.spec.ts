@@ -1,8 +1,9 @@
 import expect = require('expect');
-import { promises as fs } from 'fs';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
+import { FileAdapter, IReadable } from '@tsdi/common';
 import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
@@ -24,6 +25,79 @@ class FakeApp {
 
 function snapshot(filePath: string, before: string | null, after: string | null, ts = 1): any {
     return { filePath, before, after, timestamp: ts };
+}
+
+class NodeTestFileAdapter extends FileAdapter {
+    isAbsolute(target: string): boolean {
+        return path.isAbsolute(target);
+    }
+
+    normalize(target: string): string {
+        return path.normalize(target);
+    }
+
+    join(...targets: string[]): string {
+        return path.join(...targets);
+    }
+
+    resolve(...targets: string[]): string {
+        return path.resolve(...targets);
+    }
+
+    extname(target: string): string {
+        return path.extname(target);
+    }
+
+    existsSync(target: string): boolean {
+        return fs.existsSync(target);
+    }
+
+    read(target: string, options?: any): IReadable {
+        return fs.createReadStream(target, options) as any;
+    }
+
+    async find(): Promise<null> {
+        return null;
+    }
+
+    async readText(target: string, encoding: any = 'utf-8'): Promise<string> {
+        return (await fs.promises.readFile(target, encoding)).toString();
+    }
+
+    readTextSync(target: string, encoding: any = 'utf-8'): string {
+        return fs.readFileSync(target, encoding).toString();
+    }
+
+    async readJSON<T = any>(target: string): Promise<T> {
+        return JSON.parse(await this.readText(target));
+    }
+
+    readJSONSync<T = any>(target: string): T {
+        return JSON.parse(this.readTextSync(target));
+    }
+
+    async writeText(target: string, content: string, encoding: any = 'utf-8'): Promise<void> {
+        await fs.promises.writeFile(target, content, encoding);
+    }
+
+    async mkdir(target: string, options?: { recursive?: boolean }): Promise<void> {
+        await fs.promises.mkdir(target, { recursive: options?.recursive ?? false });
+    }
+
+    async remove(target: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
+        await fs.promises.rm(target, {
+            recursive: options?.recursive ?? false,
+            force: options?.force ?? false
+        });
+    }
+
+    override async stat(target: string): Promise<any | null> {
+        try {
+            return await fs.promises.stat(target);
+        } catch {
+            return null;
+        }
+    }
 }
 
 @Suite('FileSnapshotStore')
@@ -121,7 +195,7 @@ class SnapshotWriteTool {
 
     async captureFileSnapshot(): Promise<any> {
         try {
-            return { filePath: this.filePath, before: await fs.readFile(this.filePath, 'utf8') };
+            return { filePath: this.filePath, before: await fs.promises.readFile(this.filePath, 'utf8') };
         } catch (error: any) {
             if (error?.code === 'ENOENT') {
                 return { filePath: this.filePath, before: null };
@@ -131,7 +205,7 @@ class SnapshotWriteTool {
     }
 
     async invoke(): Promise<any> {
-        await fs.writeFile(this.filePath, 'updated', 'utf8');
+        await fs.promises.writeFile(this.filePath, 'updated', 'utf8');
         return { ok: true };
     }
 }
@@ -175,9 +249,10 @@ class SingleToolCallModelAdapter extends EchoModelAdapter {
 export class RuntimeFileUndoRedoTest {
     @Test('undoFileChange restores the pre-write content and redo re-applies it')
     async undoRestoresAndRedoReapplies() {
-        const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'undo-'));
+        const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'undo-'));
         const filePath = path.join(tmp, 'note.txt');
-        await fs.writeFile(filePath, 'original', 'utf8');
+        await fs.promises.writeFile(filePath, 'original', 'utf8');
+        const fileAdapter = new NodeTestFileAdapter();
         try {
             const store = new FileSnapshotStore();
             const tool = new SnapshotWriteTool(filePath);
@@ -198,22 +273,24 @@ export class RuntimeFileUndoRedoTest {
                 undefined,
                 undefined,
                 undefined,
-                store
+                store,
+                undefined,
+                fileAdapter
             );
 
             await runtime.runTurn('s1', 'write it');
-            expect(await fs.readFile(filePath, 'utf8')).toEqual('updated');
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
             expect(runtime.listFileSnapshots('s1').length).toEqual(1);
 
             const undone = await runtime.undoFileChange('s1');
             expect(undone.restored).toEqual('content');
-            expect(await fs.readFile(filePath, 'utf8')).toEqual('original');
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('original');
 
             const redone = await runtime.redoFileChange('s1');
             expect(redone.restored).toEqual('content');
-            expect(await fs.readFile(filePath, 'utf8')).toEqual('updated');
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
         } finally {
-            await fs.rm(tmp, { recursive: true, force: true });
+            await fs.promises.rm(tmp, { recursive: true, force: true });
         }
     }
 
@@ -226,10 +303,52 @@ export class RuntimeFileUndoRedoTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            new NodeTestFileAdapter()
         );
         const result = await runtime.undoFileChange('s1');
         expect(result).toEqual({ filePath: '', restored: 'none' });
         expect(runtime.listFileSnapshots('s1')).toEqual([]);
+    }
+
+    @Test('runTurn stores workspace from ApplicationArguments cwd when console workspace is unset')
+    async runTurnStoresWorkspaceFromAppArgsCwd() {
+        const sessions = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new EchoModelAdapter(),
+            new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { cwd: '/tmp/app-args-workspace' } as any,
+            new NodeTestFileAdapter()
+        );
+
+        await runtime.runTurn('s1', 'hello');
+
+        expect((await sessions.get('s1')).workspace).toEqual('/tmp/app-args-workspace');
     }
 }

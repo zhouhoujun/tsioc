@@ -32,7 +32,7 @@ export class AgentsDocSpec {
         mkdirSync(nested, { recursive: true });
         writeFileSync(join(this.tempRoot, 'a', 'marker.txt'), 'x');
         expect(findFileUpward(nested, 'marker.txt')).toBe(join(this.tempRoot, 'a', 'marker.txt'));
-        expect(findFileUpward(nested, 'missing.txt')).toBeUndefined();
+        expect(findFileUpward(nested, 'missing.txt', { stopAt: this.tempRoot })).toBeUndefined();
     }
 
     @Test('findAgentsDoc finds AGENTS.md at the project root from a nested dir')
@@ -41,15 +41,15 @@ export class AgentsDocSpec {
         mkdirSync(nested, { recursive: true });
         writeFileSync(join(this.tempRoot, 'proj', 'AGENTS.md'), '# Project\n');
         expect(findAgentsDoc(nested)).toBe(join(this.tempRoot, 'proj', 'AGENTS.md'));
-        expect(findAgentsDoc(join(this.tempRoot, 'empty'))).toBeUndefined();
+        expect(findAgentsDoc(join(this.tempRoot, 'empty'), undefined, { stopAt: this.tempRoot })).toBeUndefined();
     }
 
     @Test('findProjectRoot locates the .git marker and returns its parent')
     async testFindProjectRoot(): Promise<void> {
         mkdirSync(join(this.tempRoot, 'repo'), { recursive: true });
         mkdirSync(join(this.tempRoot, 'repo', '.git'));
-        expect(findProjectRoot(join(this.tempRoot, 'repo', 'src'))).toBe(join(this.tempRoot, 'repo'));
-        expect(findProjectRoot(this.tempRoot)).toBeUndefined();
+        expect(findProjectRoot(join(this.tempRoot, 'repo', 'src'), { stopAt: this.tempRoot })).toBe(join(this.tempRoot, 'repo'));
+        expect(findProjectRoot(this.tempRoot, { stopAt: this.tempRoot })).toBeUndefined();
     }
 
     @Test('readAgentsDoc returns content or empty string')

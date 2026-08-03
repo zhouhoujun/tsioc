@@ -1,4 +1,4 @@
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, MemoryStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, MemoryStore, normalizeAgentWorkspaceIdentity } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 
 @Injectable()
@@ -12,7 +12,8 @@ export class AgentConsoleInputHistoryStore {
     }
 
     async load(workspace?: string, sessionId?: string): Promise<string[]> {
-        const resolvedWorkspace = String(workspace || '').trim() || 'default';
+        const resolvedWorkspace = this.resolveWorkspaceKey(workspace);
+        const rawWorkspace = String(workspace || '').trim() || 'default';
         const resolvedSessionId = String(sessionId || '').trim();
         if (this.appRpc) {
             const result = await this.appRpc.request('app.inputHistory.get', {
@@ -27,7 +28,7 @@ export class AgentConsoleInputHistoryStore {
         const record = (await this.memory.getAll(resolvedSessionId || undefined))
             .filter(item => item.scope === 'global'
                 && item.key === AgentConsoleInputHistoryStore.HISTORY_KEY
-                && item.metadata?.workspace === resolvedWorkspace
+                && (item.metadata?.workspace === resolvedWorkspace || item.metadata?.workspace === rawWorkspace)
                 && String(item.metadata?.sessionId || '').trim() === resolvedSessionId)
             .sort((left, right) => (right.updatedAt || right.createdAt || 0) - (left.updatedAt || left.createdAt || 0))[0];
         if (!record) {
@@ -37,7 +38,7 @@ export class AgentConsoleInputHistoryStore {
     }
 
     async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
-        const resolvedWorkspace = String(workspace || '').trim() || 'default';
+        const resolvedWorkspace = this.resolveWorkspaceKey(workspace);
         const resolvedSessionId = String(sessionId || '').trim();
         const normalized = this.normalizeEntries(entries);
         if (this.appRpc) {
@@ -74,6 +75,10 @@ export class AgentConsoleInputHistoryStore {
 
     protected createRecordId(workspace: string, sessionId?: string): string {
         return `agent-ui:console-input-history:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
+    }
+
+    protected resolveWorkspaceKey(workspace?: string): string {
+        return normalizeAgentWorkspaceIdentity(workspace) || 'default';
     }
 
     protected parseEntries(value: unknown): string[] {

@@ -15,13 +15,13 @@ describe('auto register with build', () => {
     before(async () => {
         ctx = await Application.run({
             module: ServerModule,
-            loads: [
+            loadTypes: [
                 {
                     files: __dirname + '/debug.ts'
                 }
             ]
         });
-        injector = ctx.injector;
+        injector = ctx;
     });
 
     it('should auto wried property', () => {

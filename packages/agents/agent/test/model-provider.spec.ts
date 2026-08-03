@@ -917,4 +917,53 @@ export class ModelProviderTest {
             messages: [{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 }]
         })).rejects.toThrow(/Unknown model profile 'missing-profile'/);
     }
+
+    @Test('routes anthropic profiles with api keys resolved from ApplicationArguments')
+    async routesAnthropicProfilesWithAppArgsApiKey() {
+        const calls: Array<{ url: string; headers: Record<string, any> }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, headers: init.headers || {} });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        id: 'msg_1',
+                        type: 'message',
+                        role: 'assistant',
+                        content: [{ type: 'text', text: 'claude answer' }],
+                        model: 'claude-sonnet-4-20250514',
+                        stop_reason: 'end_turn',
+                        stop_sequence: null,
+                        usage: { input_tokens: 2, output_tokens: 1 }
+                    };
+                }
+            };
+        };
+
+        const appArgs = {
+            env: { ANTHROPIC_API_KEY: 'env-anthropic-key' } as Record<string, string>,
+            get<T = string>(key: string) {
+                return this.env[key] as T;
+            }
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            baseUrl: 'https://anthropic.example'
+        }, appArgs as any);
+
+        const result = await adapter.complete({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 }]
+        });
+
+        expect(calls[0].url).toEqual('https://anthropic.example/v1/messages');
+        expect(calls[0].headers['x-api-key']).toEqual('env-anthropic-key');
+        expect(result.metadata?.provider).toEqual('anthropic');
+    }
 }

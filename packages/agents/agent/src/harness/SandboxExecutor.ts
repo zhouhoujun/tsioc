@@ -1,10 +1,14 @@
 import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { ApplicationArguments } from '@tsdi/core';
 import { AgentOptions } from '../options';
-import { AGENT_OPTIONS } from '../tokens';
+import { AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME } from '../tokens';
 import {
     buildSandboxExecCommand,
     detectSandboxExecTool,
+    probeSandboxExecTool,
+    resolvePlatformShellCommand,
     SandboxExecProbe,
+    SandboxRuntimeContext,
     SandboxExecToolProbe,
     SandboxMode
 } from './sandbox-exec';
@@ -123,8 +127,24 @@ export abstract class SandboxExecutor {
 export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
     private activeProcesses = new Set<any>();
 
+    constructor(
+        @Optional() @Inject(ApplicationArguments) protected execAppArgs?: ApplicationArguments | null
+    ) {
+        super();
+    }
+
     isSupported(): boolean {
         return typeof process !== 'undefined' && typeof process.pid === 'number';
+    }
+
+    protected getProcessEnvSource(): Record<string, any> {
+        return this.execAppArgs?.env
+            || (typeof process !== 'undefined' ? process.env ?? {} : {});
+    }
+
+    protected getDefaultWorkingDirectory(): string {
+        return this.execAppArgs?.cwd
+            || (typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.');
     }
 
     async execute(
@@ -144,7 +164,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                 // Use dynamic import for child_process to support browser environments
                 import('child_process').then(({ spawn }) => {
                     const resolvedEnv = this.resolveEnvironment(policy, env);
-                    const resolvedCwd = policy.workingDirectory || process.cwd();
+                    const resolvedCwd = policy.workingDirectory || this.getDefaultWorkingDirectory();
                     const wallTimeMs = policy.resourceLimits?.wallTimeMs || timeoutMs || 30000;
 
                     const child = spawn(command, args, {
@@ -266,17 +286,18 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
         customEnv?: Record<string, string>
     ): Record<string, string | undefined> {
         const baseEnv: Record<string, string | undefined> = {};
+        const envSource = this.getProcessEnvSource();
 
         // Inherit PATH and other critical system vars
-        if (process.env?.PATH) {
-            baseEnv.PATH = process.env.PATH;
+        if (envSource?.PATH) {
+            baseEnv.PATH = envSource.PATH;
         }
 
         // Apply allowed env vars
         if (policy.allowedEnvVars && policy.allowedEnvVars.length > 0) {
             for (const key of policy.allowedEnvVars) {
-                if (process.env?.[key] !== undefined) {
-                    baseEnv[key] = process.env[key];
+                if (envSource?.[key] !== undefined) {
+                    baseEnv[key] = envSource[key];
                 }
             }
         }
@@ -304,7 +325,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
     private killProcess(child: any): void {
         try {
             if (typeof child.kill === 'function') {
-                child.kill('SIGTERM');
+                child.kill();
                 // Force kill after 1 second if still alive
                 setTimeout(() => {
                     try {
@@ -327,8 +348,24 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
  */
 @Injectable()
 export class NoopSandboxExecutor extends SandboxExecutor {
+    constructor(
+        @Optional() @Inject(ApplicationArguments) protected appArgs?: ApplicationArguments | null
+    ) {
+        super();
+    }
+
     isSupported(): boolean {
         return true;
+    }
+
+    protected getProcessEnvSource(): Record<string, any> {
+        return this.appArgs?.env
+            || (typeof process !== 'undefined' ? process.env ?? {} : {});
+    }
+
+    protected getDefaultWorkingDirectory(): string {
+        return this.appArgs?.cwd
+            || (typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.');
     }
 
     async execute(
@@ -344,8 +381,8 @@ export class NoopSandboxExecutor extends SandboxExecutor {
         try {
             const { spawn } = await import('child_process');
             const child = spawn(command, args, {
-                cwd: options.policy.workingDirectory || process.cwd(),
-                env: { ...process.env, ...options.env },
+                cwd: options.policy.workingDirectory || this.getDefaultWorkingDirectory(),
+                env: { ...this.getProcessEnvSource(), ...options.env },
                 stdio: ['pipe', 'pipe', 'pipe']
             });
 
@@ -409,10 +446,11 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
 
     constructor(
         @Optional() @Inject(AGENT_OPTIONS) private agentOptions?: AgentOptions,
-        @Optional() private platform: NodeJS.Platform = process.platform,
-        @Optional() private probe?: SandboxExecToolProbe
+        @Optional() @Inject(AGENT_SANDBOX_RUNTIME) private runtime?: SandboxRuntimeContext | null,
+        @Optional() private probe?: SandboxExecToolProbe,
+        @Optional() private appArgs?: ApplicationArguments | null
     ) {
-        super();
+        super(appArgs);
     }
 
     private get configuredMode(): SandboxMode {
@@ -421,9 +459,21 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
 
     private detectTool(): Promise<SandboxExecProbe> {
         if (!this.detectionPromise) {
-            this.detectionPromise = detectSandboxExecTool(this.platform, this.probe);
+            const runtime = this.resolveRuntimeContext();
+            const probe = this.probe ?? ((name: string) => probeSandboxExecTool(name, runtime));
+            this.detectionPromise = detectSandboxExecTool(runtime?.os, probe);
         }
         return this.detectionPromise;
+    }
+
+    private resolveRuntimeContext(): SandboxRuntimeContext | undefined {
+        if (this.runtime) {
+            return this.runtime;
+        }
+        if (this.appArgs?.platform === 'browser' || this.appArgs?.platform === 'web') {
+            return { os: 'browser', shellFamily: 'none' };
+        }
+        return undefined;
     }
 
     override isSupported(): boolean {
@@ -439,14 +489,12 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
             timeoutMs?: number;
         }
     ): Promise<SandboxExecutionResult> {
+        const resolved = resolvePlatformShellCommand(command, args, this.resolveRuntimeContext());
         const mode = options.policy.osSandbox ?? this.configuredMode;
         if (mode !== 'off') {
             const probe = await this.detectTool();
             if (probe.tool) {
-                const shellCommand = args.length === 0 && /\s/.test(command);
-                const targetCommand = shellCommand ? 'sh' : command;
-                const targetArgs = shellCommand ? ['-c', command] : args;
-                const wrapped = buildSandboxExecCommand(probe.tool, mode, targetCommand, targetArgs, {
+                const wrapped = buildSandboxExecCommand(probe.tool, mode, resolved.command, resolved.args, {
                     workspace: options.policy.workingDirectory
                 });
                 if (wrapped) {
@@ -454,7 +502,7 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
                 }
             }
         }
-        return super.execute(command, args, options);
+        return super.execute(resolved.command, resolved.args, options);
     }
 }
 

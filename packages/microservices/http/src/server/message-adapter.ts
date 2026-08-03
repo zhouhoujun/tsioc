@@ -181,19 +181,22 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
 
     accepts(...args: string[]): string | string[] | false {
         const acceptsPriority = this.acceptsPriority;
-        if (!acceptsPriority) return '*';
+        if (!acceptsPriority || typeof (acceptsPriority as any).priority !== 'function') return '*';
         const accepts = this.getHeader('accept') ?? '*';
         if (!args.length) {
             return accepts ?? false;
         }
         const mimeAdapter = this.mimeAdapter;
-        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
+        const canLookupMime = !!mimeAdapter && typeof (mimeAdapter as any).lookup === 'function';
+        const medias = args.map(a => a.indexOf('/') === -1
+            ? (canLookupMime ? mimeAdapter!.lookup(a) : a) ?? a
+            : a).filter(a => isString(a)) as string[];
         return acceptsPriority.priority(accepts, medias, 'media')[0] ?? false;
     }
 
     acceptsEncodings(...encodings: string[]): string | string[] | false {
         const acceptsPriority = this.acceptsPriority;
-        if (!acceptsPriority) return '*';
+        if (!acceptsPriority || typeof (acceptsPriority as any).priority !== 'function') return '*';
         const accepts = this.getHeader('accept-encoding') ?? '*';
         if (!encodings.length) {
             return accepts;
@@ -203,7 +206,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
 
     acceptsCharsets(...charsets: string[]): string | string[] | false {
         const acceptsPriority = this.acceptsPriority;
-        if (!acceptsPriority) return '*';
+        if (!acceptsPriority || typeof (acceptsPriority as any).priority !== 'function') return '*';
         const accepts = this.getHeader('accept-charset') ?? '*';
         if (!charsets.length) {
             return accepts;
@@ -213,7 +216,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
 
     acceptsLanguages(...langs: string[]): string | string[] | false {
         const acceptsPriority = this.acceptsPriority;
-        if (!acceptsPriority) return '*';
+        if (!acceptsPriority || typeof (acceptsPriority as any).priority !== 'function') return '*';
         const accepts = this.getHeader('accept-language') ?? '*';
         if (!langs.length) {
             return accepts;

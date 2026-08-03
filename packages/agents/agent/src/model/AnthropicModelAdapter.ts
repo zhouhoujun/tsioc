@@ -4,6 +4,7 @@ import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
+import type { ApplicationArguments } from '@tsdi/core';
 
 interface AnthropicContentBlock {
     type: 'text' | 'tool_use' | 'tool_result';
@@ -111,10 +112,13 @@ const MAX_RETRIES = 3;
 const BASE_RETRY_MS = 1000;
 
 export class AnthropicModelAdapter extends ModelAdapter {
+    protected appArgs?: ApplicationArguments;
+
     readonly provider = 'anthropic';
 
-    constructor(protected readonly options: AgentModelOptions) {
+    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
         super();
+        this.appArgs = appArgs;
     }
 
     // ── complete (non-streaming) ──────────────────────────────────────
@@ -505,7 +509,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
     protected resolveApiKey(): string | undefined {
         if (this.options.apiKey) return this.options.apiKey;
         const envKey = this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY';
-        return process.env[envKey] || process.env['ANTHROPIC_API_KEY'];
+        return this.appArgs?.get<string>(envKey)
+            || this.appArgs?.get<string>('ANTHROPIC_API_KEY');
     }
 
     protected resolveUrl(path: string): string {

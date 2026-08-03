@@ -13,3 +13,4 @@ export const AGENT_TURN_INTERCEPTORS = token<InterceptorLike<AgentTurnInput, Pro
 export const AGENT_TURN_FILTERS = token<FilterLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_FILTERS');
 export const AGENT_PROMPT_SECTIONS = token<import('./prompt/PromptSection').PromptSection[]>('AGENT_PROMPT_SECTIONS');
 export const AGENT_TOOL_BUNDLES = token<AgentCapabilityBundle[]>('AGENT_TOOL_BUNDLES');
+export const AGENT_SANDBOX_RUNTIME = token<import('./harness/sandbox-exec').SandboxRuntimeContext>('AGENT_SANDBOX_RUNTIME');

@@ -1,5 +1,5 @@
 import { Application } from '@tsdi/core';
-import { AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, StdioAppRpcServer } from '@tsdi/agent-gateway';
@@ -10,6 +10,16 @@ import { Readable, Writable } from 'stream';
 
 function createConfigService(options: AgentCliOptions): AgentUiConfigService {
     return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
+}
+
+export function createAgentSandboxRuntimeProvider(): any {
+    return {
+        provide: AGENT_SANDBOX_RUNTIME,
+        useValue: {
+            os: process.platform,
+            shellFamily: process.platform === 'win32' ? 'cmd' : 'posix'
+        }
+    };
 }
 
 export function resolveModelAdapter(config: AgentUiConfigService, options: AgentCliOptions): any {
@@ -79,6 +89,7 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
             ...withAdapterProviders(options),
+            createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
             { provide: AgentUiConfigService, useValue: config },
             ...extraProviders,
@@ -96,6 +107,7 @@ export async function runAgentRpcApplication(options: AgentCliOptions, agentOpti
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
             ...withAdapterProviders(options),
+            createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
             { provide: AgentUiConfigService, useValue: config },
             ...extraProviders,

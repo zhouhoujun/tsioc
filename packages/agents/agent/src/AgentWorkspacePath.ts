@@ -13,7 +13,26 @@ export interface ResolveAgentWorkspacePathOptions {
     dirname?: (path: string) => string;
 }
 
-function defaultDirname(input: string): string {
+export function normalizeAgentWorkspaceIdentity(input?: string | null): string {
+    let value = String(input || '').trim();
+    if (!value) {
+        return '';
+    }
+    const hadUncPrefix = value.startsWith('\\\\') || value.startsWith('//');
+    value = value.replace(/\\/g, '/').replace(/\/+/g, '/');
+    if (hadUncPrefix) {
+        value = `//${value.replace(/^\/+/, '')}`;
+    }
+    if (/^[a-zA-Z]:/.test(value)) {
+        value = value.toLowerCase();
+    }
+    if (value !== '/' && !/^[a-z]:\/$/i.test(value)) {
+        value = value.replace(/\/+$/, '');
+    }
+    return value;
+}
+
+export function dirnameAgentPath(input: string): string {
     const value = String(input || '');
     if (!value) {
         return value;
@@ -34,6 +53,19 @@ function defaultDirname(input: string): string {
         return `${parent}\\`;
     }
     return parent || trimmed;
+}
+
+export function basenameAgentPath(input: string): string {
+    const value = String(input || '').replace(/[\\/]+$/, '');
+    if (!value) {
+        return '';
+    }
+    const lastSlash = Math.max(value.lastIndexOf('/'), value.lastIndexOf('\\'));
+    return lastSlash >= 0 ? value.slice(lastSlash + 1) : value;
+}
+
+function defaultDirname(input: string): string {
+    return dirnameAgentPath(input);
 }
 
 export function findAgentWorkspaceRoot(

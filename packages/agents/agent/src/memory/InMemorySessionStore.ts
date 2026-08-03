@@ -2,6 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
+import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
 @Injectable()
 export class InMemorySessionStore extends SessionStore {
@@ -184,8 +185,9 @@ export class InMemorySessionStore extends SessionStore {
             return `thread:${primaryThreadId}`;
         }
         const workspace = String(state.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
+        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+        if (workspaceKey) {
+            return `workspace:${workspaceKey}`;
         }
         return `session:${state.sessionId}`;
     }

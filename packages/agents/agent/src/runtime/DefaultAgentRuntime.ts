@@ -1,8 +1,7 @@
+import { FileAdapter } from '@tsdi/common';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
+import { ApplicationArguments, ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
-import * as path from 'path';
 import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRuntime';
 import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -39,6 +38,7 @@ import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandbo
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
+import { dirnameAgentPath } from '../AgentWorkspacePath';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -62,6 +62,7 @@ interface ToolCompensationEntry {
 
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
+
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
@@ -92,7 +93,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected compactionHistoryStore?: CompactionHistoryStore,
         @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore,
         @Optional() protected delegationGraph?: DelegationGraphStore | null,
-        @Optional() protected fileSnapshotStore?: FileSnapshotStore
+        @Optional() protected fileSnapshotStore?: FileSnapshotStore,
+        @Optional() protected appArgs?: ApplicationArguments | null,
+        @Optional() protected fileAdapter?: FileAdapter | null
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -273,7 +276,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     protected resolveWorkspace(): string | undefined {
         const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
-        const workspace = String(consoleOptions?.workspace || '').trim();
+        const workspace = String(consoleOptions?.workspace || this.appArgs?.cwd || '').trim();
         return workspace || undefined;
     }
 
@@ -554,23 +557,33 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private async resolveFileSnapshotAfter(snapshot: FileSnapshot): Promise<FileSnapshot> {
+    private async readRuntimeFileText(filePath: string): Promise<string | null> {
+        if (!this.fileAdapter) {
+            return null;
+        }
         try {
-            const content = await fs.readFile(snapshot.filePath, 'utf8');
-            return { ...snapshot, after: content };
+            return await this.fileAdapter.readText(filePath);
         } catch {
-            return { ...snapshot, after: null };
+            return null;
         }
     }
 
+    private async resolveFileSnapshotAfter(snapshot: FileSnapshot): Promise<FileSnapshot> {
+        const content = await this.readRuntimeFileText(snapshot.filePath);
+        return { ...snapshot, after: content };
+    }
+
     private async restoreFileSnapshot(snapshot: FileSnapshot, which: 'before' | 'after'): Promise<void> {
-        const content = snapshot[which];
-        if (content === null) {
-            await fs.rm(snapshot.filePath, { force: true }).catch(() => undefined);
+        if (!this.fileAdapter) {
             return;
         }
-        await fs.mkdir(path.dirname(snapshot.filePath), { recursive: true });
-        await fs.writeFile(snapshot.filePath, content, 'utf8');
+        const content = snapshot[which];
+        if (content === null) {
+            await this.fileAdapter.remove(snapshot.filePath, { force: true }).catch(() => undefined);
+            return;
+        }
+        await this.fileAdapter.mkdir(dirnameAgentPath(snapshot.filePath), { recursive: true });
+        await this.fileAdapter.writeText(snapshot.filePath, content);
     }
 
     protected endTurnAbortScope(sessionId: string): void {

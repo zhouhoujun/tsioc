@@ -198,6 +198,20 @@ export class SessionStoreTest {
         expect(projects.find(project => project.projectKey === 'session:session-c')?.sessionIds).toEqual(['session-c']);
     }
 
+    @Test('normalizes Windows workspace variants into a single project bucket')
+    async normalizesWindowsWorkspaceVariantsIntoSingleBucket() {
+        const store = new InMemorySessionStore();
+        await store.append('session-a', { id: '1', role: 'user', content: 'a', createdAt: 1 });
+        await store.append('session-b', { id: '2', role: 'user', content: 'b', createdAt: 2 });
+        await store.setWorkspace('session-a', 'C:\\Repo\\Agents\\');
+        await store.setWorkspace('session-b', 'c:/repo/agents');
+
+        const projects = await store.listProjects();
+
+        expect(projects.map(project => project.projectKey)).toEqual(['workspace:c:/repo/agents']);
+        expect(projects[0].sessionIds.slice().sort()).toEqual(['session-a', 'session-b']);
+    }
+
     @Test('stores origin thread id and lists threads by primary thread id')
     async storesOriginThreadIdAndListsThreads() {
         const store = new InMemorySessionStore();

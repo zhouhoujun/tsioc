@@ -1,4 +1,4 @@
-import { Autowired, Injectable, Param, Singleton, Inject, Container, getToken } from '@tsdi/ioc';
+import { Autowired, Injectable, Param, Singleton, Inject, Container, getToken, token } from '@tsdi/ioc';
 
 export class SimppleAutoWried {
     constructor() {
@@ -144,7 +144,7 @@ export class StringIdTest {
     }
 }
 
-export const CollClassRoom = Symbol('CollegeClassRoom');
+export const CollClassRoom = token<IClassRoom>('CollegeClassRoom');
 
 @Injectable(CollClassRoom)
 export class SymbolCollegeClassRoom {

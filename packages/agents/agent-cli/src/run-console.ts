@@ -7,7 +7,7 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
-import { resolveModelAdapter, withAdapterProviders } from './run-command';
+import { createAgentSandboxRuntimeProvider, resolveModelAdapter, withAdapterProviders } from './run-command';
 
 export interface AgentCliUiTarget {
     entry: any;
@@ -92,6 +92,7 @@ export async function runAgentConsole(
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
             ...withAdapterProviders(options),
+            createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
             { provide: AgentUiConfigService, useValue: config },
             ...(ui.providers || []),

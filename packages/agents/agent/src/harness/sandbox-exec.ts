@@ -1,5 +1,3 @@
-import { spawn } from 'child_process';
-
 /**
  * OS-level sandbox mode for process-executing tools.
  * - 'off': no OS sandbox wrapper (default)
@@ -28,6 +26,61 @@ export interface SandboxExecOptions {
     workspace?: string;
 }
 
+export interface SandboxRuntimeContext {
+    os?: string;
+    shellFamily?: 'posix' | 'cmd' | 'none';
+}
+
+export function isShellCommandString(command: string, args: string[] = []): boolean {
+    return args.length === 0 && /\s|[|&;<>()]/.test(String(command || '').trim());
+}
+
+function resolveShellFamily(runtime?: SandboxRuntimeContext | string): 'posix' | 'cmd' | 'none' {
+    if (typeof runtime === 'string') {
+        if (runtime === 'win32') {
+            return 'cmd';
+        }
+        if (runtime === 'browser') {
+            return 'none';
+        }
+        return runtime ? 'posix' : 'none';
+    }
+    if (runtime?.shellFamily) {
+        return runtime.shellFamily;
+    }
+    if (runtime?.os === 'win32') {
+        return 'cmd';
+    }
+    if (runtime?.os === 'browser') {
+        return 'none';
+    }
+    return runtime?.os ? 'posix' : 'none';
+}
+
+export function resolvePlatformShellCommand(
+    command: string,
+    args: string[] = [],
+    runtime?: SandboxRuntimeContext | string
+): { command: string; args: string[] } {
+    if (!isShellCommandString(command, args)) {
+        return { command, args };
+    }
+    const shellFamily = resolveShellFamily(runtime);
+    if (shellFamily === 'cmd') {
+        return {
+            command: 'cmd.exe',
+            args: ['/d', '/s', '/c', command]
+        };
+    }
+    if (shellFamily !== 'posix') {
+        return { command, args };
+    }
+    return {
+        command: 'sh',
+        args: ['-lc', command]
+    };
+}
+
 const SANDBOX_EXEC_CANDIDATES: Array<{ platform: string; tools: SandboxExecTool[] }> = [
     { platform: 'linux', tools: ['bwrap', 'unshare'] },
     { platform: 'darwin', tools: ['sandbox-exec'] }
@@ -38,23 +91,33 @@ export const DEFAULT_SANDBOX_EXEC_DEGRADATION = 'OS sandbox is not available on 
 /**
  * Probe whether an executable is available on PATH.
  */
-export async function probeSandboxExecTool(name: string): Promise<boolean> {
+export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntimeContext | string): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-        try {
-            const child = spawn('sh', ['-c', `command -v ${name}`], {
-                stdio: ['ignore', 'pipe', 'ignore']
-            });
-            let found = false;
-            child.stdout?.on('data', (data: Buffer) => {
-                if (data.toString().trim()) {
-                    found = true;
-                }
-            });
-            child.on('close', () => resolve(found));
-            child.on('error', () => resolve(false));
-        } catch {
+        const shellFamily = resolveShellFamily(runtime);
+        if (shellFamily === 'none') {
             resolve(false);
+            return;
         }
+        import('child_process').then(({ spawn }) => {
+            try {
+                const check = shellFamily === 'cmd'
+                    ? { command: 'cmd.exe', args: ['/d', '/s', '/c', `where ${name}`] }
+                    : { command: 'sh', args: ['-lc', `command -v ${name}`] };
+                const child = spawn(check.command, check.args, {
+                    stdio: ['ignore', 'pipe', 'ignore']
+                });
+                let found = false;
+                child.stdout?.on('data', (data: Buffer) => {
+                    if (data.toString().trim()) {
+                        found = true;
+                    }
+                });
+                child.on('close', () => resolve(found));
+                child.on('error', () => resolve(false));
+            } catch {
+                resolve(false);
+            }
+        }).catch(() => resolve(false));
     });
 }
 
@@ -63,7 +126,7 @@ export async function probeSandboxExecTool(name: string): Promise<boolean> {
  * `platform` and `probe` are injectable for tests.
  */
 export async function detectSandboxExecTool(
-    platform: NodeJS.Platform = process.platform,
+    platform?: string,
     probe: SandboxExecToolProbe = probeSandboxExecTool
 ): Promise<SandboxExecProbe> {
     const candidate = SANDBOX_EXEC_CANDIDATES.find(entry => entry.platform === platform);
@@ -81,7 +144,7 @@ export async function detectSandboxExecTool(
 /**
  * Human-readable degradation notice when OS sandboxing is not supported.
  */
-export function describeSandboxExecDegradation(platform: NodeJS.Platform = process.platform): string {
+export function describeSandboxExecDegradation(platform?: string): string {
     if (platform === 'win32') {
         return 'OS sandbox is not supported on Windows; running under WSL2 can enable bwrap/unshare. Falling back to process-level isolation.';
     }

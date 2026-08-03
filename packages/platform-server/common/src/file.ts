@@ -2,7 +2,7 @@ import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
 import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileDirectoryEntry, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException, Encodings } from '@tsdi/common';
 import { isAbsolute, resolve, join, normalize, extname, basename, parse, sep } from 'node:path';
 import { existsSync, createReadStream, Stats, readFileSync } from 'node:fs';
-import { stat, readFile, readdir } from 'node:fs/promises';
+import { stat, readFile, readdir, mkdir, rm, writeFile } from 'node:fs/promises';
 
 
 
@@ -154,6 +154,21 @@ export class NodeFileAdapter extends FileAdapter {
     readJSONSync<T = any>(path: string): T {
         const content = this.readTextSync(path);
         return JSON.parse(content);
+    }
+
+    async writeText(path: string, content: string, encoding?: Encodings): Promise<void> {
+        await writeFile(path, content, encoding || 'utf-8');
+    }
+
+    async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {
+        await mkdir(path, { recursive: options?.recursive ?? false });
+    }
+
+    async remove(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
+        await rm(path, {
+            recursive: options?.recursive ?? false,
+            force: options?.force ?? false
+        });
     }
 
     override async stat<T extends IStats = IStats>(path: string): Promise<T | null> {

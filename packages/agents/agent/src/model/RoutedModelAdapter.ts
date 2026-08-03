@@ -1,3 +1,4 @@
+import type { ApplicationArguments } from '@tsdi/core';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { ModelResponse } from './ModelResponse';
@@ -20,12 +21,14 @@ const DEFAULT_MODERATE_MAX = 3;
 
 export class RoutedModelAdapter extends ModelAdapter {
     private readonly adapters = new Map<string, ModelAdapter>();
+    protected appArgs?: ApplicationArguments;
 
     readonly provider: string;
 
-    constructor(private readonly options: AgentModelOptions) {
+    constructor(private readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
         super();
         this.provider = this.normalizeProvider(this.options.provider, this.options.baseUrl);
+        this.appArgs = appArgs;
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
@@ -323,16 +326,16 @@ export class RoutedModelAdapter extends ModelAdapter {
     private createAdapter(config: AgentModelConfig): ModelAdapter {
         switch (config.provider) {
             case 'anthropic':
-                return new AnthropicModelAdapter(config);
+                return new AnthropicModelAdapter(config, this.appArgs);
             case 'echo':
                 return new EchoModelAdapter();
             case 'openai':
             case 'deepseek':
             case 'openai-compatible':
-                return new OpenAICompatibleModelAdapter(config);
+                return new OpenAICompatibleModelAdapter(config, this.appArgs);
             default:
                 if (config.baseUrl) {
-                    return new OpenAICompatibleModelAdapter(config);
+                    return new OpenAICompatibleModelAdapter(config, this.appArgs);
                 }
                 throw new Error(`Unsupported model provider '${config.provider ?? 'unknown'}'.`);
         }

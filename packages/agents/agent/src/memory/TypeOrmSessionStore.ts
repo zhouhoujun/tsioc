@@ -5,6 +5,7 @@ import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity } from './entities';
+import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
 @Injectable()
 export class TypeOrmSessionStore extends SessionStore {
@@ -306,8 +307,9 @@ export class TypeOrmSessionStore extends SessionStore {
             return `thread:${primaryThreadId}`;
         }
         const workspace = String(state.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
+        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+        if (workspaceKey) {
+            return `workspace:${workspaceKey}`;
         }
         return `session:${state.sessionId}`;
     }

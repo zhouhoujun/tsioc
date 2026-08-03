@@ -123,6 +123,25 @@ export class BrowserFileAdapter extends FileAdapter {
         throw new Error('readJSONSync is not supported in browser environment');
     }
 
+    async writeText(path: string, content: string, encoding?: Encodings): Promise<void> {
+        void path;
+        void content;
+        void encoding;
+        throw new Error('writeText is not supported in browser environment');
+    }
+
+    async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {
+        void path;
+        void options;
+        throw new Error('mkdir is not supported in browser environment');
+    }
+
+    async remove(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
+        void path;
+        void options;
+        throw new Error('remove is not supported in browser environment');
+    }
+
 }
 
 const absPath = /^[a-zA-Z]+:\//;

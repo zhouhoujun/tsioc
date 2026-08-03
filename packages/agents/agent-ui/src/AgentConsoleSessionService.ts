@@ -1,5 +1,5 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
 export interface AgentConsoleSessionChoice {
     id: string;
@@ -484,8 +484,10 @@ export class AgentConsoleSessionService {
             }
             const leftWorkspace = String(left.workspace || '').trim();
             const rightWorkspace = String(right.workspace || '').trim();
-            if (leftWorkspace !== rightWorkspace) {
-                return leftWorkspace.localeCompare(rightWorkspace);
+            const leftWorkspaceKey = normalizeAgentWorkspaceIdentity(leftWorkspace);
+            const rightWorkspaceKey = normalizeAgentWorkspaceIdentity(rightWorkspace);
+            if (leftWorkspaceKey !== rightWorkspaceKey) {
+                return leftWorkspaceKey.localeCompare(rightWorkspaceKey);
             }
             const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
             if (activityDelta !== 0) {
@@ -565,8 +567,9 @@ export class AgentConsoleSessionService {
             return `thread:${primaryThreadId}`;
         }
         const workspace = String(session.workspace || '').trim();
-        if (workspace) {
-            return `workspace:${workspace}`;
+        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+        if (workspaceKey) {
+            return `workspace:${workspaceKey}`;
         }
         return `session:${session.id}`;
     }

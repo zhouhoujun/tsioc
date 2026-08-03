@@ -15,7 +15,8 @@ import {
     AgentStreamChunkEvent,
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
-    AgentToolInvokedEvent
+    AgentToolInvokedEvent,
+    normalizeAgentWorkspaceIdentity
 } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
@@ -79,6 +80,21 @@ class TestFileAdapter extends FileAdapter {
 
     readJSONSync<T = any>(target: string): T {
         return JSON.parse(this.readTextSync(target));
+    }
+
+    async writeText(target: string, content: string, encoding: Encodings = 'utf-8'): Promise<void> {
+        await fs.promises.writeFile(target, content, encoding as BufferEncoding);
+    }
+
+    async mkdir(target: string, options?: { recursive?: boolean }): Promise<void> {
+        await fs.promises.mkdir(target, { recursive: options?.recursive ?? false });
+    }
+
+    async remove(target: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
+        await fs.promises.rm(target, {
+            recursive: options?.recursive ?? false,
+            force: options?.force ?? false
+        });
     }
 
     override async stat(target: string): Promise<any | null> {
@@ -764,8 +780,8 @@ class SessionServiceStub extends AgentConsoleSessionService {
                 : String(session.primaryThreadId || '').trim()
                     ? `thread:${String(session.primaryThreadId).trim()}`
                     : String(session.workspace || '').trim()
-                        ? `workspace:${String(session.workspace).trim()}`
-                    : `session:${session.id}`;
+                        ? `workspace:${normalizeAgentWorkspaceIdentity(String(session.workspace).trim())}`
+                        : `session:${session.id}`;
             const bucket = buckets.get(projectKey) || [];
             bucket.push(session);
             buckets.set(projectKey, bucket);
@@ -825,8 +841,8 @@ class WorkspaceSessionStoreStub {
                 : String(state.primaryThreadId || '').trim()
                     ? `thread:${String(state.primaryThreadId).trim()}`
                     : String(state.workspace || '').trim()
-                        ? `workspace:${String(state.workspace).trim()}`
-                    : `session:${state.sessionId}`;
+                        ? `workspace:${normalizeAgentWorkspaceIdentity(String(state.workspace).trim())}`
+                        : `session:${state.sessionId}`;
             const existing = buckets.get(projectKey) || {
                 projectKey,
                 projectId: state.projectId,
@@ -1717,6 +1733,16 @@ export class AgentConsoleComponentTest {
         expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-a']);
         expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b']);
         expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual([]);
+    }
+
+    @Test('input history store normalizes Windows workspace variants')
+    async inputHistoryStoreNormalizesWindowsWorkspaceVariants() {
+        const memory = new InMemoryMemoryStore();
+        const store = new AgentConsoleInputHistoryStore(undefined, memory as any);
+
+        await store.save(['dir'], 'C:\\Repo\\Agents\\', 'chat-a');
+
+        expect(await store.load('c:/repo/agents', 'chat-a')).toEqual(['dir']);
     }
 
     @Test('tracks detailed tool runs and highlights running tool')
@@ -5561,6 +5587,32 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessionCount).toEqual(2);
         expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-c', 'chat-a']);
         expect(projects[0].sessions[0].current).toEqual(true);
+    }
+
+    @Test('session service groups Windows workspace variants together')
+    async sessionServiceGroupsWindowsWorkspaceVariantsTogether() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: 'C:\\Repo\\Agents\\'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: 'c:/repo/agents'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-b');
+
+        expect(projects.map(project => project.projectKey)).toEqual(['workspace:c:/repo/agents']);
+        expect(projects[0].sessionCount).toEqual(2);
+        expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-b', 'chat-a']);
     }
 
     @Test('session service groups sessions by thread')

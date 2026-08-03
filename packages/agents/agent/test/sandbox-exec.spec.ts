@@ -4,6 +4,7 @@ import {
     buildSandboxExecCommand,
     describeSandboxExecDegradation,
     detectSandboxExecTool,
+    resolvePlatformShellCommand,
     SandboxMode,
     SandboxExecTool
 } from '../src/harness/sandbox-exec';
@@ -123,13 +124,29 @@ export class SandboxExecWrapperTest {
         const profile = wrapped?.args[1] || '';
         expect(profile).toContain('(deny network*)');
     }
+
+    @Test('shell command strings resolve to cmd.exe on Windows')
+    shellCommandStringsResolveToCmdOnWindows() {
+        expect(resolvePlatformShellCommand('dir && echo done', [], 'win32')).toEqual({
+            command: 'cmd.exe',
+            args: ['/d', '/s', '/c', 'dir && echo done']
+        });
+    }
+
+    @Test('plain executable invocations stay untouched when arguments are explicit')
+    plainExecutableInvocationsStayUntouched() {
+        expect(resolvePlatformShellCommand('git', ['status'], 'win32')).toEqual({
+            command: 'git',
+            args: ['status']
+        });
+    }
 }
 
 @Suite('OsSandboxExecutor')
 export class OsSandboxExecutorTest {
     @Test('mode off executes the command directly')
     async modeOffExecutesDirectly() {
-        const executor = new OsSandboxExecutor({ sandbox: { mode: 'off' } }, 'linux', async () => true);
+        const executor = new OsSandboxExecutor({ sandbox: { mode: 'off' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);
         const result = await executor.execute('echo', ['raw'], {
             policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp' })
         });
@@ -139,7 +156,7 @@ export class OsSandboxExecutorTest {
 
     @Test('missing OS tool degrades to direct execution')
     async missingToolDegradesToDirectExecution() {
-        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, 'linux', async () => false);
+        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, { os: 'linux', shellFamily: 'posix' }, async () => false);
         const result = await executor.execute('echo', ['plain'], {
             policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp' })
         });
@@ -149,7 +166,7 @@ export class OsSandboxExecutorTest {
 
     @Test('policy osSandbox off overrides configured workspace mode')
     async policyModeOverridesConfiguredMode() {
-        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, 'linux', async () => true);
+        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);
         const result = await executor.execute('echo', ['direct'], {
             policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp', osSandbox: 'off' })
         });
@@ -159,7 +176,7 @@ export class OsSandboxExecutorTest {
 
     @Test('workspace mode wraps the command with the detected tool')
     async workspaceModeWrapsCommand() {
-        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, 'linux', async () => true);
+        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);
         const result = await executor.execute('echo', ['wrapped'], {
             policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp/ws', osSandbox: 'workspace' as SandboxMode })
         });
@@ -169,7 +186,7 @@ export class OsSandboxExecutorTest {
 
     @Test('shell-style command strings are wrapped through sh -c')
     async shellCommandStringsWrapThroughSh() {
-        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, 'linux', async () => true);
+        const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);
         const result = await executor.execute('echo hello world', [], {
             policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp/ws', osSandbox: 'workspace' as SandboxMode })
         });

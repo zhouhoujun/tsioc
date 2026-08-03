@@ -1,6 +1,5 @@
-import { Dirent, existsSync, readdirSync, readFileSync } from 'fs';
-import { writeFile } from 'fs/promises';
-import { basename, extname, join, resolve } from 'path';
+import { FileAdapter, FileDirectoryEntry } from '@tsdi/common';
+import { basenameAgentPath } from '../AgentWorkspacePath';
 import { DEFAULT_AGENTS_DOC_NAME, findProjectRoot } from './agents-doc';
 
 /**
@@ -60,9 +59,64 @@ interface PackageJsonInfo {
     scripts?: Record<string, string>;
 }
 
-function readPackageJson(root: string): PackageJsonInfo | null {
+interface InitAgentsDocIo {
+    resolve(...paths: string[]): string;
+    join(...paths: string[]): string;
+    extname(path: string): string;
+    existsSync(path: string): boolean;
+    readTextSync(path: string): string;
+    listSync(path: string): FileDirectoryEntry[];
+    writeText(path: string, content: string): Promise<void>;
+}
+
+function tryLoadNodeIo(): InitAgentsDocIo | null {
     try {
-        const parsed = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+        const req = typeof require === 'function' ? require : null;
+        if (!req) {
+            return null;
+        }
+        const fs = req('fs');
+        const path = req('path');
+        return {
+            resolve: (...paths: string[]) => path.resolve(...paths),
+            join: (...paths: string[]) => path.join(...paths),
+            extname: (target: string) => path.extname(target),
+            existsSync: (target: string) => fs.existsSync(target),
+            readTextSync: (target: string) => fs.readFileSync(target, 'utf8'),
+            listSync: (target: string) => {
+                const entries = fs.readdirSync(target, { withFileTypes: true });
+                return entries.map((entry: any) => ({
+                    name: entry.name,
+                    path: path.join(target, entry.name),
+                    kind: entry.isDirectory() ? 'directory' : entry.isFile() ? 'file' : 'other'
+                }));
+            },
+            writeText: async (target: string, content: string) => {
+                await fs.promises.writeFile(target, content, 'utf8');
+            }
+        };
+    } catch {
+        return null;
+    }
+}
+
+function adaptFileAdapter(adapter: FileAdapter, writeText?: (path: string, content: string) => Promise<void>): InitAgentsDocIo {
+    return {
+        resolve: (...paths: string[]) => adapter.resolve(...paths),
+        join: (...paths: string[]) => adapter.join(...paths),
+        extname: (target: string) => adapter.extname(target),
+        existsSync: (target: string) => adapter.existsSync(target),
+        readTextSync: (target: string) => adapter.readTextSync(target),
+        listSync: () => [],
+        writeText: writeText ?? (async () => {
+            throw new Error('Writing AGENTS.md is not supported in this environment.');
+        })
+    };
+}
+
+function readPackageJson(root: string, io: InitAgentsDocIo): PackageJsonInfo | null {
+    try {
+        const parsed = JSON.parse(io.readTextSync(io.join(root, 'package.json')));
         return {
             name: typeof parsed.name === 'string' ? parsed.name : undefined,
             description: typeof parsed.description === 'string' ? parsed.description : undefined,
@@ -73,28 +127,23 @@ function readPackageJson(root: string): PackageJsonInfo | null {
     }
 }
 
-function collectExtensions(dir: string, depth: number, maxFiles: number): string[] {
+function collectExtensions(dir: string, depth: number, maxFiles: number, io: InitAgentsDocIo): string[] {
     if (depth <= 0 || maxFiles <= 0) {
         return [];
     }
-    let entries;
-    try {
-        entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
-        return [];
-    }
+    const entries = io.listSync(dir);
     const extensions: string[] = [];
     for (const entry of entries) {
         if (extensions.length >= maxFiles) {
             break;
         }
-        if (entry.isDirectory()) {
+        if (entry.kind === 'directory') {
             if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
                 continue;
             }
-            extensions.push(...collectExtensions(join(dir, entry.name), depth - 1, maxFiles - extensions.length));
-        } else if (entry.isFile()) {
-            const ext = extname(entry.name).toLowerCase();
+            extensions.push(...collectExtensions(entry.path, depth - 1, maxFiles - extensions.length, io));
+        } else if (entry.kind === 'file') {
+            const ext = io.extname(entry.name).toLowerCase();
             if (LANGUAGE_BY_EXTENSION[ext]) {
                 extensions.push(ext);
             }
@@ -103,30 +152,25 @@ function collectExtensions(dir: string, depth: number, maxFiles: number): string
     return extensions;
 }
 
-export function analyzeProjectStructure(root: string): ProjectStructureSummary {
-    let entries: Dirent[] = [];
-    try {
-        entries = readdirSync(root, { withFileTypes: true });
-    } catch {
-        entries = [];
-    }
+export function analyzeProjectStructure(root: string, io: InitAgentsDocIo = tryLoadNodeIo()!): ProjectStructureSummary {
+    const entries = io?.listSync(root) ?? [];
     const topLevelDirs: string[] = [];
     const topLevelFiles: string[] = [];
     for (const entry of entries) {
         if (entry.name.startsWith('.') && entry.name !== '.github') {
             continue;
         }
-        if (entry.isDirectory()) {
+        if (entry.kind === 'directory') {
             topLevelDirs.push(entry.name);
-        } else if (entry.isFile()) {
+        } else if (entry.kind === 'file') {
             topLevelFiles.push(entry.name);
         }
     }
 
-    const pkg = readPackageJson(root);
+    const pkg = io ? readPackageJson(root, io) : null;
 
     const languages: string[] = [];
-    for (const ext of new Set(collectExtensions(root, 3, 300))) {
+    for (const ext of new Set(io ? collectExtensions(root, 3, 300, io) : [])) {
         const language = LANGUAGE_BY_EXTENSION[ext];
         if (language && !languages.includes(language)) {
             languages.push(language);
@@ -146,14 +190,14 @@ export function analyzeProjectStructure(root: string): ProjectStructureSummary {
 
     return {
         root,
-        name: pkg?.name ?? basename(root),
+        name: pkg?.name ?? basenameAgentPath(root),
         description: pkg?.description,
         readme,
         languages,
         topLevelDirs,
         topLevelFiles,
         buildCommands,
-        vcs: existsSync(join(root, '.git')) ? 'git' : 'none'
+        vcs: io?.existsSync(io.join(root, '.git')) ? 'git' : 'none'
     };
 }
 
@@ -218,6 +262,8 @@ export interface InitAgentsDocOptions {
     root?: string;
     fileName?: string;
     force?: boolean;
+    fileAdapter?: FileAdapter;
+    writeText?: (path: string, content: string) => Promise<void>;
 }
 
 export interface InitAgentsDocResult {
@@ -228,14 +274,20 @@ export interface InitAgentsDocResult {
 }
 
 export async function initAgentsDoc(options: InitAgentsDocOptions = {}): Promise<InitAgentsDocResult> {
+    const io = options.fileAdapter
+        ? adaptFileAdapter(options.fileAdapter, options.writeText)
+        : tryLoadNodeIo();
+    if (!io) {
+        return { file: options.fileName ?? DEFAULT_AGENTS_DOC_NAME, created: false, reason: 'filesystem access is not available in this environment' };
+    }
     const fileName = options.fileName ?? DEFAULT_AGENTS_DOC_NAME;
-    const startDir = resolve(options.root ?? process.cwd());
-    const projectRoot = findProjectRoot(startDir) ?? startDir;
-    const target = join(projectRoot, fileName);
-    if (existsSync(target) && !options.force) {
+    const startDir = io.resolve(options.root ?? '.');
+    const projectRoot = findProjectRoot(startDir, { stopAt: startDir, exists: io.existsSync }) ?? startDir;
+    const target = io.join(projectRoot, fileName);
+    if (io.existsSync(target) && !options.force) {
         return { file: target, created: false, reason: `already exists at ${target}; use --force to overwrite` };
     }
-    const draft = buildAgentsMdDraft(analyzeProjectStructure(projectRoot));
-    await writeFile(target, draft, 'utf8');
+    const draft = buildAgentsMdDraft(analyzeProjectStructure(projectRoot, io));
+    await io.writeText(target, draft);
     return { file: target, created: true, draft };
 }

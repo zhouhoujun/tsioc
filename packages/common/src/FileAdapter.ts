@@ -132,6 +132,28 @@ export abstract class FileAdapter {
     abstract readJSONSync<T = any>(path: string): T;
 
     /**
+     * Write text content to file.
+     * @param path file path.
+     * @param content text content.
+     * @param encoding text encoding (default: 'utf-8').
+     */
+    abstract writeText(path: string, content: string, encoding?: Encodings): Promise<void>;
+
+    /**
+     * Create a directory.
+     * @param path directory path.
+     * @param options create options.
+     */
+    abstract mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
+
+    /**
+     * Remove a file or directory.
+     * @param path target path.
+     * @param options remove options.
+     */
+    abstract remove(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
+
+    /**
      * Resolve file or directory metadata when the adapter supports it.
      * Default implementation returns null so callers can degrade gracefully.
      */
