@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import {
+    ConsoleTextChunk,
     clampConsoleTextCursor,
     processConsoleTextInputChunk,
     shouldSkipConsoleHistoryEntry
@@ -3971,7 +3972,7 @@ export class AgentConsoleSessionState {
 
     async processDecodedInput(
         decoded: { text: string; controlKey?: string; partial?: boolean },
-        chunk: Buffer | string,
+        chunk: ConsoleTextChunk,
         options: {
             isClosed: boolean;
             onExit: (message: string, force?: boolean) => void;

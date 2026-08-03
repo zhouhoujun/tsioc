@@ -117,7 +117,7 @@ export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntim
                     stdio: ['ignore', 'pipe', 'ignore']
                 });
                 let found = false;
-                child.stdout?.on('data', (data: Buffer) => {
+                child.stdout?.on('data', (data: Uint8Array) => {
                     if (data.toString().trim()) {
                         found = true;
                     }

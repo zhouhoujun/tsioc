@@ -1194,6 +1194,10 @@ export class ConsoleRendererTest {
             text: 'sk-test',
             submitted: true
         });
+        expect(parseTerminalTextPromptChunk(new TextEncoder().encode('token\nextra') as any)).toEqual({
+            text: 'token',
+            submitted: true
+        });
         expect(shouldPlaceConsoleCursor({
             isTTY: true,
             isSelecting: false,

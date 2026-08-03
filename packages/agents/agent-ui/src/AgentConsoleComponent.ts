@@ -3,9 +3,11 @@ import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { FileAdapter } from '@tsdi/common';
 import {
     clampConsoleTextCursor,
+    ConsoleTextChunk,
     ConsoleTerminalInputHandler,
     ConsoleTerminalSurfaceAccessor,
     ConsoleTerminalSurfaceLifecycle,
+    decodeConsoleTextChunk,
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -4372,9 +4374,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     async handleTerminalInput(
         decoded: TerminalInputSequenceResult,
-        chunk: Buffer | string
+        chunk: ConsoleTextChunk
     ): Promise<void> {
-        const rawChunk = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+        const rawChunk = decodeConsoleTextChunk(chunk);
         const submitOnEnter = /[\r\n]/.test(rawChunk);
         const outcome = await this.state.processDecodedInput(decoded, chunk, {
             isClosed: this.destroyed,

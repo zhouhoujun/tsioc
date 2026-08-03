@@ -1,5 +1,42 @@
 import { fitByDisplayWidth, getDisplayWidth } from './display-width';
 
+export type ConsoleTextChunk = Uint8Array | string;
+
+export function decodeConsoleTextChunk(chunk: ConsoleTextChunk | null | undefined): string {
+    if (typeof chunk === 'string') {
+        return chunk;
+    }
+    if (chunk instanceof Uint8Array) {
+        if (typeof TextDecoder !== 'undefined') {
+            return new TextDecoder().decode(chunk);
+        }
+        const bufferCtor = (globalThis as { Buffer?: { from?(input: Uint8Array): { toString(encoding?: string): string } } }).Buffer;
+        if (typeof bufferCtor?.from === 'function') {
+            return bufferCtor.from(chunk).toString('utf8');
+        }
+    }
+    if (chunk == null) {
+        return '';
+    }
+    return String(chunk);
+}
+
+export function encodeConsoleBase64Utf8(text: string): string {
+    if (typeof TextEncoder !== 'undefined' && typeof btoa === 'function') {
+        const bytes = new TextEncoder().encode(String(text || ''));
+        let binary = '';
+        for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
+        }
+        return btoa(binary);
+    }
+    const bufferCtor = (globalThis as { Buffer?: { from?(input: string, encoding?: string): { toString(encoding?: string): string } } }).Buffer;
+    if (typeof bufferCtor?.from === 'function') {
+        return bufferCtor.from(String(text || ''), 'utf8').toString('base64');
+    }
+    return '';
+}
+
 export interface ConsoleTextInputState {
     value: string;
     cursor: number;
@@ -115,8 +152,8 @@ export function resolveConsolePlaceholderDisplayValue(
     return focused ? ` ${placeholderText}` : placeholderText;
 }
 
-export function shouldSubmitConsoleTextChunk(chunk: Buffer | string): boolean {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+export function shouldSubmitConsoleTextChunk(chunk: ConsoleTextChunk): boolean {
+    const text = decodeConsoleTextChunk(chunk);
     if (!text || isConsoleAltEnterChunk(text)) {
         return false;
     }
@@ -367,10 +404,10 @@ function isConsoleAltEnterChunk(text: string): boolean {
 export function processConsoleTextInputChunk(
     value: string,
     cursor: number,
-    chunk: Buffer | string,
+    chunk: ConsoleTextChunk,
     options: ConsoleTextInputChunkOptions = {}
 ): ConsoleTextInputChunkResult {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+    const text = decodeConsoleTextChunk(chunk);
     const baseState = {
         value: String(value || ''),
         cursor: clampConsoleTextCursor(value, cursor)
@@ -421,8 +458,8 @@ export function processConsoleTextInputChunk(
     };
 }
 
-export function applyConsoleTextInputChunk(value: string, cursor: number, chunk: Buffer | string): ConsoleTextInputState {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+export function applyConsoleTextInputChunk(value: string, cursor: number, chunk: ConsoleTextChunk): ConsoleTextInputState {
+    const text = decodeConsoleTextChunk(chunk);
     if (!text) {
         return { value: String(value || ''), cursor: clampConsoleTextCursor(value, cursor) };
     }

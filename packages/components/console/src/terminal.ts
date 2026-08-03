@@ -1,5 +1,8 @@
 import {
     applyConsoleTextInputChunk,
+    ConsoleTextChunk,
+    decodeConsoleTextChunk,
+    encodeConsoleBase64Utf8,
     formatConsoleIndexedOptionLabel,
     formatConsoleSelectOptionTableRow,
     resolveConsoleOptionLabelColumnWidth,
@@ -12,6 +15,11 @@ import { RNode, Renderer } from '@tsdi/components';
 import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
+
+function resolveConsoleHostEnv(): Record<string, string | undefined> {
+    const candidate = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+    return candidate?.env ?? {};
+}
 
 const TERMINAL_RENDER_ANSI = {
     reset: '\x1b[0m',
@@ -226,10 +234,10 @@ export interface TuiTerminalSurfaceOptions {
 export interface ConsoleTerminalInputLike {
     isTTY?: boolean;
     readable?: boolean;
-    on(event: 'data', listener: (chunk: Buffer | string) => void): void;
-    off?(event: 'data', listener: (chunk: Buffer | string) => void): void;
-    removeListener?(event: 'data', listener: (chunk: Buffer | string) => void): void;
-    read?(): Buffer | string | null;
+    on(event: 'data', listener: (chunk: ConsoleTextChunk) => void): void;
+    off?(event: 'data', listener: (chunk: ConsoleTextChunk) => void): void;
+    removeListener?(event: 'data', listener: (chunk: ConsoleTextChunk) => void): void;
+    read?(): ConsoleTextChunk | null;
     resume?(): void;
     pause?(): void;
     setRawMode?(enabled: boolean): void;
@@ -241,7 +249,7 @@ export interface ConsoleTerminalInputControllerOptions {
     pollIntervalMs?: number;
     onChunk: (
         decoded: TerminalInputSequenceResult,
-        chunk: Buffer | string
+        chunk: ConsoleTextChunk
     ) => void | Promise<void>;
 }
 
@@ -255,7 +263,7 @@ export abstract class ConsoleTerminalInputLifecycle {
 export abstract class ConsoleTerminalInputHandler {
     abstract handleTerminalInput(
         decoded: TerminalInputSequenceResult,
-        chunk: Buffer | string
+        chunk: ConsoleTextChunk
     ): void | Promise<void>;
 }
 
@@ -278,8 +286,8 @@ export class ConsoleTerminalInputController {
     protected readonly pollIntervalMs: number;
     protected started = false;
     protected resumed = false;
-    protected dataHandler?: (chunk: Buffer | string) => void;
-    protected pollTimer?: NodeJS.Timeout;
+    protected dataHandler?: (chunk: ConsoleTextChunk) => void;
+    protected pollTimer?: ReturnType<typeof setInterval>;
 
     constructor(protected options: ConsoleTerminalInputControllerOptions) {
         this.input = options.input || (globalThis as any).process?.stdin;
@@ -292,7 +300,7 @@ export class ConsoleTerminalInputController {
             return;
         }
         this.started = true;
-        this.dataHandler = (chunk: Buffer | string) => {
+        this.dataHandler = (chunk: ConsoleTextChunk) => {
             void this.options.onChunk(this.decoder.decode(chunk), chunk);
         };
         this.input.on('data', this.dataHandler);
@@ -378,7 +386,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected root?: RNode | RNode[];
     protected readonly output = (globalThis as any).process?.stdout;
     protected readonly useAlternateScreen = shouldUseAlternateScreen();
-    protected attachTimer?: NodeJS.Timeout;
+    protected attachTimer?: ReturnType<typeof setTimeout>;
 
     constructor(
         private injector: Injector
@@ -877,8 +885,8 @@ export function resolveTerminalMenuNextIndex(
     return (current + delta + count) % count;
 }
 
-export function parseTerminalInputControlKey(input: Buffer | string): TerminalInputControlKey | undefined {
-    const text = Buffer.isBuffer(input) ? input.toString('utf8') : String(input || '');
+export function parseTerminalInputControlKey(input: ConsoleTextChunk): TerminalInputControlKey | undefined {
+    const text = decodeConsoleTextChunk(input);
     if (!text) {
         return undefined;
     }
@@ -925,8 +933,8 @@ function isPartialTerminalInputSequence(text: string): boolean {
 export class TerminalInputSequenceDecoder {
     protected pending = '';
 
-    decode(input: Buffer | string): TerminalInputSequenceResult {
-        const next = Buffer.isBuffer(input) ? input.toString('utf8') : String(input || '');
+    decode(input: ConsoleTextChunk): TerminalInputSequenceResult {
+        const next = decodeConsoleTextChunk(input);
         const text = `${this.pending}${next}`;
         const controlKey = parseTerminalInputControlKey(text);
         if (controlKey && !(controlKey === 'escape' && isPartialTerminalInputSequence(text))) {
@@ -1072,7 +1080,7 @@ function paintTerminalText(value: string, ...codes: string[]): string {
     return prefix ? `${prefix}${value}${TERMINAL_RENDER_ANSI.reset}` : value;
 }
 
-export function shouldUseAlternateScreen(env: Record<string, string | undefined> = typeof process !== 'undefined' ? process.env : {}): boolean {
+export function shouldUseAlternateScreen(env: Record<string, string | undefined> = resolveConsoleHostEnv()): boolean {
     const configured = String(env.TSDI_AGENT_ALT_SCREEN || '').trim().toLowerCase();
     if (!configured) {
         return false;
@@ -1120,8 +1128,8 @@ export function wrapPrefixedText(value: string, width: number, firstPrefix = '',
     return lines.length ? lines : [firstPrefix];
 }
 
-export function parseTerminalTextPromptChunk(chunk: Buffer | string): { text: string; submitted: boolean } {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+export function parseTerminalTextPromptChunk(chunk: ConsoleTextChunk): { text: string; submitted: boolean } {
+    const text = decodeConsoleTextChunk(chunk);
     const submitIndex = text.search(/[\r\n]/);
     if (submitIndex < 0) {
         return { text, submitted: false };
@@ -1133,11 +1141,11 @@ export function parseTerminalTextPromptChunk(chunk: Buffer | string): { text: st
 }
 
 export function buildOsc52ClipboardSequence(text: string): string {
-    const payload = Buffer.from(text, 'utf8').toString('base64');
+    const payload = encodeConsoleBase64Utf8(text);
     return `\x1b]52;c;${payload}\x07`;
 }
 
-export function shortenTerminalPath(workspace: string, home = typeof process !== 'undefined' ? (process.env.HOME || '') : ''): string {
+export function shortenTerminalPath(workspace: string, home = String(resolveConsoleHostEnv().HOME || '')): string {
     const value = String(workspace || '').trim();
     if (!value) {
         return '';
@@ -2212,8 +2220,8 @@ export function findSelectMenuOptionIndexFromRenderedLines(
     return index;
 }
 
-export function parseTerminalMouseEvent(input: Buffer | string): SelectMenuMouseEvent | undefined {
-    const text = Buffer.isBuffer(input) ? input.toString('utf8') : input;
+export function parseTerminalMouseEvent(input: ConsoleTextChunk): SelectMenuMouseEvent | undefined {
+    const text = decodeConsoleTextChunk(input);
     const match = text.match(/\x1b\[<(\d+);(\d+);(\d+)([mM])/);
     if (!match) {
         return undefined;
@@ -2413,8 +2421,8 @@ export function renderDraftLine(line: string): string {
     return line.replace(/(^|\s)(@[\w.-]+)/g, (_match, prefix, mention) => `${prefix}[${mention}]`);
 }
 
-export function applyTerminalInputChunk(value: string, cursor: number, chunk: Buffer | string): TerminalDraftState {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+export function applyTerminalInputChunk(value: string, cursor: number, chunk: ConsoleTextChunk): TerminalDraftState {
+    const text = decodeConsoleTextChunk(chunk);
     if (!text || parseTerminalMouseEvent(text)) {
         return { value, cursor };
     }

@@ -199,11 +199,11 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                     let stderr = '';
                     let killedByLimits = false;
 
-                    child.stdout?.on('data', (data: Buffer) => {
+                    child.stdout?.on('data', (data: Uint8Array) => {
                         stdout += data.toString();
                     });
 
-                    child.stderr?.on('data', (data: Buffer) => {
+                    child.stderr?.on('data', (data: Uint8Array) => {
                         stderr += data.toString();
                     });
 
@@ -415,11 +415,11 @@ export class NoopSandboxExecutor extends SandboxExecutor {
             let stdout = '';
             let stderr = '';
 
-            child.stdout?.on('data', (data: Buffer) => {
+            child.stdout?.on('data', (data: Uint8Array) => {
                 stdout += data.toString();
             });
 
-            child.stderr?.on('data', (data: Buffer) => {
+            child.stderr?.on('data', (data: Uint8Array) => {
                 stderr += data.toString();
             });
 
