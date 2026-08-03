@@ -1,5 +1,5 @@
 import { AgentMemoryRecord } from '../memory/MemoryStore';
-import { AgentMessage } from '../runtime/AgentMessage';
+import { AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
@@ -10,9 +10,18 @@ import type { ApplicationArguments } from '@tsdi/core';
 
 type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
 
+interface OpenAIContentPart {
+    type: 'text' | 'image_url';
+    text?: string;
+    image_url?: {
+        url: string;
+        detail?: 'auto' | 'low' | 'high';
+    };
+}
+
 interface OpenAIMessage {
     role: OpenAIRole;
-    content?: string | null;
+    content?: string | OpenAIContentPart[] | null;
     name?: string;
     tool_call_id?: string;
     tool_calls?: Array<{
@@ -494,7 +503,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 if (toolCalls.length) {
                     result.push({
                         role: 'assistant',
-                        content: this.extractText(message.content),
+                        content: getAgentMessageText(message) || null,
                         tool_calls: toolCalls.map(call => this.mapToolCall(call, toolNameMap))
                     });
                     activeToolCallIds = new Set(toolCalls.map(call => call.id));
@@ -527,11 +536,50 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             activeToolCallIds = undefined;
             result.push({
                 role: message.role,
-                content: this.extractText(message.content) || null
+                content: this.mapMessageContent(message)
             });
         }
 
         return result;
+    }
+
+    protected mapMessageContent(message: AgentMessage): OpenAIMessage['content'] {
+        if (message.role === 'tool' || message.role === 'assistant' || message.role === 'system') {
+            return getAgentMessageText(message) || null;
+        }
+        const parts = this.mapMessageParts(resolveAgentMessageParts(message));
+        if (!parts.length) {
+            return null;
+        }
+        if (parts.length === 1 && parts[0].type === 'text') {
+            return parts[0].text || null;
+        }
+        return parts;
+    }
+
+    protected mapMessageParts(parts: AgentMessagePart[]): OpenAIContentPart[] {
+        const mapped: OpenAIContentPart[] = [];
+        for (const part of parts) {
+            if (part.type === 'text') {
+                const text = String(part.text || '');
+                if (text) {
+                    mapped.push({ type: 'text', text });
+                }
+                continue;
+            }
+            mapped.push(this.mapImagePart(part));
+        }
+        return mapped;
+    }
+
+    protected mapImagePart(part: AgentImageMessagePart): OpenAIContentPart {
+        return {
+            type: 'image_url',
+            image_url: {
+                url: part.imageUrl,
+                detail: part.detail
+            }
+        };
     }
 
     protected mapTool(tool: AgentToolDefinition, toolNameMap: Map<string, string> = new Map()): OpenAIToolDefinition {

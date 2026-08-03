@@ -11,10 +11,10 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
-import { AgentConsoleApprovalRequest, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -44,6 +44,15 @@ import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessi
 export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly STREAM_MESSAGE_FLUSH_MS = 160;
     protected static readonly STREAM_PENDING_NOTICE_MS = 8000;
+    protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp',
+        '.svg': 'image/svg+xml'
+    };
     protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
     protected static readonly SEARCH_SESSION_LIMIT = 100;
     protected static readonly SEARCH_CONCURRENCY = 6;
@@ -364,6 +373,203 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return normalized.slice(0, 1);
         }
         return normalized.slice(0, slashIndex);
+    }
+
+    protected resolveAttachmentTargetPath(targetPath: string, fileAdapter: FileAdapter): string {
+        const trimmed = String(targetPath || '').trim();
+        if (!trimmed) {
+            throw new Error('Usage: /attach <path>');
+        }
+        if (fileAdapter.isAbsolute(trimmed)) {
+            return fileAdapter.normalize(trimmed);
+        }
+        const workspace = String(this.workspace || '').trim();
+        return workspace
+            ? fileAdapter.resolve(workspace, trimmed)
+            : fileAdapter.normalize(trimmed);
+    }
+
+    protected describePendingAttachments(attachments: AgentConsolePendingAttachment[] = this.state.pendingAttachments): string {
+        if (!attachments.length) {
+            return 'No pending attachments.';
+        }
+        return `Pending attachments: ${attachments.map(item => item.name).join(', ')}`;
+    }
+
+    protected buildTurnMessageInput(prompt: string, attachments: AgentConsolePendingAttachment[]): AgentTurnMessageInput | undefined {
+        if (!attachments.length) {
+            return undefined;
+        }
+        return {
+            content: prompt,
+            parts: [
+                ...(prompt ? [{ type: 'text', text: prompt } as const] : []),
+                ...attachments.map(attachment => ({
+                    type: 'image' as const,
+                    imageUrl: attachment.imageUrl,
+                    mediaType: attachment.mediaType,
+                    name: attachment.name
+                }))
+            ]
+        };
+    }
+
+    protected async runAttachCommand(args: string): Promise<boolean> {
+        const trimmed = String(args || '').trim();
+        if (!trimmed) {
+            this.notify(this.describePendingAttachments());
+            return true;
+        }
+        if (/^(clear|reset)$/i.test(trimmed)) {
+            this.state.clearPendingAttachments();
+            this.notify('Cleared pending attachments.');
+            return true;
+        }
+        const fileAdapter = this.resolveFileAdapter();
+        if (!fileAdapter) {
+            this.notify('Attach is unavailable without a file adapter.');
+            return true;
+        }
+        try {
+            const attachment = await this.loadPendingImageAttachment(trimmed, fileAdapter);
+            this.state.setPendingAttachments([
+                ...this.state.pendingAttachments.filter(item => item.path !== attachment.path),
+                attachment
+            ]);
+            this.notify(`Attached ${attachment.name}. ${this.describePendingAttachments()}`);
+        } catch (error: any) {
+            this.notify(error?.message || String(error || 'Failed to attach image.'));
+        }
+        return true;
+    }
+
+    protected async loadPendingImageAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
+        const absolutePath = this.resolveAttachmentTargetPath(targetPath, fileAdapter);
+        const mediaType = this.resolveImageMediaType(absolutePath);
+        if (!mediaType) {
+            throw new Error(`Unsupported image format for '${targetPath}'.`);
+        }
+        const bytes = await this.readFileBytes(absolutePath, fileAdapter);
+        return {
+            id: `attachment-${Date.now()}-${Math.random()}`,
+            kind: 'image',
+            path: absolutePath,
+            name: absolutePath.split(/[\\/]/).pop() || absolutePath,
+            mediaType,
+            imageUrl: `data:${mediaType};base64,${this.encodeBase64(bytes)}`
+        };
+    }
+
+    protected resolveImageMediaType(filePath: string): string | undefined {
+        const normalized = String(filePath || '').trim().toLowerCase();
+        for (const ext of Object.keys(AgentConsoleComponent.IMAGE_MIME_TYPES)) {
+            if (normalized.endsWith(ext)) {
+                return AgentConsoleComponent.IMAGE_MIME_TYPES[ext];
+            }
+        }
+        return undefined;
+    }
+
+    protected async readFileBytes(targetPath: string, fileAdapter: FileAdapter): Promise<Uint8Array> {
+        const readable = fileAdapter.read(targetPath) as any;
+        if (readable && typeof readable[Symbol.asyncIterator] === 'function') {
+            const chunks: Uint8Array[] = [];
+            let total = 0;
+            for await (const chunk of readable) {
+                const bytes = await this.normalizeBinaryChunk(chunk);
+                if (!bytes.length) {
+                    continue;
+                }
+                chunks.push(bytes);
+                total += bytes.length;
+            }
+            return this.concatUint8Arrays(chunks, total);
+        }
+        return await new Promise<Uint8Array>((resolve, reject) => {
+            const chunks: Uint8Array[] = [];
+            let total = 0;
+            let finished = false;
+            const pending: Array<Promise<void>> = [];
+            const finish = () => {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                void Promise.all(pending)
+                    .then(() => resolve(this.concatUint8Arrays(chunks, total)))
+                    .catch(reject);
+            };
+            const fail = (error: Error) => {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                reject(error);
+            };
+            readable?.on?.('data', (chunk: any) => {
+                pending.push(this.normalizeBinaryChunk(chunk)
+                    .then(bytes => {
+                        if (!bytes.length) {
+                            return;
+                        }
+                        chunks.push(bytes);
+                        total += bytes.length;
+                    })
+                    .catch(fail));
+            });
+            readable?.once?.('end', finish);
+            readable?.once?.('close', finish);
+            readable?.once?.('error', fail);
+        });
+    }
+
+    protected async normalizeBinaryChunk(chunk: any): Promise<Uint8Array> {
+        if (!chunk) {
+            return new Uint8Array(0);
+        }
+        if (chunk instanceof Uint8Array) {
+            return chunk;
+        }
+        if (typeof ArrayBuffer !== 'undefined' && chunk instanceof ArrayBuffer) {
+            return new Uint8Array(chunk);
+        }
+        if (typeof chunk?.arrayBuffer === 'function') {
+            return new Uint8Array(await chunk.arrayBuffer());
+        }
+        if (typeof chunk === 'string') {
+            return new TextEncoder().encode(chunk);
+        }
+        if (Array.isArray(chunk)) {
+            return Uint8Array.from(chunk);
+        }
+        return new Uint8Array(0);
+    }
+
+    protected concatUint8Arrays(chunks: Uint8Array[], total: number): Uint8Array {
+        const bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return bytes;
+    }
+
+    protected encodeBase64(bytes: Uint8Array): string {
+        const bufferCtor = (globalThis as any).Buffer;
+        if (bufferCtor) {
+            return bufferCtor.from(bytes).toString('base64');
+        }
+        if (typeof globalThis.btoa === 'function') {
+            let binary = '';
+            const chunkSize = 0x8000;
+            for (let index = 0; index < bytes.length; index += chunkSize) {
+                const slice = bytes.subarray(index, index + chunkSize);
+                binary += String.fromCharCode(...Array.from(slice));
+            }
+            return globalThis.btoa(binary);
+        }
+        throw new Error('Base64 encoding is unavailable in this environment.');
     }
 
     /**
@@ -3008,6 +3214,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
                     { label: '/export', value: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]' },
+                    { label: '/attach', value: '/attach', description: 'attach an image for the next prompt' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
@@ -3088,6 +3295,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 return this.runExportCommand(parsed.args);
+            case '/attach':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.runAttachCommand(parsed.args);
             case '/tools':
                 if (parsed.args) {
                     await this.activateSelectedToolActionHandler(parsed.args);
@@ -3699,6 +3912,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const draft = this.draftLines.join('\n');
         const prompt = await this.enrichPromptWithMentions(draft);
+        const attachments = this.state.pendingAttachments.slice();
+        const turnMessage = this.buildTurnMessageInput(prompt, attachments);
         this.draftLines = [];
         this.multilineMode = false;
         this.state.pushInputHistory(draft);
@@ -3709,6 +3924,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             id: `user-${Date.now()}`,
             role: 'user',
             content: prompt,
+            parts: turnMessage?.parts,
             createdAt: Date.now()
         };
         const asstMsg: AgentMessage = {
@@ -3723,12 +3939,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setInput('');
             this.state.setStatus('running');
             this.state.setLastError('');
+            this.state.clearPendingAttachments();
             this.state.clearActivities();
             this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
             this.state.setMessages([...baseMessages, userMsg, asstMsg]);
         });
         try {
-            await this.runTurnStream(prompt, asstMsg);
+            await this.runTurnStream(prompt, asstMsg, turnMessage);
             this.clearStreamingMessageState();
             this.ensureMessageAtTail(asstMsg.id);
             this.state.batch(() => {
@@ -3773,12 +3990,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         const prompt = await this.enrichPromptWithMentions(value);
+        const attachments = this.state.pendingAttachments.slice();
+        const turnMessage = this.buildTurnMessageInput(prompt, attachments);
         this.clearStreamingMessageState();
         const turnScope = this.state.beginTurnEventScope();
         const userMessage: AgentMessage = {
             id: `user-${Date.now()}`,
             role: 'user',
             content: prompt,
+            parts: turnMessage?.parts,
             createdAt: Date.now()
         };
         const assistantMessage: AgentMessage = {
@@ -3793,13 +4013,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setInput('');
             this.state.setStatus('running');
             this.state.setLastError('');
+            this.state.clearPendingAttachments();
             this.state.clearActivities();
             this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
         });
 
         try {
-            await this.runTurnStream(prompt, assistantMessage);
+            await this.runTurnStream(prompt, assistantMessage, turnMessage);
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
             this.state.batch(() => {
@@ -3821,9 +4042,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
-    protected async runTurnStream(prompt: string, assistantMessage: AgentMessage): Promise<void> {
+    protected async runTurnStream(prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput): Promise<void> {
         this.scheduleStreamingPendingNotice();
-        const stream = this.appRpc?.stream?.('run.turn_stream', { sessionId: this.state.sessionId, input: prompt });
+        const stream = this.appRpc?.stream?.('run.turn_stream', {
+            sessionId: this.state.sessionId,
+            input: prompt,
+            ...(message ? { message } : {})
+        });
         if (stream) {
             try {
                 for await (const chunk of stream) {
@@ -3842,7 +4067,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
         const runtime: any = this.runtime;
         if (typeof runtime?.runStreamingTurn === 'function') {
-            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt)) {
+            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt, undefined, message)) {
                 this.consumeStreamChunk(chunk, assistantMessage);
             }
             assistantMessage.metadata = {
@@ -3853,7 +4078,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
 
-        const result = await this.executeTurn(prompt);
+        const result = await this.executeTurn(prompt, message);
         if (result && 'message' in result) {
             assistantMessage.content = result.message.content;
             this.state.batch(() => {
@@ -4645,12 +4870,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
-    protected async executeTurn(input: string): Promise<import('@tsdi/agent').AgentTurnResult | void> {
+    protected async executeTurn(input: string, message?: AgentTurnMessageInput): Promise<import('@tsdi/agent').AgentTurnResult | void> {
         if (this.appRpc) {
-            await this.appRpc.request('run.turn', { sessionId: this.state.sessionId, input });
+            await this.appRpc.request('run.turn', {
+                sessionId: this.state.sessionId,
+                input,
+                ...(message ? { message } : {})
+            });
             return;
         }
-        return this.runtime.runTurn(this.state.sessionId, input);
+        return this.runtime.runTurn(this.state.sessionId, input, undefined, message);
     }
 
     protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {

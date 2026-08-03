@@ -1,5 +1,5 @@
 import { Application } from '@tsdi/core';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AgentHookCommandExecutor, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
@@ -8,12 +8,63 @@ import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
 import { Readable, Writable } from 'stream';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 
 export interface AgentRunJsonEvent {
     type: string;
     timestamp: number;
     sessionId?: string;
     [key: string]: any;
+}
+
+const IMAGE_MIME_TYPES: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.bmp': 'image/bmp',
+    '.svg': 'image/svg+xml'
+};
+
+function resolveImagePaths(options: AgentCliOptions = {}): string[] {
+    const value = options.image;
+    if (Array.isArray(value)) {
+        return value.map(item => String(item || '').trim()).filter(Boolean);
+    }
+    const text = String(value || '').trim();
+    return text ? [text] : [];
+}
+
+async function buildTurnMessage(prompt: string, options: AgentCliOptions = {}): Promise<AgentTurnMessageInput | undefined> {
+    const images = await Promise.all(resolveImagePaths(options).map(loadImagePart));
+    if (!images.length) {
+        return undefined;
+    }
+    return {
+        content: prompt,
+        parts: [
+            ...(prompt ? [{ type: 'text', text: prompt } as const] : []),
+            ...images
+        ]
+    };
+}
+
+async function loadImagePart(filePath: string): Promise<NonNullable<AgentTurnMessageInput['parts']>[number]> {
+    const absolutePath = path.resolve(filePath);
+    const bytes = await fs.readFile(absolutePath);
+    const ext = path.extname(absolutePath).toLowerCase();
+    const mediaType = IMAGE_MIME_TYPES[ext];
+    if (!mediaType) {
+        throw new Error(`Unsupported image format for '${filePath}'. Expected one of: ${Object.keys(IMAGE_MIME_TYPES).join(', ')}`);
+    }
+    return {
+        type: 'image',
+        imageUrl: `data:${mediaType};base64,${bytes.toString('base64')}`,
+        mediaType,
+        name: path.basename(absolutePath)
+    };
 }
 
 function createConfigService(options: AgentCliOptions): AgentUiConfigService {
@@ -157,6 +208,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const config = createConfigService(options);
     const resolved = config.resolve();
     const modelConfig = resolved.model;
+    const message = await buildTurnMessage(prompt, options);
     const agentOptions = mergeAgentOptions({
         hooks: resolved.hooks,
         model: {
@@ -171,12 +223,6 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
             headers: modelConfig.headers,
             thinkingBudget: modelConfig.thinkingBudget,
             reasoning: modelConfig.reasoning
-        },
-        bootstrapTurn: {
-            enabled: true,
-            sessionId: resolved.sessionId,
-            input: prompt,
-            output: ''
         }
     });
 
@@ -184,7 +230,8 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
 
     try {
         await ctx.get(AgentRuntime).start();
-        return agentOptions.bootstrapTurn?.output ?? '';
+        const result = await ctx.get(AgentRuntime).runTurn(resolved.sessionId, prompt, 'local-system', message);
+        return result.message.content || '';
     } finally {
         await ctx.close();
     }
@@ -194,6 +241,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const config = createConfigService(options);
     const resolved = config.resolve();
     const modelConfig = resolved.model;
+    const message = await buildTurnMessage(prompt, options);
     const agentOptions = mergeAgentOptions({
         hooks: resolved.hooks,
         model: {
@@ -216,7 +264,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     try {
         await ctx.get(AgentRuntime).start();
         const runtime = ctx.get(AgentRuntime);
-        const stream = runtime.runStreamingTurn(resolved.sessionId, prompt, 'local-system');
+        const stream = runtime.runStreamingTurn(resolved.sessionId, prompt, 'local-system', message);
         for await (const chunk of stream) {
             if (chunk.type === 'text' && chunk.content) {
                 process.stdout.write(chunk.content);
@@ -238,6 +286,7 @@ export async function runAgentJsonStream(
 ): Promise<void> {
     const config = createConfigService(options);
     const resolved = config.resolve();
+    const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
     const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks }));
@@ -262,29 +311,30 @@ export async function runAgentJsonStream(
             input: prompt
         });
 
-        for await (const message of rpc.streamPayload({
+        for await (const eventMessage of rpc.streamPayload({
             jsonrpc: '2.0',
             id: Date.now(),
             method: 'run.turn_stream',
             params: {
                 sessionId,
-                input: prompt
+                input: prompt,
+                ...(message ? { message } : {})
             }
         }, { principalId })) {
             const timestamp = Date.now();
-            if ('error' in message) {
+            if ('error' in eventMessage) {
                 await writeEvent({
                     type: 'error',
                     timestamp,
                     sessionId,
-                    code: message.error?.code ?? -32603,
-                    message: message.error?.message || 'App RPC stream failed',
-                    data: message.error?.data
+                    code: eventMessage.error?.code ?? -32603,
+                    message: eventMessage.error?.message || 'App RPC stream failed',
+                    data: eventMessage.error?.data
                 });
-                throw new Error(message.error?.message || 'App RPC stream failed');
+                throw new Error(eventMessage.error?.message || 'App RPC stream failed');
             }
-            if ('method' in message && message.method === 'run.turn_stream.chunk') {
-                const params = message.params ?? {};
+            if ('method' in eventMessage && eventMessage.method === 'run.turn_stream.chunk') {
+                const params = eventMessage.params ?? {};
                 const chunkType = String(params.chunkType || '');
                 if (params.usage) {
                     lastUsage = params.usage;
@@ -337,14 +387,14 @@ export async function runAgentJsonStream(
                 }
                 continue;
             }
-            if ('result' in message) {
-                lastMessage = message.result?.message ?? null;
+            if ('result' in eventMessage) {
+                lastMessage = eventMessage.result?.message ?? null;
                 await writeEvent({
                     type: 'turn.completed',
                     timestamp,
-                    sessionId: message.result?.sessionId || sessionId,
+                    sessionId: eventMessage.result?.sessionId || sessionId,
                     message: lastMessage,
-                    cancelled: message.result?.cancelled === true,
+                    cancelled: eventMessage.result?.cancelled === true,
                     usage: lastUsage ?? null
                 });
                 break;

@@ -17,6 +17,7 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--root',
     '--workspace',
     '--tools',
+    '--image',
     '--provider',
     '--model',
     '--base-url',
@@ -83,6 +84,7 @@ function createAgentCli(): Command {
         .option('--api-key <key>', 'API key.')
         .option('--api-key-env <name>', 'Env var name for API key.')
         .option('--timeout <ms>', 'Request timeout in ms.')
+        .option('-i, --image <path>', 'Attach an input image (repeatable).', collectValues, [])
         .option('--stream', 'Stream the response.')
         .option('--json', 'Output JSONL event stream.')
         .option('--output-last-message', 'Append a final JSONL compatibility event containing the last assistant message.')

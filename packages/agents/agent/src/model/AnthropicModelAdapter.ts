@@ -1,4 +1,4 @@
-import { AgentMessage } from '../runtime/AgentMessage';
+import { AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
@@ -7,8 +7,13 @@ import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCacheP
 import type { ApplicationArguments } from '@tsdi/core';
 
 interface AnthropicContentBlock {
-    type: 'text' | 'tool_use' | 'tool_result';
+    type: 'text' | 'image' | 'tool_use' | 'tool_result';
     text?: string;
+    source?: {
+        type: 'base64';
+        media_type: string;
+        data: string;
+    };
     id?: string;
     name?: string;
     input?: Record<string, unknown>;
@@ -390,7 +395,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             if (msg.role === 'assistant') {
                 flushToolResults();
                 const blocks: AnthropicContentBlock[] = [];
-                const text = typeof msg.content === 'string' ? msg.content : '';
+                const text = getAgentMessageText(msg);
                 if (text) {
                     blocks.push({ type: 'text', text });
                 }
@@ -410,18 +415,67 @@ export class AnthropicModelAdapter extends ModelAdapter {
                 pendingToolResults.push({
                     type: 'tool_result',
                     tool_use_id: msg.toolCallId ?? msg.name ?? `tool-${pendingToolResults.length}`,
-                    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                    content: getAgentMessageText(msg)
                 });
             } else {
                 // user
                 flushToolResults();
-                const text = typeof msg.content === 'string' ? msg.content : '';
-                result.push({ role: 'user', content: text });
+                const blocks = this.mapUserMessageContent(msg);
+                if (!blocks.length) {
+                    result.push({ role: 'user', content: '' });
+                    continue;
+                }
+                if (blocks.length === 1 && blocks[0].type === 'text') {
+                    result.push({ role: 'user', content: blocks[0].text || '' });
+                    continue;
+                }
+                result.push({ role: 'user', content: blocks });
             }
         }
 
         flushToolResults();
         return result;
+    }
+
+    private mapUserMessageContent(message: AgentMessage): AnthropicContentBlock[] {
+        return resolveAgentMessageParts(message)
+            .map(part => this.mapUserMessagePart(part))
+            .filter((part): part is AnthropicContentBlock => !!part);
+    }
+
+    private mapUserMessagePart(part: AgentMessagePart): AnthropicContentBlock | null {
+        if (part.type === 'text') {
+            const text = String(part.text || '');
+            return text ? { type: 'text', text } : null;
+        }
+        return this.mapImagePart(part);
+    }
+
+    private mapImagePart(part: AgentImageMessagePart): AnthropicContentBlock | null {
+        const parsed = this.parseDataUrl(part.imageUrl, part.mediaType);
+        if (!parsed) {
+            return null;
+        }
+        return {
+            type: 'image',
+            source: {
+                type: 'base64',
+                media_type: parsed.mediaType,
+                data: parsed.data
+            }
+        };
+    }
+
+    private parseDataUrl(value: string, fallbackMediaType?: string): { mediaType: string; data: string } | null {
+        const input = String(value || '').trim();
+        const match = /^data:([^;,]+)?;base64,([a-zA-Z0-9+/=]+)$/i.exec(input);
+        if (!match) {
+            return null;
+        }
+        return {
+            mediaType: String(match[1] || fallbackMediaType || 'image/png').trim() || 'image/png',
+            data: match[2]
+        };
     }
 
     // ── response normalization ─────────────────────────────────────────

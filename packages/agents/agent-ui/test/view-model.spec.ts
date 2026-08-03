@@ -123,6 +123,7 @@ class RuntimeStub {
     calls: string[] = [];
     messages = [{ id: '1', role: 'assistant', content: 'ready', createdAt: 1 } as any];
     planModeSessions = new Set<string>();
+    turnMessages: any[] = [];
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         this.calls.push(`plan:${sessionId}:${enabled}`);
@@ -147,10 +148,11 @@ class RuntimeStub {
         return { filePath: '/ws/a.txt', restored: 'content' };
     }
 
-    async runTurn(sessionId: string, input: string): Promise<any> {
+    async runTurn(sessionId: string, input: string, _principalId?: string, message?: any): Promise<any> {
         this.calls.push(`${sessionId}:${input}`);
+        this.turnMessages.push(message);
         this.messages = [
-            { id: '1', role: 'user', content: input, createdAt: 1 },
+            { id: '1', role: 'user', content: input, parts: message?.parts, createdAt: 1 },
             { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 }
         ] as any;
         return { sessionId, message: this.messages[1] };
@@ -160,12 +162,13 @@ class RuntimeStub {
         return this.messages;
     }
 
-    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<any> {
+    async *runStreamingTurn(sessionId: string, input: string, _principalId?: string, message?: any): AsyncGenerator<any> {
         this.calls.push(`${sessionId}:${input}`);
+        this.turnMessages.push(message);
         yield { type: 'text', content: `Echo: ${input}` };
         yield { type: 'done', usage: { promptTokens: 5, completionTokens: 7, totalTokens: 12 } };
         this.messages = [
-            { id: '1', role: 'user', content: input, createdAt: 1 },
+            { id: '1', role: 'user', content: input, parts: message?.parts, createdAt: 1 },
             { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 }
         ] as any;
     }
@@ -1309,6 +1312,13 @@ async function waitForCondition(check: () => boolean, attempts = 10): Promise<vo
 
 @Suite('Agent console component')
 export class AgentConsoleComponentTest {
+    private pngFixture(): Buffer {
+        return Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z4uoAAAAASUVORK5CYII=',
+            'base64'
+        );
+    }
+
     @Test('submit updates messages and clears input')
     async submitUpdatesState() {
         const runtime = new RuntimeStub();
@@ -1336,6 +1346,60 @@ export class AgentConsoleComponentTest {
         expect(component.messages[1].metadata?.streaming).toEqual(false);
         expect(component.messages[1].content).toEqual('Echo: hello');
         expect(component.status).toEqual('idle');
+    }
+
+    @Test('attach command queues image and submit sends structured parts to the runtime')
+    async attachCommandQueuesImageAndSubmitSendsStructuredParts() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        app.registry.set(FileAdapter, new TestFileAdapter());
+        const workspace = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'agent-ui-attach-'));
+        await fs.promises.writeFile(path.join(workspace, 'cat.png'), this.pngFixture());
+        const { component, state } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ workspace });
+
+        component.input = '/attach cat.png';
+        await component.submit();
+        expect(state.pendingAttachments.length).toBe(1);
+
+        component.input = 'describe';
+        await component.submit();
+
+        expect(runtime.calls).toEqual(['console:describe']);
+        expect(runtime.turnMessages[0]?.parts?.[0]).toEqual({ type: 'text', text: 'describe' });
+        expect(runtime.turnMessages[0]?.parts?.[1]?.type).toBe('image');
+        expect(String(runtime.turnMessages[0]?.parts?.[1]?.imageUrl || '')).toContain('data:image/png;base64,');
+        expect(state.pendingAttachments).toEqual([]);
+        expect((component.messages[0] as any).parts?.[1]?.type).toBe('image');
+    }
+
+    @Test('attach command forwards structured parts through app rpc streaming turns')
+    async attachCommandForwardsStructuredPartsThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        app.registry.set(FileAdapter, new TestFileAdapter());
+        const appRpc = new AppRpcStub();
+        appRpc.streamChunks = [
+            { type: 'text', content: 'done' },
+            { type: 'done' }
+        ];
+        const workspace = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'agent-ui-attach-rpc-'));
+        await fs.promises.writeFile(path.join(workspace, 'cat.png'), this.pngFixture());
+        const { component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app, undefined, undefined, undefined, appRpc);
+        component.configure({ workspace });
+
+        component.input = '/attach cat.png';
+        await component.submit();
+        component.input = 'describe';
+        await component.submit();
+
+        const streamCall = appRpc.calls.find(call => call.method === 'run.turn_stream');
+        expect(streamCall).toBeTruthy();
+        expect(streamCall?.params?.message?.parts?.[0]).toEqual({ type: 'text', text: 'describe' });
+        expect(streamCall?.params?.message?.parts?.[1]?.type).toBe('image');
+        expect(String(streamCall?.params?.message?.parts?.[1]?.imageUrl || '')).toContain('data:image/png;base64,');
     }
 
     @Test('submit renders rpc stream events as compact timeline messages')

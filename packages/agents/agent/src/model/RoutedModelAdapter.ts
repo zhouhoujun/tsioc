@@ -7,6 +7,7 @@ import { AgentModelComplexity, AgentModelConfig, AgentModelOptions, AgentModelRo
 import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
+import { getAgentMessageText } from '../runtime/AgentMessage';
 
 interface ResolvedRouteSelection {
     adapter: ModelAdapter;
@@ -96,7 +97,7 @@ export class RoutedModelAdapter extends ModelAdapter {
 
     private extractInput(request: ModelRequest): string {
         const latestUserMessage = [...request.messages].reverse().find(message => message.role === 'user');
-        return latestUserMessage?.content ?? '';
+        return getAgentMessageText(latestUserMessage);
     }
 
     private estimateComplexity(input: string): AgentModelComplexity {

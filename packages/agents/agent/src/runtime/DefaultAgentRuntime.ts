@@ -6,7 +6,7 @@ import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRunti
 import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
-import { AgentMessage } from './AgentMessage';
+import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { ModelAdapter } from '../model/ModelAdapter';
@@ -125,7 +125,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.hookManager = this.options.hooks ? new AgentHookManager(this.options.hooks, this.hookExecutor) : undefined;
     }
 
-    async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
+    async runTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
         try {
@@ -137,9 +137,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } | null
                 : null;
             if (!handler) {
-                return await this.processTurn({ sessionId, input, principalId });
+                return await this.processTurn({ sessionId, input, principalId, message });
             }
-            return await handler.handle({ sessionId, input, principalId }, createRunContext(handler.injector ?? this.app));
+            return await handler.handle({ sessionId, input, principalId, message }, createRunContext(handler.injector ?? this.app));
         } finally {
             this.endTurnAbortScope(sessionId);
             release();
@@ -186,7 +186,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
         await this.ensureSessionWorkspace(input.sessionId);
         await this.app.publishEvent(new AgentTurnStartedEvent(this, input.sessionId, input.input));
-        const userMessage = this.createMessage('user', input.input);
+        const userMessage = this.createMessage(
+            'user',
+            input.message?.content ?? input.input,
+            undefined,
+            undefined,
+            input.message?.metadata,
+            input.message?.parts
+        );
         await this.sessions.append(input.sessionId, userMessage);
         const turnContext: TurnExecutionContext = {
             principalId: input.principalId,
@@ -252,13 +259,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.contextManager.synthesizeExperiences(options);
     }
 
-    async *runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk> {
+    async *runStreamingTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
         try {
             await this.ensureSessionWorkspace(sessionId);
             await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
-            const userMessage = this.createMessage('user', input);
+            const userMessage = this.createMessage(
+                'user',
+                message?.content ?? input,
+                undefined,
+                undefined,
+                message?.metadata,
+                message?.parts
+            );
             await this.sessions.append(sessionId, userMessage);
             const turnContext: TurnExecutionContext = {
                 principalId,
@@ -2015,11 +2029,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return [currentUserMessage, ...recentMessages];
     }
 
-    protected createMessage(role: AgentMessage['role'], content: string, name?: string, toolCallId?: string, metadata?: Record<string, any>): AgentMessage {
+    protected createMessage(
+        role: AgentMessage['role'],
+        content: string,
+        name?: string,
+        toolCallId?: string,
+        metadata?: Record<string, any>,
+        parts?: AgentMessagePart[]
+    ): AgentMessage {
         return {
             id: `${Date.now()}-${Math.random()}`,
             role,
             content,
+            parts: normalizeAgentMessageParts(parts),
             name,
             toolCallId,
             createdAt: Date.now(),

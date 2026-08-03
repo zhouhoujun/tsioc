@@ -64,6 +64,7 @@ export interface AgentCliOptions {
     session?: string;
     root?: string;
     tools?: string | string[];
+    image?: string | string[];
     defaultTools?: boolean;
     channels?: string | string[];
     defaultChannels?: boolean;

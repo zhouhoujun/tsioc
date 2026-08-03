@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { RunContext } from '@tsdi/core';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSearchMatch, SessionSearchOptions } from '../memory/SessionStore';
-import { AgentMessage } from './AgentMessage';
+import { AgentMessage, AgentTurnMessageInput } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
 import { AgentTurnInput } from './AgentTurnInput';
 import { StreamChunk } from '../model/StreamChunk';
@@ -23,7 +23,7 @@ export interface FileUndoRedoResult {
 
 @Abstract()
 export abstract class AgentRuntime {
-    abstract runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult>;
+    abstract runTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): Promise<AgentTurnResult>;
 
     abstract start(): Promise<void>;
     abstract stop(): Promise<void>;
@@ -32,7 +32,7 @@ export abstract class AgentRuntime {
 
     abstract processTurn(input: AgentTurnInput): Promise<AgentTurnResult>;
 
-    abstract runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk>;
+    abstract runStreamingTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;
 

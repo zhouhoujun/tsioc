@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, normalizeAgentMessageParts } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -517,14 +517,15 @@ export class AppRpcServer {
     }
 
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {
-        const input = this.requireString(params?.input, 'run.turn input');
+        const message = this.parseTurnMessage(params?.message);
+        const input = this.requireTurnInput(params?.input, message, 'run.turn input');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
-        const turn = await this.runtime.runTurn(sessionId, input, context.principalId);
+        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message);
         const messages = await this.runtime.getMessages(sessionId);
         return {
             sessionId,
@@ -595,7 +596,8 @@ export class AppRpcServer {
     }
 
     private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
-        const input = this.requireString(params?.input, 'run.turn_stream input');
+        const message = this.parseTurnMessage(params?.message);
+        const input = this.requireTurnInput(params?.input, message, 'run.turn_stream input');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
@@ -624,7 +626,7 @@ export class AppRpcServer {
         });
 
         try {
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message)) {
                 yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
                 if (chunk.type === 'done') {
                     continue;
@@ -1775,6 +1777,32 @@ export class AppRpcServer {
             throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
         }
         return value.trim();
+    }
+
+    private requireTurnInput(value: unknown, message: AgentTurnMessageInput | undefined, field: string): string {
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+        if (message?.parts?.length) {
+            return typeof value === 'string' ? value.trim() : '';
+        }
+        throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
+    }
+
+    private parseTurnMessage(value: unknown): AgentTurnMessageInput | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        const input = value as Record<string, any>;
+        const content = typeof input.content === 'string' ? input.content : undefined;
+        const parts = normalizeAgentMessageParts(input.parts);
+        const metadata = input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)
+            ? input.metadata as Record<string, any>
+            : undefined;
+        if (!content && !parts?.length && !metadata) {
+            return undefined;
+        }
+        return { content, parts, metadata };
     }
 
     private resolveModelProfile(): string {

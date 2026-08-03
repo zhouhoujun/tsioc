@@ -33,6 +33,13 @@ export class AgentCliTest {
         return fs.promises.mkdtemp(path.join(os.tmpdir(), 'agent-cli-root-'));
     }
 
+    private pngFixture(): Buffer {
+        return Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z4uoAAAAASUVORK5CYII=',
+            'base64'
+        );
+    }
+
     @Test('resolves cli config for tools and channels')
     async resolvesCliConfig() {
         const root = await this.createRoot();
@@ -363,6 +370,36 @@ export class AgentCliTest {
             model: 'echo'
         });
         expect(output).toContain('Echo: hello agent');
+    }
+
+    @Test('run --image persists structured image parts on the user message')
+    async runPromptWithImageAttachment() {
+        const root = await this.createRoot();
+        const workspace = path.join(root, 'workspace');
+        await fs.promises.mkdir(workspace, { recursive: true });
+        const imagePath = path.join(workspace, 'cat.png');
+        await fs.promises.writeFile(imagePath, this.pngFixture());
+
+        const output = await runAgentPrompt('describe the image', {
+            root,
+            session: 'echo-image',
+            workspace,
+            provider: 'echo',
+            model: 'echo',
+            image: [imagePath]
+        });
+        expect(output).toContain('Echo: describe the image');
+
+        const ctx = await runAgentRpcApplication({ root, workspace }, {});
+        try {
+            const session = await ctx.get(SessionStore).get('echo-image');
+            expect(session.messages[0].content).toBe('describe the image');
+            expect(session.messages[0].parts?.[0]).toEqual({ type: 'text', text: 'describe the image' });
+            expect(session.messages[0].parts?.[1]?.type).toBe('image');
+            expect(String(session.messages[0].parts?.[1]?.imageUrl || '')).toContain('data:image/png;base64,');
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('runs a prompt with json event stream output')

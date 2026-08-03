@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
 import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
-import { AgentMessage } from '../runtime/AgentMessage';
+import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity } from './entities';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
@@ -41,6 +41,7 @@ export class TypeOrmSessionStore extends SessionStore {
                 id: message.messageId,
                 role: message.role as AgentMessage['role'],
                 content: message.content,
+                parts: normalizeAgentMessageParts(message.parts),
                 name: message.name,
                 toolCallId: message.toolCallId,
                 createdAt: Number(message.createdAt),
@@ -148,6 +149,7 @@ export class TypeOrmSessionStore extends SessionStore {
             sequence,
             role: message.role,
             content: message.content,
+            parts: normalizeAgentMessageParts(message.parts) ?? null,
             name: message.name,
             toolCallId: message.toolCallId,
             createdAt: message.createdAt,

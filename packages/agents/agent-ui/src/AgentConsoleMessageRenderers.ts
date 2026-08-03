@@ -1,4 +1,4 @@
-import { AgentMessage, summarizeToolDisplayText } from '@tsdi/agent';
+import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -389,8 +389,12 @@ function resolveMessageRenderer(templateKind: AgentConsoleMessageTemplateKind): 
 
 function resolveMessageDisplayContent(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): string {
     const content = String(message?.content || '');
+    const imageParts = getAgentMessageImageParts(message);
+    const attachmentSummary = imageParts.length
+        ? imageParts.map(part => part.name ? `[Image: ${part.name}]` : '[Image attached]').join('\n')
+        : '';
     if (templateKind !== 'tool') {
-        return content;
+        return [content, attachmentSummary].filter(Boolean).join(content && attachmentSummary ? '\n' : '');
     }
     const toolName = String(message?.metadata?.receipt?.toolName || message?.name || '').trim();
     return summarizeToolDisplayText(toolName, content, 'output') || content;

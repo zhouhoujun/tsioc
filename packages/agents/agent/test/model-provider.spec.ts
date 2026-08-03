@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { After, Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent, resolvePromptCachePolicy } from '../src';
+import { AgentModule, AnthropicModelAdapter, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent, resolvePromptCachePolicy } from '../src';
 
 @Suite('Agent model providers')
 export class ModelProviderTest {
@@ -85,6 +85,119 @@ export class ModelProviderTest {
         expect(result.metadata?.reasoningContent).toEqual('internal');
         expect((result.metadata?.usage as any).promptTokens).toEqual(3);
         expect((result.metadata?.usage as any).cachedPromptTokens).toEqual(1);
+    }
+
+    @Test('maps image input parts into openai-compatible user content arrays')
+    async mapsImageInputIntoOpenAiContentParts() {
+        let call: any;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            call = JSON.parse(init.body);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'done' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key'
+        });
+
+        await adapter.complete({
+            sessionId: 's-openai-image',
+            summary: '',
+            memory: [],
+            messages: [{
+                id: '1',
+                role: 'user',
+                content: 'describe this image',
+                parts: [
+                    { type: 'text', text: 'describe this image' },
+                    { type: 'image', imageUrl: 'data:image/png;base64,YWJj', mediaType: 'image/png', name: 'cat.png' }
+                ],
+                createdAt: 1
+            }],
+            tools: []
+        });
+
+        expect(Array.isArray(call.messages[0].content)).toBe(true);
+        expect(call.messages[0].content[0]).toEqual({ type: 'text', text: 'describe this image' });
+        expect(call.messages[0].content[1]).toEqual({
+            type: 'image_url',
+            image_url: {
+                url: 'data:image/png;base64,YWJj',
+                detail: undefined
+            }
+        });
+    }
+
+    @Test('maps image input parts into anthropic image blocks')
+    async mapsImageInputIntoAnthropicBlocks() {
+        let call: any;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            call = JSON.parse(init.body);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        id: 'msg_1',
+                        type: 'message',
+                        role: 'assistant',
+                        content: [{ type: 'text', text: 'done' }],
+                        model: 'claude-sonnet-4-20250514',
+                        stop_reason: 'end_turn',
+                        stop_sequence: null,
+                        usage: { input_tokens: 2, output_tokens: 1 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new AnthropicModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            baseUrl: 'https://anthropic.example',
+            apiKey: 'test-key'
+        });
+
+        await adapter.complete({
+            sessionId: 's-anthropic-image',
+            summary: '',
+            memory: [],
+            messages: [{
+                id: '1',
+                role: 'user',
+                content: 'describe this image',
+                parts: [
+                    { type: 'text', text: 'describe this image' },
+                    { type: 'image', imageUrl: 'data:image/png;base64,YWJj', mediaType: 'image/png', name: 'cat.png' }
+                ],
+                createdAt: 1
+            }],
+            tools: []
+        });
+
+        expect(Array.isArray(call.messages[0].content)).toBe(true);
+        expect(call.messages[0].content[0]).toEqual({ type: 'text', text: 'describe this image' });
+        expect(call.messages[0].content[1]).toEqual({
+            type: 'image',
+            source: {
+                type: 'base64',
+                media_type: 'image/png',
+                data: 'YWJj'
+            }
+        });
     }
 
     @Test('provideAgent works with model config')
@@ -387,6 +500,61 @@ export class ModelProviderTest {
         expect(calls[0].auth).toEqual('Bearer hermes-key');
         expect(result.metadata?.provider).toEqual('openai-compatible');
         expect(result.metadata?.routing?.route).toEqual('architecture-review');
+    }
+
+    @Test('routes based on structured user text parts when content is empty')
+    async routesUsingStructuredUserTextParts() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'hermes answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            routes: [{
+                name: 'architecture-review',
+                when: { containsAny: ['架构', 'architecture'] },
+                provider: 'hermes',
+                model: 'hermes-70b',
+                baseUrl: 'https://hermes.example/v1',
+                apiKey: 'hermes-key'
+            }]
+        });
+
+        await adapter.complete({
+            sessionId: 's-structured-route',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u2',
+                role: 'user',
+                content: '',
+                parts: [
+                    { type: 'text', text: '帮我做一个架构 review，重点看 agent 路由设计。' },
+                    { type: 'image', imageUrl: 'data:image/png;base64,YWJj', mediaType: 'image/png' }
+                ],
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://hermes.example/v1/chat/completions');
+        expect(calls[0].body.model).toEqual('hermes-70b');
     }
 
     @Test('inherits top-level api key when complexity routing selects a profile')

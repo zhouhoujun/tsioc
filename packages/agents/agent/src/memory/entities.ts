@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { AgentMessagePart } from '../runtime/AgentMessage';
 
 @Entity()
 export class AgentSessionEntity {
@@ -64,6 +65,9 @@ export class AgentMessageEntity {
 
     @Column({ type: 'text' })
     content!: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    parts!: AgentMessagePart[] | null;
 
     @Column({ nullable: true })
     name!: string;

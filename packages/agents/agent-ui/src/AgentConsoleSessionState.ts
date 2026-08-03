@@ -211,6 +211,15 @@ export interface AgentConsoleSessionMeta {
     workspace?: string;
 }
 
+export interface AgentConsolePendingAttachment {
+    id: string;
+    kind: 'image';
+    path: string;
+    name: string;
+    mediaType?: string;
+    imageUrl: string;
+}
+
 export interface AgentConsoleSelectOption {
     label: string;
     value: string;
@@ -417,6 +426,7 @@ export class AgentConsoleSessionState {
     activeTurnEventScope = '';
     lastError = '';
     notice = '';
+    pendingAttachments: AgentConsolePendingAttachment[] = [];
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
@@ -434,7 +444,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/status', '/init', '/undo', '/redo', '/export', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -1237,7 +1247,29 @@ export class AgentConsoleSessionState {
     }
 
     get inputHintLabel(): string {
-        return formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+        const base = formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+        const attachmentSummary = this.pendingAttachments.length
+            ? `${this.pendingAttachments.length} attachment${this.pendingAttachments.length === 1 ? '' : 's'}`
+            : '';
+        return [base, attachmentSummary].filter(Boolean).join(' · ');
+    }
+
+    setPendingAttachments(attachments: AgentConsolePendingAttachment[]): void {
+        this.pendingAttachments = attachments.slice();
+        this.notify();
+    }
+
+    appendPendingAttachment(attachment: AgentConsolePendingAttachment): void {
+        this.pendingAttachments = [...this.pendingAttachments, attachment];
+        this.notify();
+    }
+
+    clearPendingAttachments(): void {
+        if (!this.pendingAttachments.length) {
+            return;
+        }
+        this.pendingAttachments = [];
+        this.notify();
     }
 
     setLastError(message: string): void {
