@@ -5,6 +5,7 @@ import { AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME } from '../tokens';
 import {
     buildSandboxExecCommand,
     detectSandboxExecTool,
+    loadSandboxSpawnModule,
     probeSandboxExecTool,
     resolvePlatformShellCommand,
     SandboxExecProbe,
@@ -119,8 +120,20 @@ export abstract class SandboxExecutor {
     abstract cleanup(): Promise<void>;
 }
 
+interface HostProcessLike {
+    pid?: number;
+    env?: Record<string, any>;
+    cwd?: () => string;
+    memoryUsage?: () => { rss?: number } | undefined;
+}
+
+function resolveHostProcess(): HostProcessLike | undefined {
+    const candidate = (globalThis as { process?: HostProcessLike }).process;
+    return candidate && typeof candidate === 'object' ? candidate : undefined;
+}
+
 /**
- * Default sandbox executor that uses Node.js child_process with basic isolation.
+ * Default sandbox executor that uses the host process spawner with basic isolation.
  * This provides process-level isolation without container overhead.
  */
 @Injectable()
@@ -134,17 +147,23 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
     }
 
     isSupported(): boolean {
-        return typeof process !== 'undefined' && typeof process.pid === 'number';
+        return typeof this.getHostProcess()?.pid === 'number';
+    }
+
+    protected getHostProcess(): HostProcessLike | undefined {
+        return resolveHostProcess();
     }
 
     protected getProcessEnvSource(): Record<string, any> {
         return this.execAppArgs?.env
-            || (typeof process !== 'undefined' ? process.env ?? {} : {});
+            || this.getHostProcess()?.env
+            || {};
     }
 
     protected getDefaultWorkingDirectory(): string {
         return this.execAppArgs?.cwd
-            || (typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.');
+            || this.getHostProcess()?.cwd?.()
+            || '.';
     }
 
     async execute(
@@ -161,8 +180,8 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
 
         return new Promise((resolve) => {
             try {
-                // Use dynamic import for child_process to support browser environments
-                import('child_process').then(({ spawn }) => {
+                // Use lazy loading so browser bundles can keep the spawner path unreachable.
+                loadSandboxSpawnModule().then(({ spawn }) => {
                     const resolvedEnv = this.resolveEnvironment(policy, env);
                     const resolvedCwd = policy.workingDirectory || this.getDefaultWorkingDirectory();
                     const wallTimeMs = policy.resourceLimits?.wallTimeMs || timeoutMs || 30000;
@@ -200,11 +219,12 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                     if (policy.resourceLimits?.memoryBytes) {
                         memoryCheckInterval = setInterval(() => {
                             try {
-                                const memUsage = (process as any).memoryUsage?.();
-                                if (memUsage && memUsage.rss > peakMemoryBytes) {
-                                    peakMemoryBytes = memUsage.rss;
+                                const memUsage = this.getHostProcess()?.memoryUsage?.();
+                                const rss = typeof memUsage?.rss === 'number' ? memUsage.rss : 0;
+                                if (rss > peakMemoryBytes) {
+                                    peakMemoryBytes = rss;
                                 }
-                                if (policy.resourceLimits?.memoryBytes && memUsage && memUsage.rss > policy.resourceLimits.memoryBytes) {
+                                if (policy.resourceLimits?.memoryBytes && rss > policy.resourceLimits.memoryBytes) {
                                     killedByLimits = true;
                                     this.killProcess(child);
                                     if (memoryCheckInterval) {
@@ -217,7 +237,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                         }, 100);
                     }
 
-                    child.on('close', (code) => {
+                    child.on('close', (code: number | null) => {
                         clearTimeout(wallTimer);
                         if (memoryCheckInterval) {
                             clearInterval(memoryCheckInterval);
@@ -235,7 +255,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                         });
                     });
 
-                    child.on('error', (err) => {
+                    child.on('error', (err: Error) => {
                         clearTimeout(wallTimer);
                         if (memoryCheckInterval) {
                             clearInterval(memoryCheckInterval);
@@ -258,7 +278,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                         stdout: '',
                         stderr: err.message,
                         wallTimeMs: wallTime,
-                        error: `Failed to import child_process: ${err.message}`
+                        error: `Failed to load process spawner: ${err.message}`
                     });
                 });
             } catch (err) {
@@ -358,14 +378,20 @@ export class NoopSandboxExecutor extends SandboxExecutor {
         return true;
     }
 
+    protected getHostProcess(): HostProcessLike | undefined {
+        return resolveHostProcess();
+    }
+
     protected getProcessEnvSource(): Record<string, any> {
         return this.appArgs?.env
-            || (typeof process !== 'undefined' ? process.env ?? {} : {});
+            || this.getHostProcess()?.env
+            || {};
     }
 
     protected getDefaultWorkingDirectory(): string {
         return this.appArgs?.cwd
-            || (typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.');
+            || this.getHostProcess()?.cwd?.()
+            || '.';
     }
 
     async execute(
@@ -379,7 +405,7 @@ export class NoopSandboxExecutor extends SandboxExecutor {
     ): Promise<SandboxExecutionResult> {
         const startTime = Date.now();
         try {
-            const { spawn } = await import('child_process');
+            const { spawn } = await loadSandboxSpawnModule();
             const child = spawn(command, args, {
                 cwd: options.policy.workingDirectory || this.getDefaultWorkingDirectory(),
                 env: { ...this.getProcessEnvSource(), ...options.env },
@@ -398,7 +424,7 @@ export class NoopSandboxExecutor extends SandboxExecutor {
             });
 
             return new Promise((resolve) => {
-                child.on('close', (code) => {
+                child.on('close', (code: number | null) => {
                     resolve({
                         exitCode: code ?? 1,
                         stdout,
@@ -407,7 +433,7 @@ export class NoopSandboxExecutor extends SandboxExecutor {
                     });
                 });
 
-                child.on('error', (err) => {
+                child.on('error', (err: Error) => {
                     resolve({
                         exitCode: 1,
                         stdout,

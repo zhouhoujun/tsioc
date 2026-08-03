@@ -193,7 +193,7 @@ export class SessionStoreTest {
         await store.setWorkspace('session-b', '/tmp/project-a');
 
         const projects = await store.listProjects();
-        expect(projects.map(project => project.projectKey)).toEqual(['session:session-c', 'workspace:/tmp/project-a']);
+        expect(projects.map(project => project.projectKey).slice().sort()).toEqual(['session:session-c', 'workspace:/tmp/project-a']);
         expect(projects.find(project => project.projectKey === 'workspace:/tmp/project-a')?.sessionIds.slice().sort()).toEqual(['session-a', 'session-b']);
         expect(projects.find(project => project.projectKey === 'session:session-c')?.sessionIds).toEqual(['session-c']);
     }

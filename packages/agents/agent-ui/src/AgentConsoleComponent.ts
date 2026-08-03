@@ -4439,8 +4439,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         await this.app.close();
-        if (exitMessage && typeof process !== 'undefined' && process.stdout?.write) {
-            process.stdout.write(`${exitMessage}\n`);
+        if (exitMessage && typeof globalThis.console?.log === 'function') {
+            globalThis.console.log(exitMessage);
         }
     }
 

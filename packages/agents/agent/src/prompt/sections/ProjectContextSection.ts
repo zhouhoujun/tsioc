@@ -38,7 +38,7 @@ export class ProjectContextSection extends PromptSection {
         return 'project-context';
     }
 
-    /** Pin the search root. Defaults to process.cwd() when not set. */
+    /** Pin the search root. Defaults to the injected application cwd when not set. */
     setProjectRoot(root: string): void {
         this.projectRoot = root;
         this.cache = null;

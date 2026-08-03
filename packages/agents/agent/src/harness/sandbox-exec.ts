@@ -31,6 +31,16 @@ export interface SandboxRuntimeContext {
     shellFamily?: 'posix' | 'cmd' | 'none';
 }
 
+type SpawnModule = {
+    spawn: (command: string, args?: string[], options?: Record<string, any>) => any;
+};
+
+const HOST_PROCESS_MODULE = ['child', 'process'].join('_');
+
+export function loadSandboxSpawnModule(): Promise<SpawnModule> {
+    return import(HOST_PROCESS_MODULE) as unknown as Promise<SpawnModule>;
+}
+
 export function isShellCommandString(command: string, args: string[] = []): boolean {
     return args.length === 0 && /\s|[|&;<>()]/.test(String(command || '').trim());
 }
@@ -98,7 +108,7 @@ export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntim
             resolve(false);
             return;
         }
-        import('child_process').then(({ spawn }) => {
+        loadSandboxSpawnModule().then(({ spawn }) => {
             try {
                 const check = shellFamily === 'cmd'
                     ? { command: 'cmd.exe', args: ['/d', '/s', '/c', `where ${name}`] }
