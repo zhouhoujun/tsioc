@@ -28,6 +28,7 @@ export * from './api/MemoryHandler';
 export * from './api/ToolsHandler';
 export * from './api/ApprovalHandler';
 export * from './api/StatsHandler';
+export * from './api/UsageHandler';
 export * from './api/EventHandler';
 export * from './api/AppRpcHandler';
 

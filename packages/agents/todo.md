@@ -460,7 +460,7 @@
 8. ~~无会话分享/导出~~（opencode `/share` 生成分享链接；Codex 有会话存档/删除）→ **已完成**：`/export` 命令导出会话 transcript（`json` / `jsonl`，含 session 元数据、messages、toolCalls）；`AgentConsoleSessionService.exportSession()` 统一本地 / RPC 导出模型；gateway 新增 `session.export` RPC + `GET /api/sessions/:id/export`（owner 鉴权，`Content-Disposition` 下载头）；UI `/export [json|jsonl] [sessionId] [path]` 默认写入 `<workspace>/.tsdi-agent/exports/`，无可写 `FileAdapter` 时回退只读预览。测试：agent-gateway 新增 RPC/HTTP/403 覆盖，agent-ui 新增落盘与预览回退覆盖。
 9. ~~无图像输入~~（Codex `-i` 附图像；opencode 拖拽图像入 prompt）→ **待办**：`AgentMessage`/`ModelRequest` 支持 content 图像段（base64 data-url），`RoutedModelAdapter` 透传给支持图像的多模态 provider；CLI `run --image <path>`；UI 无终端图像粘贴时至少支持 `/attach <path>` 命令。
 10. ~~非交互 exec 缺 JSON 事件流~~（现状：`tsdi-agent run` 只返回最终文本；Codex `exec --json` 输出 JSONL：thread.started/turn.started/turn.completed/item.*/error）→ **已完成**：`tsdi-agent run --json` 输出 JSONL 事件流（复用 gateway `EventHandler` 的 SSE 事件序列化），`--output-last-message` 兼容；新增 CLI 事件流测试。
-11. ~~无 usage 聚合视图~~（Codex `/usage` daily/weekly/cumulative）→ **待办**：gateway 复用 audit + turn-diagnostics token 数据新增 `GET /api/usage`（按天/周/累计 token + turn 数），UI `/usage` 命令 + dashboard 行。
+11. ~~无 usage 聚合视图~~（Codex `/usage` daily/weekly/cumulative）→ **已完成**：gateway 新增 `GET /api/usage`（按天/周/累计 token + turn 数），`usage.stats` RPC，UI `/usage` 命令 + dashboard 行；数据复用 session 消息 `metadata.usage` + turn-diagnostics 记录。
 12. ~~无用户可配置生命周期 hooks~~（opencode plugin hooks：chat.params/tool.execute.before/after/permission.ask；Claude Code PreToolUse/PostToolUse；现状框架只有内部 interceptor 管线）→ **待办**：`agent` 提供 hook 注册 API（`beforeTurn/afterTurn/beforeTool/afterTool/onApproval`），支持从配置加载 shell 命令 hook（镜像 Claude Code 的 `~/.tsdi-agent/hooks.json`），事件→子进程执行→stdout 注入上下文。
 
 ### Tier 3（大改动 / 远期，仅记录）

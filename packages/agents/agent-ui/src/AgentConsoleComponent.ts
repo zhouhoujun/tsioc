@@ -128,6 +128,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}%${range}`;
     }
 
+    protected formatUsageWindow(label: string, usage: Record<string, any>): string {
+        return `${label} ${Number(usage?.turns ?? 0)} turns · ${formatCompactNumber(Number(usage?.promptTokens ?? 0))} in · ${formatCompactNumber(Number(usage?.completionTokens ?? 0))} out · ${formatCompactNumber(Number(usage?.totalTokens ?? 0))} total`;
+    }
+
+    protected formatUsageSummary(usage: Record<string, any>): string {
+        return [
+            this.formatUsageWindow('day', usage?.daily ?? {}),
+            this.formatUsageWindow('week', usage?.weekly ?? {}),
+            this.formatUsageWindow('all', usage?.cumulative ?? {})
+        ].join(' | ');
+    }
+
     protected formatCompactionHistoryAggregate(aggregate: Record<string, any>): string {
         const sessionId = String(aggregate.sessionId ?? 'unknown');
         const count = Number(aggregate.recordCount ?? 0);
@@ -430,6 +442,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         this.notify(this.formatTurnDiagnosticsAggregate(aggregate, sessionId));
+        return true;
+    }
+
+    protected async openUsage(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Usage is unavailable without session access.');
+            return true;
+        }
+        const usage = await this.sessionService.getUsageStats(sessionId);
+        const totalTurns = Number(usage?.cumulative?.turns ?? 0);
+        const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
+        if (!totalTurns && !totalTokens) {
+            this.notify(
+                sessionId
+                    ? `No usage recorded for session '${sessionId}'.`
+                    : 'No usage recorded yet.'
+            );
+            return true;
+        }
+        this.notify(this.formatUsageSummary(usage));
         return true;
     }
 
@@ -1876,6 +1908,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
         await this.refreshTools();
         await this.refreshScheduledTasks();
+        await this.refreshUsageDigest();
         await this.refreshSummaryQualityDigest();
         await this.refreshCompactionDigest();
         await this.refreshTurnDiagnosticsDigest();
@@ -2989,6 +3022,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
+                    { label: '/usage', value: '/usage', description: 'token + turn usage [sessionId]' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
@@ -3205,6 +3239,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setApprovalsFocused(true);
                 return true;
             }
+            case '/usage':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openUsage(parsed.args?.trim() || undefined);
             case '/quality': {
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -4291,10 +4331,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshScheduledTasks(),
             this.refreshTodoPlan(),
             this.loadCodingTasks(),
+            this.refreshUsageDigest(),
             this.refreshSummaryQualityDigest(),
             this.refreshCompactionDigest(),
             this.refreshTurnDiagnosticsDigest()
         ]);
+    }
+
+    protected async refreshUsageDigest(): Promise<void> {
+        if (!this.sessionService) {
+            this.state.setUsageDigest('');
+            return;
+        }
+        try {
+            const usage = await this.sessionService.getUsageStats();
+            const totalTurns = Number(usage?.cumulative?.turns ?? 0);
+            const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
+            if (!totalTurns && !totalTokens) {
+                this.state.setUsageDigest('');
+                return;
+            }
+            this.state.setUsageDigest(this.formatUsageSummary(usage));
+        } catch (error: any) {
+            this.state.setUsageDigest('');
+            void error;
+        }
     }
 
     protected async refreshTurnDiagnosticsDigest(): Promise<void> {

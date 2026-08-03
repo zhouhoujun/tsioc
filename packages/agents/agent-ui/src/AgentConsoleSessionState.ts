@@ -344,6 +344,7 @@ export class AgentConsoleSessionState {
     projectSummary = '';
     projectSessionCount = 0;
     summaryQualityDigest = '';
+    usageDigest = '';
     compactionDigest = '';
     turnDiagnosticsDigest = '';
     projects: AgentConsoleProjectItem[] = [];
@@ -433,7 +434,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/status', '/init', '/undo', '/redo', '/export', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/status', '/init', '/undo', '/redo', '/export', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -505,6 +506,11 @@ export class AgentConsoleSessionState {
 
     setSummaryQualityDigest(digest: string): void {
         this.summaryQualityDigest = String(digest || '').trim();
+        this.notify();
+    }
+
+    setUsageDigest(digest: string): void {
+        this.usageDigest = String(digest || '').trim();
         this.notify();
     }
 

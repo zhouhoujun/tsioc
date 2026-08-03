@@ -18,6 +18,7 @@ import { AuditHandler } from '../src/api/AuditHandler';
 import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
+import { UsageHandler } from '../src/api/UsageHandler';
 import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
@@ -2370,6 +2371,67 @@ export class TurnDiagnosticsHandlerTest {
         expect(requestedSessionIds).toEqual(['s1']);
         expect(data.aggregate.totalTurns).toEqual(1);
     }
+
+    @Test('returns usage stats through http')
+    async usageStatsRoute() {
+        const now = Date.now();
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('usage-http-1', 'user-1');
+        await owners.create('usage-http-2', 'user-2');
+        await store.append('usage-http-1', {
+            id: 'usage-http-msg-1',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (12 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 } }
+        } as any);
+        await store.append('usage-http-1', {
+            id: 'usage-http-msg-2',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (3 * 24 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 20, completionTokens: 10, totalTokens: 30 } }
+        } as any);
+        await store.append('usage-http-2', {
+            id: 'usage-http-msg-3',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (6 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 50, completionTokens: 50, totalTokens: 100 } }
+        } as any);
+        const diagnostics = {
+            async list() {
+                return [
+                    { sessionId: 'usage-http-1', createdAt: now - (12 * 60 * 60 * 1000) },
+                    { sessionId: 'usage-http-1', createdAt: now - (3 * 24 * 60 * 60 * 1000) },
+                    { sessionId: 'usage-http-2', createdAt: now - (6 * 60 * 60 * 1000) }
+                ];
+            }
+        } as any;
+        const handler = new UsageHandler(store, owners, diagnostics);
+        const route = handler.getRoutes().find(route => route.path === '/api/usage' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/usage' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.usage.daily.turns).toEqual(1);
+        expect(data.usage.daily.totalTokens).toEqual(20);
+        expect(data.usage.weekly.turns).toEqual(2);
+        expect(data.usage.weekly.totalTokens).toEqual(50);
+        expect(data.usage.cumulative.turns).toEqual(2);
+        expect(data.usage.cumulative.totalTokens).toEqual(50);
+        expect(data.usage.cumulative.sessions).toEqual(1);
+    }
 }
 
 @Suite('MemoryHandler')
@@ -3997,6 +4059,72 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((capsResponse as any).result.methods).toContain('turn_diagnostics.list');
         expect((capsResponse as any).result.methods).toContain('turn_diagnostics.stats');
+    }
+
+    @Test('returns usage stats through json-rpc')
+    async usageStatsThroughRpc() {
+        const now = Date.now();
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-usage-1', 'user-1');
+        await owners.create('rpc-usage-2', 'user-2');
+        await store.append('rpc-usage-1', {
+            id: 'rpc-usage-msg-1',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (10 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } }
+        } as any);
+        await store.append('rpc-usage-1', {
+            id: 'rpc-usage-msg-2',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (2 * 24 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 20, completionTokens: 10, totalTokens: 30 } }
+        } as any);
+        await store.append('rpc-usage-2', {
+            id: 'rpc-usage-msg-3',
+            role: 'assistant',
+            content: 'done',
+            createdAt: now - (8 * 60 * 60 * 1000),
+            metadata: { usage: { promptTokens: 40, completionTokens: 20, totalTokens: 60 } }
+        } as any);
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [
+                    { sessionId: 'rpc-usage-1', createdAt: now - (10 * 60 * 60 * 1000) },
+                    { sessionId: 'rpc-usage-1', createdAt: now - (2 * 24 * 60 * 60 * 1000) },
+                    { sessionId: 'rpc-usage-2', createdAt: now - (8 * 60 * 60 * 1000) }
+                ];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'usage.stats',
+            params: {}
+        }, { principalId: 'user-1' });
+        const usage = (response as any).result.usage;
+        expect(usage.daily.turns).toEqual(1);
+        expect(usage.daily.totalTokens).toEqual(15);
+        expect(usage.weekly.turns).toEqual(2);
+        expect(usage.weekly.totalTokens).toEqual(45);
+        expect(usage.cumulative.turns).toEqual(2);
+        expect(usage.cumulative.totalTokens).toEqual(45);
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('usage.stats');
     }
 
     @Test('rejects foreign turn diagnostics access through json-rpc')

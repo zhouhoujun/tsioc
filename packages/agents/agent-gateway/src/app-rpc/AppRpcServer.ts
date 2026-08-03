@@ -5,6 +5,7 @@ import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
+import { summarizeUsageForSessions } from '../usage/UsageStats';
 
 @Injectable()
 export class AppRpcServer {
@@ -174,6 +175,7 @@ export class AppRpcServer {
                         'summary_quality.list',
                         'summary_quality.stats',
                         'summary_quality.trend',
+                        'usage.stats',
                         'compaction_history.list',
                         'compaction_history.stats',
                         'compaction_history.trend',
@@ -271,6 +273,8 @@ export class AppRpcServer {
                 return this.getSummaryQualityStats(params, context);
             case 'summary_quality.trend':
                 return this.getSummaryQualityTrend(params, context);
+            case 'usage.stats':
+                return this.getUsageStats(params, context);
             case 'compaction_history.list':
                 return this.listCompactionHistory(params, context);
             case 'compaction_history.stats':
@@ -1169,6 +1173,25 @@ export class AppRpcServer {
                 avgTruncationScore: point.avgTruncationScore,
                 fallbackRate: point.fallbackRate
             }))
+        };
+    }
+
+    private async getUsageStats(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        let sessionIds: string[];
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+            sessionIds = [sessionId];
+        } else {
+            const allSessionIds = await this.sessions.listSessionIds();
+            sessionIds = context.principalId
+                ? await this.owners.listOwned(allSessionIds, context.principalId)
+                : allSessionIds;
+        }
+        return {
+            usage: await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics)
         };
     }
 

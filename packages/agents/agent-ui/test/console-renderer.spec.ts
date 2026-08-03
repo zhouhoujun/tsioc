@@ -249,6 +249,22 @@ export class AgentConsoleRendererTest {
         expect(quality.includes('avg 91.0')).toBe(true);
     }
 
+    @Test('dashboard shows usage digest when recorded')
+    async dashboardShowsUsageDigest() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setUsageDigest(
+            'day 2 turns · 12 in · 8 out · 20 total | week 7 turns · 40 in · 30 out · 70 total | all 9 turns · 52 in · 38 out · 90 total'
+        );
+        await ref.render();
+        await Promise.resolve();
+
+        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('usage · ');
+        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('day 2 turns');
+        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('all 9 turns');
+    }
+
     @Test('dashboard omits quality line when no digest recorded')
     async dashboardOmitsSummaryQualityDigestWithoutRecords() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

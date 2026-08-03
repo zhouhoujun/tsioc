@@ -239,6 +239,7 @@ export class AgentConsoleStatusPanelComponent {
         <label v-style="accentStyle">{{dashboardSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="dashboardCountersLabel">{{dashboardCountersLabel}}</label>
         <label v-style="statsStyle" v-show="dashboardStatsLabel">{{dashboardStatsLabel}}</label>
+        <label v-style="qualityStyle" v-show="dashboardUsageLabel">{{dashboardUsageLabel}}</label>
         <label v-style="qualityStyle" v-show="dashboardQualityLabel">{{dashboardQualityLabel}}</label>
         <label v-style="qualityStyle" v-show="dashboardCompactionLabel">{{dashboardCompactionLabel}}</label>
         <label v-style="qualityStyle" v-show="dashboardTurnDiagnosticsLabel">{{dashboardTurnDiagnosticsLabel}}</label>
@@ -348,6 +349,13 @@ export class AgentConsoleDashboardPanelComponent {
             return '';
         }
         return this.state.summaryQualityDigest ? `quality · ${this.state.summaryQualityDigest}` : '';
+    }
+
+    get dashboardUsageLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.usageDigest ? `usage · ${this.state.usageDigest}` : '';
     }
 
     get dashboardCompactionLabel(): string {

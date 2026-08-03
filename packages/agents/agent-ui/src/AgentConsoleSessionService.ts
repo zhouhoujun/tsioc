@@ -1,5 +1,5 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
 export type AgentSessionExportFormat = 'json' | 'jsonl';
 
@@ -72,7 +72,8 @@ export class AgentConsoleSessionService {
     constructor(
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
         @Optional() private sessionStore?: SessionStore | null,
-        @Optional() private runtime?: AgentRuntime | null
+        @Optional() private runtime?: AgentRuntime | null,
+        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null
     ) {
     }
 
@@ -438,6 +439,31 @@ export class AgentConsoleSessionService {
         }
         const result = await this.appRpc.request('turn_diagnostics.trend', { ...(sessionId ? { sessionId } : {}), ...options }, context);
         return Array.isArray(result?.trend) ? result.trend : [];
+    }
+
+    async getUsageStats(sessionId?: string, context?: any): Promise<Record<string, any>> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('usage.stats', sessionId ? { sessionId } : {}, context);
+            return result?.usage ?? buildUsageSummary([]);
+        }
+        const sessionIds = sessionId
+            ? [sessionId]
+            : this.sessionStore
+                ? await this.sessionStore.listSessionIds()
+                : [];
+        const usageRecords: Array<ReturnType<typeof collectMessageUsageRecords>[number]> = [];
+        for (const id of sessionIds) {
+            const state = this.sessionStore
+                ? await this.sessionStore.get(id)
+                : undefined;
+            const messages = state?.messages
+                ?? (this.runtime && sessionIds.length === 1 ? await this.runtime.getMessages(id) : []);
+            usageRecords.push(...collectMessageUsageRecords(id, messages || []));
+        }
+        const turnRecords = this.turnDiagnostics
+            ? collectTurnUsageRecords((await this.turnDiagnostics.list()).filter(record => !sessionId || record.sessionId === sessionId))
+            : undefined;
+        return buildUsageSummary(usageRecords, turnRecords);
     }
 
     /**

@@ -327,6 +327,7 @@ class AppRpcStub {
     compactionHistoryRecords: any[] = [];
     compactionHistoryAggregates: any[] = [];
     compactionHistoryTrend: any[] = [];
+    usageStats: Record<string, any> | null = null;
     turnDiagnosticsAggregate: Record<string, any> | null = null;
     turnDiagnosticsRecords: any[] = [];
     turnDiagnosticsTrend: any[] = [];
@@ -519,6 +520,9 @@ class AppRpcStub {
                 ? this.compactionHistoryTrend.filter(item => item.sessionId === sessionId)
                 : this.compactionHistoryTrend;
             return { trend };
+        }
+        if (method === 'usage.stats') {
+            return { usage: this.usageStats };
         }
         if (method === 'turn_diagnostics.list') {
             const sessionId = params?.sessionId;
@@ -766,6 +770,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return result?.aggregate ?? null;
         }
         return null;
+    }
+
+    override async getUsageStats(sessionId?: string): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('usage.stats', sessionId ? { sessionId } : {});
+            return result?.usage ?? { daily: {}, weekly: {}, cumulative: {} };
+        }
+        return { daily: {}, weekly: {}, cumulative: {} };
     }
 
     override async getTurnDiagnosticsTrend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }): Promise<Array<Record<string, any>>> {
@@ -2728,6 +2741,29 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('12');
     }
 
+    @Test('usage command shows token and turn aggregates through rpc')
+    async usageCommandShowsAggregatesThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.usageStats = {
+            daily: { turns: 2, promptTokens: 12, completionTokens: 8, totalTokens: 20 },
+            weekly: { turns: 7, promptTokens: 40, completionTokens: 30, totalTokens: 70 },
+            cumulative: { turns: 9, promptTokens: 52, completionTokens: 38, totalTokens: 90 }
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/usage session-1';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'usage.stats' && call.params?.sessionId === 'session-1')).toEqual(true);
+        expect(component.notice).toContain('day 2 turns');
+        expect(component.notice).toContain('week 7 turns');
+        expect(component.notice).toContain('all 9 turns');
+        expect(component.notice).toContain('90 total');
+    }
+
     @Test('quality command reports empty stats when nothing recorded')
     async qualityCommandReportsEmptyStats() {
         const runtime = new RuntimeStub();
@@ -2990,6 +3026,41 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.summaryQualityDigest).toContain('deepseek');
         expect(component.sessionState.summaryQualityDigest).toContain('avg 84.2');
         expect(component.sessionState.summaryQualityDigest).toContain('anthropic');
+    }
+
+    @Test('refresh turn artifacts loads usage digest through rpc')
+    async refreshTurnArtifactsLoadsUsageDigest() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.usageStats = {
+            daily: { turns: 1, promptTokens: 5, completionTokens: 4, totalTokens: 9 },
+            weekly: { turns: 3, promptTokens: 12, completionTokens: 11, totalTokens: 23 },
+            cumulative: { turns: 4, promptTokens: 17, completionTokens: 15, totalTokens: 32 }
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        expect(appRpc.calls.some(call => call.method === 'usage.stats' && !call.params?.sessionId)).toEqual(true);
+        expect(component.sessionState.usageDigest).toContain('day 1 turns');
+        expect(component.sessionState.usageDigest).toContain('week 3 turns');
+        expect(component.sessionState.usageDigest).toContain('all 4 turns');
+    }
+
+    @Test('refresh turn artifacts clears usage digest when nothing recorded')
+    async refreshTurnArtifactsClearsUsageDigestWhenEmpty() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.usageStats = { daily: {}, weekly: {}, cumulative: {} };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setUsageDigest('stale digest');
+
+        await (component as any).refreshTurnArtifacts();
+
+        expect(appRpc.calls.some(call => call.method === 'usage.stats')).toEqual(true);
+        expect(component.sessionState.usageDigest).toBe('');
     }
 
     @Test('refresh turn artifacts clears summary quality digest when nothing recorded')

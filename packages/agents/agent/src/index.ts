@@ -29,6 +29,7 @@ export * from './tools/ToolSummary';
 export * from './runtime/TurnHandler';
 export * from './runtime/AgentRuntime';
 export * from './runtime/DefaultAgentRuntime';
+export * from './runtime/UsageSummary';
 
 export * from './tools/AgentTool';
 export * from './tools/ToolRegistry';
