@@ -300,6 +300,7 @@ class AppRpcStub {
     state?: Record<string, any>;
     tools?: any[];
     modelProfiles?: any[];
+    sessionExports = new Map<string, any>();
     modelActivateHandlers = new Map<string, () => Promise<any>>();
     streamChunks?: any[];
     todoPlan?: any[];
@@ -352,6 +353,35 @@ class AppRpcStub {
                 modelProfile: params?.name,
                 provider: matched?.provider || 'deepseek',
                 model: matched?.model || 'deepseek-v4-flash'
+            };
+        }
+        if (method === 'session.export') {
+            const sessionId = String(params?.sessionId || 'console');
+            const format = String(params?.format || 'json').trim().toLowerCase() === 'jsonl' ? 'jsonl' : 'json';
+            const key = `${sessionId}:${format}`;
+            const stored = this.sessionExports.get(key) ?? this.sessionExports.get(sessionId);
+            if (stored) {
+                return stored;
+            }
+            return {
+                sessionId,
+                format,
+                exportedAt: 1,
+                fileName: `agent-session-${sessionId}.${format === 'jsonl' ? 'jsonl' : 'json'}`,
+                contentType: format === 'jsonl' ? 'application/x-ndjson; charset=utf-8' : 'application/json; charset=utf-8',
+                content: format === 'jsonl'
+                    ? `${JSON.stringify({ type: 'session', exportedAt: 1, session: { id: sessionId, messageCount: 1, toolCallCount: 0 } })}\n${JSON.stringify({ type: 'message', message: { id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 } })}\n`
+                    : JSON.stringify({
+                        type: 'session_export',
+                        format,
+                        exportedAt: 1,
+                        session: { id: sessionId, messageCount: 1, toolCallCount: 0 },
+                        messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 }],
+                        toolCalls: []
+                    }, null, 2),
+                session: { id: sessionId, messageCount: 1, toolCallCount: 0 },
+                messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 }],
+                toolCalls: []
             };
         }
         if (method === 'todo.get') {
@@ -654,6 +684,16 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return result ?? null;
         }
         return null;
+    }
+
+    override async exportSession(sessionId: string, options?: { format?: 'json' | 'jsonl' }): Promise<any> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const format = options?.format === 'jsonl' ? 'jsonl' : 'json';
+            const result = await rpc.request('session.export', { sessionId, format });
+            return (this as any).normalizeExportResult(sessionId, format, result);
+        }
+        return super.exportSession(sessionId, options);
     }
 
     override async listSummaryQuality(options?: { provider?: string; limit?: number }): Promise<Array<Record<string, any>>> {
@@ -7154,6 +7194,78 @@ export class AgentConsoleComponentTest {
         expect(call).toBeTruthy();
         expect((call as any).params).toEqual({ sessionId: 'uf-2' });
         expect(state.notice).toContain('Nothing');
+    }
+
+    @Test('export command writes session transcript to workspace through file adapter')
+    async exportCommandWritesSessionTranscript() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-export-'));
+        try {
+            const app = new ApplicationContextStub();
+            app.registry.set(FileAdapter, new TestFileAdapter());
+            const runtime = new RuntimeStub();
+            const appRpc = new AppRpcStub();
+            appRpc.sessionExports.set('exp-1:jsonl', {
+                sessionId: 'exp-1',
+                format: 'jsonl',
+                exportedAt: 1,
+                fileName: 'session-exp-1.jsonl',
+                contentType: 'application/x-ndjson; charset=utf-8',
+                content: `${JSON.stringify({ type: 'session', exportedAt: 1, session: { id: 'exp-1', messageCount: 1, toolCallCount: 1 } })}\n${JSON.stringify({ type: 'message', message: { id: 'm1', role: 'assistant', content: 'ready', createdAt: 1, metadata: { toolCalls: [{ id: 'tc-1', name: 'read_file', input: { path: 'README.md' } }] } } })}\n${JSON.stringify({ type: 'tool_call', toolCall: { id: 'tc-1', name: 'read_file', input: { path: 'README.md' }, messageId: 'm1', createdAt: 1 } })}\n`,
+                session: { id: 'exp-1', messageCount: 1, toolCallCount: 1 },
+                messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1, metadata: { toolCalls: [{ id: 'tc-1', name: 'read_file', input: { path: 'README.md' } }] } }],
+                toolCalls: [{ id: 'tc-1', name: 'read_file', input: { path: 'README.md' }, messageId: 'm1', createdAt: 1 }]
+            });
+            const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, app, undefined, undefined, undefined, appRpc);
+            state.sessionId = 'exp-1';
+            state.setWorkspace(workspace);
+
+            await (component as any).handleCommand('/export jsonl');
+
+            const call = appRpc.calls.find(c => c.method === 'session.export');
+            expect(call).toBeTruthy();
+            expect((call as any).params).toEqual({ sessionId: 'exp-1', format: 'jsonl' });
+            const exportedFile = path.join(workspace, '.tsdi-agent', 'exports', 'session-exp-1.jsonl');
+            expect(fs.existsSync(exportedFile)).toEqual(true);
+            const content = fs.readFileSync(exportedFile, 'utf8');
+            expect(content).toContain('"type":"tool_call"');
+            expect(state.notice).toContain(exportedFile);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('export command falls back to preview when no writable file adapter is available')
+    async exportCommandFallsBackToPreview() {
+        const appRpc = new AppRpcStub();
+        appRpc.sessionExports.set('exp-2', {
+            sessionId: 'exp-2',
+            format: 'json',
+            exportedAt: 1,
+            fileName: 'session-exp-2.json',
+            contentType: 'application/json; charset=utf-8',
+            content: JSON.stringify({
+                type: 'session_export',
+                format: 'json',
+                exportedAt: 1,
+                session: { id: 'exp-2', messageCount: 1, toolCallCount: 0 },
+                messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 }],
+                toolCalls: []
+            }, null, 2),
+            session: { id: 'exp-2', messageCount: 1, toolCallCount: 0 },
+            messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 }],
+            toolCalls: []
+        });
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'exp-2';
+
+        await (component as any).handleCommand('/export');
+
+        const call = appRpc.calls.find(c => c.method === 'session.export');
+        expect(call).toBeTruthy();
+        expect((call as any).params).toEqual({ sessionId: 'exp-2', format: 'json' });
+        expect(state.notice).toContain('Export preview ready');
+        expect(state.selectMenu?.title).toEqual('Session export (json)');
+        expect(state.selectMenu?.options[0].detail).toContain('"type": "session_export"');
     }
 
     @Test('undo command reports nothing when the runtime has no snapshots')

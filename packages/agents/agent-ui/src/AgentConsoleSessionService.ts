@@ -1,6 +1,24 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
+export type AgentSessionExportFormat = 'json' | 'jsonl';
+
+export interface AgentSessionExportOptions {
+    format?: AgentSessionExportFormat;
+}
+
+export interface AgentSessionExportResult {
+    sessionId: string;
+    format: AgentSessionExportFormat;
+    exportedAt: number;
+    fileName: string;
+    contentType: string;
+    content: string;
+    session: Record<string, any>;
+    messages: AgentMessage[];
+    toolCalls: Array<Record<string, any>>;
+}
+
 export interface AgentConsoleSessionChoice {
     id: string;
     current?: boolean;
@@ -262,6 +280,49 @@ export class AgentConsoleSessionService {
         return false;
     }
 
+    async exportSession(
+        sessionId: string,
+        options?: AgentSessionExportOptions,
+        context?: any
+    ): Promise<AgentSessionExportResult> {
+        const resolvedSessionId = String(sessionId || '').trim();
+        if (!resolvedSessionId) {
+            throw new Error('sessionId is required');
+        }
+        const format = this.normalizeExportFormat(options?.format);
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.export', { sessionId: resolvedSessionId, format }, context);
+            return this.normalizeExportResult(resolvedSessionId, format, result);
+        }
+        const state = this.sessionStore
+            ? await this.sessionStore.get(resolvedSessionId)
+            : undefined;
+        const messages = state?.messages
+            ? state.messages.slice()
+            : this.runtime
+                ? await this.runtime.getMessages(resolvedSessionId)
+                : [];
+        const toolCalls = this.collectExportToolCalls(messages);
+        const exportedAt = Date.now();
+        const session = {
+            id: resolvedSessionId,
+            createdAt: state?.createdAt ?? null,
+            updatedAt: state?.updatedAt ?? null,
+            summary: state?.summary ?? null,
+            workspace: state?.workspace ?? null,
+            projectId: state?.projectId ?? null,
+            primaryThreadId: state?.primaryThreadId ?? null,
+            originThreadId: state?.originThreadId ?? null,
+            sessionRole: state?.sessionRole ?? null,
+            rootRequest: state?.rootRequest ?? null,
+            focusSummary: state?.focusSummary ?? null,
+            threadStatus: state?.threadStatus ?? null,
+            messageCount: messages.length,
+            toolCallCount: toolCalls.length
+        };
+        return this.createExportResult(resolvedSessionId, format, exportedAt, session, messages, toolCalls);
+    }
+
     async listApprovals(sessionId?: string, context?: any): Promise<Array<Record<string, any>>> {
         if (this.appRpc) {
             const result = await this.appRpc.request('approval.list', sessionId ? { sessionId } : {}, context);
@@ -470,6 +531,130 @@ export class AgentConsoleSessionService {
             focusSummary: state?.focusSummary,
             threadStatus: state?.threadStatus
         };
+    }
+
+    protected normalizeExportFormat(format?: string): AgentSessionExportFormat {
+        return String(format || '').trim().toLowerCase() === 'jsonl'
+            ? 'jsonl'
+            : 'json';
+    }
+
+    protected normalizeExportResult(
+        sessionId: string,
+        format: AgentSessionExportFormat,
+        result: any
+    ): AgentSessionExportResult {
+        const exportedAt = Number(result?.exportedAt ?? Date.now());
+        const messages = Array.isArray(result?.messages) ? result.messages : [];
+        const toolCalls = Array.isArray(result?.toolCalls) ? result.toolCalls : this.collectExportToolCalls(messages);
+        const session = result?.session && typeof result.session === 'object'
+            ? result.session
+            : {
+                id: sessionId,
+                messageCount: messages.length,
+                toolCallCount: toolCalls.length
+            };
+        return {
+            sessionId,
+            format: this.normalizeExportFormat(result?.format ?? format),
+            exportedAt,
+            fileName: String(result?.fileName || this.buildExportFileName(sessionId, exportedAt, format)),
+            contentType: String(result?.contentType || this.resolveExportContentType(format)),
+            content: String(result?.content || this.serializeSessionExport(format, exportedAt, session, messages, toolCalls)),
+            session,
+            messages,
+            toolCalls
+        };
+    }
+
+    protected createExportResult(
+        sessionId: string,
+        format: AgentSessionExportFormat,
+        exportedAt: number,
+        session: Record<string, any>,
+        messages: AgentMessage[],
+        toolCalls: Array<Record<string, any>>
+    ): AgentSessionExportResult {
+        return {
+            sessionId,
+            format,
+            exportedAt,
+            fileName: this.buildExportFileName(sessionId, exportedAt, format),
+            contentType: this.resolveExportContentType(format),
+            content: this.serializeSessionExport(format, exportedAt, session, messages, toolCalls),
+            session,
+            messages,
+            toolCalls
+        };
+    }
+
+    protected buildExportFileName(
+        sessionId: string,
+        exportedAt: number,
+        format: AgentSessionExportFormat
+    ): string {
+        const ext = format === 'jsonl' ? 'jsonl' : 'json';
+        const stamp = new Date(exportedAt).toISOString().replace(/[:.]/g, '-');
+        const safeSessionId = String(sessionId || 'session').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        return `agent-session-${safeSessionId}-${stamp}.${ext}`;
+    }
+
+    protected resolveExportContentType(format: AgentSessionExportFormat): string {
+        return format === 'jsonl'
+            ? 'application/x-ndjson; charset=utf-8'
+            : 'application/json; charset=utf-8';
+    }
+
+    protected serializeSessionExport(
+        format: AgentSessionExportFormat,
+        exportedAt: number,
+        session: Record<string, any>,
+        messages: AgentMessage[],
+        toolCalls: Array<Record<string, any>>
+    ): string {
+        if (format === 'jsonl') {
+            const lines = [
+                JSON.stringify({ type: 'session', exportedAt, session }),
+                ...messages.map(message => JSON.stringify({ type: 'message', message })),
+                ...toolCalls.map(toolCall => JSON.stringify({ type: 'tool_call', toolCall }))
+            ];
+            return `${lines.join('\n')}\n`;
+        }
+        return JSON.stringify({
+            type: 'session_export',
+            format,
+            exportedAt,
+            session,
+            messages,
+            toolCalls
+        }, null, 2);
+    }
+
+    protected collectExportToolCalls(messages: AgentMessage[]): Array<Record<string, any>> {
+        const records: Array<Record<string, any>> = [];
+        for (const message of messages || []) {
+            const toolCalls = Array.isArray(message?.metadata?.toolCalls)
+                ? message.metadata.toolCalls
+                : [];
+            for (const toolCall of toolCalls) {
+                if (!toolCall || typeof toolCall !== 'object') {
+                    continue;
+                }
+                const id = typeof toolCall.id === 'string' ? toolCall.id : '';
+                const name = typeof toolCall.name === 'string' ? toolCall.name : '';
+                if (!id && !name) {
+                    continue;
+                }
+                records.push({
+                    id: id || null,
+                    name: name || null,
+                    input: toolCall.input ?? null,
+                    messageId: message.id,
+                    createdAt: message.createdAt
+                });
+            }
+        }
+        return records;
     }
 
     protected sortSessionChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice[] {

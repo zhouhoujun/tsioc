@@ -95,6 +95,52 @@ export class SessionHandler {
             }
         };
 
+        const exportSession: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? `/api/sessions/${sessionId}/export`, `http://${host}`);
+            const format = url.searchParams.get('format')?.trim().toLowerCase() === 'jsonl'
+                ? 'jsonl'
+                : 'json';
+            try {
+                const state = await this.sessions.get(sessionId);
+                const messages = await this.runtime.getMessages(sessionId);
+                const toolCalls = this.collectExportToolCalls(messages);
+                const exportedAt = Date.now();
+                const session = {
+                    id: sessionId,
+                    createdAt: state.createdAt ?? null,
+                    updatedAt: state.updatedAt ?? null,
+                    summary: state.summary ?? null,
+                    workspace: state.workspace ?? null,
+                    projectId: state.projectId ?? null,
+                    primaryThreadId: state.primaryThreadId ?? null,
+                    originThreadId: state.originThreadId ?? null,
+                    sessionRole: state.sessionRole ?? null,
+                    rootRequest: state.rootRequest ?? null,
+                    focusSummary: state.focusSummary ?? null,
+                    threadStatus: state.threadStatus ?? null,
+                    messageCount: messages.length,
+                    toolCallCount: toolCalls.length
+                };
+                res.writeHead(200, {
+                    'Content-Type': format === 'jsonl'
+                        ? 'application/x-ndjson; charset=utf-8'
+                        : 'application/json; charset=utf-8',
+                    'Content-Disposition': `attachment; filename="${this.buildExportFileName(sessionId, exportedAt, format)}"`
+                }).end(this.serializeSessionExport(format, exportedAt, session, messages, toolCalls));
+            } catch {
+                res.writeHead(404).end(JSON.stringify({ error: 'session not found' }));
+            }
+        };
+
         const deleteSession: RouteHandler = async (req, res, params) => {
             const sessionId = params['id'];
             if (!sessionId) {
@@ -128,6 +174,7 @@ export class SessionHandler {
             { method: 'GET', path: '/api/sessions/threads', handler: listThreads },
             { method: 'GET', path: '/api/sessions/running', handler: runningSessions },
             { method: 'GET', path: '/api/sessions/:id/messages', handler: getMessages },
+            { method: 'GET', path: '/api/sessions/:id/export', handler: exportSession },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
         ];
     }
@@ -340,5 +387,64 @@ export class SessionHandler {
         res.writeHead(403, { 'Content-Type': 'application/json' })
             .end(JSON.stringify({ error: 'forbidden' }));
         return false;
+    }
+
+    private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {
+        const ext = format === 'jsonl' ? 'jsonl' : 'json';
+        const stamp = new Date(exportedAt).toISOString().replace(/[:.]/g, '-');
+        const safeSessionId = String(sessionId || 'session').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        return `agent-session-${safeSessionId}-${stamp}.${ext}`;
+    }
+
+    private serializeSessionExport(
+        format: 'json' | 'jsonl',
+        exportedAt: number,
+        session: Record<string, any>,
+        messages: Array<Record<string, any>>,
+        toolCalls: Array<Record<string, any>>
+    ): string {
+        if (format === 'jsonl') {
+            const lines = [
+                JSON.stringify({ type: 'session', exportedAt, session }),
+                ...messages.map(message => JSON.stringify({ type: 'message', message })),
+                ...toolCalls.map(toolCall => JSON.stringify({ type: 'tool_call', toolCall }))
+            ];
+            return `${lines.join('\n')}\n`;
+        }
+        return JSON.stringify({
+            type: 'session_export',
+            format,
+            exportedAt,
+            session,
+            messages,
+            toolCalls
+        }, null, 2);
+    }
+
+    private collectExportToolCalls(messages: Array<Record<string, any>>): Array<Record<string, any>> {
+        const records: Array<Record<string, any>> = [];
+        for (const message of messages || []) {
+            const toolCalls = Array.isArray(message?.metadata?.toolCalls)
+                ? message.metadata.toolCalls
+                : [];
+            for (const toolCall of toolCalls) {
+                if (!toolCall || typeof toolCall !== 'object') {
+                    continue;
+                }
+                const id = typeof toolCall.id === 'string' ? toolCall.id : '';
+                const name = typeof toolCall.name === 'string' ? toolCall.name : '';
+                if (!id && !name) {
+                    continue;
+                }
+                records.push({
+                    id: id || null,
+                    name: name || null,
+                    input: toolCall.input ?? null,
+                    messageId: message.id,
+                    createdAt: message.createdAt
+                });
+            }
+        }
+        return records;
     }
 }

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -141,6 +141,7 @@ export class AppRpcServer {
                         'session.messages',
                         'session.search',
                         'session.delete',
+                        'session.export',
                         'session.plan_mode.set',
                         'session.plan_mode.get',
                         'session.undo_file',
@@ -206,6 +207,8 @@ export class AppRpcServer {
                 return this.searchSessions(params, context);
             case 'session.delete':
                 return this.deleteSession(this.requireSessionId(params), context);
+            case 'session.export':
+                return this.exportSession(params, context);
             case 'session.plan_mode.set':
                 return this.setSessionPlanMode(params, context);
             case 'session.plan_mode.get':
@@ -444,6 +447,43 @@ export class AppRpcServer {
         await this.sessions.delete(sessionId);
         await this.memory.deleteBySession(sessionId);
         return { deleted: true, sessionId };
+    }
+
+    private async exportSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = await this.sessions.get(sessionId);
+        const format = this.resolveExportFormat(params?.format);
+        const messages = Array.isArray(state.messages) ? state.messages.slice() : await this.runtime.getMessages(sessionId);
+        const toolCalls = this.collectExportToolCalls(messages);
+        const exportedAt = Date.now();
+        const session = {
+            id: sessionId,
+            createdAt: state.createdAt ?? null,
+            updatedAt: state.updatedAt ?? null,
+            summary: state.summary ?? null,
+            workspace: state.workspace ?? null,
+            projectId: state.projectId ?? null,
+            primaryThreadId: state.primaryThreadId ?? null,
+            originThreadId: state.originThreadId ?? null,
+            sessionRole: state.sessionRole ?? null,
+            rootRequest: state.rootRequest ?? null,
+            focusSummary: state.focusSummary ?? null,
+            threadStatus: state.threadStatus ?? null,
+            messageCount: messages.length,
+            toolCallCount: toolCalls.length
+        };
+        return {
+            sessionId,
+            format,
+            exportedAt,
+            fileName: this.buildExportFileName(sessionId, exportedAt, format),
+            contentType: this.resolveExportContentType(format),
+            content: this.serializeSessionExport(format, exportedAt, session, messages, toolCalls),
+            session,
+            messages,
+            toolCalls
+        };
     }
 
     private async setSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -1624,6 +1664,77 @@ export class AppRpcServer {
 
     private reviewAnnotationsMemoryKey(cacheKey: string): string {
         return `${AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY}:${cacheKey}`;
+    }
+
+    private resolveExportFormat(format?: unknown): 'json' | 'jsonl' {
+        return String(format || '').trim().toLowerCase() === 'jsonl'
+            ? 'jsonl'
+            : 'json';
+    }
+
+    private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {
+        const ext = format === 'jsonl' ? 'jsonl' : 'json';
+        const stamp = new Date(exportedAt).toISOString().replace(/[:.]/g, '-');
+        const safeSessionId = String(sessionId || 'session').replace(/[^a-zA-Z0-9._-]+/g, '-');
+        return `agent-session-${safeSessionId}-${stamp}.${ext}`;
+    }
+
+    private resolveExportContentType(format: 'json' | 'jsonl'): string {
+        return format === 'jsonl'
+            ? 'application/x-ndjson; charset=utf-8'
+            : 'application/json; charset=utf-8';
+    }
+
+    private serializeSessionExport(
+        format: 'json' | 'jsonl',
+        exportedAt: number,
+        session: Record<string, any>,
+        messages: AgentMessage[],
+        toolCalls: Array<Record<string, any>>
+    ): string {
+        if (format === 'jsonl') {
+            const lines = [
+                JSON.stringify({ type: 'session', exportedAt, session }),
+                ...messages.map(message => JSON.stringify({ type: 'message', message })),
+                ...toolCalls.map(toolCall => JSON.stringify({ type: 'tool_call', toolCall }))
+            ];
+            return `${lines.join('\n')}\n`;
+        }
+        return JSON.stringify({
+            type: 'session_export',
+            format,
+            exportedAt,
+            session,
+            messages,
+            toolCalls
+        }, null, 2);
+    }
+
+    private collectExportToolCalls(messages: AgentMessage[]): Array<Record<string, any>> {
+        const records: Array<Record<string, any>> = [];
+        for (const message of messages || []) {
+            const toolCalls = Array.isArray(message?.metadata?.toolCalls)
+                ? message.metadata.toolCalls
+                : [];
+            for (const toolCall of toolCalls) {
+                if (!toolCall || typeof toolCall !== 'object') {
+                    continue;
+                }
+                const id = typeof toolCall.id === 'string' ? toolCall.id : '';
+                const name = typeof toolCall.name === 'string' ? toolCall.name : '';
+                if (!id && !name) {
+                    continue;
+                }
+                records.push({
+                    id: id || null,
+                    name: name || null,
+                    input: toolCall.input ?? null,
+                    messageId: message.id,
+                    createdAt: message.createdAt
+                });
+            }
+        }
+        return records;
     }
 
     private requireSessionId(params: any): string {

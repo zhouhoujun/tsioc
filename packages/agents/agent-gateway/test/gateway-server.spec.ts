@@ -527,6 +527,70 @@ export class SessionHandlerTest {
         expect(remaining.map((r: any) => r.id)).toEqual(['shared-1']);
     }
 
+    @Test('session export route returns transcript with tool calls')
+    async sessionExportRouteReturnsTranscript() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const messages = [
+            { id: 'u1', role: 'user', content: 'inspect project', createdAt: 1 },
+            { id: 'a1', role: 'assistant', content: 'Calling tool', createdAt: 2, metadata: { toolCalls: [{ id: 'tc-1', name: 'read_file', input: { path: 'README.md' } }] } },
+            { id: 't1', role: 'tool', content: '{"ok":true}', createdAt: 3, toolCallId: 'tc-1' }
+        ];
+        for (const message of messages) {
+            await store.append('sx-1', message as any);
+        }
+        await store.setWorkspace('sx-1', '/workspace/app');
+        await owners.create('sx-1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => messages } as any, store, owners);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id/export' && route.method === 'GET')!;
+        const req = { url: '/api/sessions/sx-1/export?format=jsonl', headers: { host: 'localhost' } } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        let body = '';
+        let headers: Record<string, any> = {};
+        const res = {
+            writeHead: (_code: number, value?: Record<string, any>) => {
+                headers = value || {};
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, { id: 'sx-1' });
+        expect(headers['Content-Type']).toContain('application/x-ndjson');
+        expect(headers['Content-Disposition']).toContain('agent-session-sx-1-');
+        expect(body).toContain('"type":"session"');
+        expect(body).toContain('"type":"tool_call"');
+        expect(body).toContain('"name":"read_file"');
+    }
+
+    @Test('session export route forbids other principals')
+    async sessionExportRouteForbidsForeignPrincipal() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('sx-locked', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('sx-locked', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id/export' && route.method === 'GET')!;
+        const req = { url: '/api/sessions/sx-locked/export', headers: { host: 'localhost' } } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        let status = 0;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, { id: 'sx-locked' });
+        expect(status).toEqual(403);
+    }
+
     @Test('lists persisted owned sessions without track call')
     async listsPersistedOwnedSessionsWithoutTrack() {
         const store = new InMemorySessionStore();
@@ -4360,6 +4424,76 @@ export class AppRpcServerTest {
         expect((redoResponse as any).result).toEqual({ filePath: '/ws/a.txt', restored: 'content' });
 
         expect(calls).toEqual(['undo:uf-s1', 'redo:uf-s1']);
+    }
+
+    @Test('session export returns transcript through json-rpc')
+    async sessionExportThroughJsonRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const messages = [
+            { id: 'u1', role: 'user', content: 'inspect', createdAt: 1 },
+            { id: 'a1', role: 'assistant', content: 'tool', createdAt: 2, metadata: { toolCalls: [{ id: 'tc-1', name: 'read_file', input: { path: 'README.md' } }] } },
+            { id: 't1', role: 'tool', content: '{"ok":true}', createdAt: 3, toolCallId: 'tc-1' }
+        ];
+        for (const message of messages) {
+            await store.append('export-rpc', message as any);
+        }
+        await owners.create('export-rpc', 'user-1');
+        const runtime = {
+            async getMessages() {
+                return messages;
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.export',
+            params: { sessionId: 'export-rpc', format: 'jsonl' }
+        }, { principalId: 'user-1' });
+        expect((response as any).result.format).toEqual('jsonl');
+        expect((response as any).result.contentType).toContain('application/x-ndjson');
+        expect((response as any).result.session.messageCount).toEqual(3);
+        expect((response as any).result.toolCalls.length).toEqual(1);
+        expect((response as any).result.content).toContain('"type":"tool_call"');
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('session.export');
+    }
+
+    @Test('session export rejects foreign session access')
+    async sessionExportRejectsForeignSession() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        await store.append('export-locked', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('export-locked', 'user-1');
+        const runtime = {
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.export',
+            params: { sessionId: 'export-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+        expect((response as any).error.message).toEqual('Forbidden');
     }
 
     @Test('undo_file rejects foreign session access')

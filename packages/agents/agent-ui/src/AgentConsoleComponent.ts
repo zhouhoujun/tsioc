@@ -18,7 +18,7 @@ import { AgentConsoleApprovalRequest, AgentConsolePlanTodoItem, AgentConsoleSele
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
-import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 @Component({
     selector: 'agent-console',
     template: `
@@ -221,6 +221,137 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.notify(this.formatSummaryQualityTrend(trend).join(' | '));
         return true;
+    }
+
+    protected async runExportCommand(args: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Session export is unavailable without session service.');
+            return true;
+        }
+        const parsed = this.parseExportArgs(args);
+        const sessionId = parsed.sessionId || this.state.sessionId;
+        if (!sessionId) {
+            this.notify('No session selected. Run /export [json|jsonl] [sessionId] [path].');
+            return true;
+        }
+        const result = await this.sessionService.exportSession(sessionId, { format: parsed.format });
+        const targetPath = await this.tryWriteSessionExport(result, parsed.path);
+        if (targetPath) {
+            this.notify(`Exported session '${sessionId}' to ${targetPath}.`);
+            return true;
+        }
+        this.previewSessionExport(result);
+        this.notify(`Export preview ready for session '${sessionId}' (${result.format.toUpperCase()}).`);
+        return true;
+    }
+
+    protected parseExportArgs(args: string): { format: AgentSessionExportFormat; sessionId?: string; path?: string } {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        let format: AgentSessionExportFormat = 'json';
+        if (tokens[0] && /^(json|jsonl)$/i.test(tokens[0])) {
+            format = tokens.shift()!.toLowerCase() as AgentSessionExportFormat;
+        }
+        if (!tokens.length) {
+            return { format };
+        }
+        if (tokens.length === 1) {
+            const token = tokens[0];
+            return this.looksLikeExportPath(token)
+                ? { format, path: token }
+                : { format, sessionId: token };
+        }
+        return {
+            format,
+            sessionId: tokens.shift(),
+            path: tokens.join(' ')
+        };
+    }
+
+    protected looksLikeExportPath(value: string): boolean {
+        const token = String(value || '').trim();
+        return !!token && (
+            /[\\/]/.test(token)
+            || token.startsWith('.')
+            || token.endsWith('.json')
+            || token.endsWith('.jsonl')
+        );
+    }
+
+    protected async tryWriteSessionExport(
+        result: AgentSessionExportResult,
+        requestedPath?: string
+    ): Promise<string | undefined> {
+        const fileAdapter = this.resolveFileAdapter();
+        if (!fileAdapter) {
+            return undefined;
+        }
+        const targetPath = this.resolveExportTargetPath(fileAdapter, result, requestedPath);
+        try {
+            const dirname = this.resolvePathDirectory(targetPath, fileAdapter);
+            if (dirname) {
+                await fileAdapter.mkdir(dirname, { recursive: true });
+            }
+            await fileAdapter.writeText(targetPath, result.content, 'utf-8');
+            return targetPath;
+        } catch {
+            return undefined;
+        }
+    }
+
+    protected previewSessionExport(result: AgentSessionExportResult): void {
+        const messageCount = Number(result.session?.messageCount ?? result.messages.length);
+        const toolCallCount = Number(result.session?.toolCallCount ?? result.toolCalls.length);
+        this.state.openSelectMenu(
+            `Session export (${result.format})`,
+            [{
+                label: result.fileName,
+                value: result.fileName,
+                description: `${messageCount} message${messageCount === 1 ? '' : 's'} · ${toolCallCount} tool call${toolCallCount === 1 ? '' : 's'}`,
+                detail: result.content
+            }],
+            0,
+            'Read-only export preview. Press Esc to close.'
+        );
+    }
+
+    protected resolveFileAdapter(): FileAdapter | null {
+        return this.app?.get(FileAdapter, null) as FileAdapter | null;
+    }
+
+    protected resolveExportTargetPath(
+        fileAdapter: FileAdapter,
+        result: AgentSessionExportResult,
+        requestedPath?: string
+    ): string {
+        const trimmed = String(requestedPath || '').trim();
+        if (trimmed) {
+            if (fileAdapter.isAbsolute(trimmed)) {
+                return fileAdapter.normalize(trimmed);
+            }
+            const workspace = String(this.workspace || '').trim();
+            return workspace
+                ? fileAdapter.resolve(workspace, trimmed)
+                : fileAdapter.normalize(trimmed);
+        }
+        const workspace = String(this.workspace || '').trim();
+        return workspace
+            ? fileAdapter.join(workspace, '.tsdi-agent', 'exports', result.fileName)
+            : fileAdapter.join('.tsdi-agent', 'exports', result.fileName);
+    }
+
+    protected resolvePathDirectory(targetPath: string, fileAdapter: FileAdapter): string {
+        const normalized = fileAdapter.normalize(targetPath).replace(/[\\/]+$/, '');
+        const slashIndex = Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\'));
+        if (slashIndex < 0) {
+            return '.';
+        }
+        if (/^[a-zA-Z]:[\\/]/.test(normalized) && slashIndex === 2) {
+            return normalized.slice(0, 3);
+        }
+        if (slashIndex === 0) {
+            return normalized.slice(0, 1);
+        }
+        return normalized.slice(0, slashIndex);
     }
 
     /**
@@ -2843,6 +2974,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
+                    { label: '/export', value: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
@@ -2916,6 +3048,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
                 await this.runRedoCommand();
                 return true;
+            case '/export':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.runExportCommand(parsed.args);
             case '/tools':
                 if (parsed.args) {
                     await this.activateSelectedToolActionHandler(parsed.args);
