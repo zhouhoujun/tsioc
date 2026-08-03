@@ -54,6 +54,7 @@ export * from './harness/TypeOrmCompactionHistoryStore';
 export * from './harness/DefaultCompactionHistoryStore';
 export * from './harness/TurnDiagnosticsStore';
 export * from './harness/EvidenceLedger';
+export * from './harness/WeaknessMiner';
 export * from './harness/InMemoryTurnDiagnosticsStore';
 export * from './harness/TypeOrmTurnDiagnosticsStore';
 export * from './harness/DefaultTurnDiagnosticsStore';

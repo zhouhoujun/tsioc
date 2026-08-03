@@ -672,6 +672,47 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/harness audit [sessionId]`: mines the durable execution trace
+     * (evidence ledgers + audit sink) for failure patterns and renders the
+     * top failing tools, error-signature clusters, falsified distribution, and
+     * candidate harness policy suggestions.
+     */
+    protected async openHarnessAudit(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Harness audit is unavailable without app RPC.');
+            return true;
+        }
+        const report = await this.sessionService.runHarnessAudit(sessionId);
+        if (!report || report.empty === true) {
+            this.notify(
+                sessionId
+                    ? `No harness failure data recorded for session '${sessionId}'.`
+                    : 'No harness failure data recorded yet.'
+            );
+            return true;
+        }
+        const lines: string[] = [];
+        const scope = report.scopedSessionIds
+            ? report.scopedSessionIds.map((id: string) => (id.length > 16 ? `${id.slice(0, 14)}…` : id)).join(',')
+            : 'all sessions';
+        lines.push(`harness audit · ${scope} · ${Number(report.totalTurns ?? 0)} turns · ${Number(report.totalToolAttempts ?? 0)} tool attempts · fail-turn ${Number(report.failureTurnRate ?? 0)}%`);
+        for (const stat of report.topFailingTools ?? []) {
+            lines.push(`tool ${stat.toolName} · ${stat.failures}/${stat.attempts} (${Number(stat.failureRate ?? 0)}%) · falsified ${Number(stat.falsifiedCount ?? 0)}`);
+        }
+        for (const cluster of report.errorClusters ?? []) {
+            lines.push(`cluster ${cluster.signature} · x${cluster.count} · tools ${(cluster.toolNames ?? []).join(',')}${cluster.suggestedPolicy ? ` · ${cluster.suggestedPolicy}` : ''}`);
+        }
+        for (const falsified of report.falsifiedDistribution ?? []) {
+            lines.push(`falsified ${falsified.toolName} · ${falsified.falsifiedCount} (${Number(falsified.falsifiedRate ?? 0)}%)`);
+        }
+        for (const suggestion of report.suggestions ?? []) {
+            lines.push(`suggest[${suggestion.kind}]${suggestion.toolName ? ` ${suggestion.toolName}` : ''} · ${suggestion.message}`);
+        }
+        this.notify(lines.join('\n'));
+        return true;
+    }
+
+    /**
      * Opens `/diagnostics list [sessionId]`: browses recorded turn diagnostics
      * records for the given session (or all owned sessions when omitted) as a
      * selectable list.
@@ -3241,6 +3282,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/delegation', value: '/delegation', description: 'delegation edges [sessionId]' },
                     { label: '/delegation tree', value: '/delegation tree', description: 'delegation tree [sessionId] [status] [depth]' },
                     { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
+                    { label: '/harness audit', value: '/harness audit', description: 'failure-pattern audit [sessionId]' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -3559,6 +3601,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         return this.openDelegationLineage(arg.slice(7).trim() || undefined);
                     }
                     return this.openDelegationList(arg || undefined);
+                }
+            case '/harness':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                {
+                    const arg = parsed.args?.trim() || '';
+                    if (arg === 'audit' || arg.startsWith('audit ')) {
+                        const sessionId = arg.slice(5).trim() || undefined;
+                        return this.openHarnessAudit(sessionId);
+                    }
+                    this.notify('Usage: /harness audit [sessionId]');
+                    return true;
                 }
             case '/copy': {
                 if (parsed.args) {

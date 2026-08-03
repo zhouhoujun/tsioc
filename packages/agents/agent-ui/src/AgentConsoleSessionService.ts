@@ -441,6 +441,19 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.trend) ? result.trend : [];
     }
 
+    /**
+     * Runs a harness failure-pattern audit over RPC. `sessionId` is optional:
+     * when provided the audit is scoped to that session (and the caller must
+     * own it), otherwise it covers every session owned by the principal.
+     */
+    async runHarnessAudit(sessionId?: string, options?: { since?: number; topN?: number; failureRateThreshold?: number; minFailures?: number }, context?: any): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        const result = await this.appRpc.request('harness.audit', { ...(sessionId ? { sessionId } : {}), ...options }, context);
+        return result?.report ?? null;
+    }
+
     async getUsageStats(sessionId?: string, context?: any): Promise<Record<string, any>> {
         if (this.appRpc) {
             const result = await this.appRpc.request('usage.stats', sessionId ? { sessionId } : {}, context);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, normalizeAgentMessageParts } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -26,7 +26,8 @@ export class AppRpcServer {
         @Optional() private summaryQuality?: SummaryQualityStore | null,
         @Optional() private compactionHistory?: CompactionHistoryStore | null,
         @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,
-        @Optional() private delegation?: DelegationGraphStore | null
+        @Optional() private delegation?: DelegationGraphStore | null,
+        @Optional() private weaknessMiner?: WeaknessMiner | null
     ) {
     }
 
@@ -184,6 +185,7 @@ export class AppRpcServer {
                         'turn_diagnostics.list',
                         'turn_diagnostics.stats',
                         'turn_diagnostics.trend',
+                        'harness.audit',
                         'delegation.tree',
                         'delegation.lineage',
                         'delegation.children',
@@ -293,6 +295,8 @@ export class AppRpcServer {
                 return this.getTurnDiagnosticsStats(params, context);
             case 'turn_diagnostics.trend':
                 return this.getTurnDiagnosticsTrend(params, context);
+            case 'harness.audit':
+                return this.runHarnessAudit(params, context);
             case 'delegation.tree':
                 return this.getDelegationTree(params, context);
             case 'delegation.lineage':
@@ -1386,8 +1390,47 @@ export class AppRpcServer {
         return { trend: trend.map(point => this.toTurnDiagnosticsTrendView(point)) };
     }
 
-    private toTurnDiagnosticsTrendView(point: import('@tsdi/agent').TurnDiagnosticsTrendPoint): Record<string, any> {
-        return {
+    private async runHarnessAudit(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.weaknessMiner) {
+            return { report: null };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+            return { report: await this.weaknessMiner.mine({ sessionIds: [sessionId], topN: this.parseTopN(params?.topN), failureRateThreshold: this.parseThreshold(params?.failureRateThreshold), minFailures: this.parseMinFailures(params?.minFailures) }) };
+        }
+        const all = await this.turnDiagnostics?.list() ?? [];
+        const sessionIds = [...new Set(all.map(record => record.sessionId))];
+        const owned = await this.owners.listOwned(sessionIds, context.principalId);
+        const since = Number.isFinite(Number(params?.since)) ? Number(params.since) : undefined;
+        const report = await this.weaknessMiner.mine({
+            sessionIds: owned.length > 0 ? owned : undefined,
+            since,
+            topN: this.parseTopN(params?.topN),
+            failureRateThreshold: this.parseThreshold(params?.failureRateThreshold),
+            minFailures: this.parseMinFailures(params?.minFailures)
+        });
+        return { report };
+    }
+
+    private parseTopN(raw: any): number | undefined {
+        const value = Number(raw);
+        return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), 50) : undefined;
+    }
+
+    private parseThreshold(raw: any): number | undefined {
+        const value = Number(raw);
+        return Number.isFinite(value) && value >= 0 ? value : undefined;
+    }
+
+    private parseMinFailures(raw: any): number | undefined {
+        const value = Number(raw);
+        return Number.isFinite(value) && value >= 0 ? Math.floor(value) : undefined;
+    }
+
+    private toTurnDiagnosticsTrendView(point: import('@tsdi/agent').TurnDiagnosticsTrendPoint): Record<string, any> {        return {
             sessionId: point.sessionId,
             bucketStart: point.bucketStart,
             recordCount: point.recordCount,

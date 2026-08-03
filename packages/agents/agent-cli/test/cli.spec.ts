@@ -185,6 +185,7 @@ export class AgentCliTest {
         expect(commandNames.includes('run')).toBe(true);
         expect(commandNames.includes('chat')).toBe(true);
         expect(commandNames.includes('doctor')).toBe(true);
+        expect(commandNames.includes('harness')).toBe(true);
         expect(commandNames.includes('completion')).toBe(true);
         expect(commandNames.includes('update')).toBe(true);
         expect(commandNames.includes('rpc-stdio')).toBe(true);
@@ -564,6 +565,51 @@ export class AgentCliTest {
             'https://registry.example.com',
             '--json'
         ]);
+    }
+
+    @Test('normalizes harness command ahead of leading options')
+    normalizesHarnessCommandAheadOfLeadingOptions() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--root',
+            '/tmp/agent-root',
+            'harness',
+            'audit',
+            '--session',
+            's1'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'harness',
+            '--root',
+            '/tmp/agent-root',
+            'audit',
+            '--session',
+            's1'
+        ]);
+    }
+
+    @Test('formats harness audit report lines')
+    formatsHarnessAuditReportLines() {
+        const { formatHarnessAuditReport } = require('../src/harness-command');
+        const text = formatHarnessAuditReport({
+            scopedSessionIds: ['session-abcdefghijklmnopqrstuvwxyz'],
+            totalTurns: 2,
+            totalToolAttempts: 5,
+            failureTurnRate: 50,
+            topFailingTools: [{ toolName: 'terminal', attempts: 3, failures: 2, failureRate: 66.7, falsifiedCount: 1 }],
+            errorClusters: [{ signature: 'ECONNREFUSED', count: 2, toolNames: ['terminal'], suggestedPolicy: 'review sandbox.networkAllowlist' }],
+            falsifiedDistribution: [{ toolName: 'terminal', falsifiedCount: 1, falsifiedRate: 33.3 }],
+            suggestions: [{ kind: 'approval', toolName: 'terminal', message: 'gate it' }]
+        });
+        expect(text).toContain('Harness failure-pattern audit');
+        expect(text).toContain('session-abcdef…');
+        expect(text).toContain('terminal: 2/3 (66.7%)');
+        expect(text).toContain('ECONNREFUSED: x2');
+        expect(text).toContain('[approval] terminal');
     }
 
     @Test('uses persistent session and memory stores across cli app restarts')

@@ -4,6 +4,7 @@ import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStd
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
+import { runAgentHarnessAudit } from './harness-command';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
 import { runAgentUpdate } from './update';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -13,7 +14,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -241,6 +242,21 @@ function createAgentCli(): Command {
             if (report.issues.some(issue => issue.severity === 'error')) {
                 process.exitCode = 1;
             }
+        });
+
+    const harness = program
+        .command('harness')
+        .description('Self-harness diagnostics: failure-pattern audit over the durable execution trace.');
+
+    harness
+        .command('audit')
+        .description('Mine failure patterns (top failing tools, error clusters, falsified distribution, policy suggestions).')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--session <id>', 'Restrict the audit to one session.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            await runAgentHarnessAudit(options);
         });
 
     program

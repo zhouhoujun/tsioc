@@ -52,6 +52,7 @@ import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
 import { InMemoryTurnDiagnosticsStore } from './harness/InMemoryTurnDiagnosticsStore';
 import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
 import { DefaultTurnDiagnosticsStore } from './harness/DefaultTurnDiagnosticsStore';
+import { WeaknessMiner } from './harness/WeaknessMiner';
 import { SummaryQualityStore } from './harness/SummaryQualityStore';
 import { InMemorySummaryQualityStore } from './harness/InMemorySummaryQualityStore';
 import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
@@ -94,6 +95,7 @@ import { createAgentProviders } from './provider';
         TypeOrmTurnDiagnosticsStore,
         DefaultTurnDiagnosticsStore,
         { provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore },
+        WeaknessMiner,
         InMemorySummaryQualityStore,
         TypeOrmSummaryQualityStore,
         DefaultSummaryQualityStore,

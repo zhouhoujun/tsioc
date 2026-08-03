@@ -548,7 +548,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 2. **A1 apply_patch**（工具面最高频差距）— ✅ 已完成（2026-08：`agent-tools/files/apply-patch.tool.ts` + 注册 + 多文件快照 undo/redo）
 3. **A4 doom-loop 恢复** + **B2 验证门**（核心机制，直接对应 Self-Harness 循环）— ✅ 已完成（见 P36）
 4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）— ✅ 已完成（见 P37）
-5. **B3 失败模式挖掘** + **B4 Harness Profile**（让「优化 Harness」本身进入循证循环）
+5. **B3 失败模式挖掘** ✅（见 P38） + **B4 Harness Profile**（进行中，让「优化 Harness」本身进入循证循环）
 6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）
 
 ### 回归口径
@@ -584,3 +584,18 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 文档：本条目；建议执行顺序第 4 项标记完成。
 
 全量回归：agent 450（442+8）、agent-tools 233、agent-gateway 133、agent-ui 263 passing；agent-cli 44 passing（1 条环境失败同 P36 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。
+
+## P38 打磨（进行中）：B3 失败模式挖掘
+
+1. ~~B3 失败模式挖掘 `WeaknessMiner`~~ → 已完成（`@tsdi/agent` + gateway + UI + CLI）：
+   - **核心**（新 `src/harness/WeaknessMiner.ts`，导出 `HarnessAuditScope` / `HarnessFailureToolStat` / `HarnessErrorCluster` / `HarnessFalsifiedStat` / `HarnessAuditSuggestion` / `HarnessAuditReport` / `normalizeErrorSignature` / `mineWeaknesses` / `WeaknessMiner`）：
+     - `mineWeaknesses(records, auditRecords?, options?)` 纯函数：`TurnDiagnosticsRecord.evidence`（B1 证据账本）为权威工具级来源；无 evidence 的 legacy 记录由 `AuditSink` 兜底映射成同形状条目。作用域（sessionIds / since / topN / failureRateThreshold / minFailures）在纯函数内生效。
+     - 输出：Top 失败工具（`failureRate` 保留一位小数，只含 failures>0）、错误签名聚类（`normalizeErrorSignature`：错误码 `E[A-Z0-9]{2,}` / `ERR_` 优先，否则首行小写截断 80）、失败轮次率（含 ≥1 失败 entry 的 turn 占比）、falsified 分布（B2）、建议（高频失败 shell 工具 → `approval`；非 shell 高频失败 → `tool`；falsified≥minFailures → `verification`；网络错误签名聚类 → `sandbox` + networkAllowlist 候选）。
+     - `WeaknessMiner` @Injectable：`@Optional` 注入 `TurnDiagnosticsStore` + `AuditSink`，`mine()` 读库后按 sessionIds 过滤再调纯函数；注册进 `agent.module.ts` providers。
+   - **gateway**：`AppRpcServer` 注入 `WeaknessMiner`，新 RPC `harness.audit`（白名单 + capabilities）+ `runHarnessAudit`：显式 sessionId → `ensureSessionAccess` 后单会话挖掘；无 sessionId → `owners.listOwned` 过滤到主体会话。`--session` 语义与 `turn_diagnostics.stats` 一致。
+   - **agent-ui**：`AgentConsoleSessionService.runHarnessAudit(sessionId?, options?)`；`AgentConsoleComponent` 新 `/harness audit [sessionId]`（`openHarnessAudit` 渲染 scope/turns/fail-turn/tools/clusters/falsified/suggestions 多行）+ `/help` 菜单项 + `commandHints` 注册 `/harness`。
+   - **agent-cli**：`TOP_LEVEL_COMMANDS` 加 `harness`；新 `src/harness-command.ts`：`runAgentHarnessAudit` 经 `runAgentApplication` 建 ctx 后 `ctx.get(WeaknessMiner).mine({ sessionIds: options.session ? [options.session] : undefined })`，`--json` 输出或 `formatHarnessAuditReport` 人类可读（含长 sessionId 截断）。
+   - **测试**：agent `test/weakness-miner.spec.ts` 9 条（签名归一化、evidence 聚类、approval/verification 建议、空输入、audit 兜底、session/since 作用域、服务级读库）；gateway `gateway-server.spec.ts` +3（owned 会话作用域 + capabilities、foreign 拒绝 -32003、无 miner 返回 null）；agent-cli `cli.spec.ts` +2（argv 归一化、报告格式化）。既有 turn 行为测试语义不变。
+   - 文档：本条目；建议执行顺序第 5 项前段标记完成（B4 同项待完成）。
+
+全量回归：agent 459（450+9）、agent-tools 233、agent-gateway 136（133+3）、agent-ui 263 passing；agent-cli 46 passing（1 条环境失败同 P36/P37 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。

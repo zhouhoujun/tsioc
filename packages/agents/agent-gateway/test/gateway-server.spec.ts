@@ -19,7 +19,7 @@ import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { UsageHandler } from '../src/api/UsageHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -4171,6 +4171,96 @@ export class AppRpcServerTest {
             params: { sessionId: 'rpc-diag-locked' }
         }, { principalId: 'user-2' });
         expect((listResponse as any).error.code).toEqual(-32003);
+    }
+
+    @Test('returns harness audit scoped to owned sessions through json-rpc')
+    async harnessAuditScopedToOwnedSessions() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-harness-1', 'user-1');
+        await owners.create('rpc-harness-2', 'user-2');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const now = Date.now();
+        const turnDiagnostics = {
+            async list() {
+                return [
+                    { sessionId: 'rpc-harness-1', createdAt: now, evidence: { turnId: 't1', sessionId: 'rpc-harness-1', entries: [{ id: 'e1', turnId: 't1', sessionId: 'rpc-harness-1', toolName: 'terminal', status: 'error', error: 'connect ECONNREFUSED', exitCode: 1, createdAt: now }], successCount: 0, errorCount: 1, skippedCount: 0, falsifiedCount: 0, totalDurationMs: 0, createdAt: now } },
+                    { sessionId: 'rpc-harness-2', createdAt: now, evidence: { turnId: 't2', sessionId: 'rpc-harness-2', entries: [{ id: 'e2', turnId: 't2', sessionId: 'rpc-harness-2', toolName: 'terminal', status: 'error', error: 'connect ECONNREFUSED', exitCode: 1, createdAt: now }], successCount: 0, errorCount: 1, skippedCount: 0, falsifiedCount: 0, totalDurationMs: 0, createdAt: now } }
+                ];
+            }
+        } as any;
+        const weaknessMiner = new WeaknessMiner(turnDiagnostics, null);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics, null, weaknessMiner);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.audit',
+            params: {}
+        }, { principalId: 'user-1' });
+        const report = (response as any).result.report;
+        expect(report).toBeTruthy();
+        expect(report.scopedSessionIds).toEqual(['rpc-harness-1']);
+        expect(report.totalTurns).toEqual(1);
+        expect(report.topFailingTools[0].toolName).toEqual('terminal');
+        expect(report.errorClusters[0].signature).toEqual('ECONNREFUSED');
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('harness.audit');
+    }
+
+    @Test('rejects foreign harness audit access through json-rpc')
+    async rejectsForeignHarnessAuditThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-harness-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const turnDiagnostics = {
+            async list() {
+                return [];
+            }
+        } as any;
+        const weaknessMiner = new WeaknessMiner(turnDiagnostics, null);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics, null, weaknessMiner);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.audit',
+            params: { sessionId: 'rpc-harness-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+    }
+
+    @Test('returns null harness audit when no miner is configured')
+    async harnessAuditWithoutMiner() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-harness-empty', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.audit',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((response as any).result.report).toEqual(null);
     }
 
     @Test('aggregates turn diagnostics across owned sessions through json-rpc')
