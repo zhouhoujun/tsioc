@@ -6,9 +6,11 @@ import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import { MemoryStore, SessionStore } from '@tsdi/agent';
 import {
+    createAgentDoctorReport,
     createAgentCli,
     ensureAgentWorkspaceConfig,
     formatProjectListLine,
+    formatAgentDoctorReport,
     formatProjectSessionsHeader,
     resolveCliConfig,
     resolveCliHooks,
@@ -19,6 +21,7 @@ import {
     resolveProviderProfile,
     normalizeCliArgv,
     runAgentJsonStream,
+    runAgentDoctor,
     runAgentPrompt,
     runAgentRpcApplication,
     withAdapterProviders,
@@ -172,10 +175,52 @@ export class AgentCliTest {
         const commandNames = cli.commands.map(cmd => cmd.name());
         expect(commandNames.includes('run')).toBe(true);
         expect(commandNames.includes('chat')).toBe(true);
+        expect(commandNames.includes('doctor')).toBe(true);
         expect(commandNames.includes('rpc-stdio')).toBe(true);
         const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
         expect(hasToolsCmd).toBe(true);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('doctor report surfaces missing workspace and missing api key')
+    async doctorReportSurfacesMissingWorkspaceAndApiKey() {
+        const root = await this.createRoot();
+        const report = createAgentDoctorReport({
+            root,
+            provider: 'openai',
+            model: 'gpt-5-mini'
+        });
+
+        expect(report.provider).toBe('openai');
+        expect(report.model).toBe('gpt-5-mini');
+        expect(report.apiKeyConfigured).toBe(false);
+        expect(report.pathEntries.find(entry => entry.label === 'workspace')?.exists).toBe(false);
+        expect(report.issues.some(issue => issue.code === 'workspace_missing')).toBe(true);
+        expect(report.issues.some(issue => issue.code === 'api_key_missing')).toBe(true);
+        expect(formatAgentDoctorReport(report)).toContain('Issues:');
+    }
+
+    @Test('doctor command emits json output')
+    async doctorCommandEmitsJsonOutput() {
+        const root = await this.createRoot();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        const report = await runAgentDoctor({
+            root,
+            provider: 'echo',
+            model: 'echo',
+            json: true
+        }, { stdout: output });
+
+        const payload = JSON.parse(buffer.trim());
+        expect(report.provider).toBe('echo');
+        expect(payload.provider).toBe('echo');
+        expect(payload.model).toBe('echo');
+        expect(Array.isArray(payload.pathEntries)).toBe(true);
     }
 
     @Test('formats project list lines with project and thread labels')
@@ -268,6 +313,27 @@ export class AgentCliTest {
             '--workspace',
             '/tmp/project',
             'hello'
+        ]);
+    }
+
+    @Test('normalizes doctor command ahead of leading options')
+    normalizesDoctorCommandAheadOfLeadingOptions() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--root',
+            '/tmp/agent-root',
+            'doctor',
+            '--json'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'doctor',
+            '--root',
+            '/tmp/agent-root',
+            '--json'
         ]);
     }
 

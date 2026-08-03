@@ -1,4 +1,5 @@
 export * from './config';
+export * from './doctor';
 export * from './agent-ui-config-reader';
 export * from './NodeAgentHookCommandExecutor';
 export * from './run-console';

@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
+import { runAgentDoctor } from './doctor';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
@@ -10,7 +11,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'tools', 'mcp', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -212,6 +213,25 @@ function createAgentCli(): Command {
                 skillRoots: resolved.skillRoots,
                 tools: resolved.tools.registration ?? {}
             }, null, 2) + '\n');
+        });
+
+    program
+        .command('doctor')
+        .description('Inspect local CLI configuration, workspace paths, and provider readiness.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--provider <name>', 'Model provider (deepseek, openai, etc.)')
+        .option('--model <name>', 'Model name.')
+        .option('--base-url <url>', 'API base URL.')
+        .option('--api-key <key>', 'API key.')
+        .option('--api-key-env <name>', 'Env var name for API key.')
+        .option('--timeout <ms>', 'Request timeout in ms.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            const report = await runAgentDoctor(options);
+            if (report.issues.some(issue => issue.severity === 'error')) {
+                process.exitCode = 1;
+            }
         });
 
     const mcp = program
