@@ -1235,7 +1235,7 @@ export class AgentToolsPackageTest {
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files']);
-        expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
+        expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'apply_patch', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(AGENT_TOOL_GROUPS.utility).toEqual(['calculator', 'location', 'weather']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser', 'playwright_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
@@ -1306,7 +1306,7 @@ export class AgentToolsPackageTest {
         expect(filesystem?.source).toEqual('builtin');
         expect(filesystem?.providerId).toEqual('@tsdi/agent-tools');
         expect(filesystem?.activation).toEqual({ kind: 'deferred', scope: 'session' });
-        expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
+        expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file', 'apply_patch', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(filesystemWrite?.defaultEnabled).toEqual(true);
         expect(filesystemWrite?.enabled).toEqual(true);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });

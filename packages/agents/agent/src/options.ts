@@ -69,6 +69,12 @@ export interface AgentSandboxOptions {
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
+    /** B2: max consecutive falsified rounds before a turn terminates with a failure summary (default 2). */
+    maxRepairRounds?: number;
+    /** A4: max loop-recovery prompt injections before a looping turn terminates (default 3). */
+    maxLoopRecoveries?: number;
+    /** B2: tool names treated as write operations for the declared-vs-actual diff check. */
+    verificationWriteTools?: string[];
     session?: AgentSessionOptions;
     context?: AgentContextOptions;
     tools?: AgentToolOptions;
@@ -83,6 +89,8 @@ export interface AgentOptions {
 export const defaultAgentOptions: AgentOptions = {
     name: 'HermesAgent',
     maxToolRounds: 4,
+    maxRepairRounds: 2,
+    maxLoopRecoveries: 3,
     session: {
         summaryThreshold: 8,
         recentMessages: 6

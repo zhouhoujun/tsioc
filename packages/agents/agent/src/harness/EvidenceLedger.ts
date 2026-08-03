@@ -85,6 +85,31 @@ export class EvidenceLedger {
         return this.entries.length;
     }
 
+    /**
+     * Read-only copies of entries recorded from `startIndex` onward. The
+     * verification gate (B2) uses this to scope falsification checks to the
+     * current round only, so earlier failures are not re-falsified.
+     */
+    entriesFrom(startIndex: number): ToolEvidenceEntry[] {
+        return startIndex <= 0
+            ? this.entries.map(entry => ({ ...entry }))
+            : this.entries.slice(startIndex).map(entry => ({ ...entry }));
+    }
+
+    /**
+     * Mark recorded entries as falsified (B2 recordFalsification). Entries
+     * whose id is not in `entryIds` are left untouched; the snapshot produced
+     * at turn end reflects the falsified flags.
+     */
+    markFalsified(entryIds: string[], reason: string): void {
+        for (const entry of this.entries) {
+            if (entryIds.includes(entry.id)) {
+                entry.falsified = true;
+                entry.falsificationReason = reason;
+            }
+        }
+    }
+
     /** Immutable per-turn aggregate snapshot. */
     snapshot(): EvidenceLedgerSnapshot {
         const successCount = this.entries.filter(entry => entry.status === 'success').length;

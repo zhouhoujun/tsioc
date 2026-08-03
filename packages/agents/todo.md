@@ -545,8 +545,8 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 ### 建议执行顺序
 
 1. **B1 证据账本**（B 面地基，对既有 receipt 路径零破坏）— ✅ 已完成
-2. **A1 apply_patch**（工具面最高频差距）
-3. **A4 doom-loop 恢复**（可先于 B2 独立落地）+ **B2 验证门**（核心机制，直接对应 Self-Harness 循环）
+2. **A1 apply_patch**（工具面最高频差距）— ✅ 已完成（2026-08：`agent-tools/files/apply-patch.tool.ts` + 注册 + 多文件快照 undo/redo）
+3. **A4 doom-loop 恢复** + **B2 验证门**（核心机制，直接对应 Self-Harness 循环）— ✅ 已完成（见 P36）
 4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）
 5. **B3 失败模式挖掘** + **B4 Harness Profile**（让「优化 Harness」本身进入循证循环）
 6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）
@@ -554,3 +554,16 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 ### 回归口径
 
 每项完成后包内测试 + 全量回归（agent / agent-tools / agent-gateway / agent-ui / agent-cli），`tsc --noEmit` clean；B 项必须保证既有 turn 行为测试（turn-loop / tool-execution / plan-mode / sandbox / undo-redo）语义不变。
+
+## P36 打磨（已完成）：A4 doom-loop 恢复 + B2 验证门
+
+1. ~~A4 doom-loop 恢复 + B2 验证门~~ → 已完成，贯穿 `completeTurn` / `completeStreamingTurn` 两条路径（`@tsdi/agent`）：
+   - **VerificationGate**（新 `src/harness/VerificationGate.ts`）：结构化证伪检查——(a) 本轮证据中 `status === 'error'` 或非零 `exitCode`（terminal / lsp_diagnostics / execute_code 失败统一走 error 证据）；(b) 声明-行为不一致——写工具（`DEFAULT_VERIFICATION_WRITE_TOOLS`：write/edit/apply_patch/move/copy/delete/mkdir）调用后 `before === after`（实际无 diff）→ 本轮标记。`verify(ledger, startIndex, writeHints)` 只检查 `startIndex` 之后的新证据，前轮失败不重复判定。
+   - **记录**：`EvidenceLedger` 新增 `entriesFrom(startIndex)`（只读切片）与 `markFalsified(entryIds, reason)`（`recordFalsification`，snapshot 的 falsifiedCount/falsified 标志落库）；`AgentTurnDiagnostics` 新增可选 `loopRecoveryCount` / `falsificationCount`，经 `recordTurnDiagnostics` 写进 record.metadata（不扩 entity schema）。
+   - **运行时**：`TurnExecutionContext.recovery` 承载 `loopPending / loopInjections / repairPending / repairInjections / consecutiveFalsifications / totalFalsifications / falsifiedEvidence / writeHints / terminated / terminationMessage`；`performToolInvocation` 在 `loopDetector.record` detected 时置 `loopPending`，写工具成功但内容未变时收集 `writeHints`；`runVerificationGate` 每轮工具执行后跑 gate（falsified → markFalsified + 计数 + 置 repairPending，`consecutiveFalsifications >= maxRepairRounds` 时置 terminated）；`resolveRecoveryTermination` 在每轮开头处理终止（B2 failure summary 或 A4 循环阻塞声明）；`maybeInjectRecoveryPrompt` 复用 `buildEmptyResponseRetryRequest` 的 system 前置注入路径——`loopPending` → `LOOP_RECOVERY_SYSTEM_PROMPT`（要求换策略或声明受阻），`repairPending` → `FALSIFICATION_REPAIR_PROMPT`（含证据摘要 + 定向修复要求，`consecutiveFalsifications >= 2` 时升级为 loop recovery 提示）。
+   - **配置**：`AgentOptions` 新增 `maxRepairRounds`（默认 2）、`maxLoopRecoveries`（默认 3）、`verificationWriteTools`（可覆盖默认写工具集）；修复轮不触发普通 `maxToolRounds` 限制语义（A4/B2 各自提前终止，既有 round-limit 路径保持）。
+   - **测试**：新 `test/verification-gate.spec.ts` 10 条——gate 单元（error 证据当前轮判定 + startIndex 隔离、无 diff 写提示、markFalsified）、A4（循环 3 次注入后阻塞终止、诊断 loopRecoveryCount 落库、模型收到提示后改策略正常完成、streaming 循环终止）、B2（失败→下轮修复提示→连续失败终止 failure summary、修复通过后正常继续且失败证据 falsified=true、maxRepairRounds=3 时连续失败升级为 loop recovery 提示后终止）。
+   - 文档：本条目；建议执行顺序第 3 项标记完成。
+   - 回归说明：`ToolLoopDetector.record` 每次工具调用记录两次（invoke 前 + 执行后），block 检测比单次记录早一轮——A4 测试适配器按此节奏编写；agent-tools 2 条 `filesystem_write` 分组断言（`apply_patch` 注册遗留）随本次一并修正。
+
+全量回归：agent 442（432+10）、agent-tools 233（231+2 修正）、agent-gateway 133、agent-ui 263 passing；agent-cli 44 passing（1 条 `update check reads latest version from registry metadata` 因本机 npm registry 配置为 npmmirror 镜像导致硬编码 npmjs.org 断言失败，属环境差异，与本次改动无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。

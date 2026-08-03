@@ -44,6 +44,10 @@ export interface AgentTurnDiagnostics {
     compactionLevel?: string;
     /** Prompt cache provider support / applied policy observed from the final model response. */
     promptCache?: PromptCacheRuntimeMetadata;
+    /** Number of loop-recovery prompts injected for this turn (A4). */
+    loopRecoveryCount?: number;
+    /** Number of tool rounds falsified by the verification gate (B2). */
+    falsificationCount?: number;
 }
 
 function summarizeEventInput(input: any): string | undefined {

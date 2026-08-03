@@ -38,6 +38,8 @@ import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandbo
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 import { EvidenceLedger } from '../harness/EvidenceLedger';
+import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
+import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentHookCommandExecutor, AgentHookContext, AgentHookManager, AgentHookTranscriptEntry } from '../hooks/AgentHooks';
@@ -56,6 +58,20 @@ interface TurnExecutionContext {
     diagnostics?: AgentTurnDiagnostics;
     profile?: string;
     evidenceLedger?: EvidenceLedger;
+    recovery?: TurnRecoveryState;
+}
+
+interface TurnRecoveryState {
+    loopPending: boolean;
+    loopInjections: number;
+    repairPending: boolean;
+    repairInjections: number;
+    consecutiveFalsifications: number;
+    totalFalsifications: number;
+    falsifiedEvidence: ToolEvidenceEntry[];
+    writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
+    terminated: boolean;
+    terminationMessage: string;
 }
 
 interface ToolCompensationEntry {
@@ -66,6 +82,7 @@ interface ToolCompensationEntry {
 
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
+const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
@@ -209,6 +226,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             workspace: await this.resolveSessionWorkspace(input.sessionId),
             diagnostics: this.createTurnDiagnostics(),
             evidenceLedger: new EvidenceLedger(input.sessionId),
+            recovery: this.createTurnRecovery(),
             profile: input.profile
         };
         await this.runTurnHooks('beforeTurn', input.sessionId, {
@@ -296,6 +314,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 workspace: await this.resolveSessionWorkspace(sessionId),
                 diagnostics: this.createTurnDiagnostics(),
                 evidenceLedger: new EvidenceLedger(sessionId),
+                recovery: this.createTurnRecovery(),
                 profile
             };
             await this.runTurnHooks('beforeTurn', sessionId, {
@@ -737,11 +756,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         loopDetector.reset();
         let round = 0;
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
+        const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
+        const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
-            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
+            if (termination) {
+                return { sessionId, message: this.createMessage('assistant', termination) };
+            }
+            let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
+            if (recoveredRequest) {
+                request = recoveredRequest;
+            }
             let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile));
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
@@ -764,10 +793,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
 
+            const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
             const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
+
+            await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
         }
@@ -793,11 +825,22 @@ export class DefaultAgentRuntime extends AgentRuntime {
         loopDetector.reset();
         let round = 0;
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
+        const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
+        const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
         let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
-            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
+            if (termination) {
+                yield { type: 'text', content: `\n\n${termination}\n\n` };
+                return { sessionId, message: this.createMessage('assistant', termination) };
+            }
+            let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
+            if (recoveredRequest) {
+                request = recoveredRequest;
+            }
             let response = yield* this.collectStreamingResponse(
                 sessionId,
                 this.prepareModelRequest(sessionId, request, turnContext.profile)
@@ -822,10 +865,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 );
             }
 
+            const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
             const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
+
+            await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
         }
@@ -994,7 +1040,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             compressionRatio: diagnostics.compressionRatio,
             compactionLevel: diagnostics.compactionLevel,
             promptCache: diagnostics.promptCache,
-            evidence: evidenceLedger?.snapshot()
+            evidence: evidenceLedger?.snapshot(),
+            metadata: {
+                loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
+                falsificationCount: diagnostics.falsificationCount ?? 0
+            }
         };
         try {
             await this.turnDiagnosticsStore.append(record);
@@ -1015,6 +1065,151 @@ export class DefaultAgentRuntime extends AgentRuntime {
             compressionRatio: undefined,
             compactionLevel: undefined
         };
+    }
+
+    private createTurnRecovery(): TurnRecoveryState {
+        return {
+            loopPending: false,
+            loopInjections: 0,
+            repairPending: false,
+            repairInjections: 0,
+            consecutiveFalsifications: 0,
+            totalFalsifications: 0,
+            falsifiedEvidence: [],
+            writeHints: [],
+            terminated: false,
+            terminationMessage: ''
+        };
+    }
+
+    private resolveRecoveryTermination(turnContext: TurnExecutionContext, maxLoopRecoveries: number): string | undefined {
+        const recovery = turnContext.recovery;
+        if (!recovery) {
+            return undefined;
+        }
+        if (recovery.terminated) {
+            return recovery.terminationMessage;
+        }
+        if (recovery.loopPending && recovery.loopInjections >= maxLoopRecoveries) {
+            recovery.loopPending = false;
+            return this.buildLoopBlockedMessage(recovery.loopInjections);
+        }
+        return undefined;
+    }
+
+    private maybeInjectRecoveryPrompt(request: ModelRequest, turnContext: TurnExecutionContext): ModelRequest | undefined {
+        const recovery = turnContext.recovery;
+        if (!recovery) {
+            return undefined;
+        }
+        if (recovery.loopPending) {
+            recovery.loopPending = false;
+            recovery.loopInjections++;
+            if (turnContext.diagnostics) {
+                turnContext.diagnostics.loopRecoveryCount = recovery.loopInjections;
+            }
+            return this.injectSystemPrompt(request, LOOP_RECOVERY_SYSTEM_PROMPT);
+        }
+        if (recovery.repairPending) {
+            recovery.repairPending = false;
+            recovery.repairInjections++;
+            if (turnContext.diagnostics) {
+                turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
+            }
+            const escalate = recovery.consecutiveFalsifications >= 2;
+            const prompt = escalate
+                ? LOOP_RECOVERY_SYSTEM_PROMPT
+                : this.buildFalsificationRepairPrompt(recovery.falsifiedEvidence);
+            return this.injectSystemPrompt(request, prompt);
+        }
+        return undefined;
+    }
+
+    private injectSystemPrompt(request: ModelRequest, prompt: string): ModelRequest {
+        return {
+            ...request,
+            messages: [
+                this.createMessage('system', prompt),
+                ...request.messages
+            ]
+        };
+    }
+
+    private async runVerificationGate(sessionId: string, turnContext: TurnExecutionContext, startIndex: number, maxRepairRounds: number): Promise<void> {
+        const recovery = turnContext.recovery;
+        if (!recovery) {
+            return;
+        }
+        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        const gate = new VerificationGate({ writeTools });
+        const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
+        recovery.writeHints = [];
+        if (!result.falsified) {
+            recovery.consecutiveFalsifications = 0;
+            return;
+        }
+        const entryIds = result.falsifiedEvidence.map(entry => entry.id).filter(Boolean);
+        if (entryIds.length) {
+            turnContext.evidenceLedger?.markFalsified(entryIds, result.reasons.join('; '));
+        }
+        recovery.falsifiedEvidence = result.falsifiedEvidence;
+        recovery.consecutiveFalsifications++;
+        recovery.totalFalsifications++;
+        recovery.repairPending = true;
+        if (turnContext.diagnostics) {
+            turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
+        }
+        if (recovery.consecutiveFalsifications >= maxRepairRounds) {
+            recovery.terminated = true;
+            recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
+        }
+    }
+
+    private async captureWriteFalsificationHint(
+        sessionId: string,
+        turnContext: TurnExecutionContext,
+        toolCall: { id: string; name: string },
+        definition: AgentToolDefinition,
+        fileSnapshot: FileSnapshot | null
+    ): Promise<void> {
+        const recovery = turnContext.recovery;
+        if (!recovery || !fileSnapshot || fileSnapshot.before === null) {
+            return;
+        }
+        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
+            return;
+        }
+        const after = await this.readRuntimeFileText(fileSnapshot.filePath);
+        if (after !== null && after === fileSnapshot.before) {
+            recovery.writeHints.push({
+                toolName: toolCall.name,
+                filePath: fileSnapshot.filePath,
+                reason: `Declared write to '${fileSnapshot.filePath}' but file content did not change.`
+            });
+        }
+    }
+
+    private buildFalsificationRepairPrompt(evidence: ToolEvidenceEntry[]): string {
+        const lines = evidence.slice(0, 8).map(entry => {
+            const reason = entry.falsificationReason ?? entry.error ?? 'failed';
+            return `- Tool "${entry.toolName}": ${reason}`;
+        });
+        const summary = lines.length ? lines.join('\n') : '- No specific evidence recorded.';
+        return `A verification gate falsified the previous tool results:\n${summary}\nFix the underlying issue and retry with a different approach. If the issue cannot be fixed, state clearly that you are blocked and explain why.`;
+    }
+
+    private buildLoopBlockedMessage(injections: number): string {
+        return `I detected a repeating tool-call loop that did not resolve after ${injections} recovery attempt(s). Ending the turn with the results gathered so far.`;
+    }
+
+    private buildFalsificationSummaryMessage(recovery: TurnRecoveryState): string {
+        const lines = recovery.falsifiedEvidence.slice(0, 8).map(entry => {
+            const reason = entry.falsificationReason ?? entry.error ?? 'failed';
+            return `- Tool "${entry.toolName}": ${reason}`;
+        });
+        const summary = lines.length ? lines.join('\n') : '- No specific evidence recorded.';
+        return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s).\n${summary}\nEnding the turn with a failure summary.`;
     }
 
     private async publishTurnDiagnosticsEvent(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
@@ -1494,6 +1689,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, reason, { sessionId, reason });
         }
         const loopResult = loopDetector.record(toolCall.name, toolCallInput);
+        if (loopResult.detected && turnContext.recovery) {
+            turnContext.recovery.loopPending = true;
+        }
         if (loopResult.severity === 'break') {
             const reason = loopResult.reason ?? 'Loop detected';
             return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
@@ -1656,6 +1854,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
+            await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
             await this.pushFileSnapshot(sessionId, fileSnapshot);
             return {
                 toolCall,
@@ -1685,6 +1884,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
+            await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
             await this.pushFileSnapshot(sessionId, fileSnapshot);
             return {
                 toolCall,
