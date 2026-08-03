@@ -30,6 +30,7 @@ export class InMemoryTurnDiagnosticsStore extends TurnDiagnosticsStore {
         return {
             ...record,
             promptCache: record.promptCache ? JSON.parse(JSON.stringify(record.promptCache)) : undefined,
+            evidence: record.evidence ? JSON.parse(JSON.stringify(record.evidence)) : undefined,
             metadata: record.metadata ? JSON.parse(JSON.stringify(record.metadata)) : undefined
         };
     }

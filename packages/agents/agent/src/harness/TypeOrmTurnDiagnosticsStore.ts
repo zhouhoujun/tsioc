@@ -4,6 +4,7 @@ import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { TurnDiagnosticsAggregate, TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsTrendPoint, aggregateTurnDiagnostics, buildTurnDiagnosticsTrend } from './TurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../memory/entities';
 import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
+import { EvidenceLedgerSnapshot } from './EvidenceLedger';
 
 @Injectable()
 export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
@@ -27,6 +28,7 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
             compressionRatio: record.compressionRatio ?? null,
             compactionLevel: record.compactionLevel ?? null,
             promptCache: record.promptCache ?? null,
+            evidence: record.evidence ?? null,
             metadata: record.metadata ?? null
         }));
     }
@@ -75,6 +77,7 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
             compressionRatio: record.compressionRatio ?? undefined,
             compactionLevel: record.compactionLevel ?? undefined,
             promptCache: record.promptCache as PromptCacheRuntimeMetadata | undefined,
+            evidence: record.evidence as EvidenceLedgerSnapshot | undefined,
             metadata: record.metadata ?? undefined
         };
     }

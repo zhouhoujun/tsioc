@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
+import { EvidenceLedgerSnapshot } from './EvidenceLedger';
 
 /**
  * A persisted record of one completed turn's diagnostics, captured from
@@ -26,6 +27,8 @@ export interface TurnDiagnosticsRecord {
     compactionLevel?: string;
     /** Prompt cache provider support / applied policy from the final model response. */
     promptCache?: PromptCacheRuntimeMetadata;
+    /** Per-turn tool evidence ledger snapshot (B1). Optional so older records remain readable. */
+    evidence?: EvidenceLedgerSnapshot;
     metadata?: Record<string, any>;
 }
 

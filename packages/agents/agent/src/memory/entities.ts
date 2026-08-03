@@ -328,6 +328,9 @@ export class AgentTurnDiagnosticsEntity {
     promptCache!: Record<string, any> | null;
 
     @Column({ type: 'simple-json', nullable: true })
+    evidence!: Record<string, any> | null;
+
+    @Column({ type: 'simple-json', nullable: true })
     metadata!: Record<string, any> | null;
 }
 
