@@ -4505,6 +4505,108 @@ export class AppRpcServerTest {
         expect((response as any).error.message).toEqual('Forbidden');
     }
 
+    @Test('sandbox mode rpc toggles runtime state through json-rpc')
+    async sandboxModeRpcTogglesRuntimeState() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const sandboxModes = new Map<string, string>();
+        const runtime = {
+            setPlanMode() {},
+            isPlanMode() {
+                return false;
+            },
+            setSessionSandboxMode(sessionId: string, mode?: string | null) {
+                if (!mode) {
+                    sandboxModes.delete(sessionId);
+                } else {
+                    sandboxModes.set(sessionId, mode);
+                }
+            },
+            getSessionSandboxMode(sessionId: string) {
+                return sandboxModes.get(sessionId);
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.create',
+            params: { sessionId: 'sb-s1' }
+        }, { principalId: 'user-1' });
+
+        const setWorkspace = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.sandbox_mode.set',
+            params: { sessionId: 'sb-s1', mode: 'workspace' }
+        }, { principalId: 'user-1' });
+        expect((setWorkspace as any).result).toEqual({ sessionId: 'sb-s1', mode: 'workspace' });
+
+        const getWorkspace = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'session.sandbox_mode.get',
+            params: { sessionId: 'sb-s1' }
+        }, { principalId: 'user-1' });
+        expect((getWorkspace as any).result).toEqual({ sessionId: 'sb-s1', mode: 'workspace' });
+
+        const setDefault = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'session.sandbox_mode.set',
+            params: { sessionId: 'sb-s1', mode: 'default' }
+        }, { principalId: 'user-1' });
+        expect((setDefault as any).result).toEqual({ sessionId: 'sb-s1', mode: 'default' });
+
+        const getDefault = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'session.sandbox_mode.get',
+            params: { sessionId: 'sb-s1' }
+        }, { principalId: 'user-1' });
+        expect((getDefault as any).result).toEqual({ sessionId: 'sb-s1', mode: 'default' });
+    }
+
+    @Test('sandbox mode rpc rejects foreign session access')
+    async sandboxModeRpcRejectsForeignSession() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('sb-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            setPlanMode() {},
+            isPlanMode() {
+                return false;
+            },
+            setSessionSandboxMode() {},
+            getSessionSandboxMode() {
+                return undefined;
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.sandbox_mode.set',
+            params: { sessionId: 'sb-locked', mode: 'workspace' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+        expect((response as any).error.message).toEqual('Forbidden');
+    }
+
     @Test('undo_file and redo_file route to runtime through json-rpc')
     async undoRedoFileRouteThroughJsonRpc() {
         const store = new InMemorySessionStore();

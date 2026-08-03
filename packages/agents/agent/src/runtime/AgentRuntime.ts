@@ -136,6 +136,25 @@ export abstract class AgentRuntime {
     }
 
     /**
+     * Override the OS sandbox mode for a session. Pass undefined/null to
+     * restore the configured default from AgentOptions.sandbox.mode.
+     */
+    setSessionSandboxMode(
+        _sessionId: string,
+        _mode?: import('../harness/sandbox-exec').SandboxMode | null
+    ): void {
+        // no-op by default
+    }
+
+    /**
+     * Return the session-scoped sandbox override, or undefined when the
+     * session inherits the configured default sandbox mode.
+     */
+    getSessionSandboxMode(_sessionId: string): import('../harness/sandbox-exec').SandboxMode | undefined {
+        return undefined;
+    }
+
+    /**
      * Revert the most recent recorded file change for a session (restore the
      * pre-change content). Override in runtimes backed by a FileSnapshotStore.
      */

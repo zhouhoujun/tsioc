@@ -123,6 +123,7 @@ class RuntimeStub {
     calls: string[] = [];
     messages = [{ id: '1', role: 'assistant', content: 'ready', createdAt: 1 } as any];
     planModeSessions = new Set<string>();
+    sandboxModes = new Map<string, 'off' | 'workspace' | 'network-block'>();
     turnMessages: any[] = [];
 
     setPlanMode(sessionId: string, enabled: boolean): void {
@@ -136,6 +137,19 @@ class RuntimeStub {
 
     isPlanMode(sessionId: string): boolean {
         return this.planModeSessions.has(sessionId);
+    }
+
+    setSessionSandboxMode(sessionId: string, mode?: 'off' | 'workspace' | 'network-block' | null): void {
+        this.calls.push(`sandbox:${sessionId}:${mode ?? 'default'}`);
+        if (mode == null) {
+            this.sandboxModes.delete(sessionId);
+            return;
+        }
+        this.sandboxModes.set(sessionId, mode);
+    }
+
+    getSessionSandboxMode(sessionId: string): 'off' | 'workspace' | 'network-block' | undefined {
+        return this.sandboxModes.get(sessionId);
     }
 
     async undoFileChange(): Promise<any> {
@@ -334,6 +348,7 @@ class AppRpcStub {
     turnDiagnosticsAggregate: Record<string, any> | null = null;
     turnDiagnosticsRecords: any[] = [];
     turnDiagnosticsTrend: any[] = [];
+    sandboxModes = new Map<string, string>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -387,6 +402,20 @@ class AppRpcStub {
                 messages: [{ id: 'm1', role: 'assistant', content: 'ready', createdAt: 1 }],
                 toolCalls: []
             };
+        }
+        if (method === 'session.sandbox_mode.set') {
+            const sessionId = String(params?.sessionId || 'console');
+            const mode = String(params?.mode || 'default');
+            if (mode === 'default') {
+                this.sandboxModes.delete(sessionId);
+            } else {
+                this.sandboxModes.set(sessionId, mode);
+            }
+            return { sessionId, mode };
+        }
+        if (method === 'session.sandbox_mode.get') {
+            const sessionId = String(params?.sessionId || 'console');
+            return { sessionId, mode: this.sandboxModes.get(sessionId) || 'default' };
         }
         if (method === 'todo.get') {
             if (this.todoFailuresBySession.has(params?.sessionId)) {
@@ -7275,19 +7304,49 @@ export class AgentConsoleComponentTest {
         expect(state.planMode).toEqual(true);
     }
 
-    @Test('status command reports session, model and plan mode')
+    @Test('permissions command sets session sandbox mode locally')
+    async permissionsCommandSetsLocalSandboxMode() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'pm-4';
+
+        await (component as any).handleCommand('/permissions sandbox workspace');
+        expect(runtime.sandboxModes.get('pm-4')).toEqual('workspace');
+        expect(state.notice).toContain('Sandbox mode set to workspace');
+
+        await (component as any).handleCommand('/permissions sandbox default');
+        expect(runtime.sandboxModes.has('pm-4')).toEqual(false);
+        expect(state.notice).toContain('Sandbox mode set to default');
+    }
+
+    @Test('permissions command routes sandbox mode through app rpc when remote')
+    async permissionsCommandRoutesSandboxModeThroughRpc() {
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'pm-5';
+
+        await (component as any).handleCommand('/permissions sandbox network-block');
+        const call = appRpc.calls.find(c => c.method === 'session.sandbox_mode.set');
+        expect(call).toBeTruthy();
+        expect((call as any).params).toEqual({ sessionId: 'pm-5', mode: 'network-block' });
+        expect(state.notice).toContain('Sandbox mode set to network-block');
+    }
+
+    @Test('status command reports session, model, plan mode, and sandbox mode')
     async statusCommandReportsSessionState() {
         const runtime = new RuntimeStub();
         const { state, component } = createConsoleParts(runtime, new SchedulerStub());
         state.sessionId = 'st-1';
         state.setModelProfile('fast');
         state.setPlanMode(true);
+        runtime.setSessionSandboxMode('st-1', 'workspace');
 
         await (component as any).handleCommand('/status');
 
         expect(state.notice).toContain('st-1');
         expect(state.notice).toContain('fast');
         expect(state.notice).toContain('ON (read-only)');
+        expect(state.notice).toContain('sandbox workspace');
     }
 
     @Test('input panel prompt shows a plan-mode badge when enabled')

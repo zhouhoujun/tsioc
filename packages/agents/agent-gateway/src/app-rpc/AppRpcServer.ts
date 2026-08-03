@@ -145,6 +145,8 @@ export class AppRpcServer {
                         'session.export',
                         'session.plan_mode.set',
                         'session.plan_mode.get',
+                        'session.sandbox_mode.set',
+                        'session.sandbox_mode.get',
                         'session.undo_file',
                         'session.redo_file',
                         'run.turn',
@@ -215,6 +217,10 @@ export class AppRpcServer {
                 return this.setSessionPlanMode(params, context);
             case 'session.plan_mode.get':
                 return this.getSessionPlanMode(params, context);
+            case 'session.sandbox_mode.set':
+                return this.setSessionSandboxMode(params, context);
+            case 'session.sandbox_mode.get':
+                return this.getSessionSandboxMode(params, context);
             case 'session.undo_file':
                 return this.undoFile(params, context);
             case 'session.redo_file':
@@ -502,6 +508,20 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
+    }
+
+    private async setSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const mode = this.normalizeSandboxMode(params?.mode);
+        this.runtime.setSessionSandboxMode(sessionId, mode);
+        return { sessionId, mode: mode ?? 'default' };
+    }
+
+    private async getSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return { sessionId, mode: this.runtime.getSessionSandboxMode(sessionId) ?? 'default' };
     }
 
     private async undoFile(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -1695,6 +1715,16 @@ export class AppRpcServer {
         return String(format || '').trim().toLowerCase() === 'jsonl'
             ? 'jsonl'
             : 'json';
+    }
+
+    private normalizeSandboxMode(value: unknown): import('@tsdi/agent').SandboxMode | undefined {
+        if (value == null || value === '' || value === 'default') {
+            return undefined;
+        }
+        if (value === 'off' || value === 'workspace' || value === 'network-block') {
+            return value;
+        }
+        throw new AppRpcError(-32602, 'Invalid session.sandbox_mode mode');
     }
 
     private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {

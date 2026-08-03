@@ -1132,6 +1132,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     protected sessionPlanModes = new Set<string>();
+    protected sessionSandboxModes = new Map<string, import('../harness/sandbox-exec').SandboxMode>();
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
@@ -1143,6 +1144,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     isPlanMode(sessionId: string): boolean {
         return this.sessionPlanModes.has(sessionId);
+    }
+
+    setSessionSandboxMode(sessionId: string, mode?: import('../harness/sandbox-exec').SandboxMode | null): void {
+        if (mode == null) {
+            this.sessionSandboxModes.delete(sessionId);
+            return;
+        }
+        this.sessionSandboxModes.set(sessionId, mode);
+    }
+
+    getSessionSandboxMode(sessionId: string): import('../harness/sandbox-exec').SandboxMode | undefined {
+        return this.sessionSandboxModes.get(sessionId);
     }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
@@ -1445,7 +1458,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, activationError.message);
         }
 
-        const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace);
+        const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
         const sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
         if (this.toolApprovalManager) {
@@ -1876,9 +1889,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
         };
     }
 
-    private resolveToolSandboxState(definition: AgentToolDefinition, workspace?: string): ToolSandboxState {
+    private resolveToolSandboxState(definition: AgentToolDefinition, workspace?: string, sessionId?: string): ToolSandboxState {
         const supported = !!this.toolExecutionCoordinator?.isSandboxExecutionSupported();
-        return resolveToolSandboxState(definition, workspace, supported);
+        const state = resolveToolSandboxState(definition, workspace, supported);
+        const mode = sessionId ? this.getSessionSandboxMode(sessionId) : undefined;
+        if (!mode || !state.policy) {
+            return state;
+        }
+        return {
+            ...state,
+            policy: {
+                ...state.policy,
+                osSandbox: mode
+            }
+        };
     }
 
     private decorateReceiptWithSandbox(

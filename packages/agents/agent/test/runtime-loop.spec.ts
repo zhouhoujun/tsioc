@@ -2132,6 +2132,27 @@ export class RuntimeLoopTest {
         expect(receipt?.sandboxApplied).toEqual(false);
     }
 
+    @Test('session sandbox mode overrides receipt sandbox policy')
+    async sessionSandboxModeOverridesReceiptSandboxPolicy() {
+        const runtime = new DefaultAgentRuntime(
+            new SandboxedToolLoopModelAdapter(),
+            new SandboxedToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+        runtime.setSessionSandboxMode('s1', 'network-block');
+
+        await runtime.runTurn('s1', 'hello');
+
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(message => message.role === 'tool');
+        const receipt = toolMessage?.metadata?.receipt;
+        expect(receipt?.sandboxPolicy?.osSandbox).toEqual('network-block');
+    }
+
     @Test('stores concise location tool output summary instead of json')
     async storesConciseLocationToolOutputSummaryInsteadOfJson() {
         const runtime = new DefaultAgentRuntime(

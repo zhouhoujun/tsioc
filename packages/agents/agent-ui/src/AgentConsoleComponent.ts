@@ -3210,6 +3210,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 const helpSelection = await this.select('Help', [
                     { label: '/model', value: '/model', description: 'switch model' },
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
+                    { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
@@ -3271,6 +3272,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 await this.runPlanCommand(parsed.args);
+                return true;
+            case '/permissions':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runPermissionsCommand(parsed.args);
                 return true;
             case '/status':
                 await this.runStatusCommand();
@@ -5013,15 +5021,69 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
+    protected async runPermissionsCommand(args: string): Promise<void> {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        if (!tokens.length) {
+            await this.runStatusCommand();
+            return;
+        }
+        const area = tokens[0].toLowerCase();
+        if (area === 'readonly' || area === 'plan') {
+            await this.runPlanCommand(tokens.slice(1).join(' '));
+            return;
+        }
+        if (area !== 'sandbox') {
+            this.notify('Usage: /permissions [readonly on|off] | [sandbox default|off|workspace|network-block]');
+            return;
+        }
+
+        const rawMode = String(tokens[1] || '').trim().toLowerCase();
+        if (!rawMode) {
+            const mode = await this.getSessionSandboxMode(this.state.sessionId);
+            this.notify(`Sandbox mode ${mode}.`);
+            return;
+        }
+        if (!['default', 'off', 'workspace', 'network-block'].includes(rawMode)) {
+            this.notify('Sandbox mode must be one of: default, off, workspace, network-block.');
+            return;
+        }
+        try {
+            await this.setSessionSandboxMode(this.state.sessionId, rawMode === 'default' ? null : rawMode as any);
+            this.notify(`Sandbox mode set to ${rawMode}.`);
+        } catch (error) {
+            this.notify(`Failed to set sandbox mode: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     protected async runStatusCommand(): Promise<void> {
         const sessionId = this.state.sessionId;
         let planMode = this.state.planMode;
+        let sandboxMode = await this.getSessionSandboxMode(sessionId).catch(() => 'default');
         if (this.appRpc) {
             const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
             planMode = result?.enabled === true;
         }
         const model = this.state.modelProfile || this.state.model || 'default';
-        this.notify(`session ${sessionId} · model ${model} · plan mode ${planMode ? 'ON (read-only)' : 'off'}`);
+        this.notify(`session ${sessionId} · model ${model} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode}`);
+    }
+
+    protected async setSessionSandboxMode(
+        sessionId: string,
+        mode: import('@tsdi/agent').SandboxMode | null
+    ): Promise<void> {
+        if (this.appRpc) {
+            await this.appRpc.request('session.sandbox_mode.set', { sessionId, mode: mode ?? 'default' });
+            return;
+        }
+        this.runtime.setSessionSandboxMode(sessionId, mode);
+    }
+
+    protected async getSessionSandboxMode(sessionId: string): Promise<string> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.sandbox_mode.get', { sessionId }).catch(() => null);
+            return String(result?.mode || 'default');
+        }
+        return this.runtime.getSessionSandboxMode(sessionId) ?? 'default';
     }
 
     protected async runUndoCommand(): Promise<void> {
