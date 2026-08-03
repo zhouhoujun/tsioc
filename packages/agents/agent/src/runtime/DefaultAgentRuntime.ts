@@ -37,6 +37,7 @@ import { OutputGuard } from '../harness/OutputGuard';
 import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
+import { EvidenceLedger } from '../harness/EvidenceLedger';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentHookCommandExecutor, AgentHookContext, AgentHookManager, AgentHookTranscriptEntry } from '../hooks/AgentHooks';
@@ -54,6 +55,7 @@ interface TurnExecutionContext {
     workspace?: string;
     diagnostics?: AgentTurnDiagnostics;
     profile?: string;
+    evidenceLedger?: EvidenceLedger;
 }
 
 interface ToolCompensationEntry {
@@ -206,6 +208,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             principalId: input.principalId,
             workspace: await this.resolveSessionWorkspace(input.sessionId),
             diagnostics: this.createTurnDiagnostics(),
+            evidenceLedger: new EvidenceLedger(input.sessionId),
             profile: input.profile
         };
         await this.runTurnHooks('beforeTurn', input.sessionId, {
@@ -223,7 +226,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeSummarize(input.sessionId);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
-            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics);
+            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
             await this.runTurnHooks('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
@@ -292,6 +295,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 principalId,
                 workspace: await this.resolveSessionWorkspace(sessionId),
                 diagnostics: this.createTurnDiagnostics(),
+                evidenceLedger: new EvidenceLedger(sessionId),
                 profile
             };
             await this.runTurnHooks('beforeTurn', sessionId, {
@@ -309,7 +313,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeSummarize(sessionId);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
-                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics);
+                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
                 await this.runTurnHooks('afterTurn', sessionId, {
                     sessionId,
                     principalId,
@@ -955,7 +959,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
+    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger): Promise<void> {
         if (!this.turnDiagnosticsStore || !diagnostics) {
             return;
         }
@@ -972,7 +976,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             totalTokenSavings: diagnostics.totalTokenSavings,
             compressionRatio: diagnostics.compressionRatio,
             compactionLevel: diagnostics.compactionLevel,
-            promptCache: diagnostics.promptCache
+            promptCache: diagnostics.promptCache,
+            evidence: evidenceLedger?.snapshot()
         };
         try {
             await this.turnDiagnosticsStore.append(record);
@@ -1399,9 +1404,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             for (const result of results) {
                 if (result.status === 'fulfilled') {
+                    this.recordToolEvidence(turnContext, result.value.receipt, result.value.error);
                     await this.finalizeToolInvocation(sessionId, result.value);
                 } else {
                     const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+                    this.recordToolEvidence(turnContext, {
+                        receiptId: randomUUID(),
+                        toolCallId: 'unknown',
+                        toolName: 'unknown',
+                        executionMode: 'parallel',
+                        status: 'error',
+                        error: err.message
+                    }, err);
                     await this.sessions.append(sessionId, this.createMessage(
                         'tool',
                         JSON.stringify({ error: err.message }),
@@ -1423,10 +1437,22 @@ export class DefaultAgentRuntime extends AgentRuntime {
         persistMessage = true
     ): Promise<Error | undefined> {
         const result = await this.performToolInvocation(sessionId, toolCall, loopDetector, executionMode, callableTools, turnContext);
+        this.recordToolEvidence(turnContext, result.receipt, result.error);
         if (persistMessage) {
             await this.finalizeToolInvocation(sessionId, result);
         }
         return result.error;
+    }
+
+    private recordToolEvidence(turnContext: TurnExecutionContext, receipt: AgentToolExecutionReceipt, error?: Error): void {
+        turnContext.evidenceLedger?.record({
+            toolName: receipt.toolName,
+            status: receipt.status === 'running' ? 'success' : receipt.status,
+            inputSummary: receipt.inputSummary,
+            outputSummary: receipt.outputSummary,
+            durationMs: receipt.durationMs,
+            error: receipt.error ?? error?.message
+        });
     }
 
     private async performToolInvocation(
