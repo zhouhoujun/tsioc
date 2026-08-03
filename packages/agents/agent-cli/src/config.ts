@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { resolveAgentWorkspacePath } from '@tsdi/agent';
+import { AgentHooksOptions, resolveAgentWorkspacePath } from '@tsdi/agent';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 
@@ -89,7 +89,10 @@ export interface AgentCliResolvedConfig {
     channels: AgentChannelsOptions;
     providerProfile?: AgentCliProviderProfile;
     settingsModel?: Partial<AgentCliProviderProfile>;
+    hooks?: AgentHooksOptions;
 }
+
+export const AGENT_HOOKS_FILE = 'hooks.json';
 
 function isCancelledConfigValue(value: unknown): boolean {
     if (typeof value !== 'string') {
@@ -448,6 +451,17 @@ export function resolveProviderBaseUrl(provider: string): string | undefined {
     }
 }
 
+function isAgentHooksObject(value: unknown): value is AgentHooksOptions {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function resolveCliHooks(root?: string): AgentHooksOptions | undefined {
+    const resolvedRoot = path.resolve(root || resolveAgentToolDiscovery(root).root);
+    const hooksPath = path.join(resolvedRoot, AGENT_HOOKS_FILE);
+    const parsed = readJsonObject(hooksPath);
+    return isAgentHooksObject(parsed) ? parsed : undefined;
+}
+
 /**
  * Resolve CLI config, loading .env files from workspace and root directories.
  */
@@ -456,6 +470,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     const settings: AgentRootSettings = resolved.settings;
     const providerProfile = resolveProviderProfile(resolved.root);
     const settingsModel = readSettingsModel(resolved.root);
+    const hooks = resolveCliHooks(resolved.root);
     const usesDefaultWorkspacePlaceholder = !options.root
         && !options.workspace
         && (!settings.workspace || settings.workspace === 'workspace');
@@ -517,6 +532,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         tools,
         channels,
         providerProfile,
-        settingsModel
+        settingsModel,
+        hooks
     };
 }

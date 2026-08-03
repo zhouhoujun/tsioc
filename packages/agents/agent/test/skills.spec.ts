@@ -2,7 +2,24 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, Handler, RunContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { AGENT_PROMPT_SECTIONS, AGENT_TURN_INTERCEPTORS, AgentModule, AgentRuntime, AgentTurnInput, AgentTurnResult, EchoModelAdapter, ModelAdapter } from '../src';
+import {
+    AGENT_PROMPT_SECTIONS,
+    AGENT_TURN_INTERCEPTORS,
+    AgentHookCommandExecutor,
+    AgentModule,
+    AgentRuntime,
+    AgentTurnInput,
+    AgentTurnResult,
+    ApprovalDecision,
+    DefaultAgentRuntime,
+    EchoModelAdapter,
+    InMemoryMemoryStore,
+    InMemorySessionStore,
+    ModelAdapter,
+    SimpleSessionSummarizer,
+    ToolRegistry,
+    defaultAgentOptions
+} from '../src';
 
 @Injectable()
 class StaticPromptSection {
@@ -117,5 +134,112 @@ export class AgentExtensionHooksTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('lifecycle hooks append context messages across turn, approval and tool stages')
+    async lifecycleHooksAppendContextMessages() {
+        class HookModelAdapter extends EchoModelAdapter {
+            calls = 0;
+            requests: any[] = [];
+            async complete(request: any): Promise<any> {
+                this.requests.push(request);
+                if (this.calls++ === 0) {
+                    return {
+                        message: '',
+                        toolCalls: [{ id: 'tool-1', name: 'hook_tool', input: { value: 1 } }],
+                        stopReason: 'tool_use'
+                    };
+                }
+                return { message: 'done', stopReason: 'end' };
+            }
+        }
+
+        class HookToolRegistry extends ToolRegistry {
+            private tool = {
+                name: 'hook_tool',
+                description: 'test hook tool',
+                execution: { sideEffect: true },
+                async invoke(input: any) {
+                    return { echoed: input?.value ?? null };
+                }
+            };
+
+            getTools(): any[] {
+                return [this.tool];
+            }
+            getTool(name: string): any {
+                return name === this.tool.name ? this.tool : undefined;
+            }
+            async invoke(name: string, input: any): Promise<any> {
+                return this.getTool(name)?.invoke(input);
+            }
+        }
+
+        class StaticHookExecutor extends AgentHookCommandExecutor {
+            isSupported(): boolean {
+                return true;
+            }
+
+            async execute(request: any): Promise<any> {
+                const toolName = request.context?.toolCall?.name ? `:${request.context.toolCall.name}` : '';
+                return {
+                    exitCode: 0,
+                    stdout: `${request.context.stage}${toolName}`,
+                    stderr: '',
+                    durationMs: 1
+                };
+            }
+        }
+
+        const approvalManager = {
+            isConfigured: () => true,
+            requiresApproval: () => true,
+            checkApproval: async () => ({ decision: ApprovalDecision.APPROVED }),
+            cancelBySession: () => 0,
+            getPending: () => []
+        };
+        const runtime = new DefaultAgentRuntime(
+            new HookModelAdapter(),
+            new HookToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                hooks: {
+                    beforeTurn: { command: 'before-turn' },
+                    afterTurn: { command: 'after-turn' },
+                    beforeTool: { command: 'before-tool' },
+                    afterTool: { command: 'after-tool' },
+                    onApproval: { command: 'on-approval' }
+                }
+            },
+            { publishEvent: async () => undefined } as any,
+            undefined,
+            undefined,
+            approvalManager as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            new StaticHookExecutor()
+        );
+
+        await runtime.runTurn('s1', 'hello');
+        const messages = await runtime.getMessages('s1');
+        const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+        expect(hookMessages.map(message => message.metadata?.hookStage)).toEqual([
+            'beforeTurn',
+            'onApproval',
+            'beforeTool',
+            'afterTool',
+            'afterTurn'
+        ]);
+        expect(hookMessages.map(message => message.content.includes('[hook'))).toEqual([true, true, true, true, true]);
     }
 }

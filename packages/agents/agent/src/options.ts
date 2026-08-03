@@ -1,4 +1,5 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
+import { AgentHooksOptions } from './hooks/AgentHooks';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -76,6 +77,7 @@ export interface AgentOptions {
     model?: AgentModelOptions;
     bootstrapTurn?: AgentBootstrapTurnOptions;
     sandbox?: AgentSandboxOptions;
+    hooks?: AgentHooksOptions;
 }
 
 export const defaultAgentOptions: AgentOptions = {
@@ -160,6 +162,10 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         bootstrapTurn: {
             ...defaultAgentOptions.bootstrapTurn,
             ...(options?.bootstrapTurn ?? {})
+        },
+        hooks: {
+            ...(defaultAgentOptions.hooks ?? {}),
+            ...(options?.hooks ?? {})
         }
     };
 }

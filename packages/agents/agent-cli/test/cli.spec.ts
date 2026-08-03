@@ -11,6 +11,7 @@ import {
     formatProjectListLine,
     formatProjectSessionsHeader,
     resolveCliConfig,
+    resolveCliHooks,
     resolveCliModelConfig,
     resolveProjectDisplayLabel,
     sortProjectSessions,
@@ -90,6 +91,24 @@ export class AgentCliTest {
         ]);
         expect(resolved.channels.registration?.preset).toBe('none');
         expect(resolved.channels.defaultChannel).toBe('local');
+    }
+
+    @Test('resolves lifecycle hooks from hooks.json')
+    async resolvesLifecycleHooksFromHooksJson() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'hooks.json'), JSON.stringify({
+            beforeTurn: { command: 'echo before-turn' },
+            afterTool: [{ command: 'echo after-tool' }]
+        }), 'utf8');
+
+        const hooks = resolveCliHooks(root);
+        const resolved = resolveCliConfig({ root });
+
+        expect(hooks).toEqual({
+            beforeTurn: { command: 'echo before-turn' },
+            afterTool: [{ command: 'echo after-tool' }]
+        });
+        expect(resolved.hooks).toEqual(hooks);
     }
 
     @Test('defaults workspace to launch git root')

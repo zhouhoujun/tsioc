@@ -1,5 +1,5 @@
 import { TuiConsoleModule } from '@tsdi/components/console';
-import { AgentRuntime, mergeAgentOptions } from '@tsdi/agent';
+import { AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
@@ -7,6 +7,7 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
+import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
 import { createAgentSandboxRuntimeProvider, resolveModelAdapter, withAdapterProviders } from './run-command';
 
 export interface AgentCliUiTarget {
@@ -38,6 +39,7 @@ function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCl
     const sessionId = resolveExplicitChatSessionId(options, agentOptions);
     const merged = mergeAgentOptions({
         ...agentOptions,
+        hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -94,6 +96,8 @@ export async function runAgentConsole(
             ...withAdapterProviders(options),
             createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
+            NodeAgentHookCommandExecutor,
+            { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
             { provide: AgentUiConfigService, useValue: config },
             ...(ui.providers || []),
             ...extraProviders

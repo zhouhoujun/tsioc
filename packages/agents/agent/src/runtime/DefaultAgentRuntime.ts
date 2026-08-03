@@ -39,6 +39,7 @@ import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/Comp
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
+import { AgentHookCommandExecutor, AgentHookContext, AgentHookManager, AgentHookTranscriptEntry } from '../hooks/AgentHooks';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -67,6 +68,7 @@ const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message
 export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
     protected toolApprovalManager?: ToolApprovalManager;
+    protected hookManager?: AgentHookManager;
     protected _stopped = false;
     protected sessionTurnQueues = new Map<string, Array<() => void>>();
     protected sessionTurnDepths = new Map<string, number>();
@@ -95,7 +97,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected delegationGraph?: DelegationGraphStore | null,
         @Optional() protected fileSnapshotStore?: FileSnapshotStore,
         @Optional() protected appArgs?: ApplicationArguments | null,
-        @Optional() protected fileAdapter?: FileAdapter | null
+        @Optional() protected fileAdapter?: FileAdapter | null,
+        @Optional() protected hookExecutor?: AgentHookCommandExecutor | null
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -119,6 +122,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.app
             );
         }
+        this.hookManager = this.options.hooks ? new AgentHookManager(this.options.hooks, this.hookExecutor) : undefined;
     }
 
     async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
@@ -189,6 +193,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
             workspace: await this.resolveSessionWorkspace(input.sessionId),
             diagnostics: this.createTurnDiagnostics()
         };
+        await this.runTurnHooks('beforeTurn', input.sessionId, {
+            sessionId: input.sessionId,
+            principalId: input.principalId,
+            workspace: turnContext.workspace,
+            input: input.input,
+            stage: 'beforeTurn',
+            turn: { status: 'started', message: input.input }
+        });
 
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
@@ -197,16 +209,40 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
             await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics);
+            await this.runTurnHooks('afterTurn', input.sessionId, {
+                sessionId: input.sessionId,
+                principalId: input.principalId,
+                workspace: turnContext.workspace,
+                input: input.input,
+                stage: 'afterTurn',
+                turn: { status: 'completed', message: result.message.content }
+            });
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
             if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
                 await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
+                await this.runTurnHooks('afterTurn', input.sessionId, {
+                    sessionId: input.sessionId,
+                    principalId: input.principalId,
+                    workspace: turnContext.workspace,
+                    input: input.input,
+                    stage: 'afterTurn',
+                    turn: { status: 'cancelled' }
+                });
                 await this.app.publishEvent(new AgentTurnCancelledEvent(this, input.sessionId));
                 throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(input.sessionId);
             }
             const err = error instanceof Error ? error : new Error(String(error));
             await this.rollbackTurnCompensations(input.sessionId, 'error');
+            await this.runTurnHooks('afterTurn', input.sessionId, {
+                sessionId: input.sessionId,
+                principalId: input.principalId,
+                workspace: turnContext.workspace,
+                input: input.input,
+                stage: 'afterTurn',
+                turn: { status: 'failed', error: err.message }
+            });
             await this.app.publishEvent(new AgentErrorEvent(this, input.sessionId, err));
             throw err;
         }
@@ -229,6 +265,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 workspace: await this.resolveSessionWorkspace(sessionId),
                 diagnostics: this.createTurnDiagnostics()
             };
+            await this.runTurnHooks('beforeTurn', sessionId, {
+                sessionId,
+                principalId,
+                workspace: turnContext.workspace,
+                input,
+                stage: 'beforeTurn',
+                turn: { status: 'started', message: input }
+            });
 
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
@@ -237,17 +281,41 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
                 await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics);
+                await this.runTurnHooks('afterTurn', sessionId, {
+                    sessionId,
+                    principalId,
+                    workspace: turnContext.workspace,
+                    input,
+                    stage: 'afterTurn',
+                    turn: { status: 'completed', message: result.message.content }
+                });
                 await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
                 await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
                 yield { type: 'done' };
             } catch (error) {
                 if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
                     await this.rollbackTurnCompensations(sessionId, 'cancelled');
+                    await this.runTurnHooks('afterTurn', sessionId, {
+                        sessionId,
+                        principalId,
+                        workspace: turnContext.workspace,
+                        input,
+                        stage: 'afterTurn',
+                        turn: { status: 'cancelled' }
+                    });
                     await this.app.publishEvent(new AgentTurnCancelledEvent(this, sessionId));
                     throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(sessionId);
                 }
                 const err = error instanceof Error ? error : new Error(String(error));
                 await this.rollbackTurnCompensations(sessionId, 'error');
+                await this.runTurnHooks('afterTurn', sessionId, {
+                    sessionId,
+                    principalId,
+                    workspace: turnContext.workspace,
+                    input,
+                    stage: 'afterTurn',
+                    turn: { status: 'failed', error: err.message }
+                });
                 await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
                 throw err;
             }
@@ -1368,6 +1436,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         if (this.toolApprovalManager) {
             const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId);
+            await this.runTurnHooks('onApproval', sessionId, {
+                sessionId,
+                principalId: turnContext.principalId,
+                workspace: turnContext.workspace,
+                stage: 'onApproval',
+                toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
+                toolDefinition: definition,
+                executionMode,
+                approval: {
+                    toolName: toolCall.name,
+                    decision: approval.decision,
+                    reason: approval.decision === ApprovalDecision.TIMEOUT
+                        ? 'timed out'
+                        : approval.decision === ApprovalDecision.DENIED
+                            ? 'denied'
+                            : approval.decision === ApprovalDecision.CANCELLED
+                                ? 'cancelled'
+                                : undefined
+                }
+            });
             if (approval.decision === ApprovalDecision.DENIED || approval.decision === ApprovalDecision.TIMEOUT) {
                 const reason = approval.decision === ApprovalDecision.TIMEOUT
                     ? `Tool "${toolCall.name}" approval timed out.`
@@ -1390,6 +1478,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }, reason, { sessionId, reason });
             }
         }
+
+        await this.runTurnHooks('beforeTool', sessionId, {
+            sessionId,
+            principalId: turnContext.principalId,
+            workspace: turnContext.workspace,
+            stage: 'beforeTool',
+            toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
+            toolDefinition: definition,
+            executionMode
+        });
 
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
 
@@ -1585,6 +1683,23 @@ export class DefaultAgentRuntime extends AgentRuntime {
             result.toolCall.id,
             result.metadata
         ));
+        const state = await this.sessions.get(sessionId);
+        await this.runTurnHooks('afterTool', sessionId, {
+            sessionId,
+            workspace: String(state.workspace || '').trim() || undefined,
+            stage: 'afterTool',
+            toolCall: {
+                id: result.toolCall.id,
+                name: result.toolCall.name,
+                input: result.metadata?.toolCallInput
+            },
+            executionMode: result.receipt.executionMode,
+            metadata: {
+                receipt: result.receipt,
+                error: result.error?.message,
+                output: result.content
+            }
+        });
     }
 
     private async createAssistantMessageFromResponse(sessionId: string, response: ModelResponse): Promise<AgentMessage> {
@@ -1696,6 +1811,40 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             this.sessionTurnsRunning.delete(sessionId);
         };
+    }
+
+    private async runTurnHooks(
+        stage: AgentHookContext['stage'],
+        sessionId: string,
+        context: AgentHookContext
+    ): Promise<void> {
+        if (!this.hookManager?.hasHooks(stage)) {
+            return;
+        }
+        const entries = await this.hookManager.run(stage, context);
+        await this.appendHookOutputs(sessionId, entries);
+    }
+
+    private async appendHookOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {
+        if (!entries.length) {
+            return;
+        }
+        for (const entry of entries) {
+            await this.sessions.append(sessionId, this.createMessage(
+                'system',
+                entry.content,
+                undefined,
+                undefined,
+                {
+                    kind: 'hook',
+                    hookStage: entry.stage,
+                    hookName: entry.name,
+                    exitCode: entry.exitCode,
+                    durationMs: entry.durationMs,
+                    stderr: entry.stderr
+                }
+            ));
+        }
     }
 
     private createBaseReceipt(

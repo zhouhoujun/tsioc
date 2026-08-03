@@ -461,7 +461,7 @@
 9. ~~无图像输入~~（Codex `-i` 附图像；opencode 拖拽图像入 prompt）→ **待办**：`AgentMessage`/`ModelRequest` 支持 content 图像段（base64 data-url），`RoutedModelAdapter` 透传给支持图像的多模态 provider；CLI `run --image <path>`；UI 无终端图像粘贴时至少支持 `/attach <path>` 命令。
 10. ~~非交互 exec 缺 JSON 事件流~~（现状：`tsdi-agent run` 只返回最终文本；Codex `exec --json` 输出 JSONL：thread.started/turn.started/turn.completed/item.*/error）→ **已完成**：`tsdi-agent run --json` 输出 JSONL 事件流（复用 gateway `EventHandler` 的 SSE 事件序列化），`--output-last-message` 兼容；新增 CLI 事件流测试。
 11. ~~无 usage 聚合视图~~（Codex `/usage` daily/weekly/cumulative）→ **已完成**：gateway 新增 `GET /api/usage`（按天/周/累计 token + turn 数），`usage.stats` RPC，UI `/usage` 命令 + dashboard 行；数据复用 session 消息 `metadata.usage` + turn-diagnostics 记录。
-12. ~~无用户可配置生命周期 hooks~~（opencode plugin hooks：chat.params/tool.execute.before/after/permission.ask；Claude Code PreToolUse/PostToolUse；现状框架只有内部 interceptor 管线）→ **待办**：`agent` 提供 hook 注册 API（`beforeTurn/afterTurn/beforeTool/afterTool/onApproval`），支持从配置加载 shell 命令 hook（镜像 Claude Code 的 `~/.tsdi-agent/hooks.json`），事件→子进程执行→stdout 注入上下文。
+12. ~~无用户可配置生命周期 hooks~~（opencode plugin hooks：chat.params/tool.execute.before/after/permission.ask；Claude Code PreToolUse/PostToolUse；现状框架只有内部 interceptor 管线）→ **已完成**：`@tsdi/agent` 新增纯运行时 hooks 基础设施（`hooks/AgentHooks.ts`：`beforeTurn` / `afterTurn` / `beforeTool` / `afterTool` / `onApproval` 五阶段、`AgentHookManager`、跨平台默认 `NoopAgentHookCommandExecutor`），`DefaultAgentRuntime` 在 turn / approval / tool 生命周期执行 hooks，并把 hook `stdout` 以 `system` hook message 注入会话上下文；`@tsdi/agent-cli` 新增 `NodeAgentHookCommandExecutor`，仅在 Node 边缘层经懒加载 spawn 执行 shell hook，`resolveCliConfig()` 从 `~/.tsdi-agent/hooks.json` 读配置并合入 `AgentOptions.hooks`，浏览器环境保持 no-op，不在 `agent` 核心直接绑定 Node。
 
 ### Tier 3（大改动 / 远期，仅记录）
 

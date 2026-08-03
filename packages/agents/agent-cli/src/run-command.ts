@@ -1,11 +1,12 @@
 import { Application } from '@tsdi/core';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AgentHookCommandExecutor, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
+import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
 import { Readable, Writable } from 'stream';
 
 export interface AgentRunJsonEvent {
@@ -98,6 +99,8 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
             ...withAdapterProviders(options),
             createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
+            NodeAgentHookCommandExecutor,
+            { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
             { provide: AgentUiConfigService, useValue: config },
             ...extraProviders,
             ...(agentOptions ? [{ provide: AGENT_OPTIONS, useValue: agentOptions }] : [])
@@ -116,6 +119,8 @@ export async function runAgentRpcApplication(options: AgentCliOptions, agentOpti
             ...withAdapterProviders(options),
             createAgentSandboxRuntimeProvider(),
             resolveModelAdapter(config, options),
+            NodeAgentHookCommandExecutor,
+            { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
             { provide: AgentUiConfigService, useValue: config },
             ...extraProviders,
             ...(agentOptions ? [{ provide: AGENT_OPTIONS, useValue: agentOptions }] : [])
@@ -127,7 +132,8 @@ export async function runAgentRpcStdio(
     options: AgentCliOptions = {},
     streams?: { input?: Readable; output?: Writable; principalId?: string; }
 ): Promise<void> {
-    const ctx = await runAgentRpcApplication(options, {});
+    const resolved = createConfigService(options).resolve(options);
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks }));
     const input = streams?.input ?? process.stdin;
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
@@ -152,6 +158,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const resolved = config.resolve();
     const modelConfig = resolved.model;
     const agentOptions = mergeAgentOptions({
+        hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -188,6 +195,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const resolved = config.resolve();
     const modelConfig = resolved.model;
     const agentOptions = mergeAgentOptions({
+        hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -232,7 +240,7 @@ export async function runAgentJsonStream(
     const resolved = config.resolve();
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, {});
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;

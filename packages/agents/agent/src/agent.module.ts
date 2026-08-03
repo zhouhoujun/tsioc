@@ -61,6 +61,7 @@ import { InMemoryDelegationGraphStore } from './harness/InMemoryDelegationGraphS
 import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
 import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
+import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/AgentHooks';
 import { createAgentProviders } from './provider';
 
 @Module({
@@ -104,6 +105,8 @@ import { createAgentProviders } from './provider';
         NodeChildProcessSandboxExecutor,
         OsSandboxExecutor,
         { provide: SandboxExecutor, useExisting: OsSandboxExecutor, asDefault: true },
+        NoopAgentHookCommandExecutor,
+        { provide: AgentHookCommandExecutor, useExisting: NoopAgentHookCommandExecutor, asDefault: true },
         FileSnapshotStore,
         ToolExecutionCoordinator,
         SystemPromptBuilder,

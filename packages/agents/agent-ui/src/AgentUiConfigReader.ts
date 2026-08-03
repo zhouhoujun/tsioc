@@ -39,6 +39,7 @@ export interface AgentUiResolvedConfig {
     skillRoots: string[];
     tools: Record<string, any>;
     channels: Record<string, any>;
+    hooks?: Record<string, any>;
     providerProfile?: AgentUiResolvedModelProfile;
     settingsModel?: Partial<AgentUiResolvedModelProfile>;
     model: AgentUiResolvedModelProfile;
