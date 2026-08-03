@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, MemoryStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -186,6 +186,9 @@ export class AppRpcServer {
                         'turn_diagnostics.stats',
                         'turn_diagnostics.trend',
                         'harness.audit',
+                        'harness.profile.list',
+                        'harness.profile.current',
+                        'harness.profile.diff',
                         'delegation.tree',
                         'delegation.lineage',
                         'delegation.children',
@@ -297,6 +300,12 @@ export class AppRpcServer {
                 return this.getTurnDiagnosticsTrend(params, context);
             case 'harness.audit':
                 return this.runHarnessAudit(params, context);
+            case 'harness.profile.list':
+                return this.listHarnessProfiles(params, context);
+            case 'harness.profile.current':
+                return this.currentHarnessProfile(params, context);
+            case 'harness.profile.diff':
+                return this.diffHarnessProfiles(params, context);
             case 'delegation.tree':
                 return this.getDelegationTree(params, context);
             case 'delegation.lineage':
@@ -1428,6 +1437,65 @@ export class AppRpcServer {
     private parseMinFailures(raw: any): number | undefined {
         const value = Number(raw);
         return Number.isFinite(value) && value >= 0 ? Math.floor(value) : undefined;
+    }
+
+    private async listHarnessProfiles(params: any, context: AppRpcRequestContext): Promise<any> {
+        const registry = getBuiltinHarnessProfiles();
+        return {
+            profiles: Object.values(registry).map(profile => this.toHarnessProfileView(profile)),
+            current: typeof this.options.harnessProfile === 'string' ? this.options.harnessProfile : undefined
+        };
+    }
+
+    private async currentHarnessProfile(params: any, context: AppRpcRequestContext): Promise<any> {
+        const reference = this.options.harnessProfile;
+        const resolved = reference
+            ? resolveHarnessProfile(reference) ?? snapshotHarnessProfile(this.options, this.resolveCurrentProfileName())
+            : snapshotHarnessProfile(this.options, this.resolveCurrentProfileName());
+        return {
+            profile: this.toHarnessProfileView(resolved),
+            reference: typeof reference === 'string' ? reference : undefined
+        };
+    }
+
+    private async diffHarnessProfiles(params: any, context: AppRpcRequestContext): Promise<any> {
+        const fromName = typeof params?.from === 'string' && params.from.trim() ? params.from.trim() : 'default';
+        const toName = typeof params?.to === 'string' && params.to.trim() ? params.to.trim() : 'current';
+        const registry = getBuiltinHarnessProfiles();
+        const from = fromName === 'current'
+            ? snapshotHarnessProfile(this.options, 'current')
+            : registry[fromName];
+        const to = toName === 'current'
+            ? snapshotHarnessProfile(this.options, 'current')
+            : registry[toName];
+        if (!from || !to) {
+            return { error: `Unknown harness profile: '${!from ? fromName : toName}'` };
+        }
+        return {
+            from: fromName,
+            to: toName,
+            diff: diffHarnessProfiles(from, to)
+        };
+    }
+
+    private resolveCurrentProfileName(): string {
+        return typeof this.options.harnessProfile === 'string' && this.options.harnessProfile.trim()
+            ? this.options.harnessProfile.trim()
+            : 'default';
+    }
+
+    private toHarnessProfileView(profile: HarnessProfile): Record<string, any> {
+        return {
+            name: profile.name,
+            version: profile.version,
+            requireApproval: profile.requireApproval,
+            sandbox: profile.sandbox,
+            maxRepairRounds: profile.maxRepairRounds,
+            maxLoopRecoveries: profile.maxLoopRecoveries,
+            verificationWriteTools: profile.verificationWriteTools,
+            granularCategories: profile.granularCategories,
+            formatter: profile.formatter
+        };
     }
 
     private toTurnDiagnosticsTrendView(point: import('@tsdi/agent').TurnDiagnosticsTrendPoint): Record<string, any> {        return {

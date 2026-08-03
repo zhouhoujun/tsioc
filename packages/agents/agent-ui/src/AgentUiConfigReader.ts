@@ -43,6 +43,7 @@ export interface AgentUiResolvedConfig {
     providerProfile?: AgentUiResolvedModelProfile;
     settingsModel?: Partial<AgentUiResolvedModelProfile>;
     model: AgentUiResolvedModelProfile;
+    harnessProfile?: string;
 }
 
 export abstract class AgentUiConfigReader {

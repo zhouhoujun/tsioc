@@ -548,7 +548,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 2. **A1 apply_patch**（工具面最高频差距）— ✅ 已完成（2026-08：`agent-tools/files/apply-patch.tool.ts` + 注册 + 多文件快照 undo/redo）
 3. **A4 doom-loop 恢复** + **B2 验证门**（核心机制，直接对应 Self-Harness 循环）— ✅ 已完成（见 P36）
 4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）— ✅ 已完成（见 P37）
-5. **B3 失败模式挖掘** ✅（见 P38） + **B4 Harness Profile**（进行中，让「优化 Harness」本身进入循证循环）
+5. **B3 失败模式挖掘** ✅（见 P38） + **B4 Harness Profile** ✅（见 P38，让「优化 Harness」本身进入循证循环）
 6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）
 
 ### 回归口径
@@ -598,4 +598,15 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - **测试**：agent `test/weakness-miner.spec.ts` 9 条（签名归一化、evidence 聚类、approval/verification 建议、空输入、audit 兜底、session/since 作用域、服务级读库）；gateway `gateway-server.spec.ts` +3（owned 会话作用域 + capabilities、foreign 拒绝 -32003、无 miner 返回 null）；agent-cli `cli.spec.ts` +2（argv 归一化、报告格式化）。既有 turn 行为测试语义不变。
    - 文档：本条目；建议执行顺序第 5 项前段标记完成（B4 同项待完成）。
 
-全量回归：agent 459（450+9）、agent-tools 233、agent-gateway 136（133+3）、agent-ui 263 passing；agent-cli 46 passing（1 条环境失败同 P36/P37 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。
+2. ~~B4 Harness Profile（版本化治理快照 + CLI/UI/RPC）~~ → 已完成（`@tsdi/agent` + gateway + UI + CLI）：
+   - **核心**（新 `src/harness/HarnessProfile.ts`，导出 `HarnessProfile` / `HARNESS_PROFILE_VERSION` / `HARNESS_PROFILE_FIELDS` / `deriveGranularCategories` / `snapshotHarnessProfile` / `applyHarnessProfile` / `diffHarnessProfiles` / `serializeHarnessProfile` / `parseHarnessProfile` / `createDefaultHarnessProfile` / `getBuiltinHarnessProfiles` / `resolveHarnessProfile` / `applyHarnessProfileReference`）：
+     - `HarnessProfile { name, version, requireApproval?, sandbox?, maxRepairRounds?, maxLoopRecoveries?, verificationWriteTools?, granularCategories?, formatter? }`，`version = 1`，`HARNESS_PROFILE_FIELDS` 固定字段序（diff/序列化稳定）。
+     - `snapshotHarnessProfile(options, name)` 从 AgentOptions 抓 governance 快照；`applyHarnessProfile(profile)` 产出 partial 覆盖层；`diffHarnessProfiles` 逐字段 JSON 比较输出 `field: a → b` 行；`serialize/parse` 校验 name/version（畸形拒绝）；`createDefaultHarnessProfile` = 旧默认治理快照；`getBuiltinHarnessProfiles()` 惰性构建 `{default, strict}`（避免 options ↔ profile 循环导入在模块初始化期读 `defaultAgentOptions`）；`strict` = network 分类审批 `{category:'network', mode:'ask'}` + `sandbox network-block` + `maxRepairRounds 1` + `maxLoopRecoveries 2` + `DEFAULT_VERIFICATION_WRITE_TOOLS` + granular `['network','sandbox']`；`resolveHarnessProfile`（string 查内置 / 对象直通 / 未知名或畸形 → undefined）。
+     - `AgentOptions.harnessProfile?: string | HarnessProfile`（verificationWriteTools 之后）；`mergeAgentOptions` 先 `resolveHarnessProfile(options.harnessProfile)` → `applyHarnessProfile` 覆盖层铺底，再铺显式 options（default → profile → explicit 三层合并，显式优先，`tools`/`sandbox` 子对象逐层合并）。`src/index.ts` 导出。
+   - **gateway**：`AppRpcServer` 白名单 + capabilities 新增 `harness.profile.list` / `harness.profile.current` / `harness.profile.diff`：list 返回内置 profiles + 当前引用；current 解析引用（string → 内置 / 否则 live 快照）；diff 支持内置名或 `current`，未知名返回 `{ error }`。
+   - **agent-ui**：`AgentConsoleSessionService.listHarnessProfiles / currentHarnessProfile / diffHarnessProfiles`；`AgentConsoleComponent` 新 `/harness profile [list|current|diff <from> <to>]`（`openHarnessProfile` 渲染 profiles/approval 规则/sandbox/diff 多行）+ `/help` 菜单项 + `commandHints` 注册 `/harness profile`。
+   - **agent-cli**：`src/harness-command.ts` 新增 `runAgentHarnessProfileList`（纯注册表，不启 runtime）/ `runAgentHarnessProfileCurrent` / `runAgentHarnessProfileDiff`（经 `runAgentApplication` 建 ctx 后读 `AGENT_OPTIONS` merge 快照）+ `formatHarnessProfileList / formatHarnessProfileCurrent / formatHarnessProfileDiff`；cli.ts 注册 `harness profile` / `harness profile:list` / `harness profile:current` / `harness profile:diff <from> [to]`；settings.json 新增 `harness.profile` 键（`AgentRootSettings.harness`），`resolveCliConfig` 透出 `harnessProfile`，`runAgentPrompt` / `runAgentStreaming` 的 agentOptions 注入 `harnessProfile`（CLI 侧持久化引用）。
+   - **测试**：agent `test/harness-profile.spec.ts` 12 条（序列化往返、畸形拒绝、默认 profile = 旧默认、strict apply 生效、显式 options 优先、内联对象、未知名回退、diff 可读、内置解析、granular 派生、无 profile 不变）；gateway `gateway-server.spec.ts` +3（list + capabilities、current 解析 options 引用、diff + 未知名错误）；agent-cli `cli.spec.ts` +2（list/current 格式化、diff 格式化）。既有 turn 行为测试语义不变。
+   - 文档：本条目；建议执行顺序第 5 项后段标记完成（B4 已完成）。
+
+全量回归：agent 471（459+12）、agent-tools 233、agent-gateway 139（136+3）、agent-ui 263 passing；agent-cli 48 passing（1 条环境失败同 P36/P37 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。

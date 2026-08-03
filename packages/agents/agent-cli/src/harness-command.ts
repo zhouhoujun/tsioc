@@ -1,5 +1,5 @@
-import { WeaknessMiner } from '@tsdi/agent';
-import { AgentCliOptions } from './config';
+import { AGENT_OPTIONS, WeaknessMiner, diffHarnessProfiles, getBuiltinHarnessProfiles, mergeAgentOptions, resolveHarnessProfile, snapshotHarnessProfile } from '@tsdi/agent';
+import { AgentCliOptions, resolveCliConfig } from './config';
 import { runAgentApplication } from './run-command';
 
 export interface HarnessCliIo {
@@ -8,6 +8,152 @@ export interface HarnessCliIo {
 
 function formatCompactId(id: string): string {
     return id.length > 16 ? `${id.slice(0, 14)}…` : id;
+}
+
+function formatProfileView(profile: Record<string, any>, active?: boolean): string {
+    const granular = Array.isArray(profile.granularCategories) && profile.granularCategories.length
+        ? `  |  granular ${profile.granularCategories.join(', ')}`
+        : '';
+    const approvalCount = Array.isArray(profile.requireApproval) ? profile.requireApproval.length : 0;
+    return `${active ? '* ' : '  '}${profile.name}  |  v${profile.version}  |  approval rules ${approvalCount}  |  repair ${profile.maxRepairRounds ?? '-'}  |  loop-recover ${profile.maxLoopRecoveries ?? '-'}  |  sandbox ${profile.sandbox?.mode ?? '-'}${granular}`;
+}
+
+export function formatHarnessProfileList(profiles: Record<string, any>[], current?: string): string {
+    const lines: string[] = [];
+    lines.push('Harness profiles');
+    profiles.forEach(profile => {
+        lines.push(formatProfileView(profile, current ? profile.name === current : profile.name === 'default'));
+    });
+    if (current) {
+        lines.push('');
+        lines.push(`Active reference: '${current}' (configured via settings.json 'harness.profile' or AgentOptions.harnessProfile)`);
+    }
+    return lines.join('\n');
+}
+
+export function formatHarnessProfileCurrent(profile: Record<string, any> | null | undefined, reference?: string): string {
+    if (!profile) {
+        return 'No harness profile resolved.';
+    }
+    const lines: string[] = [];
+    lines.push(`Harness profile ${profile.name}  |  v${profile.version}${reference ? `  |  reference '${reference}'` : ''}`);
+    const rules = Array.isArray(profile.requireApproval) ? profile.requireApproval : [];
+    lines.push('Approval rules:');
+    if (!rules.length) {
+        lines.push('- none');
+    } else {
+        rules.forEach((rule: any) => {
+            const category = typeof rule === 'string'
+                ? rule
+                : `${rule.category}${Array.isArray(rule.names) && rule.names.length ? `:${rule.names.join(',')}` : ''}${rule.mode ? ` [${rule.mode}]` : ''}`;
+            lines.push(`- ${category}`);
+        });
+    }
+    if (profile.sandbox) {
+        const allow = Array.isArray(profile.sandbox.networkAllowlist) && profile.sandbox.networkAllowlist.length
+            ? `  |  allow ${profile.sandbox.networkAllowlist.join(', ')}`
+            : '';
+        lines.push(`Sandbox: ${profile.sandbox.mode}${allow}`);
+    }
+    if (profile.maxRepairRounds !== undefined) {
+        lines.push(`Max repair rounds: ${profile.maxRepairRounds}`);
+    }
+    if (profile.maxLoopRecoveries !== undefined) {
+        lines.push(`Max loop recoveries: ${profile.maxLoopRecoveries}`);
+    }
+    if (Array.isArray(profile.verificationWriteTools) && profile.verificationWriteTools.length) {
+        lines.push(`Verification write tools: ${profile.verificationWriteTools.join(', ')}`);
+    }
+    return lines.join('\n');
+}
+
+export function formatHarnessProfileDiff(from: string, to: string, diff: string[]): string {
+    const lines: string[] = [];
+    lines.push(`Harness profile diff ${from} -> ${to}`);
+    if (!diff.length) {
+        lines.push('(no differences)');
+    } else {
+        diff.forEach(line => lines.push(`  ${line}`));
+    }
+    return lines.join('\n');
+}
+
+/**
+ * Lists the builtin harness profiles and resolves the effective profile from
+ * settings.json / AgentOptions. Does not boot the application runtime.
+ */
+export function runAgentHarnessProfileList(options: AgentCliOptions & { json?: boolean }, io: HarnessCliIo = {}): Record<string, any> {
+    const stdout = io.stdout || process.stdout;
+    const registry = getBuiltinHarnessProfiles();
+    const profiles = Object.values(registry);
+    const resolved = resolveCliConfig(options);
+    const current = typeof resolved.harnessProfile === 'string' && resolved.harnessProfile.trim()
+        ? resolved.harnessProfile.trim()
+        : undefined;
+    const result = { profiles, current };
+    stdout.write(options.json
+        ? JSON.stringify(result, null, 2) + '\n'
+        : formatHarnessProfileList(profiles as Record<string, any>[], current) + '\n');
+    return result;
+}
+
+/**
+ * Shows the effective harness profile (builtin reference or live snapshot of
+ * the merged AgentOptions). Boots the runtime like `harness audit` so the
+ * live options are authoritative.
+ */
+export async function runAgentHarnessProfileCurrent(options: AgentCliOptions & { json?: boolean }, io: HarnessCliIo = {}): Promise<Record<string, any> | null> {
+    const stdout = io.stdout || process.stdout;
+    const resolved = resolveCliConfig(options);
+    const reference = typeof resolved.harnessProfile === 'string' && resolved.harnessProfile.trim()
+        ? resolved.harnessProfile.trim()
+        : undefined;
+    const ctx = await runAgentApplication(options, mergeAgentOptions({ harnessProfile: resolved.harnessProfile }));
+    try {
+        const appOptions = ctx.get(AGENT_OPTIONS);
+        const merged = mergeAgentOptions(appOptions ?? {});
+        const profile = resolveHarnessProfile(merged.harnessProfile as any) ?? snapshotHarnessProfile(merged, reference ?? 'default');
+        stdout.write(options.json
+            ? JSON.stringify(profile, null, 2) + '\n'
+            : formatHarnessProfileCurrent(profile as Record<string, any>, reference) + '\n');
+        return profile as Record<string, any>;
+    } finally {
+        await ctx.close();
+    }
+}
+
+/**
+ * Diffs two harness profiles. `from`/`to` accept a builtin name or `current`
+ * (the live merged options snapshot).
+ */
+export async function runAgentHarnessProfileDiff(from: string, to: string, options: AgentCliOptions & { json?: boolean }, io: HarnessCliIo = {}): Promise<Record<string, any>> {
+    const stdout = io.stdout || process.stdout;
+    const registry = getBuiltinHarnessProfiles();
+    const resolved = resolveCliConfig(options);
+    const ctx = await runAgentApplication(options, mergeAgentOptions({ harnessProfile: resolved.harnessProfile }));
+    try {
+        const appOptions = ctx.get(AGENT_OPTIONS);
+        const merged = mergeAgentOptions(appOptions ?? {});
+        const snapshotCurrent = snapshotHarnessProfile(merged, 'current');
+        const fromProfile = from === 'current' ? snapshotCurrent : registry[from];
+        const toProfile = to === 'current' ? snapshotCurrent : registry[to];
+        if (!fromProfile || !toProfile) {
+            const unknown = !fromProfile ? from : to;
+            const message = `Unknown harness profile: '${unknown}'. Available: default, strict, current.`;
+            stdout.write(options.json
+                ? JSON.stringify({ error: message }, null, 2) + '\n'
+                : message + '\n');
+            return { error: message };
+        }
+        const diff = diffHarnessProfiles(fromProfile, toProfile);
+        const result = { from, to, diff };
+        stdout.write(options.json
+            ? JSON.stringify(result, null, 2) + '\n'
+            : formatHarnessProfileDiff(from, to, diff) + '\n');
+        return result;
+    } finally {
+        await ctx.close();
+    }
 }
 
 export function formatHarnessAuditReport(report: Record<string, any>): string {

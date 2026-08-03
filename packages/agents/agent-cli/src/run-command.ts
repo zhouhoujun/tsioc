@@ -210,6 +210,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const modelConfig = resolved.model;
     const message = await buildTurnMessage(prompt, options);
     const agentOptions = mergeAgentOptions({
+        harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,
@@ -243,6 +244,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const modelConfig = resolved.model;
     const message = await buildTurnMessage(prompt, options);
     const agentOptions = mergeAgentOptions({
+        harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,

@@ -612,6 +612,52 @@ export class AgentCliTest {
         expect(text).toContain('[approval] terminal');
     }
 
+    @Test('formats harness profile list and current views')
+    formatsHarnessProfileViews() {
+        const { formatHarnessProfileList, formatHarnessProfileCurrent } = require('../src/harness-command');
+        const listText = formatHarnessProfileList(
+            [
+                { name: 'default', version: 1, requireApproval: ['shell.exec'], maxRepairRounds: 3, sandbox: { mode: 'workspace' }, granularCategories: ['sandbox'] },
+                { name: 'strict', version: 1, requireApproval: ['shell.exec', { category: 'network', mode: 'ask' }], maxRepairRounds: 1, maxLoopRecoveries: 2, sandbox: { mode: 'network-block' }, granularCategories: ['sandbox', 'network'] }
+            ],
+            'strict'
+        );
+        expect(listText).toContain('Harness profiles');
+        expect(listText).toContain('* strict');
+        expect(listText).toContain('approval rules 2');
+        expect(listText).toContain("Active reference: 'strict'");
+
+        const currentText = formatHarnessProfileCurrent(
+            {
+                name: 'strict',
+                version: 1,
+                requireApproval: ['shell.exec', { category: 'network', mode: 'ask' }],
+                sandbox: { mode: 'network-block', networkAllowlist: ['registry.npmjs.org'] },
+                maxRepairRounds: 1,
+                maxLoopRecoveries: 2,
+                verificationWriteTools: ['write_file', 'edit_file']
+            },
+            'strict'
+        );
+        expect(currentText).toContain('Harness profile strict');
+        expect(currentText).toContain('network [ask]');
+        expect(currentText).toContain('registry.npmjs.org');
+        expect(currentText).toContain('Max repair rounds: 1');
+
+        expect(formatHarnessProfileCurrent(null)).toContain('No harness profile resolved.');
+    }
+
+    @Test('formats harness profile diff lines')
+    formatsHarnessProfileDiff() {
+        const { formatHarnessProfileDiff } = require('../src/harness-command');
+        const text = formatHarnessProfileDiff('default', 'strict', ['maxRepairRounds: 3 → 1', 'sandbox: workspace → network-block']);
+        expect(text).toContain('default -> strict');
+        expect(text).toContain('maxRepairRounds: 3 → 1');
+
+        const empty = formatHarnessProfileDiff('default', 'default', []);
+        expect(empty).toContain('(no differences)');
+    }
+
     @Test('uses persistent session and memory stores across cli app restarts')
     async usesPersistentStoresAcrossCliRestarts() {
         const root = await this.createRoot();

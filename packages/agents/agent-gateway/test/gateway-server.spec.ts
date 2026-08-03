@@ -4263,6 +4263,88 @@ export class AppRpcServerTest {
         expect((response as any).result.report).toEqual(null);
     }
 
+    @Test('lists builtin harness profiles through json-rpc')
+    async listsHarnessProfilesThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.profile.list',
+            params: {}
+        }, { principalId: 'user-1' });
+        const profiles = (response as any).result.profiles as any[];
+        expect(profiles.map(p => p.name).sort()).toEqual(['default', 'strict']);
+        expect(profiles[0].version).toEqual(1);
+        expect((response as any).result.current).toEqual(undefined);
+
+        const capsResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'app.capabilities',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((capsResponse as any).result.methods).toContain('harness.profile.list');
+        expect((capsResponse as any).result.methods).toContain('harness.profile.diff');
+    }
+
+    @Test('resolves current harness profile from agent options through json-rpc')
+    async currentHarnessProfileFromOptions() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events,
+            { harnessProfile: 'strict' } as any);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.profile.current',
+            params: {}
+        }, { principalId: 'user-1' });
+        const profile = (response as any).result.profile;
+        expect(profile.name).toEqual('strict');
+        expect(profile.maxRepairRounds).toEqual(1);
+    }
+
+    @Test('diffs harness profiles through json-rpc')
+    async diffsHarnessProfilesThroughRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {} as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'harness.profile.diff',
+            params: { from: 'default', to: 'strict' }
+        }, { principalId: 'user-1' });
+        const diff = (response as any).result.diff as string[];
+        expect(diff.length).toBeGreaterThan(0);
+        expect(diff.join('\n')).toContain('maxRepairRounds');
+
+        const badResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'harness.profile.diff',
+            params: { from: 'nope', to: 'strict' }
+        }, { principalId: 'user-1' });
+        expect((badResponse as any).result.error).toContain('Unknown harness profile');
+    }
+
     @Test('aggregates turn diagnostics across owned sessions through json-rpc')
     async turnDiagnosticsStatsScopesToOwnedSessions() {
         const store = new InMemorySessionStore();

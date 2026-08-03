@@ -91,6 +91,7 @@ export interface AgentCliResolvedConfig {
     providerProfile?: AgentCliProviderProfile;
     settingsModel?: Partial<AgentCliProviderProfile>;
     hooks?: AgentHooksOptions;
+    harnessProfile?: string;
 }
 
 export const AGENT_HOOKS_FILE = 'hooks.json';
@@ -534,6 +535,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         channels,
         providerProfile,
         settingsModel,
-        hooks
+        hooks,
+        harnessProfile: settings.harness?.profile
     };
 }

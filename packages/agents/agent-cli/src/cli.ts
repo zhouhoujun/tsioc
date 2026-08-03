@@ -4,7 +4,7 @@ import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStd
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
-import { runAgentHarnessAudit } from './harness-command';
+import { runAgentHarnessAudit, runAgentHarnessProfileCurrent, runAgentHarnessProfileDiff, runAgentHarnessProfileList } from './harness-command';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
 import { runAgentUpdate } from './update';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -257,6 +257,45 @@ function createAgentCli(): Command {
         .option('--json', 'Output JSON.')
         .action(async (options: any) => {
             await runAgentHarnessAudit(options);
+        });
+
+    harness
+        .command('profile')
+        .description('Show or diff versioned harness governance profiles (default / strict / current).')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            await runAgentHarnessProfileList(options);
+        });
+
+    harness
+        .command('profile:list')
+        .description('List builtin harness profiles.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            runAgentHarnessProfileList(options);
+        });
+
+    harness
+        .command('profile:current')
+        .description('Show the effective harness profile (builtin reference or live merged options).')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            await runAgentHarnessProfileCurrent(options);
+        });
+
+    harness
+        .command('profile:diff <from> [to]')
+        .description('Diff two harness profiles. from/to: default | strict | current (default to=current).')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--json', 'Output JSON.')
+        .action(async (from: string, to: string, options: any) => {
+            await runAgentHarnessProfileDiff(from, to || 'current', options);
         });
 
     program

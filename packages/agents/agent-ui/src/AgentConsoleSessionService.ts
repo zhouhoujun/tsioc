@@ -454,6 +454,38 @@ export class AgentConsoleSessionService {
         return result?.report ?? null;
     }
 
+    /**
+     * Lists the builtin harness profiles plus the active reference.
+     */
+    async listHarnessProfiles(context?: any): Promise<{ profiles: any[]; current?: string }> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('harness.profile.list', {}, context);
+            return result ?? { profiles: [] };
+        }
+        return { profiles: [] };
+    }
+
+    /**
+     * Resolves the effective harness profile (builtin reference or live snapshot).
+     */
+    async currentHarnessProfile(context?: any): Promise<any | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        const result = await this.appRpc.request('harness.profile.current', {}, context);
+        return result?.profile ?? null;
+    }
+
+    /**
+     * Diffs two harness profiles (builtin names or `current`).
+     */
+    async diffHarnessProfiles(from: string, to: string, context?: any): Promise<{ from?: string; to?: string; diff?: string[]; error?: string } | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        return this.appRpc.request('harness.profile.diff', { from, to }, context) ?? null;
+    }
+
     async getUsageStats(sessionId?: string, context?: any): Promise<Record<string, any>> {
         if (this.appRpc) {
             const result = await this.appRpc.request('usage.stats', sessionId ? { sessionId } : {}, context);

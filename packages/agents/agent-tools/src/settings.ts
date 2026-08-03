@@ -24,6 +24,9 @@ export interface AgentRootSettings {
     };
     mcp?: AgentMcpOptions;
     session?: string;
+    harness?: {
+        profile?: string;
+    };
 }
 
 export interface ResolvedAgentRootSettings {

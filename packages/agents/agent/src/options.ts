@@ -1,6 +1,7 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
+import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -85,6 +86,8 @@ export interface AgentOptions {
     maxLoopRecoveries?: number;
     /** B2: tool names treated as write operations for the declared-vs-actual diff check. */
     verificationWriteTools?: string[];
+    /** B4: reference to a versioned harness governance snapshot (built-in name or inline profile). */
+    harnessProfile?: string | HarnessProfile;
     session?: AgentSessionOptions;
     context?: AgentContextOptions;
     tools?: AgentToolOptions;
@@ -146,8 +149,13 @@ export const defaultAgentOptions: AgentOptions = {
 };
 
 export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
+    const profile = options?.harnessProfile ? resolveHarnessProfile(options.harnessProfile) : undefined;
+    const overlay = profile ? applyHarnessProfile(profile) : {};
+    const profileTools = overlay.tools ?? {};
+    const profileSandbox = overlay.sandbox ?? {};
     return {
         ...defaultAgentOptions,
+        ...overlay,
         ...(options ?? {}),
         session: {
             ...defaultAgentOptions.session,
@@ -159,6 +167,7 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         },
         tools: {
             ...defaultAgentOptions.tools,
+            ...profileTools,
             ...(options?.tools ?? {})
         },
         scheduler: {
@@ -180,6 +189,11 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         bootstrapTurn: {
             ...defaultAgentOptions.bootstrapTurn,
             ...(options?.bootstrapTurn ?? {})
+        },
+        sandbox: {
+            ...defaultAgentOptions.sandbox,
+            ...profileSandbox,
+            ...(options?.sandbox ?? {})
         },
         hooks: {
             ...(defaultAgentOptions.hooks ?? {}),

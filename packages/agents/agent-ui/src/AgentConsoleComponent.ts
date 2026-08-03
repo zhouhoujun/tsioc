@@ -713,6 +713,78 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     /**
+     * Opens `/harness profile [list|current|diff <from> <to>]`: renders the
+     * builtin versioned governance profiles, the active reference, and readable
+     * field diffs between profiles (or `current`).
+     */
+    protected async openHarnessProfile(sub?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Harness profile is unavailable without app RPC.');
+            return true;
+        }
+        const arg = (sub ?? '').trim();
+        if (arg === 'list' || arg === '' || arg === 'default') {
+            const result = await this.sessionService.listHarnessProfiles();
+            const lines: string[] = [];
+            const active = result.current;
+            lines.push(`harness profiles${active ? ` · active '${active}'` : ' · default'}`);
+            for (const profile of result.profiles ?? []) {
+                const granular = (profile.granularCategories ?? []).length
+                    ? ` · granular ${(profile.granularCategories ?? []).join(',')}`
+                    : '';
+                lines.push(`profile ${profile.name} · v${profile.version}${profile.maxRepairRounds !== undefined ? ` · repair ${profile.maxRepairRounds}` : ''}${profile.maxLoopRecoveries !== undefined ? ` · loop-recover ${profile.maxLoopRecoveries}` : ''}${profile.sandbox?.mode ? ` · sandbox ${profile.sandbox.mode}` : ''}${granular}`);
+            }
+            this.notify(lines.join('\n'));
+            return true;
+        }
+        if (arg === 'current') {
+            const profile = await this.sessionService.currentHarnessProfile();
+            if (!profile) {
+                this.notify('No harness profile resolved.');
+                return true;
+            }
+            const lines: string[] = [];
+            lines.push(`harness profile ${profile.name} · v${profile.version}`);
+            for (const rule of profile.requireApproval ?? []) {
+                const category = typeof rule === 'string' ? rule : `${rule.category}${rule.names?.length ? `:${rule.names.join(',')}` : ''}${rule.mode ? `[${rule.mode}]` : ''}`;
+                lines.push(`approval ${category}`);
+            }
+            if (profile.sandbox) {
+                lines.push(`sandbox ${profile.sandbox.mode}${profile.sandbox.networkAllowlist?.length ? ` · allow ${profile.sandbox.networkAllowlist.join(',')}` : ''}`);
+            }
+            if (profile.maxRepairRounds !== undefined) {
+                lines.push(`maxRepairRounds ${profile.maxRepairRounds}`);
+            }
+            if (profile.maxLoopRecoveries !== undefined) {
+                lines.push(`maxLoopRecoveries ${profile.maxLoopRecoveries}`);
+            }
+            this.notify(lines.join('\n'));
+            return true;
+        }
+        if (arg.startsWith('diff')) {
+            const parts = arg.slice(4).trim().split(/\s+/).filter(Boolean);
+            const from = parts[0] || 'default';
+            const to = parts[1] || 'current';
+            const result = await this.sessionService.diffHarnessProfiles(from, to);
+            if (!result) {
+                this.notify('Harness profile diff is unavailable.');
+                return true;
+            }
+            if (result.error) {
+                this.notify(result.error);
+                return true;
+            }
+            const diffLines = (result.diff ?? []).length
+                ? (result.diff ?? []).map(line => `  ${line}`)
+                : ['  (no differences)'];
+            this.notify(`harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
+            return true;
+        }
+        this.notify('Usage: /harness profile [list|current|diff <from> <to>]');
+        return true;
+    }
+
+    /**
      * Opens `/diagnostics list [sessionId]`: browses recorded turn diagnostics
      * records for the given session (or all owned sessions when omitted) as a
      * selectable list.
@@ -3283,6 +3355,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/delegation tree', value: '/delegation tree', description: 'delegation tree [sessionId] [status] [depth]' },
                     { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
                     { label: '/harness audit', value: '/harness audit', description: 'failure-pattern audit [sessionId]' },
+                    { label: '/harness profile', value: '/harness profile', description: 'governance profile list/current/diff' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -3613,7 +3686,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         const sessionId = arg.slice(5).trim() || undefined;
                         return this.openHarnessAudit(sessionId);
                     }
-                    this.notify('Usage: /harness audit [sessionId]');
+                    if (arg === 'profile' || arg.startsWith('profile ')) {
+                        return this.openHarnessProfile(arg.slice(7).trim() || undefined);
+                    }
+                    this.notify('Usage: /harness audit [sessionId] | /harness profile [list|current|diff <from> <to>]');
                     return true;
                 }
             case '/copy': {
