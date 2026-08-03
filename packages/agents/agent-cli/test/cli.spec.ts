@@ -20,6 +20,7 @@ import {
     resolveCliModelConfig,
     resolveCompletionShell,
     resolveAgentUpdateManager,
+    resolveAgentUpdateRegistry,
     resolveProjectDisplayLabel,
     sortProjectSessions,
     resolveProviderApiKeyEnv,
@@ -233,6 +234,15 @@ export class AgentCliTest {
         expect(resolveAgentUpdateManager(undefined, {} as NodeJS.ProcessEnv)).toBe('npm');
     }
 
+    @Test('resolves update registry from option env and default')
+    resolvesUpdateRegistryFromOptionEnvAndDefault() {
+        expect(resolveAgentUpdateRegistry('https://mirror.example.com/', {} as NodeJS.ProcessEnv)).toBe('https://mirror.example.com');
+        expect(resolveAgentUpdateRegistry(undefined, {
+            npm_config_registry: 'https://registry.npmmirror.com/'
+        } as NodeJS.ProcessEnv)).toBe('https://registry.npmmirror.com');
+        expect(resolveAgentUpdateRegistry(undefined, {} as NodeJS.ProcessEnv)).toBe('https://registry.npmjs.org');
+    }
+
     @Test('update command emits json plan without executing by default')
     async updateCommandEmitsJsonPlanWithoutExecutingByDefault() {
         const output = new PassThrough();
@@ -259,6 +269,56 @@ export class AgentCliTest {
         expect(payload.manager).toBe('bun');
         expect(payload.command).toBe('bun add -g @tsdi/agent-cli@latest');
         expect(invoked).toBe(false);
+    }
+
+    @Test('update check reads latest version from registry metadata')
+    async updateCheckReadsLatestVersionFromRegistryMetadata() {
+        const plan = await runAgentUpdate({
+            check: true,
+            target: 'latest'
+        }, {
+            stdout: new PassThrough(),
+            metadataFetcher: async () => ({
+                'dist-tags': {
+                    latest: '6.0.99',
+                    next: '6.1.0-beta.1'
+                }
+            })
+        });
+
+        expect(plan.registry).toBe('https://registry.npmjs.org');
+        expect(plan.latestVersion).toBe('6.0.99');
+        expect(plan.updateAvailable).toBe(true);
+    }
+
+    @Test('update check skips install when current version is already latest')
+    async updateCheckSkipsInstallWhenCurrentVersionIsAlreadyLatest() {
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+        let invoked = false;
+
+        const plan = await runAgentUpdate({
+            check: true,
+            yes: true
+        }, {
+            stdout: output,
+            metadataFetcher: async () => ({
+                'dist-tags': {
+                    latest: '6.0.31'
+                }
+            }),
+            runner: async () => {
+                invoked = true;
+                return 0;
+            }
+        });
+
+        expect(plan.updateAvailable).toBe(false);
+        expect(invoked).toBe(false);
+        expect(buffer).toContain('Already up to date; skipping install.');
     }
 
     @Test('doctor report surfaces missing workspace and missing api key')
@@ -444,6 +504,8 @@ export class AgentCliTest {
             'tsdi-agent.js',
             '--manager',
             'pnpm',
+            '--registry',
+            'https://registry.example.com',
             'update',
             '--json'
         ]);
@@ -454,6 +516,8 @@ export class AgentCliTest {
             'update',
             '--manager',
             'pnpm',
+            '--registry',
+            'https://registry.example.com',
             '--json'
         ]);
     }

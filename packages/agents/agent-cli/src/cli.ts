@@ -24,6 +24,7 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--provider',
     '--model',
     '--manager',
+    '--registry',
     '--base-url',
     '--api-key',
     '--api-key-env',
@@ -255,6 +256,8 @@ function createAgentCli(): Command {
         .description('Print or execute the package-manager command used to update @tsdi/agent-cli.')
         .option('--manager <name>', 'Package manager (npm, pnpm, yarn, bun).')
         .option('--target <tag>', 'Release tag or version to install. Defaults to latest.')
+        .option('--registry <url>', 'Registry base URL used by --check.')
+        .option('--check', 'Query the registry and compare the latest available version before updating.')
         .option('--yes', 'Execute the generated update command immediately.')
         .option('--json', 'Output JSON.')
         .action(async (options: any) => {

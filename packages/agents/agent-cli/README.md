@@ -235,7 +235,7 @@ Behavior of this example:
 - `tsdi-agent tools list`: inspect resolved tool configuration
 - `tsdi-agent doctor [--json]`: inspect local config, workspace, provider, hooks, skills, and MCP readiness
 - `tsdi-agent completion [bash|zsh|fish]`: print a shell completion script
-- `tsdi-agent update [--manager <name>] [--target <tag>] [--yes]`: print or run the package-manager command used to update `@tsdi/agent-cli`
+- `tsdi-agent update [--manager <name>] [--target <tag>] [--check] [--registry <url>] [--yes]`: print or run the package-manager command used to update `@tsdi/agent-cli`, optionally checking the latest registry version first
 - `tsdi-agent rpc-stdio`: expose the agent through JSON-RPC 2.0 JSONL over stdio for Agent UI or other clients
 
 ## UI integration
