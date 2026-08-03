@@ -7,6 +7,7 @@ import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { ApplyPatchTool } from '../files/apply-patch.tool';
 import { MkdirTool } from '../files/mkdir.tool';
 import { CopyFileTool } from '../files/copy-file.tool';
 import { MoveFileTool } from '../files/move-file.tool';
@@ -119,6 +120,7 @@ const toolItems = {
     read_file: ReadFileTool,
     write_file: WriteFileTool,
     edit_file: EditFileTool,
+    apply_patch: ApplyPatchTool,
     mkdir: MkdirTool,
     copy_file: CopyFileTool,
     move_file: MoveFileTool,
@@ -200,7 +202,7 @@ const toolItems = {
 
 const toolGroups = {
     filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files'],
-    filesystem_write: ['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
+    filesystem_write: ['write_file', 'edit_file', 'apply_patch', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
     utility: ['calculator', 'location', 'weather'],
     web: ['web_search', 'web_extract'],
     browser: ['browser_open', 'text_browser', 'playwright_browser'],

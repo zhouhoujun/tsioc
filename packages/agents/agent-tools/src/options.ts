@@ -156,6 +156,7 @@ export type AgentToolItem =
     | 'read_file'
     | 'write_file'
     | 'edit_file'
+    | 'apply_patch'
     | 'mkdir'
     | 'copy_file'
     | 'move_file'

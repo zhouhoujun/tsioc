@@ -2,6 +2,7 @@ export * from './path-policy';
 export * from './read-file.tool';
 export * from './write-file.tool';
 export * from './edit-file.tool';
+export * from './apply-patch.tool';
 export * from './mkdir.tool';
 export * from './copy-file.tool';
 export * from './move-file.tool';
