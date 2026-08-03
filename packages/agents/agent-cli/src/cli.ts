@@ -4,6 +4,7 @@ import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStd
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
+import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
@@ -11,7 +12,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'completion', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -198,8 +199,12 @@ function createAgentCli(): Command {
             }
         });
 
-    program
-        .command('tools list')
+    const tools = program
+        .command('tools')
+        .description('Inspect resolved tool configuration.');
+
+    tools
+        .command('list')
         .description('List resolved tool configuration.')
         .option('--root <dir>', 'Agent config root.')
         .option('--tools <items>', 'Comma-separated tool names.')
@@ -232,6 +237,14 @@ function createAgentCli(): Command {
             if (report.issues.some(issue => issue.severity === 'error')) {
                 process.exitCode = 1;
             }
+        });
+
+    program
+        .command('completion [shell]')
+        .description('Print a shell completion script for bash, zsh, or fish.')
+        .action((shell?: string) => {
+            const script = generateAgentCompletionScript(resolveCompletionShell(shell), program);
+            process.stdout.write(script + '\n');
         });
 
     const mcp = program

@@ -8,6 +8,7 @@ import { MemoryStore, SessionStore } from '@tsdi/agent';
 import {
     createAgentDoctorReport,
     createAgentCli,
+    generateAgentCompletionScript,
     ensureAgentWorkspaceConfig,
     formatProjectListLine,
     formatAgentDoctorReport,
@@ -15,6 +16,7 @@ import {
     resolveCliConfig,
     resolveCliHooks,
     resolveCliModelConfig,
+    resolveCompletionShell,
     resolveProjectDisplayLabel,
     sortProjectSessions,
     resolveProviderApiKeyEnv,
@@ -173,13 +175,35 @@ export class AgentCliTest {
     createsCliCommands() {
         const cli = createAgentCli();
         const commandNames = cli.commands.map(cmd => cmd.name());
+        const toolsCommand = cli.commands.find(cmd => cmd.name() === 'tools');
         expect(commandNames.includes('run')).toBe(true);
         expect(commandNames.includes('chat')).toBe(true);
         expect(commandNames.includes('doctor')).toBe(true);
+        expect(commandNames.includes('completion')).toBe(true);
         expect(commandNames.includes('rpc-stdio')).toBe(true);
-        const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
-        expect(hasToolsCmd).toBe(true);
+        expect(commandNames.includes('tools')).toBe(true);
+        expect(toolsCommand?.commands.map(cmd => cmd.name())).toEqual(['list']);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('completion script includes nested commands and options')
+    completionScriptIncludesNestedCommandsAndOptions() {
+        const cli = createAgentCli();
+        const script = generateAgentCompletionScript('bash', cli);
+        expect(script).toContain('completion');
+        expect(script).toContain('doctor');
+        expect(script).toContain('project');
+        expect(script).toContain('sessions');
+        expect(script).toContain('--workspace');
+        expect(script).toContain('--provider');
+        expect(script).toContain('bash zsh fish');
+    }
+
+    @Test('resolves completion shell from explicit value and shell env')
+    resolvesCompletionShellFromExplicitValueAndShellEnv() {
+        expect(resolveCompletionShell('fish')).toBe('fish');
+        expect(resolveCompletionShell(undefined, { SHELL: '/bin/zsh' } as NodeJS.ProcessEnv)).toBe('zsh');
+        expect(resolveCompletionShell(undefined, {} as NodeJS.ProcessEnv)).toBe('bash');
     }
 
     @Test('doctor report surfaces missing workspace and missing api key')
@@ -334,6 +358,27 @@ export class AgentCliTest {
             '--root',
             '/tmp/agent-root',
             '--json'
+        ]);
+    }
+
+    @Test('normalizes completion command ahead of leading options')
+    normalizesCompletionCommandAheadOfLeadingOptions() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--root',
+            '/tmp/agent-root',
+            'completion',
+            'fish'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'completion',
+            '--root',
+            '/tmp/agent-root',
+            'fish'
         ]);
     }
 
