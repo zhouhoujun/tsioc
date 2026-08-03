@@ -5,7 +5,7 @@ import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
 import { MemoryPutTool, MemorySearchTool } from '../src/tools/BuiltinTools';
-import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
+import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager, classifyApprovalCategory } from '../src/tools/ToolApprovalManager';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { AgentToolsModule, withAgentToolsOptions } from '../../agent-tools/src';
 import { MemoryDeleteTool, MemoryListTool } from '../../agent-tools/memory';
@@ -407,6 +407,121 @@ export class BuiltinToolsTest {
         const strategy = new DefaultApprovalStrategy();
         expect(strategy.requires('playwright_browser', {})).toEqual(true);
         expect(defaultAgentOptions.tools?.requireApproval).toContain('playwright_browser');
+    }
+
+    @Test('approval reviewer auto-approves when enabled')
+    async approvalReviewerAutoApproves() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec'], true),
+            { defaultTimeoutMs: 1000, autoReview: true },
+            undefined,
+            { review: () => 'approve' } as any
+        );
+
+        const result = await approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        expect(result.decision).toEqual(ApprovalDecision.APPROVED);
+        expect(approvals.getPending().length).toEqual(0);
+    }
+
+    @Test('approval reviewer auto-denies when enabled')
+    async approvalReviewerAutoDenies() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec'], true),
+            { defaultTimeoutMs: 1000, autoReview: true },
+            undefined,
+            { review: () => 'deny' } as any
+        );
+
+        const result = await approvals.checkApproval('shell.exec', { cmd: 'rm -rf /' }, 's1');
+        expect(result.decision).toEqual(ApprovalDecision.DENIED);
+        expect(approvals.getPending().length).toEqual(0);
+    }
+
+    @Test('approval reviewer needs-human falls back to pending flow')
+    async approvalReviewerNeedsHumanFallsBack() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec'], true),
+            { defaultTimeoutMs: 1000, autoReview: true },
+            undefined,
+            { review: () => 'needs-human' } as any
+        );
+
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(approvals.getPending().length).toEqual(1);
+        approvals.approve(approvals.getPending()[0].id);
+        expect((await pendingPromise).decision).toEqual(ApprovalDecision.APPROVED);
+    }
+
+    @Test('approval reviewer failure falls back to pending flow')
+    async approvalReviewerFailureFallsBack() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec'], true),
+            { defaultTimeoutMs: 1000, autoReview: true },
+            undefined,
+            { review: () => { throw new Error('reviewer unavailable'); } } as any
+        );
+
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(approvals.getPending().length).toEqual(1);
+        approvals.approve(approvals.getPending()[0].id);
+        expect((await pendingPromise).decision).toEqual(ApprovalDecision.APPROVED);
+    }
+
+    @Test('approval reviewer is ignored when auto review is disabled')
+    async approvalReviewerIgnoredWhenDisabled() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 1000 },
+            undefined,
+            { review: () => 'approve' } as any
+        );
+
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(approvals.getPending().length).toEqual(1);
+        approvals.approve(approvals.getPending()[0].id);
+        expect((await pendingPromise).decision).toEqual(ApprovalDecision.APPROVED);
+    }
+
+    @Test('granular category rule requires approval for matching tools only')
+    granularCategoryRuleRequiresMatchingTools() {
+        const strategy = new DefaultApprovalStrategy([{ category: 'network', names: ['web_search'] }]);
+
+        expect(strategy.requires('web_search', {})).toEqual(true);
+        expect(strategy.requires('http_fetch', {})).toEqual(false);
+        expect(strategy.requires('terminal', {})).toEqual(false);
+    }
+
+    @Test('granular category rule auto-denies in auto-deny mode')
+    granularCategoryRuleAutoDenies() {
+        const strategy = new DefaultApprovalStrategy([
+            { category: 'network', names: ['web_search'], mode: 'auto-deny' }
+        ]);
+
+        expect(strategy.autoDenies('web_search', {})).toEqual(true);
+        expect(strategy.autoDenies('http_fetch', {})).toEqual(false);
+        expect(strategy.autoDenies('web_extract', {})).toEqual(false);
+        expect(strategy.requires('web_search', {})).toEqual(true);
+    }
+
+    @Test('category classifier resolves tools by names and prefixes')
+    categoryClassifierResolvesTools() {
+        expect(classifyApprovalCategory('web_search')).toEqual('network');
+        expect(classifyApprovalCategory('web_extract')).toEqual('network');
+        expect(classifyApprovalCategory('http_fetch')).toEqual('network');
+        expect(classifyApprovalCategory('mcp.call_tool')).toEqual('mcp');
+        expect(classifyApprovalCategory('mcp.list_tools')).toEqual('mcp');
+        expect(classifyApprovalCategory('terminal')).toEqual('sandbox');
+        expect(classifyApprovalCategory('process.start')).toEqual('sandbox');
+        expect(classifyApprovalCategory('echo')).toBeUndefined();
+        expect(classifyApprovalCategory('memory.put')).toBeUndefined();
     }
 
     @Test('local tool registry returns resolved definitions with compatibility metadata')

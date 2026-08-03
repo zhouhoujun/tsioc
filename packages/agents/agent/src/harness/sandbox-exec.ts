@@ -231,3 +231,20 @@ function buildMacSandboxProfile(mode: SandboxMode, workspace?: string): string {
     }
     return profile;
 }
+
+/**
+ * A3: whether a command line references an allowlisted network destination.
+ * Allowlist entries are hostnames or URL prefixes; matching is a case-
+ * insensitive substring test against the raw command line (e.g. `curl
+ * https://api.example.com/...` contains `api.example.com`).
+ */
+export function commandReferencesAllowlistedDestination(commandLine: string, allowlist?: string[]): boolean {
+    if (!commandLine || !allowlist || allowlist.length === 0) {
+        return false;
+    }
+    const normalized = String(commandLine).toLowerCase();
+    return allowlist.some(entry => {
+        const candidate = String(entry ?? '').trim().toLowerCase();
+        return candidate.length > 0 && normalized.includes(candidate);
+    });
+}

@@ -7,14 +7,63 @@ import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 export interface ApprovalStrategy {
     requires(toolName: string, input: any): boolean;
     reason(toolName: string, input: any): string;
+    /** Whether a matched approval rule denies without entering the pending surface (granular `mode: 'auto-deny'`). */
+    autoDenies?(toolName: string, input: any): boolean;
+    /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
+    autoReview?: boolean;
 }
 
 export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
+
+/**
+ * A3: granular approval categories (mirroring Codex granular permissions).
+ * Rules can be expressed as a string tool pattern (backward compatible) or as
+ * a category-scoped object with an optional name allowlist and decision mode.
+ */
+export type ApprovalCategory = 'sandbox' | 'network' | 'mcp' | 'skill';
+
+export interface ApprovalRuleObject {
+    category: ApprovalCategory;
+    /** Tool names / patterns within the category; when omitted the whole category matches. */
+    names?: string[];
+    /** 'ask' (default) surfaces a human approval; 'auto-deny' rejects without prompting. */
+    mode?: 'ask' | 'auto-deny';
+}
+
+export type ApprovalRule = string | ApprovalRuleObject;
+
+/**
+ * A2: automatic approval review. An optional reviewer inspects the gated tool
+ * (definition + input + session evidence) and may suggest a decision. Only
+ * `approve` / `deny` short-circuit the human flow; `needs-human` and any
+ * reviewer failure fall back to the normal pending-approval surface.
+ */
+export type ReviewSuggestion = 'approve' | 'deny' | 'needs-human';
+
+export interface ApprovalReviewContext {
+    toolName: string;
+    input: any;
+    inputSummary?: string;
+    sessionId: string;
+    reason: string;
+}
+
+export interface ApprovalReviewer {
+    review(context: ApprovalReviewContext):
+        | Promise<ReviewSuggestion | { action: ReviewSuggestion; reason?: string }>
+        | ReviewSuggestion
+        | { action: ReviewSuggestion; reason?: string };
+}
+
+export const AgentApprovalReviewer = token<ApprovalReviewer>('AgentApprovalReviewer');
+
 export interface ApprovalManagerOptions {
     defaultTimeoutMs?: number;
     maxTimeoutMs?: number;
     maxPendingApprovals?: number;
     autoDeny?: boolean;
+    /** A2: run the injected ApprovalReviewer before surfacing a human approval. */
+    autoReview?: boolean;
 }
 export const AgentApprovalOptions = token<ApprovalManagerOptions>('AgentApprovalOptions');
 
@@ -123,7 +172,9 @@ export class ToolApprovalManager {
         @Optional() @Inject(AgentApprovalOptions, { defaultValue: null })
         private options?: ApprovalManagerOptions,
         @Optional()
-        private auditSink?: AuditSink
+        private auditSink?: AuditSink,
+        @Optional() @Inject(AgentApprovalReviewer, { defaultValue: null })
+        private reviewer?: ApprovalReviewer
     ) {
     }
 
@@ -147,13 +198,25 @@ export class ToolApprovalManager {
         }
 
         const request = this.createRequest(toolName, input, sessionId);
-        if (this.options?.autoDeny) {
+        const autoDeny = this.options?.autoDeny === true
+            || this.strategy?.autoDenies?.(toolName, input) === true;
+        if (autoDeny) {
             this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
                 .catch(() => {});
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), false))
                 .catch(() => {});
             this.recordApprovalAudit(request, ApprovalDecision.DENIED);
             return { decision: ApprovalDecision.DENIED, request };
+        }
+
+        // A2: an injected reviewer may resolve the request without a human.
+        // 'needs-human' and review failures fall through to the pending flow.
+        const reviewEnabled = this.options?.autoReview === true || this.strategy?.autoReview === true;
+        if (reviewEnabled && this.reviewer) {
+            const reviewed = await this.runAutoReview(request);
+            if (reviewed) {
+                return reviewed;
+            }
         }
 
         const decision = await new Promise<ApprovalDecision>((resolve) => {
@@ -178,6 +241,40 @@ export class ToolApprovalManager {
     async requireApproval(toolName: string, input: any, sessionId: string): Promise<boolean> {
         const result = await this.checkApproval(toolName, input, sessionId);
         return result.decision === ApprovalDecision.APPROVED || result.decision === ApprovalDecision.NOT_REQUIRED;
+    }
+
+    /**
+     * A2: run the injected reviewer for an already-created request. Returns a
+     * resolved decision for `approve` / `deny`, or `null` when the reviewer
+     * suggests `needs-human` or throws (fall back to the human approval flow).
+     */
+    private async runAutoReview(request: ApprovalRequest): Promise<ApprovalResult | null> {
+        let suggestion: ReviewSuggestion;
+        let reviewReason: string | undefined;
+        try {
+            const result = await this.reviewer!.review({
+                toolName: request.toolName,
+                input: request.input,
+                inputSummary: request.inputSummary,
+                sessionId: request.sessionId,
+                reason: request.reason
+            });
+            suggestion = typeof result === 'string' ? result : result.action;
+            reviewReason = typeof result === 'string' ? undefined : result.reason;
+        } catch {
+            return null;
+        }
+        if (suggestion !== 'approve' && suggestion !== 'deny') {
+            return null;
+        }
+        const decision = suggestion === 'approve' ? ApprovalDecision.APPROVED : ApprovalDecision.DENIED;
+        reviewReason = reviewReason ?? (suggestion === 'approve' ? 'auto-approved by review' : 'auto-denied by review');
+        this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
+            .catch(() => {});
+        this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
+            .catch(() => {});
+        this.recordApprovalAudit(request, decision, reviewReason);
+        return { decision, request };
     }
 
     approve(requestId: string): boolean {
@@ -307,7 +404,7 @@ export class ToolApprovalManager {
      * The record keeps the gated tool name and marks metadata.kind =
      * 'approval' so aggregated stats can separate decisions from executions.
      */
-    private recordApprovalAudit(request: ApprovalRequest, decision: ApprovalDecision): void {
+    private recordApprovalAudit(request: ApprovalRequest, decision: ApprovalDecision, reviewReason?: string): void {
         if (!this.auditSink) {
             return;
         }
@@ -333,18 +430,67 @@ export class ToolApprovalManager {
                 approvalId: request.id,
                 decision,
                 timeoutMs: request.timeoutMs,
-                expiresAt: request.expiresAt
+                expiresAt: request.expiresAt,
+                reviewed: reviewReason !== undefined ? 'auto' : undefined,
+                reviewReason
             }
         };
         this.auditSink.append(record).catch(() => {});
     }
 }
 
-export class DefaultApprovalStrategy implements ApprovalStrategy {
-    private blockedTools: Set<string>;
+/**
+ * A3: category definitions used by `classifyApprovalCategory`. `names` are
+ * explicit tool names; `prefixes` are name prefixes (e.g. `mcp.`). The
+ * category is resolved in a fixed order so overlapping names (browser tools
+ * are network-oriented) classify deterministically.
+ */
+export const APPROVAL_CATEGORY_DEFINITIONS: Record<ApprovalCategory, { names: string[]; prefixes: string[] }> = {
+    network: {
+        names: ['web_search', 'web_extract', 'http_fetch', 'http_request', 'browser_open', 'text_browser', 'playwright_browser', 'web_fetch'],
+        prefixes: ['web_', 'http_', 'browser_']
+    },
+    mcp: {
+        names: [],
+        prefixes: ['mcp.', 'mcp_']
+    },
+    skill: {
+        names: ['skill_list', 'read_skill'],
+        prefixes: ['skill.', 'skill_']
+    },
+    sandbox: {
+        names: ['terminal', 'process.start', 'process.poll', 'process.kill', 'execute_code', 'shell.exec', 'sudo.exec', 'git_operations', 'deploy', 'bash', 'sh'],
+        prefixes: []
+    }
+};
 
-    constructor(blocked?: string[]) {
-        this.blockedTools = new Set(blocked ?? [
+const APPROVAL_CATEGORY_ORDER: ApprovalCategory[] = ['network', 'mcp', 'skill', 'sandbox'];
+
+export function classifyApprovalCategory(toolName: string): ApprovalCategory | undefined {
+    const name = String(toolName ?? '').trim();
+    if (!name) {
+        return undefined;
+    }
+    for (const category of APPROVAL_CATEGORY_ORDER) {
+        const definition = APPROVAL_CATEGORY_DEFINITIONS[category];
+        if (definition.names.includes(name)) {
+            return category;
+        }
+        for (const prefix of definition.prefixes) {
+            if (name.startsWith(prefix)) {
+                return category;
+            }
+        }
+    }
+    return undefined;
+}
+
+export class DefaultApprovalStrategy implements ApprovalStrategy {
+    private rules: ApprovalRule[];
+    readonly autoReview: boolean;
+
+    constructor(blocked?: ApprovalRule[], autoReview = false) {
+        this.rules = blocked ?? [
             'shell.exec',
             'fs.write',
             'fs.delete',
@@ -353,21 +499,48 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
             'sudo.exec',
             'playwright_browser',
             'admin.*'
-        ]);
+        ];
+        this.autoReview = autoReview;
     }
 
-    requires(toolName: string, _input: any): boolean {
-        for (const pattern of this.blockedTools) {
-            if (pattern.endsWith('*')) {
-                const prefix = pattern.slice(0, -1);
-                if (toolName.startsWith(prefix)) return true;
+    requires(toolName: string, input: any): boolean {
+        for (const rule of this.rules) {
+            if (typeof rule === 'string') {
+                if (this.matchesPattern(toolName, rule)) return true;
+            } else if (this.matchesRule(toolName, input, rule)) {
+                return true;
             }
-            if (toolName === pattern) return true;
         }
         return false;
     }
 
     reason(toolName: string, _input: any): string {
         return `Tool "${toolName}" requires approval.`;
+    }
+
+    autoDenies(toolName: string, input: any): boolean {
+        for (const rule of this.rules) {
+            if (typeof rule === 'object' && rule.mode === 'auto-deny' && this.matchesRule(toolName, input, rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private matchesRule(toolName: string, _input: any, rule: ApprovalRuleObject): boolean {
+        if (classifyApprovalCategory(toolName) !== rule.category) {
+            return false;
+        }
+        if (rule.names && rule.names.length > 0) {
+            return rule.names.some(pattern => this.matchesPattern(toolName, pattern));
+        }
+        return true;
+    }
+
+    private matchesPattern(toolName: string, pattern: string): boolean {
+        if (pattern.endsWith('*')) {
+            return toolName.startsWith(pattern.slice(0, -1));
+        }
+        return toolName === pattern;
     }
 }

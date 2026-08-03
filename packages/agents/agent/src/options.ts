@@ -1,5 +1,6 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
 import { AgentHooksOptions } from './hooks/AgentHooks';
+import { ApprovalRule } from './tools/ToolApprovalManager';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -35,10 +36,13 @@ export interface AgentToolOptions {
     maxParallelTools?: number;
     /** Tool names that are safe to run in parallel (read-only tools) */
     parallelSafeTools?: string[];
-    /** Tool names/patterns requiring human approval before execution */
-    requireApproval?: string[];
+    /** Tool names/patterns or category rules requiring approval before execution (A3 granular form). */
+    requireApproval?: ApprovalRule[];
     /** Approval timeout in ms */
-    approvalTimeoutMs?: number;}
+    approvalTimeoutMs?: number;
+    /** A2: whether an injected ApprovalReviewer may resolve approval requests without a human. */
+    approvalAutoReview?: boolean;
+}
 
 export interface AgentSchedulerOptions {
     enabled?: boolean;
@@ -64,6 +68,12 @@ export interface AgentBootstrapTurnOptions {
 export interface AgentSandboxOptions {
     /** OS-level sandbox mode for process-executing tools (default: 'off'). */
     mode?: import('./harness/sandbox-exec').SandboxMode;
+    /**
+     * A3: when `mode` is 'network-block', commands that reference one of these
+     * hostnames / URL prefixes run without network blocking (approximating a
+     * network destination allowlist).
+     */
+    networkAllowlist?: string[];
 }
 
 export interface AgentOptions {

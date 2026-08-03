@@ -4,6 +4,7 @@ import { AgentOptions } from '../options';
 import { AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME } from '../tokens';
 import {
     buildSandboxExecCommand,
+    commandReferencesAllowlistedDestination,
     detectSandboxExecTool,
     loadSandboxSpawnModule,
     probeSandboxExecTool,
@@ -517,10 +518,20 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
     ): Promise<SandboxExecutionResult> {
         const resolved = resolvePlatformShellCommand(command, args, this.resolveRuntimeContext());
         const mode = options.policy.osSandbox ?? this.configuredMode;
-        if (mode !== 'off') {
+        // A3: with a network allowlist configured, commands that reference an
+        // allowlisted destination drop the network block (still workspace-
+        // restricted), approximating a network destination allowlist.
+        const effectiveMode = mode === 'network-block'
+            && commandReferencesAllowlistedDestination(
+                [resolved.command, ...resolved.args].join(' '),
+                this.agentOptions?.sandbox?.networkAllowlist
+            )
+            ? 'workspace'
+            : mode;
+        if (effectiveMode !== 'off') {
             const probe = await this.detectTool();
             if (probe.tool) {
-                const wrapped = buildSandboxExecCommand(probe.tool, mode, resolved.command, resolved.args, {
+                const wrapped = buildSandboxExecCommand(probe.tool, effectiveMode, resolved.command, resolved.args, {
                     workspace: options.policy.workingDirectory
                 });
                 if (wrapped) {

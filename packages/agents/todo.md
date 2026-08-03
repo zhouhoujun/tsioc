@@ -547,7 +547,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 1. **B1 证据账本**（B 面地基，对既有 receipt 路径零破坏）— ✅ 已完成
 2. **A1 apply_patch**（工具面最高频差距）— ✅ 已完成（2026-08：`agent-tools/files/apply-patch.tool.ts` + 注册 + 多文件快照 undo/redo）
 3. **A4 doom-loop 恢复** + **B2 验证门**（核心机制，直接对应 Self-Harness 循环）— ✅ 已完成（见 P36）
-4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）
+4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）— ✅ 已完成（见 P37）
 5. **B3 失败模式挖掘** + **B4 Harness Profile**（让「优化 Harness」本身进入循证循环）
 6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）
 
@@ -567,3 +567,20 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 回归说明：`ToolLoopDetector.record` 每次工具调用记录两次（invoke 前 + 执行后），block 检测比单次记录早一轮——A4 测试适配器按此节奏编写；agent-tools 2 条 `filesystem_write` 分组断言（`apply_patch` 注册遗留）随本次一并修正。
 
 全量回归：agent 442（432+10）、agent-tools 233（231+2 修正）、agent-gateway 133、agent-ui 263 passing；agent-cli 44 passing（1 条 `update check reads latest version from registry metadata` 因本机 npm registry 配置为 npmmirror 镜像导致硬编码 npmjs.org 断言失败，属环境差异，与本次改动无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。
+
+## P37 打磨（已完成）：A2 审批自动评审 + A3 granular 类别 + 网络目的地放行
+
+1. ~~A2 审批自动评审 + A3 granular approval 类别 + 网络目的地规则~~ → 已完成（`@tsdi/agent`）：
+   - **A2 ApprovalReviewer 自动评审**（`src/tools/ToolApprovalManager.ts`）：
+     - 新契约 `ApprovalReviewer`（`review(ctx)` 返回 `'approve' | 'deny' | 'needs-human'` 或 `{ action, reason? }`）+ 注入 token `AgentApprovalReviewer`（构造末尾 `@Optional @Inject` 注入，无则跳过）。
+     - `ApprovalManagerOptions.autoReview?: boolean` 与 `ApprovalStrategy.autoReview?: boolean` 双开关（options 优先）；开启且注入 reviewer 时 `checkApproval` 先跑 `runAutoReview`：approve/deny 直接 publish `AgentApprovalRequested`+`AgentApprovalCompleted` 事件、写审计（`reviewed: 'auto'` + reviewReason）、不进 pending 面；`needs-human` / reviewer 抛异常 → 回退人工 pending 流程。默认关闭，行为零破坏。
+   - **A3 granular 规则形态**：
+     - `ApprovalRule = string | ApprovalRuleObject`；对象形态 `{ category: 'sandbox'|'network'|'mcp'|'skill', names?, mode?: 'ask'|'auto-deny' }`；字符串形态（含 `*` 通配）完全向后兼容。
+     - `APPROVAL_CATEGORY_DEFINITIONS` + `classifyApprovalCategory(toolName)`（network: web_/http_/browser_ 前缀 + 显式名单；mcp: `mcp.`/`mcp_`；skill: `skill.`/`skill_`；sandbox: terminal/process.*/bash 等显式名单；固定顺序去重）。
+     - `DefaultApprovalStrategy` 重构：规则表从 `Set<string>` 改为 `ApprovalRule[]`（保留默认阻止名单），`requires` 支持 category 规则（names 过滤可选），新增 `autoDenies`（`mode: 'auto-deny'` 命中 → `checkApproval` 直接 DENIED + 事件 + 审计，等同既有 `autoDeny` 路径）。
+   - **A3 网络目的地放行**：`AgentSandboxOptions.networkAllowlist?: string[]`（hostname / URL 前缀）+ `sandbox-exec.ts` 新增 `commandReferencesAllowlistedDestination(commandLine, allowlist)`；`OsSandboxExecutor.execute` 在 `mode==='network-block'` 且命令命中放行清单时降级为 `'workspace'`（仍限写 workspace，近似 network_proxy 目的地约束）。
+   - **配置接线**：`AgentToolOptions.requireApproval?: ApprovalRule[]`（字符串兼容）+ `approvalAutoReview?: boolean`；`DefaultAgentRuntime.resolveApprovalManager` 透传 `autoReview`。
+   - **测试**：`test/tools.spec.ts` +8——A2（reviewer approve 免人工、deny 不进审批面、needs-human 回退 pending、reviewer 异常回退、未开启时 reviewer 被忽略）；A3（granular category 仅命中匹配工具、auto-deny 模式、`classifyApprovalCategory` 名称/前缀/未命中）。
+   - 文档：本条目；建议执行顺序第 4 项标记完成。
+
+全量回归：agent 450（442+8）、agent-tools 233、agent-gateway 133、agent-ui 263 passing；agent-cli 44 passing（1 条环境失败同 P36 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。

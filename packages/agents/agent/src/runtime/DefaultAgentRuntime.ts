@@ -2232,7 +2232,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             new DefaultApprovalStrategy(required),
             {
                 defaultTimeoutMs: this.options.tools?.approvalTimeoutMs ?? defaultAgentOptions.tools?.approvalTimeoutMs,
-                autoDeny: false
+                autoDeny: false,
+                autoReview: this.options.tools?.approvalAutoReview ?? defaultAgentOptions.tools?.approvalAutoReview
             }
         );
     }
