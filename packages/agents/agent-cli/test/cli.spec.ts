@@ -17,6 +17,7 @@ import {
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     normalizeCliArgv,
+    runAgentJsonStream,
     runAgentPrompt,
     runAgentRpcApplication,
     withAdapterProviders,
@@ -343,6 +344,57 @@ export class AgentCliTest {
             model: 'echo'
         });
         expect(output).toContain('Echo: hello agent');
+    }
+
+    @Test('runs a prompt with json event stream output')
+    async runsPromptWithJsonEventStream() {
+        const root = await this.createRoot();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        await runAgentJsonStream('hello agent', {
+            root,
+            session: 'echo-json',
+            provider: 'echo',
+            model: 'echo',
+            json: true
+        }, { output });
+
+        const events = buffer.trim().split('\n').map(line => JSON.parse(line));
+        expect(events[0].type).toBe('thread.started');
+        expect(events.some(event => event.type === 'turn.started')).toBe(true);
+        expect(events.some(event => event.type === 'item.text.delta' && String(event.delta || '').includes('Echo: hello agent'))).toBe(true);
+        const completed = events.find(event => event.type === 'turn.completed');
+        expect(completed).toBeTruthy();
+        expect(completed.message.content).toContain('Echo: hello agent');
+        expect(events[events.length - 1].type).toBe('thread.completed');
+    }
+
+    @Test('json event stream can append output-last-message compatibility event')
+    async jsonEventStreamAppendsLastMessageCompatibilityEvent() {
+        const root = await this.createRoot();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        await runAgentJsonStream('hello again', {
+            root,
+            session: 'echo-json-last',
+            provider: 'echo',
+            model: 'echo',
+            json: true,
+            outputLastMessage: true
+        }, { output });
+
+        const events = buffer.trim().split('\n').map(line => JSON.parse(line));
+        const tail = events.find(event => event.type === 'output.last_message');
+        expect(tail).toBeTruthy();
+        expect(tail.content).toContain('Echo: hello again');
     }
 
     @Test('accepts tool item names without treating them as groups')

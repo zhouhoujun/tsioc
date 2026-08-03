@@ -75,6 +75,8 @@ export interface AgentCliOptions {
     apiKeyEnv?: string;
     timeout?: string;
     workspace?: string;
+    stream?: boolean;
+    outputLastMessage?: boolean;
 }
 
 export interface AgentCliResolvedConfig {

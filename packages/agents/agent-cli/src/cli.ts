@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { runAgentApplication, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
+import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -84,17 +84,18 @@ function createAgentCli(): Command {
         .option('--api-key-env <name>', 'Env var name for API key.')
         .option('--timeout <ms>', 'Request timeout in ms.')
         .option('--stream', 'Stream the response.')
-        .option('--json', 'Output JSON.')
+        .option('--json', 'Output JSONL event stream.')
+        .option('--output-last-message', 'Append a final JSONL compatibility event containing the last assistant message.')
         .action(async (prompt: string, options: any) => {
+            if (options.json) {
+                await runAgentJsonStream(prompt || '', options);
+                return;
+            }
             if (options.stream) {
                 await runAgentStreaming(prompt || '', options);
                 return;
             }
             const output = await runAgentPrompt(prompt || '', options);
-            if (options.json) {
-                process.stdout.write(JSON.stringify({ output }) + '\n');
-                return;
-            }
             process.stdout.write(output + '\n');
         });
 

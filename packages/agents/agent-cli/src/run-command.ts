@@ -2,11 +2,18 @@ import { Application } from '@tsdi/core';
 import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
-import { AgentAppServerModule, StdioAppRpcServer } from '@tsdi/agent-gateway';
+import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { Readable, Writable } from 'stream';
+
+export interface AgentRunJsonEvent {
+    type: string;
+    timestamp: number;
+    sessionId?: string;
+    [key: string]: any;
+}
 
 function createConfigService(options: AgentCliOptions): AgentUiConfigService {
     return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
@@ -211,6 +218,144 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
                 process.stdout.write('\n');
             }
         }
+    } finally {
+        await ctx.close();
+    }
+}
+
+export async function runAgentJsonStream(
+    prompt: string,
+    options: AgentCliOptions = {},
+    streams?: { output?: Writable; principalId?: string; }
+): Promise<void> {
+    const config = createConfigService(options);
+    const resolved = config.resolve();
+    const output = streams?.output ?? process.stdout;
+    const principalId = streams?.principalId ?? 'local-system';
+    const ctx = await runAgentRpcApplication(options, {});
+    const rpc = ctx.get(AppRpcServer);
+    const sessionId = resolved.sessionId;
+    let lastMessage: any = null;
+    let lastUsage: Record<string, any> | undefined;
+
+    const writeEvent = async (event: AgentRunJsonEvent) => {
+        const body = `${JSON.stringify(event)}\n`;
+        await new Promise<void>((resolve, reject) => {
+            (output as Writable).write(body, (error?: Error | null) => error ? reject(error) : resolve());
+        });
+    };
+
+    try {
+        await ctx.get(AgentRuntime).start();
+        await writeEvent({
+            type: 'thread.started',
+            timestamp: Date.now(),
+            sessionId,
+            input: prompt
+        });
+
+        for await (const message of rpc.streamPayload({
+            jsonrpc: '2.0',
+            id: Date.now(),
+            method: 'run.turn_stream',
+            params: {
+                sessionId,
+                input: prompt
+            }
+        }, { principalId })) {
+            const timestamp = Date.now();
+            if ('error' in message) {
+                await writeEvent({
+                    type: 'error',
+                    timestamp,
+                    sessionId,
+                    code: message.error?.code ?? -32603,
+                    message: message.error?.message || 'App RPC stream failed',
+                    data: message.error?.data
+                });
+                throw new Error(message.error?.message || 'App RPC stream failed');
+            }
+            if ('method' in message && message.method === 'run.turn_stream.chunk') {
+                const params = message.params ?? {};
+                const chunkType = String(params.chunkType || '');
+                if (params.usage) {
+                    lastUsage = params.usage;
+                }
+                if (chunkType === 'event') {
+                    const eventType = String(params.eventType || '');
+                    await writeEvent({
+                        type: eventType === 'turn_started' ? 'turn.started' : 'item.event',
+                        timestamp,
+                        sessionId: params.sessionId || sessionId,
+                        eventType,
+                        label: params.label,
+                        status: params.status,
+                        content: params.content,
+                        toolName: params.toolName,
+                        toolCallId: params.toolCallId,
+                        approvalId: params.approvalId,
+                        report: params.report,
+                        diagnostics: params.diagnostics,
+                        compensated: params.compensated
+                    });
+                    continue;
+                }
+                if (chunkType === 'text' || chunkType === 'reasoning') {
+                    await writeEvent({
+                        type: chunkType === 'text' ? 'item.text.delta' : 'item.reasoning.delta',
+                        timestamp,
+                        sessionId: params.sessionId || sessionId,
+                        delta: params.content || ''
+                    });
+                    continue;
+                }
+                if (chunkType === 'tool_call') {
+                    await writeEvent({
+                        type: 'item.tool_call',
+                        timestamp,
+                        sessionId: params.sessionId || sessionId,
+                        content: params.content || '',
+                        toolCalls: params.toolCalls ?? []
+                    });
+                    continue;
+                }
+                if (chunkType === 'done') {
+                    await writeEvent({
+                        type: 'item.done',
+                        timestamp,
+                        sessionId: params.sessionId || sessionId,
+                        usage: params.usage ?? null
+                    });
+                }
+                continue;
+            }
+            if ('result' in message) {
+                lastMessage = message.result?.message ?? null;
+                await writeEvent({
+                    type: 'turn.completed',
+                    timestamp,
+                    sessionId: message.result?.sessionId || sessionId,
+                    message: lastMessage,
+                    cancelled: message.result?.cancelled === true,
+                    usage: lastUsage ?? null
+                });
+                break;
+            }
+        }
+
+        if (options.outputLastMessage && lastMessage) {
+            await writeEvent({
+                type: 'output.last_message',
+                timestamp: Date.now(),
+                sessionId,
+                content: String(lastMessage?.content || '')
+            });
+        }
+        await writeEvent({
+            type: 'thread.completed',
+            timestamp: Date.now(),
+            sessionId
+        });
     } finally {
         await ctx.close();
     }
