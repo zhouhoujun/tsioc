@@ -17,6 +17,7 @@ import { LlmTaskAdapter } from '../../agent-tools/llm/llm-task.tool';
 import { PipelineAdapter } from '../../agent-tools/pipeline/pipeline.tool';
 import { resolveDefaultToolSandboxPolicy } from '../src/harness/ToolSandboxPolicy';
 import { InMemoryAuditSink } from '../src/harness/InMemoryAuditSink';
+import { defaultAgentOptions } from '../src/options';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -399,6 +400,13 @@ export class BuiltinToolsTest {
         const result = await pendingPromise;
         expect(result.decision).toEqual(ApprovalDecision.TIMEOUT);
         expect(approvals.getPending()).toEqual([]);
+    }
+
+    @Test('default approval strategy blocks playwright browser automation')
+    defaultApprovalStrategyBlocksPlaywrightBrowser() {
+        const strategy = new DefaultApprovalStrategy();
+        expect(strategy.requires('playwright_browser', {})).toEqual(true);
+        expect(defaultAgentOptions.tools?.requireApproval).toContain('playwright_browser');
     }
 
     @Test('local tool registry returns resolved definitions with compatibility metadata')

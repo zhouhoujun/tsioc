@@ -37,6 +37,7 @@ import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { BrowserOpenTool } from '../browser/browser-open.tool';
 import { TextBrowserTool } from '../browser/text-browser.tool';
+import { PlaywrightBrowserAdapter, PlaywrightBrowserTool } from '../browser/playwright-browser.tool';
 import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
 import { SessionsListTool } from '../sessions/sessions-list.tool';
 import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
@@ -142,6 +143,7 @@ function provideCodingTaskToolFactory() {
         WebExtractTool,
         BrowserOpenTool,
         TextBrowserTool,
+        PlaywrightBrowserTool,
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
@@ -202,6 +204,12 @@ function provideCodingTaskToolFactory() {
         ModelRoutingTool,
         PollTool,
         AiCliTool,
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: PlaywrightBrowserAdapter, useValue: options?.browser?.adapter ?? null }];
+            }
+        },
         {
             provider(injector) {
                 const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
@@ -273,6 +281,7 @@ function provideCodingTaskToolFactory() {
         WebExtractTool,
         BrowserOpenTool,
         TextBrowserTool,
+        PlaywrightBrowserTool,
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,

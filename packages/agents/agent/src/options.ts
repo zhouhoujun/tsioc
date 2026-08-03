@@ -99,7 +99,7 @@ export const defaultAgentOptions: AgentOptions = {
         parallelExecution: false,
         maxParallelTools: 5,
         parallelSafeTools: ['memory.search', 'time', 'echo', 'web_search', 'session_search'],
-        requireApproval: ['shell.exec', 'fs.write', 'fs.delete', 'sudo.exec', 'deploy'],
+        requireApproval: ['shell.exec', 'fs.write', 'fs.delete', 'sudo.exec', 'deploy', 'playwright_browser'],
         approvalTimeoutMs: 30000
     },
     scheduler: {

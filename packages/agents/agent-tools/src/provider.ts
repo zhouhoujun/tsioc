@@ -22,6 +22,7 @@ import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { BrowserOpenTool } from '../browser/browser-open.tool';
 import { TextBrowserTool } from '../browser/text-browser.tool';
+import { PlaywrightBrowserAdapter, PlaywrightBrowserTool } from '../browser/playwright-browser.tool';
 import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
 import { SessionsListTool } from '../sessions/sessions-list.tool';
 import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
@@ -133,6 +134,7 @@ const toolItems = {
     web_extract: WebExtractTool,
     browser_open: BrowserOpenTool,
     text_browser: TextBrowserTool,
+    playwright_browser: PlaywrightBrowserTool,
     sessions_current: SessionsCurrentTool,
     sessions_list: SessionsListTool,
     sessions_history: SessionsHistoryTool,
@@ -201,7 +203,7 @@ const toolGroups = {
     filesystem_write: ['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
     utility: ['calculator', 'location', 'weather'],
     web: ['web_search', 'web_extract'],
-    browser: ['browser_open', 'text_browser'],
+    browser: ['browser_open', 'text_browser', 'playwright_browser'],
     sessions: ['sessions_current', 'sessions_list', 'sessions_history', 'session_search'],
     planning: ['todo', 'ask_user', 'escalate'],
     process: ['process.start', 'process.poll', 'process.kill'],
@@ -242,7 +244,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     filesystem_write: 'Workspace file mutation tools.',
     utility: 'General-purpose calculation and utility helpers.',
     web: 'Web search and extraction tools.',
-    browser: 'Lightweight browser open and text browsing tools.',
+    browser: 'Lightweight browser open, text browsing, and optional Playwright automation tools.',
     sessions: 'Read-only session listing and history inspection tools.',
     planning: 'Planning, task tracking, and collaboration prompt tools.',
     process: 'Background process lifecycle tools.',
@@ -521,6 +523,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         WebExtractTool,
         BrowserOpenTool,
         TextBrowserTool,
+        PlaywrightBrowserTool,
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
@@ -583,6 +586,10 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ModelRoutingTool,
         PollTool,
         AiCliTool,
+        {
+            provide: PlaywrightBrowserAdapter,
+            useValue: merged.browser?.adapter ?? null
+        },
         {
             provide: CodeExecutionAdapter,
             useValue: merged.codeExecution?.adapter ?? new LocalCodeExecutionAdapter(merged)

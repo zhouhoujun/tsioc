@@ -27,6 +27,12 @@ export interface AgentToolsWebOptions {
     maxContentChars?: number;
 }
 
+export interface AgentToolsBrowserOptions {
+    adapter?: import('../browser/playwright-browser.tool').PlaywrightBrowserAdapter;
+    defaultTimeoutMs?: number;
+    maxExtractChars?: number;
+}
+
 export interface AgentToolsTerminalOptions {
     defaultTimeoutMs?: number;
     maxTimeoutMs?: number;
@@ -164,6 +170,7 @@ export type AgentToolItem =
     | 'web_extract'
     | 'browser_open'
     | 'text_browser'
+    | 'playwright_browser'
     | 'sessions_current'
     | 'sessions_list'
     | 'sessions_history'
@@ -242,6 +249,7 @@ export interface AgentToolsLspOptions {
 export interface AgentToolsOptions {
     file?: AgentToolsFileOptions;
     web?: AgentToolsWebOptions;
+    browser?: AgentToolsBrowserOptions;
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     process?: AgentToolsProcessOptions;
@@ -273,6 +281,10 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     web: {
         timeoutMs: 15000,
         maxContentChars: 12000
+    },
+    browser: {
+        defaultTimeoutMs: 15000,
+        maxExtractChars: 12000
     },
     http: {
         timeoutMs: 15000,
@@ -318,6 +330,10 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         web: {
             ...(defaultAgentToolsOptions.web ?? {}),
             ...(options?.web ?? {})
+        },
+        browser: {
+            ...(defaultAgentToolsOptions.browser ?? {}),
+            ...(options?.browser ?? {})
         },
         http: {
             ...(defaultAgentToolsOptions.http ?? {}),

@@ -62,6 +62,7 @@ import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { BrowserOpenTool } from '../browser/browser-open.tool';
 import { TextBrowserTool } from '../browser/text-browser.tool';
+import { PlaywrightBrowserAdapter, PlaywrightBrowserTool } from '../browser/playwright-browser.tool';
 import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
 import { SessionsListTool } from '../sessions/sessions-list.tool';
 import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
@@ -97,7 +98,7 @@ import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText } from '@tsdi/agent';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, LightweightAgentRunner, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
-import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
+import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool, PlaywrightBrowserTool as ExportedPlaywrightBrowserTool } from '../browser';
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
@@ -931,6 +932,71 @@ export class AgentToolsPackageTest {
         expect(metadataError?.message).toContain('blocked internal host');
     }
 
+    @Test('playwright browser validates inputs, delegates to adapter, and truncates extracts')
+    async playwrightBrowserDelegatesToConfiguredAdapter() {
+        let capturedRequest: any;
+        let capturedContext: any;
+        const adapter: PlaywrightBrowserAdapter = {
+            execute: async (request, context) => {
+                capturedRequest = request;
+                capturedContext = context;
+                return {
+                    action: request.action,
+                    url: request.url ?? 'https://example.com/dashboard',
+                    title: 'Dashboard',
+                    selector: request.selector,
+                    content: 'abcdefghijklmnop'
+                };
+            }
+        } as PlaywrightBrowserAdapter;
+
+        const tool = new PlaywrightBrowserTool({
+            browser: {
+                adapter,
+                defaultTimeoutMs: 4321,
+                maxExtractChars: 6
+            }
+        });
+
+        const result = await tool.invoke({
+            action: 'extract',
+            url: 'https://example.com/dashboard',
+            selector: '#main',
+            extract: 'text'
+        }, createSessionContext());
+
+        expect(capturedRequest).toEqual({
+            action: 'extract',
+            url: 'https://example.com/dashboard',
+            selector: '#main',
+            timeoutMs: 4321,
+            extract: 'text'
+        });
+        expect(capturedContext.sessionId).toEqual('s1');
+        expect(result.content).toEqual('abcdef');
+        expect(result.truncated).toEqual(true);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ action: 'type', selector: '#main' }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('type requires text');
+    }
+
+    @Test('playwright browser requires configured adapter')
+    async playwrightBrowserRequiresConfiguredAdapter() {
+        const tool = new PlaywrightBrowserTool();
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ action: 'navigate', url: 'https://example.com' }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('requires a configured Playwright browser adapter');
+    }
+
     @Test('image info reads png and jpeg headers and validates invalid inputs')
     async imageInfoReadsHeadersAndValidatesInvalidInputs() {
         const workspace = await this.createWorkspace();
@@ -1127,6 +1193,7 @@ export class AgentToolsPackageTest {
         expect(ExportedTodoTool).toEqual(TodoTool);
         expect(ExportedBrowserOpenTool).toEqual(BrowserOpenTool);
         expect(ExportedTextBrowserTool).toEqual(TextBrowserTool);
+        expect(ExportedPlaywrightBrowserTool).toEqual(PlaywrightBrowserTool);
         expect(ExportedSessionsCurrentTool).toEqual(SessionsCurrentTool);
         expect(ExportedSessionsListTool).toEqual(SessionsListTool);
         expect(ExportedSessionsHistoryTool).toEqual(SessionsHistoryTool);
@@ -1170,7 +1237,7 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(AGENT_TOOL_GROUPS.utility).toEqual(['calculator', 'location', 'weather']);
-        expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
+        expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser', 'playwright_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
         expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
@@ -1186,6 +1253,7 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames()).toContain('location');
         expect(resolveAgentToolNames()).not.toContain('browser_open');
         expect(resolveAgentToolNames()).not.toContain('text_browser');
+        expect(resolveAgentToolNames()).not.toContain('playwright_browser');
         expect(resolveAgentToolNames()).not.toContain('sessions_current');
         expect(resolveAgentToolNames()).not.toContain('sessions_list');
         expect(resolveAgentToolNames()).not.toContain('sessions_history');
@@ -1200,6 +1268,7 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('browser_open');
         expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('text_browser');
+        expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('playwright_browser');
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_current');
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_list');
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_history');
@@ -1241,7 +1310,7 @@ export class AgentToolsPackageTest {
         expect(filesystemWrite?.defaultEnabled).toEqual(true);
         expect(filesystemWrite?.enabled).toEqual(true);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
-        expect(browser?.tools).toEqual(['browser_open', 'text_browser']);
+        expect(browser?.tools).toEqual(['browser_open', 'text_browser', 'playwright_browser']);
         expect(browser?.defaultEnabled).toEqual(false);
         expect(browser?.enabled).toEqual(false);
         expect(browser?.activation).toEqual({ kind: 'deferred', scope: 'session' });

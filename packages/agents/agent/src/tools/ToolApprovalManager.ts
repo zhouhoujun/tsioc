@@ -351,6 +351,7 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
             'db.execute',
             'deploy',
             'sudo.exec',
+            'playwright_browser',
             'admin.*'
         ]);
     }
@@ -370,4 +371,3 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         return `Tool "${toolName}" requires approval.`;
     }
 }
-
