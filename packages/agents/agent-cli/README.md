@@ -233,6 +233,9 @@ Behavior of this example:
 - `tsdi-agent run "your prompt"`: execute a single prompt
 - `tsdi-agent chat`: start Agent UI in TUI mode
 - `tsdi-agent tools list`: inspect resolved tool configuration
+- `tsdi-agent doctor [--json]`: inspect local config, workspace, provider, hooks, skills, and MCP readiness
+- `tsdi-agent completion [bash|zsh|fish]`: print a shell completion script
+- `tsdi-agent update [--manager <name>] [--target <tag>] [--yes]`: print or run the package-manager command used to update `@tsdi/agent-cli`
 - `tsdi-agent rpc-stdio`: expose the agent through JSON-RPC 2.0 JSONL over stdio for Agent UI or other clients
 
 ## UI integration

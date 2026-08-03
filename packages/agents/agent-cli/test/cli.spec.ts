@@ -8,15 +8,18 @@ import { MemoryStore, SessionStore } from '@tsdi/agent';
 import {
     createAgentDoctorReport,
     createAgentCli,
+    createAgentUpdatePlan,
     generateAgentCompletionScript,
     ensureAgentWorkspaceConfig,
     formatProjectListLine,
     formatAgentDoctorReport,
+    formatAgentUpdatePlan,
     formatProjectSessionsHeader,
     resolveCliConfig,
     resolveCliHooks,
     resolveCliModelConfig,
     resolveCompletionShell,
+    resolveAgentUpdateManager,
     resolveProjectDisplayLabel,
     sortProjectSessions,
     resolveProviderApiKeyEnv,
@@ -26,6 +29,7 @@ import {
     runAgentDoctor,
     runAgentPrompt,
     runAgentRpcApplication,
+    runAgentUpdate,
     withAdapterProviders,
     runAgentRpcStdio,
     writeProviderProfile,
@@ -180,6 +184,7 @@ export class AgentCliTest {
         expect(commandNames.includes('chat')).toBe(true);
         expect(commandNames.includes('doctor')).toBe(true);
         expect(commandNames.includes('completion')).toBe(true);
+        expect(commandNames.includes('update')).toBe(true);
         expect(commandNames.includes('rpc-stdio')).toBe(true);
         expect(commandNames.includes('tools')).toBe(true);
         expect(toolsCommand?.commands.map(cmd => cmd.name())).toEqual(['list']);
@@ -204,6 +209,56 @@ export class AgentCliTest {
         expect(resolveCompletionShell('fish')).toBe('fish');
         expect(resolveCompletionShell(undefined, { SHELL: '/bin/zsh' } as NodeJS.ProcessEnv)).toBe('zsh');
         expect(resolveCompletionShell(undefined, {} as NodeJS.ProcessEnv)).toBe('bash');
+    }
+
+    @Test('builds update plan with package manager specific command')
+    buildsUpdatePlanWithPackageManagerSpecificCommand() {
+        const plan = createAgentUpdatePlan({
+            manager: 'pnpm',
+            target: 'next'
+        });
+
+        expect(plan.manager).toBe('pnpm');
+        expect(plan.target).toBe('next');
+        expect(plan.argv).toEqual(['add', '-g', '@tsdi/agent-cli@next']);
+        expect(plan.command).toBe('pnpm add -g @tsdi/agent-cli@next');
+        expect(formatAgentUpdatePlan(plan)).toContain('Run with --yes');
+    }
+
+    @Test('resolves update manager from user agent and defaults to npm')
+    resolvesUpdateManagerFromUserAgentAndDefaultsToNpm() {
+        expect(resolveAgentUpdateManager(undefined, {
+            npm_config_user_agent: 'yarn/4.9.1 npm/? node/v22.0.0'
+        } as NodeJS.ProcessEnv)).toBe('yarn');
+        expect(resolveAgentUpdateManager(undefined, {} as NodeJS.ProcessEnv)).toBe('npm');
+    }
+
+    @Test('update command emits json plan without executing by default')
+    async updateCommandEmitsJsonPlanWithoutExecutingByDefault() {
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        let invoked = false;
+        const plan = await runAgentUpdate({
+            manager: 'bun',
+            target: 'latest',
+            json: true
+        }, {
+            stdout: output,
+            runner: async () => {
+                invoked = true;
+                return 0;
+            }
+        });
+
+        const payload = JSON.parse(buffer.trim());
+        expect(plan.manager).toBe('bun');
+        expect(payload.manager).toBe('bun');
+        expect(payload.command).toBe('bun add -g @tsdi/agent-cli@latest');
+        expect(invoked).toBe(false);
     }
 
     @Test('doctor report surfaces missing workspace and missing api key')
@@ -379,6 +434,27 @@ export class AgentCliTest {
             '--root',
             '/tmp/agent-root',
             'fish'
+        ]);
+    }
+
+    @Test('normalizes update command ahead of leading options')
+    normalizesUpdateCommandAheadOfLeadingOptions() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--manager',
+            'pnpm',
+            'update',
+            '--json'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'update',
+            '--manager',
+            'pnpm',
+            '--json'
         ]);
     }
 

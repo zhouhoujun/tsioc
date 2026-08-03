@@ -233,6 +233,9 @@ CLI 在执行命令前会读取默认工作区配置：
 - `tsdi-agent run "your prompt"`：执行单次 prompt
 - `tsdi-agent chat`：以 TUI 模式启动 Agent UI
 - `tsdi-agent tools list`：查看解析后的工具配置
+- `tsdi-agent doctor [--json]`：检查本地配置、workspace、provider、hooks、skills 与 MCP 就绪状态
+- `tsdi-agent completion [bash|zsh|fish]`：输出 shell completion 脚本
+- `tsdi-agent update [--manager <name>] [--target <tag>] [--yes]`：打印或执行用于升级 `@tsdi/agent-cli` 的包管理器命令
 - `tsdi-agent rpc-stdio`：通过 stdio 暴露 JSON-RPC 2.0 JSONL 接口，供 Agent UI 或其他客户端接入
 
 ## UI 集成

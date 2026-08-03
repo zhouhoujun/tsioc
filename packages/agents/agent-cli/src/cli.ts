@@ -5,6 +5,7 @@ import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
+import { runAgentUpdate } from './update';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
@@ -12,7 +13,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'completion', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -22,9 +23,11 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--image',
     '--provider',
     '--model',
+    '--manager',
     '--base-url',
     '--api-key',
     '--api-key-env',
+    '--target',
     '--timeout'
 ]);
 
@@ -245,6 +248,17 @@ function createAgentCli(): Command {
         .action((shell?: string) => {
             const script = generateAgentCompletionScript(resolveCompletionShell(shell), program);
             process.stdout.write(script + '\n');
+        });
+
+    program
+        .command('update')
+        .description('Print or execute the package-manager command used to update @tsdi/agent-cli.')
+        .option('--manager <name>', 'Package manager (npm, pnpm, yarn, bun).')
+        .option('--target <tag>', 'Release tag or version to install. Defaults to latest.')
+        .option('--yes', 'Execute the generated update command immediately.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            await runAgentUpdate(options);
         });
 
     const mcp = program
