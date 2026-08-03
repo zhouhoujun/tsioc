@@ -21,6 +21,7 @@ import {
     resolveCompletionShell,
     resolveAgentUpdateManager,
     resolveAgentUpdateRegistry,
+    resolveAgentUpdateStatus,
     resolveProjectDisplayLabel,
     sortProjectSessions,
     resolveProviderApiKeyEnv,
@@ -289,6 +290,7 @@ export class AgentCliTest {
         expect(plan.registry).toBe('https://registry.npmjs.org');
         expect(plan.latestVersion).toBe('6.0.99');
         expect(plan.updateAvailable).toBe(true);
+        expect(plan.status).toBe('update_available');
     }
 
     @Test('update check skips install when current version is already latest')
@@ -319,6 +321,48 @@ export class AgentCliTest {
         expect(plan.updateAvailable).toBe(false);
         expect(invoked).toBe(false);
         expect(buffer).toContain('Already up to date; skipping install.');
+        expect(plan.status).toBe('up_to_date');
+    }
+
+    @Test('update status compares semantic versions and prerelease ordering')
+    updateStatusComparesSemanticVersionsAndPrereleaseOrdering() {
+        expect(resolveAgentUpdateStatus('6.0.31', '6.0.32')).toBe('update_available');
+        expect(resolveAgentUpdateStatus('6.0.31', '6.0.31')).toBe('up_to_date');
+        expect(resolveAgentUpdateStatus('6.1.0-beta.2', '6.1.0-beta.1')).toBe('current_newer_than_target');
+        expect(resolveAgentUpdateStatus('6.1.0', '6.1.0-beta.3')).toBe('current_newer_than_target');
+        expect(resolveAgentUpdateStatus('6.0.31', null)).toBe('target_not_found');
+    }
+
+    @Test('update check skips install when checked target is missing')
+    async updateCheckSkipsInstallWhenCheckedTargetIsMissing() {
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+        let invoked = false;
+
+        const plan = await runAgentUpdate({
+            check: true,
+            target: 'missing-tag',
+            yes: true
+        }, {
+            stdout: output,
+            metadataFetcher: async () => ({
+                'dist-tags': {
+                    latest: '6.0.31'
+                }
+            }),
+            runner: async () => {
+                invoked = true;
+                return 0;
+            }
+        });
+
+        expect(plan.status).toBe('target_not_found');
+        expect(plan.updateAvailable).toBe(false);
+        expect(invoked).toBe(false);
+        expect(buffer).toContain('Checked target was not found in the registry metadata; skipping install.');
     }
 
     @Test('doctor report surfaces missing workspace and missing api key')

@@ -5,8 +5,10 @@ import { URL } from 'url';
 
 export const AGENT_CLI_PACKAGE_NAME = '@tsdi/agent-cli';
 export const SUPPORTED_UPDATE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'] as const;
+export const AGENT_UPDATE_STATUSES = ['update_available', 'up_to_date', 'current_newer_than_target', 'target_not_found'] as const;
 
 export type AgentCliUpdateManager = (typeof SUPPORTED_UPDATE_MANAGERS)[number];
+export type AgentCliUpdateStatus = (typeof AGENT_UPDATE_STATUSES)[number];
 
 export interface AgentCliUpdatePlan {
     packageName: string;
@@ -18,6 +20,7 @@ export interface AgentCliUpdatePlan {
     registry?: string;
     latestVersion?: string | null;
     updateAvailable?: boolean;
+    status?: AgentCliUpdateStatus;
 }
 
 export interface AgentCliUpdateOptions {
@@ -90,9 +93,7 @@ export function formatAgentUpdatePlan(plan: AgentCliUpdatePlan): string {
         `Manager: ${plan.manager}`,
         ...(plan.registry ? [`Registry: ${plan.registry}`] : []),
         ...(plan.latestVersion ? [`Latest: ${plan.latestVersion}`] : []),
-        ...(typeof plan.updateAvailable === 'boolean'
-            ? [`Status: ${plan.updateAvailable ? 'update available' : 'up to date'}`]
-            : []),
+        ...(plan.status ? [`Status: ${formatAgentUpdateStatus(plan.status)}`] : []),
         `Command: ${plan.command}`,
         'Run with --yes to execute the update automatically.'
     ];
@@ -110,7 +111,9 @@ export async function runAgentUpdate(options: AgentCliUpdateOptions = {}, io: Ag
         const latestVersion = await resolveAgentCliLatestVersion(plan.target, registry, io.metadataFetcher);
         plan.registry = registry;
         plan.latestVersion = latestVersion;
-        plan.updateAvailable = latestVersion ? latestVersion !== plan.currentVersion : undefined;
+        const status = resolveAgentUpdateStatus(plan.currentVersion, latestVersion);
+        plan.status = status;
+        plan.updateAvailable = status === 'update_available';
     }
 
     if (options.json) {
@@ -123,8 +126,18 @@ export async function runAgentUpdate(options: AgentCliUpdateOptions = {}, io: Ag
         return plan;
     }
 
-    if (plan.updateAvailable === false) {
+    if (plan.status === 'up_to_date') {
         stdout.write('Already up to date; skipping install.\n');
+        return plan;
+    }
+
+    if (plan.status === 'current_newer_than_target') {
+        stdout.write('Current version is newer than the checked target; skipping install.\n');
+        return plan;
+    }
+
+    if (plan.status === 'target_not_found') {
+        stdout.write('Checked target was not found in the registry metadata; skipping install.\n');
         return plan;
     }
 
@@ -185,6 +198,25 @@ async function resolveAgentCliLatestVersion(
     return null;
 }
 
+export function resolveAgentUpdateStatus(currentVersion: string, latestVersion?: string | null): AgentCliUpdateStatus {
+    const normalizedLatest = String(latestVersion || '').trim();
+    if (!normalizedLatest) {
+        return 'target_not_found';
+    }
+
+    const comparison = compareSemanticVersions(currentVersion, normalizedLatest);
+    if (comparison === null) {
+        return normalizedLatest === String(currentVersion || '').trim()
+            ? 'up_to_date'
+            : 'update_available';
+    }
+
+    if (comparison === 0) {
+        return 'up_to_date';
+    }
+    return comparison < 0 ? 'update_available' : 'current_newer_than_target';
+}
+
 function defaultAgentCliMetadataFetcher(packageName: string, registry: string): Promise<AgentCliRegistryMetadata> {
     const endpoint = `${registry}/${encodeURIComponent(packageName)}`;
     return new Promise((resolve, reject) => {
@@ -216,6 +248,97 @@ function defaultAgentCliMetadataFetcher(packageName: string, registry: string): 
         });
         req.on('error', reject);
     });
+}
+
+function formatAgentUpdateStatus(status: AgentCliUpdateStatus): string {
+    switch (status) {
+        case 'update_available':
+            return 'update available';
+        case 'up_to_date':
+            return 'up to date';
+        case 'current_newer_than_target':
+            return 'current version is newer than target';
+        case 'target_not_found':
+            return 'target version not found';
+    }
+}
+
+function compareSemanticVersions(left: string, right: string): number | null {
+    const leftVersion = parseSemanticVersion(left);
+    const rightVersion = parseSemanticVersion(right);
+    if (!leftVersion || !rightVersion) {
+        return null;
+    }
+
+    const coreDelta = compareNumber(leftVersion.major, rightVersion.major)
+        || compareNumber(leftVersion.minor, rightVersion.minor)
+        || compareNumber(leftVersion.patch, rightVersion.patch);
+    if (coreDelta !== 0) {
+        return coreDelta;
+    }
+
+    return comparePrereleaseIdentifiers(leftVersion.prerelease, rightVersion.prerelease);
+}
+
+function parseSemanticVersion(value: string): { major: number; minor: number; patch: number; prerelease: string[] } | null {
+    const match = String(value || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/);
+    if (!match) {
+        return null;
+    }
+    return {
+        major: Number(match[1]),
+        minor: Number(match[2]),
+        patch: Number(match[3]),
+        prerelease: match[4] ? match[4].split('.').filter(Boolean) : []
+    };
+}
+
+function comparePrereleaseIdentifiers(left: string[], right: string[]): number {
+    if (!left.length && !right.length) {
+        return 0;
+    }
+    if (!left.length) {
+        return 1;
+    }
+    if (!right.length) {
+        return -1;
+    }
+
+    const max = Math.max(left.length, right.length);
+    for (let index = 0; index < max; index++) {
+        const leftPart = left[index];
+        const rightPart = right[index];
+        if (leftPart === undefined) {
+            return -1;
+        }
+        if (rightPart === undefined) {
+            return 1;
+        }
+        const delta = comparePrereleasePart(leftPart, rightPart);
+        if (delta !== 0) {
+            return delta;
+        }
+    }
+    return 0;
+}
+
+function comparePrereleasePart(left: string, right: string): number {
+    const leftNumeric = /^\d+$/.test(left);
+    const rightNumeric = /^\d+$/.test(right);
+    if (leftNumeric && rightNumeric) {
+        return compareNumber(Number(left), Number(right));
+    }
+    if (leftNumeric) {
+        return -1;
+    }
+    if (rightNumeric) {
+        return 1;
+    }
+    return left.localeCompare(right);
+}
+
+function compareNumber(left: number, right: number): number {
+    return left === right ? 0 : left < right ? -1 : 1;
 }
 
 function readAgentCliVersion(): string {
