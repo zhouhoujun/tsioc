@@ -1471,8 +1471,10 @@ export class ChatWebSocketTest {
     @Test('streams chunks then final message then done over websocket writer')
     async streamsChunksAndFinalMessage() {
         const writes: string[] = [];
+        const profiles: Array<string | undefined> = [];
         const runtime = {
-            async *runStreamingTurn() {
+            async *runStreamingTurn(_sessionId?: string, _input?: string, _principalId?: string, _message?: any, profile?: string) {
+                profiles.push(profile);
                 yield { type: 'text', content: 'hel' };
                 yield { type: 'text', content: 'lo' };
                 yield { type: 'done' };
@@ -1492,7 +1494,7 @@ export class ChatWebSocketTest {
             }
         } as any;
 
-        await (ws as any).handleMessage(socket, JSON.stringify({ content: 'hello' }), 's1');
+        await (ws as any).handleMessage(socket, JSON.stringify({ content: 'hello', profile: 'strong' }), 's1');
         await new Promise(resolve => setTimeout(resolve, 0));
 
         const frames = writes.map(value => JSON.parse(value));
@@ -1500,6 +1502,7 @@ export class ChatWebSocketTest {
         expect(frames[0].content).toEqual('hel');
         expect(frames[1].content).toEqual('lo');
         expect(frames[2].content).toEqual('hello');
+        expect(profiles).toEqual(['strong']);
     }
 
     @Test('rejects resuming a foreign session id')
@@ -2562,8 +2565,10 @@ export class AppRpcServerTest {
         const memory = new InMemoryMemoryStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
+        const profiles: Array<string | undefined> = [];
         const runtime = {
-            async runTurn(sessionId: string, input: string) {
+            async runTurn(sessionId: string, input: string, _principalId?: string, _message?: any, profile?: string) {
+                profiles.push(profile);
                 await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
                 await store.append(sessionId, { id: 'a1', role: 'assistant', content: `done:${input}`, createdAt: 2 } as any);
                 return { output: `done:${input}` };
@@ -2598,10 +2603,11 @@ export class AppRpcServerTest {
             jsonrpc: '2.0',
             id: 1,
             method: 'run.turn',
-            params: { sessionId: 'rpc-s1', input: 'hello' }
+            params: { sessionId: 'rpc-s1', input: 'hello', profile: 'strong' }
         }, { principalId: 'user-1' });
         expect((runResponse as any).result.sessionId).toEqual('rpc-s1');
         expect((runResponse as any).result.message.content).toEqual('done:hello');
+        expect(profiles).toEqual(['strong']);
 
         const memoryResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -3433,9 +3439,11 @@ export class AppRpcServerTest {
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const streamedPrincipals: string[] = [];
+        const streamedProfiles: Array<string | undefined> = [];
         const runtime = {
-            async *runStreamingTurn(sessionId: string, input: string, principalId?: string) {
+            async *runStreamingTurn(sessionId: string, input: string, principalId?: string, _message?: any, profile?: string) {
                 streamedPrincipals.push(principalId || '');
+                streamedProfiles.push(profile);
                 await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
                 yield { type: 'text', content: 'hel' };
                 yield { type: 'text', content: 'lo' };
@@ -3460,10 +3468,12 @@ export class AppRpcServerTest {
             jsonrpc: '2.0',
             id: 11,
             method: 'run.turn_stream',
-            params: { sessionId: 'rpc-stream', input: 'hello' }
+            params: { sessionId: 'rpc-stream', input: 'hello', profile: 'strong' }
         }, { principalId: 'user-1' })) {
             frames.push(frame);
         }
+
+        expect(streamedProfiles).toEqual(['strong']);
 
         expect(frames).toEqual([{
             jsonrpc: '2.0',

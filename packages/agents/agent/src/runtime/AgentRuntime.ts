@@ -23,7 +23,13 @@ export interface FileUndoRedoResult {
 
 @Abstract()
 export abstract class AgentRuntime {
-    abstract runTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): Promise<AgentTurnResult>;
+    abstract runTurn(
+        sessionId: string,
+        input: string,
+        principalId?: string,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): Promise<AgentTurnResult>;
 
     abstract start(): Promise<void>;
     abstract stop(): Promise<void>;
@@ -32,7 +38,13 @@ export abstract class AgentRuntime {
 
     abstract processTurn(input: AgentTurnInput): Promise<AgentTurnResult>;
 
-    abstract runStreamingTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): AsyncGenerator<StreamChunk>;
+    abstract runStreamingTurn(
+        sessionId: string,
+        input: string,
+        principalId?: string,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;
 

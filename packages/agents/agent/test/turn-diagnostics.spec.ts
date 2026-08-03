@@ -410,4 +410,37 @@ export class TurnDiagnosticsStoreTest {
         await runtime.runTurn('s1', 'third turn');
         expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
     }
+
+    @Test('turn profile overrides session model profile for that request only')
+    async turnProfileOverridesSessionProfileForSingleTurn() {
+        const adapter = new CapturingProfileModelAdapter();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined
+        );
+
+        runtime.setSessionModelProfile('s1', 'flash');
+
+        await runtime.runTurn('s1', 'first turn');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+
+        await runtime.runTurn('s1', 'second turn', undefined, undefined, 'strong');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
+
+        await runtime.runTurn('s1', 'third turn');
+        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+    }
 }

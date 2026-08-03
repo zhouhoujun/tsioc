@@ -53,6 +53,7 @@ interface TurnExecutionContext {
     principalId?: string;
     workspace?: string;
     diagnostics?: AgentTurnDiagnostics;
+    profile?: string;
 }
 
 interface ToolCompensationEntry {
@@ -125,7 +126,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.hookManager = this.options.hooks ? new AgentHookManager(this.options.hooks, this.hookExecutor) : undefined;
     }
 
-    async runTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): Promise<AgentTurnResult> {
+    async runTurn(
+        sessionId: string,
+        input: string,
+        principalId?: string,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
         try {
@@ -137,9 +144,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } | null
                 : null;
             if (!handler) {
-                return await this.processTurn({ sessionId, input, principalId, message });
+                return await this.processTurn({ sessionId, input, principalId, message, profile });
             }
-            return await handler.handle({ sessionId, input, principalId, message }, createRunContext(handler.injector ?? this.app));
+            return await handler.handle({ sessionId, input, principalId, message, profile }, createRunContext(handler.injector ?? this.app));
         } finally {
             this.endTurnAbortScope(sessionId);
             release();
@@ -198,7 +205,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const turnContext: TurnExecutionContext = {
             principalId: input.principalId,
             workspace: await this.resolveSessionWorkspace(input.sessionId),
-            diagnostics: this.createTurnDiagnostics()
+            diagnostics: this.createTurnDiagnostics(),
+            profile: input.profile
         };
         await this.runTurnHooks('beforeTurn', input.sessionId, {
             sessionId: input.sessionId,
@@ -259,7 +267,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.contextManager.synthesizeExperiences(options);
     }
 
-    async *runStreamingTurn(sessionId: string, input: string, principalId?: string, message?: AgentTurnMessageInput): AsyncGenerator<StreamChunk> {
+    async *runStreamingTurn(
+        sessionId: string,
+        input: string,
+        principalId?: string,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
         try {
@@ -277,7 +291,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const turnContext: TurnExecutionContext = {
                 principalId,
                 workspace: await this.resolveSessionWorkspace(sessionId),
-                diagnostics: this.createTurnDiagnostics()
+                diagnostics: this.createTurnDiagnostics(),
+                profile
             };
             await this.runTurnHooks('beforeTurn', sessionId, {
                 sessionId,
@@ -686,12 +701,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    protected prepareModelRequest(sessionId: string, request: ModelRequest): ModelRequest {
+    protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.getTurnAbortSignal(sessionId);
-        const profile = this.sessionModelProfiles.get(sessionId);
-        if (profile) {
-            request.profile = profile;
+        const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
+        if (resolvedProfile) {
+            request.profile = resolvedProfile;
         }
         return request;
     }
@@ -706,21 +721,25 @@ export class DefaultAgentRuntime extends AgentRuntime {
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request));
+            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile));
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
-                response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request)));
+                response = await this.modelAdapter.complete(
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile)
+                );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
-                response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request)));
+                response = await this.modelAdapter.complete(
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile)
+                );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
 
@@ -737,7 +756,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.sessions.append(sessionId, limitMessage);
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, finalRequest));
+        const finalResponse = await this.modelAdapter.complete(
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile)
+        );
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
@@ -756,19 +777,28 @@ export class DefaultAgentRuntime extends AgentRuntime {
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            let response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, request));
+            let response = yield* this.collectStreamingResponse(
+                sessionId,
+                this.prepareModelRequest(sessionId, request, turnContext.profile)
+            );
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
-                response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request)));
+                response = yield* this.collectStreamingResponse(
+                    sessionId,
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile)
+                );
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
-                response = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request)));
+                response = yield* this.collectStreamingResponse(
+                    sessionId,
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile)
+                );
             }
 
             const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
@@ -785,7 +815,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.sessions.append(sessionId, limitMessage);
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = yield* this.collectStreamingResponse(sessionId, this.prepareModelRequest(sessionId, finalRequest));
+        const finalResponse = yield* this.collectStreamingResponse(
+            sessionId,
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile)
+        );
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
         this.capturePromptCacheDiagnostics(turnContext, finalResponse);

@@ -125,6 +125,7 @@ class RuntimeStub {
     planModeSessions = new Set<string>();
     sandboxModes = new Map<string, 'off' | 'workspace' | 'network-block'>();
     turnMessages: any[] = [];
+    turnProfiles: Array<string | undefined> = [];
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         this.calls.push(`plan:${sessionId}:${enabled}`);
@@ -162,9 +163,10 @@ class RuntimeStub {
         return { filePath: '/ws/a.txt', restored: 'content' };
     }
 
-    async runTurn(sessionId: string, input: string, _principalId?: string, message?: any): Promise<any> {
+    async runTurn(sessionId: string, input: string, _principalId?: string, message?: any, profile?: string): Promise<any> {
         this.calls.push(`${sessionId}:${input}`);
         this.turnMessages.push(message);
+        this.turnProfiles.push(profile);
         this.messages = [
             { id: '1', role: 'user', content: input, parts: message?.parts, createdAt: 1 },
             { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 }
@@ -176,9 +178,10 @@ class RuntimeStub {
         return this.messages;
     }
 
-    async *runStreamingTurn(sessionId: string, input: string, _principalId?: string, message?: any): AsyncGenerator<any> {
+    async *runStreamingTurn(sessionId: string, input: string, _principalId?: string, message?: any, profile?: string): AsyncGenerator<any> {
         this.calls.push(`${sessionId}:${input}`);
         this.turnMessages.push(message);
+        this.turnProfiles.push(profile);
         yield { type: 'text', content: `Echo: ${input}` };
         yield { type: 'done', usage: { promptTokens: 5, completionTokens: 7, totalTokens: 12 } };
         this.messages = [
@@ -4578,6 +4581,73 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'model.activate' && call.params?.name === 'strong')).toEqual(true);
         expect(component.sessionState.modelProfile).toEqual('strong');
         expect(component.model).toEqual('deepseek-v4-pro');
+    }
+
+    @Test('model once queues next-turn profile without changing the session default')
+    async modelOnceQueuesNextTurnProfileWithoutSwitchingDefault() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            {
+                ui: { title: 'Console' },
+                model: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-flash',
+                    defaultProfile: 'flash',
+                    profiles: {
+                        flash: { provider: 'deepseek', model: 'deepseek-v4-flash' },
+                        strong: { provider: 'deepseek', model: 'deepseek-v4-pro', reasoning: true }
+                    }
+                }
+            }
+        );
+
+        await component.onInit();
+        component.input = '/model once strong';
+        await component.submit();
+
+        expect(component.sessionState.modelProfile).toEqual('flash');
+        expect(component.sessionState.oneShotModelProfile).toEqual('strong');
+        expect(component.notice).toEqual('Queued model profile strong for the next prompt.');
+    }
+
+    @Test('model once forwards profile for a single rpc turn then clears it')
+    async modelOnceForwardsProfileForSingleRpcTurnThenClearsIt() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.state = {
+            sessionId: 'console',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            modelProfile: 'flash',
+            workspace: '/tmp/workspace',
+            title: 'Console'
+        };
+        appRpc.streamChunks = [
+            { type: 'text', content: 'done' },
+            { type: 'done' }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+
+        await component.onInit();
+        component.input = '/model once strong';
+        await component.submit();
+        component.input = 'hello';
+        await component.submit();
+
+        const streamCall = appRpc.calls.find(call => call.method === 'run.turn_stream');
+        expect(streamCall?.params?.profile).toEqual('strong');
+        expect(component.sessionState.oneShotModelProfile).toEqual('');
+        expect(component.sessionState.modelProfile).toEqual('flash');
     }
 
     @Test('model activation ignores stale app rpc results after switching sessions')

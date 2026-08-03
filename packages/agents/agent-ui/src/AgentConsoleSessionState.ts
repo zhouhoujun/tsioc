@@ -346,6 +346,7 @@ export class AgentConsoleSessionState {
     provider = '';
     model = '';
     modelProfile = '';
+    oneShotModelProfile = '';
     planMode = false;
     workspace = '';
     projectKey = '';
@@ -553,6 +554,11 @@ export class AgentConsoleSessionState {
 
     setModelProfile(modelProfile: string): void {
         this.modelProfile = modelProfile;
+        this.notify();
+    }
+
+    setOneShotModelProfile(modelProfile: string): void {
+        this.oneShotModelProfile = String(modelProfile || '').trim();
         this.notify();
     }
 
@@ -1248,10 +1254,13 @@ export class AgentConsoleSessionState {
 
     get inputHintLabel(): string {
         const base = formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+        const oneShotSummary = this.oneShotModelProfile
+            ? `next model ${this.oneShotModelProfile}`
+            : '';
         const attachmentSummary = this.pendingAttachments.length
             ? `${this.pendingAttachments.length} attachment${this.pendingAttachments.length === 1 ? '' : 's'}`
             : '';
-        return [base, attachmentSummary].filter(Boolean).join(' · ');
+        return [base, oneShotSummary, attachmentSummary].filter(Boolean).join(' · ');
     }
 
     setPendingAttachments(attachments: AgentConsolePendingAttachment[]): void {

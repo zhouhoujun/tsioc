@@ -97,7 +97,10 @@ export class ChatWebSocket {
                 return;
             }
             const input = message.content ?? message.input ?? text;
-            void this.handleLegacyMessage(socket, sessionId, input, principalId);
+            const profile = typeof message?.profile === 'string' && message.profile.trim()
+                ? message.profile.trim()
+                : undefined;
+            void this.handleLegacyMessage(socket, sessionId, input, principalId, profile);
         } catch {
             const errorMsg = JSON.stringify({ type: 'error', sessionId, error: 'invalid JSON' });
             this.writeFrame(socket, 0x01, Buffer.from(errorMsg));
@@ -129,14 +132,20 @@ export class ChatWebSocket {
         });
     }
 
-    private handleLegacyMessage(socket: DuplexSocket, sessionId: string, input: string, principalId?: string): void {
+    private handleLegacyMessage(
+        socket: DuplexSocket,
+        sessionId: string,
+        input: string,
+        principalId?: string,
+        profile?: string
+    ): void {
         void this.sessionQueue.enqueue(sessionId, async () => {
             if (this.rpc) {
                 const request = {
                     jsonrpc: '2.0' as const,
                     id: `ws-${sessionId}-${Date.now()}`,
                     method: 'run.turn_stream',
-                    params: { sessionId, input }
+                    params: { sessionId, input, ...(profile ? { profile } : {}) }
                 };
                 for await (const payload of this.rpc.streamPayload(request, { principalId })) {
                     if (this.isRpcChunkNotification(payload)) {
@@ -180,7 +189,7 @@ export class ChatWebSocket {
             }
 
             let streamDone = false;
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, principalId)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, principalId, undefined, profile)) {
                 if (chunk.type === 'done') {
                     streamDone = true;
                     continue;
@@ -263,8 +272,11 @@ export class ChatWebSocket {
         if (message?.method === 'run.turn_stream') {
             const input = message?.params?.input ?? '';
             const requestSessionId = message?.params?.sessionId ?? sessionId;
+            const profile = typeof message?.params?.profile === 'string' && message.params.profile.trim()
+                ? message.params.profile.trim()
+                : undefined;
             let finalMessage = '';
-            for await (const chunk of this.runtime.runStreamingTurn(requestSessionId, input, principalId)) {
+            for await (const chunk of this.runtime.runStreamingTurn(requestSessionId, input, principalId, undefined, profile)) {
                 if (chunk.type === 'text') {
                     finalMessage += chunk.content ?? '';
                 }
@@ -282,7 +294,16 @@ export class ChatWebSocket {
             };
         }
         if (message?.method === 'run.turn') {
-            const result = await this.runtime.runTurn(message?.params?.sessionId ?? sessionId, message?.params?.input ?? '', principalId);
+            const profile = typeof message?.params?.profile === 'string' && message.params.profile.trim()
+                ? message.params.profile.trim()
+                : undefined;
+            const result = await this.runtime.runTurn(
+                message?.params?.sessionId ?? sessionId,
+                message?.params?.input ?? '',
+                principalId,
+                undefined,
+                profile
+            );
             return {
                 jsonrpc: '2.0',
                 id: message?.id ?? null,

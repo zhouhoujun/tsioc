@@ -3208,7 +3208,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         switch (resolved.command) {
             case '/help':
                 const helpSelection = await this.select('Help', [
-                    { label: '/model', value: '/model', description: 'switch model' },
+                    { label: '/model', value: '/model', description: 'switch model or queue next-turn profile' },
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
@@ -3254,6 +3254,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 if (parsed.args) {
+                    const modelArgs = String(parsed.args || '').trim();
+                    if (modelArgs.toLowerCase().startsWith('once')) {
+                        const profileName = modelArgs.slice(4).trim();
+                        if (!profileName) {
+                            this.notify('Usage: /model once <profile>.');
+                            return true;
+                        }
+                        await this.queueNextTurnModelProfile(profileName);
+                        return true;
+                    }
                     await this.activateModelProfile(parsed.args);
                     return true;
                 }
@@ -3922,6 +3932,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const prompt = await this.enrichPromptWithMentions(draft);
         const attachments = this.state.pendingAttachments.slice();
         const turnMessage = this.buildTurnMessageInput(prompt, attachments);
+        const profile = this.consumePendingTurnModelProfile();
         this.draftLines = [];
         this.multilineMode = false;
         this.state.pushInputHistory(draft);
@@ -3953,7 +3964,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setMessages([...baseMessages, userMsg, asstMsg]);
         });
         try {
-            await this.runTurnStream(prompt, asstMsg, turnMessage);
+            await this.runTurnStream(prompt, asstMsg, turnMessage, profile);
             this.clearStreamingMessageState();
             this.ensureMessageAtTail(asstMsg.id);
             this.state.batch(() => {
@@ -4000,6 +4011,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const prompt = await this.enrichPromptWithMentions(value);
         const attachments = this.state.pendingAttachments.slice();
         const turnMessage = this.buildTurnMessageInput(prompt, attachments);
+        const profile = this.consumePendingTurnModelProfile();
         this.clearStreamingMessageState();
         const turnScope = this.state.beginTurnEventScope();
         const userMessage: AgentMessage = {
@@ -4028,7 +4040,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
 
         try {
-            await this.runTurnStream(prompt, assistantMessage, turnMessage);
+            await this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
             this.state.batch(() => {
@@ -4050,11 +4062,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
-    protected async runTurnStream(prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput): Promise<void> {
+    protected async runTurnStream(
+        prompt: string,
+        assistantMessage: AgentMessage,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): Promise<void> {
         this.scheduleStreamingPendingNotice();
         const stream = this.appRpc?.stream?.('run.turn_stream', {
             sessionId: this.state.sessionId,
             input: prompt,
+            ...(profile ? { profile } : {}),
             ...(message ? { message } : {})
         });
         if (stream) {
@@ -4075,7 +4093,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
         const runtime: any = this.runtime;
         if (typeof runtime?.runStreamingTurn === 'function') {
-            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt, undefined, message)) {
+            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt, undefined, message, profile)) {
                 this.consumeStreamChunk(chunk, assistantMessage);
             }
             assistantMessage.metadata = {
@@ -4086,7 +4104,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
 
-        const result = await this.executeTurn(prompt, message);
+        const result = await this.executeTurn(prompt, message, profile);
         if (result && 'message' in result) {
             assistantMessage.content = result.message.content;
             this.state.batch(() => {
@@ -4878,16 +4896,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
-    protected async executeTurn(input: string, message?: AgentTurnMessageInput): Promise<import('@tsdi/agent').AgentTurnResult | void> {
+    protected async executeTurn(
+        input: string,
+        message?: AgentTurnMessageInput,
+        profile?: string
+    ): Promise<import('@tsdi/agent').AgentTurnResult | void> {
         if (this.appRpc) {
             await this.appRpc.request('run.turn', {
                 sessionId: this.state.sessionId,
                 input,
+                ...(profile ? { profile } : {}),
                 ...(message ? { message } : {})
             });
             return;
         }
-        return this.runtime.runTurn(this.state.sessionId, input, undefined, message);
+        return this.runtime.runTurn(this.state.sessionId, input, undefined, message, profile);
     }
 
     protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {
@@ -5154,6 +5177,32 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
         });
         this.notify(`Switched model profile to ${name}.`);
+    }
+
+    protected async queueNextTurnModelProfile(profileName: string): Promise<void> {
+        const name = String(profileName || '').trim();
+        if (!name) {
+            this.notify('Usage: /model once <profile>.');
+            return;
+        }
+        if (!this.appRpc) {
+            const profiles = this.options.model?.profiles || {};
+            if (!profiles[name]) {
+                this.notify(`Unknown model profile: ${name}`);
+                return;
+            }
+        }
+        this.state.setOneShotModelProfile(name);
+        this.notify(`Queued model profile ${name} for the next prompt.`);
+    }
+
+    protected consumePendingTurnModelProfile(): string | undefined {
+        const profile = String(this.state.oneShotModelProfile || '').trim();
+        if (!profile) {
+            return undefined;
+        }
+        this.state.setOneShotModelProfile('');
+        return profile;
     }
 
     protected async activateTool(name: string): Promise<boolean> {

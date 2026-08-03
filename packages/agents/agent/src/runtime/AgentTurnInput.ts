@@ -5,4 +5,5 @@ export interface AgentTurnInput {
     input: string;
     principalId?: string;
     message?: AgentTurnMessageInput;
+    profile?: string;
 }

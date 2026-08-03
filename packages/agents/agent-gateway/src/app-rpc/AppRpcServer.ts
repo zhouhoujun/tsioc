@@ -536,16 +536,21 @@ export class AppRpcServer {
         return this.runtime.redoFileChange(sessionId);
     }
 
+    private optionalProfile(value: any): string | undefined {
+        return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+    }
+
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {
         const message = this.parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn input');
+        const profile = this.optionalProfile(params?.profile);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
-        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message);
+        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message, profile);
         const messages = await this.runtime.getMessages(sessionId);
         return {
             sessionId,
@@ -618,6 +623,7 @@ export class AppRpcServer {
     private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
         const message = this.parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn_stream input');
+        const profile = this.optionalProfile(params?.profile);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
@@ -646,7 +652,7 @@ export class AppRpcServer {
         });
 
         try {
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message, profile)) {
                 yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
                 if (chunk.type === 'done') {
                     continue;
