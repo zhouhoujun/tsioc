@@ -1,7 +1,21 @@
 /**
+ * One file captured inside a multi-file snapshot (e.g. a patch that touches
+ * several files in a single tool call). `before` is the content prior to the
+ * change (null when the file did not exist), `after` is the content after the
+ * change (null when the file was deleted).
+ */
+export interface FileSnapshotPart {
+    filePath: string;
+    before: string | null;
+    after?: string | null;
+}
+
+/**
  * A file change snapshot for undo/redo. `before` is the file content prior to
  * the change (null when the file did not exist), `after` is the content after
- * the change (null when the file was deleted).
+ * the change (null when the file was deleted). Tools that mutate several files
+ * in one call (e.g. `apply_patch`) populate `files` with the per-file parts so
+ * `/undo` and `/redo` restore the whole operation, not just the primary file.
  */
 export interface FileSnapshot {
     filePath: string;
@@ -10,6 +24,7 @@ export interface FileSnapshot {
     timestamp: number;
     toolName?: string;
     toolCallId?: string;
+    files?: FileSnapshotPart[];
 }
 
 export const DEFAULT_FILE_SNAPSHOT_MAX_DEPTH = 50;
@@ -106,6 +121,12 @@ export class FileSnapshotStore {
     }
 
     private sizeOf(snapshot: FileSnapshot): number {
-        return (snapshot.before?.length ?? 0) + (snapshot.after?.length ?? 0);
+        let total = (snapshot.before?.length ?? 0) + (snapshot.after?.length ?? 0);
+        if (snapshot.files) {
+            for (const part of snapshot.files) {
+                total += (part.before?.length ?? 0) + (part.after?.length ?? 0);
+            }
+        }
+        return total;
     }
 }

@@ -27,7 +27,7 @@ import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentContextManager, ContextPreparationReport, SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
-import { FileSnapshot, FileSnapshotStore } from '../harness/FileSnapshotStore';
+import { FileSnapshot, FileSnapshotPart, FileSnapshotStore } from '../harness/FileSnapshotStore';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
@@ -671,20 +671,37 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private async resolveFileSnapshotAfter(snapshot: FileSnapshot): Promise<FileSnapshot> {
         const content = await this.readRuntimeFileText(snapshot.filePath);
-        return { ...snapshot, after: content };
+        let files: FileSnapshotPart[] | undefined;
+        if (snapshot.files?.length) {
+            files = [];
+            for (const part of snapshot.files) {
+                files.push({ ...part, after: await this.readRuntimeFileText(part.filePath) });
+            }
+        }
+        return { ...snapshot, after: content, files };
     }
 
     private async restoreFileSnapshot(snapshot: FileSnapshot, which: 'before' | 'after'): Promise<void> {
         if (!this.fileAdapter) {
             return;
         }
-        const content = snapshot[which];
-        if (content === null) {
-            await this.fileAdapter.remove(snapshot.filePath, { force: true }).catch(() => undefined);
+        if (snapshot.files?.length) {
+            for (const part of [...snapshot.files].reverse()) {
+                await this.restoreSnapshotPart(part, which);
+            }
             return;
         }
-        await this.fileAdapter.mkdir(dirnameAgentPath(snapshot.filePath), { recursive: true });
-        await this.fileAdapter.writeText(snapshot.filePath, content);
+        await this.restoreSnapshotPart(snapshot, which);
+    }
+
+    private async restoreSnapshotPart(part: FileSnapshotPart, which: 'before' | 'after'): Promise<void> {
+        const content = which === 'before' ? part.before : (part.after ?? null);
+        if (content === null) {
+            await this.fileAdapter!.remove(part.filePath, { force: true }).catch(() => undefined);
+            return;
+        }
+        await this.fileAdapter!.mkdir(dirnameAgentPath(part.filePath), { recursive: true });
+        await this.fileAdapter!.writeText(part.filePath, content);
     }
 
     protected endTurnAbortScope(sessionId: string): void {
