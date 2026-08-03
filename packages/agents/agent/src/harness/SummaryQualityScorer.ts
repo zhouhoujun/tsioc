@@ -7,6 +7,8 @@
  * truncation. Provider-specific quality can then be compared by aggregating
  * these scores per model provider.
  */
+import { ToolEvidenceEntry } from './EvidenceLedger';
+
 export interface SummaryQualityScore {
     /** Overall 0-100 score, 0 when no summary content is available. */
     total: number;
@@ -140,4 +142,26 @@ function scoreTruncation(length: number): number {
         return 85;
     }
     return 100;
+}
+
+/**
+ * B5: evidence coverage metric.
+ *
+ * Computes the fraction of the turn's tool evidence entries (success or error)
+ * whose tool name appears in the summary text. Returns a percentage between 0
+ * and 100, or `undefined` when there is no usable evidence (no entries, or all
+ * entries were skipped) so aggregations can skip unmeasured summaries without
+ * polluting the average.
+ */
+export function computeEvidenceCoverage(
+    summary: string | undefined | null,
+    evidence?: ToolEvidenceEntry[] | null
+): number | undefined {
+    const entries = (evidence ?? []).filter(entry => entry.status !== 'skipped');
+    if (entries.length === 0) {
+        return undefined;
+    }
+    const text = String(summary || '').toLowerCase();
+    const mentioned = entries.filter(entry => text.includes(entry.toolName.toLowerCase())).length;
+    return Math.round((mentioned / entries.length) * 1000) / 10;
 }

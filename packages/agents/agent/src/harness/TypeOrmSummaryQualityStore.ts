@@ -11,6 +11,12 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
 
     async append(record: SummaryQualityRecord): Promise<void> {
         const repo = this.adapter.getRepository(AgentSummaryQualityEntity);
+        const metadata: Record<string, any> | null = {
+            ...(record.metadata ?? {})
+        };
+        if (record.evidenceCoverage !== undefined) {
+            metadata.evidenceCoverage = record.evidenceCoverage;
+        }
         await repo.save(repo.create({
             id: record.id,
             provider: record.provider,
@@ -23,7 +29,7 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
             fallbackUsed: record.fallbackUsed,
             summaryLength: record.summaryLength,
             createdAt: record.createdAt,
-            metadata: record.metadata ?? null
+            metadata: Object.keys(metadata).length > 0 ? metadata : null
         }));
     }
 
@@ -62,6 +68,7 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
     }
 
     private toRecord(record: AgentSummaryQualityEntity): SummaryQualityRecord {
+        const metadata = record.metadata ?? undefined;
         return {
             id: record.id,
             provider: record.provider,
@@ -73,8 +80,9 @@ export class TypeOrmSummaryQualityStore extends SummaryQualityStore {
             truncationScore: record.truncationScore,
             fallbackUsed: record.fallbackUsed,
             summaryLength: record.summaryLength,
+            evidenceCoverage: typeof metadata?.evidenceCoverage === 'number' ? metadata.evidenceCoverage : undefined,
             createdAt: Number(record.createdAt),
-            metadata: record.metadata ?? undefined
+            metadata
         };
     }
 }

@@ -18,6 +18,12 @@ export interface SummaryQualityRecord {
     truncationScore: number;
     fallbackUsed: boolean;
     summaryLength: number;
+    /**
+     * B5: 0-100 percentage of the turn's tool evidence entries (success/error)
+     * whose tool name appears in the summary text. `undefined` when the
+     * summary was produced without evidence (or all entries were skipped).
+     */
+    evidenceCoverage?: number;
     createdAt: number;
     metadata?: Record<string, any>;
 }
@@ -37,6 +43,8 @@ export interface SummaryQualityAggregate {
     avgLengthBalance: number;
     avgTruncationScore: number;
     fallbackRate: number;
+    /** B5: average evidence coverage over records that carry it; 0 when none do. */
+    avgEvidenceCoverage: number;
     timeRange?: { from: number; to: number };
 }
 
@@ -76,6 +84,7 @@ export function aggregateSummaryQuality(
             avgLengthBalance: avg(recordsGroup.map(record => record.lengthBalance)),
             avgTruncationScore: avg(recordsGroup.map(record => record.truncationScore)),
             fallbackRate: Math.round((recordsGroup.filter(record => record.fallbackUsed).length / recordsGroup.length) * 1000) / 10,
+            avgEvidenceCoverage: avgEvidenceCoverageOf(recordsGroup),
             timeRange: {
                 from: Math.min(...recordsGroup.map(record => record.createdAt)),
                 to: Math.max(...recordsGroup.map(record => record.createdAt))
@@ -102,6 +111,18 @@ export interface SummaryQualityTrendPoint {
     avgLengthBalance: number;
     avgTruncationScore: number;
     fallbackRate: number;
+    /** B5: average evidence coverage over records that carry it; 0 when none do. */
+    avgEvidenceCoverage: number;
+}
+
+/** Average evidence coverage over records that carry a value; 0 when none do. */
+function avgEvidenceCoverageOf(records: SummaryQualityRecord[]): number {
+    const measured = records
+        .map(record => record.evidenceCoverage)
+        .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    return measured.length > 0
+        ? Math.round((measured.reduce((sum, value) => sum + value, 0) / measured.length) * 10) / 10
+        : 0;
 }
 
 const DEFAULT_TREND_BUCKET_SIZE = 24 * 60 * 60 * 1000;
@@ -157,7 +178,8 @@ export function buildSummaryQualityTrend(
                 avgAnnotationQuality: avg(group.map(record => record.annotationQuality)),
                 avgLengthBalance: avg(group.map(record => record.lengthBalance)),
                 avgTruncationScore: avg(group.map(record => record.truncationScore)),
-                fallbackRate: Math.round((group.filter(record => record.fallbackUsed).length / group.length) * 1000) / 10
+                fallbackRate: Math.round((group.filter(record => record.fallbackUsed).length / group.length) * 1000) / 10,
+                avgEvidenceCoverage: avgEvidenceCoverageOf(group)
             });
         }
     }

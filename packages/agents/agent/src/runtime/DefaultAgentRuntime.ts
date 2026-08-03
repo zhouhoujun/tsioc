@@ -241,7 +241,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
             await this.sessions.append(input.sessionId, result.message);
-            await this.maybeSummarize(input.sessionId);
+            await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
             await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
@@ -329,7 +329,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
                 await this.sessions.append(sessionId, result.message);
-                await this.maybeSummarize(sessionId);
+                await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
                 await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
@@ -2238,11 +2238,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         );
     }
 
-    private async maybeSummarize(sessionId: string): Promise<void> {
+    private async maybeSummarize(sessionId: string, evidence?: ToolEvidenceEntry[]): Promise<void> {
         const state = await this.sessions.get(sessionId);
         const threshold = this.options.session?.summaryThreshold ?? defaultAgentOptions.session!.summaryThreshold!;
         if (state.messages.length >= threshold) {
-            const summary = await this.summarizer.summarize(state.messages);
+            const summary = await this.summarizer.summarize(state.messages, evidence);
             await this.sessions.setSummary(sessionId, summary);
         }
     }

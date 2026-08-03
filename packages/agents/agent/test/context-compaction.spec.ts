@@ -766,6 +766,46 @@ export class ContextCompactionTest {
         expect(result).toContain('Goal: Fix routing in src/app.ts.');
     }
 
+    /* --- B5 evidence-based compaction --- */
+
+    @Test('LLMSessionSummarizer fallback reflects failed tools from the evidence ledger')
+    async llmFallbackReflectsEvidenceFailures() {
+        const summarizer = new LLMSessionSummarizer(null);
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Deploy the service and verify the endpoint.', createdAt: 1 }
+        ];
+        const evidence = [
+            { id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'terminal', status: 'error', exitCode: 1, error: 'connect ECONNREFUSED', createdAt: 1 },
+            { id: 'e2', turnId: 't1', sessionId: 's1', toolName: 'curl', status: 'success', createdAt: 1 },
+            { id: 'e3', turnId: 't1', sessionId: 's1', toolName: 'bash', status: 'error', falsified: true, falsificationReason: 'claim contradicted by output', createdAt: 1 }
+        ] as any;
+
+        const result = await summarizer.summarize(messages, evidence);
+
+        expect(result).toContain('Goal:');
+        expect(result).toContain('evidence: terminal, bash (falsified)');
+    }
+
+    @Test('LLMSessionSummarizer passes evidence into the model prompt')
+    async llmInjectsEvidenceSectionIntoPrompt() {
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Fix routing in src/app.ts.', createdAt: 1 }
+        ];
+        const evidence = [
+            { id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'write_file', status: 'success', createdAt: 1 },
+            { id: 'e2', turnId: 't1', sessionId: 's1', toolName: 'terminal', status: 'error', exitCode: 2, error: 'command not found', createdAt: 1 }
+        ] as any;
+
+        const requestSpy = new RequestSpyModelAdapter();
+        const summarizer = new LLMSessionSummarizer(requestSpy as any);
+        await summarizer.summarize(messages, evidence);
+
+        expect(requestSpy.lastUserContent).toContain('Evidence from this turn:');
+        expect(requestSpy.lastUserContent).toContain('- write_file: success');
+        expect(requestSpy.lastUserContent).toContain('- terminal: error (exit 2)');
+        expect(requestSpy.lastUserContent).toContain('- terminal: error (exit 2) - command not found');
+    }
+
     /* --- language-aware token estimation --- */
 
     @Test('estimateTokens handles CJK-heavy text more accurately than length/4')
@@ -1766,6 +1806,19 @@ class StaticSummaryModelAdapter extends EchoModelAdapter {
     async complete(): Promise<any> {
         return {
             message: this.content,
+            stopReason: 'end'
+        };
+    }
+}
+
+class RequestSpyModelAdapter extends EchoModelAdapter {
+    lastUserContent = '';
+
+    async complete(request: any): Promise<any> {
+        const lastUser = [...request.messages].reverse().find((msg: any) => msg.role === 'user');
+        this.lastUserContent = lastUser?.content ?? '';
+        return {
+            message: this.lastUserContent,
             stopReason: 'end'
         };
     }

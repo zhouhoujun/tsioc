@@ -6,7 +6,7 @@ import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
 import { SummaryQualityRecord, SummaryQualityStore, aggregateSummaryQuality, buildSummaryQualityTrend } from '../src/harness/SummaryQualityStore';
-import { scoreSummaryQuality } from '../src/harness/SummaryQualityScorer';
+import { scoreSummaryQuality, computeEvidenceCoverage } from '../src/harness/SummaryQualityScorer';
 import { InMemorySummaryQualityStore } from '../src/harness/InMemorySummaryQualityStore';
 import { TypeOrmSummaryQualityStore } from '../src/harness/TypeOrmSummaryQualityStore';
 import { AgentSummaryQualityEntity } from '../src/memory/entities';
@@ -167,6 +167,97 @@ export class SummaryQualityScorerTest {
     }
 }
 
+@Suite('Evidence coverage metric')
+export class EvidenceCoverageTest {
+    private evidence(partials: Array<Partial<{ toolName: string; status: 'success' | 'error' | 'skipped'; error?: string }>> = []) {
+        return partials.map((partial, index) => ({
+            id: `e${index}`,
+            turnId: 't1',
+            sessionId: 's1',
+            toolName: partial.toolName ?? 'read_file',
+            status: partial.status ?? 'success',
+            error: partial.error,
+            createdAt: 1
+        })) as any;
+    }
+
+    @Test('returns undefined when no evidence is provided')
+    async noEvidenceIsUndefined() {
+        expect(computeEvidenceCoverage(makeFullSummary(), undefined)).toEqual(undefined);
+        expect(computeEvidenceCoverage(makeFullSummary(), null)).toEqual(undefined);
+        expect(computeEvidenceCoverage(makeFullSummary(), [])).toEqual(undefined);
+    }
+
+    @Test('returns undefined when every evidence entry was skipped')
+    async allSkippedIsUndefined() {
+        const evidence = this.evidence([
+            { toolName: 'read_file', status: 'skipped' },
+            { toolName: 'write_file', status: 'skipped' }
+        ]);
+        expect(computeEvidenceCoverage(makeFullSummary(), evidence)).toEqual(undefined);
+    }
+
+    @Test('counts the fraction of tool names mentioned in the summary')
+    async countsMentionedTools() {
+        const summary = [
+            'Goal: Write src/app.ts and read the config.',
+            'Decisions: Ran write_file and terminal checks.',
+            'Files: modified: src/app.ts',
+            'Errors: terminal failed once.',
+            'Open state: Verify with read_file.'
+        ].join('\n');
+        const evidence = this.evidence([
+            { toolName: 'write_file', status: 'success' },
+            { toolName: 'read_file', status: 'success' },
+            { toolName: 'terminal', status: 'error' }
+        ]);
+        expect(computeEvidenceCoverage(summary, evidence)).toEqual(100);
+    }
+
+    @Test('returns a partial percentage when only some tools are mentioned')
+    async partialCoverage() {
+        const summary = [
+            'Goal: Fix the config.',
+            'Decisions: Inspected the file with read_file.',
+            'Files: modified: src/config.ts',
+            'Errors: No errors recorded.',
+            'Open state: Apply the patch.'
+        ].join('\n');
+        const evidence = this.evidence([
+            { toolName: 'read_file', status: 'success' },
+            { toolName: 'write_file', status: 'success' },
+            { toolName: 'terminal', status: 'success' }
+        ]);
+        expect(computeEvidenceCoverage(summary, evidence)).toEqual(33.3);
+    }
+
+    @Test('excludes skipped entries from the denominator')
+    async skipsExcludedFromDenominator() {
+        const summary = [
+            'Goal: Inspect the layout.',
+            'Decisions: Ran list_dir on the workspace.',
+            'Files: mentioned: src/',
+            'Errors: No errors recorded.',
+            'Open state: Continue.'
+        ].join('\n');
+        const evidence = this.evidence([
+            { toolName: 'list_dir', status: 'success' },
+            { toolName: 'git_status', status: 'skipped' },
+            { toolName: 'docker_ps', status: 'skipped' }
+        ]);
+        expect(computeEvidenceCoverage(summary, evidence)).toEqual(100);
+    }
+
+    @Test('returns 0 when no tool name is mentioned')
+    async noMentionedTools() {
+        const evidence = this.evidence([
+            { toolName: 'apply_patch', status: 'success' },
+            { toolName: 'write_file', status: 'error' }
+        ]);
+        expect(computeEvidenceCoverage(makeFullSummary(), evidence)).toEqual(0);
+    }
+}
+
 @Suite('Summary quality stores')
 export class SummaryQualityStoreTest {
     @Test('in-memory summary quality store snapshots records immutably and filters by provider')
@@ -216,6 +307,20 @@ export class SummaryQualityStoreTest {
             makeRecord({ id: 'r2', provider: 'deepseek', total: 80, createdAt: 2 })
         ]);
         expect(raw[0].avgTotal).toEqual(85);
+    }
+
+    @Test('aggregate averages evidence coverage over measured records only')
+    async aggregateAveragesEvidenceCoverage() {
+        const aggregates = aggregateSummaryQuality([
+            makeRecord({ id: 'e1', provider: 'deepseek', evidenceCoverage: 100, createdAt: 1 }),
+            makeRecord({ id: 'e2', provider: 'deepseek', evidenceCoverage: 50, createdAt: 2 }),
+            makeRecord({ id: 'e3', provider: 'deepseek', createdAt: 3 }),
+            makeRecord({ id: 'e4', provider: 'anthropic', createdAt: 4 })
+        ]);
+        const deepseek = aggregates.find(a => a.provider === 'deepseek')!;
+        expect(deepseek.avgEvidenceCoverage).toEqual(75);
+        const anthropic = aggregates.find(a => a.provider === 'anthropic')!;
+        expect(anthropic.avgEvidenceCoverage).toEqual(0);
     }
 
     @Test('aggregate summary quality scopes to a single model')
@@ -332,7 +437,6 @@ export class SummaryQualityStoreTest {
             const store = new TypeOrmSummaryQualityStore(adapter);
             await store.append(makeRecord({ id: 'db-q1', provider: 'deepseek', total: 100, createdAt: 10 }));
             await store.append(makeRecord({ id: 'db-q2', provider: 'deepseek', total: 40, fallbackUsed: true, createdAt: 20 }));
-
             const records = await store.list({ provider: 'deepseek' });
             expect(records.length).toEqual(2);
             expect(records[0].total).toEqual(100);
@@ -381,6 +485,33 @@ export class SummaryQualityStoreTest {
             await ctx.close();
         }
     }
+
+    @Test('typeorm summary quality store roundtrips evidence coverage via metadata')
+    async typeOrmRoundtripsEvidenceCoverage() {
+        const ctx = await Application.run(SummaryQualityOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const store = new TypeOrmSummaryQualityStore(adapter);
+            await store.append(makeRecord({ id: 'db-ec1', provider: 'deepseek', evidenceCoverage: 80, createdAt: 5 }));
+            await store.append(makeRecord({ id: 'db-ec2', provider: 'deepseek', createdAt: 6 }));
+
+            const records = await store.list({ provider: 'deepseek' });
+            expect(records.length).toEqual(2);
+            expect(records[0].evidenceCoverage).toEqual(80);
+            expect(records[1].evidenceCoverage).toEqual(undefined);
+
+            const aggregate = await store.aggregate('deepseek');
+            expect(aggregate[0].avgEvidenceCoverage).toEqual(80);
+
+            const trend = buildSummaryQualityTrend(records, { provider: 'deepseek' });
+            expect(trend[0].avgEvidenceCoverage).toEqual(80);
+
+            const stored = await adapter.getRepository(AgentSummaryQualityEntity).findOne({ where: { id: 'db-ec1' } as any });
+            expect((stored?.metadata as any)?.evidenceCoverage).toEqual(80);
+        } finally {
+            await ctx.close();
+        }
+    }
 }
 
 @Suite('LLMSessionSummarizer quality recording')
@@ -420,6 +551,57 @@ export class SummaryQualityIntegrationTest {
         expect(records[0].provider).toEqual('unknown');
         expect(records[0].fallbackUsed).toEqual(true);
         expect(records[0].total).toBeLessThan(100);
+    }
+
+    @Test('records evidence coverage when evidence is provided and tools are mentioned')
+    async recordsEvidenceCoverage() {
+        const store = new InMemorySummaryQualityStore();
+        const summarizer = new LLMSessionSummarizer(
+            new StaticModelAdapter(makeFullSummary()) as any,
+            store as any
+        );
+        const messages = [
+            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
+        ];
+        const evidence = [
+            { id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'read_file', status: 'success', createdAt: 1 },
+            { id: 'e2', turnId: 't1', sessionId: 's1', toolName: 'write_file', status: 'error', createdAt: 1 }
+        ] as any;
+        await summarizer.summarize(messages, evidence);
+
+        const records = await store.list();
+        expect(records.length).toEqual(1);
+        expect(records[0].evidenceCoverage).toEqual(0);
+
+        const mentioning = new LLMSessionSummarizer(
+            new StaticModelAdapter([
+                'Goal: Write src/app.ts and read the config.',
+                'Decisions: Ran write_file and read_file.',
+                'Files: modified: src/app.ts',
+                'Errors: write_file failed.',
+                'Open state: Verify.'
+            ].join('\n')) as any,
+            store as any
+        );
+        await mentioning.summarize(messages, evidence);
+        const all = await store.list();
+        expect(all[1].evidenceCoverage).toEqual(100);
+    }
+
+    @Test('leaves evidence coverage unset when no evidence was provided')
+    async recordsWithoutEvidence() {
+        const store = new InMemorySummaryQualityStore();
+        const summarizer = new LLMSessionSummarizer(
+            new StaticModelAdapter(makeFullSummary()) as any,
+            store as any
+        );
+        await summarizer.summarize([
+            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
+        ]);
+
+        const records = await store.list();
+        expect(records.length).toEqual(1);
+        expect(records[0].evidenceCoverage).toEqual(undefined);
     }
 
     @Test('summarization never breaks when the store is missing')

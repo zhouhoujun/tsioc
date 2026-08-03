@@ -4,8 +4,9 @@ import { SessionSummarizer } from './SessionSummarizer';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
-import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
+import { scoreSummaryQuality, computeEvidenceCoverage } from '../harness/SummaryQualityScorer';
 import { SummaryQualityRecord, SummaryQualityStore } from '../harness/SummaryQualityStore';
+import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
 
 const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths (modified), and files merely mentioned or read (mentioned), 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. In the Files: line list paths as "modified: a, b | mentioned: c, d" to distinguish edited files from merely referenced ones. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 const SUMMARY_LABELS = ['Goal', 'Decisions', 'Files', 'Errors', 'Open state'] as const;
@@ -28,14 +29,15 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         super();
     }
 
-    async summarize(messages: AgentMessage[]): Promise<string> {
+    async summarize(messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): Promise<string> {
         let fallbackUsed = false;
         let summary: string;
         if (!this.modelAdapter || messages.length === 0) {
             fallbackUsed = true;
-            summary = this.naiveFallback(messages);
+            summary = this.naiveFallback(messages, evidence);
         } else {
             const conversationText = this.formatMessagesForSummarization(messages);
+            const evidenceText = this.formatEvidenceSection(evidence);
 
             const request: ModelRequest = {
                 sessionId: 'summarizer',
@@ -49,7 +51,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
                     {
                         id: 'summarize-user',
                         role: 'user',
-                        content: `Compress this conversation:\n\n${conversationText}`,
+                        content: `Compress this conversation:\n\n${conversationText}${evidenceText ? `\n\nEvidence from this turn:\n${evidenceText}` : ''}`,
                         createdAt: 0
                     }
                 ],
@@ -61,22 +63,44 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             try {
                 const response = await this.modelAdapter.complete(request);
                 if (response.message && response.message.trim()) {
-                    summary = this.normalizeStructuredSummary(response.message, messages);
+                    summary = this.normalizeStructuredSummary(response.message, messages, evidence);
                 } else {
                     fallbackUsed = true;
-                    summary = this.naiveFallback(messages);
+                    summary = this.naiveFallback(messages, evidence);
                 }
             } catch {
                 fallbackUsed = true;
-                summary = this.naiveFallback(messages);
+                summary = this.naiveFallback(messages, evidence);
             }
         }
 
-        this.recordQuality(summary, fallbackUsed);
+        this.recordQuality(summary, fallbackUsed, evidence);
         return summary;
     }
 
-    private recordQuality(summary: string, fallbackUsed: boolean): void {
+    /**
+     * B5: compact per-tool outcome lines for the summarization prompt, e.g.
+     * `write_file: success` or `terminal: error (exit 1, connect ECONNREFUSED)`.
+     */
+    private formatEvidenceSection(evidence?: ToolEvidenceEntry[]): string {
+        if (!evidence || evidence.length === 0) {
+            return '';
+        }
+        const lines = evidence.map(entry => {
+            const outcome = entry.falsified
+                ? 'falsified'
+                : entry.status === 'error'
+                    ? `error${entry.exitCode !== undefined ? ` (exit ${entry.exitCode})` : ''}`
+                    : entry.status === 'skipped'
+                        ? 'skipped'
+                        : 'success';
+            const detail = entry.error || entry.falsificationReason || '';
+            return `- ${entry.toolName}: ${outcome}${detail ? ` - ${this.truncate(detail, 120)}` : ''}`;
+        });
+        return lines.slice(0, 20).join('\n');
+    }
+
+    private recordQuality(summary: string, fallbackUsed: boolean, evidence?: ToolEvidenceEntry[]): void {
         if (!summary || !this.summaryQualityStore) {
             return;
         }
@@ -93,6 +117,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
                 truncationScore: score.truncationScore,
                 fallbackUsed: score.fallbackUsed,
                 summaryLength: score.summaryLength,
+                evidenceCoverage: computeEvidenceCoverage(summary, evidence),
                 createdAt: Date.now()
             };
             void this.summaryQualityStore.append(record).catch(() => undefined);
@@ -147,7 +172,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         return parts.join('\n');
     }
 
-    private naiveFallback(messages: AgentMessage[]): string {
+    private naiveFallback(messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): string {
         if (messages.length === 0) {
             return '';
         }
@@ -156,7 +181,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             Goal: this.resolveGoal(relevant),
             Decisions: this.resolveDecisions(relevant),
             Files: this.resolveFiles(relevant),
-            Errors: this.resolveErrors(relevant),
+            Errors: this.resolveErrors(relevant, evidence),
             'Open state': this.resolveOpenState(relevant)
         });
     }
@@ -239,11 +264,20 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         return false;
     }
 
-    private resolveErrors(messages: AgentMessage[]): string {
+    private resolveErrors(messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): string {
         const errorMessages = messages
             .filter(message => this.isErrorMessage(message))
             .slice(-2)
             .map(message => this.truncate(String(message.metadata?.error || message.metadata?.receipt?.error || message.content), 180));
+        if (evidence?.length) {
+            const failedTools = evidence
+                .filter(entry => entry.status === 'error' || entry.falsified)
+                .slice(0, 3)
+                .map(entry => `${entry.toolName}${entry.falsified ? ' (falsified)' : ''}`);
+            if (failedTools.length) {
+                errorMessages.push(`evidence: ${failedTools.join(', ')}`);
+            }
+        }
         return errorMessages.join(' | ');
     }
 
@@ -294,13 +328,13 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         return `${text.slice(0, maxLength - 3)}...`;
     }
 
-    private normalizeStructuredSummary(rawSummary: string, messages: AgentMessage[]): string {
+    private normalizeStructuredSummary(rawSummary: string, messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): string {
         const relevant = messages.filter(message => message.role !== 'system');
         const fallback = {
             Goal: this.resolveGoal(relevant),
             Decisions: this.resolveDecisions(relevant),
             Files: this.resolveFiles(relevant),
-            Errors: this.resolveErrors(relevant),
+            Errors: this.resolveErrors(relevant, evidence),
             'Open state': this.resolveOpenState(relevant)
         } satisfies Record<SummaryLabel, string>;
         const parsed = this.parseStructuredSummary(rawSummary);
