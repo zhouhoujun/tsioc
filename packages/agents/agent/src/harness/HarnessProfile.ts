@@ -33,7 +33,7 @@ export interface HarnessProfile {
     verificationWriteTools?: string[];
     /** Granular approval categories referenced by the approval rules (derived, informational). */
     granularCategories?: ApprovalCategory[];
-    /** A7 placeholder: formatter command used for generated edits (not yet wired into AgentOptions). */
+    /** A7: formatter command used for generated edits (snapshot of `AgentOptions.format.command`). */
     formatter?: string | null;
 }
 
@@ -106,8 +106,8 @@ export function snapshotHarnessProfile(options: Partial<AgentOptions> | undefine
         if (options.verificationWriteTools !== undefined) {
             profile.verificationWriteTools = options.verificationWriteTools.slice();
         }
-        if (options.hooks && typeof (options.hooks as any).formatter === 'string') {
-            profile.formatter = (options.hooks as any).formatter;
+        if (options.format?.command) {
+            profile.formatter = options.format.command;
         }
     }
     profile.granularCategories = deriveGranularCategories(profile.requireApproval);
@@ -142,6 +142,9 @@ export function applyHarnessProfile(profile: HarnessProfile): Partial<AgentOptio
     }
     if (profile.verificationWriteTools !== undefined) {
         overlay.verificationWriteTools = profile.verificationWriteTools.slice();
+    }
+    if (profile.formatter) {
+        overlay.format = { command: profile.formatter, extensions: [] };
     }
     return overlay;
 }

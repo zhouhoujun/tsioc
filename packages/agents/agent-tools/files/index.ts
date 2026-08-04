@@ -1,4 +1,5 @@
 export * from './path-policy';
+export * from './formatter';
 export * from './read-file.tool';
 export * from './write-file.tool';
 export * from './edit-file.tool';

@@ -5,6 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { runFormatter } from './formatter';
 
 const BEGIN_MARKER = '*** Begin Patch';
 const END_MARKER = '*** End Patch';
@@ -312,6 +313,21 @@ export class ApplyPatchTool implements AgentTool {
         const plan = await buildPlan(hunks, policy.rootDir);
         await commitPlan(plan);
 
+        const formatResults = [];
+        for (const file of plan.files) {
+            if (file.after === null) {
+                continue;
+            }
+            const format = await runFormatter(file.absolutePath, this.options?.format);
+            if (format.attempted) {
+                formatResults.push({
+                    path: file.relativePath,
+                    formatted: format.formatted ?? null,
+                    failure: format.failure
+                });
+            }
+        }
+
         return {
             ok: true,
             summary: `${plan.added} file(s) added, ${plan.updated} updated, ${plan.deleted} deleted, ${plan.moved} moved`,
@@ -319,7 +335,8 @@ export class ApplyPatchTool implements AgentTool {
                 path: file.relativePath,
                 change: file.change
             })),
-            bytesWritten: plan.files.reduce((sum, file) => sum + (file.after?.length ?? 0), 0)
+            bytesWritten: plan.files.reduce((sum, file) => sum + (file.after?.length ?? 0), 0),
+            formatted: formatResults.length ? formatResults : undefined
         };
     }
 

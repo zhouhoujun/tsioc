@@ -186,8 +186,8 @@ export class ToolApprovalManager {
         return this.strategy?.requires(toolName, input) ?? false;
     }
 
-    async checkApproval(toolName: string, input: any, sessionId: string): Promise<ApprovalResult> {
-        if (!this.requiresApproval(toolName, input)) {
+    async checkApproval(toolName: string, input: any, sessionId: string, force = false): Promise<ApprovalResult> {
+        if (!force && !this.requiresApproval(toolName, input)) {
             return { decision: ApprovalDecision.NOT_REQUIRED };
         }
         // Defensive sweep: requests whose timer already fired but were not yet

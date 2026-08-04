@@ -3,7 +3,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
 import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRuntime';
-import { AgentTurnInput } from './AgentTurnInput';
+import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMessageParts } from './AgentMessage';
@@ -42,7 +42,7 @@ import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
-import { AgentHookCommandExecutor, AgentHookContext, AgentHookManager, AgentHookTranscriptEntry } from '../hooks/AgentHooks';
+import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -59,6 +59,8 @@ interface TurnExecutionContext {
     profile?: string;
     evidenceLedger?: EvidenceLedger;
     recovery?: TurnRecoveryState;
+    agent?: AgentTurnAgentConfig;
+    toolSteps?: number;
 }
 
 interface TurnRecoveryState {
@@ -142,7 +144,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.app
             );
         }
-        this.hookManager = this.options.hooks ? new AgentHookManager(this.options.hooks, this.hookExecutor) : undefined;
+        this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
     }
 
     async runTurn(
@@ -150,7 +152,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         input: string,
         principalId?: string,
         message?: AgentTurnMessageInput,
-        profile?: string
+        profile?: string,
+        agent?: AgentTurnAgentConfig
     ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
@@ -163,9 +166,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } | null
                 : null;
             if (!handler) {
-                return await this.processTurn({ sessionId, input, principalId, message, profile });
+                return await this.processTurn({ sessionId, input, principalId, message, profile, agent });
             }
-            return await handler.handle({ sessionId, input, principalId, message, profile }, createRunContext(handler.injector ?? this.app));
+            return await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
         } finally {
             this.endTurnAbortScope(sessionId);
             release();
@@ -227,7 +230,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             diagnostics: this.createTurnDiagnostics(),
             evidenceLedger: new EvidenceLedger(input.sessionId),
             recovery: this.createTurnRecovery(),
-            profile: input.profile
+            profile: input.profile,
+            agent: input.agent
         };
         await this.runTurnHooks('beforeTurn', input.sessionId, {
             sessionId: input.sessionId,
@@ -293,7 +297,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         input: string,
         principalId?: string,
         message?: AgentTurnMessageInput,
-        profile?: string
+        profile?: string,
+        agent?: AgentTurnAgentConfig
     ): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
@@ -315,7 +320,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 diagnostics: this.createTurnDiagnostics(),
                 evidenceLedger: new EvidenceLedger(sessionId),
                 recovery: this.createTurnRecovery(),
-                profile
+                profile,
+                agent
             };
             await this.runTurnHooks('beforeTurn', sessionId, {
                 sessionId,
@@ -1675,9 +1681,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         callableTools: AgentToolDefinition[],
         turnContext: TurnExecutionContext
     ): Promise<ToolInvocationResult> {
-        const toolCallInput = this.cloneToolInput(toolCall.input);
-        const inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
-        const baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
+        let toolCallInput = this.cloneToolInput(toolCall.input);
+        let inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
+        let baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
         const callableToolNames = new Set(callableTools.map(tool => tool.name));
         if (!callableToolNames.has(toolCall.name)) {
             const reason = `Tool "${toolCall.name}" is not available for this turn. Activate or expose it before invoking.`;
@@ -1688,6 +1694,29 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 error: reason
             }, reason, { sessionId, reason });
         }
+
+        // A5: per-agent permission matrix (exact tool-name match wins, else default policy).
+        const turnPermission = turnContext.agent?.permissions?.[toolCall.name];
+        if (turnPermission === 'deny') {
+            const reason = `Tool "${toolCall.name}" is denied by the turn permission matrix.`;
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
+        }
+        const maxSteps = turnContext.agent?.maxSteps;
+        if (maxSteps !== undefined && maxSteps > 0 && (turnContext.toolSteps ?? 0) >= maxSteps) {
+            const reason = `Tool "${toolCall.name}" skipped: turn tool-step budget (${maxSteps}) exhausted.`;
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
+        }
+        turnContext.toolSteps = (turnContext.toolSteps ?? 0) + 1;
         const loopResult = loopDetector.record(toolCall.name, toolCallInput);
         if (loopResult.detected && turnContext.recovery) {
             turnContext.recovery.loopPending = true;
@@ -1732,11 +1761,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, activationError.message);
         }
 
-        const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
-        const sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
+const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
+let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
-        if (this.toolApprovalManager) {
-            const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId);
+        if (this.toolApprovalManager && turnPermission !== 'allow') {
+            const forceApproval = turnPermission === 'ask';
+            const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId, forceApproval);
             await this.runTurnHooks('onApproval', sessionId, {
                 sessionId,
                 principalId: turnContext.principalId,
@@ -1780,7 +1810,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
-        await this.runTurnHooks('beforeTool', sessionId, {
+        const beforeToolHookResults = await this.runTurnHooks('beforeTool', sessionId, {
             sessionId,
             principalId: turnContext.principalId,
             workspace: turnContext.workspace,
@@ -1789,6 +1819,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             toolDefinition: definition,
             executionMode
         });
+        const rewrittenToolInput = beforeToolHookResults.find(result => result.input !== undefined)?.input;
+        if (rewrittenToolInput !== undefined) {
+            toolCallInput = this.cloneToolInput(rewrittenToolInput);
+            inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
+            baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
+            sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
+        }
 
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
 
@@ -2120,12 +2157,24 @@ export class DefaultAgentRuntime extends AgentRuntime {
         stage: AgentHookContext['stage'],
         sessionId: string,
         context: AgentHookContext
-    ): Promise<void> {
+    ): Promise<AgentHookExecutionResult[]> {
         if (!this.hookManager?.hasHooks(stage)) {
-            return;
+            return [];
         }
-        const entries = await this.hookManager.run(stage, context);
-        await this.appendHookOutputs(sessionId, entries);
+        const output = await this.hookManager.run(stage, context);
+        await this.appendHookOutputs(sessionId, output.entries);
+        return output.results;
+    }
+
+    override registerHookFunction(
+        stage: AgentLifecycleHookStage,
+        hook: AgentFunctionHookDefinition
+    ): void {
+        this.hookManager?.registerFunction(stage, hook);
+    }
+
+    override unregisterHookFunction(stage: AgentLifecycleHookStage, name?: string): void {
+        this.hookManager?.unregisterFunction(stage, name);
     }
 
     private async appendHookOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {

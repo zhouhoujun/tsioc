@@ -1,5 +1,8 @@
 import { AgentMcpOptions } from '../mcp/types';
 import { AgentAiCliOptions } from '../ai-cli/types';
+import { AgentFormatterOptions } from '@tsdi/agent';
+
+export { AgentFormatterOptions };
 
 export interface WebSearchResult {
     title: string;
@@ -265,6 +268,8 @@ export interface AgentToolsOptions {
     codingTask?: AgentToolsCodingTaskOptions;
     delegation?: AgentToolsDelegationOptions;
     roots?: string[];
+    /** A7: best-effort source formatter run by write tools on matching extensions. */
+    format?: AgentFormatterOptions;
     mcp?: AgentMcpOptions;
     lsp?: AgentToolsLspOptions;
     registration?: AgentToolsRegistrationOptions;
@@ -386,6 +391,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
             }
         },
         roots: (options?.roots ?? []).slice(),
+        format: options?.format
+            ? { ...options.format, extensions: options.format.extensions.slice() }
+            : undefined,
         mcp: options?.mcp ? {
             ...options.mcp,
             servers: (options.mcp.servers ?? []).slice(),

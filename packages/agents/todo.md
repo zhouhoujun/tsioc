@@ -509,8 +509,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 5. **A5 per-agent 权限矩阵**（opencode agent frontmatter `permission`：edit/bash/… allow|ask|deny + `steps`）
    - 落地：`AgentTurnInput` 增加可选 `agent?: { permissions: Record<string, 'allow'|'ask'|'deny'>, maxSteps?: number }`；`performToolInvocation` 定义解析后按工具名/组匹配权限（ask 落入既有审批面）；gateway `run.turn`/`run.turn_stream` 透传。
    - 断言：deny 拒绝、ask 进审批、allow 直过、未匹配继承会话级。
-6. **A6 JS 函数插件**（opencode plugin `tool.execute.before/after`；现状 `AgentHooks` 仅 shell 命令、浏览器 no-op）
-   - 落地：`hooks/AgentHooks.ts` 增加函数式钩子（beforeTool/afterTool/turn 的 `(ctx) => Promise<AgentHookExecutionResult>` 注册器），`runTurnHooks` 先跑函数钩子再跑 shell 钩子；纯 TS，不引入 Node 依赖。
+6. **A6 JS 函数插件**（opencode plugin `tool.execute.before/after`；现状 `AgentHooks` 仅 shell 命令、浏览器 no-op）— ✅ 已完成（2026-08-04，见 P39）
+   - 落地：`hooks/AgentHooks.ts` 增加函数式钩子（beforeTurn/afterTurn/beforeTool/afterTool/onApproval 的 `AgentHookFunction`，返回 `Partial<AgentHookExecutionResult>`，`beforeTool` 可返回 `input` 重写工具输入），`AgentHookManager` 静态收集（`AgentHooksOptions.functions`）+ 动态注册/卸载（`registerFunction`/`unregisterFunction`），`run()` 函数钩子先于 shell 钩子、异常归一为 error 结果不阻断；executor 缺省时函数钩子仍可用（浏览器场景）。
+   - 落地：`AgentRuntime` 增加 `registerHookFunction`/`unregisterHookFunction` 默认空实现；`DefaultAgentRuntime` 委托 hookManager；`runTurnHooks` 改为返回函数钩子结果，`performToolInvocation` 在 beforeTool 钩子后应用 `input` 重写（重算 inputSummary/receipt，A5 权限检查顺序不变）。
+   - 验证：`test/function-hooks.spec.ts` 7 项通过（静态重写/先于 shell/转录/动态注册卸载/异常不阻断/无 executor 可用/重写进 receipt）；agent 包全量 498 passing（491 基线 + 7）；五包回归 agent 498 / agent-tools 240 / agent-gateway 139 / agent-ui 263 / agent-cli 49，全部 `tsc --noEmit` clean。
    - 断言：函数钩子可改写 tool input、afterTool 读 receipt、异常不阻断主流程。
 7. **A7 formatter**（opencode `formatter` 配置，`$FILE` 占位）
    - 落地：`AgentOptions.format?: { command, extensions, env }`；写文件工具（write/edit/apply_patch）成功后可选调用，失败仅告警。
@@ -549,7 +551,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 3. **A4 doom-loop 恢复** + **B2 验证门**（核心机制，直接对应 Self-Harness 循环）— ✅ 已完成（见 P36）
 4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）— ✅ 已完成（见 P37）
 5. **B3 失败模式挖掘** ✅（见 P38） + **B4 Harness Profile** ✅（见 P38，让「优化 Harness」本身进入循证循环）
-6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）
+6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）— ✅ 全部已完成（见 P39）
 
 ### 回归口径
 
@@ -610,3 +612,19 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 文档：本条目；建议执行顺序第 5 项后段标记完成（B4 已完成）。
 
 全量回归：agent 471（459+12）、agent-tools 233、agent-gateway 139（136+3）、agent-ui 263 passing；agent-cli 48 passing（1 条环境失败同 P36/P37 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。
+
+## P39 打磨（已完成）：A5 per-agent 权限 + A6 JS 函数插件 + A7 formatter
+
+1. ~~A5 per-agent 权限矩阵~~ → 已完成（`@tsdi/agent`）：
+   - 落地：`AgentTurnInput` 增加可选 `agent?: { permissions?: Record<string, 'allow'|'ask'|'deny'>, maxSteps?: number }`；`DefaultAgentRuntime.performToolInvocation` 定义解析后按工具名/组匹配权限（`deny` 拒绝、`ask` 落入既有审批面、`allow` 直过、未匹配继承会话级）；gateway `run.turn` / `run.turn_stream` 透传。
+   - 验证：`test/agent-permission.spec.ts` 7 项通过。
+2. ~~A6 JS 函数插件~~ → 已完成（`@tsdi/agent`）：
+   - 落地：`hooks/AgentHooks.ts` 增加函数式钩子（beforeTurn/afterTurn/beforeTool/afterTool/onApproval 的 `AgentHookFunction`，返回 `Partial<AgentHookExecutionResult>`，`beforeTool` 可返回 `input` 重写工具输入），`AgentHookManager` 静态收集（`AgentHooksOptions.functions`）+ 动态注册/卸载（`registerFunction`/`unregisterFunction`），`run()` 函数钩子先于 shell 钩子、异常归一为 error 结果不阻断；executor 缺省时函数钩子仍可用（浏览器场景）。
+   - 落地：`AgentRuntime` 增加 `registerHookFunction`/`unregisterHookFunction` 默认空实现；`DefaultAgentRuntime` 委托 hookManager；`runTurnHooks` 改为返回函数钩子结果，`performToolInvocation` 在 beforeTool 钩子后应用 `input` 重写（重算 inputSummary/receipt，A5 权限检查顺序不变）。
+   - 验证：`test/function-hooks.spec.ts` 7 项通过。
+3. ~~A7 formatter~~ → 已完成（`@tsdi/agent` + `agent-tools`）：
+   - 落地：`AgentOptions.format` 三工具桥接 + settings 配置（见前轮 formatter 全套）。
+   - 验证：`agent-tools/test/formatter.spec.ts` 7 项 + `agent/test/harness-profile.spec.ts` 13 项通过。
+   - 文档：本条目；建议执行顺序第 6 项标记完成。
+
+全量回归（含性能修复：agent-ui 测试耗时 3.157min → 1.168min）：agent 498（491+7 function-hooks）、agent-tools 240（233+7 formatter）、agent-gateway 139、agent-ui 263、agent-cli 49（较 P38 修正 1 条 registry 环境差异）passing；agent / agent-tools / agent-gateway / agent-ui / agent-cli `tsc --noEmit` clean。既有 turn 行为测试（turn-loop / tool-execution / plan-mode / sandbox / undo-redo）语义不变。

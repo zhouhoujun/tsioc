@@ -11,12 +11,36 @@ export interface AgentHookDefinition {
     timeoutMs?: number;
 }
 
+/**
+ * In-process JS function hook handler. Runs without shell spawning (usable in
+ * browser/no-Node environments). A `beforeTool` hook may return `input` to
+ * rewrite the tool input before execution. Fields other than `input` are
+ * normalized by the hook manager (exitCode/stdout/stderr/durationMs default
+ * when omitted).
+ */
+export type AgentHookFunction = (ctx: AgentHookContext) => Partial<AgentHookExecutionResult> | Promise<Partial<AgentHookExecutionResult>>;
+
+export interface AgentFunctionHookDefinition {
+    name?: string;
+    handler: AgentHookFunction;
+}
+
+export interface AgentFunctionHooksOptions {
+    beforeTurn?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    afterTurn?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    beforeTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    afterTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    onApproval?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+}
+
 export interface AgentHooksOptions {
     beforeTurn?: AgentHookDefinition | AgentHookDefinition[];
     afterTurn?: AgentHookDefinition | AgentHookDefinition[];
     beforeTool?: AgentHookDefinition | AgentHookDefinition[];
     afterTool?: AgentHookDefinition | AgentHookDefinition[];
     onApproval?: AgentHookDefinition | AgentHookDefinition[];
+    /** In-process JS function hooks. Run before shell hooks for the same stage. */
+    functions?: AgentFunctionHooksOptions;
 }
 
 export interface AgentHookContext {
@@ -49,6 +73,8 @@ export interface AgentHookExecutionResult {
     stderr: string;
     durationMs: number;
     error?: string;
+    /** beforeTool only: replacement tool input applied before execution. */
+    input?: any;
 }
 
 export interface AgentHookTranscriptEntry {
@@ -58,6 +84,11 @@ export interface AgentHookTranscriptEntry {
     exitCode: number;
     durationMs: number;
     stderr?: string;
+}
+
+export interface AgentHookRunOutput {
+    entries: AgentHookTranscriptEntry[];
+    results: AgentHookExecutionResult[];
 }
 
 @Abstract()
@@ -84,35 +115,146 @@ export class NoopAgentHookCommandExecutor extends AgentHookCommandExecutor {
 }
 
 export class AgentHookManager {
+    private readonly functionHooks: Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition[]>>;
+
     constructor(
         private readonly hooks: AgentHooksOptions | undefined,
         private readonly executor?: AgentHookCommandExecutor | null
     ) {
+        this.functionHooks = this.collectFunctionHooks(this.hooks?.functions);
     }
 
     hasHooks(stage?: AgentLifecycleHookStage): boolean {
-        if (!this.hooks) {
-            return false;
-        }
         if (!stage) {
-            return this.stages().some(name => this.normalizeStageHooks(name).length > 0);
+            return this.stages().some(name => this.normalizeStageHooks(name).length > 0 || this.normalizeFunctionStageHooks(name).length > 0);
         }
-        return this.normalizeStageHooks(stage).length > 0;
+        return this.normalizeStageHooks(stage).length > 0 || this.normalizeFunctionStageHooks(stage).length > 0;
     }
 
-    async run(stage: AgentLifecycleHookStage, context: AgentHookContext): Promise<AgentHookTranscriptEntry[]> {
-        const hooks = this.normalizeStageHooks(stage);
-        if (!hooks.length || !this.executor?.isSupported()) {
-            return [];
-        }
+    async run(stage: AgentLifecycleHookStage, context: AgentHookContext): Promise<AgentHookRunOutput> {
         const entries: AgentHookTranscriptEntry[] = [];
-        for (const hook of hooks) {
+        const results: AgentHookExecutionResult[] = [];
+        const functionHooks = this.normalizeFunctionStageHooks(stage);
+        for (const hook of functionHooks) {
+            const result = await this.runFunctionHook(hook, context);
+            results.push(result);
+            const entry = this.toFunctionTranscriptEntry(stage, hook, result);
+            if (entry) {
+                entries.push(entry);
+            }
+        }
+        if (!this.executor?.isSupported()) {
+            return { entries, results };
+        }
+        for (const hook of this.normalizeStageHooks(stage)) {
             const entry = await this.runHook(stage, hook, context);
             if (entry) {
                 entries.push(entry);
             }
         }
-        return entries;
+        return { entries, results };
+    }
+
+    registerFunction(stage: AgentLifecycleHookStage, hook: AgentFunctionHookDefinition): void {
+        const normalized = this.normalizeFunctionHook(hook);
+        if (!normalized) {
+            return;
+        }
+        const list = this.functionHooks[stage] ?? [];
+        list.push(normalized);
+        this.functionHooks[stage] = list;
+    }
+
+    unregisterFunction(stage: AgentLifecycleHookStage, name?: string): void {
+        const list = this.functionHooks[stage];
+        if (!list?.length) {
+            return;
+        }
+        if (!name) {
+            delete this.functionHooks[stage];
+            return;
+        }
+        this.functionHooks[stage] = list.filter(hook => hook.name !== name);
+    }
+
+    private collectFunctionHooks(functions: AgentFunctionHooksOptions | undefined): Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition[]>> {
+        const collected: Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition[]>> = {};
+        if (!functions) {
+            return collected;
+        }
+        for (const stage of this.stages()) {
+            const value = functions[stage];
+            if (!value) {
+                continue;
+            }
+            const list = (Array.isArray(value) ? value : [value])
+                .map(hook => this.normalizeFunctionHook(hook))
+                .filter((hook): hook is AgentFunctionHookDefinition => !!hook);
+            if (list.length) {
+                collected[stage] = list;
+            }
+        }
+        return collected;
+    }
+
+    private normalizeFunctionStageHooks(stage: AgentLifecycleHookStage): AgentFunctionHookDefinition[] {
+        return this.functionHooks[stage] ?? [];
+    }
+
+    private normalizeFunctionHook(hook: AgentFunctionHookDefinition | undefined | null): AgentFunctionHookDefinition | null {
+        if (!hook || typeof hook !== 'object' || typeof hook.handler !== 'function') {
+            return null;
+        }
+        return {
+            name: String(hook.name || '').trim() || undefined,
+            handler: hook.handler
+        };
+    }
+
+    private async runFunctionHook(hook: AgentFunctionHookDefinition, context: AgentHookContext): Promise<AgentHookExecutionResult> {
+        const startedAt = Date.now();
+        try {
+            const result = await hook.handler(context);
+            const durationMs = typeof result?.durationMs === 'number'
+                ? result.durationMs
+                : Math.max(0, Date.now() - startedAt);
+            return {
+                exitCode: typeof result?.exitCode === 'number' ? result.exitCode : 0,
+                stdout: String(result?.stdout ?? ''),
+                stderr: String(result?.stderr ?? ''),
+                durationMs,
+                ...(result?.error ? { error: result.error } : {}),
+                ...(result?.input !== undefined ? { input: result.input } : {})
+            };
+        } catch (error) {
+            return {
+                exitCode: 1,
+                stdout: '',
+                stderr: error instanceof Error ? error.message : String(error),
+                durationMs: Math.max(0, Date.now() - startedAt),
+                error: error instanceof Error ? error.message : String(error)
+            };
+        }
+    }
+
+    private toFunctionTranscriptEntry(
+        stage: AgentLifecycleHookStage,
+        hook: AgentFunctionHookDefinition,
+        result: AgentHookExecutionResult
+    ): AgentHookTranscriptEntry | null {
+        const stdout = String(result.stdout || '').trim();
+        const error = String(result.error || '').trim();
+        if (!stdout && !error) {
+            return null;
+        }
+        return {
+            stage,
+            name: hook.name ?? 'function',
+            content: this.wrapOutput(stage, hook.name ?? 'function', stdout || error),
+            exitCode: result.exitCode,
+            durationMs: result.durationMs,
+            stderr: error || undefined
+        };
     }
 
     private stages(): AgentLifecycleHookStage[] {

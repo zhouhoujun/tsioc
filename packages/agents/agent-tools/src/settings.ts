@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { AgentToolsOptions } from './options';
+import { AgentToolsOptions, AgentFormatterOptions } from './options';
 import { AgentMcpOptions } from '../mcp/types';
 
 export const DEFAULT_AGENT_ROOT_DIRNAME = '.tsdi-agent';
@@ -17,6 +17,8 @@ export interface AgentRootSettings {
         root?: string;
         values?: string | string[];
         defaultEnabled?: boolean;
+        /** A7: best-effort source formatter for generated edits (write tools only). */
+        format?: AgentFormatterOptions;
     };
     channels?: {
         values?: string | string[];
@@ -119,6 +121,9 @@ export function resolveAgentToolDiscovery(root?: string): ResolvedAgentToolDisco
             file: { rootDir: toolsRoot },
             roots: resolved.toolsRoot ? [toolsRoot] : [],
             ...(settings.mcp ? { mcp: settings.mcp } : {}),
+            ...(settings.tools?.format
+                ? { format: { ...settings.tools.format, extensions: (settings.tools.format.extensions ?? []).slice() } }
+                : {}),
             registration: {
                 preset: settings.tools?.defaultEnabled === false ? 'none' : 'default',
                 groups: {},

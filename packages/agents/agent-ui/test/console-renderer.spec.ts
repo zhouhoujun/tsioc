@@ -742,9 +742,6 @@ export class AgentConsoleRendererTest {
             },
             workers: []
         });
-        await ref.render();
-        await Promise.resolve();
-
         ref.instance.sessionState.selectedReviewHunkIndex = 1;
         ref.instance.sessionState.toggleReviewHunkFold();
         const foldIndex = ref.instance.sessionState.reviewDetailLines.findIndex(line => line.includes('folded hunk'));
@@ -783,13 +780,7 @@ export class AgentConsoleRendererTest {
             },
             workers: []
         });
-        await ref.render();
-        await Promise.resolve();
-
         ref.instance.sessionState.reviewSideBySide = true;
-        await ref.render();
-        await Promise.resolve();
-
         const pairIndex = ref.instance.sessionState.reviewDetailLines.findIndex(line => line.includes('old first'));
         ref.instance.sessionState.reviewDetailScroll = Math.max(0, pairIndex);
         await ref.render();

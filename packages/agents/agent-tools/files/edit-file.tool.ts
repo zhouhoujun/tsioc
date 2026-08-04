@@ -5,6 +5,7 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { readFileSnapshot } from './snapshot';
+import { runFormatter } from './formatter';
 
 @Injectable()
 export class EditFileTool implements AgentTool {
@@ -69,10 +70,14 @@ export class EditFileTool implements AgentTool {
             : content.replace(oldString, newString);
         await fs.writeFile(absolutePath, updated, 'utf8');
 
+        const format = await runFormatter(absolutePath, this.options?.format);
+
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
             replacements: replaceAll ? matches : 1,
-            bytesWritten: Buffer.byteLength(updated, 'utf8')
+            bytesWritten: Buffer.byteLength(updated, 'utf8'),
+            formatted: format.attempted ? format.formatted ?? null : undefined,
+            formatFailure: format.attempted && format.failure ? format.failure : undefined
         };
     }
 

@@ -77,6 +77,21 @@ export interface AgentSandboxOptions {
     networkAllowlist?: string[];
 }
 
+/**
+ * A7: best-effort source formatter applied to generated edits. When a write
+ * tool (write_file / edit_file / apply_patch) lands a change whose file
+ * extension matches `extensions`, the tool runs `command <file>` and ignores
+ * failures (a broken formatter never blocks the write).
+ */
+export interface AgentFormatterOptions {
+    /** Formatter command invoked as `command <filePath>` (e.g. 'prettier', 'npx prettier --write'). */
+    command: string;
+    /** File extensions (with leading dot, e.g. '.ts', '.json') that trigger the formatter. */
+    extensions: string[];
+    /** Extra environment variables for the formatter process. */
+    env?: Record<string, string>;
+}
+
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
@@ -96,6 +111,8 @@ export interface AgentOptions {
     model?: AgentModelOptions;
     bootstrapTurn?: AgentBootstrapTurnOptions;
     sandbox?: AgentSandboxOptions;
+    /** A7: best-effort source formatter for generated edits (write tools only). */
+    format?: AgentFormatterOptions;
     hooks?: AgentHooksOptions;
 }
 

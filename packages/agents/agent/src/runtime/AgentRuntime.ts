@@ -28,7 +28,8 @@ export abstract class AgentRuntime {
         input: string,
         principalId?: string,
         message?: AgentTurnMessageInput,
-        profile?: string
+        profile?: string,
+        agent?: import('./AgentTurnInput').AgentTurnAgentConfig
     ): Promise<AgentTurnResult>;
 
     abstract start(): Promise<void>;
@@ -43,7 +44,8 @@ export abstract class AgentRuntime {
         input: string,
         principalId?: string,
         message?: AgentTurnMessageInput,
-        profile?: string
+        profile?: string,
+        agent?: import('./AgentTurnInput').AgentTurnAgentConfig
     ): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;
@@ -188,5 +190,31 @@ export abstract class AgentRuntime {
      */
     listFileSnapshots(_sessionId: string): FileSnapshot[] {
         return [];
+    }
+
+    /**
+     * Register an in-process JS function hook for a lifecycle stage. Function
+     * hooks run before shell hooks for the same stage, and a `beforeTool`
+     * function hook may return `input` on its result to rewrite the tool input
+     * before execution.
+     * Override this in concrete runtimes that support function hooks.
+     */
+    registerHookFunction(
+        _stage: import('../hooks/AgentHooks').AgentLifecycleHookStage,
+        _hook: import('../hooks/AgentHooks').AgentFunctionHookDefinition
+    ): void {
+        // no-op by default
+    }
+
+    /**
+     * Remove a previously registered function hook. Without a name, all
+     * function hooks for the stage are removed.
+     * Override this in concrete runtimes that support function hooks.
+     */
+    unregisterHookFunction(
+        _stage: import('../hooks/AgentHooks').AgentLifecycleHookStage,
+        _name?: string
+    ): void {
+        // no-op by default
     }
 }

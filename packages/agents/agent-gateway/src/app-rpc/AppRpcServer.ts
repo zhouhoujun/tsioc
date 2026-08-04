@@ -553,17 +553,42 @@ export class AppRpcServer {
         return typeof value === 'string' && value.trim() ? value.trim() : undefined;
     }
 
+    private optionalAgent(value: any): import('@tsdi/agent').AgentTurnAgentConfig | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        const agent: import('@tsdi/agent').AgentTurnAgentConfig = {};
+        const permissions = (value as any).permissions;
+        if (permissions && typeof permissions === 'object' && !Array.isArray(permissions)) {
+            const clean: Record<string, 'allow' | 'ask' | 'deny'> = {};
+            for (const [toolName, level] of Object.entries(permissions as Record<string, unknown>)) {
+                if (level === 'allow' || level === 'ask' || level === 'deny') {
+                    clean[toolName] = level;
+                }
+            }
+            if (Object.keys(clean).length > 0) {
+                agent.permissions = clean;
+            }
+        }
+        const maxSteps = (value as any).maxSteps;
+        if (typeof maxSteps === 'number' && Number.isInteger(maxSteps) && maxSteps > 0) {
+            agent.maxSteps = maxSteps;
+        }
+        return Object.keys(agent).length > 0 ? agent : undefined;
+    }
+
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {
         const message = this.parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn input');
         const profile = this.optionalProfile(params?.profile);
+        const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
-        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message, profile);
+        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message, profile, agent);
         const messages = await this.runtime.getMessages(sessionId);
         return {
             sessionId,
@@ -637,6 +662,7 @@ export class AppRpcServer {
         const message = this.parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn_stream input');
         const profile = this.optionalProfile(params?.profile);
+        const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `rpc-${randomUUID()}`;
@@ -665,7 +691,7 @@ export class AppRpcServer {
         });
 
         try {
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message, profile)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message, profile, agent)) {
                 yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
                 if (chunk.type === 'done') {
                     continue;

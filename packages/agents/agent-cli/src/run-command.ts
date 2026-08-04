@@ -184,7 +184,7 @@ export async function runAgentRpcStdio(
     streams?: { input?: Readable; output?: Writable; principalId?: string; }
 ): Promise<void> {
     const resolved = createConfigService(options).resolve(options);
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format }));
     const input = streams?.input ?? process.stdin;
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
@@ -212,6 +212,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const agentOptions = mergeAgentOptions({
         harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
+        format: resolved.tools.format,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -246,6 +247,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const agentOptions = mergeAgentOptions({
         harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
+        format: resolved.tools.format,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -291,7 +293,7 @@ export async function runAgentJsonStream(
     const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;

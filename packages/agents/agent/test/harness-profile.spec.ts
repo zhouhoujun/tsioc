@@ -147,4 +147,15 @@ export class HarnessProfileTest {
         expect(merged.tools?.requireApproval).toEqual(defaultAgentOptions.tools?.requireApproval);
         expect(merged.harnessProfile).toBeUndefined();
     }
+
+    @Test('snapshot captures format.command and apply restores it')
+    formatterSnapshotsAndApplies() {
+        const profile = snapshotHarnessProfile({ format: { command: 'prettier', extensions: ['.ts'] } });
+        expect(profile.formatter).toEqual('prettier');
+        const overlay = applyHarnessProfile(profile);
+        expect(overlay.format).toEqual({ command: 'prettier', extensions: [] });
+        const merged = mergeAgentOptions({ format: { command: 'prettier', extensions: ['.ts'] } });
+        expect(merged.format?.command).toEqual('prettier');
+        expect(merged.format?.extensions).toEqual(['.ts']);
+    }
 }
