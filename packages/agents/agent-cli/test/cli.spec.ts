@@ -4,8 +4,16 @@ import * as os from 'os';
 import * as path from 'path';
 import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
-import { MemoryStore, SessionStore } from '@tsdi/agent';
+import { ApplicationContext } from '@tsdi/core';
+import { ComponentRef } from '@tsdi/components';
+import { TuiConsoleModule } from '@tsdi/components/console';
+import { MemoryStore, SessionStore, AGENT_OPTIONS, AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentAppServerModule } from '@tsdi/agent-gateway';
+import { provideTools } from '@tsdi/agent-tools';
+import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import {
+    CliAgentUiConfigReader,
     createAgentDoctorReport,
     createAgentCli,
     createAgentUpdatePlan,
@@ -32,6 +40,9 @@ import {
     runAgentPrompt,
     runAgentRpcApplication,
     runAgentUpdate,
+    NodeAgentHookCommandExecutor,
+    createAgentSandboxRuntimeProvider,
+    resolveModelAdapter,
     withAdapterProviders,
     runAgentRpcStdio,
     writeProviderProfile,
@@ -40,8 +51,170 @@ import {
 
 @Suite('Agent CLI')
 export class AgentCliTest {
+    private createFakeTerminalInput(): PassThrough & { isTTY: boolean; readable: boolean; setRawMode(enabled: boolean): void; rawMode: boolean; } {
+        const input = new PassThrough() as PassThrough & { isTTY: boolean; readable: boolean; setRawMode(enabled: boolean): void; rawMode: boolean; };
+        input.isTTY = true;
+        input.readable = true;
+        input.rawMode = false;
+        input.setRawMode = (enabled: boolean) => {
+            input.rawMode = enabled;
+        };
+        return input;
+    }
+
+    private createFakeTerminalOutput(): PassThrough & { isTTY: boolean; columns: number; rows: number; rendered: string; } {
+        const output = new PassThrough() as PassThrough & { isTTY: boolean; columns: number; rows: number; rendered: string; };
+        output.isTTY = true;
+        output.columns = 120;
+        output.rows = 40;
+        output.rendered = '';
+        output.on('data', chunk => {
+            output.rendered += String(chunk);
+        });
+        return output;
+    }
+
     private async createRoot(): Promise<string> {
         return fs.promises.mkdtemp(path.join(os.tmpdir(), 'agent-cli-root-'));
+    }
+
+    private async withHome<T>(home: string, work: () => Promise<T>): Promise<T> {
+        const originalHome = process.env.HOME;
+        process.env.HOME = home;
+        try {
+            return await work();
+        } finally {
+            process.env.HOME = originalHome;
+        }
+    }
+
+    private async withPatchedProcessStdio<T>(
+        input: PassThrough,
+        output: PassThrough,
+        work: () => Promise<T>
+    ): Promise<T> {
+        const stdinDescriptor = Object.getOwnPropertyDescriptor(process, 'stdin');
+        const stdoutDescriptor = Object.getOwnPropertyDescriptor(process, 'stdout');
+        Object.defineProperty(process, 'stdin', {
+            configurable: true,
+            value: input
+        });
+        Object.defineProperty(process, 'stdout', {
+            configurable: true,
+            value: output
+        });
+        try {
+            return await work();
+        } finally {
+            if (stdinDescriptor) {
+                Object.defineProperty(process, 'stdin', stdinDescriptor);
+            }
+            if (stdoutDescriptor) {
+                Object.defineProperty(process, 'stdout', stdoutDescriptor);
+            }
+        }
+    }
+
+    private async waitFor(predicate: () => boolean | Promise<boolean>, timeoutMs = 8000): Promise<void> {
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < timeoutMs) {
+            if (await predicate()) {
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        throw new Error(`Timed out after ${timeoutMs}ms`);
+    }
+
+    private async bootSimulatedChat(
+        options: {
+            workspace: string;
+            provider?: string;
+            model?: string;
+            root?: string;
+        }
+    ): Promise<{
+        ctx: ApplicationContext;
+        component: AgentConsoleComponent;
+        input: PassThrough & { rawMode: boolean };
+        output: PassThrough & { rendered: string };
+        close(): Promise<void>;
+    }> {
+        const input = this.createFakeTerminalInput();
+        const output = this.createFakeTerminalOutput();
+        let ctx!: ApplicationContext;
+        await this.withPatchedProcessStdio(input, output, async () => {
+            const cliOptions = {
+                workspace: options.workspace,
+                provider: options.provider || 'echo',
+                model: options.model || 'echo',
+                ...(options.root ? { root: options.root } : {})
+            };
+            const config = new AgentUiConfigService(new CliAgentUiConfigReader(), cliOptions);
+            const resolved = config.resolve(cliOptions);
+            const modelConfig = resolved.model;
+            const runtimeAgentOptions = mergeAgentOptions({
+                hooks: resolved.hooks,
+                model: {
+                    provider: modelConfig.provider,
+                    model: modelConfig.model,
+                    baseUrl: modelConfig.baseUrl,
+                    apiKey: modelConfig.apiKey,
+                    apiKeyEnv: modelConfig.apiKeyEnv,
+                    timeoutMs: modelConfig.timeoutMs,
+                    temperature: modelConfig.temperature,
+                    maxTokens: modelConfig.maxTokens,
+                    headers: modelConfig.headers,
+                    thinkingBudget: modelConfig.thinkingBudget,
+                    reasoning: modelConfig.reasoning,
+                    defaultProfile: modelConfig.defaultProfile,
+                    profiles: modelConfig.profiles,
+                    routes: modelConfig.routes,
+                    complexityRouting: modelConfig.complexityRouting,
+                    complexityThresholds: modelConfig.complexityThresholds
+                },
+                ui: {
+                    console: {
+                        workspace: resolved.workspace
+                    }
+                }
+            });
+
+            ctx = await runAgentUi(AgentConsoleComponent, {
+                consoleModule: TuiConsoleModule,
+                agentOptions: runtimeAgentOptions,
+                deps: [ServerCommonModule, AgentAppServerModule],
+                providers: [
+                    ...provideAgentOrmStorage(resolved.root),
+                    ...provideTools(resolved.tools),
+                    ...withAdapterProviders(cliOptions),
+                    createAgentSandboxRuntimeProvider(),
+                    resolveModelAdapter(config, cliOptions),
+                    NodeAgentHookCommandExecutor,
+                    { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
+                    { provide: AgentUiConfigService, useValue: config },
+                    { provide: AGENT_OPTIONS, useValue: runtimeAgentOptions }
+                ]
+            });
+            await ctx.get(AgentRuntime).start();
+        });
+
+        const component = (ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>).instance;
+        await this.waitFor(() => component.sessionState.workspace === options.workspace && !!component.sessionState.sessionId);
+
+        return {
+            ctx,
+            component,
+            input,
+            output,
+            close: async () => {
+                await this.withPatchedProcessStdio(input, output, async () => {
+                    await ctx.close();
+                });
+                input.destroy();
+                output.destroy();
+            }
+        };
     }
 
     private pngFixture(): Buffer {
@@ -661,45 +834,47 @@ export class AgentCliTest {
     @Test('uses persistent session and memory stores across cli app restarts')
     async usesPersistentStoresAcrossCliRestarts() {
         const root = await this.createRoot();
-        const first = await runAgentRpcApplication({
-            root,
-            provider: 'echo',
-            model: 'echo'
+        await this.withHome(root, async () => {
+            const first = await runAgentRpcApplication({
+                root,
+                provider: 'echo',
+                model: 'echo'
+            });
+
+            try {
+                const sessions = first.get(SessionStore) as SessionStore;
+                const memory = first.get(MemoryStore) as MemoryStore;
+                await sessions.append('persisted-session', { id: '1', role: 'user', content: 'hello', createdAt: 1 } as any);
+                await memory.put({
+                    id: 'mem-1',
+                    key: 'agent-ui.console.input-history',
+                    value: JSON.stringify(['hello']),
+                    scope: 'global',
+                    metadata: { workspace: '/tmp/workspace', principalId: 'local-system', kind: 'console-input-history' },
+                    createdAt: 1,
+                    updatedAt: 1
+                } as any);
+            } finally {
+                await first.close();
+            }
+
+            const second = await runAgentRpcApplication({
+                root,
+                provider: 'echo',
+                model: 'echo'
+            });
+
+            try {
+                const sessions = second.get(SessionStore) as SessionStore;
+                const memory = second.get(MemoryStore) as MemoryStore;
+                const state = await sessions.get('persisted-session');
+                const records = await memory.getAll('persisted-session');
+                expect(state.messages.map((message: any) => message.content)).toEqual(['hello']);
+                expect(records.some((record: any) => record.key === 'agent-ui.console.input-history')).toBe(true);
+            } finally {
+                await second.close();
+            }
         });
-
-        try {
-            const sessions = first.get(SessionStore) as SessionStore;
-            const memory = first.get(MemoryStore) as MemoryStore;
-            await sessions.append('persisted-session', { id: '1', role: 'user', content: 'hello', createdAt: 1 } as any);
-            await memory.put({
-                id: 'mem-1',
-                key: 'agent-ui.console.input-history',
-                value: JSON.stringify(['hello']),
-                scope: 'global',
-                metadata: { workspace: '/tmp/workspace', principalId: 'local-system', kind: 'console-input-history' },
-                createdAt: 1,
-                updatedAt: 1
-            } as any);
-        } finally {
-            await first.close();
-        }
-
-        const second = await runAgentRpcApplication({
-            root,
-            provider: 'echo',
-            model: 'echo'
-        });
-
-        try {
-            const sessions = second.get(SessionStore) as SessionStore;
-            const memory = second.get(MemoryStore) as MemoryStore;
-            const state = await sessions.get('persisted-session');
-            const records = await memory.getAll('persisted-session');
-            expect(state.messages.map((message: any) => message.content)).toEqual(['hello']);
-            expect(records.some((record: any) => record.key === 'agent-ui.console.input-history')).toBe(true);
-        } finally {
-            await second.close();
-        }
     }
 
     @Test('runs shared rpc stdio server through cli entrypoint')
@@ -710,23 +885,25 @@ export class AgentCliTest {
         output.on('data', chunk => {
             buffer += String(chunk);
         });
+        const root = await this.createRoot();
+        await this.withHome(root, async () => {
+            const running = runAgentRpcStdio({
+                provider: 'echo',
+                model: 'echo'
+            }, {
+                input,
+                output
+            });
 
-        const running = runAgentRpcStdio({
-            provider: 'echo',
-            model: 'echo'
-        }, {
-            input,
-            output
+            input.write('{"jsonrpc":"2.0","id":1,"method":"app.ping"}\n');
+            input.end();
+            await running;
+
+            const response = JSON.parse(buffer.trim());
+            expect(response.jsonrpc).toBe('2.0');
+            expect(response.id).toBe(1);
+            expect(response.result.ok).toBe(true);
         });
-
-        input.write('{"jsonrpc":"2.0","id":1,"method":"app.ping"}\n');
-        input.end();
-        await running;
-
-        const response = JSON.parse(buffer.trim());
-        expect(response.jsonrpc).toBe('2.0');
-        expect(response.id).toBe(1);
-        expect(response.result.ok).toBe(true);
     }
 
     @Test('package main and bin entries point to runnable files')
@@ -739,24 +916,28 @@ export class AgentCliTest {
     @Test('rejects API call without configured key')
     async rejectsApiCallWithoutKey() {
         const root = await this.createRoot();
-        try {
-            await runAgentPrompt('test', { root, session: 'no-key' });
-            expect(false).toBe(true);
-        } catch (error: any) {
-            expect(error.message).toContain('API key');
-        }
+        await this.withHome(root, async () => {
+            try {
+                await runAgentPrompt('test', { root, session: 'no-key' });
+                expect(false).toBe(true);
+            } catch (error: any) {
+                expect(error.message).toContain('API key');
+            }
+        });
     }
 
     @Test('runs a prompt with echo provider without external API configuration')
     async runsPromptWithEchoProvider() {
         const root = await this.createRoot();
-        const output = await runAgentPrompt('hello agent', {
-            root,
-            session: 'echo-run',
-            provider: 'echo',
-            model: 'echo'
+        await this.withHome(root, async () => {
+            const output = await runAgentPrompt('hello agent', {
+                root,
+                session: 'echo-run',
+                provider: 'echo',
+                model: 'echo'
+            });
+            expect(output).toContain('Echo: hello agent');
         });
-        expect(output).toContain('Echo: hello agent');
     }
 
     @Test('run --image persists structured image parts on the user message')
@@ -766,27 +947,28 @@ export class AgentCliTest {
         await fs.promises.mkdir(workspace, { recursive: true });
         const imagePath = path.join(workspace, 'cat.png');
         await fs.promises.writeFile(imagePath, this.pngFixture());
+        await this.withHome(root, async () => {
+            const output = await runAgentPrompt('describe the image', {
+                root,
+                session: 'echo-image',
+                workspace,
+                provider: 'echo',
+                model: 'echo',
+                image: [imagePath]
+            });
+            expect(output).toContain('Echo: describe the image');
 
-        const output = await runAgentPrompt('describe the image', {
-            root,
-            session: 'echo-image',
-            workspace,
-            provider: 'echo',
-            model: 'echo',
-            image: [imagePath]
+            const ctx = await runAgentRpcApplication({ root, workspace }, {});
+            try {
+                const session = await ctx.get(SessionStore).get('echo-image');
+                expect(session.messages[0].content).toBe('describe the image');
+                expect(session.messages[0].parts?.[0]).toEqual({ type: 'text', text: 'describe the image' });
+                expect(session.messages[0].parts?.[1]?.type).toBe('image');
+                expect(String(session.messages[0].parts?.[1]?.imageUrl || '')).toContain('data:image/png;base64,');
+            } finally {
+                await ctx.close();
+            }
         });
-        expect(output).toContain('Echo: describe the image');
-
-        const ctx = await runAgentRpcApplication({ root, workspace }, {});
-        try {
-            const session = await ctx.get(SessionStore).get('echo-image');
-            expect(session.messages[0].content).toBe('describe the image');
-            expect(session.messages[0].parts?.[0]).toEqual({ type: 'text', text: 'describe the image' });
-            expect(session.messages[0].parts?.[1]?.type).toBe('image');
-            expect(String(session.messages[0].parts?.[1]?.imageUrl || '')).toContain('data:image/png;base64,');
-        } finally {
-            await ctx.close();
-        }
     }
 
     @Test('runs a prompt with json event stream output')
@@ -797,23 +979,24 @@ export class AgentCliTest {
         output.on('data', chunk => {
             buffer += String(chunk);
         });
+        await this.withHome(root, async () => {
+            await runAgentJsonStream('hello agent', {
+                root,
+                session: 'echo-json',
+                provider: 'echo',
+                model: 'echo',
+                json: true
+            }, { output });
 
-        await runAgentJsonStream('hello agent', {
-            root,
-            session: 'echo-json',
-            provider: 'echo',
-            model: 'echo',
-            json: true
-        }, { output });
-
-        const events = buffer.trim().split('\n').map(line => JSON.parse(line));
-        expect(events[0].type).toBe('thread.started');
-        expect(events.some(event => event.type === 'turn.started')).toBe(true);
-        expect(events.some(event => event.type === 'item.text.delta' && String(event.delta || '').includes('Echo: hello agent'))).toBe(true);
-        const completed = events.find(event => event.type === 'turn.completed');
-        expect(completed).toBeTruthy();
-        expect(completed.message.content).toContain('Echo: hello agent');
-        expect(events[events.length - 1].type).toBe('thread.completed');
+            const events = buffer.trim().split('\n').map(line => JSON.parse(line));
+            expect(events[0].type).toBe('thread.started');
+            expect(events.some(event => event.type === 'turn.started')).toBe(true);
+            expect(events.some(event => event.type === 'item.text.delta' && String(event.delta || '').includes('Echo: hello agent'))).toBe(true);
+            const completed = events.find(event => event.type === 'turn.completed');
+            expect(completed).toBeTruthy();
+            expect(completed.message.content).toContain('Echo: hello agent');
+            expect(events[events.length - 1].type).toBe('thread.completed');
+        });
     }
 
     @Test('json event stream can append output-last-message compatibility event')
@@ -824,20 +1007,21 @@ export class AgentCliTest {
         output.on('data', chunk => {
             buffer += String(chunk);
         });
+        await this.withHome(root, async () => {
+            await runAgentJsonStream('hello again', {
+                root,
+                session: 'echo-json-last',
+                provider: 'echo',
+                model: 'echo',
+                json: true,
+                outputLastMessage: true
+            }, { output });
 
-        await runAgentJsonStream('hello again', {
-            root,
-            session: 'echo-json-last',
-            provider: 'echo',
-            model: 'echo',
-            json: true,
-            outputLastMessage: true
-        }, { output });
-
-        const events = buffer.trim().split('\n').map(line => JSON.parse(line));
-        const tail = events.find(event => event.type === 'output.last_message');
-        expect(tail).toBeTruthy();
-        expect(tail.content).toContain('Echo: hello again');
+            const events = buffer.trim().split('\n').map(line => JSON.parse(line));
+            const tail = events.find(event => event.type === 'output.last_message');
+            expect(tail).toBeTruthy();
+            expect(tail.content).toContain('Echo: hello again');
+        });
     }
 
     @Test('accepts tool item names without treating them as groups')

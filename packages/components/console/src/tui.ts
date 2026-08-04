@@ -27,7 +27,7 @@ import {
     resolveConsolePlaceholderDisplayValue,
     resolveConsoleSelectWindow
 } from './input';
-import { provideConsoleTerminalLifecycle } from './terminal';
+import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
 import { TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent } from './components';
 
 const ANSI_RESET = '\x1b[0m';
@@ -57,6 +57,7 @@ export interface TuiRenderLayout {
     lines: string[];
     cursorTargets: TuiCursorTarget[];
     regions: TuiRenderRegion[];
+    clickTargets: TerminalClickTarget[];
 }
 
 type TuiRenderRegionDraft = TuiRenderRegion & { element?: ConsoleElement };
@@ -77,15 +78,17 @@ export class TuiRenderer extends ConsoleRenderer {
         const lines: string[] = [];
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
+        const clickTargets: TerminalClickTarget[] = [];
         const width = options.width;
         const visited = new WeakSet<object>();
-        nodes.forEach(current => this.walkTuiNode(current as ConsoleNode, lines, {}, width, cursorTargets, regions, visited));
+        nodes.forEach(current => this.walkTuiNode(current as ConsoleNode, lines, {}, width, cursorTargets, regions, clickTargets, visited));
         while (lines.length && !this.stripAnsi(lines[lines.length - 1]).trim()) {
             lines.pop();
         }
         return {
             lines,
             cursorTargets,
+            clickTargets,
             regions: regions.map(region => ({
                 id: region.id,
                 startRow: region.startRow,
@@ -101,6 +104,7 @@ export class TuiRenderer extends ConsoleRenderer {
         width?: number,
         cursorTargets: TuiCursorTarget[] = [],
         regions: TuiRenderRegionDraft[] = [],
+        clickTargets: TerminalClickTarget[] = [],
         visited: WeakSet<object> = new WeakSet<object>()
     ): void {
         if (current && typeof current === 'object') {
@@ -129,12 +133,23 @@ export class TuiRenderer extends ConsoleRenderer {
         const text = this.collectText(element);
         const regionId = this.resolveRenderRegionId(element);
         const regionStart = regionId ? lines.length : -1;
+        const clickStart = this.hasClickHandler(element) ? lines.length : -1;
         const finishRegion = () => {
             if (!regionId || lines.length <= regionStart) {
                 return;
             }
             const region = { id: regionId, startRow: regionStart, endRow: lines.length };
             regions.push({ ...region, element });
+        };
+        const finishClickTarget = () => {
+            if (clickStart < 0 || lines.length <= clickStart) {
+                return;
+            }
+            clickTargets.push({
+                node: element,
+                startRow: clickStart,
+                endRow: lines.length
+            });
         };
 
         switch (tag) {
@@ -145,6 +160,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     lines.push(...this.renderInlineLines(element, { ...styleMap, 'font-weight': 'bold' }, width));
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             case 'p':
@@ -155,6 +171,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             case 'span':
@@ -164,12 +181,14 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             case 'button':
                 if (text.trim()) {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             case 'select': {
@@ -246,6 +265,7 @@ export class TuiRenderer extends ConsoleRenderer {
                         ...hintStyle
                     }), width));
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             }
@@ -266,6 +286,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const mergedStyle = shellStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(shellStyle)) : styleMap;
                 if (!value && !prompt && !placeholder) {
                     lines.push(this.applyAnsi('', mergedStyle, width));
+                    finishClickTarget();
                     finishRegion();
                     return;
                 }
@@ -284,6 +305,7 @@ export class TuiRenderer extends ConsoleRenderer {
                         ? this.applyAnsi(displayValue, this.mergeStyles(mergedStyle, isPlaceholder ? placeholderStyle : valueStyle), undefined, true)
                         : '';
                     lines.push(`${promptText}${valueText}`);
+                    finishClickTarget();
                     finishRegion();
                     return;
                 }
@@ -306,6 +328,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     ? this.applyAnsi(afterCursor, this.mergeStyles(mergedStyle, isPlaceholder ? placeholderStyle : valueStyle), undefined, true)
                     : '';
                 lines.push(`${promptText}${beforeText}${cursorText}${afterText}`);
+                finishClickTarget();
                 finishRegion();
                 return;
             }
@@ -328,6 +351,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const displayValue = resolveConsolePlaceholderDisplayValue(value, placeholder, focused);
                 if (!displayValue && !prompt) {
                     lines.push(this.applyAnsi('', mergedStyle, width));
+                    finishClickTarget();
                     finishRegion();
                     return;
                 }
@@ -349,11 +373,13 @@ export class TuiRenderer extends ConsoleRenderer {
                     row: lineStart + rendered.cursorRow,
                     column: rendered.cursorColumn
                 });
+                finishClickTarget();
                 finishRegion();
                 return;
             }
             case 'br':
                 lines.push('');
+                finishClickTarget();
                 finishRegion();
                 return;
             case 'section':
@@ -362,9 +388,19 @@ export class TuiRenderer extends ConsoleRenderer {
                 const childLines: string[] = [];
                 const childTargets: TuiCursorTarget[] = [];
                 const childRegions: TuiRenderRegionDraft[] = [];
+                const childClickTargets: TerminalClickTarget[] = [];
                 const childInherited = this.getInheritedStyleMap(styleMap);
                 const hasOwnFrame = this.hasBlockFrame(styleMap, width);
-                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, childLines, childInherited, width, childTargets, childRegions, visited));
+                element.childNodes.forEach(child => this.walkTuiNode(
+                    child as ConsoleNode,
+                    childLines,
+                    childInherited,
+                    width,
+                    childTargets,
+                    childRegions,
+                    childClickTargets,
+                    visited
+                ));
                 const framed = this.renderBlockLines(childLines, styleMap, width);
                 lines.push(...framed);
                 const offset = this.resolveBlockContentOffset(styleMap);
@@ -381,17 +417,39 @@ export class TuiRenderer extends ConsoleRenderer {
                     };
                     regions.push({ ...absolute, element: region.element });
                 });
+                childClickTargets.forEach(target => {
+                    clickTargets.push({
+                        ...target,
+                        startRow: start + offset.row + target.startRow,
+                        endRow: start + offset.row + target.endRow
+                    });
+                });
                 if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
                     lines.push('');
                 }
+                finishClickTarget();
                 finishRegion();
                 return;
             }
             default:
-                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, lines, this.getInheritedStyleMap(styleMap), width, cursorTargets, regions, visited));
+                element.childNodes.forEach(child => this.walkTuiNode(
+                    child as ConsoleNode,
+                    lines,
+                    this.getInheritedStyleMap(styleMap),
+                    width,
+                    cursorTargets,
+                    regions,
+                    clickTargets,
+                    visited
+                ));
+                finishClickTarget();
                 finishRegion();
                 return;
         }
+    }
+
+    protected hasClickHandler(element?: ConsoleElement): boolean {
+        return !!element?.events?.listenerCount?.('click');
     }
 
     protected getInheritedStyleMap(styleMap: Record<string, string>): Record<string, string> {

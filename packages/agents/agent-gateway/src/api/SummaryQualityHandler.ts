@@ -72,34 +72,36 @@ export class SummaryQualityHandler {
     }
 
     private toTrendPoint(point: ReturnType<typeof buildSummaryQualityTrend>[number]): Record<string, any> {
-        return {
-            provider: point.provider,
-            bucketStart: point.bucketStart,
-            recordCount: point.recordCount,
-            avgTotal: point.avgTotal,
-            minTotal: point.minTotal,
-            maxTotal: point.maxTotal,
-            avgFieldCompleteness: point.avgFieldCompleteness,
-            avgAnnotationQuality: point.avgAnnotationQuality,
-            avgLengthBalance: point.avgLengthBalance,
-            avgTruncationScore: point.avgTruncationScore,
-            fallbackRate: point.fallbackRate
-        };
+            return {
+                provider: point.provider,
+                bucketStart: point.bucketStart,
+                recordCount: point.recordCount,
+                avgTotal: point.avgTotal,
+                minTotal: point.minTotal,
+                maxTotal: point.maxTotal,
+                avgFieldCompleteness: point.avgFieldCompleteness,
+                avgAnnotationQuality: point.avgAnnotationQuality,
+                avgLengthBalance: point.avgLengthBalance,
+                avgTruncationScore: point.avgTruncationScore,
+                fallbackRate: point.fallbackRate,
+                avgEvidenceCoverage: point.avgEvidenceCoverage
+            };
     }
 
     private toView(record: SummaryQualityRecord): Record<string, any> {
-        return {
-            id: record.id,
-            provider: record.provider,
-            model: record.model ?? null,
-            total: record.total,
-            fieldCompleteness: record.fieldCompleteness,
-            annotationQuality: record.annotationQuality,
-            lengthBalance: record.lengthBalance,
-            truncationScore: record.truncationScore,
-            fallbackUsed: record.fallbackUsed,
-            summaryLength: record.summaryLength,
-            createdAt: record.createdAt
-        };
+            return {
+                id: record.id,
+                provider: record.provider,
+                model: record.model ?? null,
+                total: record.total,
+                fieldCompleteness: record.fieldCompleteness,
+                annotationQuality: record.annotationQuality,
+                lengthBalance: record.lengthBalance,
+                truncationScore: record.truncationScore,
+                fallbackUsed: record.fallbackUsed,
+                summaryLength: record.summaryLength,
+                evidenceCoverage: record.evidenceCoverage ?? null,
+                createdAt: record.createdAt
+            };
     }
 }

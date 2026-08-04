@@ -23,12 +23,16 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
             provide: AGENT_CONSOLE_APP_RPC,
             useFactory: (rpc: AppRpcServer) => ({
                 request: async (method: string, params?: any, context?: any) => {
+                    const requestContext = {
+                        principalId: 'local-system',
+                        ...(context || {})
+                    };
                     const response = await rpc.handle({
                         jsonrpc: '2.0',
                         id: Date.now(),
                         method,
                         params
-                    }, context);
+                    }, requestContext);
                     if (!response) {
                         return undefined;
                     }
@@ -38,12 +42,16 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
                     return response.result;
                 },
                 stream: async function* (method: string, params?: any, context?: any) {
+                    const requestContext = {
+                        principalId: 'local-system',
+                        ...(context || {})
+                    };
                     for await (const message of rpc.streamPayload({
                         jsonrpc: '2.0',
                         id: Date.now(),
                         method,
                         params
-                    }, context)) {
+                    }, requestContext)) {
                         if ('error' in message) {
                             throw new Error(message.error?.message || 'App RPC stream failed');
                         }

@@ -14,27 +14,26 @@ export class AgentConsoleInputHistoryStore {
     async load(workspace?: string, sessionId?: string): Promise<string[]> {
         const resolvedWorkspace = this.resolveWorkspaceKey(workspace);
         const rawWorkspace = String(workspace || '').trim() || 'default';
-        const resolvedSessionId = String(sessionId || '').trim();
         if (this.appRpc) {
             const result = await this.appRpc.request('app.inputHistory.get', {
-                workspace: resolvedWorkspace,
-                sessionId: resolvedSessionId || undefined
+                workspace: resolvedWorkspace
             });
             return this.normalizeEntries(result);
         }
         if (!this.memory) {
             return [];
         }
-        const record = (await this.memory.getAll(resolvedSessionId || undefined))
+        const records = (await this.memory.getAll(undefined))
             .filter(item => item.scope === 'global'
                 && item.key === AgentConsoleInputHistoryStore.HISTORY_KEY
-                && (item.metadata?.workspace === resolvedWorkspace || item.metadata?.workspace === rawWorkspace)
-                && String(item.metadata?.sessionId || '').trim() === resolvedSessionId)
-            .sort((left, right) => (right.updatedAt || right.createdAt || 0) - (left.updatedAt || left.createdAt || 0))[0];
-        if (!record) {
-            return [];
-        }
-        return this.parseEntries(record.value);
+                && (item.metadata?.workspace === resolvedWorkspace || item.metadata?.workspace === rawWorkspace))
+            .map((item, index) => ({ item, index }))
+            .sort((left, right) => {
+                const timeDelta = (right.item.updatedAt || right.item.createdAt || 0) - (left.item.updatedAt || left.item.createdAt || 0);
+                return timeDelta !== 0 ? timeDelta : right.index - left.index;
+            })
+            .map(entry => entry.item);
+        return this.mergeEntries(records.map(record => this.parseEntries(record.value)));
     }
 
     async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
@@ -100,5 +99,22 @@ export class AgentConsoleInputHistoryStore {
             .map((entry: any) => String(entry || '').trim())
             .filter(Boolean)))
             .slice(0, 200);
+    }
+
+    protected mergeEntries(groups: string[][]): string[] {
+        const merged: string[] = [];
+        const seen = new Set<string>();
+        for (const group of groups) {
+            for (const entry of group) {
+                if (!seen.has(entry)) {
+                    seen.add(entry);
+                    merged.push(entry);
+                }
+                if (merged.length >= 200) {
+                    return merged;
+                }
+            }
+        }
+        return merged;
     }
 }

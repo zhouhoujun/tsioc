@@ -7,6 +7,7 @@ import {
     DivDirective,
     formatConsoleIndexedOptionLabel,
     LabelComponent,
+    PanelComponent,
     resolveConsoleListWindow,
     SpanDirective,
     TuiSelectComponent,
@@ -2230,7 +2231,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messageLabels(): string[] {
-        return this.renderedMessageItems.flatMap(item => item.lines).map(line =>
+        return this.renderedLines.map(line =>
             `${line.status || ''}${line.role || ''}${line.prefix || ''}${line.content}`
         );
     }
@@ -2249,12 +2250,12 @@ export class AgentConsoleMessagesPanelComponent {
             return;
         }
         const sameMessageSelected = this.state.selectedMessageId === messageId;
-        this.state.setSelectedMessageId(messageId);
-        if (!line?.previewCollapsed) {
-            return;
-        }
         if (sameMessageSelected && this.state.messageDetailOpen) {
             this.state.closeMessageDetail();
+            return;
+        }
+        this.state.setSelectedMessageId(messageId);
+        if (!line?.previewCollapsed) {
             return;
         }
         this.state.openMessageDetail();
@@ -2274,7 +2275,7 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length + 1;
         const baseLine = lines[lines.length - 1];
-        const previewText = `… ${hiddenCount} more lines. click to view`;
+        const previewText = `… ${hiddenCount} more lines. /messages + Enter to view`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             cursor: 'pointer',
@@ -2332,15 +2333,15 @@ export class AgentConsoleMessagesPanelComponent {
 
 @Component({
     selector: 'agent-console-message-detail-panel',
-    imports: CONSOLE_BASE_IMPORTS,
+    imports: [PanelComponent],
     template: `
-    <div class="console-panel console-message-detail-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{detailSummaryLabel}}</label>
-        <label v-style="hintStyle">{{detailHintLabel}}</label>
-        <label v-style="detailLineStyleAt(index)" v-for="index in detailIndexes">
-            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span v-style="detailLinePrefixStyleAt(index)" v-show="detailLinePrefixAt(index)">{{detailLinePrefixAt(index)}}</span><span v-style="detailLineContentStyleAt(index)">{{detailLineContentAt(index)}}</span>
-        </label>
-    </div>
+    <panel
+        :summary="detailSummaryLabel"
+        :hint="detailHintLabel"
+        :detailLines="detailLines"
+        :visibleLines="state.consoleOptions.messageDetailVisibleLines"
+        :expanded="state.messageDetailOpen"
+        @expandedChange="onExpandedChange"></panel>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {
@@ -2399,6 +2400,15 @@ export class AgentConsoleMessageDetailPanelComponent {
         return lines.slice(start, start + this.state.consoleOptions.messageDetailVisibleLines);
     }
 
+    get detailLines(): string[] {
+        return this.detailIndexes.map(index => {
+            const lineNumber = this.detailLineNumberAt(index);
+            const prefix = this.detailLinePrefixAt(index);
+            const content = this.detailLineContentAt(index);
+            return `${lineNumber}${prefix}${content}`.trimEnd();
+        }).filter(line => !!String(line || '').trim());
+    }
+
     get detailSummaryLabel(): string {
         if (!this.shouldShow || !this.selectedMessage) {
             return '';
@@ -2425,6 +2435,14 @@ export class AgentConsoleMessageDetailPanelComponent {
 
     get detailIndexes(): number[] {
         return Array.from({ length: this.state.consoleOptions.messageDetailVisibleLines }, (_value, index) => index);
+    }
+
+    onExpandedChange(expanded: boolean): void {
+        if (expanded) {
+            this.state.openMessageDetail();
+            return;
+        }
+        this.state.closeMessageDetail();
     }
 
     detailLineNumberAt(index: number): string {

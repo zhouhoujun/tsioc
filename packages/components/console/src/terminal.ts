@@ -68,6 +68,12 @@ export interface SelectMenuMouseEvent {
     release: boolean;
 }
 
+export interface TerminalClickTarget {
+    node: ConsoleNode;
+    startRow: number;
+    endRow: number;
+}
+
 export interface TerminalToolRunItem {
     name: string;
     status: 'running' | 'success' | 'error';
@@ -216,6 +222,7 @@ export interface TuiTerminalSurfaceRenderer {
         lines: string[];
         cursorTargets?: TerminalCursorTarget[];
         regions?: TerminalRenderRegion[];
+        clickTargets?: TerminalClickTarget[];
     };
 }
 
@@ -278,6 +285,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
 export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
+    abstract dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean;
+    abstract writeTerminalClipboardText(text: string): boolean;
 }
 
 export class ConsoleTerminalInputController {
@@ -417,6 +426,18 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.getLastRenderedLines().map(line => stripAnsiValue(line)).join('\n').trim();
     }
 
+    dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean {
+        return this.surface?.dispatchMouse(mouse) ?? false;
+    }
+
+    writeTerminalClipboardText(text: string): boolean {
+        if (!text || !this.output?.isTTY || typeof this.output.write !== 'function') {
+            return false;
+        }
+        this.output.write(buildOsc52ClipboardSequence(text));
+        return true;
+    }
+
     protected prepare(): void {
         if (!this.output?.isTTY) {
             return;
@@ -424,6 +445,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.useAlternateScreen) {
             this.output.write('\x1b[?1049h');
         }
+        this.output.write('\x1b[?1000h\x1b[?1006h');
         this.output.write(buildClearScreenSequence(false));
     }
 
@@ -460,6 +482,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             this.attachTimer = undefined;
         }
         if (this.output?.isTTY) {
+            this.output.write('\x1b[?1000l\x1b[?1006l');
             this.output.write(buildTerminalCleanupSequence({
                 reset: '\x1b[0m',
                 alternateScreen: this.useAlternateScreen,
@@ -533,6 +556,7 @@ export class TuiTerminalSurface {
     protected outputResizeListener?: () => void;
     protected renderedLines: string[] = [];
     protected terminalRow = 0;
+    protected clickTargets: TerminalClickTarget[] = [];
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -573,6 +597,7 @@ export class TuiTerminalSurface {
         this.renderState = undefined;
         this.renderedLines = [];
         this.terminalRow = 0;
+        this.clickTargets = [];
         this.scheduled = false;
     }
 
@@ -599,6 +624,7 @@ export class TuiTerminalSurface {
         const width = this.resolveWidth();
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width });
         const lines = layout.lines || [];
+        this.clickTargets = (layout.clickTargets || []).slice();
         const cursorTarget = layout.cursorTargets?.[0];
         const cursorMode = this.resolveCursorMode();
         const cursorRow = cursorMode === 'prompt' && cursorTarget
@@ -622,6 +648,23 @@ export class TuiTerminalSurface {
             this.resolveOutput()?.write(result.output);
         }
         return result;
+    }
+
+    dispatchMouse(mouse: SelectMenuMouseEvent): boolean {
+        if (!this.isPrimaryMouseRelease(mouse)) {
+            return false;
+        }
+        return this.dispatchClickAt(mouse.y - 1);
+    }
+
+    dispatchClickAt(row: number): boolean {
+        const safeRow = Math.max(0, Math.floor(row));
+        const target = this.clickTargets.find(item => safeRow >= item.startRow && safeRow < item.endRow);
+        if (!target?.node?.dispatchEvent) {
+            return false;
+        }
+        target.node.dispatchEvent({ type: 'click' } as Event);
+        return true;
     }
 
     destroy(): void {
@@ -694,6 +737,15 @@ export class TuiTerminalSurface {
         }
         output.off('resize', this.outputResizeListener);
         this.outputResizeListener = undefined;
+    }
+
+    protected isPrimaryMouseRelease(mouse?: SelectMenuMouseEvent): boolean {
+        if (!mouse?.release) {
+            return false;
+        }
+        const button = Math.max(0, Math.floor(mouse.button || 0));
+        const motionOrWheelMask = 0b1100000;
+        return (button & motionOrWheelMask) === 0 && (button & 0b11) === 0;
     }
 }
 
@@ -794,6 +846,7 @@ export type TerminalInputControlKey =
 export interface TerminalInputSequenceResult {
     text: string;
     controlKey?: TerminalInputControlKey;
+    mouse?: SelectMenuMouseEvent;
     partial: boolean;
 }
 
@@ -927,7 +980,11 @@ export function parseTerminalInputControlKey(input: ConsoleTextChunk): TerminalI
 }
 
 function isPartialTerminalInputSequence(text: string): boolean {
-    return text === '\u001b' || text === '\u001b[' || text === '\u001bO' || /^\u001b\[[0-9;]*$/.test(text);
+    return text === '\u001b'
+        || text === '\u001b['
+        || text === '\u001bO'
+        || /^\u001b\[[0-9;]*$/.test(text)
+        || /^\u001b\[<[\d;]*$/.test(text);
 }
 
 export class TerminalInputSequenceDecoder {
@@ -936,6 +993,11 @@ export class TerminalInputSequenceDecoder {
     decode(input: ConsoleTextChunk): TerminalInputSequenceResult {
         const next = decodeConsoleTextChunk(input);
         const text = `${this.pending}${next}`;
+        const mouse = parseTerminalMouseEvent(text);
+        if (mouse) {
+            this.pending = '';
+            return { text, mouse, partial: false };
+        }
         const controlKey = parseTerminalInputControlKey(text);
         if (controlKey && !(controlKey === 'escape' && isPartialTerminalInputSequence(text))) {
             this.pending = '';

@@ -421,8 +421,128 @@ export class AgentConsoleRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 5 more lines. click to view'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 5 more lines. /messages + Enter to view'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
+    }
+
+    @Test('opens truncated message detail from terminal mouse click')
+    async opensTruncatedMessageDetailFromTerminalMouseClick() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+
+            consoleRef.instance.sessionState.setMessages([{
+                id: 'a1',
+                role: 'assistant',
+                content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
+                createdAt: 1
+            } as any]);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 80,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const previewRow = surface.lastRenderedLines.findIndex(line => line.includes('/messages + Enter to view'));
+            expect(previewRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: previewRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
+            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
+            expect(surface.lastRenderedLines.some(line => line.includes('/messages + Enter to view'))).toBe(false);
+            const expandedRow = surface.lastRenderedLines.findIndex(line => line.includes('line 12'));
+            expect(expandedRow).toBeGreaterThanOrEqual(0);
+
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: expandedRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('/messages + Enter to view'))).toBe(true);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('copies truncated message detail text from terminal copy action')
+    async copiesTruncatedMessageDetailTextFromTerminalCopyAction() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const copied: Array<{ text: string; label: string }> = [];
+            consoleRef.instance.sessionState.copyFocusedTextAction = async (text, label) => {
+                copied.push({ text, label });
+            };
+
+            consoleRef.instance.sessionState.setMessages([{
+                id: 'a1',
+                role: 'assistant',
+                content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
+                createdAt: 1
+            } as any]);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 80,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const previewRow = surface.lastRenderedLines.findIndex(line => line.includes('/messages + Enter to view'));
+            expect(previewRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: previewRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(await consoleRef.instance.sessionState.handleFocusKey('copy')).toBe(true);
+            expect(copied).toEqual([{
+                text: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
+                label: 'selected message'
+            }]);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
     }
 
     @Test('keeps the latest substantive user request visible while showing latest messages when unfocused')

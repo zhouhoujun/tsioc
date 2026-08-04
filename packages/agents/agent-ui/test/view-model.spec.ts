@@ -1081,11 +1081,23 @@ class InputHistoryStoreStub extends AgentConsoleInputHistoryStore {
     override async load(workspace?: string, sessionId?: string): Promise<string[]> {
         this.workspaces.push(String(workspace || ''));
         this.sessionIds.push(String(sessionId || ''));
-        const scoped = this.entriesByScope.get(this.scopeKey(workspace, sessionId));
-        if (scoped) {
-            return scoped.slice();
+        if (this.entriesByScope.size) {
+            const merged: string[] = [];
+            const seen = new Set<string>();
+            const records = Array.from(this.entriesByScope.entries())
+                .filter(([key]) => key.startsWith(`${String(workspace || '')}::`))
+                .reverse();
+            for (const [, values] of records) {
+                for (const entry of values) {
+                    if (!seen.has(entry)) {
+                        seen.add(entry);
+                        merged.push(entry);
+                    }
+                }
+            }
+            return merged;
         }
-        return this.entriesByScope.size ? [] : this.entries.slice();
+        return this.entries.slice();
     }
 
     override async save(entries: string[], workspace?: string, sessionId?: string): Promise<void> {
@@ -1098,6 +1110,7 @@ class InputHistoryStoreStub extends AgentConsoleInputHistoryStore {
         this.workspaces.push(String(workspace || ''));
         this.sessionIds.push(String(sessionId || ''));
         this.entries = next;
+        this.entriesByScope.delete(this.scopeKey(workspace, sessionId));
         this.entriesByScope.set(this.scopeKey(workspace, sessionId), next);
     }
 }
@@ -1842,12 +1855,13 @@ export class AgentConsoleComponentTest {
         expect(component.title).toEqual('Rpc Console');
     }
 
-    @Test('loads persisted input history on init')
+    @Test('loads persisted input history on init and filters pure commands for selection')
     async loadsPersistedInputHistoryOnInit() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const historyStore = new InputHistoryStoreStub();
-        historyStore.entries = ['second', '/help', 'first'];
+        historyStore.setScopedEntries('/tmp/workspace-b', 'chat-a', ['first']);
+        historyStore.setScopedEntries('/tmp/workspace-b', 'chat-b', ['second', '/help']);
         const { component, state } = createConsoleParts(
             runtime,
             scheduler,
@@ -1863,25 +1877,50 @@ export class AgentConsoleComponentTest {
 
         await component.onInit();
 
-        expect(state.getInputHistoryEntries()).toEqual(['second', '/help', 'first']);
+        expect(state.getInputHistoryEntries()).toEqual(['second', 'first']);
         expect(historyStore.workspaces[0]).toEqual('/tmp/workspace-b');
-        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(historyStore.sessionIds[0]).toEqual('');
+        state.setInput('draft', 5);
+        const inputPanel = new AgentConsoleInputPanelComponent(state);
+        const inputField = {
+            value: 'draft',
+            selectionStart: 5,
+            selectionEnd: 5,
+            setSelectionRange(start: number, end: number) {
+                this.selectionStart = start;
+                this.selectionEnd = end;
+            },
+            focus() {
+            }
+        } as any;
+        let prevented = false;
+        await inputPanel.onKeydown({
+            key: 'ArrowUp',
+            target: inputField,
+            preventDefault() {
+                prevented = true;
+            }
+        } as any);
+        expect(prevented).toEqual(true);
         expect(state.input).toEqual('second');
+        expect(inputField.value).toEqual('second');
+        expect(inputField.selectionStart).toEqual('second'.length);
+        expect(inputField.selectionEnd).toEqual('second'.length);
         expect(state.navigateInputHistory(-1)).toEqual(true);
         expect(state.input).toEqual('first');
     }
 
-    @Test('input history store keeps local memory entries isolated per session')
-    async inputHistoryStoreKeepsLocalMemoryEntriesIsolatedPerSession() {
+    @Test('input history store aggregates local memory entries across workspace sessions')
+    async inputHistoryStoreAggregatesLocalMemoryEntriesAcrossWorkspaceSessions() {
         const memory = new InMemoryMemoryStore();
         const store = new AgentConsoleInputHistoryStore(undefined, memory as any);
 
-        await store.save(['session-a'], '/tmp/shared-workspace', 'chat-a');
-        await store.save(['session-b'], '/tmp/shared-workspace', 'chat-b');
+        await store.save(['session-a', '/help'], '/tmp/shared-workspace', 'chat-a');
+        await store.save(['session-b', 'session-a'], '/tmp/shared-workspace', 'chat-b');
 
-        expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-a']);
-        expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b']);
-        expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual([]);
+        expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-b', 'session-a', '/help']);
+        expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b', 'session-a', '/help']);
+        expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual(['session-b', 'session-a', '/help']);
     }
 
     @Test('input history store normalizes Windows workspace variants')
@@ -2592,8 +2631,8 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-c']);
     }
 
-    @Test('openSession persists and restores session-scoped input history')
-    async openSessionPersistsAndRestoresSessionScopedInputHistory() {
+    @Test('openSession persists current input history and reloads workspace history choices')
+    async openSessionPersistsCurrentInputHistoryAndReloadsWorkspaceHistoryChoices() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const sessionService = new SessionServiceStub(runtime);
@@ -2623,16 +2662,19 @@ export class AgentConsoleComponentTest {
         await (component as any).openSession('chat-b');
 
         expect(component.sessionId).toEqual('chat-b');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-b']);
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-a', 'history-b']);
         expect(historyStore.saveCalls[0]).toEqual(['history-a']);
         expect(historyStore.sessionIds[0]).toEqual('chat-a');
+        expect(historyStore.workspaces[1]).toEqual('/tmp/workspace-history');
+        expect(historyStore.sessionIds[1]).toEqual('');
 
         await (component as any).openSession('chat-c');
 
         expect(component.sessionId).toEqual('chat-c');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual([]);
-        expect(historyStore.saveCalls[1]).toEqual(['history-b']);
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-a', 'history-b']);
+        expect(historyStore.saveCalls[1]).toEqual(['history-a', 'history-b']);
         expect(historyStore.sessionIds[2]).toEqual('chat-b');
+        expect(historyStore.sessionIds[3]).toEqual('');
     }
 
     @Test('openSession ignores stale switches blocked behind history persistence')
@@ -2824,6 +2866,7 @@ export class AgentConsoleComponentTest {
             avgLengthBalance: 90,
             avgTruncationScore: 88,
             fallbackRate: 8.3,
+            avgEvidenceCoverage: 67.5,
             timeRange: { from: 1720000000000, to: 1720086400000 }
         }];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
@@ -2835,6 +2878,7 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'summary_quality.stats' && call.params?.provider === 'deepseek')).toEqual(true);
         expect(component.notice).toContain('deepseek');
         expect(component.notice).toContain('12');
+        expect(component.notice).toContain('evidence 67.5%');
     }
 
     @Test('usage command shows token and turn aggregates through rpc')
@@ -2891,6 +2935,7 @@ export class AgentConsoleComponentTest {
             lengthBalance: 100,
             truncationScore: 100,
             fallbackUsed: false,
+            evidenceCoverage: 88.5,
             summaryLength: 230,
             createdAt: 1720000000000
         }];
@@ -2905,6 +2950,7 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.selectMenu?.title).toEqual('Summary quality records (deepseek)');
         expect(component.sessionState.selectMenu?.options[0].label).toContain('deepseek-v4-flash');
         expect(component.sessionState.selectMenu?.options[0].label).toContain('92');
+        expect(component.sessionState.selectMenu?.options[0].description).toContain('evidence 88.5%');
 
         await component.sessionState.cancelSelectMenu();
         await pending;
@@ -2932,8 +2978,8 @@ export class AgentConsoleComponentTest {
         const scheduler = new SchedulerStub();
         const appRpc = new AppRpcStub();
         appRpc.summaryQualityAggregates = [
-            { provider: 'deepseek', recordCount: 12, avgTotal: 84.2, fallbackRate: 8.3, timeRange: {} },
-            { provider: 'anthropic', recordCount: 3, avgTotal: 71, fallbackRate: 33.3, timeRange: {} }
+            { provider: 'deepseek', recordCount: 12, avgTotal: 84.2, fallbackRate: 8.3, avgEvidenceCoverage: 70, timeRange: {} },
+            { provider: 'anthropic', recordCount: 3, avgTotal: 71, fallbackRate: 33.3, avgEvidenceCoverage: 55, timeRange: {} }
         ];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
         await component.onInit();
@@ -2943,6 +2989,7 @@ export class AgentConsoleComponentTest {
 
         expect(component.notice).toContain('deepseek');
         expect(component.notice).toContain('anthropic');
+        expect(component.notice).toContain('evidence');
     }
 
     @Test('quality trend command renders sparkline through rpc')
@@ -2952,8 +2999,8 @@ export class AgentConsoleComponentTest {
         const appRpc = new AppRpcStub();
         const day = 24 * 60 * 60 * 1000;
         appRpc.summaryQualityTrend = [
-            { provider: 'deepseek', bucketStart: 0, recordCount: 2, avgTotal: 75, minTotal: 60, maxTotal: 90, fallbackRate: 50 },
-            { provider: 'deepseek', bucketStart: day, recordCount: 1, avgTotal: 90, minTotal: 90, maxTotal: 90, fallbackRate: 0 }
+            { provider: 'deepseek', bucketStart: 0, recordCount: 2, avgTotal: 75, minTotal: 60, maxTotal: 90, fallbackRate: 50, avgEvidenceCoverage: 40 },
+            { provider: 'deepseek', bucketStart: day, recordCount: 1, avgTotal: 90, minTotal: 90, maxTotal: 90, fallbackRate: 0, avgEvidenceCoverage: 100 }
         ];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
         await component.onInit();
@@ -2966,6 +3013,7 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('▇');
         expect(component.notice).toContain('█');
         expect(component.notice).toContain('avg 82.5');
+        expect(component.notice).toContain('evidence 70.0%');
     }
 
     @Test('quality trend command reports empty trend')
@@ -4883,6 +4931,57 @@ export class AgentConsoleComponentTest {
         );
         expect(component.input).toEqual('second');
         expect(component.inputCursor).toEqual('second'.length);
+    }
+
+    @Test('terminal input routes mouse events to the terminal surface accessor')
+    async terminalInputRoutesMouseEventsToSurfaceAccessor() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        const mouse = { button: 0, x: 4, y: 12, release: true };
+        const handled: any[] = [];
+
+        (component as any).surfaceAccessor = {
+            dispatchTerminalMouse(event: any) {
+                handled.push(event);
+                return true;
+            }
+        };
+
+        await component.onInit();
+        component.input = 'draft';
+        await (component as any).handleTerminalInput(
+            { text: '\u001b[<0;4;12m', mouse, partial: false },
+            '\u001b[<0;4;12m'
+        );
+
+        expect(handled).toEqual([mouse]);
+        expect(component.input).toEqual('draft');
+    }
+
+    @Test('copy action writes terminal clipboard sequence through the surface accessor')
+    async copyActionWritesTerminalClipboardSequenceThroughSurfaceAccessor() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        const written: string[] = [];
+
+        (component as any).surfaceAccessor = {
+            dispatchTerminalMouse() {
+                return false;
+            },
+            writeTerminalClipboardText(text: string) {
+                written.push(text);
+                return true;
+            }
+        };
+
+        await component.onInit();
+        const handler = (component as any).copyFocusedTextActionHandler;
+        await handler('hello world', 'selected message');
+
+        expect(written).toEqual(['hello world']);
+        expect(component.notice).toEqual('Copied selected message.');
     }
 
     @Test('input panel closes normal select menus with q and escape')
@@ -7029,6 +7128,49 @@ export class AgentConsoleComponentTest {
         state.setMessagesFocused(true);
         expect(await state.handleFocusKey('enter')).toEqual(true);
         expect(state.messageDetailOpen).toEqual(true);
+    }
+
+    @Test('session state copies selected message content when messages are focused')
+    async sessionStateCopiesSelectedMessageContentWhenMessagesFocused() {
+        const state = new AgentConsoleSessionState();
+        const copied: Array<{ text: string; label: string }> = [];
+        state.copyFocusedTextAction = async (text, label) => {
+            copied.push({ text, label });
+        };
+        state.setMessages([
+            {
+                id: 'm1',
+                role: 'assistant',
+                content: 'line1\nline2',
+                createdAt: 1
+            } as any
+        ]);
+
+        state.setMessagesFocused(true);
+        expect(await state.handleFocusKey('copy')).toEqual(true);
+        expect(copied).toEqual([{ text: 'line1\nline2', label: 'selected message' }]);
+    }
+
+    @Test('session state copies selected message content from message detail')
+    async sessionStateCopiesSelectedMessageContentFromMessageDetail() {
+        const state = new AgentConsoleSessionState();
+        const copied: Array<{ text: string; label: string }> = [];
+        state.copyFocusedTextAction = async (text, label) => {
+            copied.push({ text, label });
+        };
+        state.setMessages([
+            {
+                id: 'm1',
+                role: 'assistant',
+                content: 'line1\nline2\nline3',
+                createdAt: 1
+            } as any
+        ]);
+
+        state.setMessagesFocused(true);
+        state.openMessageDetail();
+        expect(await state.handleFocusKey('copy')).toEqual(true);
+        expect(copied).toEqual([{ text: 'line1\nline2\nline3', label: 'selected message' }]);
     }
 
     @Test('session state supports paged message navigation and detail edges')

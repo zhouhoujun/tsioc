@@ -55,6 +55,7 @@ export const COMPONENTDEF = Symbol('__COMPONENTDEF');
 export const CUSTOM_ELEMENTS = Symbol('__CUSTOM_ELEMENTS');
 export const LOCAL_REFS = Symbol('__LOCAL_REFS');
 export const TEMPLATE_FACTORY = Symbol('__TEMPLATE_FACTORY');
+export const PROJECTION_NODES = Symbol('__PROJECTION_NODES');
 
 /**
  * A node in the DOM tree.

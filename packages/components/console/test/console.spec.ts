@@ -8,6 +8,7 @@ import {
     composePrimaryTerminalScreen,
     ConsoleElement,
     ConsoleRenderer,
+    ConsoleTerminalSurfaceLifecycleService,
     ConsoleTemplateModule,
     ConsoleText,
     renderPanel,
@@ -21,6 +22,7 @@ import {
     windowRenderedBlocksFromBottomWithContext,
     buildOsc52ClipboardSequence,
     getDisplayWidth,
+    PanelComponent,
     sliceByDisplayWidth,
     parseTerminalInputControlKey,
     parseTerminalTextPromptChunk,
@@ -183,6 +185,23 @@ class ConsoleStableRegionTestComponent {
     `
 })
 class ConsolePanelTestComponent {
+}
+
+@Component({
+    selector: 'console-fold-panel-test',
+    imports: [PanelComponent],
+    template: `
+    <section>
+        <panel
+            :summary="summary"
+            :detailLines="detailLines"
+            :visibleLines="2"></panel>
+    </section>
+    `
+})
+class ConsoleFoldPanelTestComponent {
+    summary = 'Preview';
+    detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
 }
 
 @Component({
@@ -572,6 +591,26 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('removes stale v-for views when the collection shrinks')
+    async removesStaleVForViewsWhenCollectionShrinks() {
+        const ctx = await Application.run(ConsoleLoopUpdateTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopUpdateTestComponent) as ComponentRef<ConsoleLoopUpdateTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['› hi', '…']);
+
+            ref.instance.items = [{ label: '› hi' }];
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['› hi']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('preserves inline padding in tui renderer')
     async preservesInlinePaddingInTuiRenderer() {
         const ctx = await Application.run(ConsoleInlinePaddingTestComponent, {
@@ -690,6 +729,63 @@ export class ConsoleRendererTest {
         expect(renderPanel('Tasks', ['hidden'], 24, 2, {
             footerLines: ['footer one', 'footer two']
         })).toEqual(['Tasks', 'footer one', 'footer two']);
+    }
+
+    @Test('toggles panel summary and detail through tui renderer')
+    async togglesPanelSummaryAndDetailThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleFoldPanelTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleFoldPanelTestComponent) as ComponentRef<ConsoleFoldPanelTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 48,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.join('\n')).toContain('Preview');
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 1');
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 2');
+            expect(surface.lastRenderedLines.join('\n')).toContain('… 2 more lines');
+            expect(surface.lastRenderedLines.join('\n')).not.toContain('line 4');
+
+            const summaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
+            expect(summaryRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: summaryRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 4');
+            expect(surface.lastRenderedLines.join('\n')).not.toContain('… 2 more lines');
+
+            const expandedSummaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: expandedSummaryRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.join('\n')).toContain('… 2 more lines');
+            expect(surface.lastRenderedLines.join('\n')).not.toContain('line 4');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
     }
 
     @Test('prefers six digit hex colors in tui renderer')
@@ -911,6 +1007,156 @@ export class ConsoleRendererTest {
         expect(decoder.decode('B')).toEqual({ text: '\u001b[B', controlKey: 'down', partial: false });
         expect(decoder.decode('\u001b[A')).toEqual({ text: '\u001b[A', controlKey: 'up', partial: false });
         expect(decoder.decode('x')).toEqual({ text: 'x', partial: false });
+    }
+
+    @Test('decodes split terminal mouse sequences in the base console layer')
+    decodesSplitTerminalMouseSequences() {
+        const decoder = new TerminalInputSequenceDecoder();
+        expect(decoder.decode('\u001b[<0;12;7')).toEqual({ text: '', partial: true });
+        expect(decoder.decode('m')).toEqual({
+            text: '\u001b[<0;12;7m',
+            mouse: {
+                button: 0,
+                x: 12,
+                y: 7,
+                release: true
+            },
+            partial: false
+        });
+    }
+
+    @Test('dispatches tui mouse clicks to clickable nodes')
+    async dispatchesTuiMouseClicks() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: targetRow + 1,
+                release: true
+            })).toBe(true);
+            expect(ref.instance.selected).toBe('2');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('refreshes tui click targets after the rendered tree shrinks')
+    async refreshesTuiClickTargetsAfterRenderedTreeShrinks() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const firstRow = surface.lastRenderedLines.findIndex(line => line.includes('One'));
+            const secondRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(firstRow).toBeGreaterThanOrEqual(0);
+            expect(secondRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: secondRow + 1,
+                release: true
+            })).toBe(true);
+            expect(ref.instance.selected).toBe('2');
+
+            ref.instance.items = [{ label: 'Only', value: '1' }];
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('Two'))).toBe(false);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: secondRow + 1,
+                release: true
+            })).toBe(false);
+            expect(ref.instance.selected).toBe('2');
+
+            const onlyRow = surface.lastRenderedLines.findIndex(line => line.includes('Only'));
+            expect(onlyRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: onlyRow + 1,
+                release: true
+            })).toBe(true);
+            expect(ref.instance.selected).toBe('1');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('ignores non-release and out-of-range tui mouse clicks')
+    async ignoresNonReleaseAndOutOfRangeTuiMouseClicks() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(ref.instance.selected).toBe('');
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: targetRow + 3,
+                release: true
+            })).toBe(false);
+            expect(ref.instance.selected).toBe('');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
     }
 
     @Test('builds terminal cleanup sequences for host cli adapters')
@@ -1140,6 +1386,34 @@ export class ConsoleRendererTest {
         expect(third.output).toContain('\x1b[1A');
     }
 
+    @Test('clears removed primary lines and restores prompt cursor after shrink')
+    clearsRemovedPrimaryLinesAndRestoresPromptCursorAfterShrink() {
+        const expanded = renderPrimaryTerminalScreen({
+            lines: ['logo', 'line 1', 'line 2', 'line 3', '> ask'],
+            width: 80,
+            stablePrefixRows: 1,
+            cursorRow: 4,
+            cursorTarget: { row: 4, column: 5 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        const collapsed = renderPrimaryTerminalScreen({
+            state: expanded.state,
+            lines: ['logo', '… 2 more lines. /messages + Enter to view', '> ask'],
+            width: 80,
+            stablePrefixRows: 1,
+            cursorRow: 2,
+            cursorTarget: { row: 2, column: 5 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        expect(collapsed.output).toContain('\x1b[J');
+        expect(collapsed.output).toContain('/messages + Enter to view');
+        expect(collapsed.output).not.toContain('line 3');
+        expect(collapsed.state.cursorTarget).toEqual({ row: 2, column: 5 });
+        expect(collapsed.state.terminalRow).toBe(2);
+    }
+
     @Test('wraps terminal prefixed text locally')
     wrapsTerminalPrefixedTextLocally() {
         expect(wrapPrefixedText('hello world wide', 10, '> ', '  ')).toEqual([
@@ -1153,6 +1427,83 @@ export class ConsoleRendererTest {
         expect(getDisplayWidth('你好')).toBe(4);
         expect(sliceByDisplayWidth('abc你好', 6)).toBe('abc你');
         expect(buildOsc52ClipboardSequence('hello')).toBe('\u001b]52;c;aGVsbG8=\u0007');
+    }
+
+    @Test('writes terminal clipboard text through the console surface lifecycle service')
+    writesTerminalClipboardTextThroughConsoleSurfaceLifecycleService() {
+        const writes: string[] = [];
+        const service = new ConsoleTerminalSurfaceLifecycleService({} as any);
+        Object.defineProperty(service, 'output', {
+            value: {
+                isTTY: true,
+                write(value: string) {
+                    writes.push(value);
+                }
+            },
+            configurable: true
+        });
+
+        expect(service.writeTerminalClipboardText('hello')).toBe(true);
+        expect(writes).toEqual([buildOsc52ClipboardSequence('hello')]);
+    }
+
+    @Test('returns stripped rendered text through the console surface lifecycle service')
+    returnsStrippedRenderedTextThroughConsoleSurfaceLifecycleService() {
+        const service = new ConsoleTerminalSurfaceLifecycleService({} as any);
+        Object.defineProperty(service, 'surface', {
+            value: {
+                lastRenderedLines: ['\x1b[31mHello\x1b[0m ', ' World ']
+            },
+            configurable: true
+        });
+
+        expect(service.getLastRenderedText(value => value.replace(/\x1b\[[0-9;]*m/g, ''))).toBe('Hello\n World');
+    }
+
+    @Test('does not write terminal clipboard text when output is unavailable or text is empty')
+    doesNotWriteTerminalClipboardTextWhenUnavailable() {
+        const writes: string[] = [];
+        const service = new ConsoleTerminalSurfaceLifecycleService({} as any);
+        Object.defineProperty(service, 'output', {
+            value: {
+                isTTY: false,
+                write(value: string) {
+                    writes.push(value);
+                }
+            },
+            configurable: true
+        });
+
+        expect(service.writeTerminalClipboardText('hello')).toBe(false);
+        expect(service.writeTerminalClipboardText('')).toBe(false);
+        expect(writes).toEqual([]);
+    }
+
+    @Test('ignores terminal mouse clicks after the surface is destroyed')
+    async ignoresTerminalMouseClicksAfterSurfaceDestroy() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+        const renderer = ctx.get(TuiRenderer);
+        const root = ref.hostView.rootNodes[0] as ConsoleElement;
+        const surface = new TuiTerminalSurface({
+            renderer,
+            root,
+            width: 40,
+            output: { write() {} }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        surface.destroy();
+        expect(surface.dispatchMouse({
+            button: 0,
+            x: 1,
+            y: 1,
+            release: true
+        })).toBe(false);
+        await ctx.close();
     }
 
     @Test('windows terminal rendered blocks locally')

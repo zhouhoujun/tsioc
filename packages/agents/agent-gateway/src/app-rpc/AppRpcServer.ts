@@ -393,14 +393,9 @@ export class AppRpcServer {
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
         const workspace = this.requireString(params?.workspace, 'app.inputHistory.get workspace');
-        const sessionId = this.optionalSessionId(params);
-        if (sessionId) {
-            await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
-            this.sessionHandler.track(sessionId);
-        }
-        const principalId = this.resolveHistoryPrincipalId(context);
-        const record = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId, sessionId);
-        return record ? this.normalizeInputHistoryEntries(this.parseInputHistoryEntries(record.value)) : [];
+        const principalIds = this.resolveHistoryPrincipalIds(context);
+        const records = this.listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
+        return this.mergeConsoleInputHistoryEntries(records.map(record => this.parseInputHistoryEntries(record.value)));
     }
 
     private async putInputHistory(params: any, context: AppRpcRequestContext): Promise<{ workspace: string; entries: string[] }> {
@@ -1189,6 +1184,7 @@ export class AppRpcServer {
                 truncationScore: record.truncationScore,
                 fallbackUsed: record.fallbackUsed,
                 summaryLength: record.summaryLength,
+                evidenceCoverage: record.evidenceCoverage ?? null,
                 createdAt: record.createdAt
             }))
         };
@@ -1238,7 +1234,8 @@ export class AppRpcServer {
                 avgAnnotationQuality: point.avgAnnotationQuality,
                 avgLengthBalance: point.avgLengthBalance,
                 avgTruncationScore: point.avgTruncationScore,
-                fallbackRate: point.fallbackRate
+                fallbackRate: point.fallbackRate,
+                avgEvidenceCoverage: point.avgEvidenceCoverage
             }))
         };
     }
@@ -1996,19 +1993,53 @@ export class AppRpcServer {
         return String(context?.principalId || '').trim() || 'anonymous';
     }
 
+    private resolveHistoryPrincipalIds(context: AppRpcRequestContext): string[] {
+        const principalId = this.resolveHistoryPrincipalId(context);
+        return principalId === 'local-system'
+            ? [principalId, 'anonymous']
+            : [principalId];
+    }
+
     private createConsoleInputHistoryRecordId(workspace: string, principalId: string, sessionId?: string): string {
         return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
     }
 
     private findConsoleInputHistoryRecord(records: any[], workspace: string, principalId: string, sessionId?: string): any | undefined {
         const resolvedSessionId = String(sessionId || '').trim();
+        return this.listConsoleInputHistoryRecords(records, workspace, [principalId])
+            .find(record => String(record?.metadata?.sessionId || '').trim() === resolvedSessionId);
+    }
+
+    private listConsoleInputHistoryRecords(records: any[], workspace: string, principalIds: string[]): any[] {
+        const allowedPrincipals = new Set((principalIds || []).map(id => String(id || '').trim()).filter(Boolean));
         return (records || [])
             .filter(record => record?.scope === 'global'
                 && record?.key === AppRpcServer.CONSOLE_INPUT_HISTORY_KEY
                 && record?.metadata?.workspace === workspace
-                && String(record?.metadata?.principalId || '').trim() === principalId
-                && String(record?.metadata?.sessionId || '').trim() === resolvedSessionId)
-            .sort((left, right) => (right?.updatedAt || right?.createdAt || 0) - (left?.updatedAt || left?.createdAt || 0))[0];
+                && allowedPrincipals.has(String(record?.metadata?.principalId || '').trim()))
+            .map((record, index) => ({ record, index }))
+            .sort((left, right) => {
+                const timeDelta = (right.record?.updatedAt || right.record?.createdAt || 0) - (left.record?.updatedAt || left.record?.createdAt || 0);
+                return timeDelta !== 0 ? timeDelta : right.index - left.index;
+            })
+            .map(entry => entry.record);
+    }
+
+    private mergeConsoleInputHistoryEntries(groups: any[]): string[] {
+        const merged: string[] = [];
+        const seen = new Set<string>();
+        for (const group of groups) {
+            for (const entry of this.normalizeInputHistoryEntries(group)) {
+                if (!seen.has(entry)) {
+                    seen.add(entry);
+                    merged.push(entry);
+                }
+                if (merged.length >= 200) {
+                    return merged;
+                }
+            }
+        }
+        return merged;
     }
 
     private parseInputHistoryEntries(value: unknown): any[] {

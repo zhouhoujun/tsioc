@@ -59,7 +59,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             const attrParts: string[] = [];
             const custParts: string[] = [];
             const normalizedParts: string[] = [];
-            const htmlElements = ['button', 'input', 'div', 'span', 'a', 'form', 'ul', 'li', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'img', 'video', 'audio', 'select', 'option', 'textarea', 'label', 'link', 'meta', 'script', 'style'];
+            const htmlElements = ['button', 'input', 'div', 'span', 'a', 'form', 'ul', 'li', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'img', 'video', 'audio', 'select', 'option', 'textarea', 'label', 'link', 'meta', 'script', 'style', 'panel'];
             for (const part of parts) {
                 if (part.startsWith('*')) {
                     const bracketed = `[${part}]`;

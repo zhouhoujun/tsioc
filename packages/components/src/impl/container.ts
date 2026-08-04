@@ -57,6 +57,13 @@ class ViewContainerRefImpl implements ViewContainerRef {
         }
         return this._renderer;
     }
+
+    private resolveContainerParent(): RNode | null {
+        const nativeElement = this.element.nativeElement;
+        const storedParent = this.injector.getParentNode(nativeElement);
+        const actualParent = nativeElement.parentNode;
+        return actualParent || storedParent || null;
+    }
     /**
      * Returns the number of views currently attached to this container.
      *
@@ -149,29 +156,9 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if (this.isElementContainer) {
             // For ElementContainer, views are inserted as siblings of the container (anchor)
             // The container acts as an anchor point - views are inserted before it (or after previous views)
-            // First try injector.getParentNode, then try nativeElement.parentNode
-            let parentNode = this.injector.getParentNode(nativeElement);
-
-            // If stored parent is from template AST (not connected to rendered DOM),
-            // use the actual DOM parentNode instead
-            if (!parentNode) {
-                parentNode = nativeElement.parentNode;
-            }
+            const parentNode = this.resolveContainerParent();
 
             if (parentNode) {
-                const prefersLocalChildren = nativeElement?.constructor?.name === 'ConsoleElement';
-                if (prefersLocalChildren) {
-                    if (nextSibling && nextSibling.parentNode === nativeElement) {
-                        viewNodes.forEach(node => {
-                            nativeElement.insertBefore(node, nextSibling);
-                        });
-                    } else {
-                        viewNodes.forEach(node => {
-                            nativeElement.appendChild(node);
-                        });
-                    }
-                    return viewRef;
-                }
                 if (nextSibling) {
                     viewNodes.forEach(node => {
                         parentNode.insertBefore(node, nextSibling);
@@ -236,8 +223,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         // Move DOM nodes
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
-        // Use injector.getParentNode to get the correct parent for cloned templates
-        const parentNode = this.injector.getParentNode(nativeElement) || nativeElement.parentNode;
+        const parentNode = this.resolveContainerParent();
 
         // Remove nodes from their current position
         if (this.isElementContainer && parentNode) {
@@ -310,8 +296,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewRef = this.views[removeIndex];
         const viewNodes = viewRef.rootNodes;
         const nativeElement = this.element.nativeElement;
-        // Use injector.getParentNode to get the correct parent for cloned templates
-        const parentNode = this.injector.getParentNode(nativeElement) || nativeElement.parentNode;
+        const parentNode = this.resolveContainerParent();
 
         // Remove DOM nodes
         if (this.isElementContainer && parentNode) {

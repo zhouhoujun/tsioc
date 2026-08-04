@@ -1,4 +1,5 @@
-import { Attribute, Directive, ElementRef, OnDestroy, AfterViewInit, Renderer } from '@tsdi/components';
+import { Attribute, Component, Directive, ElementRef, EventEmitter, OnDestroy, AfterViewInit, Renderer, RNode, NodeType, PROJECTION_NODES } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
 import {
     applyConsoleClipboardPaste,
     clampConsoleSelectIndex,
@@ -355,6 +356,224 @@ export class TuiSelectComponent {
             style[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
         });
         return style;
+    }
+}
+
+@Component({
+    selector: 'panel',
+    template: `
+    <div class="console-panel console-base-panel" v-style="shellStyle">
+        <label class="panel-summary" v-style="summaryStyle" @click="toggle" v-show="summaryLine">{{summaryLine}}</label>
+        <label class="panel-hint" v-style="hintStyle" v-show="hintLabel">{{hintLabel}}</label>
+        <label class="panel-detail" v-style="detailStyle" v-for="index in detailIndexes">{{detailLineAt(index)}}</label>
+        <label class="panel-hint" v-style="hintStyle" v-show="hiddenDetailLabel">{{hiddenDetailLabel}}</label>
+    </div>
+    `
+})
+export class PanelComponent {
+    private _summary = '';
+    private _hint = '';
+    private _detailLines: string[] = [];
+    private _visibleLines = 3;
+    private _expanded = false;
+
+    constructor(
+        @Optional() protected elementRef?: ElementRef
+    ) {
+    }
+
+    @Attribute()
+    get summary(): string {
+        return this._summary;
+    }
+
+    set summary(value: string) {
+        this._summary = String(value || '').trim();
+    }
+
+    @Attribute()
+    get hint(): string {
+        return this._hint;
+    }
+
+    set hint(value: string) {
+        this._hint = String(value || '').trim();
+    }
+
+    @Attribute()
+    get detailLines(): string[] {
+        const contentLines = this.contentDetailLines;
+        return contentLines.length ? contentLines : this._detailLines;
+    }
+
+    set detailLines(value: string[] | string | undefined | null) {
+        if (Array.isArray(value)) {
+            this._detailLines = value.map(line => String(line ?? ''));
+            return;
+        }
+        const text = String(value || '').trim();
+        if (!text) {
+            this._detailLines = [];
+            return;
+        }
+        try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+                this._detailLines = parsed.map(line => String(line ?? ''));
+                return;
+            }
+        } catch {
+            // ignore JSON parse failures and fall back to newline splitting
+        }
+        this._detailLines = text.split('\n').map(line => String(line ?? ''));
+    }
+
+    @Attribute()
+    get visibleLines(): number {
+        return this._visibleLines;
+    }
+
+    set visibleLines(value: number | string) {
+        const parsed = Number.parseInt(String(value ?? this._visibleLines), 10);
+        this._visibleLines = Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+    }
+
+    @Attribute()
+    get expanded(): boolean {
+        return this._expanded;
+    }
+
+    set expanded(value: boolean | string) {
+        this._expanded = value === '' || value === true || value === 'true';
+    }
+
+    @Attribute() expandedChange = new EventEmitter<boolean>();
+
+    get contentDetailLines(): string[] {
+        const nodes = this.resolveProjectedContent();
+        if (!nodes.length) {
+            return [];
+        }
+        const lines: string[] = [];
+        nodes.forEach(node => {
+            this.collectContentText(node, lines);
+        });
+        return lines;
+    }
+
+    protected resolveProjectedContent(): RNode[] {
+        const native = this.elementRef?.nativeElement as any;
+        const nodes = native?.[PROJECTION_NODES] as RNode[] | undefined;
+        return nodes?.length ? nodes : [];
+    }
+
+    protected collectContentText(node: RNode | undefined | null, lines: string[]): void {
+        if (!node) {
+            return;
+        }
+        if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
+            const text = String((node as any).textContent || '');
+            text.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed) {
+                    lines.push(trimmed);
+                }
+            });
+            return;
+        }
+        const children = (node as any).childNodes as RNode[] | undefined;
+        if (children?.length) {
+            children.forEach(child => this.collectContentText(child, lines));
+            return;
+        }
+        const text = String((node as any).textContent || '');
+        text.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed) {
+                lines.push(trimmed);
+            }
+        });
+    }
+
+    get shellStyle(): string {
+        return 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
+    }
+
+    get summaryLabel(): string {
+        return this._summary || this.detailLines[0] || '';
+    }
+
+    get summaryLine(): string {
+        const summary = this.summaryLabel;
+        if (!summary) {
+            return '';
+        }
+        return `${this._expanded ? '▾' : '▸'} ${summary}`;
+    }
+
+    get hintLabel(): string {
+        if (this._hint) {
+            return this._hint;
+        }
+        if (!this.detailLines.length) {
+            return '';
+        }
+        return this._expanded ? 'click summary to collapse' : 'click summary to expand';
+    }
+
+    get visibleDetailLines(): string[] {
+        const lines = this.detailLines;
+        if (this._expanded) {
+            return lines.slice();
+        }
+        return lines.slice(0, this._visibleLines);
+    }
+
+    get detailIndexes(): number[] {
+        return Array.from({ length: this.visibleDetailLines.length }, (_value, index) => index);
+    }
+
+    detailLineAt(index: number): string {
+        return this.visibleDetailLines[index] || '';
+    }
+
+    get hiddenDetailCount(): number {
+        if (this._expanded) {
+            return 0;
+        }
+        return Math.max(0, this.detailLines.length - this._visibleLines);
+    }
+
+    get hiddenDetailLabel(): string {
+        const hidden = this.hiddenDetailCount;
+        return hidden > 0 ? `… ${hidden} more line${hidden === 1 ? '' : 's'}` : '';
+    }
+
+    get summaryStyle(): Record<string, string> {
+        return {
+            color: '#f3f6fb',
+            'font-weight': 'bold',
+            cursor: 'pointer'
+        };
+    }
+
+    get detailStyle(): Record<string, string> {
+        return {
+            color: '#d6dee6',
+            'white-space': 'pre-wrap',
+            'overflow-wrap': 'anywhere'
+        };
+    }
+
+    get hintStyle(): Record<string, string> {
+        return {
+            color: '#6f7c8a'
+        };
+    }
+
+    toggle(): void {
+        this._expanded = !this._expanded;
+        this.expandedChange.emit(this._expanded);
     }
 }
 

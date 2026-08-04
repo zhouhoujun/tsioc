@@ -272,7 +272,13 @@ export class VForDirective {
 
         // 销毁不再需要的视图
         for (const oldView of oldViewRefs.values()) {
-            if (oldView && typeof oldView.destroy === 'function') {
+            if (!oldView) {
+                continue;
+            }
+            const index = this.viewContainer.indexOf(oldView);
+            if (index >= 0) {
+                this.viewContainer.remove(index);
+            } else if (typeof oldView.destroy === 'function') {
                 oldView.destroy();
             }
         }

@@ -1987,8 +1987,8 @@ export class SummaryQualityHandlerTest {
                 const provider = options?.provider;
                 const limit = options?.limit ?? 200;
                 return [
-                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
-                    { id: 'q2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 }
+                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, evidenceCoverage: 100, createdAt: 1 },
+                    { id: 'q2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, evidenceCoverage: 50, createdAt: 2 }
                 ].filter(record => !provider || record.provider === provider).slice(0, limit);
             }
         } as any;
@@ -2011,6 +2011,7 @@ export class SummaryQualityHandlerTest {
         expect(data.records[0].provider).toEqual('deepseek');
         expect(data.records[0].model).toEqual('deepseek-v4-flash');
         expect(data.records[0].fallbackUsed).toEqual(false);
+        expect(data.records[0].evidenceCoverage).toEqual(100);
     }
 
     @Test('lists all summary quality records when no filter is provided')
@@ -2018,7 +2019,7 @@ export class SummaryQualityHandlerTest {
         const quality = {
             async list() {
                 return [
-                    { id: 'q1', provider: 'deepseek', model: null, total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 }
+                    { id: 'q1', provider: 'deepseek', model: null, total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, evidenceCoverage: 80, createdAt: 1 }
                 ];
             }
         } as any;
@@ -2038,6 +2039,7 @@ export class SummaryQualityHandlerTest {
         const data = JSON.parse(body);
         expect(data.records.length).toEqual(1);
         expect(data.records[0].model).toEqual(null);
+        expect(data.records[0].evidenceCoverage).toEqual(80);
     }
 
     @Test('aggregates summary quality stats with optional provider scope')
@@ -2078,9 +2080,9 @@ export class SummaryQualityHandlerTest {
                 const provider = options?.provider;
                 const day = 24 * 60 * 60 * 1000;
                 return [
-                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 75, fieldCompleteness: 90, annotationQuality: 70, lengthBalance: 80, truncationScore: 100, fallbackUsed: true, summaryLength: 230, createdAt: 1 },
-                    { id: 'q2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 240, createdAt: day + 1 },
-                    { id: 'q3', provider: 'anthropic', model: null, total: 50, fieldCompleteness: 60, annotationQuality: 40, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 190, createdAt: day + 2 }
+                    { id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 75, fieldCompleteness: 90, annotationQuality: 70, lengthBalance: 80, truncationScore: 100, fallbackUsed: true, summaryLength: 230, evidenceCoverage: 60, createdAt: 1 },
+                    { id: 'q2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 240, evidenceCoverage: 100, createdAt: day + 1 },
+                    { id: 'q3', provider: 'anthropic', model: null, total: 50, fieldCompleteness: 60, annotationQuality: 40, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 190, evidenceCoverage: 0, createdAt: day + 2 }
                 ].filter(record => !provider || record.provider === provider).slice(0, options?.limit ?? 500);
             }
         } as any;
@@ -2104,9 +2106,11 @@ export class SummaryQualityHandlerTest {
         expect(data.trend[0].recordCount).toEqual(1);
         expect(data.trend[0].avgTotal).toEqual(75);
         expect(data.trend[0].fallbackRate).toEqual(100);
+        expect(data.trend[0].avgEvidenceCoverage).toEqual(60);
         expect(data.trend[1].bucketStart).toEqual(24 * 60 * 60 * 1000);
         expect(data.trend[1].avgTotal).toEqual(90);
         expect(data.trend[1].fallbackRate).toEqual(0);
+        expect(data.trend[1].avgEvidenceCoverage).toEqual(100);
         expect(data.trend[0].avgAnnotationQuality).toEqual(70);
         expect(typeof data.trend[0].minTotal).toEqual('number');
         expect(typeof data.trend[0].maxTotal).toEqual('number');
@@ -2117,8 +2121,8 @@ export class SummaryQualityHandlerTest {
         const quality = {
             async list(options?: { provider?: string; limit?: number }) {
                 return [
-                    { id: 'q1', provider: 'deepseek', model: null, total: 80, fieldCompleteness: 90, annotationQuality: 80, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: 1 },
-                    { id: 'q2', provider: 'anthropic', model: null, total: 60, fieldCompleteness: 70, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 200, createdAt: 1 }
+                    { id: 'q1', provider: 'deepseek', model: null, total: 80, fieldCompleteness: 90, annotationQuality: 80, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, evidenceCoverage: 75, createdAt: 1 },
+                    { id: 'q2', provider: 'anthropic', model: null, total: 60, fieldCompleteness: 70, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 200, evidenceCoverage: 25, createdAt: 1 }
                 ].slice(0, options?.limit ?? 500);
             }
         } as any;
@@ -3091,8 +3095,8 @@ export class AppRpcServerTest {
         expect((workspaceB as any).result).toEqual(['other']);
     }
 
-    @Test('stores console input history per session within the same workspace through json-rpc')
-    async storesConsoleInputHistoryPerSessionWithinSharedWorkspace() {
+    @Test('queries console input history across workspace sessions through json-rpc')
+    async queriesConsoleInputHistoryAcrossWorkspaceSessions() {
         const store = new InMemorySessionStore();
         const memory = new InMemoryMemoryStore();
         const owners = new SessionOwnerStore(store);
@@ -3151,7 +3155,6 @@ export class AppRpcServerTest {
             id: 22,
             method: 'app.inputHistory.get',
             params: {
-                sessionId: 'rpc-history-a',
                 workspace: '/tmp/shared-workspace'
             }
         }, { principalId: 'user-1' });
@@ -3161,13 +3164,93 @@ export class AppRpcServerTest {
             id: 23,
             method: 'app.inputHistory.get',
             params: {
-                sessionId: 'rpc-history-b',
                 workspace: '/tmp/shared-workspace'
             }
         }, { principalId: 'user-1' });
 
-        expect((sessionA as any).result).toEqual(['session a']);
-        expect((sessionB as any).result).toEqual(['session b']);
+        expect((sessionA as any).result).toEqual(['session b', 'session a']);
+        expect((sessionB as any).result).toEqual(['session b', 'session a']);
+    }
+
+    @Test('local-system input history query includes legacy anonymous workspace records')
+    async localSystemInputHistoryQueryIncludesLegacyAnonymousRecords() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                bootstrapTurn: {
+                    sessionId: 'rpc-history-local'
+                }
+            } as any
+        );
+
+        await memory.put({
+            id: 'legacy-anonymous-history',
+            key: 'agent-ui.console.input-history',
+            value: JSON.stringify(['legacy prompt']),
+            scope: 'global',
+            metadata: {
+                workspace: '/tmp/shared-workspace',
+                principalId: 'anonymous',
+                sessionId: 'legacy-session',
+                kind: 'console-input-history'
+            },
+            createdAt: 1,
+            updatedAt: 1
+        } as any);
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 24,
+            method: 'app.inputHistory.put',
+            params: {
+                sessionId: 'rpc-history-local',
+                workspace: '/tmp/shared-workspace',
+                entries: ['current prompt']
+            }
+        }, { principalId: 'local-system' });
+
+        const localSystem = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 25,
+            method: 'app.inputHistory.get',
+            params: {
+                workspace: '/tmp/shared-workspace'
+            }
+        }, { principalId: 'local-system' });
+
+        const userScoped = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 26,
+            method: 'app.inputHistory.get',
+            params: {
+                workspace: '/tmp/shared-workspace'
+            }
+        }, { principalId: 'user-1' });
+
+        expect((localSystem as any).result).toEqual(['current prompt', 'legacy prompt']);
+        expect((userScoped as any).result).toEqual([]);
     }
 
     @Test('lists audit records through json-rpc and applies filters')
@@ -3525,16 +3608,16 @@ export class AppRpcServerTest {
                 const provider = options?.provider;
                 const limit = options?.limit ?? 200;
                 return [
-                    { id: 'sq1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
-                    { id: 'sq2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 }
+                    { id: 'sq1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, evidenceCoverage: 100, createdAt: 1 },
+                    { id: 'sq2', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 50, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, evidenceCoverage: 50, createdAt: 2 }
                 ].filter(record => !provider || record.provider === provider).slice(0, limit);
             },
             async aggregate(provider?: string) {
                 return provider
-                    ? [{ provider, recordCount: 2, avgTotal: 81, minTotal: 70, maxTotal: 92, avgFieldCompleteness: 90, avgAnnotationQuality: 75, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 50, timeRange: { from: 1, to: 2 } }]
+                    ? [{ provider, recordCount: 2, avgTotal: 81, minTotal: 70, maxTotal: 92, avgFieldCompleteness: 90, avgAnnotationQuality: 75, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 50, avgEvidenceCoverage: 75, timeRange: { from: 1, to: 2 } }]
                     : [
-                        { provider: 'deepseek', recordCount: 1, avgTotal: 92, minTotal: 92, maxTotal: 92, avgFieldCompleteness: 100, avgAnnotationQuality: 100, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 0, timeRange: { from: 1, to: 1 } },
-                        { provider: 'anthropic', recordCount: 1, avgTotal: 70, minTotal: 70, maxTotal: 70, avgFieldCompleteness: 80, avgAnnotationQuality: 50, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 100, timeRange: { from: 2, to: 2 } }
+                        { provider: 'deepseek', recordCount: 1, avgTotal: 92, minTotal: 92, maxTotal: 92, avgFieldCompleteness: 100, avgAnnotationQuality: 100, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 0, avgEvidenceCoverage: 100, timeRange: { from: 1, to: 1 } },
+                        { provider: 'anthropic', recordCount: 1, avgTotal: 70, minTotal: 70, maxTotal: 70, avgFieldCompleteness: 80, avgAnnotationQuality: 50, avgLengthBalance: 100, avgTruncationScore: 100, fallbackRate: 100, avgEvidenceCoverage: 50, timeRange: { from: 2, to: 2 } }
                     ];
             }
         } as any;
@@ -3550,6 +3633,7 @@ export class AppRpcServerTest {
         expect((listResponse as any).result.records[0].provider).toEqual('deepseek');
         expect((listResponse as any).result.records[0].model).toEqual('deepseek-v4-flash');
         expect((listResponse as any).result.records[0].fallbackUsed).toEqual(false);
+        expect((listResponse as any).result.records[0].evidenceCoverage).toEqual(100);
 
         const statsResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -3560,6 +3644,7 @@ export class AppRpcServerTest {
         expect((statsResponse as any).result.aggregates.length).toEqual(1);
         expect((statsResponse as any).result.aggregates[0].provider).toEqual('anthropic');
         expect((statsResponse as any).result.aggregates[0].fallbackRate).toEqual(50);
+        expect((statsResponse as any).result.aggregates[0].avgEvidenceCoverage).toEqual(75);
 
         const capsResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -3580,10 +3665,10 @@ export class AppRpcServerTest {
                 const provider = options?.provider;
                 const limit = options?.limit ?? 200;
                 return [
-                    { id: 't1', provider: 'deepseek', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
-                    { id: 't2', provider: 'deepseek', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: 2 },
-                    { id: 't3', provider: 'deepseek', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: day + 1 },
-                    { id: 't4', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 70, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 200, createdAt: day + 2 }
+                    { id: 't1', provider: 'deepseek', total: 90, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, evidenceCoverage: 100, createdAt: 1 },
+                    { id: 't2', provider: 'deepseek', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, evidenceCoverage: 50, createdAt: 2 },
+                    { id: 't3', provider: 'deepseek', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, evidenceCoverage: 80, createdAt: day + 1 },
+                    { id: 't4', provider: 'anthropic', total: 70, fieldCompleteness: 80, annotationQuality: 70, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 200, evidenceCoverage: 20, createdAt: day + 2 }
                 ].filter(record => !provider || record.provider === provider).slice(0, limit);
             }
         } as any;
@@ -3601,9 +3686,11 @@ export class AppRpcServerTest {
         expect(deepseek[0].recordCount).toEqual(2);
         expect(deepseek[0].avgTotal).toEqual(75);
         expect(deepseek[0].fallbackRate).toEqual(50);
+        expect(deepseek[0].avgEvidenceCoverage).toEqual(75);
         expect(deepseek[1].bucketStart).toEqual(day);
         expect(deepseek[1].recordCount).toEqual(1);
         expect(deepseek[1].avgTotal).toEqual(80);
+        expect(deepseek[1].avgEvidenceCoverage).toEqual(80);
 
         const allTrend = await rpc.handle({
             jsonrpc: '2.0',
@@ -3623,9 +3710,9 @@ export class AppRpcServerTest {
                 const day = 24 * 60 * 60 * 1000;
                 const limit = options?.limit ?? 200;
                 return [
-                    { id: 'fm1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, createdAt: 1 },
-                    { id: 'fm2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, createdAt: day + 1 },
-                    { id: 'fm3', provider: 'deepseek', model: 'deepseek-v3', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, createdAt: 3 }
+                    { id: 'fm1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, fieldCompleteness: 100, annotationQuality: 100, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 230, evidenceCoverage: 100, createdAt: 1 },
+                    { id: 'fm2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fieldCompleteness: 80, annotationQuality: 60, lengthBalance: 100, truncationScore: 100, fallbackUsed: true, summaryLength: 210, evidenceCoverage: 50, createdAt: day + 1 },
+                    { id: 'fm3', provider: 'deepseek', model: 'deepseek-v3', total: 80, fieldCompleteness: 90, annotationQuality: 90, lengthBalance: 100, truncationScore: 100, fallbackUsed: false, summaryLength: 220, evidenceCoverage: 80, createdAt: 3 }
                 ].filter(record => (!options?.provider || record.provider === options.provider)
                     && (!options?.model || record.model === options.model)).slice(0, limit);
             },
@@ -3646,6 +3733,7 @@ export class AppRpcServerTest {
                     avgLengthBalance: 100,
                     avgTruncationScore: 100,
                     fallbackRate: Math.round(records.filter(record => record.fallbackUsed).length / records.length * 100),
+                    avgEvidenceCoverage: 75,
                     timeRange: { from: 1, to: 3 }
                 }];
             }
@@ -3670,6 +3758,7 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((statsResponse as any).result.aggregates[0].recordCount).toEqual(1);
         expect((statsResponse as any).result.aggregates[0].avgTotal).toEqual(80);
+        expect((statsResponse as any).result.aggregates[0].avgEvidenceCoverage).toEqual(75);
 
         const trendResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -3680,6 +3769,7 @@ export class AppRpcServerTest {
         expect((trendResponse as any).result.trend.length).toEqual(2);
         expect((trendResponse as any).result.trend[0].avgTotal).toEqual(92);
         expect((trendResponse as any).result.trend[1].avgTotal).toEqual(60);
+        expect((trendResponse as any).result.trend[0].avgEvidenceCoverage).toEqual(100);
     }
 
     @Test('summary quality rpc returns empty payloads when no store is configured')

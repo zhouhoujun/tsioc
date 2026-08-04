@@ -8,6 +8,7 @@ import {
     ConsoleTerminalSurfaceAccessor,
     ConsoleTerminalSurfaceLifecycle,
     decodeConsoleTextChunk,
+    shouldSkipConsoleHistoryEntry,
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -66,6 +67,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
+    protected inputHistoryRestoreTimers: Array<ReturnType<typeof setTimeout>> = [];
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -129,12 +131,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const count = Number(aggregate.recordCount ?? 0);
         const avgTotal = Number(aggregate.avgTotal ?? 0).toFixed(1);
         const fallbackRate = Number(aggregate.fallbackRate ?? 0).toFixed(1);
+        const evidenceCoverage = Number(aggregate.avgEvidenceCoverage ?? 0).toFixed(1);
         const from = Number(aggregate.timeRange?.from ?? 0);
         const to = Number(aggregate.timeRange?.to ?? 0);
         const range = from || to
             ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
             : '';
-        return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}%${range}`;
+        return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}% · evidence ${evidenceCoverage}%${range}`;
     }
 
     protected formatUsageWindow(label: string, usage: Record<string, any>): string {
@@ -204,6 +207,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 `annotation ${Number(record.annotationQuality ?? 0)}`,
                 `length ${Number(record.lengthBalance ?? 0)}`,
                 `truncation ${Number(record.truncationScore ?? 0)}`,
+                record.evidenceCoverage != null ? `evidence ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
                 record.fallbackUsed ? 'fallback' : ''
             ].filter(Boolean).join(' · ') || 'summary quality record',
             detail: [
@@ -215,6 +219,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 `Annotation: ${Number(record.annotationQuality ?? 0)}`,
                 `Length: ${Number(record.lengthBalance ?? 0)}`,
                 `Truncation: ${Number(record.truncationScore ?? 0)}`,
+                record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
                 `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
                 `Summary length: ${Number(record.summaryLength ?? 0)}`,
                 createdAt ? `Created: ${new Date(createdAt).toLocaleString()}` : ''
@@ -1191,12 +1196,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const fallbackRate = totals.length
                 ? (sorted.reduce((sum, point) => sum + Number(point.fallbackRate ?? 0), 0) / sorted.length).toFixed(1)
                 : '0.0';
+            const evidenceCoverage = totals.length
+                ? (sorted.reduce((sum, point) => sum + Number(point.avgEvidenceCoverage ?? 0), 0) / sorted.length).toFixed(1)
+                : '0.0';
             const from = Number(sorted[0]?.bucketStart ?? 0);
             const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
             const range = from || to
                 ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
                 : '';
-            lines.push(`${provider} ${sorted.map(point => spark(Number(point.avgTotal ?? 0))).join('')} (${sorted.length}d${range} · avg ${avgTotal} · fb ${fallbackRate}%)`);
+            lines.push(`${provider} ${sorted.map(point => spark(Number(point.avgTotal ?? 0))).join('')} (${sorted.length}d${range} · avg ${avgTotal} · fb ${fallbackRate}% · evidence ${evidenceCoverage}%)`);
         }
         return lines.sort((a, b) => a.localeCompare(b));
     }
@@ -1747,7 +1755,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.refreshPendingApprovals(target.id),
             this.refreshTodoPlan(target.id, projectSessions),
             this.loadCodingTasks(target.id, projectSessionIds),
-            this.restoreInputHistory(target.id)
+            this.restoreInputHistory()
         ]);
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
@@ -2055,6 +2063,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.notify(`Nothing to copy for ${label}.`);
                 return;
             }
+            if (this.surfaceAccessor?.writeTerminalClipboardText?.(text)) {
+                this.notify(`Copied ${label}.`);
+                return;
+            }
             this.notify(text);
         };
     }
@@ -2224,7 +2236,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
         await this.bootstrapStateFromAppRpc();
+        await this.initializeInputHistory();
         await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
+        this.scheduleInputHistoryRestore();
         await this.refreshTools();
         await this.refreshScheduledTasks();
         await this.refreshUsageDigest();
@@ -2237,6 +2251,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     onDestroy(): void {
         this.destroyed = true;
         this.clearStreamingMessageState();
+        this.clearInputHistoryRestoreTimers();
         this.state.copyFocusedTextAction = undefined;
         this.state.activateSelectedSessionAction = undefined;
         this.state.openSelectedTaskAction = undefined;
@@ -2563,18 +2578,53 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
     }
 
-    protected async restoreInputHistory(sessionId = this.state.sessionId): Promise<void> {
+    protected async restoreInputHistory(): Promise<void> {
         if (!this.inputHistoryStore) {
             return;
         }
         try {
             const workspace = this.resolveHistoryWorkspace();
-            const entries = await this.inputHistoryStore.load(workspace, sessionId);
-            if (sessionId === this.state.sessionId) {
+            const entries = (await this.inputHistoryStore.load(workspace))
+                .filter(entry => !shouldSkipConsoleHistoryEntry(entry));
+            if (workspace === this.resolveHistoryWorkspace()) {
                 this.state.setInputHistoryEntries(entries);
             }
         } catch {
         }
+    }
+
+    protected async initializeInputHistory(): Promise<void> {
+        if (!this.inputHistoryStore) {
+            return;
+        }
+        try {
+            const workspace = this.resolveHistoryWorkspace();
+            const entries = (await this.inputHistoryStore.load(workspace))
+                .filter(entry => !shouldSkipConsoleHistoryEntry(entry));
+            if (workspace === this.resolveHistoryWorkspace()) {
+                this.state.setInputHistoryEntries(entries);
+            }
+        } catch {
+        }
+    }
+
+    protected scheduleInputHistoryRestore(delays: number[] = [0, 150, 750]): void {
+        this.clearInputHistoryRestoreTimers();
+        for (const delay of delays) {
+            this.inputHistoryRestoreTimers.push(setTimeout(() => {
+                if (this.destroyed) {
+                    return;
+                }
+                void this.restoreInputHistory();
+            }, Math.max(0, delay)));
+        }
+    }
+
+    protected clearInputHistoryRestoreTimers(): void {
+        for (const timer of this.inputHistoryRestoreTimers) {
+            clearTimeout(timer);
+        }
+        this.inputHistoryRestoreTimers = [];
     }
 
     protected async persistInputHistory(): Promise<void> {
@@ -4958,6 +5008,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ): Promise<void> {
+        if (decoded.mouse) {
+            this.surfaceAccessor?.dispatchTerminalMouse(decoded.mouse);
+            return;
+        }
         const rawChunk = decodeConsoleTextChunk(chunk);
         const submitOnEnter = /[\r\n]/.test(rawChunk);
         const outcome = await this.state.processDecodedInput(decoded, chunk, {

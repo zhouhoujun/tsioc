@@ -1,6 +1,6 @@
 import { Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions } from '../template/compiler';
-import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF, CUSTOM_ELEMENTS, LOCAL_REFS, TEMPLATE_FACTORY } from '../renderer/Node';
+import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF, CUSTOM_ELEMENTS, LOCAL_REFS, TEMPLATE_FACTORY, PROJECTION_NODES } from '../renderer/Node';
 import { ComponentDef } from '../refs/component';
 import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { NodeInjector } from '../refs/injector';
@@ -24,7 +24,7 @@ export interface RendererOptions {
     textFactory: (node: RText, options: CompilerOptions) => Rendering<RText>;
     elementFactory: (node: RElement, renderer: Renderer, options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>;
     attributeFactory: (attr: RAttr) => (element: RElement, renderer: Renderer) => void;
-    componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[], delimiter: RegExp) => Rendering<RElement>,
+    componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[], delimiter: RegExp, options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
     templateFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
     bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, injector: NodeInjector, context: any, delimiter: RegExp) => void,
 }
@@ -170,7 +170,7 @@ export function compileElementToFactory(
     // 检查是否是组件
     const componentDef = node[COMPONENTDEF];
     if (componentDef) {
-        return rendererOptions.componentFactory(node, renderer, componentDef, attrs, bindings, rendererOptions.delimiter);
+        return rendererOptions.componentFactory(node, renderer, componentDef, attrs, bindings, rendererOptions.delimiter, options, rendererOptions);
     }
 
     // 检查是否是模板标签
@@ -291,7 +291,9 @@ export function compileComponentToFactory(
     componentDef: ComponentDef,
     attrs: RAttr[],
     bindings: any[],
-    delimiter: RegExp
+    delimiter: RegExp,
+    options: CompilerOptions,
+    rendererOptions: RendererOptions
 ): Rendering<RElement> {
     const compiledAttrs = attrs
         .filter(({ name, value }) =>
@@ -309,6 +311,17 @@ export function compileComponentToFactory(
         || name === 'v-model'
         || hasDelimiter(value, delimiter)
     ).length;
+
+    // 编译组件元素内部投影内容（<component> ...content... </component>）。
+    const contentFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
+    if (node.childNodes?.length) {
+        for (const child of node.childNodes) {
+            const childFactory = compileNodeToFactory(child, renderer, options, rendererOptions);
+            if (childFactory) {
+                contentFactories.push(childFactory);
+            }
+        }
+    }
 
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
@@ -343,6 +356,20 @@ export function compileComponentToFactory(
 
         // 附加组件到环境
         injector.attachComponent(componentRef);
+
+        // 创建投影内容节点，通过 PROJECTION_NODES 暴露给组件读取。
+        if (contentFactories.length) {
+            const contentNodes: RNode[] = [];
+            contentFactories.forEach(createChild => {
+                const child = createChild(renderer, effect, injector, context);
+                if (child) {
+                    contentNodes.push(child);
+                }
+            });
+            if (contentNodes.length) {
+                (element as any)[PROJECTION_NODES] = contentNodes;
+            }
+        }
 
         attrs.forEach(({ name, value }) => {
             processComponentAttribute(componentRef, name, value, context, effect, injector, delimiter);

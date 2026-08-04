@@ -1,9 +1,10 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ComponentRef, ComponentsModule } from '@tsdi/components';
+import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
+import { PanelComponent } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleActivityPanelComponent,
@@ -18,6 +19,23 @@ import {
     AgentConsoleWorkingPanelComponent,
     AgentUiModule
 } from '../src';
+
+@Component({
+    selector: 'html-panel-test',
+    imports: [PanelComponent],
+    template: `
+    <section>
+        <panel
+            :summary="summary"
+            :detailLines="detailLines"
+            :visibleLines="2"></panel>
+    </section>
+    `
+})
+class HtmlPanelTestComponent {
+    summary = 'Preview';
+    detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
+}
 
 @Suite('Agent HTML console')
 export class HtmlConsoleTest {
@@ -165,6 +183,48 @@ export class HtmlConsoleTest {
         expect(inputField?.selectionEnd).toEqual('second command'.length);
     }
 
+    @Test('toggles panel summary and detail through html renderer')
+    async togglesPanelSummaryAndDetailThroughHtmlRenderer() {
+        const ctx = await Application.run(HtmlPanelTestComponent, {
+            deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
+            providers: [{
+                provide: DOCUMENT,
+                useFactory: () => {
+                    const { JSDOM } = require('jsdom');
+                    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+                    return dom.window.document;
+                }
+            }]
+        });
+        try {
+            const ref = ctx.runners.getRef(HtmlPanelTestComponent) as ComponentRef<HtmlPanelTestComponent>;
+            await ref.render();
+            await Promise.resolve();
+            const root = ref.hostView.rootNodes[0] as any;
+            const summary = root.querySelector('.panel-summary') as HTMLElement | null;
+
+            expect(root.textContent).toContain('Preview');
+            expect(root.textContent).toContain('line 1');
+            expect(root.textContent).toContain('line 2');
+            expect(root.textContent).toContain('… 2 more lines');
+            expect(root.textContent).not.toContain('line 4');
+
+            summary?.click();
+            await Promise.resolve();
+
+            expect(root.textContent).toContain('line 4');
+            expect(root.textContent).not.toContain('… 2 more lines');
+
+            summary?.click();
+            await Promise.resolve();
+
+            expect(root.textContent).toContain('… 2 more lines');
+            expect(root.textContent).not.toContain('line 4');
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('filters tool transcript rows from the main messages panel')
     async filtersToolTranscriptRowsFromMainMessagesPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
@@ -202,14 +262,15 @@ export class HtmlConsoleTest {
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const collapsedLine = messagesPanel.instance.renderedLines.find(line => line.previewCollapsed);
-        expect(collapsedLine?.content).toContain('more lines');
+        expect(collapsedLine?.content).toContain('/messages + Enter to view');
 
         messagesPanel.instance.onMessageLineClick(collapsedLine);
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
         expect(ref.instance.sessionState.inputFocused).toEqual(false);
 
-        messagesPanel.instance.onMessageLineClick(collapsedLine);
+        const expandedLine = messagesPanel.instance.renderedLines.find(line => line.messageId === 'a1' && !line.previewCollapsed);
+        messagesPanel.instance.onMessageLineClick(expandedLine);
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(false);
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }

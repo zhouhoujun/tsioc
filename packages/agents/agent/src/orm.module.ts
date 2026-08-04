@@ -1,16 +1,13 @@
 import { importProvidersFrom, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
-import { createHash } from 'crypto';
 import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
 import { AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSummaryQualityEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
 
 interface AgentOrmNodeRuntime {
-    resolve(...paths: string[]): string;
     join(...paths: string[]): string;
-    tmpdir(): string;
+    homedir(): string;
     ensureDirectory(path: string): void;
-    isWritableDirectory(path: string): boolean;
 }
 
 function normalizeOrmPath(input: string): string {
@@ -53,20 +50,10 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
         const path = req('path');
         const os = req('os');
         return {
-            resolve: (...paths: string[]) => path.resolve(...paths),
             join: (...paths: string[]) => path.join(...paths),
-            tmpdir: () => os.tmpdir(),
+            homedir: () => process.env.HOME || os.homedir(),
             ensureDirectory: (target: string) => {
                 fs.mkdirSync(target, { recursive: true });
-            },
-            isWritableDirectory: (target: string) => {
-                try {
-                    fs.mkdirSync(target, { recursive: true });
-                    fs.accessSync(target, fs.constants.W_OK);
-                    return true;
-                } catch {
-                    return false;
-                }
             }
         };
     } catch {
@@ -120,15 +107,11 @@ export function provideAgentOrmStorage(root: string, fileName = 'agent.db'): Pro
 function resolveAgentOrmStorageLocation(root: string, fileName: string): string {
     const runtime = loadNodeOrmRuntime();
     if (!runtime) {
-        return joinOrmPath(root, fileName);
+        return joinOrmPath('~/.tsdi-agent', 'agent.db');
     }
-    const resolvedRoot = runtime.resolve(root);
-    if (runtime.isWritableDirectory(resolvedRoot)) {
-        return runtime.join(resolvedRoot, fileName);
-    }
-    const fallbackRoot = runtime.join(runtime.tmpdir(), '.tsdi-agent', createHash('sha1').update(resolvedRoot).digest('hex'));
-    runtime.ensureDirectory(fallbackRoot);
-    return runtime.join(fallbackRoot, fileName);
+    const storageRoot = runtime.join(runtime.homedir(), '.tsdi-agent');
+    runtime.ensureDirectory(storageRoot);
+    return runtime.join(storageRoot, 'agent.db');
 }
 
 
