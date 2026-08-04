@@ -25,16 +25,15 @@ import {
     imports: [PanelComponent],
     template: `
     <section>
-        <panel
-            :summary="summary"
-            :detailLines="detailLines"
-            :visibleLines="2"></panel>
+        <panel>
+            <panel-header><label>Detail</label></panel-header>
+            <panel-summary><label>Preview</label></panel-summary>
+            <panel-body><label>line 1</label><label>line 2</label><label>line 3</label><label>line 4</label></panel-body>
+        </panel>
     </section>
     `
 })
 class HtmlPanelTestComponent {
-    summary = 'Preview';
-    detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
 }
 
 @Suite('Agent HTML console')
@@ -204,21 +203,19 @@ export class HtmlConsoleTest {
             const summary = root.querySelector('.panel-summary') as HTMLElement | null;
 
             expect(root.textContent).toContain('Preview');
-            expect(root.textContent).toContain('line 1');
-            expect(root.textContent).toContain('line 2');
-            expect(root.textContent).toContain('… 2 more lines');
+            expect(root.textContent).not.toContain('line 1');
             expect(root.textContent).not.toContain('line 4');
 
             summary?.click();
             await Promise.resolve();
 
+            expect(root.textContent).toContain('line 1');
             expect(root.textContent).toContain('line 4');
-            expect(root.textContent).not.toContain('… 2 more lines');
 
             summary?.click();
             await Promise.resolve();
 
-            expect(root.textContent).toContain('… 2 more lines');
+            expect(root.textContent).not.toContain('line 1');
             expect(root.textContent).not.toContain('line 4');
         } finally {
             await ctx.close();

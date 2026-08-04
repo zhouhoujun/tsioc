@@ -489,8 +489,8 @@ export class AgentConsoleRendererTest {
         }
     }
 
-    @Test('copies truncated message detail text from terminal copy action')
-    async copiesTruncatedMessageDetailTextFromTerminalCopyAction() {
+    @Test('expands and collapses message detail from terminal click')
+    async expandsAndCollapsesMessageDetailFromTerminalClick() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
@@ -500,10 +500,6 @@ export class AgentConsoleRendererTest {
             const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
             await consoleRef.render();
             const renderer = tuiCtx.get(TuiRenderer);
-            const copied: Array<{ text: string; label: string }> = [];
-            consoleRef.instance.sessionState.copyFocusedTextAction = async (text, label) => {
-                copied.push({ text, label });
-            };
 
             consoleRef.instance.sessionState.setMessages([{
                 id: 'a1',
@@ -525,6 +521,7 @@ export class AgentConsoleRendererTest {
 
             const previewRow = surface.lastRenderedLines.findIndex(line => line.includes('/messages + Enter to view'));
             expect(previewRow).toBeGreaterThanOrEqual(0);
+
             expect(surface.dispatchMouse({
                 button: 0,
                 x: 1,
@@ -534,11 +531,23 @@ export class AgentConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(await consoleRef.instance.sessionState.handleFocusKey('copy')).toBe(true);
-            expect(copied).toEqual([{
-                text: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
-                label: 'selected message'
-            }]);
+            expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
+            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
+            expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(true);
+
+            const expandedRow = surface.lastRenderedLines.findIndex(line => line.includes('line 12'));
+            expect(expandedRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 1,
+                y: expandedRow + 1,
+                release: true
+            })).toBe(true);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('/messages + Enter to view'))).toBe(true);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

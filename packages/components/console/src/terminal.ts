@@ -16,6 +16,10 @@ import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
+export function stripTerminalAnsi(value: string): string {
+    return String(value || '').replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 function resolveConsoleHostEnv(): Record<string, string | undefined> {
     const candidate = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
     return candidate?.env ?? {};
@@ -287,6 +291,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
+    setMouseCapture?(enabled: boolean): boolean;
+    getMouseCaptureEnabled?(): boolean;
 }
 
 export class ConsoleTerminalInputController {
@@ -396,11 +402,29 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected readonly output = (globalThis as any).process?.stdout;
     protected readonly useAlternateScreen = shouldUseAlternateScreen();
     protected attachTimer?: ReturnType<typeof setTimeout>;
+    protected mouseCaptureEnabled = false;
 
     constructor(
         private injector: Injector
     ) {
         super();
+    }
+
+    setMouseCapture(enabled: boolean): boolean {
+        if (!this.output?.isTTY || typeof this.output.write !== 'function') {
+            return false;
+        }
+        const next = !!enabled;
+        if (next === this.mouseCaptureEnabled) {
+            return true;
+        }
+        this.mouseCaptureEnabled = next;
+        this.output.write(next ? '\x1b[?1000h\x1b[?1006h' : '\x1b[?1000l\x1b[?1006l');
+        return true;
+    }
+
+    getMouseCaptureEnabled(): boolean {
+        return this.mouseCaptureEnabled;
     }
 
     startRendering(): void {
@@ -423,7 +447,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     }
 
     getLastRenderedText(stripAnsiValue: (value: string) => string): string {
-        return this.getLastRenderedLines().map(line => stripAnsiValue(line)).join('\n').trim();
+        return this.getLastRenderedLines()
+            .map(line => stripAnsiValue(line).trimEnd())
+            .join('\n')
+            .trim();
     }
 
     dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean {
@@ -445,7 +472,6 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.useAlternateScreen) {
             this.output.write('\x1b[?1049h');
         }
-        this.output.write('\x1b[?1000h\x1b[?1006h');
         this.output.write(buildClearScreenSequence(false));
     }
 

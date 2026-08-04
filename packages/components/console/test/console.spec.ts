@@ -192,16 +192,18 @@ class ConsolePanelTestComponent {
     imports: [PanelComponent],
     template: `
     <section>
-        <panel
-            :summary="summary"
-            :detailLines="detailLines"
-            :visibleLines="2"></panel>
+        <panel>
+            <panel-header>{{header}}</panel-header>
+            <panel-summary>{{summary}}</panel-summary>
+            <panel-body>{{body}}</panel-body>
+        </panel>
     </section>
     `
 })
 class ConsoleFoldPanelTestComponent {
+    header = 'Detail';
     summary = 'Preview';
-    detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
+    body = 'line 1\nline 2\nline 3\nline 4';
 }
 
 @Component({
@@ -731,8 +733,8 @@ export class ConsoleRendererTest {
         })).toEqual(['Tasks', 'footer one', 'footer two']);
     }
 
-    @Test('toggles panel summary and detail through tui renderer')
-    async togglesPanelSummaryAndDetailThroughTuiRenderer() {
+    @Test('toggles panel summary and body through tui renderer')
+    async togglesPanelSummaryAndBodyThroughTuiRenderer() {
         const ctx = await Application.run(ConsoleFoldPanelTestComponent, {
             deps: [TuiTemplateModule, ComponentsModule]
         });
@@ -750,10 +752,9 @@ export class ConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
+            expect(surface.lastRenderedLines.join('\n')).toContain('Detail');
             expect(surface.lastRenderedLines.join('\n')).toContain('Preview');
-            expect(surface.lastRenderedLines.join('\n')).toContain('line 1');
-            expect(surface.lastRenderedLines.join('\n')).toContain('line 2');
-            expect(surface.lastRenderedLines.join('\n')).toContain('… 2 more lines');
+            expect(surface.lastRenderedLines.join('\n')).not.toContain('line 1');
             expect(surface.lastRenderedLines.join('\n')).not.toContain('line 4');
 
             const summaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
@@ -767,8 +768,10 @@ export class ConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 1');
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 2');
+            expect(surface.lastRenderedLines.join('\n')).toContain('line 3');
             expect(surface.lastRenderedLines.join('\n')).toContain('line 4');
-            expect(surface.lastRenderedLines.join('\n')).not.toContain('… 2 more lines');
 
             const expandedSummaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
             expect(surface.dispatchMouse({
@@ -780,7 +783,7 @@ export class ConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(surface.lastRenderedLines.join('\n')).toContain('… 2 more lines');
+            expect(surface.lastRenderedLines.join('\n')).not.toContain('line 1');
             expect(surface.lastRenderedLines.join('\n')).not.toContain('line 4');
         } finally {
             surface?.destroy();

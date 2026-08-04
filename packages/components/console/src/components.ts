@@ -363,32 +363,22 @@ export class TuiSelectComponent {
     selector: 'panel',
     template: `
     <div class="console-panel console-base-panel" v-style="shellStyle">
-        <label class="panel-summary" v-style="summaryStyle" @click="toggle" v-show="summaryLine">{{summaryLine}}</label>
+        <label class="panel-header" v-style="headerStyle" v-show="headerLabel">{{headerLabel}}</label>
+        <label class="panel-summary" v-style="summaryStyle" v-show="summaryLine" @click="toggle">{{summaryLine}}</label>
+        <label class="panel-body" v-style="bodyStyle" v-for="index in bodyIndexes">{{bodyLineAt(index)}}</label>
         <label class="panel-hint" v-style="hintStyle" v-show="hintLabel">{{hintLabel}}</label>
-        <label class="panel-detail" v-style="detailStyle" v-for="index in detailIndexes">{{detailLineAt(index)}}</label>
-        <label class="panel-hint" v-style="hintStyle" v-show="hiddenDetailLabel">{{hiddenDetailLabel}}</label>
     </div>
     `
 })
 export class PanelComponent {
-    private _summary = '';
     private _hint = '';
-    private _detailLines: string[] = [];
-    private _visibleLines = 3;
     private _expanded = false;
+    private _collapsedLabel = '\u25b8';
+    private _expandedLabel = '\u25be';
 
     constructor(
         @Optional() protected elementRef?: ElementRef
     ) {
-    }
-
-    @Attribute()
-    get summary(): string {
-        return this._summary;
-    }
-
-    set summary(value: string) {
-        this._summary = String(value || '').trim();
     }
 
     @Attribute()
@@ -401,44 +391,6 @@ export class PanelComponent {
     }
 
     @Attribute()
-    get detailLines(): string[] {
-        const contentLines = this.contentDetailLines;
-        return contentLines.length ? contentLines : this._detailLines;
-    }
-
-    set detailLines(value: string[] | string | undefined | null) {
-        if (Array.isArray(value)) {
-            this._detailLines = value.map(line => String(line ?? ''));
-            return;
-        }
-        const text = String(value || '').trim();
-        if (!text) {
-            this._detailLines = [];
-            return;
-        }
-        try {
-            const parsed = JSON.parse(text);
-            if (Array.isArray(parsed)) {
-                this._detailLines = parsed.map(line => String(line ?? ''));
-                return;
-            }
-        } catch {
-            // ignore JSON parse failures and fall back to newline splitting
-        }
-        this._detailLines = text.split('\n').map(line => String(line ?? ''));
-    }
-
-    @Attribute()
-    get visibleLines(): number {
-        return this._visibleLines;
-    }
-
-    set visibleLines(value: number | string) {
-        const parsed = Number.parseInt(String(value ?? this._visibleLines), 10);
-        this._visibleLines = Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
-    }
-
-    @Attribute()
     get expanded(): boolean {
         return this._expanded;
     }
@@ -447,18 +399,40 @@ export class PanelComponent {
         this._expanded = value === '' || value === true || value === 'true';
     }
 
+    @Attribute()
+    get collapsedLabel(): string {
+        return this._collapsedLabel;
+    }
+
+    set collapsedLabel(value: string) {
+        this._collapsedLabel = String(value ?? '').trim() || '\u25b8';
+    }
+
+    @Attribute()
+    get expandedLabel(): string {
+        return this._expandedLabel;
+    }
+
+    set expandedLabel(value: string) {
+        this._expandedLabel = String(value ?? '').trim() || '\u25be';
+    }
+
     @Attribute() expandedChange = new EventEmitter<boolean>();
 
-    get contentDetailLines(): string[] {
-        const nodes = this.resolveProjectedContent();
-        if (!nodes.length) {
-            return [];
-        }
-        const lines: string[] = [];
-        nodes.forEach(node => {
-            this.collectContentText(node, lines);
-        });
-        return lines;
+    get headerLines(): string[] {
+        return this.resolveProjectedText('panel-header');
+    }
+
+    get summaryLines(): string[] {
+        return this.resolveProjectedText('panel-summary');
+    }
+
+    get bodyLines(): string[] {
+        return this.resolveProjectedText('panel-body');
+    }
+
+    get hasBodyContent(): boolean {
+        return !!this.findProjectedElement('panel-body');
     }
 
     protected resolveProjectedContent(): RNode[] {
@@ -467,26 +441,37 @@ export class PanelComponent {
         return nodes?.length ? nodes : [];
     }
 
-    protected collectContentText(node: RNode | undefined | null, lines: string[]): void {
+    protected findProjectedElement(tagName: string): RNode | undefined {
+        const nodes = this.resolveProjectedContent();
+        return nodes.find(node =>
+            node.nodeType === NodeType.Element &&
+            String((node as any).tagName || '').toLowerCase() === tagName
+        );
+    }
+
+    protected resolveProjectedText(tagName: string): string[] {
+        const element = this.findProjectedElement(tagName);
+        if (!element) {
+            return [];
+        }
+        const lines: string[] = [];
+        const children = (element as any).childNodes as RNode[] | undefined;
+        children?.forEach(child => this.collectProjectedNodeText(child, lines));
+        return lines;
+    }
+
+    protected collectProjectedNodeText(node: RNode | undefined | null, lines: string[]): void {
         if (!node) {
             return;
         }
         if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
-            const text = String((node as any).textContent || '');
-            text.split('\n').forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed) {
-                    lines.push(trimmed);
-                }
-            });
+            this.pushContentLines(String((node as any).textContent || ''), lines);
             return;
         }
-        const children = (node as any).childNodes as RNode[] | undefined;
-        if (children?.length) {
-            children.forEach(child => this.collectContentText(child, lines));
-            return;
-        }
-        const text = String((node as any).textContent || '');
+        this.pushContentLines(String((node as any).textContent || ''), lines);
+    }
+
+    protected pushContentLines(text: string, lines: string[]): void {
         text.split('\n').forEach(line => {
             const trimmed = line.trim();
             if (trimmed) {
@@ -499,8 +484,12 @@ export class PanelComponent {
         return 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
     }
 
+    get headerLabel(): string {
+        return this.headerLines[0] || '';
+    }
+
     get summaryLabel(): string {
-        return this._summary || this.detailLines[0] || '';
+        return this.summaryLines[0] || this.bodyLines[0] || '';
     }
 
     get summaryLine(): string {
@@ -508,45 +497,35 @@ export class PanelComponent {
         if (!summary) {
             return '';
         }
-        return `${this._expanded ? '▾' : '▸'} ${summary}`;
+        return `${this._expanded ? '\u25be' : '\u25b8'} ${summary}`;
     }
 
     get hintLabel(): string {
         if (this._hint) {
             return this._hint;
         }
-        if (!this.detailLines.length) {
+        if (!this.hasBodyContent && !this.summaryLines.length) {
             return '';
         }
         return this._expanded ? 'click summary to collapse' : 'click summary to expand';
     }
 
-    get visibleDetailLines(): string[] {
-        const lines = this.detailLines;
-        if (this._expanded) {
-            return lines.slice();
+    get bodyIndexes(): number[] {
+        if (!this._expanded) {
+            return [];
         }
-        return lines.slice(0, this._visibleLines);
+        return Array.from({ length: this.bodyLines.length }, (_value, index) => index);
     }
 
-    get detailIndexes(): number[] {
-        return Array.from({ length: this.visibleDetailLines.length }, (_value, index) => index);
+    bodyLineAt(index: number): string {
+        return this.bodyLines[index] || '';
     }
 
-    detailLineAt(index: number): string {
-        return this.visibleDetailLines[index] || '';
-    }
-
-    get hiddenDetailCount(): number {
-        if (this._expanded) {
-            return 0;
-        }
-        return Math.max(0, this.detailLines.length - this._visibleLines);
-    }
-
-    get hiddenDetailLabel(): string {
-        const hidden = this.hiddenDetailCount;
-        return hidden > 0 ? `… ${hidden} more line${hidden === 1 ? '' : 's'}` : '';
+    get headerStyle(): Record<string, string> {
+        return {
+            color: '#f3f6fb',
+            'font-weight': 'bold'
+        };
     }
 
     get summaryStyle(): Record<string, string> {
@@ -557,7 +536,7 @@ export class PanelComponent {
         };
     }
 
-    get detailStyle(): Record<string, string> {
+    get bodyStyle(): Record<string, string> {
         return {
             color: '#d6dee6',
             'white-space': 'pre-wrap',
@@ -572,11 +551,13 @@ export class PanelComponent {
     }
 
     toggle(): void {
+        if (!this.hasBodyContent && !this.summaryLines.length) {
+            return;
+        }
         this._expanded = !this._expanded;
         this.expandedChange.emit(this._expanded);
     }
 }
-
 @Directive({
     selector: 'label'
 })
@@ -584,7 +565,6 @@ export class LabelComponent {
     @Attribute() labelStyle = 'color: #6e7681;';
     @Attribute() renderRegion = '';
 }
-
 
 @Directive({
     selector: 'span'

@@ -1007,6 +1007,17 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    resolveLatestCollapsedMessageId(): string | undefined {
+        const messages = this.displayMessages;
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const content = String(messages[index]?.content || '');
+            if (content.split('\n').length > 8) {
+                return String(messages[index]?.id || '');
+            }
+        }
+        return undefined;
+    }
+
     closeMessageDetail(): void {
         if (!this.messageDetailOpen && this.messageDetailScroll === 0) {
             return;
@@ -2522,8 +2533,6 @@ export class AgentConsoleSessionState {
         }
         const normalized = String(rawText || '').trim().toLowerCase();
         switch (normalized) {
-            case 'y':
-                return 'copy';
             case 'a':
                 return 'approve';
             case 'd':
@@ -3500,9 +3509,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedReviewCopyText(), 'review');
-                    return true;
                 case ',':
                     this.moveReviewGroupSelection(-1);
                     return true;
@@ -3577,9 +3583,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
-                    return true;
                 case 'down':
                     this.scrollMessageDetail(1);
                     return true;
@@ -3614,9 +3617,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
-                    return true;
                 case 'down':
                     this.moveMessageSelection(1);
                     return true;
@@ -3648,9 +3648,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedApprovalCopyText(), 'selected approval');
-                    return true;
                 case 'approve':
                     if (this.selectedApproval?.id) {
                         await this.resolveApprovalAction?.('approve', this.selectedApproval.id);
@@ -3695,9 +3692,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), 'selected task');
-                    return true;
                 case 'enter':
                     if (this.selectedTask?.id) {
                         await this.openSelectedTaskAction?.(this.selectedTask.id);
@@ -3761,9 +3755,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedScheduledTaskCopyText(), 'scheduled job');
-                    return true;
                 case 'enter':
                 case 'p':
                     if (this.selectedScheduledTask?.id) {
@@ -3811,9 +3802,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedTool?.name || '', 'tool name');
-                    return true;
                 case 'enter':
                 case 'approve':
                     if (this.selectedTool?.name) {
@@ -3849,9 +3837,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedToolRunCopyText(), 'tool run');
-                    return true;
                 case 'down':
                     this.moveToolRunSelection(1);
                     return true;
@@ -3880,9 +3865,6 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedSessionCopyText(), 'session');
-                    return true;
                 case 'down':
                     this.moveSessionSelection(1);
                     return true;
@@ -4076,6 +4058,14 @@ export class AgentConsoleSessionState {
                 return { handled: true, action: 'submitTextPrompt' };
             }
             if (!this.modalPromptActive && !this.inputLocked) {
+                if (!String(this.input || '').trim() && !this.messageDetailOpen) {
+                    const collapsedId = this.resolveLatestCollapsedMessageId();
+                    if (collapsedId) {
+                        this.setSelectedMessageId(collapsedId);
+                        this.openMessageDetail();
+                        return { handled: true, action: 'expandMessage' };
+                    }
+                }
                 return { handled: true, action: 'submit', value: rawText };
             }
             return { handled: true };
