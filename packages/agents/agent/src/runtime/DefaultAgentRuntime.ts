@@ -747,7 +747,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number): ModelRequest {
+    protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.getTurnAbortSignal(sessionId);
         const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
@@ -756,6 +756,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         if (falsifyRate != null) {
             request.falsifyRate = falsifyRate;
+        }
+        if (reasoning != null) {
+            request.reasoning = reasoning;
         }
         return request;
     }
@@ -793,7 +796,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 request = recoveredRequest;
             }
             const falsifyRate = this.computeTurnFalsifyRate(turnContext);
-            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate));
+            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
@@ -801,7 +804,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
                 response = await this.modelAdapter.complete(
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate)
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
@@ -810,7 +813,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
                 response = await this.modelAdapter.complete(
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate)
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
@@ -832,7 +835,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = await this.modelAdapter.complete(
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext))
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
         );
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
@@ -866,7 +869,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const falsifyRate = this.computeTurnFalsifyRate(turnContext);
             let response = yield* this.collectStreamingResponse(
                 sessionId,
-                this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate)
+                this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
             );
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
@@ -875,7 +878,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate)
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
@@ -884,7 +887,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate)
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
             }
 
@@ -907,7 +910,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = yield* this.collectStreamingResponse(
             sessionId,
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext))
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
         );
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);

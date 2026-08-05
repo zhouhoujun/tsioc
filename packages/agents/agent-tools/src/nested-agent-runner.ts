@@ -20,6 +20,18 @@ export interface NestedAgentRunRequest {
      * Defaults to the adapter-specific class ('spawn_agent' / 'llm_task').
      */
     workerClass?: string;
+    /**
+     * P42: explicit named model profile for this worker's turn. Takes
+     * precedence over the worker-class profile. Unlike session-level profile
+     * pinning it needs no cleanup and is safe under concurrent workers.
+     */
+    profile?: string;
+    /** P42: enable model reasoning (extended thinking) for this worker's turn. */
+    reasoning?: boolean;
+    /** P42: cap concurrent workers within this batch (undefined = unlimited). */
+    concurrency?: number;
+    /** P42: sensitive values injected into the worker prompt, never persisted. */
+    secrets?: Record<string, string>;
 }
 
 export interface DelegatedAgentReport {
@@ -42,6 +54,38 @@ export interface NestedAgentRunResult {
     report?: DelegatedAgentReport;
 }
 
+/**
+ * Run `fn` over `items` with at most `limit` in-flight promises.
+ * `undefined`/non-positive/over-size limits fall back to unbounded
+ * Promise.allSettled semantics (previous behavior). Results preserve input
+ * order and settlement status, so callers keep their allSettled mapping.
+ */
+export async function runWithConcurrency<T, R>(
+    items: T[],
+    limit: number | undefined,
+    fn: (item: T, index: number) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+    if (items.length === 0) {
+        return [];
+    }
+    if (!limit || limit <= 0 || limit >= items.length) {
+        return Promise.allSettled(items.map((item, index) => fn(item, index)));
+    }
+    const results: PromiseSettledResult<R>[] = new Array(items.length);
+    let cursor = 0;
+    await Promise.all(Array.from({ length: Math.floor(limit) }, async () => {
+        while (cursor < items.length) {
+            const index = cursor++;
+            try {
+                results[index] = { status: 'fulfilled', value: await fn(items[index], index) };
+            } catch (err) {
+                results[index] = { status: 'rejected', reason: err };
+            }
+        }
+    }));
+    return results;
+}
+
 @Abstract()
 export abstract class NestedAgentRunner {
     abstract run(request: NestedAgentRunRequest): Promise<NestedAgentRunResult>;
@@ -55,7 +99,7 @@ export abstract class NestedAgentRunner {
         if (requests.length === 0) {
             return [];
         }
-        const settled = await Promise.allSettled(requests.map(req => this.run(req)));
+        const settled = await runWithConcurrency(requests, requests[0]?.concurrency, (req, index) => this.run(req));
         return settled.map((result, index) => {
             if (result.status === 'fulfilled') {
                 return result.value;
@@ -88,6 +132,15 @@ function buildSubAgentPrompt(request: SpawnAgentInput): string {
         parts.push(`Context:\n${request.context.trim()}`);
     }
     return parts.join('\n\n');
+}
+
+export function appendSecrets(prompt: string, secrets?: Record<string, string>): string {
+    const entries = secrets ? Object.entries(secrets).filter(([, value]) => value != null) : [];
+    if (entries.length === 0) {
+        return prompt;
+    }
+    const lines = entries.map(([key, value]) => `${key}: ${value}`);
+    return `${prompt}\n\n## Secrets\n${lines.join('\n')}`;
 }
 
 export function parseDelegatedAgentReport(content: string): DelegatedAgentReport | undefined {
@@ -166,7 +219,10 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             toolsets: input.toolsets,
             maxTurns: input.maxTurns,
             parentSessionId: input.sessionId,
-            workerClass: 'spawn_agent'
+            workerClass: 'spawn_agent',
+            profile: input.profile,
+            reasoning: input.reasoning,
+            secrets: input.secrets
         });
         return this.toSpawnAgentResult(result, sessionId);
     }
@@ -175,16 +231,24 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
         if (inputs.length === 0) {
             return [];
         }
-        const requests = inputs.map(input => ({
+        const requests: NestedAgentRunRequest[] = inputs.map(input => ({
             prompt: buildSubAgentPrompt(input),
             sessionId: `spawn-${randomUUID()}`,
             toolsets: input.toolsets,
             maxTurns: input.maxTurns,
             parentSessionId: input.sessionId,
-            workerClass: 'spawn_agent'
+            workerClass: 'spawn_agent',
+            profile: input.profile,
+            reasoning: input.reasoning,
+            secrets: input.secrets
         }));
+        if (inputs[0]?.concurrency) {
+            for (const req of requests) {
+                req.concurrency = inputs[0].concurrency;
+            }
+        }
         const results = await this.requireRunner().runParallel(requests);
-        return results.map((result, index) => this.toSpawnAgentResult(result, requests[index].sessionId));
+        return results.map((result, index) => this.toSpawnAgentResult(result, requests[index].sessionId!));
     }
 
     protected toSpawnAgentResult(result: NestedAgentRunResult, sessionId: string): SpawnAgentResult {
@@ -231,7 +295,10 @@ export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
             model: request.model,
             temperature: request.temperature,
             maxTokens: request.maxTokens,
-            workerClass: 'llm_task'
+            workerClass: 'llm_task',
+            profile: request.profile,
+            reasoning: request.reasoning,
+            secrets: request.secrets
         });
         return {
             content: result.content,

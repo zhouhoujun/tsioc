@@ -14,6 +14,13 @@ export interface AgentTurnAgentConfig {
     permissions?: Record<string, AgentToolPermission>;
     /** Max tool invocations this turn; 0 or undefined means unlimited. */
     maxSteps?: number;
+    /**
+     * P42: enable model reasoning (extended thinking) for this turn.
+     * When set, the model adapter emits its provider-specific reasoning
+     * affordance (Anthropic `thinking` / OpenAI `reasoning_effort`). Undefined
+     * keeps the adapter's option-level default.
+     */
+    reasoning?: boolean;
 }
 
 export interface AgentTurnInput {

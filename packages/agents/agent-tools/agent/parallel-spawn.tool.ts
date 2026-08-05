@@ -56,11 +56,28 @@ export class ParallelSpawnTool implements AgentTool {
                         maxTurns: {
                             type: 'number',
                             description: 'Maximum number of turns this sub-agent may execute (default: 10).'
+                        },
+                        profile: {
+                            type: 'string',
+                            description: 'Explicit named model profile for this sub-agent turn.'
+                        },
+                        reasoning: {
+                            type: 'boolean',
+                            description: 'Enable model reasoning (extended thinking) for this sub-agent.'
+                        },
+                        secrets: {
+                            type: 'object',
+                            additionalProperties: { type: 'string' },
+                            description: 'Sensitive key/value pairs injected into this sub-agent prompt. Never persisted.'
                         }
                     },
                     required: ['goal']
                 },
                 description: 'Array of task specifications to run in parallel. Each task gets its own isolated sub-agent.'
+            },
+            concurrency: {
+                type: 'number',
+                description: 'Maximum number of sub-agents running at the same time (default: unlimited).'
             }
         },
         required: ['tasks']
@@ -75,7 +92,7 @@ export class ParallelSpawnTool implements AgentTool {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        const tasks: Array<{ goal: string; context?: string; toolsets?: string[]; maxTurns?: number }> = Array.isArray(input?.tasks) ? input.tasks : [];
+        const tasks: Array<{ goal: string; context?: string; toolsets?: string[]; maxTurns?: number; profile?: string; reasoning?: boolean; secrets?: Record<string, string> }> = Array.isArray(input?.tasks) ? input.tasks : [];
         if (tasks.length === 0) {
             return { results: [], error: 'tasks array is required and must contain at least one task.' };
         }
@@ -84,7 +101,11 @@ export class ParallelSpawnTool implements AgentTool {
             context: typeof task.context === 'string' ? task.context : undefined,
             toolsets: Array.isArray(task.toolsets) ? task.toolsets.filter((t: any) => typeof t === 'string') : undefined,
             maxTurns: typeof task.maxTurns === 'number' ? task.maxTurns : undefined,
-            sessionId: _context?.sessionId
+            sessionId: _context?.sessionId,
+            profile: typeof task.profile === 'string' && task.profile.trim() ? task.profile.trim() : undefined,
+            reasoning: typeof task.reasoning === 'boolean' ? task.reasoning : undefined,
+            secrets: this.requireSecrets(task.secrets),
+            concurrency: typeof input?.concurrency === 'number' && input.concurrency > 0 ? input.concurrency : undefined
         }));
         const results = await this.adapter.spawnParallel(inputs);
         const aggregate = this.aggregateResults(tasks, results);
@@ -192,5 +213,18 @@ export class ParallelSpawnTool implements AgentTool {
             throw new Error(`Invalid ${field}: must be a non-empty string.`);
         }
         return value.trim();
+    }
+
+    private requireSecrets(value: unknown): Record<string, string> | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        const secrets: Record<string, string> = {};
+        for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+            if (typeof entry === 'string') {
+                secrets[key] = entry;
+            }
+        }
+        return Object.keys(secrets).length > 0 ? secrets : undefined;
     }
 }

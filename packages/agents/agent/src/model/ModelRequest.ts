@@ -29,4 +29,11 @@ export interface ModelRequest {
      * confidence) on high-failure trajectories.
      */
     falsifyRate?: number;
+    /**
+     * P42: explicit reasoning (extended thinking) request for this model call.
+     * When true, adapters emit their provider-specific reasoning affordance
+     * (Anthropic `thinking` / OpenAI `reasoning_effort`). When false or
+     * undefined the adapter keeps its option-level default.
+     */
+    reasoning?: boolean;
 }

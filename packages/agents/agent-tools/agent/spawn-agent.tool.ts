@@ -22,6 +22,14 @@ export interface SpawnAgentInput {
     toolsets?: string[];
     maxTurns?: number;
     sessionId?: string;
+    /** P42: explicit named model profile for the sub-agent turn. */
+    profile?: string;
+    /** P42: enable model reasoning (extended thinking) for the sub-agent. */
+    reasoning?: boolean;
+    /** P42: cap concurrent workers in a spawn batch (parallel_spawn only). */
+    concurrency?: number;
+    /** P42: sensitive values injected into the sub-agent prompt, never persisted. */
+    secrets?: Record<string, string>;
 }
 
 export interface SpawnAgentResult {
@@ -65,6 +73,19 @@ export class SpawnAgentTool implements AgentTool {
             maxTurns: {
                 type: 'number',
                 description: 'Maximum number of turns the sub-agent may execute (default: 10).'
+            },
+            profile: {
+                type: 'string',
+                description: 'Explicit named model profile for the sub-agent turn (overrides the worker-class profile).'
+            },
+            reasoning: {
+                type: 'boolean',
+                description: 'Enable model reasoning (extended thinking) for the sub-agent.'
+            },
+            secrets: {
+                type: 'object',
+                additionalProperties: { type: 'string' },
+                description: 'Sensitive key/value pairs injected into the sub-agent prompt. Never persisted to delegation metadata or logs.'
             }
         },
         required: ['goal']
@@ -85,7 +106,10 @@ export class SpawnAgentTool implements AgentTool {
             context: typeof input?.context === 'string' ? input.context : undefined,
             toolsets: Array.isArray(input?.toolsets) ? input.toolsets.filter((t: any) => typeof t === 'string') : undefined,
             maxTurns: typeof input?.maxTurns === 'number' && input.maxTurns > 0 ? input.maxTurns : undefined,
-            sessionId: _context?.sessionId
+            sessionId: _context?.sessionId,
+            profile: typeof input?.profile === 'string' && input.profile.trim() ? input.profile.trim() : undefined,
+            reasoning: typeof input?.reasoning === 'boolean' ? input.reasoning : undefined,
+            secrets: this.requireSecrets(input?.secrets)
         });
         return {
             goal,
@@ -112,5 +136,18 @@ export class SpawnAgentTool implements AgentTool {
             throw new Error(`Invalid ${field}: must be a non-empty string.`);
         }
         return value.trim();
+    }
+
+    protected requireSecrets(value: unknown): Record<string, string> | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        const secrets: Record<string, string> = {};
+        for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+            if (typeof entry === 'string') {
+                secrets[key] = entry;
+            }
+        }
+        return Object.keys(secrets).length > 0 ? secrets : undefined;
     }
 }

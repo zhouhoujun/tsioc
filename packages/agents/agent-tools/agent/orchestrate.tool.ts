@@ -9,6 +9,12 @@ export interface OrchestrateTask {
     dependsOn?: string[];
     toolsets?: string[];
     maxTurns?: number;
+    /** P42: explicit named model profile for this task. */
+    profile?: string;
+    /** P42: enable model reasoning (extended thinking) for this task. */
+    reasoning?: boolean;
+    /** P42: sensitive values injected into the task prompt, never persisted. */
+    secrets?: Record<string, string>;
 }
 
 export interface OrchestratePhase {
@@ -92,6 +98,19 @@ export class OrchestrateTool implements AgentTool {
                         maxTurns: {
                             type: 'number',
                             description: 'Maximum turns for this sub-agent (default: 10).'
+                        },
+                        profile: {
+                            type: 'string',
+                            description: 'Explicit named model profile for this task.'
+                        },
+                        reasoning: {
+                            type: 'boolean',
+                            description: 'Enable model reasoning (extended thinking) for this task.'
+                        },
+                        secrets: {
+                            type: 'object',
+                            additionalProperties: { type: 'string' },
+                            description: 'Sensitive key/value pairs injected into this task prompt. Never persisted.'
                         }
                     },
                     required: ['id', 'goal']
@@ -123,7 +142,10 @@ export class OrchestrateTool implements AgentTool {
             context: typeof t.context === 'string' ? t.context : undefined,
             dependsOn: Array.isArray(t.dependsOn) ? t.dependsOn.filter((d: any) => typeof d === 'string') : undefined,
             toolsets: Array.isArray(t.toolsets) ? t.toolsets.filter((t2: any) => typeof t2 === 'string') : undefined,
-            maxTurns: typeof t.maxTurns === 'number' ? t.maxTurns : undefined
+            maxTurns: typeof t.maxTurns === 'number' ? t.maxTurns : undefined,
+            profile: typeof t.profile === 'string' && t.profile.trim() ? t.profile.trim() : undefined,
+            reasoning: typeof t.reasoning === 'boolean' ? t.reasoning : undefined,
+            secrets: this.requireSecrets(t.secrets)
         }));
 
         const allIds = new Set(tasks.map(t => t.id));
@@ -167,7 +189,10 @@ export class OrchestrateTool implements AgentTool {
                 context: pt.context,
                 toolsets: pt.task.toolsets,
                 maxTurns: pt.task.maxTurns,
-                sessionId: _context?.sessionId
+                sessionId: _context?.sessionId,
+                profile: pt.task.profile,
+                reasoning: pt.task.reasoning,
+                secrets: pt.task.secrets
             }));
 
             const results = inputs.length ? await this.adapter.spawnParallel(inputs) : [];
@@ -372,6 +397,19 @@ export class OrchestrateTool implements AgentTool {
             throw new Error(`Invalid ${field}: must be a non-empty string.`);
         }
         return value.trim();
+    }
+
+    private requireSecrets(value: unknown): Record<string, string> | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        const secrets: Record<string, string> = {};
+        for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+            if (typeof entry === 'string') {
+                secrets[key] = entry;
+            }
+        }
+        return Object.keys(secrets).length > 0 ? secrets : undefined;
     }
 
     private normalizeList(values?: string[] | null): string[] {

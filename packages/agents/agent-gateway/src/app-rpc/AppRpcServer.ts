@@ -569,6 +569,10 @@ export class AppRpcServer {
         if (typeof maxSteps === 'number' && Number.isInteger(maxSteps) && maxSteps > 0) {
             agent.maxSteps = maxSteps;
         }
+        const reasoning = (value as any).reasoning;
+        if (typeof reasoning === 'boolean') {
+            agent.reasoning = reasoning;
+        }
         return Object.keys(agent).length > 0 ? agent : undefined;
     }
 

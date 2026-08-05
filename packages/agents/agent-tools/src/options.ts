@@ -114,8 +114,27 @@ export interface AgentToolsCodingTaskOptions {
  * workers pin that profile for their session instead of relying on
  * complexity/routes matching.
  */
+export interface AgentToolsDelegationEncryptionOptions {
+    /** Static AES-256-GCM key for delegation metadata at rest. Prefer keyEnv. */
+    key?: string;
+    /** Environment variable holding the AES-256-GCM delegation key. */
+    keyEnv?: string;
+}
+
 export interface AgentToolsDelegationOptions {
     workerModelProfiles?: Record<string, string>;
+    /**
+     * Cap the number of concurrently running delegation workers within a
+     * single spawn batch (spawn_agent / parallel_spawn / orchestrate phase).
+     * Undefined keeps unlimited concurrency.
+     */
+    concurrency?: number;
+    /**
+     * When a key is configured, delegation metadata (goal/context) and
+     * sub-agent secrets are sealed with AES-256-GCM before persistence.
+     * Without a key, metadata stays plaintext (previous behavior).
+     */
+    encryption?: AgentToolsDelegationEncryptionOptions;
 }
 
 export type AgentToolGroup =

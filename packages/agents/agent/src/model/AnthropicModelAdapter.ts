@@ -349,8 +349,11 @@ export class AnthropicModelAdapter extends ModelAdapter {
             body.temperature = this.options.temperature;
         }
 
-        if ((this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0) {
-            body.thinking = { type: 'enabled', budget_tokens: (this.options as any).thinkingBudget };
+        if (request.reasoning === true || ((this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0)) {
+            const budget = (this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0
+                ? (this.options as any).thinkingBudget
+                : 2048;
+            body.thinking = { type: 'enabled', budget_tokens: budget };
         }
 
         return body;

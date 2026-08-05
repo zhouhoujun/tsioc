@@ -4,11 +4,14 @@ import { AgentRuntime, SessionStore } from '@tsdi/agent';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions } from './options';
 import {
+    appendSecrets,
     NestedAgentRunner,
     NestedAgentRunRequest,
     NestedAgentRunResult,
-    parseDelegatedAgentReport
+    parseDelegatedAgentReport,
+    runWithConcurrency
 } from './nested-agent-runner';
+import { createDelegationCipher, resolveDelegationCipherKey } from './delegation/crypto';
 
 @Injectable()
 export class LightweightAgentRunner extends NestedAgentRunner {
@@ -39,7 +42,8 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             await this.runtime.start();
             this.started = true;
         }
-        const settled = await Promise.allSettled(requests.map(req => this.runSingle(req)));
+        const limit = requests[0]?.concurrency ?? this.options?.delegation?.concurrency;
+        const settled = await runWithConcurrency(requests, limit, (req, index) => this.runSingle(req));
         return settled.map((result, index) => {
             if (result.status === 'fulfilled') {
                 return result.value;
@@ -69,37 +73,49 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         const sessionId = request.sessionId || `sub-${randomUUID()}`;
         const parentSessionId = request.parentSessionId;
         const workerProfile = this.resolveWorkerModelProfile(request);
+        const explicitProfile = request.profile;
+        const cipherKey = resolveDelegationCipherKey(this.options?.delegation?.encryption);
+        const cipher = cipherKey ? createDelegationCipher(cipherKey) : undefined;
+        const agentConfig = request.reasoning == null ? undefined : { reasoning: request.reasoning };
+        const basePrompt = request.systemPrompt
+            ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
+            : request.prompt;
+        const prompt = appendSecrets(basePrompt, request.secrets);
 
         if (parentSessionId) {
             this.runtime!.registerChildSession(parentSessionId, sessionId, {
                 kind: 'nested',
-                goal: request.prompt,
+                goal: cipher ? cipher.encrypt(prompt) : basePrompt,
                 toolsets: request.toolsets,
                 model: request.model,
-                maxTurns: request.maxTurns
+                maxTurns: request.maxTurns,
+                ...(cipher && request.secrets
+                    ? {
+                        sealed: true,
+                        secrets: Object.fromEntries(
+                            Object.entries(request.secrets).map(([key, value]) => [key, cipher.encrypt(value)])
+                        )
+                    }
+                    : {})
             });
         }
         if (request.toolsets?.length) {
             this.runtime!.setSessionToolFilter(sessionId, request.toolsets);
         }
-        if (workerProfile) {
+        if (!explicitProfile && workerProfile) {
             this.runtime!.setSessionModelProfile(sessionId, workerProfile);
         }
-
-        const prompt = request.systemPrompt
-            ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
-            : request.prompt;
 
         let succeeded = false;
         try {
             const maxTurns = typeof request.maxTurns === 'number' && request.maxTurns > 0
                 ? Math.floor(request.maxTurns)
                 : LightweightAgentRunner.DEFAULT_MAX_TURNS;
-            let result = await this.runtime!.runTurn(sessionId, prompt);
+            let result = await this.runtime!.runTurn(sessionId, prompt, undefined, undefined, explicitProfile, agentConfig);
             let report = parseDelegatedAgentReport(result.message.content);
 
             for (let turn = 1; turn < maxTurns && !report; turn++) {
-                result = await this.runtime!.runTurn(sessionId, LightweightAgentRunner.CONTINUE_PROMPT);
+                result = await this.runtime!.runTurn(sessionId, LightweightAgentRunner.CONTINUE_PROMPT, undefined, undefined, explicitProfile, agentConfig);
                 report = parseDelegatedAgentReport(result.message.content);
             }
 
@@ -136,7 +152,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             if (request.toolsets?.length) {
                 this.runtime!.clearSessionToolFilter(sessionId);
             }
-            if (workerProfile) {
+            if (!explicitProfile && workerProfile) {
                 this.runtime!.clearSessionModelProfile(sessionId);
             }
         }

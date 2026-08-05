@@ -654,3 +654,45 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 说明：B5 实现先行（早于 P39/P40 提交），todo.md 记录滞后，本次补录。
 
 验证：`summary-quality.spec.ts` 31 passing（含 Evidence coverage metric Suite）、`context-compaction.spec.ts` 85 passing；agent 全量 504 passing（当前基线，含 B6 5 条）；`tsc --noEmit` clean。
+
+## P42 规划：多代理 v2（per-spawn 模型 / reasoning / 并发度 + 子任务加密）
+
+1. **A-per-spawn 模型覆盖（profile）**：
+   - 契约：`SpawnAgentInput.profile?: string`、`NestedAgentRunRequest.profile?: string`；`spawn_agent` / `parallel_spawn`（per-task）/ `orchestrate`（per-task）schema 增加 `profile`。
+   - 落地：`LightweightAgentRunner.runSingle` 显式 `request.profile` 优先 → `runtime.runTurn(sessionId, prompt, undefined, undefined, profile)`（turn 级覆盖，不改会话级 `sessionModelProfiles`）；否则回退 workerClass → `workerModelProfiles`（既有路径）；delegation metadata 记录所选 profile。
+   - 验证：`agent-tools/test/delegation-v2.spec.ts` 断言显式 profile 优先于 workerModelProfiles / 会话默认。
+2. **A-per-spawn reasoning 覆盖**：
+   - 契约：`AgentTurnAgentConfig.reasoning?: boolean`（复用既有 `agent` 透传面，gateway `run.turn` 免改签名即获得 RPC 透传）；`ModelRequest.reasoning?: boolean`。
+   - 落地：`prepareModelRequest` 增加第 5 参 `reasoning?`（`falsifyRate` 之后），非 null 写入 `request.reasoning`；`completeTurn` / `completeStreamingTurn` 从 `turnContext.agent?.reasoning` 传入；adapter 侧：`AnthropicModelAdapter` 当 `request.reasoning` 时 `body.thinking = { type: 'enabled', budget_tokens: thinkingBudget || 2048 }`（保留既有 `options.thinkingBudget > 0` 自动开启），`OpenAICompatibleModelAdapter` 当 `request.reasoning` 时 `body.reasoning_effort = 'high'`。
+   - 验证：agent `test/model-provider.spec.ts` +2（anthropic body.thinking / openai reasoning_effort）；gateway `run.turn` agent.reasoning 透传。
+3. **A-并发度上限**：
+   - 契约：`AgentToolsDelegationOptions.concurrency?: number`（默认 undefined = 不限，保持既有行为）；`NestedAgentRunRequest.concurrency?: number`；`parallel_spawn` input 增加 `concurrency?: number`。
+   - 落地：`nested-agent-runner.ts` 导出有界并发工具 `runWithConcurrency<T>(items, limit, fn)`；`NestedAgentRunner.runParallel` 与 `LightweightAgentRunner.runParallel` 均按 `limit = request.concurrency ?? options.delegation.concurrency ?? Infinity` 分片调度（orchestrate 各 phase 经 `adapter.spawnParallel` → runner.runParallel 自动受控）。
+   - 验证：`delegation-v2.spec.ts` 用假 runtime 记录并发水位，断言 `concurrency=2` 下 4 任务峰值 ≤ 2 且结果全量返回。
+4. **A-子任务加密**：
+   - 契约：`AgentToolsDelegationOptions.encryption?: { key?: string; keyEnv?: string }`（AES-256-GCM）；`SpawnAgentInput.secrets?: Record<string, string>`（spawn/parallel/orchestrate 均支持）。
+   - 落地：新增 `agent-tools/src/delegation/crypto.ts` — `createDelegationCipher(key)`：SHA-256 派生 32 字节密钥，随机 12 字节 IV + 16 字节 auth tag，base64 `iv.tag.ciphertext`；`sealRecord(record, sensitiveKeys)` 对 delegation metadata 的 goal/context/secrets 加密落盘、明文移除；`LightweightAgentRunner.runSingle` 解密 secrets 后以 `## Secrets` 段注入子代理 prompt（仅内存，不进 metadata / 日志）；未配置 key → 明文透传（零行为变化）。
+   - 验证：`delegation-v2.spec.ts` — 加解密往返、篡改 → 抛错、同明文两次密文不同（随机 IV）、metadata 无明文、child prompt 含解密 secrets、无 key 时 metadata 明文不变。
+
+实现顺序：agent 侧（AgentTurnInput/ModelRequest/adapters/prepareModelRequest）→ agent-tools 侧（options/crypto/runner/工具 schema）→ gateway 透传 → 测试 → 五包全量回归 + agent `tsc --noEmit` → todo.md 收尾 + 提交。
+
+## P42 打磨（已完成）：多代理 v2
+
+1. ~~A-per-spawn 模型覆盖（profile）~~ → 已完成（`@tsdi/agent-tools`，本次提交）：
+   - 契约落地：`SpawnAgentInput.profile?`、`NestedAgentRunRequest.profile?`；`spawn_agent` / `parallel_spawn`（per-task）/ `orchestrate`（per-task）schema 增加 `profile`；`resolveWorkerModelProfile` 改为 `request.profile ?? workerModelProfile`（显式 profile 短路 worker-class 映射）。
+   - 落地：`LightweightAgentRunner.runSingle` 显式 `request.profile` 优先 → turn 级 `runTurn(..., profile)` 覆盖（不写会话级 `sessionModelProfiles`，无需清理）；否则回退 workerClass → `workerModelProfiles`（既有路径，try/finally 清理保留）。
+   - 测试：`agent-tools/test/delegation-v2.spec.ts` — `explicitProfileOverridesWorkerProfile`（显式 profile 走 turn 级且不触碰 setSessionModelProfile）、`workerProfileStillApplies`（无显式 profile 时 worker-class 映射仍生效）。
+2. ~~A-per-spawn reasoning 覆盖~~ → 已完成（`@tsdi/agent`，本次提交）：
+   - 契约落地：`AgentTurnAgentConfig.reasoning?: boolean`（复用既有 `agent` 透传面，gateway `run.turn` 签名不变即获得 RPC 透传）、`ModelRequest.reasoning?: boolean`。
+   - 落地：`prepareModelRequest(sessionId, request, profile?, falsifyRate?, reasoning?)` 第 5 参，8 处调用均传 `turnContext.agent?.reasoning`；`AnthropicModelAdapter` 当 `request.reasoning === true` 时 `body.thinking = { type: 'enabled', budget_tokens: thinkingBudget || 2048 }`（保留 `options.thinkingBudget > 0` 自动开启）；`OpenAICompatibleModelAdapter` 当 `request.reasoning === true` 时 `body.reasoning_effort = 'high'` 且丢弃 `temperature`（reasoning 模型拒绝 temperature）。
+   - 测试：`agent/test/model-provider.spec.ts` +2（anthropic body.thinking 默认 budget 2048 / openai reasoning_effort=high 且无 temperature）。
+3. ~~A-并发度上限~~ → 已完成（`@tsdi/agent-tools`，本次提交）：
+   - 契约落地：`AgentToolsDelegationOptions.concurrency?`（默认 undefined = 不限）；`NestedAgentRunRequest.concurrency?`；`parallel_spawn` input 增加 `concurrency?`。
+   - 落地：`nested-agent-runner.ts` 导出 `runWithConcurrency<T>(items, limit, fn)`（`limit` 无/≤0/≥len → 不设限直跑，返回顺序保持的 `PromiseSettledResult[]`）；`NestedAgentRunner.runParallel`（取 `requests[0].concurrency`）与 `LightweightAgentRunner.runParallel`（`request.concurrency ?? options.delegation.concurrency`）均按 limit 分片。
+   - 测试：`delegation-v2.spec.ts` — `concurrencyBounded`（峰值 ≤ 2 且顺序保持）、`concurrencyUnbounded`（undefined/超大 limit 不限）、`parallelBatchConcurrency`（4 任务 concurrency=2 峰值 ≤ 2 全量返回）。
+4. ~~A-子任务加密~~ → 已完成（`@tsdi/agent-tools`，本次提交）：
+   - 契约落地：`AgentToolsDelegationOptions.encryption?: { key?: string; keyEnv?: string }`；`SpawnAgentInput.secrets?: Record<string, string>`（spawn/parallel/orchestrate/llm-task 均支持）。
+   - 落地：新增 `src/delegation/crypto.ts` — `createDelegationCipher(key)`（SHA-256 派生 32B 密钥，AES-256-GCM，随机 12B IV + 16B auth tag，base64 `iv.tag.ciphertext` 格式）、`resolveDelegationCipherKey(encryption)`（key → keyEnv → undefined）；`LightweightAgentRunner.runSingle` 解密 secrets 后以 `## Secrets` 段注入子代理 prompt（仅内存）；delegation metadata 加密落盘（有 cipher 时 goal 存密文 + `sealed: true` + per-secret 密文；无 cipher 时 metadata 仅存 basePrompt、secrets 一律不进明文 metadata）。
+   - 测试：`delegation-v2.spec.ts` — 往返/篡改抛错/随机 IV/错 key 拒绝/key 解析优先级/secrets 注入 prompt 且 metadata 无明文/有 cipher 时 metadata 全密文可解密/无 key 明文透传。
+
+验证：`agent-tools/test/delegation-v2.spec.ts` 14 passing（新增）、`agent/test/model-provider.spec.ts` 29 passing（+2）；全量回归：agent 506、agent-tools 254、agent-gateway 140、agent-cli 49 passing；agent-ui 269 passing + 1 条预存在 fold-panel 渲染失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，git stash 基线双跑确认与本次无关）；agent/agent-tools/agent-gateway/agent-ui/agent-cli `tsc --noEmit` 全部 clean。既有 spawn/parallel/orchestrate 行为（无 profile/reasoning/secrets/concurrency 时）零变化。

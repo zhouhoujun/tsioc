@@ -7,6 +7,12 @@ export interface LlmTaskRequest {
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    /** P42: explicit named model profile for this task. */
+    profile?: string;
+    /** P42: enable model reasoning (extended thinking) for this task. */
+    reasoning?: boolean;
+    /** P42: sensitive values injected into the prompt, never persisted. */
+    secrets?: Record<string, string>;
 }
 
 export interface LlmTaskResult {

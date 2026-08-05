@@ -1312,4 +1312,89 @@ export class ModelProviderTest {
         expect(calls[0].headers['x-api-key']).toEqual('env-anthropic-key');
         expect(result.metadata?.provider).toEqual('anthropic');
     }
+
+    @Test('enables anthropic thinking block with default budget when reasoning requested')
+    async enablesAnthropicThinkingOnReasoningRequest() {
+        let call: { url: string; body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            call = { url, body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        type: 'message',
+                        role: 'assistant',
+                        content: [{ type: 'text', text: 'done' }],
+                        model: 'claude-sonnet-4-20250514',
+                        stop_reason: 'end_turn',
+                        stop_sequence: null,
+                        usage: { input_tokens: 2, output_tokens: 1 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new AnthropicModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            baseUrl: 'https://anthropic.example',
+            apiKey: 'test-key'
+        });
+
+        await adapter.complete({
+            sessionId: 's-reasoning',
+            summary: '',
+            memory: [],
+            reasoning: true,
+            messages: [{ id: '1', role: 'user', content: 'think step by step', createdAt: 1 }],
+            tools: []
+        });
+
+        expect(call?.url).toEqual('https://anthropic.example/v1/messages');
+        expect(call?.body.thinking).toEqual({ type: 'enabled', budget_tokens: 2048 });
+    }
+
+    @Test('disables temperature and sets reasoning effort on openai-compatible reasoning requests')
+    async openAiReasoningRequestDropsTemperature() {
+        let call: { url: string; body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            call = { url, body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'reasoned answer' },
+                            finish_reason: 'stop'
+                        }],
+                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000,
+            temperature: 0.7
+        });
+
+        await adapter.complete({
+            sessionId: 's-reasoning-openai',
+            summary: '',
+            memory: [],
+            reasoning: true,
+            messages: [{ id: '1', role: 'user', content: 'think step by step', createdAt: 1 }],
+            tools: []
+        });
+
+        expect(call?.url).toEqual('https://example.com/v1/chat/completions');
+        expect(call?.body.reasoning_effort).toEqual('high');
+        expect(call?.body.temperature).toBeUndefined();
+    }
 }
