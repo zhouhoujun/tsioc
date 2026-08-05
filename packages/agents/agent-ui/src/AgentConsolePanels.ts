@@ -1028,9 +1028,11 @@ export class AgentConsoleSessionsPanelComponent {
             const count = session.messageCount != null ? ` (${session.messageCount})` : '';
             const workspace = this.workspaceLabel(session.workspace);
             const workspacePrefix = workspace ? `[${workspace}] ` : '';
+            const name = String(session.title || '').trim() || session.id;
+            const pinned = session.pinned ? ' 📌' : '';
             rows.push({
                 id: session.id,
-                label: `${marker} ${workspacePrefix}${session.id}${current}${count}`,
+                label: `${marker} ${workspacePrefix}${name}${current}${count}${pinned}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue

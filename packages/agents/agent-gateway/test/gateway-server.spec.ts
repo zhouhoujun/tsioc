@@ -310,6 +310,285 @@ export class SessionHandlerTest {
         expect(data[0].lastActiveAt).toBeTruthy();
     }
 
+    @Test('lists sessions with title and pinned flags')
+    async listsSessionsWithTitleAndPinned() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await store.setTitle('s1', 'My session');
+        await store.setPinned('s1', true);
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].id).toEqual('s1');
+        expect(data[0].title).toEqual('My session');
+        expect(data[0].pinned).toEqual(true);
+    }
+
+    @Test('sorts pinned sessions before unpinned sessions')
+    async sortsPinnedSessionsFirst() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('unpinned', { id: '1', role: 'user', content: 'newer', createdAt: 3 });
+            await store.append('pinned', { id: '2', role: 'user', content: 'older', createdAt: 1 });
+            await store.setPinned('pinned', true);
+            await owners.create('unpinned', 'user-1');
+            await owners.create('pinned', 'user-1');
+        } finally {
+            Date.now = originalNow;
+        }
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('unpinned');
+        handler.track('pinned');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.map((session: any) => session.id)).toEqual(['pinned', 'unpinned']);
+        expect(data[0].pinned).toEqual(true);
+        expect(data[1].pinned).toEqual(false);
+    }
+
+    @Test('sets and clears a session title through the api route')
+    async setsAndClearsSessionTitleThroughApi() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const setTitleRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/title' && route.method === 'PUT')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        let status = 0;
+        let body = '';
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await setTitleRoute.handler(req, res, { id: 's1' }, { title: 'My session' });
+        expect(status).toEqual(200);
+        expect(JSON.parse(body)).toEqual({ status: 'updated', title: 'My session' });
+        expect((await store.get('s1')).title).toEqual('My session');
+
+        await setTitleRoute.handler(req, res, { id: 's1' }, { title: '' });
+        expect((await store.get('s1')).title).toBeUndefined();
+    }
+
+    @Test('pins and unpins a session through the api route')
+    async pinsAndUnpinsSessionThroughApi() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const setPinnedRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/pinned' && route.method === 'PUT')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: () => res
+        } as any;
+
+        await setPinnedRoute.handler(req, res, { id: 's1' }, { pinned: true });
+        expect((await store.get('s1')).pinned).toEqual(true);
+
+        await setPinnedRoute.handler(req, res, { id: 's1' }, { pinned: false });
+        expect((await store.get('s1')).pinned).toEqual(false);
+    }
+
+    @Test('snapshot routes create, list, restore and delete snapshots')
+    async snapshotRoutesRoundTrip() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.append('s1', { id: '2', role: 'assistant', content: 'two', createdAt: 2 });
+        await store.setSummary('s1', 'summary');
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: () => res
+        } as any;
+
+        const createRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots' && route.method === 'POST')!;
+        let body = '';
+        const createRes = {
+            writeHead: () => createRes,
+            end: (value?: string) => {
+                body = value ?? '';
+                return createRes;
+            }
+        } as any;
+        await createRoute.handler(req, createRes, { id: 's1' }, { label: 'checkpoint' });
+        const { snapshotId } = JSON.parse(body);
+        expect(snapshotId).toMatch(/^snap_/);
+
+        const listRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots' && route.method === 'GET')!;
+        let listBody = '';
+        const listRes = {
+            writeHead: () => listRes,
+            end: (value?: string) => {
+                listBody = value ?? '';
+                return listRes;
+            }
+        } as any;
+        await listRoute.handler(req, listRes, { id: 's1' });
+        const snapshots = JSON.parse(listBody);
+        expect(snapshots.length).toEqual(1);
+        expect(snapshots[0].snapshotId).toEqual(snapshotId);
+        expect(snapshots[0].label).toEqual('checkpoint');
+        expect(snapshots[0].messageCount).toEqual(2);
+
+        await store.append('s1', { id: '3', role: 'user', content: 'three', createdAt: 3 });
+        const restoreRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots/:snapshotId/restore' && route.method === 'POST')!;
+        await restoreRoute.handler(req, res, { id: 's1', snapshotId });
+        const state = await store.get('s1');
+        expect(state.messages.length).toEqual(2);
+        expect(state.messages.map(message => message.content)).toEqual(['one', 'two']);
+
+        const deleteRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots/:snapshotId' && route.method === 'DELETE')!;
+        await deleteRoute.handler(req, res, { id: 's1', snapshotId });
+        expect(await store.listSnapshots('s1')).toEqual([]);
+    }
+
+    @Test('snapshot restore returns 404 for unknown snapshot')
+    async snapshotRestoreReturns404ForUnknownSnapshot() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const restoreRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots/:snapshotId/restore' && route.method === 'POST')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        let status = 0;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await restoreRoute.handler(req, res, { id: 's1', snapshotId: 'missing' });
+        expect(status).toEqual(404);
+    }
+
+    @Test('title and pinned mutation routes forbid foreign principals')
+    async mutationRoutesForbidForeignPrincipals() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const titleRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/title' && route.method === 'PUT')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        let status = 0;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await titleRoute.handler(req, res, { id: 's1' }, { title: 'hijack' });
+        expect(status).toEqual(403);
+        expect((await store.get('s1')).title).toBeUndefined();
+    }
+
+    @Test('keeps pinned sessions first inside project groups')
+    async keepsPinnedSessionsFirstInsideProjectGroups() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('s1', '/tmp/project-a');
+            await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+            await store.setWorkspace('s2', '/tmp/project-a');
+            await store.setPinned('s2', true);
+            await owners.create('s1', 'user-1');
+            await owners.create('s2', 'user-1');
+        } finally {
+            Date.now = originalNow;
+        }
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+        handler.track('s2');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/projects' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].sessions.map((session: any) => session.id)).toEqual(['s2', 's1']);
+        expect(data[0].sessions[0].pinned).toEqual(true);
+    }
+
     @Test('lists owned sessions grouped by workspace')
     async listsOwnedSessionsGroupedByWorkspace() {
         const store = new InMemorySessionStore();

@@ -60,6 +60,14 @@ export interface SessionSearchOptions {
     maxSessions?: number;
 }
 
+export interface AgentSessionSnapshotInfo {
+    snapshotId: string;
+    label?: string;
+    messageCount: number;
+    summary?: string;
+    createdAt: number;
+}
+
 export interface AgentThreadSource {
     sessionId: string;
     projectId?: string | null;
@@ -161,6 +169,12 @@ export abstract class SessionStore {
     abstract listThreads(): Promise<AgentThreadIndex[]>;
     abstract append(sessionId: string, message: AgentMessage): Promise<AgentState>;
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
+    abstract setTitle(sessionId: string, title?: string): Promise<void>;
+    abstract setPinned(sessionId: string, pinned: boolean): Promise<void>;
+    abstract snapshot(sessionId: string, label?: string): Promise<string>;
+    abstract listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]>;
+    abstract restoreSnapshot(sessionId: string, snapshotId: string): Promise<void>;
+    abstract deleteSnapshot(sessionId: string, snapshotId: string): Promise<void>;
     abstract setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void>;
     abstract setWorkspace(sessionId: string, workspace?: string): Promise<void>;
     abstract setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void>;

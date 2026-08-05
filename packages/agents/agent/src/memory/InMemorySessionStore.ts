@@ -1,12 +1,21 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
+interface AgentSessionSnapshotEntry {
+    snapshotId: string;
+    label?: string;
+    messages: AgentMessage[];
+    summary?: string;
+    createdAt: number;
+}
+
 @Injectable()
 export class InMemorySessionStore extends SessionStore {
     private sessions = new Map<string, AgentState>();
+    private snapshots = new Map<string, Map<string, AgentSessionSnapshotEntry>>();
 
     async get(sessionId: string): Promise<AgentState> {
         let state = this.sessions.get(sessionId);
@@ -19,6 +28,8 @@ export class InMemorySessionStore extends SessionStore {
             sessionId: state.sessionId,
             messages: state.messages.slice(),
             summary: state.summary,
+            title: state.title,
+            pinned: state.pinned,
             ownerPrincipalId: state.ownerPrincipalId,
             workspace: state.workspace,
             projectId: state.projectId,
@@ -128,6 +139,79 @@ export class InMemorySessionStore extends SessionStore {
         this.sessions.set(sessionId, state);
     }
 
+    async setTitle(sessionId: string, title?: string): Promise<void> {
+        const state = await this.get(sessionId);
+        state.title = String(title || '').trim() || undefined;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setPinned(sessionId: string, pinned: boolean): Promise<void> {
+        const state = await this.get(sessionId);
+        state.pinned = !!pinned;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async snapshot(sessionId: string, label?: string): Promise<string> {
+        const state = await this.get(sessionId);
+        const snapshotId = `snap_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+        let bucket = this.snapshots.get(sessionId);
+        if (!bucket) {
+            bucket = new Map<string, AgentSessionSnapshotEntry>();
+            this.snapshots.set(sessionId, bucket);
+        }
+        bucket.set(snapshotId, {
+            snapshotId,
+            label: String(label || '').trim() || undefined,
+            messages: state.messages.slice(),
+            summary: state.summary,
+            createdAt: Date.now()
+        });
+        return snapshotId;
+    }
+
+    async listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]> {
+        const bucket = this.snapshots.get(sessionId);
+        if (!bucket) {
+            return [];
+        }
+        return Array.from(bucket.values())
+            .sort((left, right) => right.createdAt - left.createdAt)
+            .map(entry => ({
+                snapshotId: entry.snapshotId,
+                label: entry.label,
+                messageCount: entry.messages.length,
+                summary: entry.summary,
+                createdAt: entry.createdAt
+            }));
+    }
+
+    async restoreSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        const entry = this.snapshots.get(sessionId)?.get(snapshotId);
+        if (!entry) {
+            throw new Error(`snapshot not found: ${snapshotId}`);
+        }
+        const state = await this.get(sessionId);
+        state.messages = entry.messages.slice();
+        state.summary = entry.summary;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async deleteSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        const bucket = this.snapshots.get(sessionId);
+        if (!bucket?.delete(snapshotId)) {
+            return;
+        }
+        if (!bucket.size) {
+            this.snapshots.delete(sessionId);
+        }
+    }
+
     async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
         const state = this.sessions.get(sessionId);
         if (!state) {
@@ -169,10 +253,12 @@ export class InMemorySessionStore extends SessionStore {
 
     delete(sessionId: string): void {
         this.sessions.delete(sessionId);
+        this.snapshots.delete(sessionId);
     }
 
     clear(): void {
         this.sessions.clear();
+        this.snapshots.clear();
     }
 
     protected resolveProjectKey(state: AgentState): string {

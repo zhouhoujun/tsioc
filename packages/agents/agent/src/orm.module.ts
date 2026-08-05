@@ -2,7 +2,7 @@ import { importProvidersFrom, Module, ModuleWithProviders, Provider } from '@tsd
 import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
-import { AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSummaryQualityEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
+import { AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
 
 interface AgentOrmNodeRuntime {
     join(...paths: string[]): string;
@@ -69,7 +69,7 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
             synchronize: true,
-            entities: [AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity]
+            entities: [AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity]
         } as TypeormOptions)
     ]
 })
@@ -117,7 +117,7 @@ function resolveAgentOrmStorageLocation(root: string, fileName: string): string 
 
 function createAgentOrmProviders(options: TypeormOptions): Provider[] {
     options.entities ??= [];
-    options.entities.push(AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity);
+    options.entities.push(AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity);
     return provideTypeOrm(options);
 }
 

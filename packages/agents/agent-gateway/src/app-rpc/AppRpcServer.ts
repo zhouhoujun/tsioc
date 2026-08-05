@@ -150,6 +150,12 @@ export class AppRpcServer {
                         'session.sandbox_mode.get',
                         'session.undo_file',
                         'session.redo_file',
+                        'session.set_title',
+                        'session.set_pinned',
+                        'session.snapshot.create',
+                        'session.snapshot.list',
+                        'session.snapshot.restore',
+                        'session.snapshot.delete',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -230,6 +236,18 @@ export class AppRpcServer {
                 return this.undoFile(params, context);
             case 'session.redo_file':
                 return this.redoFile(params, context);
+            case 'session.set_title':
+                return this.setSessionTitle(params, context);
+            case 'session.set_pinned':
+                return this.setSessionPinned(params, context);
+            case 'session.snapshot.create':
+                return this.createSessionSnapshot(params, context);
+            case 'session.snapshot.list':
+                return this.listSessionSnapshots(params, context);
+            case 'session.snapshot.restore':
+                return this.restoreSessionSnapshot(params, context);
+            case 'session.snapshot.delete':
+                return this.deleteSessionSnapshot(params, context);
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -441,6 +459,58 @@ export class AppRpcServer {
         await this.sessions.delete(sessionId);
         await this.memory.deleteBySession(sessionId);
         return { deleted: true, sessionId };
+    }
+
+    private async setSessionTitle(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const title = typeof params?.title === 'string' ? params.title : undefined;
+        await this.sessions.setTitle(sessionId, title);
+        return { updated: true, sessionId, title };
+    }
+
+    private async setSessionPinned(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const pinned = !!params?.pinned;
+        await this.sessions.setPinned(sessionId, pinned);
+        return { updated: true, sessionId, pinned };
+    }
+
+    private async createSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const label = typeof params?.label === 'string' ? params.label : undefined;
+        const snapshotId = await this.sessions.snapshot(sessionId, label);
+        return { snapshotId, sessionId };
+    }
+
+    private async listSessionSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.sessions.listSnapshots(sessionId);
+    }
+
+    private async restoreSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const snapshotId = String(params?.snapshotId || '').trim();
+        if (!snapshotId) {
+            throw new Error('snapshotId required');
+        }
+        await this.sessions.restoreSnapshot(sessionId, snapshotId);
+        return { restored: true, sessionId, snapshotId };
+    }
+
+    private async deleteSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const snapshotId = String(params?.snapshotId || '').trim();
+        if (!snapshotId) {
+            throw new Error('snapshotId required');
+        }
+        await this.sessions.deleteSnapshot(sessionId, snapshotId);
+        return { deleted: true, sessionId, snapshotId };
     }
 
     private async exportSession(params: any, context: AppRpcRequestContext): Promise<any> {

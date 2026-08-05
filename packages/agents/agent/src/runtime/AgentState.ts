@@ -5,6 +5,8 @@ export interface AgentState {
     sessionId: string;
     messages: AgentMessage[];
     summary?: string;
+    title?: string;
+    pinned?: boolean;
     ownerPrincipalId?: string;
     workspace?: string;
     projectId?: string;

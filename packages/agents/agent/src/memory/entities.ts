@@ -10,7 +10,13 @@ export class AgentSessionEntity {
     sessionId!: string;
 
     @Column({ type: 'text', nullable: true })
-    summary!: string;
+    summary!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    title!: string | null;
+
+    @Column({ type: 'boolean', default: false })
+    pinned!: boolean;
 
     @Column({ type: 'text', nullable: true })
     ownerPrincipalId!: string | null;
@@ -44,6 +50,33 @@ export class AgentSessionEntity {
 
     @Column({ type: 'bigint' })
     updatedAt!: number;
+}
+
+@Entity()
+export class AgentSessionSnapshotEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column()
+    snapshotId!: string;
+
+    @Column({ type: 'text', nullable: true })
+    label!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    summary!: string | null;
+
+    @Column({ type: 'int', default: 0 })
+    messageCount!: number;
+
+    @Column({ type: 'simple-json', nullable: true })
+    messages!: Array<Record<string, any>> | null;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
 }
 
 @Entity()

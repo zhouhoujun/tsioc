@@ -27,6 +27,8 @@ export interface AgentConsoleSessionChoice {
     lastActiveAt?: number;
     messageCount?: number;
     summary?: string;
+    title?: string;
+    pinned?: boolean;
     workspace?: string;
     projectKey?: string;
     projectId?: string;
@@ -105,6 +107,8 @@ export class AgentConsoleSessionService {
                     lastActiveAt: item?.lastActiveAt,
                     messageCount: item?.messageCount,
                     summary: item?.summary,
+                    title: item?.title,
+                    pinned: !!item?.pinned,
                     workspace: item?.workspace,
                     projectKey: item?.projectKey,
                     projectId: item?.projectId,
@@ -148,6 +152,8 @@ export class AgentConsoleSessionService {
                             lastActiveAt: item?.lastActiveAt,
                             messageCount: item?.messageCount,
                             summary: item?.summary,
+                            title: item?.title,
+                            pinned: !!item?.pinned,
                             workspace: item?.workspace,
                             projectId: item?.projectId,
                             primaryThreadId: item?.primaryThreadId,
@@ -199,6 +205,8 @@ export class AgentConsoleSessionService {
                             lastActiveAt: item?.lastActiveAt,
                             messageCount: item?.messageCount,
                             summary: item?.summary,
+                            title: item?.title,
+                            pinned: !!item?.pinned,
                             workspace: item?.workspace,
                             projectKey: item?.projectKey,
                             projectId: item?.projectId,
@@ -264,6 +272,72 @@ export class AgentConsoleSessionService {
             return;
         }
         await this.sessionStore?.delete(sessionId);
+    }
+
+    async setSessionTitle(sessionId: string, title?: string, context?: any): Promise<void> {
+        if (!sessionId) {
+            return;
+        }
+        if (this.appRpc) {
+            await this.appRpc.request('session.set_title', { sessionId, title }, context);
+            return;
+        }
+        await this.sessionStore?.setTitle(sessionId, title);
+    }
+
+    async setSessionPinned(sessionId: string, pinned: boolean, context?: any): Promise<void> {
+        if (!sessionId) {
+            return;
+        }
+        if (this.appRpc) {
+            await this.appRpc.request('session.set_pinned', { sessionId, pinned }, context);
+            return;
+        }
+        await this.sessionStore?.setPinned(sessionId, pinned);
+    }
+
+    async createSessionSnapshot(sessionId: string, label?: string, context?: any): Promise<string> {
+        if (!sessionId) {
+            return '';
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.snapshot.create', { sessionId, label }, context);
+            return String(result?.snapshotId || '');
+        }
+        return this.sessionStore?.snapshot(sessionId, label) ?? '';
+    }
+
+    async listSessionSnapshots(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!sessionId) {
+            return [];
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.snapshot.list', { sessionId }, context);
+            return Array.isArray(result) ? result : [];
+        }
+        return this.sessionStore?.listSnapshots(sessionId) ?? [];
+    }
+
+    async restoreSessionSnapshot(sessionId: string, snapshotId: string, context?: any): Promise<void> {
+        if (!sessionId || !snapshotId) {
+            return;
+        }
+        if (this.appRpc) {
+            await this.appRpc.request('session.snapshot.restore', { sessionId, snapshotId }, context);
+            return;
+        }
+        await this.sessionStore?.restoreSnapshot(sessionId, snapshotId);
+    }
+
+    async deleteSessionSnapshot(sessionId: string, snapshotId: string, context?: any): Promise<void> {
+        if (!sessionId || !snapshotId) {
+            return;
+        }
+        if (this.appRpc) {
+            await this.appRpc.request('session.snapshot.delete', { sessionId, snapshotId }, context);
+            return;
+        }
+        await this.sessionStore?.deleteSnapshot(sessionId, snapshotId);
     }
 
     async cancelTurn(sessionId: string, context?: any): Promise<boolean> {
@@ -576,6 +650,8 @@ export class AgentConsoleSessionService {
         updatedAt?: number;
         messages?: AgentMessage[];
         summary?: string;
+        title?: string;
+        pinned?: boolean;
         workspace?: string;
         projectKey?: string;
         projectId?: string;
@@ -592,6 +668,8 @@ export class AgentConsoleSessionService {
             lastActiveAt: state?.updatedAt ?? state?.createdAt,
             messageCount: state?.messages?.length || 0,
             summary: state?.summary,
+            title: state?.title,
+            pinned: !!state?.pinned,
             workspace: state?.workspace,
             projectKey: state?.projectKey,
             projectId: state?.projectId,
@@ -730,6 +808,10 @@ export class AgentConsoleSessionService {
 
     protected sortSessionChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice[] {
         return sessions.slice().sort((left, right) => {
+            const pinnedDelta = Number(!!right.pinned) - Number(!!left.pinned);
+            if (pinnedDelta !== 0) {
+                return pinnedDelta;
+            }
             const leftProjectKey = String(left.projectKey || '').trim();
             const rightProjectKey = String(right.projectKey || '').trim();
             if (!!leftProjectKey !== !!rightProjectKey) {

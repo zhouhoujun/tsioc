@@ -383,4 +383,109 @@ export class SessionStoreTest {
         expect(threads[0].status).toEqual('active');
         expect(threads[0].stage).toBeUndefined();
     }
+
+    @Test('stores title and pinned flags')
+    async storesTitleAndPinned() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'hi', createdAt: 1 });
+        await store.setTitle('session', 'My session');
+        await store.setPinned('session', true);
+
+        const state = await store.get('session');
+        expect(state.title).toEqual('My session');
+        expect(state.pinned).toEqual(true);
+    }
+
+    @Test('clears title with blank input and unpins')
+    async clearsTitleWithBlankInputAndUnpins() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'hi', createdAt: 1 });
+        await store.setTitle('session', 'My session');
+        await store.setPinned('session', true);
+
+        await store.setTitle('session', '   ');
+        await store.setPinned('session', false);
+
+        const state = await store.get('session');
+        expect(state.title).toBeUndefined();
+        expect(state.pinned).toEqual(false);
+    }
+
+    @Test('creates and lists snapshots with labels and message counts')
+    async createsAndListsSnapshots() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.append('session', { id: '2', role: 'assistant', content: 'two', createdAt: 2 });
+        await store.setSummary('session', 'summary');
+
+        const snapshotId = await store.snapshot('session', 'checkpoint');
+
+        expect(snapshotId).toMatch(/^snap_/);
+        const snapshots = await store.listSnapshots('session');
+        expect(snapshots).toEqual([{
+            snapshotId,
+            label: 'checkpoint',
+            messageCount: 2,
+            summary: 'summary',
+            createdAt: expect.any(Number)
+        }]);
+    }
+
+    @Test('restores messages and summary from a snapshot')
+    async restoresMessagesAndSummaryFromSnapshot() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.append('session', { id: '2', role: 'assistant', content: 'two', createdAt: 2 });
+        await store.setSummary('session', 'summary');
+        const snapshotId = await store.snapshot('session', 'checkpoint');
+
+        await store.append('session', { id: '3', role: 'user', content: 'three', createdAt: 3 });
+        await store.setSummary('session', 'changed');
+
+        await store.restoreSnapshot('session', snapshotId);
+
+        const state = await store.get('session');
+        expect(state.messages.length).toEqual(2);
+        expect(state.messages.map(message => message.content)).toEqual(['one', 'two']);
+        expect(state.summary).toEqual('summary');
+    }
+
+    @Test('lists snapshots newest first')
+    async listsSnapshotsNewestFirst() {
+        const store = new InMemorySessionStore();
+        const originalNow = Date.now;
+        let now = 100;
+        Date.now = () => ++now;
+        try {
+            await store.append('session', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            const first = await store.snapshot('session', 'first');
+            const second = await store.snapshot('session', 'second');
+
+            const snapshots = await store.listSnapshots('session');
+            expect(snapshots.map(snapshot => snapshot.snapshotId)).toEqual([second, first]);
+        } finally {
+            Date.now = originalNow;
+        }
+    }
+
+    @Test('throws when restoring an unknown snapshot')
+    async restoreThrowsForUnknownSnapshot() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await expect(store.restoreSnapshot('session', 'missing')).rejects.toThrow('snapshot not found: missing');
+    }
+
+    @Test('deletes a snapshot and removes snapshots on session delete')
+    async deletesSnapshotAndRemovesSnapshotsOnSessionDelete() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        const snapshotId = await store.snapshot('session');
+
+        await store.deleteSnapshot('session', snapshotId);
+        expect(await store.listSnapshots('session')).toEqual([]);
+
+        await store.snapshot('session');
+        store.delete('session');
+        expect(await store.listSnapshots('session')).toEqual([]);
+    }
 }

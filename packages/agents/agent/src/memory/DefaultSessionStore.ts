@@ -6,7 +6,7 @@ import { InMemorySessionStore } from './InMemorySessionStore';
 import { TypeOrmSessionStore } from './TypeOrmSessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex } from './SessionStore';
 
 @Injectable()
 export class DefaultSessionStore extends SessionStore {
@@ -45,6 +45,30 @@ export class DefaultSessionStore extends SessionStore {
 
     async setSummary(sessionId: string, summary: string): Promise<void> {
         await this.resolveStore().setSummary(sessionId, summary);
+    }
+
+    async setTitle(sessionId: string, title?: string): Promise<void> {
+        await this.resolveStore().setTitle(sessionId, title);
+    }
+
+    async setPinned(sessionId: string, pinned: boolean): Promise<void> {
+        await this.resolveStore().setPinned(sessionId, pinned);
+    }
+
+    async snapshot(sessionId: string, label?: string): Promise<string> {
+        return this.resolveStore().snapshot(sessionId, label);
+    }
+
+    async listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]> {
+        return this.resolveStore().listSnapshots(sessionId);
+    }
+
+    async restoreSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        await this.resolveStore().restoreSnapshot(sessionId, snapshotId);
+    }
+
+    async deleteSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        await this.resolveStore().deleteSnapshot(sessionId, snapshotId);
     }
 
     async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {

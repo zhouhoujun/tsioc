@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentMessageEntity, AgentSessionEntity } from './entities';
+import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
 @Injectable()
@@ -25,7 +25,9 @@ export class TypeOrmSessionStore extends SessionStore {
         const messages = await this.adapter.getRepository(AgentMessageEntity).find({ where: { sessionId } as any, order: { sequence: 'ASC' } as any });
         return {
             sessionId,
-            summary: session.summary,
+            summary: session.summary ?? undefined,
+            title: session.title ?? undefined,
+            pinned: !!session.pinned,
             ownerPrincipalId: session.ownerPrincipalId ?? undefined,
             workspace: session.workspace ?? undefined,
             projectId: session.projectId ?? undefined,
@@ -171,6 +173,103 @@ export class TypeOrmSessionStore extends SessionStore {
         await repo.save(session);
     }
 
+    async setTitle(sessionId: string, title?: string): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        const normalizedTitle = String(title || '').trim() || null;
+        if (!session) {
+            session = repo.create({ sessionId, title: normalizedTitle, createdAt: now, updatedAt: now });
+        } else {
+            session.title = normalizedTitle;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
+    async setPinned(sessionId: string, pinned: boolean): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        if (!session) {
+            session = repo.create({ sessionId, pinned: !!pinned, createdAt: now, updatedAt: now });
+        } else {
+            session.pinned = !!pinned;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
+    async snapshot(sessionId: string, label?: string): Promise<string> {
+        const repo = this.adapter.getRepository(AgentSessionSnapshotEntity);
+        const state = await this.get(sessionId);
+        const snapshotId = `snap_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+        await repo.save(repo.create({
+            sessionId,
+            snapshotId,
+            label: String(label || '').trim() || null,
+            summary: state.summary ?? null,
+            messageCount: state.messages.length,
+            messages: state.messages as Array<Record<string, any>>,
+            createdAt: Date.now()
+        }));
+        return snapshotId;
+    }
+
+    async listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]> {
+        const rows = await this.adapter.getRepository(AgentSessionSnapshotEntity).find({
+            where: { sessionId } as any,
+            order: { createdAt: 'DESC' as any }
+        });
+        return rows.map(row => ({
+            snapshotId: row.snapshotId,
+            label: row.label ?? undefined,
+            messageCount: row.messageCount,
+            summary: row.summary ?? undefined,
+            createdAt: Number(row.createdAt)
+        }));
+    }
+
+    async restoreSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        const row = await this.adapter.getRepository(AgentSessionSnapshotEntity).findOne({ where: { sessionId, snapshotId } as any });
+        if (!row) {
+            throw new Error(`snapshot not found: ${snapshotId}`);
+        }
+        const sessionRepo = this.adapter.getRepository(AgentSessionEntity);
+        const messageRepo = this.adapter.getRepository(AgentMessageEntity);
+        let session = await sessionRepo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        if (!session) {
+            session = sessionRepo.create({ sessionId, createdAt: now, updatedAt: now });
+        } else {
+            session.updatedAt = now;
+        }
+        session.summary = row.summary ?? null;
+        await sessionRepo.save(session);
+
+        await messageRepo.delete({ sessionId } as any);
+        const restored = (row.messages || []) as Array<Record<string, any>>;
+        for (let index = 0; index < restored.length; index++) {
+            const message = restored[index];
+            await messageRepo.save(messageRepo.create({
+                sessionId,
+                messageId: String(message.id || `msg_${Date.now()}_${index}`),
+                sequence: index + 1,
+                role: String(message.role || 'user'),
+                content: String(message.content || ''),
+                parts: normalizeAgentMessageParts(message.parts as any) ?? null,
+                name: message.name,
+                toolCallId: message.toolCallId,
+                createdAt: Number(message.createdAt || now),
+                metadata: message.metadata ?? null
+            }));
+        }
+    }
+
+    async deleteSnapshot(sessionId: string, snapshotId: string): Promise<void> {
+        await this.adapter.getRepository(AgentSessionSnapshotEntity).delete({ sessionId, snapshotId } as any);
+    }
+
     async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
         const repo = this.adapter.getRepository(AgentSessionEntity);
         let session = await repo.findOne({ where: { sessionId } as any });
@@ -240,11 +339,13 @@ export class TypeOrmSessionStore extends SessionStore {
 
     async delete(sessionId: string): Promise<void> {
         await this.adapter.getRepository(AgentMessageEntity).delete({ sessionId } as any);
+        await this.adapter.getRepository(AgentSessionSnapshotEntity).delete({ sessionId } as any);
         await this.adapter.getRepository(AgentSessionEntity).delete({ sessionId } as any);
     }
 
     async clear(): Promise<void> {
         await this.adapter.getRepository(AgentMessageEntity).clear();
+        await this.adapter.getRepository(AgentSessionSnapshotEntity).clear();
         await this.adapter.getRepository(AgentSessionEntity).clear();
     }
 

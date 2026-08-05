@@ -768,3 +768,26 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 **回归**（全部通过；失败项均为预存，经 git stash 基线对照验证与本改动无关）：
 - agent-ssh 8 passing；agent-tools 259 passing；agent-cli 51 passing；agent-ui 311 passing 1 failed（`toggles panel summary and detail through html renderer` 预存）；components/console 69 passing 2 failed（`toggles panel summary and detail through tui renderer`、`returns stripped rendered text...` 预存）。
 - 四包 tsc clean（agent-ssh/agent-tools/agent-cli/agent-ui；console 经 agent-ui tsc 路径别名覆盖类型检查）。
+
+## P45 规划：session 固定/重命名/快照（pin / rename / snapshot）
+
+差距来源：Codex CLI 0.144+ 提供持久化 session 名（persisted session names）、pin、fork/snapshot；当前 console 仅 `/new`、`/session <id>`（openSession）、`/sessions`、`/clear`，session 列表无固定/命名/快照能力。本轮补 pin/rename/snapshot 三层。
+
+1. **agent 契约（`@tsdi/agent`）**：
+   - `AgentState` 增 `title?: string`（用户命名，持久化）、`pinned?: boolean`（固定置顶）。
+   - `SessionStore` 抽象增 `setTitle(sessionId, title?)`、`setPinned(sessionId, pinned)`、`snapshot(sessionId, label?) → string`（返回 snapshotId）、`listSnapshots(sessionId) → AgentSessionSnapshotInfo[]`、`restoreSnapshot(sessionId, snapshotId)`、`deleteSnapshot(sessionId, snapshotId)`；新增 `AgentSessionSnapshotInfo`（snapshotId、label、messageCount、createdAt、summary）。
+   - `InMemorySessionStore`：title/pinned 落 state；snapshots 用 `Map<sessionId, Map<snapshotId, {label, messages, summary, createdAt}>>`（消息数组浅拷贝引用快照，restore 时替换 state.messages 引用）。
+   - `TypeOrmSessionStore`：`AgentSessionEntity` 增 `title`/`pinned` 列（`text` / `boolean default false`）；快照持久化新实体 `AgentSessionSnapshotEntity`（sessionId、snapshotId、label、summary、messageCount、createdAt）。
+2. **gateway（`@tsdi/agent-gateway`）**：
+   - `SessionInfo` 契约增 `title?`、`pinned?`；`listSessionInfos` 填充并按 pinned 优先排序（pinned 置顶，组内再按活跃度）。
+   - HTTP：`PUT /api/sessions/:id/title`、`PUT /api/sessions/:id/pin`、`POST /api/sessions/:id/snapshots`、`GET /api/sessions/:id/snapshots`、`POST /api/sessions/:id/snapshots/:snapshotId/restore`、`DELETE /api/sessions/:id/snapshots/:snapshotId`。
+   - RPC：`session.title.set`、`session.pin.set`、`session.snapshot.create`、`session.snapshot.list`、`session.snapshot.restore`、`session.snapshot.delete` + capabilities 登记。
+3. **agent-ui**：
+   - `AgentConsoleSessionItem` 增 `title?`、`pinned?`；`AgentConsoleSessionService` 增 `setSessionTitle` / `setSessionPinned` / `createSnapshot` / `listSnapshots` / `restoreSnapshot` / `deleteSnapshot`（走 RPC）。
+   - 命令：`/session rename <id> <title>`、`/session pin [id]`、`/session unpin [id]`、`/session snapshot [id] [label]`、`/session snapshots [id]`、`/session restore <id> <snapshotId>`、`/session snapshot-delete <id> <snapshotId>`；`/sessions` 面板 label 优先 title、pinned 显示 📌 角标；commandHints 与 `/help` 菜单登记。
+4. **测试**：
+   - agent `session.spec.ts`：title/pin 持久化 + snapshot 创建/列表/恢复/删除（InMemory）；`persistent-session.spec.ts` 补 TypeOrm 同套（entity 往返）。
+   - gateway `gateway-server.spec.ts`：HTTP title/pin/snapshot 路由 + RPC `session.*` 方法 + pinned 排序。
+   - agent-ui `view-model.spec.ts`：rename/pin/unpin/snapshot/restore/snapshot-delete 命令 + 列表 label 优先 title + 📌 角标。
+
+实现顺序：agent（契约 → InMemory → TypeOrm entity）→ gateway（SessionInfo → HTTP → RPC）→ agent-ui（state/service → 命令）→ 测试 → 回归（agent/agent-gateway/agent-ui tsc + 全量测试）→ todo.md 收尾 + 提交。

@@ -168,6 +168,103 @@ export class SessionHandler {
                 .end(JSON.stringify(running));
         };
 
+        const setTitle: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const title = typeof body?.title === 'string' ? body.title : undefined;
+            await this.sessions.setTitle(sessionId, title);
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ status: 'updated', title }));
+        };
+
+        const setPinned: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const pinned = !!body?.pinned;
+            await this.sessions.setPinned(sessionId, pinned);
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ status: 'updated', pinned }));
+        };
+
+        const createSnapshot: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            try {
+                const label = typeof body?.label === 'string' ? body.label : undefined;
+                const snapshotId = await this.sessions.snapshot(sessionId, label);
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ snapshotId }));
+            } catch (err: any) {
+                res.writeHead(500).end(JSON.stringify({ error: err?.message ?? 'snapshot failed' }));
+            }
+        };
+
+        const listSnapshots: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const snapshots = await this.sessions.listSnapshots(sessionId);
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(snapshots));
+        };
+
+        const restoreSnapshot: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            const snapshotId = params['snapshotId'];
+            if (!sessionId || !snapshotId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id and snapshot id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            try {
+                await this.sessions.restoreSnapshot(sessionId, snapshotId);
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ status: 'restored' }));
+            } catch (err: any) {
+                res.writeHead(404).end(JSON.stringify({ error: err?.message ?? 'snapshot not found' }));
+            }
+        };
+
+        const deleteSnapshot: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            const snapshotId = params['snapshotId'];
+            if (!sessionId || !snapshotId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id and snapshot id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            await this.sessions.deleteSnapshot(sessionId, snapshotId);
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ status: 'deleted' }));
+        };
+
         return [
             { method: 'GET', path: '/api/sessions', handler: listSessions },
             { method: 'GET', path: '/api/sessions/projects', handler: listProjects },
@@ -175,6 +272,12 @@ export class SessionHandler {
             { method: 'GET', path: '/api/sessions/running', handler: runningSessions },
             { method: 'GET', path: '/api/sessions/:id/messages', handler: getMessages },
             { method: 'GET', path: '/api/sessions/:id/export', handler: exportSession },
+            { method: 'PUT', path: '/api/sessions/:id/title', handler: setTitle },
+            { method: 'PUT', path: '/api/sessions/:id/pinned', handler: setPinned },
+            { method: 'GET', path: '/api/sessions/:id/snapshots', handler: listSnapshots },
+            { method: 'POST', path: '/api/sessions/:id/snapshots', handler: createSnapshot },
+            { method: 'POST', path: '/api/sessions/:id/snapshots/:snapshotId/restore', handler: restoreSnapshot },
+            { method: 'DELETE', path: '/api/sessions/:id/snapshots/:snapshotId', handler: deleteSnapshot },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
         ];
     }
@@ -192,6 +295,8 @@ export class SessionHandler {
                 lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
                 messageCount: state.messages.length,
                 summary: state.summary,
+                title: state.title,
+                pinned: !!state.pinned,
                 workspace: state.workspace,
                 projectKey,
                 projectId: state.projectId ?? undefined,
@@ -204,6 +309,10 @@ export class SessionHandler {
             });
         }
         return infos.sort((left, right) => {
+            const pinnedDelta = Number(!!right.pinned) - Number(!!left.pinned);
+            if (pinnedDelta !== 0) {
+                return pinnedDelta;
+            }
             const leftProjectKey = String(left.projectKey || '').trim();
             const rightProjectKey = String(right.projectKey || '').trim();
             if (leftProjectKey !== rightProjectKey) {
@@ -234,6 +343,10 @@ export class SessionHandler {
         return Array.from(buckets.entries())
             .map(([projectKey, sessions]) => {
                 const orderedSessions = sessions.slice().sort((left, right) => {
+                    const pinnedDelta = Number(!!right.pinned) - Number(!!left.pinned);
+                    if (pinnedDelta !== 0) {
+                        return pinnedDelta;
+                    }
                     const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
                     if (activityDelta !== 0) {
                         return activityDelta;
@@ -292,6 +405,10 @@ export class SessionHandler {
         return Array.from(buckets.entries())
             .map(([threadId, sessions]) => {
                 const orderedSessions = sessions.slice().sort((left, right) => {
+                    const pinnedDelta = Number(!!right.pinned) - Number(!!left.pinned);
+                    if (pinnedDelta !== 0) {
+                        return pinnedDelta;
+                    }
                     const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
                     if (activityDelta !== 0) {
                         return activityDelta;

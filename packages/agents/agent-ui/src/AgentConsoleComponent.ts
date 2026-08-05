@@ -1271,6 +1271,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             updatedAt: item.lastActiveAt,
             messageCount: item.messageCount,
             summary: item.summary,
+            title: item.title,
+            pinned: !!item.pinned,
             projectKey: item.projectKey,
             projectId: item.projectId,
             primaryThreadId: item.primaryThreadId,
@@ -1386,6 +1388,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         updatedAt?: number;
         messageCount?: number;
         summary?: string;
+        title?: string;
+        pinned?: boolean;
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;
@@ -1410,6 +1414,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 updatedAt: item.lastActiveAt,
                 messageCount: item.messageCount,
                 summary: item.summary,
+                title: item.title,
+                pinned: !!item.pinned,
                 projectKey,
                 projectId,
                 primaryThreadId: item.primaryThreadId || primaryThreadId,
@@ -3396,6 +3402,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/ssh', value: '/ssh', description: 'SSH hosts: list / connect / disconnect / forward' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
+                    { label: '/title', value: '/title', description: 'set current session title: /title <name> (blank clears)' },
+                    { label: '/pin', value: '/pin', description: 'pin the current session to the top of the list' },
+                    { label: '/unpin', value: '/unpin', description: 'unpin the current session' },
+                    { label: '/snapshot', value: '/snapshot', description: 'snapshot current session: /snapshot [label]' },
+                    { label: '/snapshots', value: '/snapshots', description: 'list / restore / delete session snapshots' },
                     { label: '/messages', value: '/messages', description: 'messages' },
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
                     { label: '/tasks', value: '/tasks', description: 'task inspector' },
@@ -3831,6 +3842,89 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
+            case '/pin':
+            case '/unpin': {
+                const pinSessionId = this.state.sessionId;
+                if (!pinSessionId || !this.sessionService) {
+                    this.notify('No current session to pin.');
+                    return true;
+                }
+                const pin = resolved.command === '/pin';
+                await this.sessionService.setSessionPinned(pinSessionId, pin);
+                await this.refreshSessions();
+                this.notify(pin ? `Pinned session ${pinSessionId}.` : `Unpinned session ${pinSessionId}.`);
+                return true;
+            }
+            case '/title': {
+                const titleSessionId = this.state.sessionId;
+                if (!titleSessionId || !this.sessionService) {
+                    this.notify('No current session to title.');
+                    return true;
+                }
+                const title = String(parsed.args || '').trim();
+                await this.sessionService.setSessionTitle(titleSessionId, title || undefined);
+                await this.refreshSessions();
+                this.notify(title ? `Session titled "${title}".` : 'Session title cleared.');
+                return true;
+            }
+            case '/snapshot': {
+                const snapshotSessionId = this.state.sessionId;
+                if (!snapshotSessionId || !this.sessionService) {
+                    this.notify('No current session to snapshot.');
+                    return true;
+                }
+                const label = String(parsed.args || '').trim() || undefined;
+                const snapshotId = await this.sessionService.createSessionSnapshot(snapshotSessionId, label);
+                if (snapshotId) {
+                    this.notify(`Snapshot created: ${snapshotId}`);
+                } else {
+                    this.notify('Snapshot creation failed.');
+                }
+                return true;
+            }
+            case '/snapshots': {
+                const snapshotSessionId = this.state.sessionId;
+                if (!snapshotSessionId || !this.sessionService) {
+                    this.notify('No current session for snapshots.');
+                    return true;
+                }
+                const snapshots = await this.sessionService.listSessionSnapshots(snapshotSessionId);
+                if (!snapshots.length) {
+                    this.notify('No snapshots for the current session. Use /snapshot [label] to create one.');
+                    return true;
+                }
+                const choice = await this.select(
+                    `Snapshots (${snapshots.length})`,
+                    snapshots.map((snapshot, index) => ({
+                        label: `${String(snapshot.label || 'snapshot').trim()} · ${snapshot.messageCount ?? 0} msgs${snapshot.summary ? ` · ${snapshot.summary}` : ''}`,
+                        value: String(snapshot.snapshotId || index),
+                        detail: snapshot.snapshotId
+                    })),
+                    0,
+                    this.state.consoleOptions.selectHint
+                );
+                if (!choice) return true;
+                const action = await this.select(
+                    'Snapshot action',
+                    [
+                        { label: 'restore', value: 'restore', detail: 'replace current transcript with this snapshot' },
+                        { label: 'delete', value: 'delete', detail: 'remove this snapshot' }
+                    ],
+                    0,
+                    this.state.consoleOptions.selectHint
+                );
+                if (!action) return true;
+                if (action === 'restore') {
+                    await this.sessionService.restoreSessionSnapshot(snapshotSessionId, choice);
+                    await this.refreshSessions();
+                    await this.openSession(snapshotSessionId);
+                    this.notify('Snapshot restored.');
+                } else {
+                    await this.sessionService.deleteSessionSnapshot(snapshotSessionId, choice);
+                    this.notify('Snapshot deleted.');
+                }
+                return true;
+            }
             case '/toolruns':
                 if (!this.state.toolRuns.length) {
                     this.notify('No tool runs available.');
@@ -3888,6 +3982,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                             updatedAt: item.lastActiveAt,
                             messageCount: item.messageCount,
                             summary: item.summary,
+                            title: item.title,
+                            pinned: !!item.pinned,
                             projectKey: item.projectKey,
                             projectId: item.projectId,
                             primaryThreadId: item.primaryThreadId,
@@ -3932,8 +4028,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         `Search: "${rawQuery}" (${merged.length})`,
                         merged.map(s => {
                             const hit = contentHits.get(s.id);
+                            const name = String(s.title || '').trim() || s.id;
+                            const pinned = s.pinned ? ' 📌' : '';
                             return {
-                                label: `${s.id}${s.current ? ' [current]' : ''}${hit ? ` (${hit.count} msg)` : ''} (${s.messageCount ?? '?'})`,
+                                label: `${name}${s.current ? ' [current]' : ''}${hit ? ` (${hit.count} msg)` : ''} (${s.messageCount ?? '?'})${pinned}`,
                                 value: s.id,
                                 detail: hit ? hit.snippet : (s.summary || s.workspace || '')
                             };
@@ -3977,7 +4075,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     const sessionId = await this.select(
                         `Sessions in ${project}`,
                         projectSessions.map(s => ({
-                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
+                            label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
                             value: s.id,
                             detail: s.summary
                         })),
@@ -4019,7 +4117,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     const sessionId = await this.select(
                         `Sessions in ${thread}`,
                         threadSessions.map(s => ({
-                            label: `${s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})`,
+                            label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
                             value: s.id,
                             detail: s.summary
                         })),

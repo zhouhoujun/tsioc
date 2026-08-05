@@ -264,4 +264,100 @@ describe('Persistent session store', () => {
             await ctx.close();
         }
     });
+
+    it('persists title and pinned flags', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-t', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setTitle('session-t', 'My session');
+            await store.setPinned('session-t', true);
+
+            const state = await store.get('session-t');
+            expect(state.title).toEqual('My session');
+            expect(state.pinned).toEqual(true);
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('clears title with blank input and unpins', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-t', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setTitle('session-t', 'My session');
+            await store.setPinned('session-t', true);
+
+            await store.setTitle('session-t', '   ');
+            await store.setPinned('session-t', false);
+
+            const state = await store.get('session-t');
+            expect(state.title).toBeUndefined();
+            expect(state.pinned).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('persists snapshots and restores transcript', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-s', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.append('session-s', { id: '2', role: 'assistant', content: 'two', createdAt: 2, metadata: { model: 'm1' } });
+            await store.setSummary('session-s', 'summary');
+
+            const snapshotId = await store.snapshot('session-s', 'checkpoint');
+            expect(snapshotId).toMatch(/^snap_/);
+
+            const snapshots = await store.listSnapshots('session-s');
+            expect(snapshots).toEqual([{
+                snapshotId,
+                label: 'checkpoint',
+                messageCount: 2,
+                summary: 'summary',
+                createdAt: expect.any(Number)
+            }]);
+
+            await store.append('session-s', { id: '3', role: 'user', content: 'three', createdAt: 3 });
+            await store.restoreSnapshot('session-s', snapshotId);
+
+            const state = await store.get('session-s');
+            expect(state.messages.length).toEqual(2);
+            expect(state.messages.map(message => message.content)).toEqual(['one', 'two']);
+            expect(state.messages[1].metadata?.model).toEqual('m1');
+            expect(state.summary).toEqual('summary');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('throws when restoring an unknown snapshot', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-s', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await expect(store.restoreSnapshot('session-s', 'missing')).rejects.toThrow('snapshot not found: missing');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('deletes snapshots and removes them on session delete', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-s', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            const snapshotId = await store.snapshot('session-s');
+            await store.deleteSnapshot('session-s', snapshotId);
+            expect(await store.listSnapshots('session-s')).toEqual([]);
+
+            await store.snapshot('session-s');
+            await store.delete('session-s');
+            expect(await store.listSnapshots('session-s')).toEqual([]);
+        } finally {
+            await ctx.close();
+        }
+    });
 });

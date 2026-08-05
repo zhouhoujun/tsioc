@@ -5,6 +5,8 @@ export interface SessionInfo {
     lastActiveAt: number;
     messageCount: number;
     summary?: string;
+    title?: string;
+    pinned?: boolean;
     workspace?: string;
     projectKey?: string;
     projectId?: string;
