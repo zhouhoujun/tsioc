@@ -23,6 +23,7 @@ export * from '../lsp';
 export * from '../registry';
 export * from '../scheduling';
 export * from '../terminal';
+export * from '../ssh';
 export * from '../memory';
 export * from '../project';
 export * from '../coding';

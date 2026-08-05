@@ -99,6 +99,10 @@
       "types": "./terminal/index.d.ts",
       "default": "./terminal/index.js"
     },
+    "./ssh": {
+      "types": "./ssh/index.d.ts",
+      "default": "./ssh/index.js"
+    },
     "./agent": {
       "types": "./agent/index.d.ts",
       "default": "./agent/index.js"
@@ -178,6 +182,7 @@
   },
   "dependencies": {
     "@tsdi/agent": "6.0.31",
+    "@tsdi/agent-ssh": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "cross-fetch": "^4.1.0",
     "globby": "^11.0.0",

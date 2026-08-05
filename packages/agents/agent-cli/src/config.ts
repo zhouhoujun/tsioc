@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { AgentHooksOptions, resolveAgentWorkspacePath } from '@tsdi/agent';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
+import { SshOptions } from '@tsdi/agent-ssh';
 
 export interface AgentCliModelRoute {
     name?: string;
@@ -93,6 +94,7 @@ export interface AgentCliResolvedConfig {
     settingsModel?: Partial<AgentCliProviderProfile>;
     hooks?: AgentHooksOptions;
     harnessProfile?: string;
+    ssh?: SshOptions;
 }
 
 export const AGENT_HOOKS_FILE = 'hooks.json';
@@ -537,6 +539,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         providerProfile,
         settingsModel,
         hooks,
-        harnessProfile: settings.harness?.profile
+        harnessProfile: settings.harness?.profile,
+        ...(settings.ssh ? { ssh: settings.ssh } : {})
     };
 }

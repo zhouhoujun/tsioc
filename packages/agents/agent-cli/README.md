@@ -128,6 +128,16 @@ Recommended full adaptive `settings.json` example:
       "local"
     ],
     "defaultEnabled": true
+  },
+  "ssh": {
+    "hosts": {
+      "web": {
+        "host": "example.com",
+        "username": "root",
+        "auth": { "type": "key", "keyPath": "~/.ssh/id_ed25519" }
+      }
+    },
+    "allowlist": ["web"]
   }
 }
 ```
@@ -146,6 +156,36 @@ Field notes:
 - `skills.roots`: skill directories, relative to `workspace`
 - `channels.values`: default channel list
 - `channels.defaultEnabled`: whether the default channel preset is enabled
+- `ssh.hosts`: named SSH hosts used by the `/ssh` command family and the `ssh_*` tools
+- `ssh.allowlist`: optional host ids / `host:port` / hostnames permitted for SSH connections; empty means all configured hosts are allowed
+
+The `ssh` section maps to `@tsdi/agent-ssh` options:
+
+```json
+{
+  "ssh": {
+    "hosts": {
+      "web": {
+        "host": "example.com",
+        "port": 22,
+        "username": "root",
+        "auth": { "type": "key", "keyPath": "~/.ssh/id_ed25519" },
+        "knownHosts": "accept-new"
+      },
+      "db": {
+        "host": "db.internal",
+        "port": 2222,
+        "auth": { "type": "password", "passwordEnv": "DB_SSH_PASSWORD" }
+      }
+    },
+    "allowlist": ["web", "db.internal:2222"]
+  }
+}
+```
+
+- `auth.type` supports `key` (default `~/.ssh/id_ed25519` / `id_rsa`), `password` (or `passwordEnv`), and `agent`.
+- `knownHosts` per host: `strict` (verify against `~/.ssh/known_hosts`), `accept-new` (default), or `off`.
+- In the console, `/ssh` lists hosts and connection status, `/ssh connect <host>` / `/ssh disconnect <host>` manage connections, and `/ssh forward <host> <destAddr> <destPort>` verifies a forwarding channel.
 
 Multi-provider `fast / strong` adaptive configuration example:
 

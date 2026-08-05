@@ -115,6 +115,7 @@
     "@types/duplexify": "^3.6.1",
     "@types/qs": "^6.9.7",
     "@types/readable-stream": "^2.3.14",
+    "@types/ssh2": "^1.15.5",
     "amqp-connection-manager": "^4.1.2",
     "amqplib": "^0.10.3",
     "axios": "^1.6.8",
@@ -139,6 +140,7 @@
     "nats": "^2.9.0",
     "pumpify": "^2.0.1",
     "qs": "^6.10.3",
+    "ssh2": "^1.17.0",
     "swagger-ui-dist": "^5.3.1",
     "uuid": "^8.3.2",
     "ws": "^8.5.0"

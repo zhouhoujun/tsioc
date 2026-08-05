@@ -1,6 +1,7 @@
 import { Injector, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ApplicationArguments } from '@tsdi/core';
 import { AgentModule } from '@tsdi/agent';
+import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from './options';
 import {
@@ -47,6 +48,7 @@ import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
+import { SshExecTool, SshGetTool, SshPutTool, SshTunnelTool } from '../ssh/ssh.tool';
 import { ProcessRegistry } from '../process/ProcessRegistry';
 import { ProcessStartTool } from '../process/process-start.tool';
 import { ProcessPollTool } from '../process/process-poll.tool';
@@ -157,6 +159,11 @@ function provideCodingTaskToolFactory() {
         ProcessKillTool,
         ScheduleTool,
         TerminalTool,
+        SshConnectionManager,
+        SshExecTool,
+        SshPutTool,
+        SshGetTool,
+        SshTunnelTool,
         MemoryListTool,
         MemoryPutTool,
         MemorySearchTool,
@@ -293,6 +300,10 @@ function provideCodingTaskToolFactory() {
         ProcessKillTool,
         ScheduleTool,
         TerminalTool,
+        SshExecTool,
+        SshPutTool,
+        SshGetTool,
+        SshTunnelTool,
         MemoryListTool,
         MemoryPutTool,
         MemorySearchTool,

@@ -41,6 +41,15 @@ export interface AgentToolsTerminalOptions {
     maxTimeoutMs?: number;
 }
 
+export interface AgentToolsSshOptions {
+    /** Named SSH host configurations available to ssh_* tools. */
+    hosts?: Record<string, import('@tsdi/agent-ssh').SshHostConfig>;
+    /** Host ids (or host:port) allowed to be connected. Empty means all configured hosts are allowed. */
+    allowlist?: string[];
+    defaultTimeoutMs?: number;
+    maxTimeoutMs?: number;
+}
+
 export interface AgentToolsSandboxOptions {
     enabled?: boolean;
     maxCommandLength?: number;
@@ -152,6 +161,7 @@ export type AgentToolGroup =
     | 'registry'
     | 'http'
     | 'terminal'
+    | 'ssh'
     | 'media'
     | 'agent'
     | 'code_execution'
@@ -219,6 +229,10 @@ export type AgentToolItem =
     | 'http_fetch'
     | 'http_request'
     | 'terminal'
+    | 'ssh_exec'
+    | 'ssh_put'
+    | 'ssh_get'
+    | 'ssh_tunnel'
     | 'image_info'
     | 'pdf_read'
     | 'vision_analyze'
@@ -275,6 +289,7 @@ export interface AgentToolsOptions {
     browser?: AgentToolsBrowserOptions;
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
+    ssh?: AgentToolsSshOptions;
     process?: AgentToolsProcessOptions;
     sandbox?: AgentToolsSandboxOptions;
     codeExecution?: AgentToolsCodeExecutionOptions;
@@ -374,6 +389,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         terminal: {
             ...(options?.terminal ?? {})
+        },
+        ssh: {
+            ...(options?.ssh ?? {})
         },
         process: {
             ...(options?.process ?? {})

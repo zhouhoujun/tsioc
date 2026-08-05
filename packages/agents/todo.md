@@ -727,3 +727,44 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 6. ~~测试~~ → 已完成：`view-model.spec.ts` 新增 18 条 vim 用例（默认关闭不拦截 / h l 0 $ x 动作 / dd pending 序列 / broken pending 重置 / k j 历史导航 / insert 透传 / I A o O 光标定位 / 终端 Escape 回 normal（含无 vim 时既有行为保持）/ inputPrompt 角标（含 plan 并存）/ keymap 覆盖-unset-reset / 非法 action 拒绝 / `/vim` toggle / `/keymap` set-list-unset-reset / handleTerminalInput normal 拦截 / insert 透传 / Escape 切换 / 箭头保留 + Enter 吞掉）；`html-console.spec.ts` +1（textarea `prompt` 属性含 vim 角标）。
 
 验证：agent-ui 全量 288 passing + 1 条预存在失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，渲染为占位字符与 vim 无关）；`view-model.spec.ts` 230 passing（+18）、`html-console.spec.ts` 6 passing + 1 预存在失败（+1）；`tsc --noEmit` clean。既有输入行为（vim 关闭时）零变化。
+
+## P44 规划：远程会话 SSH（两阶段交付）
+
+**阶段一（核心 + 工具）**：
+1. **新建共享包 `@tsdi/agent-ssh`**（`packages/agents/agent-ssh/`，仿 agent-channels 结构；`@tsdi/agent` 零依赖核心不引入 ssh2，agent-ui 不依赖 agent-tools，故 SSH 原语独立成包）：
+   - 依赖：`ssh2`（纯 JS，自带 MockServer 可测）+ `@tsdi/agent`、`@tsdi/ioc`。
+   - `src/ssh-config.ts`：`SshHostConfig`（id、host、port=22、username、auth: keyPath|privateKey|password、knownHosts: 'strict'|'accept-new'|'off'、readyTimeoutMs、keepaliveIntervalMs、connectTimeoutMs）；`SshAuthResolver`（keyPath 从 `~/.ssh/*` 读取、env 引用展开）。
+   - `src/ssh-client.ts`：`SshClient` 薄 Promise 封装（connect 含 host key 校验、exec(command) → {stdout,stderr,exitCode}、shell({term,cols,rows}) → 可读写流、sftp put/get、tcpip forwardOut 本地端口转发、disconnect、isConnected、事件转 Promise）。
+   - `src/ssh-manager.ts`：`SshConnectionManager`（按 host id 注册表、会话级复用、`disposeAll`、`list`）。
+   - `src/agent-ssh.module.ts` + `provider.ts` + `index.ts` + `taskfile.ts` + `unit.ts` + `package.json`（Apache-2.0）。
+2. **agent-tools 新 `ssh/` 工具包**（对齐 terminal 工具模式）：
+   - `SshExecTool`（远程执行命令，复用 sandbox 命令策略）、`SshPutTool`/`SshGetTool`（sftp 双向传输，受 workspace 文件策略约束）、`SshTunnelTool`（本地端口转发 start/stop 生命周期）。
+   - `AgentToolsOptions.ssh`：`{ hosts?: Record<string, SshHostConfig>, allowlist?: string[]（host id 或 host:port 白名单）, defaultTimeoutMs, maxTimeoutMs }`；`AgentToolsSshOptions` 接口并入 options.ts。
+   - provider.ts：toolItems 增 `ssh_exec`/`ssh_get`/`ssh_put`/`ssh_tunnel`、toolGroups.ssh、`withSshAgentTools()`、deferredActivationBundles += 'ssh'、withDefaultAgentTools 纳入、index.ts 导出、README 安全矩阵补行。
+   - 安全：deferred 激活 + `requiredPrincipals: ['local-system']` + `allowLocalAnonymous: true`；knownHosts 默认 'accept-new'（strict 可配）；白名单为空即禁连。
+3. **测试**（ssh2 MockServer，无需真实 SSH）：`agent-ssh/test/ssh-client.spec.ts`（connect/exec/shell/sftp/host-key/auth 失败/超时/dispose）+ `agent-tools/test/ssh-tools.spec.ts`（四工具 + sandbox 命令策略 + 白名单拒绝 + 未配置 host 提示）。
+
+**阶段二（agent-ui 交互式远程 shell）**：
+4. agent-ui 依赖 `@tsdi/agent-ssh`（`SshClient`/`SshConnectionManager` 复用）：
+   - `/ssh` 命令族：`/ssh connect <hostId|user@host> [port]`、`/ssh disconnect [id]`、`/ssh list`、`/ssh forward <localPort> <hostId> <remotePort>`。
+   - 交互 shell 模式：`AgentConsoleComponent` 增加 `sshShell` 会话态——激活时 `handleTerminalInput` 原始字节直通远端 PTY 流（跳过 processDecodedInput），远端 stdout 按行回显（pushActivity 'ssh' kind 或专用输出区），`Ctrl+]` 或 `/ssh detach` 脱离回 prompt 而连接保留。
+   - 面板角标：inputPrompt 追加 ` · ssh <host>`。
+5. **测试**：agent-ui `view-model.spec.ts` + `html-console.spec.ts`（注入 mock SshClient：connect/list/disconnect/forward 命令、shell 字节转发、detach、命令注入校验、无连接时提示）。
+
+实现顺序：agent-ssh 包 → agent-tools ssh 工具 → 测试阶段一 → agent-ui /ssh → 测试阶段二 → 回归（agent-ssh/agent-tools/agent-ui tsc + 全量测试）→ todo.md 收尾 + 提交。
+
+## P44 打磨（已完成）：远程会话 SSH
+
+**阶段一（agent-ssh 包）**：
+1. `@tsdi/agent-ssh` 包：`ssh-config.ts`（SshHostConfig/SshAuthResolver/knownHosts: strict|accept-new|off）、`ssh-client.ts`（SshClient：connect/exec/shell/sftpPut/sftpGet/forwardOut/disconnect/isConnected）、`ssh-manager.ts`（SshConnectionManager：按 host id 注册表/连接复用/disposeAll/list）、`agent-ssh.module.ts` + `provider.ts`（`provideSsh()`、`AGENT_SSH_OPTIONS` token）+ `index.ts` + `taskfile.ts` + `unit.ts` + `package.json`。
+2. agent-tools `ssh/` 工具包：`SshExecTool`/`SshPutTool`/`SshGetTool`/`SshTunnelTool` + `SshOptions` 并入 options.ts；provider.ts 注册 `ssh_exec`/`ssh_put`/`ssh_get`/`ssh_tunnel` + toolGroups.ssh + `withSshAgentTools()` + deferredActivationBundles + withDefaultAgentTools + index 导出 + README 安全矩阵与 SSH 配置段。
+3. 测试：agent-ssh 8 passing（MockServer：connect/exec/shell/host-key/allowlist/manager）；agent-tools ssh-tools.spec.ts 5 passing + 全量 259 passing。
+
+**阶段二（agent-ui 交互式远程 shell）**：
+4. `/ssh` 命令族：`list`/`connect`/`disconnect`/`forward`/`shell`（help 菜单 + commandHints '/ssh'）；`AgentConsoleComponent` 注入 `@Optional() SshConnectionManager`（构造末位，兼容位置参数构造）；配置接线 settings.json `ssh` 段 → AgentRootSettings → AgentCliResolvedConfig → `AGENT_SSH_OPTIONS` provider（run-console.ts）+ AgentUiResolvedConfig.ssh。
+5. 交互 shell 模式：`/ssh shell <host>` 打开远端 PTY（xterm-256color + 终端尺寸），`handleTerminalInput` 在 shell 激活时字节直通（跳过 processDecodedInput），`Ctrl+]`（0x1d）detach 或远端关闭自动退出，退出后 `resetTerminalRenderState()` 整屏复位；`ConsoleTerminalSurfaceAccessor` 新增可选 API `writeRawTerminalData`/`resetTerminalRenderState`/`getTerminalSize`（ConsoleTerminalSurfaceLifecycleService 实现，console 包基线验证零回归）；面板角标 inputPrompt 追加 ` · ssh <host>`。
+6. 测试：ssh-command.spec.ts 12 passing（命令族）；ssh-shell.spec.ts 11 passing（shell 会话/字节转发/detach/自动退出/拒绝重入/失败路径）；agent-cli cli.spec.ts +2（ssh 配置解析）。
+
+**回归**（全部通过；失败项均为预存，经 git stash 基线对照验证与本改动无关）：
+- agent-ssh 8 passing；agent-tools 259 passing；agent-cli 51 passing；agent-ui 311 passing 1 failed（`toggles panel summary and detail through html renderer` 预存）；components/console 69 passing 2 failed（`toggles panel summary and detail through tui renderer`、`returns stripped rendered text...` 预存）。
+- 四包 tsc clean（agent-ssh/agent-tools/agent-cli/agent-ui；console 经 agent-ui tsc 路径别名覆盖类型检查）。

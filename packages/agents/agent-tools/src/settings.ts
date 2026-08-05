@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { SshOptions } from '@tsdi/agent-ssh';
 import { AgentToolsOptions, AgentFormatterOptions } from './options';
 import { AgentMcpOptions } from '../mcp/types';
 
@@ -29,6 +30,7 @@ export interface AgentRootSettings {
     harness?: {
         profile?: string;
     };
+    ssh?: SshOptions;
 }
 
 export interface ResolvedAgentRootSettings {

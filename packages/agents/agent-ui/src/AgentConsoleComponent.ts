@@ -12,6 +12,7 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
+import { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
@@ -21,6 +22,8 @@ import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
+
+const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 @Component({
     selector: 'agent-console',
     template: `
@@ -61,6 +64,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
+    protected sshShell: SshShellSession | null = null;
     protected openSessionRequestId = 0;
     protected openReviewRequestId = 0;
     protected activateModelRequestId = 0;
@@ -84,7 +88,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
         @Optional() @Inject(ComponentRef) private componentRef?: ComponentRef<AgentConsoleComponent> | null,
         @Optional() @Inject(ConsoleTerminalSurfaceAccessor) private surfaceAccessor?: ConsoleTerminalSurfaceAccessor | null,
-        @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null
+        @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
+        @Optional() private sshManager?: SshConnectionManager | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -2265,6 +2270,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.activateSelectedToolAction = undefined;
         this.state.resolveApprovalAction = undefined;
         void this.persistInputHistory();
+        const shell = this.sshShell;
+        this.sshShell = null;
+        this.state.sshShell = null;
+        if (shell) {
+            void shell.close().catch(() => void 0);
+        }
         this.dispose();
     }
 
@@ -3382,6 +3393,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
                     { label: '/export', value: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]' },
                     { label: '/attach', value: '/attach', description: 'attach an image for the next prompt' },
+                    { label: '/ssh', value: '/ssh', description: 'SSH hosts: list / connect / disconnect / forward' },
                     { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
@@ -3507,6 +3519,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeMessageDetail();
                 this.state.closeReview();
                 this.state.setToolsFocused(true);
+                return true;
+            case '/ssh':
+                await this.runSshCommand(parsed.args);
                 return true;
             case '/jobs':
                 if (this.isTurnInProgress()) {
@@ -5021,6 +5036,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.surfaceAccessor?.dispatchTerminalMouse(decoded.mouse);
             return;
         }
+        if (this.state.isSshShellActive && this.sshShell) {
+            const raw = decodeConsoleTextChunk(chunk);
+            if (raw === SSH_SHELL_DETACH_SEQUENCE) {
+                await this.detachSshShell('detached');
+                return;
+            }
+            this.sshShell.write(raw);
+            return;
+        }
         if (this.state.vimMode && !this.state.isAnyFocusActive() && this.state.inputMode === 'normal') {
             const raw = decodeConsoleTextChunk(chunk);
             if (decoded.controlKey === 'return') {
@@ -5312,6 +5336,192 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         this.notify('Usage: /keymap [list] | [set <key> <action>] | [unset <key>] | [reset]');
+    }
+
+    protected async runSshCommand(args: string): Promise<void> {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const action = (tokens[0] || 'list').toLowerCase();
+        if (action === 'help' || action === '?') {
+            this.notify('Usage: /ssh [list] | connect <host> | disconnect <host> | shell <host> | forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
+            return;
+        }
+        if (action === 'list' || action === 'ls') {
+            this.listSshHosts();
+            return;
+        }
+        if (action === 'connect') {
+            await this.connectSshHost(tokens[1]);
+            return;
+        }
+        if (action === 'disconnect') {
+            await this.disconnectSshHost(tokens[1]);
+            return;
+        }
+        if (action === 'shell') {
+            await this.startSshShell(tokens[1]);
+            return;
+        }
+        if (action === 'forward') {
+            await this.forwardSshTunnel(tokens.slice(1));
+            return;
+        }
+        this.notify('Unknown /ssh command. Usage: /ssh [list] | connect <host> | disconnect <host> | shell <host> | forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
+    }
+
+    protected listSshHosts(): void {
+        if (!this.sshManager) {
+            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            return;
+        }
+        const infos = this.sshManager.list();
+        if (!infos.length) {
+            this.notify('No SSH hosts configured.');
+            return;
+        }
+        const lines = infos.map(info =>
+            `${info.id} · ${info.username}@${info.host}:${info.port} · ${info.connected ? 'connected' : 'disconnected'}`
+        );
+        this.notify(lines.join('\n'));
+    }
+
+    protected async connectSshHost(id: string | undefined): Promise<void> {
+        if (!id) {
+            this.notify('Usage: /ssh connect <host>');
+            return;
+        }
+        if (!this.sshManager) {
+            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            return;
+        }
+        if (!this.sshManager.hasHost(id)) {
+            this.notify(`SSH host '${id}' is not configured. Use /ssh list to see available hosts.`);
+            return;
+        }
+        try {
+            const client = await this.sshManager.connect(id);
+            this.notify(`Connected to ${client.hostId}.`);
+        } catch (error) {
+            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    protected async disconnectSshHost(id: string | undefined): Promise<void> {
+        if (!id) {
+            this.notify('Usage: /ssh disconnect <host>');
+            return;
+        }
+        if (!this.sshManager) {
+            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            return;
+        }
+        const disconnected = await this.sshManager.disconnect(id);
+        this.notify(disconnected
+            ? `Disconnected from ${id}.`
+            : `SSH host '${id}' is not connected.`);
+    }
+
+    protected async forwardSshTunnel(tokens: string[]): Promise<void> {
+        const id = tokens[0];
+        const destAddr = tokens[1];
+        const destPort = Number(tokens[2]);
+        if (!id || !destAddr || !Number.isInteger(destPort) || destPort < 1 || destPort > 65535) {
+            this.notify('Usage: /ssh forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
+            return;
+        }
+        if (!this.sshManager) {
+            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            return;
+        }
+        const srcAddr = tokens[3] || '127.0.0.1';
+        const srcPort = tokens[4] == null ? 0 : Number(tokens[4]);
+        if (!Number.isInteger(srcPort) || srcPort < 0 || srcPort > 65535) {
+            this.notify('Invalid srcPort: must be an integer in 0..65535.');
+            return;
+        }
+        let client: SshClient;
+        try {
+            client = await this.sshManager.connect(id);
+        } catch (error) {
+            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
+            return;
+        }
+        try {
+            const channel = await client.forwardOut(srcAddr, srcPort, destAddr, destPort);
+            channel.close();
+            this.notify(`Tunnel established: ${srcAddr}:${srcPort} -> ${destAddr}:${destPort} via ${client.hostId}.`);
+        } catch (error) {
+            this.notify(`SSH forward failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    protected async startSshShell(id: string | undefined): Promise<void> {
+        if (!id) {
+            this.notify('Usage: /ssh shell <host>');
+            return;
+        }
+        if (!this.sshManager) {
+            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            return;
+        }
+        if (!this.sshManager.hasHost(id)) {
+            this.notify(`SSH host '${id}' is not configured. Use /ssh list to see available hosts.`);
+            return;
+        }
+        if (this.state.isSshShellActive) {
+            this.notify(`Already in SSH shell on ${this.state.sshShell?.hostId}. Press Ctrl+] to detach.`);
+            return;
+        }
+        let client: SshClient;
+        try {
+            client = await this.sshManager.connect(id);
+        } catch (error) {
+            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
+            return;
+        }
+        const size = this.surfaceAccessor?.getTerminalSize?.() ?? { cols: 80, rows: 24 };
+        let shell: SshShellSession;
+        try {
+            shell = await client.shell({ term: 'xterm-256color', cols: size.cols, rows: size.rows });
+        } catch (error) {
+            this.notify(`SSH shell failed: ${error instanceof Error ? error.message : String(error)}`);
+            return;
+        }
+        this.sshShell = shell;
+        this.state.sshShell = { hostId: id };
+        shell.stream.on('data', (chunk: Buffer | string) => {
+            this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
+        });
+        shell.stream.stderr?.on('data', (chunk: Buffer | string) => {
+            this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
+        });
+        const onEnd = () => {
+            if (this.state.isSshShellActive && this.sshShell === shell) {
+                void this.detachSshShell('closed');
+            }
+        };
+        shell.stream.on('close', onEnd);
+        shell.stream.on('error', onEnd);
+        this.notify(`SSH shell started on ${id}. Terminal bytes stream live; press Ctrl+] to detach.`);
+    }
+
+    protected async detachSshShell(reason: 'detached' | 'closed'): Promise<void> {
+        const hostId = this.state.sshShell?.hostId || '';
+        const shell = this.sshShell;
+        this.sshShell = null;
+        this.state.sshShell = null;
+        if (shell) {
+            try {
+                await shell.close();
+            } catch {
+                void 0;
+            }
+        }
+        this.surfaceAccessor?.resetTerminalRenderState?.();
+        if (hostId) {
+            this.notify(reason === 'detached'
+                ? `SSH shell detached from ${hostId}.`
+                : `SSH shell on ${hostId} closed.`);
+        }
     }
 
     protected async runPermissionsCommand(args: string): Promise<void> {

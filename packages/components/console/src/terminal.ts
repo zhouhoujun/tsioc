@@ -288,6 +288,9 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
     abstract notifyNonMouseInput?(): boolean;
+    abstract writeRawTerminalData?(text: string): boolean;
+    abstract resetTerminalRenderState?(): boolean;
+    abstract getTerminalSize?(): { cols: number; rows: number };
 }
 
 export class ConsoleTerminalInputController {
@@ -444,6 +447,29 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         }
         this.output.write(buildOsc52ClipboardSequence(text));
         return true;
+    }
+
+    writeRawTerminalData(text: string): boolean {
+        if (!text || !this.output?.isTTY || typeof this.output.write !== 'function') {
+            return false;
+        }
+        this.output.write(text);
+        return true;
+    }
+
+    resetTerminalRenderState(): boolean {
+        if (!this.surface) {
+            return false;
+        }
+        this.surface.destroy();
+        this.surface = null;
+        this.attach();
+        return true;
+    }
+
+    getTerminalSize(): { cols: number; rows: number } {
+        const size = resolveTerminalSize(this.output || {});
+        return { cols: size.columns, rows: size.rows };
     }
 
     protected prepare(): void {

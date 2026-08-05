@@ -1,7 +1,7 @@
 {
-  "name": "@tsdi/agent-ui",
+  "name": "@tsdi/agent-ssh",
   "version": "6.0.31",
-  "description": "UI package for @tsdi/agent, including console UI and shared config helpers.",
+  "description": "SSH client primitives and session manager for @tsdi/agent remote sessions.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
@@ -9,11 +9,13 @@
   },
   "keywords": [
     "agents",
-    "ui",
-    "console",
-    "tui",
-    "rpc",
-    "tsdi"
+    "ssh",
+    "remote",
+    "session",
+    "sftp",
+    "tsdi",
+    "ioc",
+    "application"
   ],
   "author": "houjun",
   "license": "Apache-2.0",
@@ -27,12 +29,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "@tsdi/agent": "6.0.31",
-    "@tsdi/agent-ssh": "6.0.31",
-    "@tsdi/common": "6.0.31",
-    "@tsdi/components": "6.0.0-beta7",
-    "@tsdi/components/console": "6.0.0-beta7",
-    "@tsdi/core": "6.0.31",
-    "@tsdi/ioc": "6.0.31"
+    "@tsdi/ioc": "6.0.31",
+    "ssh2": "^1.17.0"
   },
   "directories": {
     "lib": "lib",

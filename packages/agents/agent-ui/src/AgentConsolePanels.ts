@@ -577,6 +577,9 @@ export class AgentConsoleInputPanelComponent {
         if (this.state?.vimMode) {
             badges.push(`vim ${this.state.inputMode}`);
         }
+        if (this.state?.isSshShellActive) {
+            badges.push(`ssh ${this.state.sshShell?.hostId || ''}`);
+        }
         return badges.length ? `${base} · ${badges.join(' · ')}` : base;
     }
 

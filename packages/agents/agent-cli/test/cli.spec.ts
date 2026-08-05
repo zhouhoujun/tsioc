@@ -302,6 +302,58 @@ export class AgentCliTest {
         expect(resolved.hooks).toEqual(hooks);
     }
 
+    @Test('resolves ssh hosts and allowlist from settings')
+    async resolvesSshHostsFromSettings() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'settings.json'), JSON.stringify({
+            ssh: {
+                hosts: {
+                    web: {
+                        host: 'example.com',
+                        username: 'root',
+                        auth: { type: 'key', keyPath: '~/.ssh/id_ed25519' }
+                    },
+                    db: {
+                        host: 'db.internal',
+                        port: 2222,
+                        auth: { type: 'password', passwordEnv: 'DB_SSH_PASSWORD' }
+                    }
+                },
+                allowlist: ['web', 'db.internal:2222']
+            }
+        }), 'utf8');
+
+        const resolved = resolveCliConfig({ root });
+
+        expect(resolved.ssh).toEqual({
+            hosts: {
+                web: {
+                    host: 'example.com',
+                    username: 'root',
+                    auth: { type: 'key', keyPath: '~/.ssh/id_ed25519' }
+                },
+                db: {
+                    host: 'db.internal',
+                    port: 2222,
+                    auth: { type: 'password', passwordEnv: 'DB_SSH_PASSWORD' }
+                }
+            },
+            allowlist: ['web', 'db.internal:2222']
+        });
+    }
+
+    @Test('resolves without ssh config when settings has no ssh section')
+    async resolvesWithoutSshConfigWhenAbsent() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'settings.json'), JSON.stringify({
+            session: 'plain'
+        }), 'utf8');
+
+        const resolved = resolveCliConfig({ root });
+
+        expect(resolved.ssh).toBeUndefined();
+    }
+
     @Test('defaults workspace to launch git root')
     async defaultsWorkspaceToLaunchGitRoot() {
         const home = await this.createRoot();

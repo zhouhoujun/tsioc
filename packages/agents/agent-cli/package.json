@@ -40,7 +40,8 @@
     "commander": "^12.1.0",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",
-    "tslib": "^2.0.1"
+    "tslib": "^2.0.1",
+    "@tsdi/agent-ssh": "6.0.31"
   },
   "directories": {
     "lib": "lib",

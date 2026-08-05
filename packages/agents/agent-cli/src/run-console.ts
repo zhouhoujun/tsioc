@@ -1,6 +1,7 @@
 import { TuiConsoleModule } from '@tsdi/components/console';
 import { AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
+import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
 import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -99,6 +100,7 @@ export async function runAgentConsole(
             NodeAgentHookCommandExecutor,
             { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
             { provide: AgentUiConfigService, useValue: config },
+            { provide: AGENT_SSH_OPTIONS, useValue: resolved.ssh ?? {} },
             ...(ui.providers || []),
             ...extraProviders
         ]

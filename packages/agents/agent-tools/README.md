@@ -35,6 +35,7 @@ npm run test:coverage
 - `registry`: tool registry introspection tools
 - `scheduling`: scheduled prompt tools
 - `terminal`: opt-in shell execution tools
+- `ssh`: SSH remote command, file transfer, and forwarding tools
 - `lsp`: Language Server Protocol tools (definition, references, diagnostics, document symbols)
 - `memory`: memory recall, export, inspection, and deletion tools
 - `project`: project summary, risk, and handoff intelligence tools
@@ -54,6 +55,7 @@ npm run test:coverage
 - `withMemoryAgentTools`
 - `withProjectAgentTools`
 - `withTerminalAgentTools`
+- `withSshAgentTools`
 - `withDefaultAgentTools`
 - `ReadFileTool`
 - `GlobSearchTool`
@@ -81,6 +83,10 @@ npm run test:coverage
 - `MemoryDeleteTool`
 - `ProjectIntelTool`
 - `TerminalTool`
+- `SshExecTool`
+- `SshPutTool`
+- `SshGetTool`
+- `SshTunnelTool`
 
 ## Notes
 
@@ -133,6 +139,31 @@ provideAgentTools({ lsp: { servers: {
 - `allowLocalAnonymous: true` means a tool may run without an explicit principal in local/direct execution and may also run for the gateway-local principal used when gateway auth is disabled.
 - `requiredPrincipals` is enforced by `@tsdi/agent`'s tool execution coordinator before the tool implementation runs.
 - Remote principals that do not satisfy the tool policy receive an authorization failure recorded in the tool receipt and audit trail instead of executing the side effect.
+
+## SSH tools
+
+`ssh_exec`, `ssh_put`, `ssh_get`, and `ssh_tunnel` execute commands, transfer
+files, and verify forwarding channels on configured SSH hosts.
+
+Configure hosts through `agentTools.ssh`:
+
+```ts
+provideAgentTools({ ssh: {
+  defaultTimeoutMs: 30000,
+  maxTimeoutMs: 300000,
+  hosts: {
+    web: { host: 'example.com', username: 'root', auth: { type: 'key', keyPath: '~/.ssh/id_ed25519' } },
+    db: { host: 'db.internal', port: 2222, auth: { type: 'password', passwordEnv: 'DB_SSH_PASSWORD' } }
+  },
+  allowlist: ['web', 'db.internal:2222']
+} })
+```
+
+- Tools connect lazily through `@tsdi/agent-ssh`'s `SshConnectionManager`; the same host set powers the agent-ui `/ssh` command family.
+- `auth.type` supports `key` (default `~/.ssh/id_ed25519`/`id_rsa`), `password` (or `passwordEnv`), and `agent`.
+- `allowlist` entries may be host ids, `host:port`, or bare hostnames; an empty allowlist permits all configured hosts.
+- `knownHosts` per host: `strict` (verify against `~/.ssh/known_hosts`), `accept-new` (default), or `off`.
+- `ssh_exec` timeouts are bounded by `maxTimeoutMs` (default 600000 ms).
 
 ## MCP security boundary
 

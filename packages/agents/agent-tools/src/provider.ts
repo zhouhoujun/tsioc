@@ -32,6 +32,7 @@ import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
+import { SshExecTool, SshGetTool, SshPutTool, SshTunnelTool } from '../ssh/ssh.tool';
 import { ProcessRegistry } from '../process/ProcessRegistry';
 import { ProcessStartTool } from '../process/process-start.tool';
 import { ProcessPollTool } from '../process/process-poll.tool';
@@ -164,6 +165,10 @@ const toolItems = {
     http_fetch: HttpFetchTool,
     http_request: HttpRequestTool,
     terminal: TerminalTool,
+    ssh_exec: SshExecTool,
+    ssh_put: SshPutTool,
+    ssh_get: SshGetTool,
+    ssh_tunnel: SshTunnelTool,
     vision_analyze: VisionAnalyzeTool,
     image_generate: ImageGenerateTool,
     spawn_agent: SpawnAgentTool,
@@ -216,6 +221,7 @@ const toolGroups = {
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal'],
+    ssh: ['ssh_exec', 'ssh_put', 'ssh_get', 'ssh_tunnel'],
     agent: ['spawn_agent', 'parallel_spawn', 'orchestrate'],
     code_execution: ['execute_code'],
     knowledge: ['knowledge_search', 'knowledge_store'],
@@ -257,6 +263,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.',
+    ssh: 'SSH remote command, file transfer, and forwarding tools.',
     agent: 'Sub-agent delegation, parallel task execution, and isolated task execution tools.',
     code_execution: 'Sandboxed code execution across multiple languages.',
     knowledge: 'Knowledge base query and store tools.',
@@ -278,7 +285,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     ai_cli: 'External AI coding CLI tool invocation (Claude Code, OpenCode, Gemini CLI, Codex CLI).',
     lsp: 'Language Server Protocol queries (definition, references, diagnostics, document symbols).'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'media', 'agent', 'code_execution', 'git', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'ssh', 'media', 'agent', 'code_execution', 'git', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -399,6 +406,10 @@ export function withSchedulingAgentTools(): Provider[] {
 
 export function withTerminalAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.terminal.map(name => toolItems[name]));
+}
+
+export function withSshAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.ssh.map(name => toolItems[name]));
 }
 
 export function withLspAgentTools(): Provider[] {

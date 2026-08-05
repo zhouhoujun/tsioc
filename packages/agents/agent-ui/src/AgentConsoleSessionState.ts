@@ -435,6 +435,7 @@ export class AgentConsoleSessionState {
     inputHistoryIndex = -1;
     inputHistoryDraft = '';
     inputLocked = false;
+    sshShell: { hostId: string } | null = null;
     modalPromptActive = false;
     activeTurnEventScope = '';
     lastError = '';
@@ -457,7 +458,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
+    commandHints = ['/help', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -562,6 +563,10 @@ export class AgentConsoleSessionState {
 
     get contextPreparationSummary(): string {
         return this.contextPreparation?.summary || '';
+    }
+
+    get isSshShellActive(): boolean {
+        return !!this.sshShell;
     }
 
     setModelProfile(modelProfile: string): void {
