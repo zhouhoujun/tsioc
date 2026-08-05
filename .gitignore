@@ -21,3 +21,4 @@ big-temp.json
 **/coverage-*.json
 *.info
 packages/microservices/**/coverage/
+.omo/
