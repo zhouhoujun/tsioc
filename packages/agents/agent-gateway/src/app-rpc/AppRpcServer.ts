@@ -359,36 +359,12 @@ export class AppRpcServer {
     }
 
     private async resolveAppStateSessionId(workspace: string, context: AppRpcRequestContext): Promise<string> {
-        const workspaceSessions = await this.findWorkspaceSessions(workspace, context.principalId);
-        if (workspaceSessions.length) {
-            return workspaceSessions[0].id;
-        }
+        // Contract: only an explicit --session resumes history; otherwise start fresh.
         const bootstrapSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
         if (bootstrapSessionId) {
             return bootstrapSessionId;
         }
         return `chat-${randomUUID()}`;
-    }
-
-    private async findWorkspaceSessions(workspace: string, principalId?: string): Promise<Array<{ id: string; lastActiveAt?: number }>> {
-        const normalizedWorkspace = String(workspace || '').trim();
-        const infos = await this.sessionHandler.listSessionInfos(principalId);
-        const filtered = normalizedWorkspace
-            ? infos.filter(info => String(info.workspace || '').trim() === normalizedWorkspace)
-            : infos;
-        return filtered
-            .slice()
-            .sort((left, right) => {
-                const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-                if (activityDelta !== 0) {
-                    return activityDelta;
-                }
-                return left.id.localeCompare(right.id);
-            })
-            .map(info => ({
-                id: info.id,
-                lastActiveAt: info.lastActiveAt
-            }));
     }
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {

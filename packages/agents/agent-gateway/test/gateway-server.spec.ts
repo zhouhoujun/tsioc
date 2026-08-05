@@ -2810,8 +2810,8 @@ export class AppRpcServerTest {
         expect(await owners.getOwner('rpc-init')).toEqual('user-1');
     }
 
-    @Test('returns most recent workspace session through shared app state')
-    async returnsMostRecentWorkspaceSessionThroughSharedAppState() {
+    @Test('creates fresh session through shared app state instead of reusing workspace sessions')
+    async createsFreshSessionThroughSharedAppState() {
         const store = new InMemorySessionStore();
         const memory = new InMemoryMemoryStore();
         const owners = new SessionOwnerStore(store);
@@ -2857,12 +2857,6 @@ export class AppRpcServerTest {
 
         await new Promise(resolve => setTimeout(resolve, 5));
 
-        await owners.create('other-workspace-newer', 'user-1');
-        await store.setWorkspace('other-workspace-newer', '/tmp/other');
-        await store.append('other-workspace-newer', { id: 'm2', role: 'user', content: 'other', createdAt: 2 } as any);
-
-        await new Promise(resolve => setTimeout(resolve, 5));
-
         await owners.create('workspace-latest', 'user-1');
         await store.setWorkspace('workspace-latest', '/tmp/workspace');
         await store.append('workspace-latest', { id: 'm3', role: 'user', content: 'latest', createdAt: 3 } as any);
@@ -2873,7 +2867,9 @@ export class AppRpcServerTest {
             method: 'app.state'
         }, { principalId: 'user-1' });
 
-        expect((response as any).result.sessionId).toEqual('workspace-latest');
+        const sessionId = String((response as any).result.sessionId || '');
+        expect(sessionId.startsWith('chat-')).toEqual(true);
+        expect(sessionId).not.toEqual('workspace-latest');
         expect((response as any).result.workspace).toEqual('/tmp/workspace');
     }
 
