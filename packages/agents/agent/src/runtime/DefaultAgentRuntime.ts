@@ -747,14 +747,29 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string): ModelRequest {
+    protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.getTurnAbortSignal(sessionId);
         const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
         if (resolvedProfile) {
             request.profile = resolvedProfile;
         }
+        if (falsifyRate != null) {
+            request.falsifyRate = falsifyRate;
+        }
         return request;
+    }
+
+    protected computeTurnFalsifyRate(turnContext: TurnExecutionContext): number | undefined {
+        const ledger = turnContext?.evidenceLedger;
+        if (!ledger || ledger.size === 0) {
+            return undefined;
+        }
+        const measured = ledger.entriesFrom(0).filter(entry => entry.status !== 'skipped');
+        if (measured.length === 0) {
+            return undefined;
+        }
+        return measured.filter(entry => entry.falsified === true).length / measured.length;
     }
 
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
@@ -777,7 +792,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
-            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile));
+            const falsifyRate = this.computeTurnFalsifyRate(turnContext);
+            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate));
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
@@ -785,7 +801,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
                 response = await this.modelAdapter.complete(
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile)
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate)
                 );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
@@ -794,7 +810,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
                 response = await this.modelAdapter.complete(
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile)
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate)
                 );
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
@@ -816,7 +832,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = await this.modelAdapter.complete(
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile)
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext))
         );
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
@@ -847,9 +863,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
+            const falsifyRate = this.computeTurnFalsifyRate(turnContext);
             let response = yield* this.collectStreamingResponse(
                 sessionId,
-                this.prepareModelRequest(sessionId, request, turnContext.profile)
+                this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate)
             );
             if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetried = true;
@@ -858,7 +875,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile)
+                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate)
                 );
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
@@ -867,7 +884,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile)
+                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate)
                 );
             }
 
@@ -890,7 +907,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
         const finalResponse = yield* this.collectStreamingResponse(
             sessionId,
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile)
+            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext))
         );
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);

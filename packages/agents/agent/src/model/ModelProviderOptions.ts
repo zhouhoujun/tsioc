@@ -53,6 +53,15 @@ export interface AgentModelRouteWhen {
     containsAny?: string[];
     minInputLength?: number;
     maxInputLength?: number;
+    /**
+     * B6: route when the current turn's falsification rate (fraction of
+     * measured tool evidence falsified by the verification gate, 0-1) is
+     * strictly greater than this threshold. Requests without ledger evidence
+     * (no tool calls yet this turn) never match this condition, so this route
+     * only fires on high-failure trajectories. Typically used to switch to a
+     * stronger profile or to declare low confidence on degraded runs.
+     */
+    falsifyRateGt?: number;
 }
 
 export interface AgentModelRoute extends AgentModelConfig {

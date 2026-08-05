@@ -15,6 +15,7 @@ interface ResolvedRouteSelection {
     route?: AgentModelRoute;
     profileName?: string;
     complexity: AgentModelComplexity;
+    falsifyRate?: number;
 }
 
 const DEFAULT_SIMPLE_MAX = 1;
@@ -55,16 +56,18 @@ export class RoutedModelAdapter extends ModelAdapter {
     private selectAdapter(request: ModelRequest): ResolvedRouteSelection {
         const input = this.extractInput(request);
         const complexity = this.estimateComplexity(input);
+        const falsifyRate = request.falsifyRate;
         const explicitProfile = this.resolveExplicitProfile(request.profile);
         if (explicitProfile) {
             return {
                 adapter: this.getOrCreateAdapter(explicitProfile.config),
                 config: explicitProfile.config,
                 profileName: explicitProfile.profileName,
-                complexity
+                complexity,
+                falsifyRate
             };
         }
-        const explicitRoute = this.matchRoute(input, complexity);
+        const explicitRoute = this.matchRoute(input, complexity, falsifyRate);
         const explicitConfig = explicitRoute ? this.resolveRouteConfig(explicitRoute) : null;
         if (explicitConfig) {
             return {
@@ -72,7 +75,8 @@ export class RoutedModelAdapter extends ModelAdapter {
                 config: explicitConfig,
                 route: explicitRoute ?? undefined,
                 profileName: explicitRoute?.profile,
-                complexity
+                complexity,
+                falsifyRate
             };
         }
 
@@ -82,7 +86,8 @@ export class RoutedModelAdapter extends ModelAdapter {
                 adapter: this.getOrCreateAdapter(complexityConfig.config),
                 config: complexityConfig.config,
                 profileName: complexityConfig.profileName,
-                complexity
+                complexity,
+                falsifyRate
             };
         }
 
@@ -91,7 +96,8 @@ export class RoutedModelAdapter extends ModelAdapter {
             adapter: this.getOrCreateAdapter(fallback.config),
             config: fallback.config,
             profileName: fallback.profileName,
-            complexity
+            complexity,
+            falsifyRate
         };
     }
 
@@ -138,16 +144,16 @@ export class RoutedModelAdapter extends ModelAdapter {
         return 'complex';
     }
 
-    private matchRoute(input: string, complexity: AgentModelComplexity): AgentModelRoute | null {
+    private matchRoute(input: string, complexity: AgentModelComplexity, falsifyRate?: number): AgentModelRoute | null {
         for (const route of this.options.routes ?? []) {
-            if (this.routeMatches(route, input, complexity)) {
+            if (this.routeMatches(route, input, complexity, falsifyRate)) {
                 return route;
             }
         }
         return null;
     }
 
-    private routeMatches(route: AgentModelRoute, input: string, complexity: AgentModelComplexity): boolean {
+    private routeMatches(route: AgentModelRoute, input: string, complexity: AgentModelComplexity, falsifyRate?: number): boolean {
         const when = route.when;
         if (!when) {
             return true;
@@ -180,6 +186,10 @@ export class RoutedModelAdapter extends ModelAdapter {
         }
 
         if (when.maxInputLength != null && input.length > when.maxInputLength) {
+            return false;
+        }
+
+        if (when.falsifyRateGt != null && (falsifyRate == null || falsifyRate <= when.falsifyRateGt)) {
             return false;
         }
 
@@ -251,7 +261,7 @@ export class RoutedModelAdapter extends ModelAdapter {
         if (!source) {
             return {};
         }
-        return {
+        const picked: AgentModelConfig = {
             provider: source.provider,
             model: source.model,
             apiKey: source.apiKey,
@@ -265,6 +275,12 @@ export class RoutedModelAdapter extends ModelAdapter {
             reasoning: source.reasoning,
             promptCache: source.promptCache
         };
+        for (const key of Object.keys(picked) as Array<keyof AgentModelConfig>) {
+            if (picked[key] === undefined) {
+                delete picked[key];
+            }
+        }
+        return picked;
     }
 
     private mergeConfigs(base?: AgentModelConfig, override?: AgentModelConfig): AgentModelConfig {
@@ -357,7 +373,8 @@ export class RoutedModelAdapter extends ModelAdapter {
             routing: {
                 complexity: selection.complexity,
                 route: selection.route?.name,
-                profile: selection.profileName
+                profile: selection.profileName,
+                ...(selection.falsifyRate != null ? { falsifyRate: selection.falsifyRate } : {})
             }
         };
     }

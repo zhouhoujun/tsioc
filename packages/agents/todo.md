@@ -543,6 +543,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 6. **B6 不确定性校准路由**（对应 PEFT 适配器之一 uncertainty-calibrated routing）
    - `RoutedModelAdapter.routes` 增加 `when.falsifyRateGt` 条件（消费 ledger 聚合：高 falsify 率 → 切强 profile 或声明低置信）。
    - 断言：高失败轨迹→路由切换、无 ledger 时跳过。
+   - — ✅ 已完成（见 P40）
 
 ### 建议执行顺序
 
@@ -628,3 +629,15 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 文档：本条目；建议执行顺序第 6 项标记完成。
 
 全量回归（含性能修复：agent-ui 测试耗时 3.157min → 1.168min）：agent 498（491+7 function-hooks）、agent-tools 240（233+7 formatter）、agent-gateway 139、agent-ui 263、agent-cli 49（较 P38 修正 1 条 registry 环境差异）passing；agent / agent-tools / agent-gateway / agent-ui / agent-cli `tsc --noEmit` clean。既有 turn 行为测试（turn-loop / tool-execution / plan-mode / sandbox / undo-redo）语义不变。
+
+## P40 打磨（已完成）：B6 不确定性校准路由
+
+1. ~~B6 不确定性校准路由~~ → 已完成（`@tsdi/agent`）：
+   - **契约**：`AgentModelRouteWhen.falsifyRateGt?: number`（0-1 阈值，严格大于才命中）；`ModelRequest.falsifyRate?: number`（本轮 falsify 率，无工具证据时为 undefined）。
+   - **运行时注入**：`DefaultAgentRuntime` 新增 `computeTurnFalsifyRate(turnContext)`——`evidenceLedger.entriesFrom(0)` 中非 skipped 条目里 `falsified === true` 占比；无 ledger / 空账本 / 无 measured 条目 → undefined。`prepareModelRequest` 增加第 4 参 `falsifyRate`，非 null 时写入 `request.falsifyRate`；`completeTurn` / `completeStreamingTurn` 的每轮模型请求与终局请求均注入当前值（falsify 率随修复推进累计，成功修复后回落）。
+   - **路由**：`RoutedModelAdapter.selectAdapter` 读取 `request.falsifyRate` 并透传 selection/metadata；`routeMatches` 新增 `falsifyRateGt` 判定（`falsifyRate == null || falsifyRate <= threshold` → 不命中；无 ledger 证据永不命中）；metadata.routing 附带 `falsifyRate`。
+   - **顺带修复（预存在 bug）**：`resolveRouteConfig` 对「仅引用 profile 名、无内联配置」的 route（README 文档形态，如 `{ when, profile: 'strong' }`）失效——`pickConfig(route)` 返回全 undefined 字段对象，`mergeConfigs` 展开时把已合并的 provider/model 覆盖成 undefined，`!provider && !model` 判 null 后回落默认配置。修复：`pickConfig` 剔除 undefined 字段（有值字段行为不变，既有 hermes/内联配置路由测试不受影响）。该 bug 自 `85a8181ef`（route delegation worker classes to model profiles）引入。
+   - **测试**：agent `test/model-provider.spec.ts` +3（`falsifyRateGt` 高于阈值 → 切 strong profile 且 metadata 带 falsifyRate、低于阈值跳过、无 ledger 证据跳过）；`test/turn-diagnostics.spec.ts` +2（runtime 在 falsified 工具轮后的下个请求注入 `falsifyRate > 0`、新 turn 空账本重置为 undefined；无工具证据的 turn 不设 falsifyRate）。
+   - 文档：本条目；建议执行顺序第 6 项标记完成。
+
+全量回归：agent 504（含 B6 新增 5 条）、agent-tools 240、agent-gateway 140、agent-ui 269 passing + 1 条预存在 fold-panel 渲染失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，git stash 基线双跑确认与本次无关）、agent-cli 49 passing；agent `tsc --noEmit` clean。既有 turn 行为测试（turn-loop / tool-execution / plan-mode / sandbox / undo-redo）语义不变。

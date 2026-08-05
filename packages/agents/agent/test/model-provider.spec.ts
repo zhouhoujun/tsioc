@@ -557,6 +557,184 @@ export class ModelProviderTest {
         expect(calls[0].body.model).toEqual('hermes-70b');
     }
 
+    @Test('routes to strong profile when falsify rate exceeds threshold')
+    async routesFalsifyRateAboveThresholdToStrongProfile() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'strong answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                strong: {
+                    provider: 'openai',
+                    model: 'gpt-4.1',
+                    baseUrl: 'https://openai.example',
+                    apiKey: 'openai-key'
+                }
+            },
+            routes: [{
+                name: 'high-failure-escalation',
+                when: { falsifyRateGt: 0.5 },
+                profile: 'strong'
+            }]
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-falsify-high',
+            summary: '',
+            memory: [],
+            tools: [],
+            falsifyRate: 0.8,
+            messages: [{
+                id: 'u2',
+                role: 'user',
+                content: 'continue after tool failures',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://openai.example/v1/chat/completions');
+        expect(calls[0].body.model).toEqual('gpt-4.1');
+        expect(result.metadata?.provider).toEqual('openai');
+        expect(result.metadata?.routing?.route).toEqual('high-failure-escalation');
+        expect(result.metadata?.routing?.profile).toEqual('strong');
+        expect(result.metadata?.routing?.falsifyRate).toEqual(0.8);
+    }
+
+    @Test('skips falsify rate route when rate is below threshold')
+    async skipsFalsifyRateRouteBelowThreshold() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'default answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                strong: {
+                    provider: 'openai',
+                    model: 'gpt-4.1',
+                    baseUrl: 'https://openai.example',
+                    apiKey: 'openai-key'
+                }
+            },
+            routes: [{
+                name: 'high-failure-escalation',
+                when: { falsifyRateGt: 0.5 },
+                profile: 'strong'
+            }]
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-falsify-low',
+            summary: '',
+            memory: [],
+            tools: [],
+            falsifyRate: 0.2,
+            messages: [{
+                id: 'u2',
+                role: 'user',
+                content: 'continue after a few tool results',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://deepseek.example/chat/completions');
+        expect(calls[0].body.model).toEqual('deepseek-v4-flash');
+        expect(result.metadata?.routing?.route).toBeUndefined();
+        expect(result.metadata?.routing?.falsifyRate).toEqual(0.2);
+    }
+
+    @Test('skips falsify rate route without ledger evidence')
+    async skipsFalsifyRateRouteWithoutLedgerEvidence() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'default answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                strong: {
+                    provider: 'openai',
+                    model: 'gpt-4.1',
+                    baseUrl: 'https://openai.example',
+                    apiKey: 'openai-key'
+                }
+            },
+            routes: [{
+                name: 'high-failure-escalation',
+                when: { falsifyRateGt: 0.5 },
+                profile: 'strong'
+            }]
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-falsify-none',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u2',
+                role: 'user',
+                content: 'first request before any tool evidence',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://deepseek.example/chat/completions');
+        expect(calls[0].body.model).toEqual('deepseek-v4-flash');
+        expect(result.metadata?.routing?.route).toBeUndefined();
+        expect(result.metadata?.routing?.falsifyRate).toBeUndefined();
+    }
+
     @Test('inherits top-level api key when complexity routing selects a profile')
     async inheritsTopLevelApiKeyForComplexityProfile() {
         const calls: Array<{ auth: string | undefined; body: any }> = [];

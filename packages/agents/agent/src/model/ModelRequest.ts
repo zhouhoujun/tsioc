@@ -21,4 +21,12 @@ export interface ModelRequest {
      * different worker classes to different models.
      */
     profile?: string;
+    /**
+     * B6: the current turn's falsification rate (fraction of measured tool
+     * evidence falsified by the verification gate, 0-1). Undefined while no
+     * tool evidence exists yet. The routed model adapter consumes this via
+     * `when.falsifyRateGt` to switch to a stronger profile (or declare low
+     * confidence) on high-failure trajectories.
+     */
+    falsifyRate?: number;
 }

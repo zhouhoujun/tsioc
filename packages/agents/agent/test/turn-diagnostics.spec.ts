@@ -75,10 +75,54 @@ class CapturingProfileModelAdapter extends EchoModelAdapter {
     }
 }
 
+class FalsifyRateCapturingModelAdapter extends EchoModelAdapter {
+    requests: Array<{ falsifyRate?: number }> = [];
+    private count = 0;
+    private readonly failFirst: boolean;
+
+    constructor(failFirst = true) {
+        super();
+        this.failFirst = failFirst;
+    }
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.failFirst && this.count === 1) {
+            return {
+                toolCalls: [{ id: `tool-fr-${this.count}`, name: 'echo', input: { value: 'x' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
 class EmptyToolRegistry extends ToolRegistry {
     getTools() { return []; }
     getTool() { return undefined; }
     async invoke(): Promise<any> { return null; }
+}
+
+class EchoToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{ name: 'echo', description: 'echo input' } as any];
+    }
+    getTool() {
+        return this.getTools()[0] as any;
+    }
+    async invoke(_name: string, input: any): Promise<any> {
+        return input;
+    }
+}
+
+class FailingEchoToolRegistry extends EchoToolRegistry {
+    async invoke(): Promise<any> {
+        throw new Error('boom');
+    }
 }
 
 class FakeApp {
@@ -442,5 +486,68 @@ export class TurnDiagnosticsStoreTest {
 
         await runtime.runTurn('s1', 'third turn');
         expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+    }
+}
+
+@Suite('Turn falsify rate routing (B6)')
+export class TurnFalsifyRateRuntimeTest {
+    @Test('runtime injects falsify rate into the request following a falsified tool round')
+    async runtimeInjectsFalsifyRateAfterFalsifiedRound() {
+        const model = new FalsifyRateCapturingModelAdapter();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new FailingEchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined
+        );
+
+        const result = await runtime.runTurn('s1', 'first turn');
+
+        expect(result.message.content).toEqual('done');
+        expect(model.requests.length).toEqual(2);
+        expect(model.requests[0].falsifyRate).toBeUndefined();
+        expect(model.requests[1].falsifyRate).toBeGreaterThan(0);
+
+        await runtime.runTurn('s1', 'second turn');
+        expect(model.requests.length).toEqual(3);
+        expect(model.requests[2].falsifyRate).toBeUndefined();
+    }
+
+    @Test('runtime leaves falsify rate unset when no tool evidence was measured')
+    async runtimeLeavesFalsifyRateUnsetWithoutEvidence() {
+        const model = new FalsifyRateCapturingModelAdapter(false);
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined
+        );
+
+        await runtime.runTurn('s1', 'hello');
+
+        expect(model.requests.length).toEqual(1);
+        expect(model.requests[0].falsifyRate).toBeUndefined();
     }
 }

@@ -24,6 +24,7 @@ export interface AgentCliModelRoute {
         containsAny?: string[];
         minInputLength?: number;
         maxInputLength?: number;
+        falsifyRateGt?: number;
     };
 }
 

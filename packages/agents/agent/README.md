@@ -145,6 +145,7 @@ AgentModule.withOptions({
 - Explicit `routes` are checked first.
 - If no explicit route matches, the adapter estimates prompt complexity as `simple`, `moderate`, or `complex`.
 - If no complexity route matches, the adapter falls back to `defaultProfile`, then to the top-level `model` config.
+- `when.falsifyRateGt` is an explicit route condition that matches when the current turn's verification-gate falsification rate (fraction of measured tool evidence falsified, 0-1) is strictly greater than the threshold. Requests made before any tool evidence exists never match, so the route only fires on high-failure trajectories — typically used to switch to a stronger profile or declare low confidence on degraded runs.
 
 In the example above, simple or moderate prompts stay on `deepseek-v4-flash`,
 while complex prompts are routed to `deepseek-v4-pro`.
