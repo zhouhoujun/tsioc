@@ -437,7 +437,7 @@
 
 全量回归：agent 367（367+0）、agent-gateway 119（119+0）、agent-ui 241（234+7）passing；三包 tsc 干净。
 
-## P34 规划：对比 Codex / opencode 的差距清单与打磨计划（待办，未开始）
+## P34 规划：对比 Codex / opencode 的差距清单与打磨计划（Tier1/Tier2 已完成；Tier3 远期仅记录）
 
 ### 对比结论（2026-08 调研）
 
@@ -483,7 +483,7 @@
 5. ~~Tier1-3 LSP 工具组~~（已完成，2026-08：`agent-tools/lsp/` 零依赖 LSP client + `LspServerManager` 惰性启动 + 4 个 lsp_* 工具，agent-tools 217 全绿）
 6. ~~Tier2 按需~~（7 浏览器 / 8 导出 / 9 图像 / 10 JSON 事件 / 11 usage / 12 hooks 均已完成，见上）
 
-## P35 规划：剩余点状差距 + Self-Harness 化 Harness（2026-08-03 调研，待办，未开始）
+## P35 规划：剩余点状差距 + Self-Harness 化 Harness（2026-08-03 调研，已完成，见 P36-P41）
 
 ### 对比结论（2026-08-03 第二轮）
 
@@ -494,19 +494,19 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 
 ### Theme A 剩余点状差距（每项：现状 → 落地 → 断言）
 
-1. **A1 apply_patch 统一补丁工具**（Codex/opencode 均有；现状 `agent-tools/files/edit-file.tool.ts` 仅 oldString/newString 精确替换，无统一 diff 语义）
+1. **A1 apply_patch 统一补丁工具**（Codex/opencode 均有；现状 `agent-tools/files/edit-file.tool.ts` 仅 oldString/newString 精确替换，无统一 diff 语义）— ✅ 已完成（2026-08，见建议执行顺序第 2 项）
    - 落地：新增 `agent-tools/files/apply-patch.tool.ts`——minidiff 解析器（`*** Begin Patch` / `*** Add File` / `*** Update File` / `*** Delete File` / `*** Move to` / 上下文 hunk），复用 `./path-policy` 的 workspace 根/symlink 校验与 `captureFileSnapshot`（走既有 undo/redo 栈）；`execution.sideEffect + requiresSequential`，授权同 `edit_file`。
    - 断言：单文件多 hunk、Add/Delete/Move、上下文不唯一失败、符号链接拒绝、`/undo` 还原。
-2. **A2 审批自动评审**（Codex `approvals_reviewer=auto_review`：评审 agent 只审需审批的动作）
+2. **A2 审批自动评审**（Codex `approvals_reviewer=auto_review`：评审 agent 只审需审批的动作）— ✅ 已完成（见 P37）
    - 落地：`agent/src/tools/ToolApprovalManager.ts` 增加可选 `ApprovalReviewer`（建议 approve/deny/needs-human，评审依据 = 工具定义 + 输入 + 会话证据 receipts/audit）；`DefaultApprovalStrategy` 增加 `autoReview` 选项；评审失败回退人工。
    - 断言：评审放行免人工、评审拒绝不进审批面、评审异常回退。
-3. **A3 granular approval 类别 + 网络目的地规则**（Codex granular：sandbox/rules/mcp_elicitations/request_permissions/skill_approval；`network_proxy` 目的地约束）
+3. **A3 granular approval 类别 + 网络目的地规则**（Codex granular：sandbox/rules/mcp_elicitations/request_permissions/skill_approval；`network_proxy` 目的地约束）— ✅ 已完成（见 P37）
    - 落地：`AgentOptions.tools.requireApproval` 增加对象形态 `{ category: 'sandbox'|'network'|'mcp'|'skill', names?, mode: 'ask'|'auto-deny' }`（字符串形态向后兼容）；`sandbox mode='network-block'` 时支持放行目的地清单（近似 network_proxy）。
    - 断言：分类 auto-deny、字符串兼容、放行清单生效。
-4. **A4 doom-loop 恢复**（opencode `doom_loop` permission：疑似卡住时注入恢复 prompt；现状 `ToolLoopDetector` 只 break 跳过）
+4. **A4 doom-loop 恢复**（opencode `doom_loop` permission：疑似卡住时注入恢复 prompt；现状 `ToolLoopDetector` 只 break 跳过）— ✅ 已完成（见 P36）
    - 落地：`DefaultAgentRuntime.completeTurn` 在 loopDetector block/break 或连续 falsify（见 B2）时注入 `LOOP_RECOVERY_SYSTEM_PROMPT`（要求换策略或声明受阻），复用 `buildEmptyResponseRetryRequest` 的注入路径。
    - 断言：循环 3 次注入恢复提示、模型改策略继续、仍循环则终止。
-5. **A5 per-agent 权限矩阵**（opencode agent frontmatter `permission`：edit/bash/… allow|ask|deny + `steps`）
+5. **A5 per-agent 权限矩阵**（opencode agent frontmatter `permission`：edit/bash/… allow|ask|deny + `steps`）— ✅ 已完成（见 P39）
    - 落地：`AgentTurnInput` 增加可选 `agent?: { permissions: Record<string, 'allow'|'ask'|'deny'>, maxSteps?: number }`；`performToolInvocation` 定义解析后按工具名/组匹配权限（ask 落入既有审批面）；gateway `run.turn`/`run.turn_stream` 透传。
    - 断言：deny 拒绝、ask 进审批、allow 直过、未匹配继承会话级。
 6. **A6 JS 函数插件**（opencode plugin `tool.execute.before/after`；现状 `AgentHooks` 仅 shell 命令、浏览器 no-op）— ✅ 已完成（2026-08-04，见 P39）
@@ -514,7 +514,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 落地：`AgentRuntime` 增加 `registerHookFunction`/`unregisterHookFunction` 默认空实现；`DefaultAgentRuntime` 委托 hookManager；`runTurnHooks` 改为返回函数钩子结果，`performToolInvocation` 在 beforeTool 钩子后应用 `input` 重写（重算 inputSummary/receipt，A5 权限检查顺序不变）。
    - 验证：`test/function-hooks.spec.ts` 7 项通过（静态重写/先于 shell/转录/动态注册卸载/异常不阻断/无 executor 可用/重写进 receipt）；agent 包全量 498 passing（491 基线 + 7）；五包回归 agent 498 / agent-tools 240 / agent-gateway 139 / agent-ui 263 / agent-cli 49，全部 `tsc --noEmit` clean。
    - 断言：函数钩子可改写 tool input、afterTool 读 receipt、异常不阻断主流程。
-7. **A7 formatter**（opencode `formatter` 配置，`$FILE` 占位）
+7. **A7 formatter**（opencode `formatter` 配置，`$FILE` 占位）— ✅ 已完成（见 P39）
    - 落地：`AgentOptions.format?: { command, extensions, env }`；写文件工具（write/edit/apply_patch）成功后可选调用，失败仅告警。
    - 断言：扩展名命中、失败回退、不改变既有内容语义。
 
@@ -527,23 +527,22 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 落地：`EvidenceLedger`（record/snapshot，turnId 自动生成）+ `TurnDiagnosticsRecord.evidence?` + InMemory/TypeOrm 持久化（entity 新增 `evidence` simple-json 列）+ `DefaultAgentRuntime`（turnContext.evidenceLedger 于 `processTurn`/`runStreamingTurn` 创建；`invokeSingleTool`/`executeToolsParallel` 两调用点记录 final receipt，parallel rejected 分支合成 error 证据；`recordTurnDiagnostics` 附 snapshot）。
    - 验证：`test/evidence-ledger.spec.ts` 7 项通过（单元聚合/不可变快照/InMemory 往返/TypeOrm 持久化/运行时混合工具串行+并行/模块装配）；agent 包全量 432 passing；五包回归 agent 432 / agent-tools 219 / agent-gateway 133 / agent-ui 263 / agent-cli 45，全部 `tsc --noEmit` clean。
    - 断言：条目与 receipt 一致、falsified 透传、聚合可查。
-2. **B2 验证门 `VerificationGate`**（核心：只有通过验证的修正才进下一轮）
+2. **B2 验证门 `VerificationGate`**（核心：只有通过验证的修正才进下一轮）— ✅ 已完成（见 P36）
    - `completeTurn` 每轮结束执行：结构化证伪检查（a）terminal 非零 exit / `lsp_diagnostics` error / `execute_code` 失败；（b）声明-行为不一致——`FileSnapshotStore` before/after 对比模型声称写入 vs 实际 diff；（c）loopDetector 触发。
    - falsified → 注入 `FALSIFICATION_REPAIR_PROMPT`（证据摘要 + 定向修复要求）+ `recordFalsification`；连续 falsify 轮次单独计数 `maxRepairRounds`，不占用正常 `maxToolRounds`。
    - 断言：失败输出→下轮收到修复提示；修复通过→正常继续；连续失败→终止给失败摘要；既有 turn 测试语义不变。
-3. **B3 失败模式挖掘 `WeaknessMiner`**（对应 Self-Harness Weakness Mining：聚类执行轨迹发现失败模式）
+3. **B3 失败模式挖掘 `WeaknessMiner`**（对应 Self-Harness Weakness Mining：聚类执行轨迹发现失败模式）— ✅ 已完成（见 P38）
    - 输入 `TurnDiagnosticsStore` + `AuditSink`（跨会话，可限 workspace/session）；输出 Top 失败工具 / 错误签名聚类 / 失败轮次率 / falsified 分布，每条附「建议」= 命中现有 harness 策略的候选（如高频失败工具 → 建议加入 requireApproval）。
    - 面：`tsdi-agent harness audit [--json]`（agent-cli）+ agent-ui `/harness audit`。
    - 断言：合成轨迹聚类正确、空库返回空、CLI JSON 形状稳定。
-4. **B4 Harness Profile**（对应 Surface Host Adapter 的运行时对偶：可拆卸、版本化、可回滚）
+4. **B4 Harness Profile**（对应 Surface Host Adapter 的运行时对偶：可拆卸、版本化、可回滚）— ✅ 已完成（见 P38）
    - 把治理配置（requireApproval、sandbox、maxRepairRounds、falsification 阈值、granular 类别、formatter）快照为版本化 `HarnessProfile` JSON，`AgentOptions.harnessProfile` 引用；`tsdi-agent harness profile list/apply/diff` + agent-ui `/harness profile`；升级默认 profile =「提案」，跑全量回归 = Proposal Validation（与 Self-Harness 三阶段一致）。
    - 断言：profile 序列化往返、apply 生效（如 requireApproval 变化）、diff 可读、默认 profile 兼容旧配置。
-5. **B5 循证摘要**（`LLMSessionSummarizer` 注入「本轮证据」段；`SummaryQualityStore` 增加 `evidenceCoverage` 指标 = 摘要提及的成功/失败工具占比）
-   - 断言：注入后摘要含证据、evidenceCoverage 计算正确、质量分仍可解释。
-6. **B6 不确定性校准路由**（对应 PEFT 适配器之一 uncertainty-calibrated routing）
-   - `RoutedModelAdapter.routes` 增加 `when.falsifyRateGt` 条件（消费 ledger 聚合：高 falsify 率 → 切强 profile 或声明低置信）。
-   - 断言：高失败轨迹→路由切换、无 ledger 时跳过。
-   - — ✅ 已完成（见 P40）
+5. **B5 循证摘要**（`LLMSessionSummarizer` 注入「本轮证据」段；`SummaryQualityStore` 增加 `evidenceCoverage` 指标 = 摘要提及的成功/失败工具占比）— ✅ 已完成（见 P41）
+- 断言：注入后摘要含证据、evidenceCoverage 计算正确、质量分仍可解释。
+6. **B6 不确定性校准路由**（对应 PEFT 适配器之一 uncertainty-calibrated routing）— ✅ 已完成（见 P40）
+- `RoutedModelAdapter.routes` 增加 `when.falsifyRateGt` 条件（消费 ledger 聚合：高 falsify 率 → 切强 profile 或声明低置信）。
+- 断言：高失败轨迹→路由切换、无 ledger 时跳过。
 
 ### 建议执行顺序
 
@@ -553,6 +552,8 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 4. **A2 审批自动评审** / **A3 granular + 网络规则**（审批面加固，可与 B 并行）— ✅ 已完成（见 P37）
 5. **B3 失败模式挖掘** ✅（见 P38） + **B4 Harness Profile** ✅（见 P38，让「优化 Harness」本身进入循证循环）
 6. **A5 per-agent 权限** / **A6 JS 插件** / **A7 formatter**（按需）— ✅ 全部已完成（见 P39）
+7. **B5 循证摘要**（让压缩质量反映工具结果保真度）— ✅ 已完成（见 P41）
+8. **B6 不确定性校准路由**（对应 PEFT uncertainty-calibrated routing）— ✅ 已完成（见 P40）
 
 ### 回归口径
 
@@ -588,7 +589,7 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 
 全量回归：agent 450（442+8）、agent-tools 233、agent-gateway 133、agent-ui 263 passing；agent-cli 44 passing（1 条环境失败同 P36 说明，npm 镜像差异，与本次无关）；agent / agent-tools / agent-gateway / agent-ui / agent-channels / agent-providers `tsc --noEmit` clean。
 
-## P38 打磨（进行中）：B3 失败模式挖掘
+## P38 打磨（已完成）：B3 失败模式挖掘 + B4 Harness Profile
 
 1. ~~B3 失败模式挖掘 `WeaknessMiner`~~ → 已完成（`@tsdi/agent` + gateway + UI + CLI）：
    - **核心**（新 `src/harness/WeaknessMiner.ts`，导出 `HarnessAuditScope` / `HarnessFailureToolStat` / `HarnessErrorCluster` / `HarnessFalsifiedStat` / `HarnessAuditSuggestion` / `HarnessAuditReport` / `normalizeErrorSignature` / `mineWeaknesses` / `WeaknessMiner`）：
@@ -638,6 +639,18 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - **路由**：`RoutedModelAdapter.selectAdapter` 读取 `request.falsifyRate` 并透传 selection/metadata；`routeMatches` 新增 `falsifyRateGt` 判定（`falsifyRate == null || falsifyRate <= threshold` → 不命中；无 ledger 证据永不命中）；metadata.routing 附带 `falsifyRate`。
    - **顺带修复（预存在 bug）**：`resolveRouteConfig` 对「仅引用 profile 名、无内联配置」的 route（README 文档形态，如 `{ when, profile: 'strong' }`）失效——`pickConfig(route)` 返回全 undefined 字段对象，`mergeConfigs` 展开时把已合并的 provider/model 覆盖成 undefined，`!provider && !model` 判 null 后回落默认配置。修复：`pickConfig` 剔除 undefined 字段（有值字段行为不变，既有 hermes/内联配置路由测试不受影响）。该 bug 自 `85a8181ef`（route delegation worker classes to model profiles）引入。
    - **测试**：agent `test/model-provider.spec.ts` +3（`falsifyRateGt` 高于阈值 → 切 strong profile 且 metadata 带 falsifyRate、低于阈值跳过、无 ledger 证据跳过）；`test/turn-diagnostics.spec.ts` +2（runtime 在 falsified 工具轮后的下个请求注入 `falsifyRate > 0`、新 turn 空账本重置为 undefined；无工具证据的 turn 不设 falsifyRate）。
-   - 文档：本条目；建议执行顺序第 6 项标记完成。
+   - 文档：本条目；建议执行顺序第 8 项标记完成。
 
 全量回归：agent 504（含 B6 新增 5 条）、agent-tools 240、agent-gateway 140、agent-ui 269 passing + 1 条预存在 fold-panel 渲染失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，git stash 基线双跑确认与本次无关）、agent-cli 49 passing；agent `tsc --noEmit` clean。既有 turn 行为测试（turn-loop / tool-execution / plan-mode / sandbox / undo-redo）语义不变。
+
+## P41 打磨（已完成）：B5 循证摘要
+
+1. ~~B5 循证摘要~~ → 已完成（`@tsdi/agent`，commit `c09bc7f93`）：
+   - **契约**：`SessionSummarizer.summarize(messages, evidence?: ToolEvidenceEntry[])` 增加可选证据参数；`DefaultAgentRuntime.maybeSummarize(sessionId, evidence?)` 在 `run()` / `runStreaming()` 两条路径把 `turnContext.evidenceLedger?.entriesFrom(0)` 传入（仅触发 summaryThreshold 压缩时）。
+   - **LLM/fallback 注入**：`LLMSessionSummarizer` 把「本轮证据」段拼进模型 prompt（success/error/falsified 分工具列出，来自 B1 证据账本）；无模型时的 fallback 摘要同样反映失败工具，压缩内容不再丢失工具结果保真度。
+   - **evidenceCoverage 指标**：`SummaryQualityScorer` 新增 `computeEvidenceCoverage(summary, evidence)` = 摘要中提及的工具名占（非 skipped）证据条目的比例（0-100）；`SummaryQualityStore` 的记录/聚合/趋势均携带 `evidenceCoverage`（只统计有 evidence 的 measured 记录）；`TypeOrmSummaryQualityStore` 经 metadata 往返持久化。
+   - **测试**：`test/summary-quality.spec.ts` 新增 `Evidence coverage metric` Suite 10 条（无证据→undefined、全 skipped→undefined、提及比例、部分提及、分母排除 skipped、全未提及→0、聚合只算 measured、typeorm metadata 往返、有证据且提及→记录、无证据→不设）；`test/context-compaction.spec.ts` +2（fallback 反映 ledger 失败工具、evidence 传入模型 prompt）。
+   - 文档：本条目；建议执行顺序第 7 项标记完成。
+   - 说明：B5 实现先行（早于 P39/P40 提交），todo.md 记录滞后，本次补录。
+
+验证：`summary-quality.spec.ts` 31 passing（含 Evidence coverage metric Suite）、`context-compaction.spec.ts` 85 passing；agent 全量 504 passing（当前基线，含 B6 5 条）；`tsc --noEmit` clean。
