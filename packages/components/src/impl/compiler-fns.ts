@@ -347,7 +347,7 @@ export function compileComponentToFactory(
         // 处理静态属性
         attrs.forEach(({ name, value }) => {
             if (!name.startsWith('@') && !name.startsWith(':') && !name.startsWith('[') && !name.startsWith('v-')) {
-                const inputDef = (componentRef.def?.attributes || []).find((attr: any) => attr.alias === name || attr.propertyKey === name);
+                const inputDef = findComponentAttributeDef(componentRef.def?.attributes || [], name);
                 if (inputDef) {
                     componentRef.instance[inputDef.propertyKey] = value;
                 }
@@ -1015,7 +1015,7 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
 
     if (attrName.startsWith('@')) {
         const eventName = attrName.substring(1);
-        const inputDef = attributes.find((attr: any) => attr.alias === eventName || attr.propertyKey === eventName);
+        const inputDef = findComponentAttributeDef(attributes, eventName);
         if (inputDef) {
             effect.run(() => {
                 const handler = evaluateExpression(expr, context, injector, delimiter);
@@ -1034,7 +1034,7 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
         }
     } else if (attrName.startsWith(':')) {
         const propName = attrName.substring(1);
-        const inputDef = attributes.find((attr: any) => attr.alias === propName || attr.propertyKey === propName);
+        const inputDef = findComponentAttributeDef(attributes, propName);
         if (inputDef) {
             effect.run(() => {
                 const attValue = evaluateExpression(expr, context, injector, delimiter);
@@ -1042,11 +1042,20 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
             });
         }
     } else {
-        const inputDef = attributes.find((attr: any) => attr.alias === attrName || attr.propertyKey === attrName);
+        const inputDef = findComponentAttributeDef(attributes, attrName);
         if (inputDef) {
             componentRef.instance[inputDef.propertyKey] = expr;
         }
     }
+}
+
+function findComponentAttributeDef(attributes: any[], name: string): any {
+    const normalized = name.toLowerCase();
+    return attributes.find((attr: any) => {
+        const alias = attr.alias == null ? '' : String(attr.alias);
+        const key = attr.propertyKey == null ? '' : String(attr.propertyKey);
+        return alias.toLowerCase() === normalized || key.toLowerCase() === normalized;
+    });
 }
 
 /**

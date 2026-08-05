@@ -2200,7 +2200,10 @@ export class AgentConsoleMessagesPanelComponent {
     get visibleMessages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const messages = this.messages;
         const visibleCount = this.state.consoleOptions.messagesVisibleItems;
-        if (!this.state.messagesFocused && !this.state.messageDetailOpen && messages.length > visibleCount) {
+        if (this.state.messageDetailOpen) {
+            return messages;
+        }
+        if (!this.state.messagesFocused && messages.length > visibleCount) {
             const pinnedIndex = this.resolvePinnedRootMessageIndex(messages);
             if (pinnedIndex >= 0 && pinnedIndex < messages.length - visibleCount) {
                 return [
@@ -2286,7 +2289,10 @@ export class AgentConsoleMessagesPanelComponent {
             return;
         }
         this.state.setSelectedMessageId(messageId);
-        if (!line?.previewCollapsed) {
+        const messageItem = this.messageItems.find(item =>
+            item.lines.some(renderedLine => renderedLine.messageId === messageId)
+        );
+        if (!messageItem || messageItem.lines.length <= COLLAPSED_MESSAGE_PREVIEW_LINES) {
             return;
         }
         this.state.openMessageDetail();

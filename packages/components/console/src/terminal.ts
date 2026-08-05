@@ -430,7 +430,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     }
 
     getLastRenderedText(stripAnsiValue: (value: string) => string): string {
-        return this.getLastRenderedLines().map(line => stripAnsiValue(line)).join('\n').trim();
+        return this.getLastRenderedLines().map(line => stripAnsiValue(line).trimEnd()).join('\n');
     }
 
     dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean {
@@ -702,7 +702,9 @@ export class TuiTerminalSurface {
             if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
                 return false;
             }
-            return this.dispatchClickAt(mouse.y - 1);
+            const safeRow = Math.max(0, Math.floor((mouse.y || 0) - 1));
+            const target = this.clickTargets.find(item => safeRow >= item.startRow && safeRow < item.endRow);
+            return this.dispatchClickAt(target?.node);
         }
         if ((button & 0b1100000) !== 0) {
             if ((button & 32) !== 0
@@ -741,13 +743,11 @@ export class TuiTerminalSurface {
         return true;
     }
 
-    dispatchClickAt(row: number): boolean {
-        const safeRow = Math.max(0, Math.floor(row));
-        const target = this.clickTargets.find(item => safeRow >= item.startRow && safeRow < item.endRow);
-        if (!target?.node?.dispatchEvent) {
+    dispatchClickAt(node?: ConsoleNode): boolean {
+        if (!node?.dispatchEvent) {
             return false;
         }
-        target.node.dispatchEvent({ type: 'click' } as Event);
+        node.dispatchEvent({ type: 'click' } as Event);
         return true;
     }
 

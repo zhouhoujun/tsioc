@@ -1337,8 +1337,9 @@ async function flushWorkspaceSuggestions(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
-async function waitForSuggestionMenu(state: AgentConsoleSessionState, attempts = 10): Promise<void> {
-    for (let index = 0; index < attempts; index++) {
+async function waitForSuggestionMenu(state: AgentConsoleSessionState, timeoutMs = 3000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
         if (state.selectMenu?.options?.length) {
             return;
         }
