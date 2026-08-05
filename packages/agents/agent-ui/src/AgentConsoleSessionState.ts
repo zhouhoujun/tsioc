@@ -26,6 +26,12 @@ import {
 } from './AgentConsoleSuggestions';
 import { AgentConsoleWorkspaceMentionResolver } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
+import {
+    VIM_DEFAULT_BINDINGS,
+    isConsoleVimAction,
+    resolveConsoleVimKey,
+    ConsoleInputMode
+} from './AgentConsoleVim';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -240,6 +246,7 @@ export interface AgentConsoleOptions {
     inputPrompt?: string;
     inputPlaceholder?: string;
     inputContinuationPrompt?: string;
+    vimMode?: boolean;
     emptyValueLabel?: string;
     noneValueLabel?: string;
     statusVisibleLines?: number;
@@ -283,6 +290,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     inputPrompt: '> ',
     inputPlaceholder: 'Ask code or files',
     inputContinuationPrompt: '  ',
+    vimMode: false,
     emptyValueLabel: '-',
     noneValueLabel: 'none',
     statusVisibleLines: 6,
@@ -419,6 +427,10 @@ export class AgentConsoleSessionState {
     inputPrompt = this.consoleOptions.inputPrompt;
     inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
     inputPlaceholder = this.consoleOptions.inputPlaceholder;
+    vimMode = this.consoleOptions.vimMode;
+    inputMode: ConsoleInputMode = 'insert';
+    vimBindings: Record<string, string> = {};
+    vimPendingKey = '';
     inputHistoryEntries: string[] = [];
     inputHistoryIndex = -1;
     inputHistoryDraft = '';
@@ -445,7 +457,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -565,6 +577,137 @@ export class AgentConsoleSessionState {
     setPlanMode(enabled: boolean): void {
         this.planMode = enabled;
         this.notify();
+    }
+
+    get effectiveVimBindings(): Record<string, string> {
+        return { ...VIM_DEFAULT_BINDINGS, ...this.vimBindings };
+    }
+
+    setVimMode(enabled: boolean): void {
+        this.vimMode = !!enabled;
+        if (!this.vimMode) {
+            this.inputMode = 'insert';
+            this.vimPendingKey = '';
+        }
+        this.notify();
+    }
+
+    setInputMode(mode: ConsoleInputMode): void {
+        if (!this.vimMode) {
+            this.inputMode = 'insert';
+            return;
+        }
+        this.inputMode = mode;
+        if (mode === 'insert') {
+            this.vimPendingKey = '';
+        }
+        this.notify();
+    }
+
+    setVimBinding(key: string, action: string): boolean {
+        const normalizedKey = String(key || '').trim();
+        if (!normalizedKey || !isConsoleVimAction(action)) {
+            return false;
+        }
+        this.vimBindings = { ...this.vimBindings, [normalizedKey]: action };
+        this.notify();
+        return true;
+    }
+
+    unsetVimBinding(key: string): boolean {
+        const normalizedKey = String(key || '').trim();
+        if (!normalizedKey || !this.vimBindings[normalizedKey]) {
+            return false;
+        }
+        const next = { ...this.vimBindings };
+        delete next[normalizedKey];
+        this.vimBindings = next;
+        this.notify();
+        return true;
+    }
+
+    resetVimBindings(): void {
+        this.vimBindings = {};
+        this.vimPendingKey = '';
+        this.notify();
+    }
+
+    handleVimKey(key: string): boolean {
+        if (!this.vimMode || this.inputMode !== 'normal') {
+            return false;
+        }
+        const resolution = resolveConsoleVimKey(key, this.effectiveVimBindings, this.vimPendingKey || undefined);
+        if (resolution.pending !== undefined) {
+            this.vimPendingKey = resolution.pending;
+            this.notify();
+            return true;
+        }
+        this.vimPendingKey = '';
+        if (resolution.action) {
+            return this.applyVimAction(resolution.action);
+        }
+        return false;
+    }
+
+    applyVimAction(action: string): boolean {
+        switch (action) {
+            case 'insert-mode':
+                this.setInputMode('insert');
+                break;
+            case 'insert-start':
+                this.moveInputCursorToEdge('start');
+                this.setInputMode('insert');
+                break;
+            case 'insert-after':
+                this.setInputCursor(this.inputCursor + 1);
+                this.setInputMode('insert');
+                break;
+            case 'insert-end':
+                this.moveInputCursorToEdge('end');
+                this.setInputMode('insert');
+                break;
+            case 'newline-below':
+                this.setInput(this.input ? `${this.input}\n` : '', this.input.length + 1);
+                this.setInputMode('insert');
+                break;
+            case 'newline-above':
+                this.setInput(this.input ? `\n${this.input}` : '', 0);
+                this.setInputMode('insert');
+                break;
+            case 'history-prev':
+                return this.navigateInputHistory(-1);
+            case 'history-next':
+                return this.navigateInputHistory(1);
+            case 'cursor-left':
+                this.moveInputCursor(-1);
+                break;
+            case 'cursor-right':
+                this.moveInputCursor(1);
+                break;
+            case 'cursor-start':
+                this.moveInputCursorToEdge('start');
+                break;
+            case 'cursor-end':
+                this.moveInputCursorToEdge('end');
+                break;
+            case 'delete-char':
+                if (this.inputCursor < this.input.length) {
+                    this.setInput(
+                        this.input.slice(0, this.inputCursor) + this.input.slice(this.inputCursor + 1),
+                        this.inputCursor
+                    );
+                }
+                break;
+            case 'delete-line':
+                this.setInput('', 0);
+                break;
+            case 'exit-insert':
+                this.setInputMode('normal');
+                break;
+            default:
+                return false;
+        }
+        return true;
     }
 
     subscribe(listener: () => void): () => void {
@@ -2394,6 +2537,11 @@ export class AgentConsoleSessionState {
         this.inputPrompt = this.consoleOptions.inputPrompt;
         this.inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
         this.inputPlaceholder = this.consoleOptions.inputPlaceholder;
+        this.vimMode = this.consoleOptions.vimMode;
+        if (!this.vimMode) {
+            this.inputMode = 'insert';
+            this.vimPendingKey = '';
+        }
         this.notify();
     }
 
@@ -4060,6 +4208,10 @@ export class AgentConsoleSessionState {
         }
 
         if (rawText === '\u001b' && !controlKey) {
+            if (this.vimMode && this.inputMode === 'insert') {
+                this.setInputMode('normal');
+                return { handled: true };
+            }
             await this.handleEscapeKey();
             return { handled: true };
         }

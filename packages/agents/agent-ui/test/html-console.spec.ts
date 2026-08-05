@@ -275,6 +275,32 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 
+    @Test('input panel prompt renders a vim mode badge when vim mode is enabled')
+    async inputPanelPromptRendersVimModeBadge() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const inputRoot = inputPanel.hostView.rootNodes[0] as any;
+        const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
+
+        await ref.render();
+        await Promise.resolve();
+
+        const defaultPrompt = inputField?.getAttribute('prompt') || '';
+        expect(defaultPrompt).not.toContain('vim');
+
+        ref.instance.sessionState.setVimMode(true);
+        await Promise.resolve();
+        expect(inputField?.getAttribute('prompt') || '').toContain('vim insert');
+
+        ref.instance.sessionState.setInputMode('normal');
+        await Promise.resolve();
+        expect(inputField?.getAttribute('prompt') || '').toContain('vim normal');
+
+        ref.instance.sessionState.setVimMode(false);
+        await Promise.resolve();
+        expect(inputField?.getAttribute('prompt') || '').not.toContain('vim');
+    }
+
     @After()
     async clean() {
         await this.ctx?.close();

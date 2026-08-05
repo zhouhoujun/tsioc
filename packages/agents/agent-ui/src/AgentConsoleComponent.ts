@@ -20,6 +20,7 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
+import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 @Component({
     selector: 'agent-console',
     template: `
@@ -3373,6 +3374,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 const helpSelection = await this.select('Help', [
                     { label: '/model', value: '/model', description: 'switch model or queue next-turn profile' },
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
+                    { label: '/vim', value: '/vim', description: 'toggle vim-style normal/insert input mode' },
+                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset vim key bindings' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
@@ -3447,6 +3450,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 await this.runPlanCommand(parsed.args);
+                return true;
+            case '/vim':
+                await this.runVimCommand(parsed.args);
+                return true;
+            case '/keymap':
+                await this.runKeymapCommand(parsed.args);
                 return true;
             case '/permissions':
                 if (this.isTurnInProgress()) {
@@ -5012,6 +5021,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.surfaceAccessor?.dispatchTerminalMouse(decoded.mouse);
             return;
         }
+        if (this.state.vimMode && !this.state.isAnyFocusActive() && this.state.inputMode === 'normal') {
+            const raw = decodeConsoleTextChunk(chunk);
+            if (decoded.controlKey === 'return') {
+                return;
+            }
+            if (!decoded.controlKey && raw && raw !== '\u001b' && !/[\u0000-\u001f\u007f]/.test(raw)) {
+                this.state.handleVimKey(raw);
+                return;
+            }
+        }
         const rawChunk = decodeConsoleTextChunk(chunk);
         const submitOnEnter = /[\r\n]/.test(rawChunk);
         const outcome = await this.state.processDecodedInput(decoded, chunk, {
@@ -5228,6 +5247,71 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         } catch (error) {
             this.notify(`Failed to set plan mode: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    protected async runVimCommand(args: string): Promise<void> {
+        const raw = String(args || '').trim().toLowerCase();
+        let enabled: boolean;
+        if (raw === 'on' || raw === '1' || raw === 'true') {
+            enabled = true;
+        } else if (raw === 'off' || raw === '0' || raw === 'false') {
+            enabled = false;
+        } else {
+            enabled = !this.state.vimMode;
+        }
+        this.state.setVimMode(enabled);
+        this.notify(enabled
+            ? 'Vim mode enabled — input starts in insert mode; press Esc for normal mode.'
+            : 'Vim mode disabled.');
+    }
+
+    protected async runKeymapCommand(args: string): Promise<void> {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const action = (tokens[0] || 'list').toLowerCase();
+        if (action === 'list') {
+            const entries = Object.entries(this.state.effectiveVimBindings)
+                .map(([key, value]) => `${key} -> ${value}`)
+                .join('\n');
+            this.notify(entries || 'No vim bindings.');
+            return;
+        }
+        if (action === 'set') {
+            const key = tokens[1];
+            const target = tokens[2];
+            if (!key || !target) {
+                this.notify('Usage: /keymap set <key> <action>');
+                return;
+            }
+            if (!isConsoleVimAction(target)) {
+                this.notify(`Unknown vim action: ${target}  (available: ${VIM_ACTION_NAMES.join(', ')})`);
+                return;
+            }
+            if (this.state.setVimBinding(key, target)) {
+                this.notify(`Keymap set: ${key} -> ${target}`);
+            } else {
+                this.notify(`Failed to set keymap for key: ${key}`);
+            }
+            return;
+        }
+        if (action === 'unset') {
+            const key = tokens[1];
+            if (!key) {
+                this.notify('Usage: /keymap unset <key>');
+                return;
+            }
+            if (this.state.unsetVimBinding(key)) {
+                this.notify(`Keymap unset: ${key} (default restored if any)`);
+            } else {
+                this.notify(`No custom binding for key: ${key}`);
+            }
+            return;
+        }
+        if (action === 'reset') {
+            this.state.resetVimBindings();
+            this.notify('Keymap reset to defaults.');
+            return;
+        }
+        this.notify('Usage: /keymap [list] | [set <key> <action>] | [unset <key>] | [reset]');
     }
 
     protected async runPermissionsCommand(args: string): Promise<void> {

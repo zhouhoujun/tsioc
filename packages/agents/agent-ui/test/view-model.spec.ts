@@ -7685,4 +7685,370 @@ export class AgentConsoleComponentTest {
 
         expect(state.notice).toEqual('Nothing to undo.');
     }
+
+    @Test('vim mode is disabled by default and does not intercept keys')
+    async vimModeDisabledByDefault() {
+        const state = new AgentConsoleSessionState();
+        expect(state.vimMode).toEqual(false);
+        expect(state.inputMode).toEqual('insert');
+        expect(state.handleVimKey('h')).toEqual(false);
+        expect(state.handleVimKey('d')).toEqual(false);
+    }
+
+    @Test('vim normal mode executes cursor and edit actions')
+    async vimNormalModeExecutesCursorAndEditActions() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        state.setInputMode('normal');
+        state.setInput('abc');
+
+        expect(state.handleVimKey('h')).toEqual(true);
+        expect(state.inputCursor).toEqual(2);
+        expect(state.handleVimKey('l')).toEqual(true);
+        expect(state.inputCursor).toEqual(3);
+        expect(state.handleVimKey('0')).toEqual(true);
+        expect(state.inputCursor).toEqual(0);
+        expect(state.handleVimKey('$')).toEqual(true);
+        expect(state.inputCursor).toEqual(3);
+
+        state.setInput('abc', 1);
+        expect(state.handleVimKey('x')).toEqual(true);
+        expect(state.input).toEqual('ac');
+        expect(state.inputCursor).toEqual(1);
+    }
+
+    @Test('vim dd pending sequence deletes the input line')
+    async vimDdPendingSequenceDeletesLine() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        state.setInputMode('normal');
+        state.setInput('abc');
+
+        expect(state.handleVimKey('d')).toEqual(true);
+        expect(state.vimPendingKey).toEqual('d');
+        expect(state.input).toEqual('abc');
+
+        expect(state.handleVimKey('d')).toEqual(true);
+        expect(state.vimPendingKey).toEqual('');
+        expect(state.input).toEqual('');
+        expect(state.inputCursor).toEqual(0);
+    }
+
+    @Test('vim broken pending sequence resets without acting')
+    async vimBrokenPendingSequenceResets() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        state.setInputMode('normal');
+        state.setInput('abc', 1);
+
+        expect(state.handleVimKey('d')).toEqual(true);
+        expect(state.vimPendingKey).toEqual('d');
+        expect(state.handleVimKey('x')).toEqual(false);
+        expect(state.vimPendingKey).toEqual('');
+        expect(state.input).toEqual('abc');
+    }
+
+    @Test('vim normal mode navigates input history with k and j')
+    async vimNormalModeNavigatesHistory() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        state.setInputMode('normal');
+        state.pushInputHistory('first');
+        state.pushInputHistory('second');
+
+        expect(state.handleVimKey('k')).toEqual(true);
+        expect(state.input).toEqual('second');
+        expect(state.handleVimKey('k')).toEqual(true);
+        expect(state.input).toEqual('first');
+        expect(state.handleVimKey('j')).toEqual(true);
+        expect(state.input).toEqual('second');
+    }
+
+    @Test('vim insert mode passes keys through and exit returns to normal')
+    async vimInsertModePassesThrough() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        expect(state.inputMode).toEqual('insert');
+        expect(state.handleVimKey('h')).toEqual(false);
+
+        state.setInputMode('normal');
+        expect(state.inputMode).toEqual('normal');
+        state.setInputMode('normal');
+        expect(state.inputMode).toEqual('normal');
+
+        state.setVimMode(false);
+        expect(state.vimMode).toEqual(false);
+        expect(state.inputMode).toEqual('insert');
+        state.setInputMode('normal');
+        expect(state.inputMode).toEqual('insert');
+    }
+
+    @Test('vim insert actions reposition the cursor before entering insert mode')
+    async vimInsertActionsRepositionCursor() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        state.setInputMode('normal');
+        state.setInput('abc');
+
+        state.handleVimKey('I');
+        expect(state.inputMode).toEqual('insert');
+        expect(state.inputCursor).toEqual(0);
+
+        state.setInputMode('normal');
+        state.handleVimKey('A');
+        expect(state.inputMode).toEqual('insert');
+        expect(state.inputCursor).toEqual(3);
+
+        state.setInputMode('normal');
+        state.handleVimKey('o');
+        expect(state.inputMode).toEqual('insert');
+        expect(state.input).toEqual('abc\n');
+        expect(state.inputCursor).toEqual(4);
+
+        state.setInputMode('normal');
+        state.handleVimKey('O');
+        expect(state.inputMode).toEqual('insert');
+        expect(state.input).toEqual('\nabc\n');
+        expect(state.inputCursor).toEqual(0);
+    }
+
+    @Test('terminal escape in vim insert mode returns to normal mode')
+    async terminalEscapeReturnsToNormalMode() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+        expect(state.inputMode).toEqual('insert');
+
+        const result = await state.processDecodedInput(
+            { text: '\u001b', partial: false },
+            '\u001b',
+            {
+                isClosed: false,
+                onExit() {},
+                hasActiveTextPrompt: false
+            }
+        );
+
+        expect(result.handled).toEqual(true);
+        expect(state.inputMode).toEqual('normal');
+    }
+
+    @Test('terminal escape without vim keeps existing escape behavior')
+    async terminalEscapeWithoutVimKeepsEscapeBehavior() {
+        const state = new AgentConsoleSessionState();
+        state.setInputMode('normal');
+        expect(state.inputMode).toEqual('insert');
+
+        const result = await state.processDecodedInput(
+            { text: '\u001b', partial: false },
+            '\u001b',
+            {
+                isClosed: false,
+                onExit() {},
+                hasActiveTextPrompt: false
+            }
+        );
+
+        expect(result.handled).toEqual(true);
+        expect(state.inputMode).toEqual('insert');
+    }
+
+    @Test('input panel prompt shows a vim mode badge with the current mode')
+    async inputPromptShowsVimBadge() {
+        const state = new AgentConsoleSessionState();
+        state.inputPrompt = '>';
+        const panel = new AgentConsoleInputPanelComponent(state);
+        expect(panel.inputPrompt).toEqual('>');
+
+        state.setVimMode(true);
+        expect(panel.inputPrompt).toEqual('> · vim insert');
+
+        state.setInputMode('normal');
+        expect(panel.inputPrompt).toEqual('> · vim normal');
+
+        state.setPlanMode(true);
+        expect(panel.inputPrompt).toEqual('> · plan · vim normal');
+    }
+
+    @Test('vim custom keymap overrides, unsets, and resets bindings')
+    async vimCustomKeymapOverrideUnsetReset() {
+        const state = new AgentConsoleSessionState();
+        state.setVimMode(true);
+
+        expect(state.effectiveVimBindings.h).toEqual('cursor-left');
+        expect(state.setVimBinding('h', 'cursor-right')).toEqual(true);
+        expect(state.effectiveVimBindings.h).toEqual('cursor-right');
+
+        expect(state.setVimBinding('q', 'delete-line')).toEqual(true);
+        expect(state.effectiveVimBindings.q).toEqual('delete-line');
+
+        expect(state.unsetVimBinding('h')).toEqual(true);
+        expect(state.effectiveVimBindings.h).toEqual('cursor-left');
+        expect(state.unsetVimBinding('h')).toEqual(false);
+
+        state.resetVimBindings();
+        expect(state.effectiveVimBindings.q).toEqual(undefined);
+        expect(state.effectiveVimBindings.h).toEqual('cursor-left');
+    }
+
+    @Test('vim binding setter rejects unknown actions')
+    async vimBindingSetterRejectsUnknownActions() {
+        const state = new AgentConsoleSessionState();
+        expect(state.setVimBinding('q', 'bogus-action')).toEqual(false);
+        expect(state.setVimBinding('', 'delete-line')).toEqual(false);
+        expect(state.effectiveVimBindings.q).toEqual(undefined);
+    }
+
+    @Test('vim command toggles the session vim mode')
+    async vimCommandTogglesVimMode() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+
+        await (component as any).handleCommand('/vim');
+        expect(state.vimMode).toEqual(true);
+        expect(state.notice).toContain('Vim mode enabled');
+
+        await (component as any).handleCommand('/vim off');
+        expect(state.vimMode).toEqual(false);
+        expect(state.notice).toContain('Vim mode disabled');
+
+        await (component as any).handleCommand('/vim on');
+        expect(state.vimMode).toEqual(true);
+    }
+
+    @Test('keymap command sets, lists, unsets, and resets bindings')
+    async keymapCommandSetListUnsetReset() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+
+        await (component as any).handleCommand('/keymap set q delete-line');
+        expect(state.effectiveVimBindings.q).toEqual('delete-line');
+
+        await (component as any).handleCommand('/keymap list');
+        expect(state.notice).toContain('q -> delete-line');
+
+        await (component as any).handleCommand('/keymap unset q');
+        expect(state.effectiveVimBindings.q).toEqual(undefined);
+
+        await (component as any).handleCommand('/keymap set q delete-line');
+        await (component as any).handleCommand('/keymap reset');
+        expect(state.effectiveVimBindings.q).toEqual(undefined);
+
+        await (component as any).handleCommand('/keymap set q bogus');
+        expect(state.notice).toContain('Unknown vim action');
+    }
+
+    @Test('terminal input intercepts vim normal mode keys before insertion')
+    async terminalInputInterceptsVimNormalMode() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        await component.onInit();
+        component.sessionState.setVimMode(true);
+        component.sessionState.setInputMode('normal');
+        component.sessionState.setInput('abc');
+
+        await (component as any).handleTerminalInput(
+            { text: 'h', partial: false },
+            'h'
+        );
+        expect(component.input).toEqual('abc');
+        expect(component.inputCursor).toEqual(2);
+
+        await (component as any).handleTerminalInput(
+            { text: '0', partial: false },
+            '0'
+        );
+        expect(component.inputCursor).toEqual(0);
+
+        await (component as any).handleTerminalInput(
+            { text: 'x', partial: false },
+            'x'
+        );
+        expect(component.input).toEqual('bc');
+        expect(component.inputCursor).toEqual(0);
+    }
+
+    @Test('terminal input passes insert mode keys through as text')
+    async terminalInputPassesInsertModeThrough() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        await component.onInit();
+        component.sessionState.setVimMode(true);
+        component.sessionState.setInput('');
+
+        await (component as any).handleTerminalInput(
+            { text: 'h', partial: false },
+            'h'
+        );
+        expect(component.input).toEqual('h');
+
+        await (component as any).handleTerminalInput(
+            { text: 'i', partial: false },
+            'i'
+        );
+        expect(component.input).toEqual('hi');
+    }
+
+    @Test('terminal input escape in vim insert mode switches to normal without inserting')
+    async terminalInputEscapeSwitchesToNormal() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        await component.onInit();
+        component.sessionState.setVimMode(true);
+        component.sessionState.setInput('draft');
+        expect(component.sessionState.inputMode).toEqual('insert');
+
+        await (component as any).handleTerminalInput(
+            { text: '\u001b', partial: false },
+            '\u001b'
+        );
+        expect(component.sessionState.inputMode).toEqual('normal');
+        expect(component.input).toEqual('draft');
+
+        await (component as any).handleTerminalInput(
+            { text: 'd', partial: false },
+            'd'
+        );
+        expect(component.sessionState.vimPendingKey).toEqual('d');
+        await (component as any).handleTerminalInput(
+            { text: 'd', partial: false },
+            'd'
+        );
+        expect(component.input).toEqual('');
+    }
+
+    @Test('terminal input keeps arrow navigation and consumes enter in vim normal mode')
+    async terminalInputPreservesArrowsAndConsumesEnter() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        await component.onInit();
+        component.sessionState.setVimMode(true);
+        component.sessionState.setInputMode('normal');
+        component.sessionState.setInput('abc');
+        let submitted = false;
+        (component as any).submit = async () => {
+            submitted = true;
+        };
+
+        await (component as any).handleTerminalInput(
+            { text: '\u001b[D', controlKey: 'left', partial: false },
+            '\u001b[D'
+        );
+        expect(component.input).toEqual('abc');
+        expect(component.inputCursor).toEqual(2);
+
+        await (component as any).handleTerminalInput(
+            { text: '\r', controlKey: 'return', partial: false },
+            '\r'
+        );
+        expect(submitted).toEqual(false);
+        expect(component.input).toEqual('abc');
+    }
 }

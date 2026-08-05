@@ -570,7 +570,14 @@ export class AgentConsoleInputPanelComponent {
 
     get inputPrompt(): string {
         const base = this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
-        return this.state?.planMode ? `${base} · plan` : base;
+        const badges: string[] = [];
+        if (this.state?.planMode) {
+            badges.push('plan');
+        }
+        if (this.state?.vimMode) {
+            badges.push(`vim ${this.state.inputMode}`);
+        }
+        return badges.length ? `${base} · ${badges.join(' · ')}` : base;
     }
 
     get inputPlaceholderLabel(): string {
@@ -662,6 +669,12 @@ export class AgentConsoleInputPanelComponent {
             || code.endsWith('enter');
     }
 
+    protected isEscapeKey(event: KeyboardEvent): boolean {
+        const key = String(event?.key || '').trim().toLowerCase();
+        const code = String(event?.code || '').trim().toLowerCase();
+        return key === 'escape' || key === 'esc' || code === 'escape';
+    }
+
     async onKeydown(event: KeyboardEvent): Promise<void> {
         if (this.state?.selectMenu) {
             if (this.isEnterKey(event)) {
@@ -677,6 +690,21 @@ export class AgentConsoleInputPanelComponent {
             if (this.state.handleSelectKey(event.key)) {
                 event.preventDefault?.();
                 return;
+            }
+        }
+        if (this.state?.vimMode) {
+            if (this.state.inputMode === 'insert' && this.isEscapeKey(event)) {
+                event.preventDefault?.();
+                this.state.setInputMode('normal');
+                return;
+            }
+            if (this.state.inputMode === 'normal') {
+                if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                    event.preventDefault?.();
+                    this.state.handleVimKey(event.key);
+                    this.syncTextareaState(event.target as HTMLTextAreaElement | null);
+                    return;
+                }
             }
         }
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {

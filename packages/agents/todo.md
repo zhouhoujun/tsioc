@@ -696,3 +696,34 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 测试：`delegation-v2.spec.ts` — 往返/篡改抛错/随机 IV/错 key 拒绝/key 解析优先级/secrets 注入 prompt 且 metadata 无明文/有 cipher 时 metadata 全密文可解密/无 key 明文透传。
 
 验证：`agent-tools/test/delegation-v2.spec.ts` 14 passing（新增）、`agent/test/model-provider.spec.ts` 29 passing（+2）；全量回归：agent 506、agent-tools 254、agent-gateway 140、agent-cli 49 passing；agent-ui 269 passing + 1 条预存在 fold-panel 渲染失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，git stash 基线双跑确认与本次无关）；agent/agent-tools/agent-gateway/agent-ui/agent-cli `tsc --noEmit` 全部 clean。既有 spawn/parallel/orchestrate 行为（无 profile/reasoning/secrets/concurrency 时）零变化。
+
+## P43 规划：vim mode / keymap 定制（agent-ui TUI 输入层）
+
+1. **输入模式状态**（`AgentConsoleSessionState`）：
+   - 契约：`vimMode: boolean`（默认 false，零行为变化）、`inputMode: 'insert' | 'normal'`（默认 insert）、`vimBindings: Record<string, string>`（自定义覆盖表，会话级内存态）；`AgentConsoleOptions.vimMode?: boolean` 提供配置默认。
+   - 落地：`setVimMode` / `setInputMode` / `setVimBinding` / `unsetVimBinding` / `resetVimBindings`；`effectiveVimBindings` getter = `{ ...VIM_DEFAULT_BINDINGS, ...vimBindings }`；`handleVimKey(key)`（normal 模式拦截，含 `dd` pending 序列）与 `applyVimAction(action)`（insert-mode/insert-start/insert-after/insert-end/newline-below/newline-above/history-prev/history-next/cursor-left/cursor-right/cursor-start/cursor-end/delete-char/delete-line/exit-insert，复用既有 `moveInputCursor`/`setInput`/`navigateInputHistory`）。
+2. **纯函数模块** `src/AgentConsoleVim.ts`（对齐 `AgentConsoleSuggestions.ts` 模式）：
+   - `VIM_DEFAULT_BINDINGS`（i/I/a/A/o/O/j/k/h/l/0/$/x/dd）、`VIM_ACTION_NAMES` 与 `VIM_ACTION_LABELS`（供 `/keymap list` 展示）、`resolveConsoleVimKey(key, bindings, pending)` 返回 `{ action, pending }`。
+3. **输入拦截两条路径**：
+   - HTML textarea 路径（`AgentConsoleInputPanelComponent.onKeydown`）：normal 模式映射键 preventDefault + 执行动作；未映射可打印键 preventDefault（vim normal 不输入文本）；insert 模式 Escape → 回 normal。
+   - 终端解码路径（`AgentConsoleComponent.handleTerminalInput`）：normal 模式单字符拦截走 `handleVimKey`；insert 模式 Escape（`controlKey === 'escape'` 或 `rawText === '\u001b'`）→ 回 normal；控制键（箭头/home/end）保持既有 draftNavigation 行为。
+4. **模式角标**：`inputPrompt` getter 追加 ` · vim ${inputMode}`（planMode 角标并存）。
+5. **命令**：`/vim [on|off]`（toggle 会话 vimMode，纯 UI 态，不走 runtime RPC）；`/keymap [list] | [set <key> <action>] | [unset <key>] | [reset]`（action 名经 `VIM_ACTION_NAMES` 校验，非法即提示用法）；`commandHints` 与 `/help` 菜单登记两项。
+6. **测试**：`view-model.spec.ts` 新增 vim Suite（normal 拦截先于文本插入 / insert 透传 / Escape 回 normal / h/l/0/$/x/dd/j/k 动作 / 自定义 keymap 覆盖默认 / unset 恢复 / reset 清空 / list 展示 / `/vim` 命令 toggle / handleTerminalInput 拦截）；`html-console.spec.ts` +1（inputPrompt 含 vim 模式角标）。
+
+实现顺序：AgentConsoleVim.ts → SessionState → Panels → Component → 测试 → agent-ui 全量回归 + `tsc --noEmit` → todo.md 收尾 + 提交。
+
+## P43 打磨（已完成）：vim mode / keymap 定制
+
+1. ~~输入模式状态~~ → 已完成（`@tsdi/agent-ui`，本次提交）：
+   - 契约落地：`vimMode: boolean`（默认 false，零行为变化）、`inputMode: 'insert' | 'normal'`（默认 insert）、`vimBindings: Record<string, string>`（自定义覆盖表，会话级内存态）、`vimPendingKey`（`dd` 序列 pending）；`AgentConsoleOptions.vimMode?: boolean` 配置默认，`defaultAgentConsoleOptions` 与 `setConsoleOptions` 同步。
+   - 方法族：`setVimMode`（关时强制回 insert + 清 pending）/ `setInputMode`（非 vim 态恒为 insert）/ `setVimBinding` / `unsetVimBinding`（删覆盖 → 默认键位回归）/ `resetVimBindings`（清覆盖表）/ `effectiveVimBindings` getter = `{ ...VIM_DEFAULT_BINDINGS, ...vimBindings }`；`handleVimKey(key)`（normal 拦截，`dd` pending 序列，broken pending 重置丢弃）与 `applyVimAction(action)`（15 个动作，复用既有 `moveInputCursor`/`setInputCursor`/`moveInputCursorToEdge`/`setInput`/`navigateInputHistory`）。
+2. ~~纯函数模块~~ → 已完成：`src/AgentConsoleVim.ts` — `ConsoleInputMode`/`ConsoleVimAction`/`ConsoleVimKeyResolution` 类型、`VIM_DEFAULT_BINDINGS`（i/I/a/A/o/O/j/k/h/l/0/$/x/d）、`VIM_PENDING_PREFIX_KEYS`（d）、`VIM_ACTION_NAMES`/`VIM_ACTION_LABELS`、`isConsoleVimAction`、`resolveConsoleVimKey(key, bindings, pending)`。
+3. ~~输入拦截两条路径~~ → 已完成：
+   - HTML textarea（`AgentConsoleInputPanelComponent.onKeydown`）：vimMode 开启时 insert Escape → 回 normal；normal 模式对非 Ctrl/Cmd/Alt 组合键全部 preventDefault + `handleVimKey`（未映射键同样吞掉，normal 不输入文本；Ctrl+C/X/V 等浏览器快捷键保留）。
+   - 终端解码（`AgentConsoleComponent.handleTerminalInput`）：`isAnyFocusActive()` 为假且 normal 模式时，非控制字符单键/粘贴串走 `handleVimKey`，`controlKey === 'return'` 直接吞掉（normal 不提交）；箭头/home/end 保持既有 draftNavigation；insert 模式 Escape 在 `processDecodedInput` 的 plain-escape 分支（focus 层处理之后）转 normal，无 vim 时既有 `handleEscapeKey` 行为不变。
+4. ~~模式角标~~ → 已完成：`inputPrompt` getter 以 badges 数组追加 ` · plan` / ` · vim insert|normal`（可并存）。
+5. ~~命令~~ → 已完成：`/vim [on|off]`（纯 UI 态 toggle，不走 runtime RPC）；`/keymap [list] | [set <key> <action>] | [unset <key>] | [reset]`（action 经 `VIM_ACTION_NAMES` 校验，非法提示可用动作列表）；`commandHints` 与 `/help` 菜单登记两项。
+6. ~~测试~~ → 已完成：`view-model.spec.ts` 新增 18 条 vim 用例（默认关闭不拦截 / h l 0 $ x 动作 / dd pending 序列 / broken pending 重置 / k j 历史导航 / insert 透传 / I A o O 光标定位 / 终端 Escape 回 normal（含无 vim 时既有行为保持）/ inputPrompt 角标（含 plan 并存）/ keymap 覆盖-unset-reset / 非法 action 拒绝 / `/vim` toggle / `/keymap` set-list-unset-reset / handleTerminalInput normal 拦截 / insert 透传 / Escape 切换 / 箭头保留 + Enter 吞掉）；`html-console.spec.ts` +1（textarea `prompt` 属性含 vim 角标）。
+
+验证：agent-ui 全量 288 passing + 1 条预存在失败（`togglesPanelSummaryAndDetailThroughHtmlRenderer`，渲染为占位字符与 vim 无关）；`view-model.spec.ts` 230 passing（+18）、`html-console.spec.ts` 6 passing + 1 预存在失败（+1）；`tsc --noEmit` clean。既有输入行为（vim 关闭时）零变化。
