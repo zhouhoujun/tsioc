@@ -287,6 +287,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
+    abstract notifyNonMouseInput?(): boolean;
 }
 
 export class ConsoleTerminalInputController {
@@ -372,6 +373,9 @@ export class ConsoleTerminalInputLifecycleService extends ConsoleTerminalInputLi
                 if (this.injector.destroyed) {
                     return;
                 }
+                if (!decoded.mouse && !decoded.partial) {
+                    this.injector.get(ConsoleTerminalSurfaceAccessor, null)?.notifyNonMouseInput?.();
+                }
                 return this.injector.get(ConsoleTerminalInputHandler, null)?.handleTerminalInput?.(decoded, chunk);
             }
         });
@@ -430,6 +434,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.dispatchMouse(mouse) ?? false;
     }
 
+    notifyNonMouseInput(): boolean {
+        return this.surface?.notifyNonMouseInput() ?? false;
+    }
+
     writeTerminalClipboardText(text: string): boolean {
         if (!text || !this.output?.isTTY || typeof this.output.write !== 'function') {
             return false;
@@ -445,7 +453,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.useAlternateScreen) {
             this.output.write('\x1b[?1049h');
         }
-        this.output.write('\x1b[?1000h\x1b[?1006h');
+        this.output.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
         this.output.write(buildClearScreenSequence(false));
     }
 
@@ -482,7 +490,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             this.attachTimer = undefined;
         }
         if (this.output?.isTTY) {
-            this.output.write('\x1b[?1000l\x1b[?1006l');
+            this.output.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
             this.output.write(buildTerminalCleanupSequence({
                 reset: '\x1b[0m',
                 alternateScreen: this.useAlternateScreen,
@@ -557,6 +565,8 @@ export class TuiTerminalSurface {
     protected renderedLines: string[] = [];
     protected terminalRow = 0;
     protected clickTargets: TerminalClickTarget[] = [];
+    protected mousePress?: { x: number; y: number };
+    protected mouseHandedOff = false;
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -599,6 +609,8 @@ export class TuiTerminalSurface {
         this.terminalRow = 0;
         this.clickTargets = [];
         this.scheduled = false;
+        this.mousePress = undefined;
+        this.mouseHandedOff = false;
     }
 
     requestRender(): void {
@@ -651,10 +663,56 @@ export class TuiTerminalSurface {
     }
 
     dispatchMouse(mouse: SelectMenuMouseEvent): boolean {
-        if (!this.isPrimaryMouseRelease(mouse)) {
+        if (this.mouseHandedOff || !mouse) {
             return false;
         }
-        return this.dispatchClickAt(mouse.y - 1);
+        const button = Math.max(0, Math.floor(mouse.button || 0));
+        if (mouse.release) {
+            const pressed = this.mousePress;
+            this.mousePress = undefined;
+            if (!this.isPrimaryMouseRelease(mouse)) {
+                return false;
+            }
+            if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
+                return false;
+            }
+            return this.dispatchClickAt(mouse.y - 1);
+        }
+        if ((button & 0b1100000) !== 0) {
+            if ((button & 32) !== 0
+                && (button & 0b11) === 0
+                && this.mousePress
+                && this.isTuiMouseDrag(this.mousePress, mouse)) {
+                this.handOffMouseSelection();
+            }
+            return false;
+        }
+        if ((button & 0b11) !== 0) {
+            this.mousePress = undefined;
+            return false;
+        }
+        this.mousePress = { x: mouse.x, y: mouse.y };
+        return false;
+    }
+
+    protected isTuiMouseDrag(press: { x: number; y: number }, current: { x: number; y: number }): boolean {
+        return Math.abs(current.x - press.x) >= TUI_MOUSE_DRAG_THRESHOLD
+            || Math.abs(current.y - press.y) >= TUI_MOUSE_DRAG_THRESHOLD;
+    }
+
+    protected handOffMouseSelection(): void {
+        this.mousePress = undefined;
+        this.mouseHandedOff = true;
+        this.resolveOutput()?.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
+    }
+
+    notifyNonMouseInput(): boolean {
+        if (!this.mouseHandedOff) {
+            return false;
+        }
+        this.mouseHandedOff = false;
+        this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        return true;
     }
 
     dispatchClickAt(row: number): boolean {
@@ -1023,6 +1081,11 @@ export class TerminalInputSequenceDecoder {
 export function getChatCommands(): string[] {
     return CHAT_COMMANDS.slice();
 }
+
+export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x1b[?1006h';
+export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
+
+export const TUI_MOUSE_DRAG_THRESHOLD = 3;
 
 export function buildClearScreenSequence(clearScrollback = false): string {
     return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;

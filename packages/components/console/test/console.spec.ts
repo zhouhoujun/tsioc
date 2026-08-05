@@ -1025,6 +1025,21 @@ export class ConsoleRendererTest {
         });
     }
 
+    @Test('decodes terminal mouse motion events for drag detection')
+    decodesTerminalMouseMotionEventsForDragDetection() {
+        const decoder = new TerminalInputSequenceDecoder();
+        expect(decoder.decode('\u001b[<32;12;7M')).toEqual({
+            text: '\u001b[<32;12;7M',
+            mouse: {
+                button: 32,
+                x: 12,
+                y: 7,
+                release: false
+            },
+            partial: false
+        });
+    }
+
     @Test('dispatches tui mouse clicks to clickable nodes')
     async dispatchesTuiMouseClicks() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
@@ -1150,6 +1165,157 @@ export class ConsoleRendererTest {
                 button: 0,
                 x: 1,
                 y: targetRow + 3,
+                release: true
+            })).toBe(false);
+            expect(ref.instance.selected).toBe('');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('hands terminal selection off on tui drag and re-arms on keyboard input')
+    async handsTerminalSelectionOffOnTuiDrag() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const writes: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write: (value: string) => writes.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+
+            // press, then drag beyond the threshold.
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 2,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(surface.dispatchMouse({
+                button: 32,
+                x: 12,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(writes).toContain('\x1b[?1000l\x1b[?1002l\x1b[?1006l');
+            expect(ref.instance.selected).toBe('');
+
+            // no click is dispatched for the drag, even on a late release.
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 12,
+                y: targetRow + 1,
+                release: true
+            })).toBe(false);
+            expect(ref.instance.selected).toBe('');
+
+            // keyboard input re-arms mouse tracking.
+            expect(surface.notifyNonMouseInput()).toBe(true);
+            expect(writes).toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
+            expect(surface.notifyNonMouseInput()).toBe(false);
+
+            // clicks work again after re-arm.
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 2,
+                y: targetRow + 1,
+                release: true
+            })).toBe(true);
+            expect(ref.instance.selected).toBe('2');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('dispatches tui click on quick press-release without drag')
+    async dispatchesTuiClickOnQuickPressReleaseWithoutDrag() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const writes: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write: (value: string) => writes.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 2,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 2,
+                y: targetRow + 1,
+                release: true
+            })).toBe(true);
+            expect(ref.instance.selected).toBe('2');
+            expect(writes.join('')).not.toContain('\x1b[?1000l');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('does not dispatch tui click when press and release are far apart')
+    async doesNotDispatchTuiClickWhenPressAndReleaseAreFarApart() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 2,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(surface.dispatchMouse({
+                button: 0,
+                x: 40,
+                y: targetRow + 1,
                 release: true
             })).toBe(false);
             expect(ref.instance.selected).toBe('');
