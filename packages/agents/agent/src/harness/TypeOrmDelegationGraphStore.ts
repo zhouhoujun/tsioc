@@ -1,5 +1,5 @@
-import { randomUUID } from 'crypto';
 import { Inject, Injectable } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { In } from 'typeorm';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentDelegationEdgeEntity } from '../memory/entities';
@@ -7,14 +7,17 @@ import { DelegationEdgeInput, DelegationEdgeRecord, DelegationEdgeStatus, Delega
 
 @Injectable()
 export class TypeOrmDelegationGraphStore extends DelegationGraphStore {
-    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
+    constructor(
+        @Inject(TypeormAdapter) private adapter: TypeormAdapter,
+        private uuid: UuidGenerator
+    ) {
         super();
     }
 
     async append(edge: DelegationEdgeInput): Promise<DelegationEdgeRecord> {
         const repo = this.adapter.getRepository(AgentDelegationEdgeEntity);
         const record: DelegationEdgeRecord = {
-            id: edge.id ?? `edge-${randomUUID()}`,
+            id: edge.id ?? `edge-${this.uuid.generate()}`,
             parentSessionId: edge.parentSessionId,
             childSessionId: edge.childSessionId,
             kind: edge.kind,

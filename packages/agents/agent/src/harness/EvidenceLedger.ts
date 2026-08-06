@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { UuidGenerator } from '@tsdi/core';
 
 /**
  * One normalized evidence entry for a single tool invocation within a turn.
@@ -57,13 +57,17 @@ export class EvidenceLedger {
     private readonly entries: ToolEvidenceEntry[] = [];
     readonly turnId: string;
 
-    constructor(private readonly sessionId: string, turnId?: string) {
-        this.turnId = turnId ?? randomUUID();
+    constructor(
+        private readonly sessionId: string,
+        private readonly uuid: UuidGenerator,
+        turnId?: string
+    ) {
+        this.turnId = turnId ?? this.uuid.generate();
     }
 
     record(entry: ToolEvidenceInput): ToolEvidenceEntry {
         const normalized: ToolEvidenceEntry = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             turnId: this.turnId,
             sessionId: this.sessionId,
             toolName: entry.toolName,

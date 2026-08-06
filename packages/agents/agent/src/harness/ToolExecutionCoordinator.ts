@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { randomUUID } from 'crypto';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ToolSchemaValidator } from './ToolSchemaValidator';
@@ -39,6 +38,7 @@ export class ToolExecutionCoordinator {
         private rateLimitManager: RateLimitManager,
         private outputGuard: OutputGuard,
         @Inject(ApplicationContext) private app: ApplicationContext,
+        private uuid: UuidGenerator,
         @Optional() private auditSink?: AuditSink,
         @Optional() private sandboxExecutor?: SandboxExecutor
     ) {
@@ -47,7 +47,7 @@ export class ToolExecutionCoordinator {
     async execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
         const sandboxState = this.resolveSandboxState(request);
         const baseReceipt: AgentToolExecutionReceipt = request.baseReceipt ?? {
-            receiptId: randomUUID(),
+            receiptId: this.uuid.generate(),
             toolCallId: request.toolCall.id,
             toolName: request.toolCall.name,
             executionMode: request.executionMode,

@@ -1,7 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { ApplicationArguments, ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
-import { randomUUID } from 'crypto';
+import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
 import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRuntime';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -108,6 +107,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         protected summarizer: SessionSummarizer,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) protected options: AgentOptions,
         protected app: ApplicationContext,
+        protected uuid: UuidGenerator,
         @Optional() @Inject(ExperienceDistiller) protected experienceDistiller?: ExperienceDistiller,
         @Optional() protected promptBuilder?: SystemPromptBuilder,
         @Optional() protected approvalManagerInput?: ToolApprovalManager,
@@ -141,7 +141,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 new ToolSchemaValidator(),
                 new RateLimitManager(),
                 new OutputGuard(),
-                this.app
+                this.app,
+                this.uuid
             );
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
@@ -228,7 +229,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             principalId: input.principalId,
             workspace: await this.resolveSessionWorkspace(input.sessionId),
             diagnostics: this.createTurnDiagnostics(),
-            evidenceLedger: new EvidenceLedger(input.sessionId),
+            evidenceLedger: new EvidenceLedger(input.sessionId, this.uuid),
             recovery: this.createTurnRecovery(),
             profile: input.profile,
             agent: input.agent
@@ -318,7 +319,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 principalId,
                 workspace: await this.resolveSessionWorkspace(sessionId),
                 diagnostics: this.createTurnDiagnostics(),
-                evidenceLedger: new EvidenceLedger(sessionId),
+                evidenceLedger: new EvidenceLedger(sessionId, this.uuid),
                 recovery: this.createTurnRecovery(),
                 profile,
                 agent
@@ -1022,7 +1023,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         const record: CompactionHistoryRecord = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId,
             strategy: report.strategy,
             compactionTriggered: report.compactionTriggered,
@@ -1053,7 +1054,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         const record: TurnDiagnosticsRecord = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId,
             createdAt: Date.now(),
             emptyResponseRetryCount: diagnostics.emptyResponseRetryCount,
@@ -1647,7 +1648,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } else {
                     const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
                     this.recordToolEvidence(turnContext, {
-                        receiptId: randomUUID(),
+                        receiptId: this.uuid.generate(),
                         toolCallId: 'unknown',
                         toolName: 'unknown',
                         executionMode: 'parallel',
@@ -2225,7 +2226,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         inputSummary?: string
     ): AgentToolExecutionReceipt {
         return {
-            receiptId: randomUUID(),
+            receiptId: this.uuid.generate(),
             toolCallId: toolCall.id,
             toolName: toolCall.name,
             executionMode,
@@ -2298,6 +2299,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         }
         return new ToolApprovalManager(
             this.app,
+            this.uuid,
             new DefaultApprovalStrategy(required),
             {
                 defaultTimeoutMs: this.options.tools?.approvalTimeoutMs ?? defaultAgentOptions.tools?.approvalTimeoutMs,
@@ -2378,7 +2380,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         const createdAt = record.createdAt ?? Date.now();
         return {
             ...record,
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId,
             scope: record.scope ?? 'session',
             createdAt,

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { DelegationEdgeInput, DelegationEdgeRecord, DelegationEdgeStatus, DelegationGraphStore, DelegationTreeNode, DelegationTreeOptions } from './DelegationGraphStore';
 import { InMemoryDelegationGraphStore } from './InMemoryDelegationGraphStore';
@@ -11,7 +11,8 @@ export class DefaultDelegationGraphStore extends DelegationGraphStore {
 
     constructor(
         @Inject(ApplicationContext) private app: ApplicationContext,
-        private fallback: InMemoryDelegationGraphStore
+        private fallback: InMemoryDelegationGraphStore,
+        private uuid: UuidGenerator
     ) {
         super();
     }
@@ -45,7 +46,7 @@ export class DefaultDelegationGraphStore extends DelegationGraphStore {
             return this.resolved;
         }
         const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmDelegationGraphStore(adapter) : this.fallback;
+        this.resolved = adapter ? new TypeOrmDelegationGraphStore(adapter, this.uuid) : this.fallback;
         return this.resolved;
     }
 

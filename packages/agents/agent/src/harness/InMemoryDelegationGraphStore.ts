@@ -1,14 +1,18 @@
-import { randomUUID } from 'crypto';
 import { Injectable } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { DelegationEdgeInput, DelegationEdgeRecord, DelegationEdgeStatus, DelegationGraphStore, DelegationTreeNode, DelegationTreeOptions, buildDelegationLineage, buildDelegationTree } from './DelegationGraphStore';
 
 @Injectable()
 export class InMemoryDelegationGraphStore extends DelegationGraphStore {
     private edges: DelegationEdgeRecord[] = [];
 
+    constructor(private uuid: UuidGenerator) {
+        super();
+    }
+
     async append(edge: DelegationEdgeInput): Promise<DelegationEdgeRecord> {
         const record: DelegationEdgeRecord = {
-            id: edge.id ?? `edge-${randomUUID()}`,
+            id: edge.id ?? `edge-${this.uuid.generate()}`,
             parentSessionId: edge.parentSessionId,
             childSessionId: edge.childSessionId,
             kind: edge.kind,

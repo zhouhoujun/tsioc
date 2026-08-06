@@ -1,6 +1,5 @@
 import { Injectable, Optional, Inject, token } from '@tsdi/ioc';
-import { ApplicationContext } from '@tsdi/core';
-import { randomUUID } from 'crypto';
+import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 
@@ -167,6 +166,7 @@ export class ToolApprovalManager {
 
     constructor(
         private app: ApplicationContext,
+        private uuid: UuidGenerator,
         @Optional() @Inject(AgentApprovalStrategy, { defaultValue: null })
         private strategy?: ApprovalStrategy,
         @Optional() @Inject(AgentApprovalOptions, { defaultValue: null })
@@ -361,7 +361,7 @@ export class ToolApprovalManager {
         );
         const createdAt = Date.now();
         return {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             toolName,
             input: requestInput,
             hasInput: input !== undefined,
@@ -409,7 +409,7 @@ export class ToolApprovalManager {
             return;
         }
         const record: AgentAuditRecord = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId: request.sessionId,
             toolName: request.toolName,
             toolCallId: `approval:${request.id}`,
