@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { LightweightAgentRunner, runWithConcurrency } from '../src';
@@ -132,11 +133,7 @@ export class DelegationV2Suite {
             setSessionModelProfile: () => { sessionProfileSet = true; },
             clearSessionModelProfile: () => { sessionProfileSet = true; }
         });
-        const runner = new LightweightAgentRunner(
-            mockRuntime as any,
-            undefined,
-            { delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any
-        );
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,undefined,{ delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any);
         await runner.run({ prompt: 'test', workerClass: 'spawn_agent', profile: 'explicit' });
         expect(turns.length).toBe(1);
         expect(turns[0].profile).toEqual('explicit');
@@ -151,11 +148,7 @@ export class DelegationV2Suite {
             setSessionModelProfile: (sessionId: string, profile: string) => { setProfiles.push(`${sessionId}:${profile}`); },
             clearSessionModelProfile: () => { }
         });
-        const runner = new LightweightAgentRunner(
-            mockRuntime as any,
-            undefined,
-            { delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any
-        );
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,undefined,{ delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any);
         await runner.run({ prompt: 'test', workerClass: 'spawn_agent' });
         expect(setProfiles.length).toBe(1);
         expect(setProfiles[0]).toContain(':strong');
@@ -170,7 +163,7 @@ export class DelegationV2Suite {
                 return { message: { content: 'Summary: done', metadata: {} } };
             }
         });
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'test', reasoning: true });
         expect(agents.length).toBe(1);
         expect(agents[0]).toEqual({ reasoning: true });
@@ -187,7 +180,7 @@ export class DelegationV2Suite {
             },
             registerChildSession: (_parent: string, _child: string, metadata?: Record<string, any>) => { capturedMetadata = metadata; }
         });
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({
             prompt: 'run the report',
             parentSessionId: 'parent-1',
@@ -210,11 +203,7 @@ export class DelegationV2Suite {
             },
             registerChildSession: (_parent: string, _child: string, metadata?: Record<string, any>) => { capturedMetadata = metadata; }
         });
-        const runner = new LightweightAgentRunner(
-            mockRuntime as any,
-            undefined,
-            { delegation: { encryption: { key: 'delegation-key' } } } as any
-        );
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,undefined,{ delegation: { encryption: { key: 'delegation-key' } } } as any);
         await runner.run({
             prompt: 'run the report',
             parentSessionId: 'parent-1',
@@ -235,7 +224,7 @@ export class DelegationV2Suite {
             runTurn: async () => ({ message: { content: 'Summary: done', metadata: {} } }),
             registerChildSession: (_parent: string, _child: string, metadata?: Record<string, any>) => { capturedMetadata = metadata; }
         });
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'plain goal', parentSessionId: 'parent-1' });
         expect(capturedMetadata?.goal).toEqual('plain goal');
         expect(capturedMetadata?.sealed).toBeUndefined();
@@ -254,7 +243,7 @@ export class DelegationV2Suite {
                 return { message: { content: 'Summary: done', metadata: {} } };
             }
         });
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         const requests = Array.from({ length: 4 }, (_, index) => ({
             prompt: `task-${index}`,
             concurrency: 2

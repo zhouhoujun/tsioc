@@ -95,6 +95,7 @@ import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
 import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText } from '@tsdi/agent';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, LightweightAgentRunner, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
@@ -549,7 +550,7 @@ export class AgentToolsPackageTest {
         expect(new CopyFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new MkdirTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
-        expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new ProcessStartTool(new RandomUuidGenerator(),new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new BackupTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new PipelineTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
@@ -557,11 +558,11 @@ export class AgentToolsPackageTest {
         expect(new AiCliTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new SendMessageTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new KnowledgeStoreTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
-        expect(new MemoryPutTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MemoryPutTool(new RandomUuidGenerator()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new MemoryForgetTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new MemoryPurgeTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new MemoryDeleteTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
-        expect(new CronManageTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new CronManageTool(new RandomUuidGenerator()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new DataManageTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new CheckpointTool(null!, null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new KanbanTool(null!).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
@@ -1662,7 +1663,7 @@ export class AgentToolsPackageTest {
     @Test('memory put and search respect visibility and filters')
     async memoryPutAndSearchRespectVisibilityAndFilters() {
         const store = new InMemoryMemoryStore();
-        const put = new MemoryPutTool();
+        const put = new MemoryPutTool(new RandomUuidGenerator());
         const search = new MemorySearchTool();
 
         const sessionRecord = await put.invoke({ key: 'topic', value: 'router cache', namespace: 'agent', category: 'conversation' }, createSessionContext({ sessionId: 's1', memory: store }));
@@ -1768,7 +1769,7 @@ export class AgentToolsPackageTest {
     async memoryPutCompensationRemovesOnlyAddedRecords() {
         const store = new InMemoryMemoryStore();
         await store.put({ id: 'existing-1', sessionId: 's1', key: 'topic', value: 'old', scope: 'session', createdAt: 1 });
-        const tool = new MemoryPutTool();
+        const tool = new MemoryPutTool(new RandomUuidGenerator());
 
         const captured = await tool.captureCompensation({ key: 'topic' }, createSessionContext({ sessionId: 's1', memory: store }));
         await tool.invoke({ key: 'topic', value: 'new-1' }, createSessionContext({ sessionId: 's1', memory: store }));
@@ -1991,7 +1992,7 @@ export class AgentToolsPackageTest {
             run: async () => ({ tool: 'content_search', output: { matches: [] }, summary: 'returned matches' })
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, llm);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,llm);
         const result = await tool.invoke({
             action: 'plan',
             goal: 'Fix current city weather auto detection'
@@ -2021,12 +2022,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Apply weather location fix',
@@ -2063,12 +2059,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Patch fallback flow and add tests',
@@ -2392,7 +2383,7 @@ export class AgentToolsPackageTest {
     @Test('schedule tool creates lists and cancels session tasks')
     async scheduleToolManagesTasksBySession() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any);
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any);
 
         const created = await tool.invoke({ action: 'create', prompt: 'ping', delayMs: 1000 }, createSessionContext({ sessionId: 'sched-1' }));
         expect(created.scheduled).toEqual(true);
@@ -2413,7 +2404,7 @@ export class AgentToolsPackageTest {
     @Test('schedule tool enforces session and interval limits')
     async scheduleToolEnforcesLimits() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any, {
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any,{
             schedule: {
                 maxTasksPerSession: 1,
                 maxPromptLength: 4,
@@ -2461,7 +2452,7 @@ export class AgentToolsPackageTest {
     @Test('schedule tool creates cron tasks')
     async scheduleToolCreatesCronTasks() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any);
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any);
 
         const created = await tool.invoke({ action: 'create', prompt: 'ping', cronExpr: '0 */5 * * * *' }, createSessionContext({ sessionId: 'sched-cron-ok' }));
         expect(created.scheduled).toEqual(true);
@@ -2472,7 +2463,7 @@ export class AgentToolsPackageTest {
     @Test('schedule tool gets pauses resumes and updates session tasks')
     async scheduleToolGetsPausesResumesAndUpdatesSessionTasks() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any);
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any);
 
         const created = await tool.invoke({ action: 'create', prompt: 'ping', delayMs: 1000 }, createSessionContext({ sessionId: 'sched-life' }));
         const id = created.task.id;
@@ -2501,7 +2492,7 @@ export class AgentToolsPackageTest {
     @Test('schedule lifecycle actions enforce session ownership and mutable input')
     async scheduleLifecycleActionsEnforceSessionOwnershipAndMutableInput() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any);
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any);
         const created = await tool.invoke({ action: 'create', prompt: 'ping', delayMs: 1000 }, createSessionContext({ sessionId: 'sched-owner' }));
 
         let notFoundError: Error | undefined;
@@ -2524,7 +2515,7 @@ export class AgentToolsPackageTest {
     @Test('schedule tool rejects cron tasks below min interval and unschedulable cron')
     async scheduleToolRejectsInvalidCronCadence() {
         const scheduler = new FakeScheduler();
-        const tool = new ScheduleTool({ get: () => scheduler } as any, {
+        const tool = new ScheduleTool(new RandomUuidGenerator(),{ get: () => scheduler } as any,{
             schedule: {
                 minIntervalMs: 60000
             }
@@ -2550,7 +2541,7 @@ export class AgentToolsPackageTest {
     @Test('process tools start poll and isolate session access')
     async processToolsStartPollAndIsolateSessionAccess() {
         const workspace = await this.createWorkspace();
-        const start = new ProcessStartTool(new ProcessRegistry(), { file: { rootDir: workspace } } as any);
+        const start = new ProcessStartTool(new RandomUuidGenerator(),new ProcessRegistry(),{ file: { rootDir: workspace } } as any);
         const processes = (start as any).processes;
         const poll = new ProcessPollTool(processes);
 
@@ -2580,7 +2571,7 @@ export class AgentToolsPackageTest {
     async processToolsKillRunningCommandsAndProviderExposesProcessGroup() {
         const workspace = await this.createWorkspace();
         const registry = new ProcessRegistry();
-        const start = new ProcessStartTool(registry, { file: { rootDir: workspace } } as any);
+        const start = new ProcessStartTool(new RandomUuidGenerator(),registry,{ file: { rootDir: workspace } } as any);
         const poll = new ProcessPollTool(registry);
         const kill = new ProcessKillTool(registry);
 
@@ -2630,7 +2621,7 @@ export class AgentToolsPackageTest {
         const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-tools-proc-outside-'));
         const linkedDir = path.join(workspace, 'linked-workdir');
         symlinkSync(outside, linkedDir);
-        const tool = new ProcessStartTool(new (require('../process/ProcessRegistry').ProcessRegistry)(), { file: { rootDir: workspace } } as any);
+        const tool = new ProcessStartTool(new RandomUuidGenerator(),new (require('../process/ProcessRegistry').ProcessRegistry)(),{ file: { rootDir: workspace } } as any);
 
         let error: Error | undefined;
         try {
@@ -2645,7 +2636,7 @@ export class AgentToolsPackageTest {
     async processStartEnforcesPerSessionProcessLimit() {
         const workspace = await this.createWorkspace();
         const registry = new ProcessRegistry();
-        const tool = new ProcessStartTool(registry, { file: { rootDir: workspace }, process: { maxProcessesPerSession: 1 } } as any);
+        const tool = new ProcessStartTool(new RandomUuidGenerator(),registry,{ file: { rootDir: workspace }, process: { maxProcessesPerSession: 1 } } as any);
 
         const first = await tool.invoke({ command: 'sleep 1' }, createSessionContext({ sessionId: 'proc-limit' }));
         expect(first.process.running).toEqual(true);
@@ -3093,7 +3084,7 @@ export class AgentToolsPackageTest {
     @Test('process start applies shared sandbox command policy')
     async processStartAppliesSharedSandboxPolicy() {
         const workspace = await this.createWorkspace();
-        const tool = new ProcessStartTool(new ProcessRegistry(), {
+        const tool = new ProcessStartTool(new RandomUuidGenerator(),new ProcessRegistry(),{
             file: { rootDir: workspace },
             sandbox: { allowedCommands: ['sleep'] }
         } as any);
@@ -3169,7 +3160,7 @@ export class AgentToolsPackageTest {
     async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
         let seenSessionId = '';
         let seenMaxTurns: number | undefined;
-        const adapter = new DelegatingSpawnAgentAdapter({
+        const adapter = new DelegatingSpawnAgentAdapter(new RandomUuidGenerator(),{
             run: async (request: NestedAgentRunRequest) => {
                 seenSessionId = request.sessionId || '';
                 seenMaxTurns = request.maxTurns;
@@ -3493,7 +3484,7 @@ export class AgentToolsPackageTest {
     @Test('delegating spawn adapter parallel delegates through runner parallel')
     async delegatingSpawnAdapterParallelDelegatesThroughRunnerParallel() {
         let parallelRuns = 0;
-        const adapter = new DelegatingSpawnAgentAdapter({
+        const adapter = new DelegatingSpawnAgentAdapter(new RandomUuidGenerator(),{
             runParallel: async (requests: NestedAgentRunRequest[]) => {
                 parallelRuns++;
                 return requests.map((req: NestedAgentRunRequest, i: number) => ({
@@ -3591,7 +3582,7 @@ export class AgentToolsPackageTest {
 
     @Test('parse delegated agent reports with diff and structured lists')
     async parseDelegatedAgentReportsWithDiffAndStructuredLists() {
-        const adapter = new DelegatingSpawnAgentAdapter({
+        const adapter = new DelegatingSpawnAgentAdapter(new RandomUuidGenerator(),{
             run: async () => ({
                 content: [
                     'Summary: finished the worker pass',
@@ -4371,7 +4362,7 @@ export class AgentToolsPackageTest {
 
     @Test('cron manage requires and uses agent scheduler')
     async cronManageRequiresAndUsesAgentScheduler() {
-        const tool = new CronManageTool({ get: () => undefined } as any);
+        const tool = new CronManageTool(new RandomUuidGenerator(),{ get: () => undefined } as any);
         let schedulerError: Error | undefined;
         try {
             await tool.invoke({ action: 'list' }, createSessionContext());
@@ -4381,7 +4372,7 @@ export class AgentToolsPackageTest {
         expect(schedulerError?.message).toContain('scheduler');
 
         const scheduler = new FakeScheduler();
-        const cronTool = new CronManageTool({ get: () => scheduler } as any);
+        const cronTool = new CronManageTool(new RandomUuidGenerator(),{ get: () => scheduler } as any);
 
         const listed = await cronTool.invoke({ action: 'list' }, createSessionContext({ sessionId: 'cron-1' }));
         expect(listed.jobs).toEqual([]);
@@ -4514,7 +4505,7 @@ export class AgentToolsPackageTest {
 
     @Test('shared llm task adapter delegates through nested agent runner')
     async sharedLlmTaskAdapterDelegatesThroughNestedAgentRunner() {
-        const adapter = new DelegatingLlmTaskAdapter({
+        const adapter = new DelegatingLlmTaskAdapter(new RandomUuidGenerator(),{
             run: async (request: NestedAgentRunRequest) => ({
                 content: request.prompt,
                 turnCount: 1,
@@ -5019,12 +5010,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Patch error handling',
@@ -5068,7 +5054,7 @@ export class AgentToolsPackageTest {
         } as WorkspaceActionRunner;
 
         const store = new CodingTaskStore();
-        const tool = new CodingTaskTool(store, runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),store,runner,null as any);
         const runResult = await tool.invoke({
             action: 'run',
             goal: 'Patch error handling',
@@ -5117,10 +5103,10 @@ export class AgentToolsPackageTest {
             }
         };
         store.save('s1', task as any);
-        const tool = new CodingTaskTool(store, {
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),store,{
             getSupportedTools: () => ['git_operations'],
             run: async (action: any) => ({ tool: action.tool, output: { ok: true }, summary: 'ok' })
-        } as WorkspaceActionRunner, null as any);
+        } as WorkspaceActionRunner,null as any);
 
         let error: Error | undefined;
         try {
@@ -5154,7 +5140,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Apply two isolated edits',
@@ -5224,12 +5210,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Apply isolated edits with one failure',
@@ -5300,12 +5281,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 1000 } } as any);
         const firstRun = await tool.invoke({
             action: 'run',
             goal: 'Apply isolated edits with one failure',
@@ -5366,7 +5342,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any);
         const completedTask = await tool.invoke({
             action: 'run',
             goal: 'Apply isolated edits',
@@ -5416,12 +5392,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 1, parallelWorkerTimeoutMs: 1000 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 1, parallelWorkerTimeoutMs: 1000 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Retry transient failure',
@@ -5458,12 +5429,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(
-            new CodingTaskStore(),
-            runner,
-            null as any,
-            { codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 20 } } as any
-        );
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any,{ codingTask: { parallelWorkerRetries: 0, parallelWorkerTimeoutMs: 20 } } as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Timeout worker',
@@ -5507,7 +5473,7 @@ export class AgentToolsPackageTest {
         } as WorkspaceActionRunner;
 
         const store = new CodingTaskStore();
-        const tool = new CodingTaskTool(store, runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),store,runner,null as any);
         const runResult = await tool.invoke({
             action: 'run',
             goal: 'Apply two isolated edits',
@@ -5541,7 +5507,7 @@ export class AgentToolsPackageTest {
             run: async (action: any) => ({ tool: action.tool, output: { ok: true }, summary: 'ok' })
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any);
         let error: Error | undefined;
         try {
             await tool.invoke({
@@ -5572,7 +5538,7 @@ export class AgentToolsPackageTest {
             }
         } as WorkspaceActionRunner;
 
-        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const tool = new CodingTaskTool(new RandomUuidGenerator(),new CodingTaskStore(),runner,null as any);
         const result = await tool.invoke({
             action: 'run',
             goal: 'Simple edit',
@@ -5591,7 +5557,7 @@ export class AgentToolsPackageTest {
 
     @Test('lightweight agent runner requires runtime')
     async lightweightAgentRunnerRequiresRuntime() {
-        const runner = new LightweightAgentRunner();
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator());
         let error: Error | undefined;
         try {
             await runner.run({ prompt: 'test' });
@@ -5635,7 +5601,7 @@ export class AgentToolsPackageTest {
             ]
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         const result = await runner.run({ prompt: 'analyze project' });
 
         expect(result.content).toContain('analyze project');
@@ -5670,7 +5636,7 @@ export class AgentToolsPackageTest {
             getMessages: async () => []
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'do the thing', systemPrompt: 'You are a helpful assistant' });
 
         expect(prompts[0]).toContain('You are a helpful assistant');
@@ -5703,7 +5669,7 @@ export class AgentToolsPackageTest {
             ]
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         const result = await runner.run({ prompt: 'analyze project', maxTurns: 3 });
 
         expect(callCount).toBe(2);
@@ -5738,7 +5704,7 @@ export class AgentToolsPackageTest {
             ]
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         const result = await runner.run({ prompt: 'analyze project' });
 
         expect(callCount).toBe(2);
@@ -5757,7 +5723,7 @@ export class AgentToolsPackageTest {
             getMessages: async () => []
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'test', sessionId: 'custom-42' });
 
         expect(seenSessionId).toEqual('custom-42');
@@ -5781,7 +5747,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'test', toolsets: ['filesystem', 'web'] });
 
         expect(filterSessions.length).toBe(1);
@@ -5808,18 +5774,14 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(
-            mockRuntime as any,
-            undefined,
-            {
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,undefined,{
                 delegation: {
                     workerModelProfiles: {
                         spawn_agent: 'strong',
                         llm_task: 'fast'
                     }
                 }
-            } as any
-        );
+            } as any);
         const result = await runner.run({ prompt: 'test', workerClass: 'spawn_agent' });
 
         expect(setProfiles.length).toBe(1);
@@ -5845,11 +5807,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(
-            mockRuntime as any,
-            undefined,
-            { delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any
-        );
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,undefined,{ delegation: { workerModelProfiles: { spawn_agent: 'strong' } } } as any);
         await runner.run({ prompt: 'test', workerClass: 'llm_task' });
 
         expect(profileSet).toBe(false);
@@ -5872,7 +5830,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'test' });
 
         expect(profileSet).toBe(false);
@@ -5895,7 +5853,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         await runner.run({ prompt: 'test' });
 
         expect(filterCalled).toBe(false);
@@ -5924,7 +5882,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any, mockSessions as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,mockSessions as any);
         await runner.run({ prompt: 'test', parentSessionId: 'parent-42' });
 
         expect(parentMessages.length).toBe(3);
@@ -5951,7 +5909,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any, mockSessions as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any,mockSessions as any);
         await runner.run({ prompt: 'test' });
 
         expect(appendCalled).toBe(false);
@@ -5972,7 +5930,7 @@ export class AgentToolsPackageTest {
             }
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         let error: Error | undefined;
         try {
             await runner.run({ prompt: 'test', toolsets: ['filesystem'] });
@@ -6001,7 +5959,7 @@ export class AgentToolsPackageTest {
             unregisterChildSession: (parent: string, child: string) => unregistered.push([parent, child])
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         const result = await runner.run({ prompt: 'analyze', parentSessionId: 'parent-1' });
 
         expect(result.sessionId).toContain('sub-');
@@ -6023,7 +5981,7 @@ export class AgentToolsPackageTest {
             unregisterChildSession: (parent: string, child: string) => unregistered.push([parent, child])
         };
 
-        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(),mockRuntime as any);
         let error: Error | undefined;
         try {
             await runner.run({ prompt: 'test', parentSessionId: 'parent-1' });

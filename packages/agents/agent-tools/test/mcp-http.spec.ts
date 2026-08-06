@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import * as http from 'http';

@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import * as os from 'os';
 import * as path from 'path';
@@ -380,6 +381,7 @@ export class ApplyPatchToolTest {
                 new LLMSessionSummarizer(new EchoModelAdapter() as any),
                 defaultAgentOptions,
                 new FakeApp() as any,
+                new RandomUuidGenerator(),
                 undefined,
                 undefined,
                 undefined,

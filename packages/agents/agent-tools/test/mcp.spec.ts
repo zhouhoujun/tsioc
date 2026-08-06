@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { AGENT_TOOL_BUNDLES, AgentModule, ToolRegistry } from '@tsdi/agent';
 import { provideMcpTools, McpClient } from '../mcp';
 
