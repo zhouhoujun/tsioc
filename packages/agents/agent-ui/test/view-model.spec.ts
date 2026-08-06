@@ -4943,7 +4943,7 @@ export class AgentConsoleComponentTest {
         const handled: any[] = [];
 
         (component as any).surfaceAccessor = {
-            dispatchTerminalMouse(event: any) {
+            dispatchMouse(event: any) {
                 handled.push(event);
                 return true;
             }
@@ -4968,7 +4968,7 @@ export class AgentConsoleComponentTest {
         const written: string[] = [];
 
         (component as any).surfaceAccessor = {
-            dispatchTerminalMouse() {
+            dispatchMouse() {
                 return false;
             },
             writeTerminalClipboardText(text: string) {

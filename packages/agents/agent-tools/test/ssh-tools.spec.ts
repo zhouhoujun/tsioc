@@ -55,8 +55,8 @@ export class SshToolsTest {
                 stream.end();
             });
         });
+        const manager = new SshConnectionManager();
         try {
-            const manager = new SshConnectionManager();
             manager.register(mockConfig(mock.port));
             const tool = new SshExecTool(manager, { ssh: { defaultTimeoutMs: 10000 } });
             const result = await tool.invoke({ host: 'mock', command: 'uname' }, { sessionId: 's1' } as any);
@@ -64,6 +64,7 @@ export class SshToolsTest {
             expect(result.exitCode).toBe(0);
             expect(result.host).toBe('mock');
         } finally {
+            await manager.disposeAll();
             mock.server.close();
         }
     }
@@ -88,8 +89,8 @@ export class SshToolsTest {
                 accept();
             });
         });
+        const manager = new SshConnectionManager();
         try {
-            const manager = new SshConnectionManager();
             manager.register(mockConfig(mock.port));
             const tool = new SshPutTool(manager);
             let rejected = false;
@@ -100,6 +101,7 @@ export class SshToolsTest {
             }
             expect(rejected).toBe(true);
         } finally {
+            await manager.disposeAll();
             mock.server.close();
         }
     }
@@ -119,8 +121,8 @@ export class SshToolsTest {
     @Test('ssh_tunnel opens a forwarding channel to the mock server')
     async tunnelTool() {
         const mock = await startMockServer();
+        const manager = new SshConnectionManager();
         try {
-            const manager = new SshConnectionManager();
             manager.register(mockConfig(mock.port));
             const tool = new SshTunnelTool(manager);
             let rejected = false;
@@ -131,6 +133,7 @@ export class SshToolsTest {
             }
             expect(rejected).toBe(true);
         } finally {
+            await manager.disposeAll();
             mock.server.close();
         }
     }

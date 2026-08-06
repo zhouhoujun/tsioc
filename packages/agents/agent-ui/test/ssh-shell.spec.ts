@@ -104,10 +104,6 @@ class FakeSurfaceAccessor extends ConsoleTerminalSurfaceAccessor {
         return '';
     }
 
-    dispatchTerminalMouse(): boolean {
-        return false;
-    }
-
     getClickTargets(): TerminalClickTarget[] {
         return [];
     }

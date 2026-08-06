@@ -502,7 +502,8 @@ export class AgentCliTest {
     async updateCheckReadsLatestVersionFromRegistryMetadata() {
         const plan = await runAgentUpdate({
             check: true,
-            target: 'latest'
+            target: 'latest',
+            registry: 'https://registry.npmjs.org'
         }, {
             stdout: new PassThrough(),
             metadataFetcher: async () => ({
