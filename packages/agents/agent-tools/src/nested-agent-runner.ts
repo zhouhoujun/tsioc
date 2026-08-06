@@ -1,5 +1,5 @@
-import { randomUUID } from 'crypto';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { SpawnAgentAdapter, SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { LlmTaskAdapter, LlmTaskRequest, LlmTaskResult } from '../llm/llm-task.tool';
 import { WeatherAdapter, WeatherForecastResult, WeatherLookup, WeatherResult } from '../utility/weather.tool';
@@ -206,13 +206,14 @@ function normalizeLabel(label: string): keyof DelegatedAgentReport | undefined {
 @Injectable({ provide: SpawnAgentAdapter })
 export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     constructor(
+        private uuid: UuidGenerator,
         @Optional() private runner?: NestedAgentRunner | null
     ) {
         super();
     }
 
     override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
-        const sessionId = `spawn-${randomUUID()}`;
+        const sessionId = `spawn-${this.uuid.generate()}`;
         const result = await this.requireRunner().run({
             prompt: buildSubAgentPrompt(input),
             sessionId,
@@ -233,7 +234,7 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
         }
         const requests: NestedAgentRunRequest[] = inputs.map(input => ({
             prompt: buildSubAgentPrompt(input),
-            sessionId: `spawn-${randomUUID()}`,
+            sessionId: `spawn-${this.uuid.generate()}`,
             toolsets: input.toolsets,
             maxTurns: input.maxTurns,
             parentSessionId: input.sessionId,
@@ -282,6 +283,7 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
 @Injectable({ provide: LlmTaskAdapter })
 export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
     constructor(
+        private uuid: UuidGenerator,
         @Optional() private runner?: NestedAgentRunner | null
     ) {
         super();
@@ -290,7 +292,7 @@ export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
     override async execute(request: LlmTaskRequest): Promise<LlmTaskResult> {
         const result = await this.requireRunner().run({
             prompt: request.prompt,
-            sessionId: `llm-task-${randomUUID()}`,
+            sessionId: `llm-task-${this.uuid.generate()}`,
             systemPrompt: request.system,
             model: request.model,
             temperature: request.temperature,

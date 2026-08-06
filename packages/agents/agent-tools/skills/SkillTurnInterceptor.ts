@@ -1,13 +1,13 @@
 import { AgentTurnInput, AgentTurnResult, SessionStore, ToolRegistry } from '@tsdi/agent';
-import { Handler, RunContext } from '@tsdi/core';
+import { Handler, RunContext, UuidGenerator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { randomUUID } from 'crypto';
 import { LocalSkillRegistry } from './LocalSkillRegistry';
 import { SkillSessionStore } from './SkillSessionStore';
 
 @Injectable()
 export class SkillTurnInterceptor {
     constructor(
+        private uuid: UuidGenerator,
         private skills: LocalSkillRegistry,
         private sessions: SkillSessionStore,
         private sessionStore: SessionStore,
@@ -70,14 +70,14 @@ export class SkillTurnInterceptor {
     private async respond(input: AgentTurnInput, content: string): Promise<AgentTurnResult> {
         const createdAt = Date.now();
         await this.sessionStore.append(input.sessionId, {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             role: 'user',
             content: input.input,
             createdAt,
             metadata: { slashCommand: true }
         });
         const message = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             role: 'assistant' as const,
             content,
             createdAt: createdAt + 1,

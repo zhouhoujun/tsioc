@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
@@ -136,6 +136,7 @@ export class CodingTaskTool implements AgentTool {
     private static readonly WORKTREE_WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
 
     constructor(
+        private uuid: UuidGenerator,
         @Optional() store?: CodingTaskStore | null,
         @Optional() runner?: WorkspaceActionRunner | null,
         @Optional() llmTool?: LlmTaskTool | null,
@@ -474,7 +475,7 @@ export class CodingTaskTool implements AgentTool {
         const now = Date.now();
         return {
             task: {
-                id: `coding-${randomUUID()}`,
+                id: `coding-${this.uuid.generate()}`,
                 title: `Retry failed workers: ${sourceTask.title}`,
                 goal: sourceTask.goal,
                 status: 'planned',
@@ -595,7 +596,7 @@ export class CodingTaskTool implements AgentTool {
     private createTaskRecord(input: any, goal: string, draft: PlannedTaskDraft): CodingTaskRecord {
         const now = Date.now();
         return {
-            id: typeof input?.task_id === 'string' && input.task_id.trim() ? input.task_id.trim() : `coding-${randomUUID()}`,
+            id: typeof input?.task_id === 'string' && input.task_id.trim() ? input.task_id.trim() : `coding-${this.uuid.generate()}`,
             title: typeof input?.title === 'string' && input.title.trim() ? input.title.trim() : draft.title,
             goal,
             status: 'planned',

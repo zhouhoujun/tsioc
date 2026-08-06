@@ -1,5 +1,5 @@
 import { Injector, Module, ModuleWithProviders } from '@tsdi/ioc';
-import { ApplicationArguments } from '@tsdi/core';
+import { ApplicationArguments, UuidGenerator } from '@tsdi/core';
 import { AgentModule } from '@tsdi/agent';
 import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
@@ -105,6 +105,7 @@ function provideCodingTaskToolFactory() {
             return [{
                 provide: CodingTaskTool,
                 useFactory: () => new CodingTaskTool(
+                    injector.get(UuidGenerator),
                     injector.get(CodingTaskStore, null),
                     injector.get(WorkspaceActionRunner, null),
                     injector.get(LlmTaskTool, null),

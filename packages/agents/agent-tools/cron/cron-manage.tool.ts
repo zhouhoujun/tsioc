@@ -1,7 +1,6 @@
 import { AgentScheduler, AgentTool, AgentToolContext, NextRunCalculator, ScheduledAgentTask } from '@tsdi/agent';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { randomUUID } from 'crypto';
 
 const DEFAULT_MAX_PROMPT_LENGTH = 4000;
 
@@ -50,6 +49,7 @@ export class CronManageTool implements AgentTool {
     };
 
     constructor(
+        private uuid: UuidGenerator,
         @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null
     ) {
@@ -160,7 +160,7 @@ export class CronManageTool implements AgentTool {
         NextRunCalculator.validateCronExpr(cronExpr);
 
         const task: ScheduledAgentTask = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId,
             prompt,
             cronExpr,

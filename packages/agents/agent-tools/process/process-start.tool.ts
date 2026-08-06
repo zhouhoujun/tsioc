@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { AgentToolsOptions } from '../src/options';
@@ -34,6 +34,7 @@ export class ProcessStartTool implements AgentTool {
     };
 
     constructor(
+        private uuid: UuidGenerator,
         private processes: ProcessRegistry,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null }) private options?: AgentToolsOptions
     ) {
@@ -48,7 +49,7 @@ export class ProcessStartTool implements AgentTool {
         const maxOutputChars = this.resolveMaxOutputChars(input?.maxOutputChars);
         const record = this.processes.start(
             context.sessionId,
-            randomUUID(),
+            this.uuid.generate(),
             command,
             cwd,
             maxOutputChars,

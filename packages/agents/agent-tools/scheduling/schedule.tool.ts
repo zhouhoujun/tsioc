@@ -1,7 +1,6 @@
 import { AgentScheduler, AgentTool, AgentToolContext, NextRunCalculator, ScheduledAgentTask } from '@tsdi/agent';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { randomUUID } from 'crypto';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
@@ -33,6 +32,7 @@ export class ScheduleTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
+        private uuid: UuidGenerator,
         @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
@@ -93,7 +93,7 @@ export class ScheduleTool implements AgentTool {
             const intervalMs = cronExpr ? undefined : this.resolveInterval(input?.intervalMs);
             this.ensureSessionCapacity(scheduler, context.sessionId);
             const task: ScheduledAgentTask = {
-                id: randomUUID(),
+                id: this.uuid.generate(),
                 sessionId: context.sessionId,
                 prompt,
                 runAt,

@@ -1,6 +1,6 @@
 import { AgentMemoryRecord, AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { randomUUID } from 'crypto';
+import { UuidGenerator } from '@tsdi/core';
 
 @Injectable()
 export class MemoryPutTool implements AgentTool {
@@ -27,12 +27,15 @@ export class MemoryPutTool implements AgentTool {
         authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
     };
 
+    constructor(private uuid: UuidGenerator) {
+    }
+
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const key = this.requireString(input?.key, 'key');
         const value = this.requireString(input?.value, 'value');
         const scope = this.resolveScope(input?.scope);
         const record: AgentMemoryRecord = {
-            id: randomUUID(),
+            id: this.uuid.generate(),
             sessionId: scope === 'session' ? context.sessionId : undefined,
             key,
             value,

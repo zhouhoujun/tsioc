@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime, SessionStore } from '@tsdi/agent';
+import { UuidGenerator } from '@tsdi/core';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions } from './options';
 import {
@@ -24,6 +24,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
     ].join(' ');
 
     constructor(
+        private uuid: UuidGenerator,
         @Optional() private runtime?: AgentRuntime | null,
         @Optional() private sessions?: SessionStore | null,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS) private options?: AgentToolsOptions | null
@@ -70,7 +71,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
     }
 
     private async runSingle(request: NestedAgentRunRequest): Promise<NestedAgentRunResult> {
-        const sessionId = request.sessionId || `sub-${randomUUID()}`;
+        const sessionId = request.sessionId || `sub-${this.uuid.generate()}`;
         const parentSessionId = request.parentSessionId;
         const workerProfile = this.resolveWorkerModelProfile(request);
         const explicitProfile = request.profile;
@@ -168,7 +169,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         }
         const req = {
             ...request,
-            sessionId: request.sessionId || `sub-${randomUUID()}`
+            sessionId: request.sessionId || `sub-${this.uuid.generate()}`
         };
         return this.runSingle(req);
     }

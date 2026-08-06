@@ -1,7 +1,7 @@
 import { Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
 import { AgentCapabilityBundle, AgentTool, withAgentTools } from '@tsdi/agent';
 import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
-import { ApplicationArguments } from '@tsdi/core';
+import { ApplicationArguments, UuidGenerator } from '@tsdi/core';
 import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
@@ -89,6 +89,7 @@ function provideCodingTaskTool(): Provider {
             return [{
                 provide: CodingTaskTool,
                 useFactory: () => new CodingTaskTool(
+                    injector.get(UuidGenerator),
                     injector.get(CodingTaskStore, null),
                     injector.get(WorkspaceActionRunner, null),
                     injector.get(LlmTaskTool, null),
