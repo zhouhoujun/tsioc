@@ -798,3 +798,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 2. ~~gateway HTTP / RPC~~ → 已完成：session title/pin/snapshot 全套 HTTP 路由与 `session.title.set`、`session.pin.set`、`session.snapshot.*` RPC，并按 pinned 优先排序会话列表。
 3. ~~agent-ui 命令与展示~~ → 已完成：`/title`、`/pin`、`/unpin`、`/snapshot`、`/snapshots` 命令，列表展示标题与固定标记，支持快照恢复/删除。
 4. ~~测试与回归~~ → 已完成：agent 518、agent-gateway 148、agent-ui 312 passing；session/persistent-session、gateway HTTP/RPC、console 命令及既有 SSH、vim、dashboard 行为全量通过。
+
+## P46 打磨（已完成）：回归修复收尾
+
+1. ~~agent-ui 1 处失败~~ → 已完成：`ssh-shell.spec.ts` 重复 `dispatchMouse` 定义（107 行与 123 行同名函数，TS2393），删除 107 行重复块后保留 view-model.spec.ts 改名后的 stub，312 passing。
+2. ~~agent-tools 挂起~~ → 已完成：`ssh-tools.spec.ts` 三个用例只在 finally 里 `mock.server.close()`，未关闭 SshConnectionManager 持有的存活连接（8 个 active socket handle）导致进程不退出；修复为 try 外声明 manager + finally 先 `await manager.disposeAll()` 再关 server，259 passing EXIT:0。
+3. ~~agent-cli registry 断言~~ → 已完成：`cli.spec.ts` update-check 用例断言受本机 `npm_config_registry`（npmmirror）影响，改为显式传 `registry: 'https://registry.npmjs.org'`，51 passing。
+4. 提交：`9c2e6af30 test(agents): fix agent-cli/tools/ui test regressions`（4 文件 +10/-10）。至此 todo.md 全部条目 P0–P46 收尾，agents 各子包测试全绿。
