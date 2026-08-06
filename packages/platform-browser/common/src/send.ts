@@ -85,8 +85,7 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         if (opts.statusCode != null && typeof (adapter as any).setStatus === 'function') {
             (adapter as any).setStatus(opts.statusCode);
         }
-        adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
-        return file;
+        (adapter as any).write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));        return file;
     }
 
     private createContentDisposition(filename: string, disposition: 'inline' | 'attachment'): string {

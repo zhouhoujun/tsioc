@@ -4,7 +4,7 @@ import { CompilerModule } from '@tsdi/compiler';
 if (process.cwd() === __dirname) {
     Workflow.run(CompilerModule, {
         baseURL: __dirname,
-        src: 'src/**/*.ts',
+        src: ['src/**/*.ts', 'common/**/*.ts'],
         outDir: '../../dist/platform-browser',
         options: {
             target: 'es2020',
