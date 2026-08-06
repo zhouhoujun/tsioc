@@ -795,6 +795,58 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async handleVoiceCommand(arg: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Voice control is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        if (!sessionId) {
+            this.notify('No session selected. Start a session before using /voice.');
+            return true;
+        }
+        const sub = (arg || '').trim().split(/\s+/)[0];
+        switch (sub) {
+            case 'start': {
+                const result = await this.sessionService.startVoiceSession(sessionId);
+                if (result?.ok) {
+                    this.notify(`Voice session started (${sessionId}). Speak into the capture device; run /voice stop to transcribe.`);
+                } else {
+                    this.notify(result?.error || 'Voice session could not be started.');
+                }
+                return true;
+            }
+            case 'stop': {
+                const result = await this.sessionService.endVoiceSession(sessionId);
+                if (result?.ok && result.transcribed) {
+                    this.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}`);
+                } else {
+                    this.notify(result?.error || (result?.transcribed ? `Transcribed: ${result.transcribed}` : 'Voice session produced no transcription.'));
+                }
+                return true;
+            }
+            case 'cancel': {
+                const result = await this.sessionService.cancelVoiceSession(sessionId);
+                if (result?.ok) {
+                    this.notify(result.cancelled ? 'Voice session cancelled.' : 'No voice session was active.');
+                } else {
+                    this.notify(result?.error || 'Voice session could not be cancelled.');
+                }
+                return true;
+            }
+            default: {
+                const status = await this.sessionService.getVoiceStatus(sessionId);
+                const available = status?.available ? 'available' : 'unavailable';
+                const missing = Array.isArray(status?.missing) && status.missing.length
+                    ? ` (missing ${status.missing.join(', ')})`
+                    : '';
+                const active = status?.active ? 'active' : 'inactive';
+                this.notify(`voice ${available}${missing} · session ${active}${Number(status?.bufferedBytes ?? 0) > 0 ? ` · buffered ${status.bufferedBytes} bytes` : ''}\nUsage: /voice start|stop|cancel|status`);
+                return true;
+            }
+        }
+    }
+
     /**
      * Opens `/diagnostics list [sessionId]`: browses recorded turn diagnostics
      * records for the given session (or all owned sessions when omitted) as a
@@ -3413,6 +3465,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
                     { label: '/harness audit', value: '/harness audit', description: 'failure-pattern audit [sessionId]' },
                     { label: '/harness profile', value: '/harness profile', description: 'governance profile list/current/diff' },
+                    { label: '/voice', value: '/voice', description: 'voice session status/start/stop/cancel' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, this.state.consoleOptions.selectHint);
@@ -3758,6 +3811,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     this.notify('Usage: /harness audit [sessionId] | /harness profile [list|current|diff <from> <to>]');
                     return true;
                 }
+            case '/voice':
+                return this.handleVoiceCommand(parsed.args?.trim() || '');
             case '/copy': {
                 if (parsed.args) {
                     switch (parsed.args) {

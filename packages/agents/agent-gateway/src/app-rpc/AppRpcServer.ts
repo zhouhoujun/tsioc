@@ -6,6 +6,7 @@ import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
 import { summarizeUsageForSessions } from '../usage/UsageStats';
+import { AudioSessionHandler, AudioSessionState } from '../audio';
 
 @Injectable()
 export class AppRpcServer {
@@ -27,9 +28,12 @@ export class AppRpcServer {
         @Optional() private compactionHistory?: CompactionHistoryStore | null,
         @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,
         @Optional() private delegation?: DelegationGraphStore | null,
-        @Optional() private weaknessMiner?: WeaknessMiner | null
+        @Optional() private weaknessMiner?: WeaknessMiner | null,
+        @Optional() private audio?: AudioSessionHandler | null
     ) {
     }
+
+    protected readonly audioStatesBySession = new Map<string, AudioSessionState>();
 
     async handlePayload(payload: AppRpcRequest | AppRpcRequest[], context: AppRpcRequestContext = {}): Promise<AppRpcResponse | AppRpcResponse[] | null> {
         if (Array.isArray(payload)) {
@@ -191,6 +195,11 @@ export class AppRpcServer {
                         'turn_diagnostics.list',
                         'turn_diagnostics.stats',
                         'turn_diagnostics.trend',
+                        'audio.status',
+                        'audio.start',
+                        'audio.feed',
+                        'audio.end',
+                        'audio.cancel',
                         'harness.audit',
                         'harness.profile.list',
                         'harness.profile.current',
@@ -316,6 +325,16 @@ export class AppRpcServer {
                 return this.getTurnDiagnosticsStats(params, context);
             case 'turn_diagnostics.trend':
                 return this.getTurnDiagnosticsTrend(params, context);
+            case 'audio.status':
+                return this.getAudioStatus(params, context);
+            case 'audio.start':
+                return this.startAudioSession(params, context);
+            case 'audio.feed':
+                return this.feedAudioChunk(params, context);
+            case 'audio.end':
+                return this.endAudioSession(params, context);
+            case 'audio.cancel':
+                return this.cancelAudioSession(params, context);
             case 'harness.audit':
                 return this.runHarnessAudit(params, context);
             case 'harness.profile.list':
@@ -1470,6 +1489,86 @@ export class AppRpcServer {
         const owned = await this.owners.listOwned(sessionIds, context.principalId);
         const trend = await this.turnDiagnostics.trend(owned, { bucketSize, maxBuckets });
         return { trend: trend.map(point => this.toTurnDiagnosticsTrendView(point)) };
+    }
+
+    private async getAudioStatus(params: any, context: AppRpcRequestContext): Promise<any> {
+        if (!this.audio) {
+            return { available: false, missing: ['streaming STT adapter', 'streaming TTS adapter'], active: false };
+        }
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const state = sessionId ? this.audioStatesBySession.get(sessionId) : undefined;
+        return {
+            available: this.audio.isAvailable,
+            missing: this.audio.missingComponents,
+            active: state?.active ?? false,
+            processing: state?.processing ?? false,
+            bufferedBytes: state?.bufferedBytes ?? 0
+        };
+    }
+
+    private async startAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.audio) {
+            return { sessionId, ok: false, error: 'audio unavailable: missing streaming STT and TTS adapters' };
+        }
+        const state = this.audioStatesBySession.get(sessionId) ?? this.audio.createSessionState();
+        const result = this.audio.startSession(state);
+        this.audioStatesBySession.set(sessionId, state);
+        return { sessionId, ok: result.ok, error: result.error, available: this.audio.isAvailable };
+    }
+
+    private async feedAudioChunk(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = this.audioStatesBySession.get(sessionId);
+        if (!state) {
+            return { sessionId, ok: false, error: 'no active audio session; call audio.start first' };
+        }
+        const chunk = this.requireAudioChunk(params?.chunk);
+        const accepted = this.audio?.feedAudio(state, chunk) ?? false;
+        return { sessionId, ok: accepted, bufferedBytes: state.bufferedBytes };
+    }
+
+    private async endAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = this.audioStatesBySession.get(sessionId);
+        if (!state) {
+            return { sessionId, ok: false, error: 'no active audio session; call audio.start first' };
+        }
+        let transcribed: string | undefined;
+        let reply: string | undefined;
+        let error: string | undefined;
+        await this.audio?.endSession(state, {
+            onTranscribed: text => { transcribed = text; },
+            onReply: text => { reply = text; },
+            onError: err => { error = err.message; }
+        }, sessionId);
+        return { sessionId, ok: !error, transcribed, reply, error };
+    }
+
+    private async cancelAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = this.audioStatesBySession.get(sessionId);
+        if (state) {
+            await this.audio?.cancelSession(state);
+            this.audioStatesBySession.delete(sessionId);
+        }
+        return { sessionId, ok: true, cancelled: !!state };
+    }
+
+    private requireAudioChunk(value: unknown): Uint8Array {
+        if (typeof value !== 'string' || !value) {
+            throw new AppRpcError(-32602, 'Invalid params: chunk must be a non-empty base64 string');
+        }
+        return Buffer.from(value, 'base64');
     }
 
     private async runHarnessAudit(params: any, context: AppRpcRequestContext): Promise<any> {

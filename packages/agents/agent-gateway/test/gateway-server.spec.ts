@@ -27,6 +27,13 @@ import { StatsHandler } from '../src/api/StatsHandler';
 import { InMemoryAuditSink } from '../../agent/src/harness/InMemoryAuditSink';
 import { ReadFileTool } from '../../agent-tools/src';
 import { AgentGatewayModule, provideAgentGateway } from '../src';
+import {
+    AudioSessionHandler,
+    StreamingTranscriptionAdapter,
+    StreamingTranscriptionResult,
+    StreamingTtsAdapter,
+    StreamingTtsOptions
+} from '../src/audio';
 
 @Suite('RouteMatcher')
 export class RouteMatcherTest {
@@ -5848,5 +5855,207 @@ export class StdioAppRpcServerTest {
         expect((idleSecond as any).result.compensated).toEqual(0);
         expect((idleSecond as any).result.toolCallIds).toEqual([]);
         expect((idleSecond as any).error).toBeUndefined();
+    }
+}
+
+class RpcEchoTranscriptionAdapter extends StreamingTranscriptionAdapter {
+    readonly format: 'pcm16k' | 'wav' = 'pcm16k';
+    chunks: Uint8Array[] = [];
+    cancelled = false;
+    async feedAudio(chunk: Uint8Array): Promise<void> {
+        this.chunks.push(chunk);
+    }
+    async endAudio(): Promise<StreamingTranscriptionResult> {
+        return { text: Buffer.concat(this.chunks as Buffer[]).toString('utf8') };
+    }
+    async cancelAudio(): Promise<void> {
+        this.cancelled = true;
+    }
+}
+
+class RpcEchoTtsAdapter extends StreamingTtsAdapter {
+    readonly format: 'pcm16k' | 'wav' | 'mp3' = 'pcm16k';
+    synthesized: string[] = [];
+    async *synthesizeStream(text: string, _options?: StreamingTtsOptions): AsyncIterable<Uint8Array> {
+        this.synthesized.push(text);
+        yield Buffer.from(`[tts:${text}]`);
+    }
+}
+
+@Suite('AppRpcServer audio RPC')
+export class AppRpcServerAudioTest {
+    private makeRpc(withAudio: boolean): {
+        rpc: AppRpcServer;
+        stt: RpcEchoTranscriptionAdapter;
+        tts: RpcEchoTtsAdapter;
+        turns: string[];
+        store: InMemorySessionStore;
+    } {
+        const turns: string[] = [];
+        const runtime = {
+            async runTurn(sessionId: string, input: string) {
+                turns.push(`${sessionId}|${input}`);
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                await store.append(sessionId, { id: 'a1', role: 'assistant', content: `echo:${input}`, createdAt: 2 } as any);
+                return { sessionId, message: { role: 'assistant', content: `echo:${input}`, createdAt: 2, id: 'a1' } };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            }
+        } as any;
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const sessions = new SessionHandler(runtime, store, owners);
+        const stt = new RpcEchoTranscriptionAdapter();
+        const tts = new RpcEchoTtsAdapter();
+        const audio = withAudio ? new AudioSessionHandler(runtime, stt, tts) : null;
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {} as any,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            audio as any
+        );
+        return { rpc, stt, tts, turns, store };
+    }
+
+    private async handle(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1'): Promise<any> {
+        return rpc.handle({ jsonrpc: '2.0', id: 1, method, params }, { principalId });
+    }
+
+    @Test('audio.status reports unavailable when no audio handler is configured')
+    async statusWithoutAudioHandler() {
+        const { rpc, store } = this.makeRpc(false);
+        await store.get('s-1');
+        const response = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
+        expect(response.result.available).toBe(false);
+        expect(response.result.missing).toContain('streaming STT adapter');
+        expect(response.result.active).toBe(false);
+    }
+
+    @Test('audio.start fails gracefully without an audio handler')
+    async startWithoutAudioHandler() {
+        const { rpc, store } = this.makeRpc(false);
+        await store.get('s-1');
+        const response = await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
+        expect(response.result.ok).toBe(false);
+        expect(response.result.error).toContain('audio unavailable');
+    }
+
+    @Test('audio.start, feed and end run the full RPC flow with base64 chunks')
+    async fullRpcFlow() {
+        const { rpc, stt, tts, turns, store } = this.makeRpc(true);
+        await store.get('s-1');
+
+        const start = await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
+        expect(start.result.ok).toBe(true);
+        expect(start.result.available).toBe(true);
+
+        const statusActive = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
+        expect(statusActive.result.active).toBe(true);
+        expect(statusActive.result.bufferedBytes).toBe(0);
+
+        const feed1 = await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('hel').toString('base64') });
+        expect(feed1.result.ok).toBe(true);
+        expect(feed1.result.bufferedBytes).toBe(3);
+        const feed2 = await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('lo').toString('base64') });
+        expect(feed2.result.bufferedBytes).toBe(5);
+
+        const end = await this.handle(rpc, 'audio.end', { sessionId: 's-1' });
+        expect(end.result.ok).toBe(true);
+        expect(end.result.transcribed).toBe('hello');
+        expect(end.result.reply).toBe('echo:hello');
+        expect(turns).toEqual(['s-1|hello']);
+        expect(stt.chunks.length).toBe(2);
+        expect(tts.synthesized).toEqual([]);
+
+        const statusDone = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
+        expect(statusDone.result.active).toBe(false);
+        expect(statusDone.result.bufferedBytes).toBe(0);
+    }
+
+    @Test('audio.feed and audio.end reject when no session was started')
+    async feedAndEndWithoutStart() {
+        const { rpc, store } = this.makeRpc(true);
+        await store.get('s-1');
+
+        const feed = await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('x').toString('base64') });
+        expect(feed.result.ok).toBe(false);
+        expect(feed.result.error).toContain('audio.start first');
+
+        const end = await this.handle(rpc, 'audio.end', { sessionId: 's-1' });
+        expect(end.result.ok).toBe(false);
+        expect(end.result.error).toContain('audio.start first');
+    }
+
+    @Test('audio.feed validates the base64 chunk parameter')
+    async feedValidatesChunk() {
+        const { rpc, store } = this.makeRpc(true);
+        await store.get('s-1');
+        await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
+
+        const missing = await this.handle(rpc, 'audio.feed', { sessionId: 's-1' });
+        expect(missing.error.code).toBe(-32602);
+
+        const empty = await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: '' });
+        expect(empty.error.code).toBe(-32602);
+    }
+
+    @Test('audio.cancel clears the session and is idempotent')
+    async cancelFlow() {
+        const { rpc, stt, store } = this.makeRpc(true);
+        await store.get('s-1');
+        await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
+        await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('partial').toString('base64') });
+
+        const cancel = await this.handle(rpc, 'audio.cancel', { sessionId: 's-1' });
+        expect(cancel.result.ok).toBe(true);
+        expect(cancel.result.cancelled).toBe(true);
+        expect(stt.cancelled).toBe(true);
+
+        const status = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
+        expect(status.result.active).toBe(false);
+        expect(status.result.bufferedBytes).toBe(0);
+
+        const cancelAgain = await this.handle(rpc, 'audio.cancel', { sessionId: 's-1' });
+        expect(cancelAgain.result.ok).toBe(true);
+        expect(cancelAgain.result.cancelled).toBe(false);
+    }
+
+    @Test('audio RPC rejects foreign session access')
+    async foreignSessionRejected() {
+        const { rpc, store } = this.makeRpc(true);
+        await store.get('s-1');
+        await store.setOwner('s-1', 'user-2');
+
+        const status = await this.handle(rpc, 'audio.status', { sessionId: 's-1' }, 'user-1');
+        expect(status.error.code).toBe(-32003);
+
+        const start = await this.handle(rpc, 'audio.start', { sessionId: 's-1' }, 'user-1');
+        expect(start.error.code).toBe(-32003);
+    }
+
+    @Test('audio methods require a sessionId')
+    async missingSessionId() {
+        const { rpc } = this.makeRpc(true);
+
+        const start = await this.handle(rpc, 'audio.start', {});
+        expect(start.error.code).toBe(-32602);
+
+        const end = await this.handle(rpc, 'audio.end', {});
+        expect(end.error.code).toBe(-32602);
     }
 }

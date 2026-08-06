@@ -8,22 +8,33 @@ import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionQueue } from '../auth/SessionQueue';
 import { AppRpcServer } from '../app-rpc/AppRpcServer';
+import { AudioSessionHandler, AudioSessionEvents, AudioSessionState } from '../audio';
 
 const MAGIC_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const MAX_WS_MESSAGE_BYTES = 64 * 1024;
+const MAX_WS_BUFFER_BYTES = 1024 * 1024;
 
 /**
  * WebSocket chat handler — /ws/chat.
  * Mirrors zeroclaw-gateway's handle_ws_chat: accepts WebSocket upgrade,
  * reads JSON messages, dispatches to AgentRuntime.runTurn(), sends responses.
+ *
+ * Audio channel: when an {@link AudioSessionHandler} is configured, binary
+ * frames (opcode 0x02) carry raw audio chunks and are fed into the audio
+ * session, while JSON control messages (`{ type: 'audio', action: ... }`)
+ * manage the session lifecycle. Synthesized audio is streamed back as binary
+ * frames.
  */
 @Injectable()
 export class ChatWebSocket {
+    private readonly audioStates = new WeakMap<DuplexSocket, AudioSessionState>();
+
     constructor(
         private runtime: AgentRuntime,
         private owners: SessionOwnerStore,
         private sessionQueue: SessionQueue,
-        @Optional() private rpc?: AppRpcServer | null
+        @Optional() private rpc?: AppRpcServer | null,
+        @Optional() private audio?: AudioSessionHandler | null
     ) {
     }
 
@@ -47,9 +58,13 @@ export class ChatWebSocket {
     private async handleSocket(socket: DuplexSocket, sessionId: string, principalId?: string): Promise<void> {
         let buffer = Buffer.alloc(0);
 
+        if (this.audio) {
+            this.audioStates.set(socket, this.audio.createSessionState());
+        }
+
         socket.on('data', (data: Buffer) => {
             buffer = Buffer.concat([buffer, data] as Uint8Array[]);
-            if (buffer.length > MAX_WS_MESSAGE_BYTES) {
+            if (buffer.length > MAX_WS_BUFFER_BYTES) {
                 socket.end();
                 return;
             }
@@ -58,6 +73,11 @@ export class ChatWebSocket {
 
         socket.on('close', () => {
             this.sessionQueue.remove(sessionId);
+            const state = this.audioStates.get(socket);
+            if (state) {
+                void this.audio?.cancelSession(state).catch(() => undefined);
+                this.audioStates.delete(socket);
+            }
         });
     }
 
@@ -81,8 +101,18 @@ export class ChatWebSocket {
                 continue;
             }
 
+            if (result.opcode === 0x02) {
+                this.handleAudioFrame(socket, result.payload, sessionId);
+                continue;
+            }
+
             if (result.opcode !== 0x01) {
                 continue;
+            }
+
+            if (result.payload.length > MAX_WS_MESSAGE_BYTES) {
+                socket.end();
+                return Buffer.alloc(0);
             }
 
             this.handleMessage(socket, result.payload.toString(), sessionId, principalId);
@@ -92,6 +122,10 @@ export class ChatWebSocket {
     private handleMessage(socket: DuplexSocket, text: string, sessionId: string, principalId?: string): void {
         try {
             const message = JSON.parse(text);
+            if (message?.type === 'audio' && typeof message?.action === 'string') {
+                this.handleAudioControl(socket, message, sessionId, principalId);
+                return;
+            }
             if (message?.jsonrpc === '2.0' && typeof message?.method === 'string') {
                 void this.handleRpcMessage(socket, message, sessionId, principalId);
                 return;
@@ -105,6 +139,83 @@ export class ChatWebSocket {
             const errorMsg = JSON.stringify({ type: 'error', sessionId, error: 'invalid JSON' });
             this.writeFrame(socket, 0x01, Buffer.from(errorMsg));
         }
+    }
+
+    private handleAudioFrame(socket: DuplexSocket, payload: Buffer, sessionId: string): void {
+        const state = this.audioStates.get(socket);
+        if (!state || !this.audio) {
+            return;
+        }
+        this.audio.feedAudio(state, payload, this.audioEvents(socket, sessionId));
+    }
+
+    /**
+     * Handle `{ type: 'audio', action: 'start' | 'end' | 'cancel' | 'status' }`
+     * control messages. Actions start/end/cancel are forwarded to the
+     * {@link AudioSessionHandler}; status reports the current session state.
+     */
+    private handleAudioControl(socket: DuplexSocket, message: any, sessionId: string, principalId?: string): void {
+        const action = message.action as string;
+        const state = this.audioStates.get(socket);
+        if (!this.audio) {
+            this.writeJson(socket, { type: 'audio-status', sessionId, available: false, active: false, error: 'audio not configured' });
+            return;
+        }
+        const events = this.audioEvents(socket, sessionId);
+        switch (action) {
+            case 'start': {
+                if (!state) {
+                    this.audioStates.set(socket, this.audio.createSessionState());
+                }
+                const current = this.audioStates.get(socket)!;
+                const result = this.audio.startSession(current);
+                this.writeJson(socket, {
+                    type: 'audio-status',
+                    sessionId,
+                    available: this.audio.isAvailable,
+                    active: result.ok,
+                    error: result.error
+                });
+                break;
+            }
+            case 'end': {
+                if (!state) {
+                    this.writeJson(socket, { type: 'audio-status', sessionId, available: this.audio.isAvailable, active: false, error: 'no active audio session' });
+                    break;
+                }
+                const audio = this.audio;
+                void audio.endSession(state, events, sessionId).then(() => {
+                    this.writeJson(socket, { type: 'audio-status', sessionId, available: audio.isAvailable, active: false });
+                }).catch(() => undefined);
+                break;
+            }
+            case 'cancel': {
+                if (state) {
+                    void this.audio.cancelSession(state).catch(() => undefined);
+                }
+                this.writeJson(socket, { type: 'audio-status', sessionId, available: this.audio.isAvailable, active: false });
+                break;
+            }
+            case 'status':
+            default:
+                this.writeJson(socket, {
+                    type: 'audio-status',
+                    sessionId,
+                    available: this.audio.isAvailable,
+                    active: state?.active ?? false,
+                    missing: this.audio.missingComponents
+                });
+                break;
+        }
+    }
+
+    private audioEvents(socket: DuplexSocket, sessionId: string): AudioSessionEvents {
+        return {
+            onAudioChunk: chunk => this.writeFrame(socket, 0x02, Buffer.from(chunk)),
+            onTranscribed: text => this.writeJson(socket, { type: 'audio-transcribed', sessionId, text }),
+            onReply: text => this.writeJson(socket, { type: 'audio-reply', sessionId, text }),
+            onError: error => this.writeJson(socket, { type: 'audio-error', sessionId, error: error.message })
+        };
     }
 
     private handleRpcMessage(socket: DuplexSocket, message: any, sessionId: string, principalId?: string): void {

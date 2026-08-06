@@ -634,6 +634,43 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.edges) ? result.edges : [];
     }
 
+    async getVoiceStatus(sessionId?: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc) {
+            return { available: false, active: false, bufferedBytes: 0 };
+        }
+        const result = await this.appRpc.request('audio.status', sessionId ? { sessionId } : {}, context);
+        return result ?? { available: false, active: false, bufferedBytes: 0 };
+    }
+
+    async startVoiceSession(sessionId: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await this.appRpc.request('audio.start', { sessionId }, context)) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    async feedVoiceAudio(sessionId: string, chunk: Uint8Array, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        const base64 = Buffer.from(chunk).toString('base64');
+        return (await this.appRpc.request('audio.feed', { sessionId, chunk: base64 }, context)) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    async endVoiceSession(sessionId: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await this.appRpc.request('audio.end', { sessionId }, context)) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    async cancelVoiceSession(sessionId: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await this.appRpc.request('audio.cancel', { sessionId }, context)) ?? { ok: false, error: 'no response from gateway' };
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

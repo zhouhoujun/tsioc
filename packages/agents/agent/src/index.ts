@@ -113,3 +113,4 @@ export * from './channels/LocalAgentClient';
 export * from './channels/PubSubAgentChannel';
 
 export * from './ui/AgentConsoleAppRpc';
+export * from './audio';

@@ -33,3 +33,5 @@ export * from './api/EventHandler';
 export * from './api/AppRpcHandler';
 
 export * from './ws/ChatWebSocket';
+
+export * from './audio';

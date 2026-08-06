@@ -352,6 +352,8 @@ class AppRpcStub {
     turnDiagnosticsRecords: any[] = [];
     turnDiagnosticsTrend: any[] = [];
     sandboxModes = new Map<string, string>();
+    audioStatesBySession = new Map<string, { bufferedBytes: number; chunks: string[] }>();
+    audioStatusOverride: Record<string, any> | null = null;
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -681,6 +683,55 @@ class AppRpcStub {
                 } : null
             };
         }
+        if (method === 'audio.status') {
+            if (this.audioStatusOverride) {
+                return this.audioStatusOverride;
+            }
+            const sessionId = String(params?.sessionId || 'console');
+            const state = this.audioStatesBySession.get(sessionId);
+            return {
+                sessionId,
+                available: true,
+                active: !!state,
+                bufferedBytes: state?.bufferedBytes || 0
+            };
+        }
+        if (method === 'audio.start') {
+            const sessionId = String(params?.sessionId || 'console');
+            this.audioStatesBySession.set(sessionId, { bufferedBytes: 0, chunks: [] });
+            return { sessionId, ok: true, active: true };
+        }
+        if (method === 'audio.feed') {
+            const sessionId = String(params?.sessionId || 'console');
+            const state = this.audioStatesBySession.get(sessionId);
+            if (!state) {
+                return { sessionId, ok: false, error: 'no active voice session' };
+            }
+            const chunk = String(params?.chunk || '');
+            state.bufferedBytes += Buffer.from(chunk, 'base64').length;
+            state.chunks.push(chunk);
+            return { sessionId, ok: true, bufferedBytes: state.bufferedBytes };
+        }
+        if (method === 'audio.end') {
+            const sessionId = String(params?.sessionId || 'console');
+            const state = this.audioStatesBySession.get(sessionId);
+            if (!state) {
+                return { sessionId, ok: false, error: 'no active voice session' };
+            }
+            this.audioStatesBySession.delete(sessionId);
+            return {
+                sessionId,
+                ok: true,
+                transcribed: 'hello voice input',
+                reply: 'voice reply from gateway',
+                active: false
+            };
+        }
+        if (method === 'audio.cancel') {
+            const sessionId = String(params?.sessionId || 'console');
+            const cancelled = this.audioStatesBySession.delete(sessionId);
+            return { sessionId, ok: true, cancelled };
+        }
         return undefined;
     }
 
@@ -814,6 +865,48 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return result?.usage ?? { daily: {}, weekly: {}, cumulative: {} };
         }
         return { daily: {}, weekly: {}, cumulative: {} };
+    }
+
+    override async getVoiceStatus(sessionId?: string): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('audio.status', sessionId ? { sessionId } : {});
+            return result ?? { available: false, active: false, bufferedBytes: 0 };
+        }
+        return { available: false, active: false, bufferedBytes: 0 };
+    }
+
+    override async startVoiceSession(sessionId: string): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (!rpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await rpc.request('audio.start', { sessionId })) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    override async feedVoiceAudio(sessionId: string, chunk: Uint8Array): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (!rpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        const base64 = Buffer.from(chunk).toString('base64');
+        return (await rpc.request('audio.feed', { sessionId, chunk: base64 })) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    override async endVoiceSession(sessionId: string): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (!rpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await rpc.request('audio.end', { sessionId })) ?? { ok: false, error: 'no response from gateway' };
+    }
+
+    override async cancelVoiceSession(sessionId: string): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (!rpc || !sessionId) {
+            return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
+        }
+        return (await rpc.request('audio.cancel', { sessionId })) ?? { ok: false, error: 'no response from gateway' };
     }
 
     override async getTurnDiagnosticsTrend(sessionId?: string, options?: { bucketSize?: number; maxBuckets?: number }): Promise<Array<Record<string, any>>> {
@@ -2903,6 +2996,155 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('week 7 turns');
         expect(component.notice).toContain('all 9 turns');
         expect(component.notice).toContain('90 total');
+    }
+
+    @Test('voice command reports gateway availability through rpc')
+    async voiceCommandReportsAvailabilityThroughRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-1';
+        await component.onInit();
+
+        component.input = '/voice';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'audio.status' && call.params?.sessionId === 'voice-1')).toEqual(true);
+        expect(component.notice).toContain('voice available');
+        expect(component.notice).toContain('Usage: /voice start|stop|cancel|status');
+    }
+
+    @Test('voice status command reports active session and buffered bytes')
+    async voiceStatusCommandReportsActiveSession() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.audioStatesBySession.set('voice-2', { bufferedBytes: 4096, chunks: ['AA=='] });
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-2';
+        await component.onInit();
+
+        component.input = '/voice status';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'audio.status' && call.params?.sessionId === 'voice-2')).toEqual(true);
+        expect(component.notice).toContain('voice available');
+        expect(component.notice).toContain('session active');
+        expect(component.notice).toContain('buffered 4096 bytes');
+    }
+
+    @Test('voice status command reports missing components when gateway unavailable')
+    async voiceStatusCommandReportsMissingComponents() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.audioStatusOverride = {
+            sessionId: 'voice-3',
+            available: false,
+            active: false,
+            bufferedBytes: 0,
+            missing: ['AudioCaptureAdapter', 'SpeechToTextAdapter']
+        };
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-3';
+        await component.onInit();
+
+        component.input = '/voice';
+        await component.submit();
+
+        expect(component.notice).toContain('voice unavailable');
+        expect(component.notice).toContain('missing AudioCaptureAdapter, SpeechToTextAdapter');
+        expect(component.notice).toContain('session inactive');
+    }
+
+    @Test('voice start command opens a voice session through rpc')
+    async voiceStartCommandOpensVoiceSession() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-4';
+        await component.onInit();
+
+        component.input = '/voice start';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'audio.start' && call.params?.sessionId === 'voice-4')).toEqual(true);
+        expect(appRpc.audioStatesBySession.has('voice-4')).toEqual(true);
+        expect(component.notice).toContain('Voice session started (voice-4)');
+    }
+
+    @Test('voice stop command transcribes and replies through rpc')
+    async voiceStopCommandTranscribesAndReplies() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-5';
+        await component.onInit();
+
+        component.input = '/voice start';
+        await component.submit();
+
+        component.input = '/voice stop';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'audio.end' && call.params?.sessionId === 'voice-5')).toEqual(true);
+        expect(appRpc.audioStatesBySession.has('voice-5')).toEqual(false);
+        expect(component.notice).toContain('Transcribed: hello voice input');
+        expect(component.notice).toContain('Reply: voice reply from gateway');
+    }
+
+    @Test('voice cancel command cancels an active voice session')
+    async voiceCancelCommandCancelsSession() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'voice-6';
+        await component.onInit();
+
+        component.input = '/voice start';
+        await component.submit();
+
+        component.input = '/voice cancel';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'audio.cancel' && call.params?.sessionId === 'voice-6')).toEqual(true);
+        expect(appRpc.audioStatesBySession.has('voice-6')).toEqual(false);
+        expect(component.notice).toContain('Voice session cancelled.');
+    }
+
+    @Test('voice command without a session prompts to start one')
+    async voiceCommandWithoutSessionPromptsToStartOne() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        state.sessionId = '';
+
+        component.input = '/voice';
+        await component.submit();
+
+        expect(component.notice).toContain('No session selected. Start a session before using /voice.');
+        expect(appRpc.calls.some(call => call.method.startsWith('audio.'))).toEqual(false);
+    }
+
+    @Test('voice command degrades gracefully without gateway rpc')
+    async voiceCommandDegradesWithoutGatewayRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const { state, component } = createConsoleParts(runtime, scheduler);
+        state.sessionId = 'voice-7';
+        await component.onInit();
+
+        component.input = '/voice';
+        await component.submit();
+
+        expect(component.notice).toContain('voice unavailable');
+        expect(component.notice).toContain('Usage: /voice start|stop|cancel|status');
     }
 
     @Test('quality command reports empty stats when nothing recorded')
