@@ -27,6 +27,7 @@ export * from './response';
 export * from './FileAdapter';
 export * from './MimeAdapter';
 export * from './PacketId';
+export * from './audio';
 
 export * from './stream';
 export * from './StreamAdapter';
