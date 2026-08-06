@@ -26,7 +26,7 @@ export interface AudioCaptureAdapterOptions {
      * Declared format produced by this adapter.
      * Defaults to 'pcm16k' (raw 16 kHz mono PCM).
      */
-    format?: 'pcm16k' | 'wav';
+    format?: 'pcm16k' | 'wav' | 'webm';
     /**
      * Sample rate hint (Hz). Defaults to 16000.
      */
@@ -52,7 +52,7 @@ export abstract class AudioCaptureAdapter {
     /**
      * Declared audio format produced by this adapter.
      */
-    readonly format: 'pcm16k' | 'wav' = 'pcm16k';
+    readonly format: 'pcm16k' | 'wav' | 'webm' = 'pcm16k';
 
     /**
      * Whether this adapter can currently capture audio.
