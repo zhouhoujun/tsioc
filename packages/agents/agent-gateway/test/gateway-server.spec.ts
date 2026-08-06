@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
@@ -1058,11 +1059,7 @@ export class ApprovalHandlerTest {
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
-        const approvalManager = new ToolApprovalManager(
-            { publishEvent: async () => {} } as any,
-            { requires: () => true, reason: () => 'approval required' } as any,
-            { defaultTimeoutMs: 60000 }
-        );
+        const approvalManager = new ToolApprovalManager({ publishEvent: async () => {} } as any, new RandomUuidGenerator(),{ requires: () => true, reason: () => 'approval required' } as any,{ defaultTimeoutMs: 60000 });
         const handler = new ApprovalHandler(approvalManager as any, owners);
 
         const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
@@ -1107,11 +1104,7 @@ export class ApprovalHandlerTest {
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
-        const approvalManager = new ToolApprovalManager(
-            { publishEvent: async () => {} } as any,
-            { requires: () => true, reason: () => 'approval required' } as any,
-            { defaultTimeoutMs: 60000 }
-        );
+        const approvalManager = new ToolApprovalManager({ publishEvent: async () => {} } as any, new RandomUuidGenerator(),{ requires: () => true, reason: () => 'approval required' } as any,{ defaultTimeoutMs: 60000 });
         const handler = new ApprovalHandler(approvalManager as any, owners);
 
         const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
@@ -1148,11 +1141,7 @@ export class ApprovalHandlerTest {
         await store.get('s-2');
         await owners.create('s-1', 'user-1');
         await owners.create('s-2', 'user-2');
-        const approvalManager = new ToolApprovalManager(
-            { publishEvent: async () => {} } as any,
-            { requires: () => true, reason: () => 'approval required' } as any,
-            { defaultTimeoutMs: 60000 }
-        );
+        const approvalManager = new ToolApprovalManager({ publishEvent: async () => {} } as any, new RandomUuidGenerator(),{ requires: () => true, reason: () => 'approval required' } as any,{ defaultTimeoutMs: 60000 });
         const handler = new ApprovalHandler(approvalManager as any, owners);
 
         const pendingCheck1 = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
@@ -2887,7 +2876,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, tools, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,tools,owners,sessions,events);
 
         const runResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -2973,7 +2962,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -3008,7 +2997,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handlePayload([{
             jsonrpc: '2.0',
@@ -3051,15 +3040,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 ui: {
                     title: 'Console',
                     console: {
@@ -3074,8 +3055,7 @@ export class AppRpcServerTest {
                 bootstrapTurn: {
                     sessionId: 'rpc-init'
                 }
-            } as any
-        );
+            } as any);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -3114,15 +3094,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 ui: {
                     title: 'Console',
                     console: {
@@ -3134,8 +3106,7 @@ export class AppRpcServerTest {
                     model: 'deepseek-v4-flash',
                     defaultProfile: 'flash'
                 }
-            } as any
-        );
+            } as any);
 
         await owners.create('workspace-old', 'user-1');
         await store.setWorkspace('workspace-old', '/tmp/workspace');
@@ -3177,15 +3148,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 ui: {
                     title: 'Console',
                     console: {
@@ -3196,8 +3159,7 @@ export class AppRpcServerTest {
                     provider: 'deepseek',
                     model: 'deepseek-v4-flash'
                 }
-            } as any
-        );
+            } as any);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -3229,15 +3191,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 model: {
                     provider: 'deepseek',
                     model: 'deepseek-v4-flash',
@@ -3250,8 +3204,7 @@ export class AppRpcServerTest {
                 bootstrapTurn: {
                     sessionId: 'rpc-model'
                 }
-            } as any
-        );
+            } as any);
 
         const listed = await rpc.handle({
             jsonrpc: '2.0',
@@ -3316,20 +3269,11 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 bootstrapTurn: {
                     sessionId: 'rpc-history'
                 }
-            } as any
-        );
+            } as any);
 
         await rpc.handle({
             jsonrpc: '2.0',
@@ -3395,20 +3339,11 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 bootstrapTurn: {
                     sessionId: 'rpc-history-a'
                 }
-            } as any
-        );
+            } as any);
 
         await rpc.handle({
             jsonrpc: '2.0',
@@ -3472,20 +3407,11 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{
                 bootstrapTurn: {
                     sessionId: 'rpc-history-local'
                 }
-            } as any
-        );
+            } as any);
 
         await memory.put({
             id: 'legacy-anonymous-history',
@@ -3564,7 +3490,7 @@ export class AppRpcServerTest {
                 ];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {} as any, audit);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,audit);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -3699,7 +3625,7 @@ export class AppRpcServerTest {
                 throw new Error('unexpected action');
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, tools, owners, new SessionHandler(runtime, store, owners), events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,tools,owners,new SessionHandler(runtime, store, owners),events);
 
         const listed = await rpc.handle({
             jsonrpc: '2.0',
@@ -3826,7 +3752,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const frames: any[] = [];
         for await (const frame of rpc.streamPayload({
@@ -3903,7 +3829,7 @@ export class AppRpcServerTest {
                     ];
             }
         } as any;
-        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+        const rpc = new AppRpcServer({} as any, new RandomUuidGenerator(),{} as any,{} as any,{ getToolDefinitions: () => [] } as any,{} as any,{} as any,{} as any,{} as any,null,null,quality);
 
         const listResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -3954,7 +3880,7 @@ export class AppRpcServerTest {
                 ].filter(record => !provider || record.provider === provider).slice(0, limit);
             }
         } as any;
-        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+        const rpc = new AppRpcServer({} as any, new RandomUuidGenerator(),{} as any,{} as any,{ getToolDefinitions: () => [] } as any,{} as any,{} as any,{} as any,{} as any,null,null,quality);
 
         const trendResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -4020,7 +3946,7 @@ export class AppRpcServerTest {
                 }];
             }
         } as any;
-        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any, {} as any, null, null, quality);
+        const rpc = new AppRpcServer({} as any, new RandomUuidGenerator(),{} as any,{} as any,{ getToolDefinitions: () => [] } as any,{} as any,{} as any,{} as any,{} as any,null,null,quality);
 
         const listResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -4056,7 +3982,7 @@ export class AppRpcServerTest {
 
     @Test('summary quality rpc returns empty payloads when no store is configured')
     async summaryQualityWithoutStore() {
-        const rpc = new AppRpcServer({} as any, {} as any, {} as any, { getToolDefinitions: () => [] } as any, {} as any, {} as any, {} as any);
+        const rpc = new AppRpcServer({} as any, new RandomUuidGenerator(),{} as any,{} as any,{ getToolDefinitions: () => [] } as any,{} as any,{} as any,{} as any);
 
         const listResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -4135,7 +4061,7 @@ export class AppRpcServerTest {
                 }].filter(record => record.sessionId === sessionId);
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4165,7 +4091,7 @@ export class AppRpcServerTest {
                 return [];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4185,7 +4111,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4215,7 +4141,7 @@ export class AppRpcServerTest {
                     : [{ sessionId: 'rpc-stats', recordCount: 2, compactedCount: 1, prunedCount: 1, avgCompressionRatio: 30, totalTokensBefore: 9000, totalTokensAfter: 4900, totalTokensSaved: 4100, timeRange: { from: 1, to: 2 } }];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4251,7 +4177,7 @@ export class AppRpcServerTest {
                 return [];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4271,7 +4197,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4306,7 +4232,7 @@ export class AppRpcServerTest {
                 ].filter(point => !sessionId || point.sessionId === sessionId);
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4353,7 +4279,7 @@ export class AppRpcServerTest {
                 return [];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, compactionHistory);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,compactionHistory);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4373,7 +4299,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4417,7 +4343,7 @@ export class AppRpcServerTest {
                 };
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4484,7 +4410,7 @@ export class AppRpcServerTest {
                 ];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4526,7 +4452,7 @@ export class AppRpcServerTest {
                 return {};
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const statsResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -4565,7 +4491,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const weaknessMiner = new WeaknessMiner(turnDiagnostics, null);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics, null, weaknessMiner);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics,null,weaknessMiner);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4604,7 +4530,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const weaknessMiner = new WeaknessMiner(turnDiagnostics, null);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics, null, weaknessMiner);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics,null,weaknessMiner);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4624,7 +4550,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4643,7 +4569,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4674,8 +4600,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events,
-            { harnessProfile: 'strict' } as any);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{ harnessProfile: 'strict' } as any);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4696,7 +4621,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4738,7 +4663,7 @@ export class AppRpcServerTest {
                 return { sessionIds, totalTurns: sessionIds?.length ?? 0 };
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4758,7 +4683,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const listResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -4798,7 +4723,7 @@ export class AppRpcServerTest {
                 return {};
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4849,7 +4774,7 @@ export class AppRpcServerTest {
                 }];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4897,7 +4822,7 @@ export class AppRpcServerTest {
                 return [];
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4932,7 +4857,7 @@ export class AppRpcServerTest {
                 return (sessionIds ?? []).map(id => ({ sessionId: id, bucketStart: 0, recordCount: 1, emptyResponseCount: 0, repeatedClarificationCount: 0, followUpRecoveryCount: 0, compactionCount: 0, totalTokenSavings: 0, avgCompressionRatio: 0 }));
             }
         } as any;
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{},null,null,null,null,turnDiagnostics);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4954,7 +4879,7 @@ export class AppRpcServerTest {
         const events = new EventHandler(owners);
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -4987,7 +4912,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const createResponse = await rpc.handle({
             jsonrpc: '2.0',
@@ -5047,7 +4972,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5086,7 +5011,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         await rpc.handle({
             jsonrpc: '2.0',
@@ -5149,7 +5074,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5182,7 +5107,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         await rpc.handle({
             jsonrpc: '2.0',
@@ -5231,7 +5156,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5268,7 +5193,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5296,7 +5221,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5400,7 +5325,7 @@ export class AppRpcHandlerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
 
         const frames: any[] = [];
         for await (const frame of rpc.streamPayload({
@@ -5458,7 +5383,7 @@ export class StdioAppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
         const stdio = new StdioAppRpcServer(rpc);
         const input = new PassThrough();
         const output = new PassThrough();
@@ -5515,7 +5440,7 @@ export class StdioAppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
         const stdio = new StdioAppRpcServer(rpc);
         const input = new PassThrough();
         const output = new PassThrough();
@@ -5604,23 +5529,8 @@ export class StdioAppRpcServerTest {
         await owners.create('s-2', 'user-2');
         const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         const events = new EventHandler(owners);
-        const approvalManager = new ToolApprovalManager(
-            { publishEvent: async () => {} } as any,
-            { requires: () => true, reason: () => 'approval required' } as any,
-            { defaultTimeoutMs: 60000 }
-        );
-        const rpc = new AppRpcServer(
-            { searchSessions: async () => [] } as any,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {} as any,
-            null,
-            approvalManager as any
-        );
+        const approvalManager = new ToolApprovalManager({ publishEvent: async () => {} } as any, new RandomUuidGenerator(),{ requires: () => true, reason: () => 'approval required' } as any,{ defaultTimeoutMs: 60000 });
+        const rpc = new AppRpcServer({ searchSessions: async () => [] } as any, new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,approvalManager as any);
 
         const response = await rpc.handle({
             jsonrpc: '2.0',
@@ -5641,24 +5551,9 @@ export class StdioAppRpcServerTest {
         await owners.create('s-1', 'user-1');
         const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         const events = new EventHandler(owners);
-        const approvalManager = new ToolApprovalManager(
-            { publishEvent: async () => {} } as any,
-            { requires: () => true, reason: () => 'approval required' } as any,
-            { defaultTimeoutMs: 60000 }
-        );
+        const approvalManager = new ToolApprovalManager({ publishEvent: async () => {} } as any, new RandomUuidGenerator(),{ requires: () => true, reason: () => 'approval required' } as any,{ defaultTimeoutMs: 60000 });
 
-        const rpc = new AppRpcServer(
-            { searchSessions: async () => [] } as any,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {} as any,
-            null,
-            approvalManager as any
-        );
+        const rpc = new AppRpcServer({ searchSessions: async () => [] } as any, new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,approvalManager as any);
 
         const pendingCheck = approvalManager.checkApproval('write_file', { path: '/tmp/x' }, 's-1');
         await new Promise<void>(resolve => setTimeout(resolve, 10));
@@ -5813,18 +5708,7 @@ export class StdioAppRpcServerTest {
         const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         const events = new EventHandler(owners);
         const runtime = { searchSessions: async () => [], cancelTurn: async () => ({ cancelled: false, compensated: 0, toolCallIds: [] }) } as any;
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {} as any,
-            null,
-            null
-        );
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null);
 
         // unknown session: benign no-op instead of an error
         const unknown = await rpc.handle({
@@ -5911,24 +5795,7 @@ export class AppRpcServerAudioTest {
         const stt = new RpcEchoTranscriptionAdapter();
         const tts = new RpcEchoTtsAdapter();
         const audio = withAudio ? new AudioSessionHandler(runtime, stt, tts) : null;
-        const rpc = new AppRpcServer(
-            runtime,
-            store,
-            memory,
-            { getToolDefinitions: () => [] } as any,
-            owners,
-            sessions,
-            events,
-            {} as any,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            audio as any
-        );
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null,null,null,null,null,null,audio as any);
         return { rpc, stt, tts, turns, store };
     }
 

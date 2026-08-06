@@ -1,5 +1,5 @@
-import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
@@ -15,6 +15,7 @@ export class AppRpcServer {
 
     constructor(
         private runtime: AgentRuntime,
+        private uuid: UuidGenerator,
         private sessions: SessionStore,
         private memory: MemoryStore,
         private tools: ToolRegistry,
@@ -359,7 +360,7 @@ export class AppRpcServer {
     private async createSession(params: any, context: AppRpcRequestContext): Promise<any> {
         const requested = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
-            : `rpc-${randomUUID()}`;
+            : `rpc-${this.uuid.generate()}`;
         await this.ensureSessionAccess(requested, context, { createIfMissing: true });
         this.sessionHandler.track(requested);
         await this.setSessionWorkspace(requested);
@@ -401,7 +402,7 @@ export class AppRpcServer {
         if (bootstrapSessionId) {
             return bootstrapSessionId;
         }
-        return `chat-${randomUUID()}`;
+        return `chat-${this.uuid.generate()}`;
     }
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
@@ -648,7 +649,7 @@ export class AppRpcServer {
         const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
-            : `rpc-${randomUUID()}`;
+            : `rpc-${this.uuid.generate()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
@@ -729,7 +730,7 @@ export class AppRpcServer {
         const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
-            : `rpc-${randomUUID()}`;
+            : `rpc-${this.uuid.generate()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
