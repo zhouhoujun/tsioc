@@ -13,7 +13,7 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
-import { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
+import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';

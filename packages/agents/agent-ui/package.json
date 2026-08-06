@@ -27,12 +27,19 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "@tsdi/agent": "6.0.31",
-    "@tsdi/agent-ssh": "6.0.31",
     "@tsdi/common": "6.0.31",
     "@tsdi/components": "6.0.0-beta7",
     "@tsdi/components/console": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31"
+  },
+  "peerDependencies": {
+    "@tsdi/agent-ssh": "6.0.31"
+  },
+  "peerDependenciesMeta": {
+    "@tsdi/agent-ssh": {
+      "optional": true
+    }
   },
   "directories": {
     "lib": "lib",

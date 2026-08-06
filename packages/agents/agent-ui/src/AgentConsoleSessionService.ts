@@ -653,7 +653,7 @@ export class AgentConsoleSessionService {
         if (!this.appRpc || !sessionId) {
             return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
         }
-        const base64 = Buffer.from(chunk).toString('base64');
+        const base64 = this.encodeBase64(chunk);
         return (await this.appRpc.request('audio.feed', { sessionId, chunk: base64 }, context)) ?? { ok: false, error: 'no response from gateway' };
     }
 
@@ -1149,5 +1149,22 @@ export class AgentConsoleSessionService {
 
     protected createSessionId(): string {
         return `session-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    }
+
+    protected encodeBase64(bytes: Uint8Array): string {
+        const bufferCtor = (globalThis as any).Buffer;
+        if (bufferCtor) {
+            return bufferCtor.from(bytes).toString('base64');
+        }
+        if (typeof globalThis.btoa === 'function') {
+            let binary = '';
+            const chunkSize = 0x8000;
+            for (let index = 0; index < bytes.length; index += chunkSize) {
+                const slice = bytes.subarray(index, index + chunkSize);
+                binary += String.fromCharCode(...Array.from(slice));
+            }
+            return globalThis.btoa(binary);
+        }
+        throw new Error('Base64 encoding is unavailable in this environment.');
     }
 }

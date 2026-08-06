@@ -1,7 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { AgentModule } from '@tsdi/agent';
-import { AgentSshModule } from '@tsdi/agent-ssh';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
@@ -36,8 +35,7 @@ import {
 @Module({
     imports: [
         ComponentsModule,
-        AgentModule,
-        AgentSshModule
+        AgentModule
     ],
     bootstrap: [
         AgentConsoleComponent
