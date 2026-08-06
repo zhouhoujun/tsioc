@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, createRunContext, RunContext } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
@@ -926,7 +927,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -985,7 +987,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1018,7 +1021,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 } },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'newest');
@@ -1039,7 +1043,8 @@ export class RuntimeLoopTest {
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'router question');
@@ -1061,7 +1066,8 @@ export class RuntimeLoopTest {
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', '   ');
@@ -1087,7 +1093,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'us-east-1');
@@ -1115,7 +1122,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', '成都');
@@ -1149,7 +1157,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1182,7 +1191,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', '成都');
@@ -1211,7 +1221,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -1246,6 +1257,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,
@@ -1281,7 +1293,8 @@ export class RuntimeLoopTest {
                 ...defaultAgentOptions,
                 session: { ...defaultAgentOptions.session, summaryThreshold: 2 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'Fix routing in src/app.ts and preserve the current task goal.');
@@ -1326,7 +1339,8 @@ export class RuntimeLoopTest {
                     compactionMinTokens: 150
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
@@ -1379,7 +1393,8 @@ export class RuntimeLoopTest {
                     compactionMinTokens: 150
                 }
             },
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
@@ -1419,7 +1434,8 @@ export class RuntimeLoopTest {
                 session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 },
                 context: { ...defaultAgentOptions.context, compactionThreshold: 1, compactionMinTokens: 1 }
             },
-            new ThrowOnContextPreparedApp() as any
+            new ThrowOnContextPreparedApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1436,7 +1452,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new ThrowOnTurnDiagnosticsApp() as any
+            new ThrowOnTurnDiagnosticsApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1456,6 +1473,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,
@@ -1484,7 +1502,8 @@ export class RuntimeLoopTest {
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'router question');
@@ -1505,7 +1524,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 2, summaryThreshold: 999 } },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'keep-me');
@@ -1537,6 +1557,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             distiller
         );
 
@@ -1563,6 +1584,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             distiller
         );
 
@@ -1584,6 +1606,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new ThrowingExperienceDistiller()
         );
 
@@ -1615,6 +1638,7 @@ export class RuntimeLoopTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             distiller
         );
 
@@ -1634,7 +1658,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, maxToolRounds: 1 },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1655,7 +1680,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -1680,7 +1706,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const stream = runtime.runStreamingTurn('s1', 'hello');
@@ -1727,7 +1754,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const stream = runtime.runStreamingTurn('s1', 'hello');
@@ -1759,7 +1787,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         // Tool errors are fed back as tool messages instead of throwing.
@@ -1782,7 +1811,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'weather please');
@@ -1799,7 +1829,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1815,7 +1846,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1831,7 +1863,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         // Tools now run independently; failures are fed back as messages, not thrown.
@@ -1864,7 +1897,8 @@ export class RuntimeLoopTest {
                     parallelSafeTools: ['lookup', 'mutate']
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1891,7 +1925,8 @@ export class RuntimeLoopTest {
                     approvalTimeoutMs: 1000
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1934,7 +1969,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -1986,7 +2022,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await registry.activateTool('s1', 'heavy_tool');
@@ -2032,7 +2069,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2054,7 +2092,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2079,7 +2118,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2115,7 +2155,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2141,7 +2182,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
         runtime.setSessionSandboxMode('s1', 'network-block');
 
@@ -2162,7 +2204,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'where am i');
@@ -2186,7 +2229,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         // Tool errors are now fed back as tool messages instead of throwing.
@@ -2231,7 +2275,8 @@ export class RuntimeLoopTest {
                     parallelSafeTools: ['lookup', 'mutate']
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
         await sequentialRuntime.runTurn('s1', 'hello');
         const sequentialMessages = await sequentialRuntime.getMessages('s1');
@@ -2253,7 +2298,8 @@ export class RuntimeLoopTest {
                     parallelSafeTools: ['lookup_one', 'lookup_two']
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
         await parallelRuntime.runTurn('s2', 'hello');
         const parallelMessages = await parallelRuntime.getMessages('s2');
@@ -2277,7 +2323,8 @@ export class RuntimeLoopTest {
                     parallelExecution: false
                 }
             },
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2296,7 +2343,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2317,7 +2365,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-2');
@@ -2337,7 +2386,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-1');
@@ -2357,7 +2407,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await Promise.all([
@@ -2381,7 +2432,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         await Promise.all([
@@ -2417,7 +2469,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'gateway-local');
@@ -2450,7 +2503,8 @@ export class RuntimeLoopTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-2');

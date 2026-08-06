@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
@@ -226,6 +227,7 @@ export class BuiltinToolsTest {
     async approvalManagerReturnsPendingMetadata() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 }
         );
@@ -252,6 +254,7 @@ export class BuiltinToolsTest {
     async approvalManagerReturnsDecisionStates() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 }
         );
@@ -269,6 +272,7 @@ export class BuiltinToolsTest {
     async approvalManagerSnapshotsPendingInput() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 }
         );
@@ -291,6 +295,7 @@ export class BuiltinToolsTest {
     async approvalManagerDeniesRequestsAbovePendingLimit() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000, maxPendingApprovals: 1 }
         );
@@ -309,6 +314,7 @@ export class BuiltinToolsTest {
     async approvalManagerCapsTimeout() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 5000, maxTimeoutMs: 1000 }
         );
@@ -326,6 +332,7 @@ export class BuiltinToolsTest {
         const sink = new InMemoryAuditSink();
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 },
             sink
@@ -359,6 +366,7 @@ export class BuiltinToolsTest {
     async approvalManagerOrdersPendingFifo() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 }
         );
@@ -383,6 +391,7 @@ export class BuiltinToolsTest {
     async approvalManagerSweepsExpiredRequests() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 20, maxTimeoutMs: 20 }
         );
@@ -413,6 +422,7 @@ export class BuiltinToolsTest {
     async approvalReviewerAutoApproves() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec'], true),
             { defaultTimeoutMs: 1000, autoReview: true },
             undefined,
@@ -428,6 +438,7 @@ export class BuiltinToolsTest {
     async approvalReviewerAutoDenies() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec'], true),
             { defaultTimeoutMs: 1000, autoReview: true },
             undefined,
@@ -443,6 +454,7 @@ export class BuiltinToolsTest {
     async approvalReviewerNeedsHumanFallsBack() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec'], true),
             { defaultTimeoutMs: 1000, autoReview: true },
             undefined,
@@ -460,6 +472,7 @@ export class BuiltinToolsTest {
     async approvalReviewerFailureFallsBack() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec'], true),
             { defaultTimeoutMs: 1000, autoReview: true },
             undefined,
@@ -477,6 +490,7 @@ export class BuiltinToolsTest {
     async approvalReviewerIgnoredWhenDisabled() {
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             new DefaultApprovalStrategy(['shell.exec']),
             { defaultTimeoutMs: 1000 },
             undefined,
@@ -1003,7 +1017,7 @@ export class BuiltinToolsTest {
         }
 
         const scheduler = new FakeScheduler();
-        const registry = new LocalToolRegistry([new ScheduleTool({ get: () => scheduler } as any)], new InMemoryMemoryStore());
+        const registry = new LocalToolRegistry([new ScheduleTool(new RandomUuidGenerator(), { get: () => scheduler } as any)], new InMemoryMemoryStore());
         await registry.activateTool('session-reg', 'schedule');
         await registry.invoke('schedule', { action: 'create', prompt: 'hello' }, 'session-reg');
         expect(scheduler.tasks.length).toEqual(1);

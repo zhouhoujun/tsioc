@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
@@ -127,6 +128,7 @@ function createRuntime(adapter: any, tool: any, app = new FakeApp(), approvalMan
         new SimpleSessionSummarizer(),
         options,
         app as any,
+            new RandomUuidGenerator(),
         undefined,
         undefined,
         approvalManager
@@ -134,7 +136,8 @@ function createRuntime(adapter: any, tool: any, app = new FakeApp(), approvalMan
 }
 
 function createApprovalManager(app: any, strategy: DefaultApprovalStrategy, timeoutMs = 800): ToolApprovalManager {
-    const manager = new ToolApprovalManager(app as any, strategy as any, { autoReview: false, defaultTimeoutMs: timeoutMs });
+    const manager = new ToolApprovalManager(app as any,
+            new RandomUuidGenerator(), strategy as any, { autoReview: false, defaultTimeoutMs: timeoutMs });
     return manager;
 }
 

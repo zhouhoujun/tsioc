@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
@@ -101,7 +102,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const turn = runtime.runTurn('s1', 'hello');
@@ -134,7 +136,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            new FakeApp() as any,
+            new RandomUuidGenerator()
         );
 
         const cancelled = await runtime.cancelTurn('s1');
@@ -150,7 +153,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         const turn = cancelRuntime.runTurn('s1', 'hello');
         await waitFor(() => adapter.requests.length > 0);
@@ -170,7 +174,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const chunks: any[] = [];
@@ -210,7 +215,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         runtime.registerChildSession('parent-1', 'child-1');
 
@@ -244,7 +250,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         runtime.registerChildSession('parent-1', 'child-1');
         runtime.registerChildSession('parent-1', 'child-2');
@@ -284,7 +291,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         await store.setProjectMetadata('parent-1', { primaryThreadId: 'thread-p', sessionRole: 'main' });
         runtime.registerChildSession('parent-1', 'child-1', { goal: 'analyze project' });
@@ -306,7 +314,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         runtime.registerChildSession('parent-1', 'child-1');
 
@@ -327,7 +336,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         await store.setProjectMetadata('child-1', {
             projectId: 'proj-a',
@@ -359,7 +369,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         await store.setProjectMetadata('child-1', { sessionRole: 'worker', projectId: 'proj-a', focusSummary: 'mine' });
         runtime.registerChildSession('parent-1', 'child-1', { goal: 'ignored' });
@@ -383,7 +394,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         await store.setProjectMetadata('parent-1', { primaryThreadId: 'thread-p', sessionRole: 'main' });
         runtime.registerChildSession('parent-1', 'child-1', { goal: 'polish ui' });
@@ -409,7 +421,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         runtime.registerChildSession('parent-1', 'child-1');
         await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
@@ -431,7 +444,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         runtime.registerChildSession('parent-1', 'child-1');
         await waitForState(async () => (await store.get('child-1')).sessionRole === 'worker');
@@ -453,7 +467,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
         await store.setProjectMetadata('child-1', { sessionRole: 'worker', threadStatus: 'completed' });
         runtime.registerChildSession('parent-1', 'child-1');
@@ -472,6 +487,7 @@ export class TurnCancellationTest {
         const app = new FakeApp();
         const approvalManager = new ToolApprovalManager(
             app as any,
+            new RandomUuidGenerator(),
             { requires: () => true, reason: () => 'approval required' } as any,
             { defaultTimeoutMs: 60000 }
         );
@@ -483,6 +499,7 @@ export class TurnCancellationTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             approvalManager as any
@@ -521,7 +538,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         const turn = runtime.runTurn('s1', 'store it');
@@ -564,7 +582,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         let error: any;
@@ -600,7 +619,8 @@ export class TurnCancellationTest {
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any
+            app as any,
+            new RandomUuidGenerator()
         );
 
         let error: any;

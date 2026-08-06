@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
@@ -139,7 +140,7 @@ function makeEvidence(turnId: string, statuses: ToolEvidenceEntry['status'][]): 
 export class EvidenceLedgerTest {
     @Test('evidence ledger records entries and aggregates snapshot counts')
     async ledgerAggregatesCounts() {
-        const ledger = new EvidenceLedger('s1', 'turn-1');
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator(), 'turn-1');
         ledger.record({ toolName: 'ok_tool', status: 'success', durationMs: 10, inputSummary: '{a:1}', outputSummary: '{ok:true}' });
         ledger.record({ toolName: 'fail_tool', status: 'error', durationMs: 5, error: 'boom' });
         ledger.record({ toolName: 'unknown_tool', status: 'skipped', durationMs: 0, error: 'not callable' });
@@ -158,7 +159,8 @@ export class EvidenceLedgerTest {
 
     @Test('evidence ledger fills identity fields and snapshots immutably')
     async ledgerFillsIdentityAndSnapshotsImmutably() {
-        const ledger = new EvidenceLedger('s1');
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
         const entry = ledger.record({ toolName: 'ok_tool', status: 'success' });
 
         expect(entry.turnId).toEqual(ledger.turnId);
@@ -224,6 +226,7 @@ export class EvidenceLedgerTest {
             new LLMSessionSummarizer(new EchoModelAdapter() as any),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,
@@ -272,6 +275,7 @@ export class EvidenceLedgerTest {
             new LLMSessionSummarizer(new EchoModelAdapter() as any),
             options,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,

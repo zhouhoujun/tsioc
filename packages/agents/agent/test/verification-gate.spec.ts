@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
@@ -143,10 +144,11 @@ function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, dia
         new InMemoryMemoryStore(),
         new SimpleSessionSummarizer(),
         { ...defaultAgentOptions, ...options },
-        new FakeApp() as any
+        new FakeApp() as any,
+        new RandomUuidGenerator()
     ];
     if (diagnosticsStore) {
-        while (args.length < 14) {
+        while (args.length < 15) {
             args.push(undefined);
         }
         args.push(diagnosticsStore);
@@ -170,7 +172,8 @@ function injectedRecoveryPrompts(adapter: { requests: any[] }): string[] {
 export class VerificationGateTest {
     @Test('falsifies error evidence recorded in the current round')
     async falsifiesErrorEvidenceInCurrentRound() {
-        const ledger = new EvidenceLedger('s1');
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
         ledger.record({ toolName: 'terminal', status: 'error', error: 'exit 1' });
         ledger.record({ toolName: 'write_file', status: 'success', inputSummary: 'old' });
 
@@ -187,7 +190,8 @@ export class VerificationGateTest {
 
     @Test('flags declared writes whose content did not change')
     async flagsDeclaredWritesWithoutDiff() {
-        const ledger = new EvidenceLedger('s1');
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
         ledger.record({ toolName: 'write_file', status: 'success', inputSummary: 'path' });
 
         const gate = new VerificationGate();
@@ -203,7 +207,8 @@ export class VerificationGateTest {
 
     @Test('marks ledger entries as falsified')
     async marksLedgerEntriesAsFalsified() {
-        const ledger = new EvidenceLedger('s1');
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
         const entry = ledger.record({ toolName: 'terminal', status: 'error', error: 'boom' });
         ledger.markFalsified([entry.id], 'exit 1');
         const snapshot = ledger.snapshot();

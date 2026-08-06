@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -91,6 +92,7 @@ function createRuntime(
         new SimpleSessionSummarizer(),
         { ...defaultAgentOptions, ...options },
         { publishEvent: async () => undefined } as any,
+            new RandomUuidGenerator(),
         undefined,
         undefined,
         createApprovalManager() as any,

@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -232,6 +233,7 @@ export class CoordinatorSandboxWiringTest {
             new RateLimitManager(),
             new OutputGuard(),
             { async publishEvent() {} } as any,
+            new RandomUuidGenerator(),
             undefined,
             executor
         );
@@ -279,6 +281,7 @@ export class CoordinatorSandboxWiringTest {
             new RateLimitManager(),
             new OutputGuard(),
             { async publishEvent() {} } as any,
+            new RandomUuidGenerator(),
             undefined,
             executor
         );

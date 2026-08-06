@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as os from 'os';
@@ -264,6 +265,7 @@ export class RuntimeFileUndoRedoTest {
                 new SimpleSessionSummarizer(),
                 defaultAgentOptions,
                 new FakeApp() as any,
+            new RandomUuidGenerator(),
                 undefined,
                 undefined,
                 undefined,
@@ -304,6 +306,7 @@ export class RuntimeFileUndoRedoTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,
@@ -333,6 +336,7 @@ export class RuntimeFileUndoRedoTest {
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,

@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
@@ -352,6 +353,7 @@ export class CompactionHistoryStoreTest {
                 }
             },
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,
@@ -386,6 +388,7 @@ export class CompactionHistoryStoreTest {
             new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
             defaultAgentOptions,
             new FakeApp() as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             undefined,

@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, Handler, RunContext } from '@tsdi/core';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import {
     AGENT_PROMPT_SECTIONS,
@@ -215,6 +216,7 @@ export class AgentExtensionHooksTest {
                 }
             },
             { publishEvent: async () => undefined } as any,
+            new RandomUuidGenerator(),
             undefined,
             undefined,
             approvalManager as any,

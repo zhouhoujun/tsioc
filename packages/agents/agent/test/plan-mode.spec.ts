@@ -1,3 +1,4 @@
+import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
@@ -129,6 +130,7 @@ function createRuntime(adapter: any, tool: any, app = new FakeApp(), promptBuild
         new SimpleSessionSummarizer(),
         defaultAgentOptions,
         app as any,
+            new RandomUuidGenerator(),
         undefined,
         promptBuilder
     );
