@@ -581,7 +581,7 @@ export class ConsoleRenderer implements Renderer {
     }
 
     click(node: RNode): void {
-        (node as ConsoleNode).dispatchEvent({ type: 'click' } as Event);
+        (node as ConsoleNode).dispatchEvent({ type: 'click', target: node } as unknown as Event);
     }
 
     renderToLines(node: RNode | RNode[]): string[] {

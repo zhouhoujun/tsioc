@@ -11,7 +11,6 @@ import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMe
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
-    AgentConsoleDashboardPanelComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleAssistantMessageItemComponent,
     AgentConsoleApprovalsPanelComponent,
@@ -46,7 +45,6 @@ import {
     declarations: [
         AgentConsoleComponent,
         AgentConsoleBrandPanelComponent,
-        AgentConsoleDashboardPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
@@ -79,7 +77,6 @@ import {
     exports: [
         AgentConsoleComponent,
         AgentConsoleBrandPanelComponent,
-        AgentConsoleDashboardPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,

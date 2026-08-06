@@ -6,10 +6,11 @@ import { TuiTemplateModule, ConsoleElement, PanelComponent } from './src';
     selector: 'console-fold-panel-test',
     imports: [PanelComponent],
     template: `
-        <panel
-            :summary="'Preview'"
-            :detailLines="['line 1', 'line 2', 'line 3', 'line 4']"
-            :visibleLines="2"></panel>
+        <panel>
+            <panel-header>Preview</panel-header>
+            <panel-summary>line 1\nline 2\n… 2 more lines</panel-summary>
+            <panel-body>line 1\nline 2\nline 3\nline 4</panel-body>
+        </panel>
     `
 })
 class ConsoleFoldPanelTestComponent {

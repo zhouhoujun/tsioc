@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { EventEmitter } from 'events';
 import { Suite, Test } from '@tsdi/unit';
-import { ConsoleTerminalSurfaceAccessor } from '@tsdi/components/console';
+import { ConsoleTerminalSurfaceAccessor, TerminalClickTarget } from '@tsdi/components/console';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionState } from '../src';
 
 class RuntimeStub {
@@ -105,6 +105,22 @@ class FakeSurfaceAccessor extends ConsoleTerminalSurfaceAccessor {
     }
 
     dispatchTerminalMouse(): boolean {
+        return false;
+    }
+
+    getClickTargets(): TerminalClickTarget[] {
+        return [];
+    }
+
+    getTerminalRootStartRow(): number {
+        return 0;
+    }
+
+    dispatchClickAt(): boolean {
+        return false;
+    }
+
+    dispatchMouse(): boolean {
         return false;
     }
 

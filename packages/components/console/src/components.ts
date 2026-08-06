@@ -363,79 +363,22 @@ export class TuiSelectComponent {
     selector: 'panel',
     template: `
     <div class="console-panel console-base-panel" v-style="shellStyle">
-        <label class="panel-summary" v-style="summaryStyle" @click="toggle" v-show="summaryLine">{{summaryLine}}</label>
-        <label class="panel-hint" v-style="hintStyle" v-show="hintLabel">{{hintLabel}}</label>
-        <label class="panel-detail" v-style="detailStyle" v-for="index in detailIndexes">{{detailLineAt(index)}}</label>
-        <label class="panel-hint" v-style="hintStyle" v-show="hiddenDetailLabel">{{hiddenDetailLabel}}</label>
+        <label class="panel-header" v-style="headerStyle" @click="toggle" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>
+        <label class="panel-summary" v-style="summaryStyle" @click="toggle" v-show="!expanded" v-for="index in summaryIndexes">{{summaryLineAt(index)}}</label>
+        <label class="panel-body" v-style="bodyStyle" v-show="bodyVisible" v-for="index in bodyIndexes">{{bodyLineAt(index)}}</label>
+        <label class="panel-toggle" v-style="toggleStyle" @click="toggle" v-show="hasSummary">{{toggleLabel}}</label>
     </div>
     `
 })
 export class PanelComponent {
-    private _summary = '';
-    private _hint = '';
-    private _detailLines: string[] = [];
-    private _visibleLines = 3;
     private _expanded = false;
+    private _locale: 'zh-CN' | 'en' = 'zh-CN';
+    private _expandText = '';
+    private _collapseText = '';
 
     constructor(
         @Optional() protected elementRef?: ElementRef
     ) {
-    }
-
-    @Attribute()
-    get summary(): string {
-        return this._summary;
-    }
-
-    set summary(value: string) {
-        this._summary = String(value || '').trim();
-    }
-
-    @Attribute()
-    get hint(): string {
-        return this._hint;
-    }
-
-    set hint(value: string) {
-        this._hint = String(value || '').trim();
-    }
-
-    @Attribute()
-    get detailLines(): string[] {
-        const contentLines = this.contentDetailLines;
-        return contentLines.length ? contentLines : this._detailLines;
-    }
-
-    set detailLines(value: string[] | string | undefined | null) {
-        if (Array.isArray(value)) {
-            this._detailLines = value.map(line => String(line ?? ''));
-            return;
-        }
-        const text = String(value || '').trim();
-        if (!text) {
-            this._detailLines = [];
-            return;
-        }
-        try {
-            const parsed = JSON.parse(text);
-            if (Array.isArray(parsed)) {
-                this._detailLines = parsed.map(line => String(line ?? ''));
-                return;
-            }
-        } catch {
-            // ignore JSON parse failures and fall back to newline splitting
-        }
-        this._detailLines = text.split('\n').map(line => String(line ?? ''));
-    }
-
-    @Attribute()
-    get visibleLines(): number {
-        return this._visibleLines;
-    }
-
-    set visibleLines(value: number | string) {
-        const parsed = Number.parseInt(String(value ?? this._visibleLines), 10);
-        this._visibleLines = Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
     }
 
     @Attribute()
@@ -449,15 +392,62 @@ export class PanelComponent {
 
     @Attribute() expandedChange = new EventEmitter<boolean>();
 
-    get contentDetailLines(): string[] {
-        const nodes = this.resolveProjectedContent();
-        if (!nodes.length) {
-            return [];
-        }
+    @Attribute()
+    get locale(): 'zh-CN' | 'en' {
+        return this._locale;
+    }
+
+    set locale(value: string) {
+        this._locale = String(value || '').toLowerCase().startsWith('en') ? 'en' : 'zh-CN';
+    }
+
+    @Attribute()
+    get expandText(): string {
+        return this._expandText || (this._locale === 'en' ? 'Click to expand' : '点击展开');
+    }
+
+    set expandText(value: string) {
+        this._expandText = String(value || '').trim();
+    }
+
+    @Attribute()
+    get collapseText(): string {
+        return this._collapseText || (this._locale === 'en' ? 'Click to collapse' : '点击折叠');
+    }
+
+    set collapseText(value: string) {
+        this._collapseText = String(value || '').trim();
+    }
+
+    get headerLines(): string[] {
+        return this.collectProjectionSlot('panel-header');
+    }
+
+    get summaryLines(): string[] {
+        return this.collectProjectionSlot('panel-summary');
+    }
+
+    get bodyLines(): string[] {
+        return this.collectProjectionSlot('panel-body');
+    }
+
+    get hasSummary(): boolean {
+        return this.summaryLines.length > 0;
+    }
+
+    get bodyVisible(): boolean {
+        return !this.hasSummary || this._expanded;
+    }
+
+    get toggleLabel(): string {
+        return this._expanded ? this.collapseText : this.expandText;
+    }
+
+    protected collectProjectionSlot(tagName: string): string[] {
         const lines: string[] = [];
-        nodes.forEach(node => {
-            this.collectContentText(node, lines);
-        });
+        this.resolveProjectedContent()
+            .filter(node => String((node as any).tagName || '').toLowerCase() === tagName)
+            .forEach(node => this.collectContentText(node, lines));
         return lines;
     }
 
@@ -499,65 +489,48 @@ export class PanelComponent {
         return 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
     }
 
-    get summaryLabel(): string {
-        return this._summary || this.detailLines[0] || '';
+    get headerIndexes(): number[] {
+        return this.indexes(this.headerLines);
     }
 
-    get summaryLine(): string {
-        const summary = this.summaryLabel;
-        if (!summary) {
-            return '';
-        }
-        return `${this._expanded ? '▾' : '▸'} ${summary}`;
+    get summaryIndexes(): number[] {
+        return this.indexes(this._expanded ? [] : this.summaryLines);
     }
 
-    get hintLabel(): string {
-        if (this._hint) {
-            return this._hint;
-        }
-        if (!this.detailLines.length) {
-            return '';
-        }
-        return this._expanded ? 'click summary to collapse' : 'click summary to expand';
+    get bodyIndexes(): number[] {
+        return this.indexes(this.bodyVisible ? this.bodyLines : []);
     }
 
-    get visibleDetailLines(): string[] {
-        const lines = this.detailLines;
-        if (this._expanded) {
-            return lines.slice();
-        }
-        return lines.slice(0, this._visibleLines);
+    protected indexes(lines: string[]): number[] {
+        return Array.from({ length: lines.length }, (_value, index) => index);
     }
 
-    get detailIndexes(): number[] {
-        return Array.from({ length: this.visibleDetailLines.length }, (_value, index) => index);
+    headerLineAt(index: number): string {
+        const line = this.headerLines[index] || '';
+        return index === 0 && this.hasSummary ? `${this._expanded ? '▾' : '▸'} ${line}` : line;
     }
 
-    detailLineAt(index: number): string {
-        return this.visibleDetailLines[index] || '';
+    summaryLineAt(index: number): string {
+        return this.summaryLines[index] || '';
     }
 
-    get hiddenDetailCount(): number {
-        if (this._expanded) {
-            return 0;
-        }
-        return Math.max(0, this.detailLines.length - this._visibleLines);
+    bodyLineAt(index: number): string {
+        return this.bodyLines[index] || '';
     }
 
-    get hiddenDetailLabel(): string {
-        const hidden = this.hiddenDetailCount;
-        return hidden > 0 ? `… ${hidden} more line${hidden === 1 ? '' : 's'}` : '';
-    }
-
-    get summaryStyle(): Record<string, string> {
+    get headerStyle(): Record<string, string> {
         return {
             color: '#f3f6fb',
             'font-weight': 'bold',
-            cursor: 'pointer'
+            cursor: this.hasSummary ? 'pointer' : 'default'
         };
     }
 
-    get detailStyle(): Record<string, string> {
+    get summaryStyle(): Record<string, string> {
+        return { color: '#6f7c8a', cursor: 'pointer' };
+    }
+
+    get bodyStyle(): Record<string, string> {
         return {
             color: '#d6dee6',
             'white-space': 'pre-wrap',
@@ -565,13 +538,17 @@ export class PanelComponent {
         };
     }
 
-    get hintStyle(): Record<string, string> {
+    get toggleStyle(): Record<string, string> {
         return {
-            color: '#6f7c8a'
+            color: '#6f7c8a',
+            cursor: 'pointer'
         };
     }
 
     toggle(): void {
+        if (!this.hasSummary) {
+            return;
+        }
         this._expanded = !this._expanded;
         this.expandedChange.emit(this._expanded);
     }

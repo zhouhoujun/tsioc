@@ -70,8 +70,10 @@ export interface SelectMenuMouseEvent {
 
 export interface TerminalClickTarget {
     node: ConsoleNode;
-    startRow: number;
-    endRow: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 }
 
 export interface TerminalToolRunItem {
@@ -285,9 +287,12 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
 export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
-    abstract dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean;
-    abstract writeTerminalClipboardText(text: string): boolean;
+    abstract getClickTargets(): TerminalClickTarget[];
+    abstract getTerminalRootStartRow(): number;
+    abstract dispatchClickAt(node?: ConsoleNode): boolean;
+    abstract dispatchMouse?(mouse: SelectMenuMouseEvent): boolean;
     abstract notifyNonMouseInput?(): boolean;
+    abstract writeTerminalClipboardText(text: string): boolean;
     abstract writeRawTerminalData?(text: string): boolean;
     abstract resetTerminalRenderState?(): boolean;
     abstract getTerminalSize?(): { cols: number; rows: number };
@@ -376,9 +381,6 @@ export class ConsoleTerminalInputLifecycleService extends ConsoleTerminalInputLi
                 if (this.injector.destroyed) {
                     return;
                 }
-                if (!decoded.mouse && !decoded.partial) {
-                    this.injector.get(ConsoleTerminalSurfaceAccessor, null)?.notifyNonMouseInput?.();
-                }
                 return this.injector.get(ConsoleTerminalInputHandler, null)?.handleTerminalInput?.(decoded, chunk);
             }
         });
@@ -433,11 +435,23 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.getLastRenderedLines().map(line => stripAnsiValue(line).trimEnd()).join('\n');
     }
 
-    dispatchTerminalMouse(mouse: SelectMenuMouseEvent): boolean {
+    getClickTargets(): TerminalClickTarget[] {
+        return this.surface?.clickTargets || [];
+    }
+
+    getTerminalRootStartRow(): number {
+        return this.surface?.getTerminalRootStartRow() ?? 0;
+    }
+
+    dispatchClickAt(node?: ConsoleNode): boolean {
+        return this.surface?.dispatchClickAt(node) ?? false;
+    }
+
+    dispatchMouse?(mouse: SelectMenuMouseEvent): boolean {
         return this.surface?.dispatchMouse(mouse) ?? false;
     }
 
-    notifyNonMouseInput(): boolean {
+    notifyNonMouseInput?(): boolean {
         return this.surface?.notifyNonMouseInput() ?? false;
     }
 
@@ -590,7 +604,7 @@ export class TuiTerminalSurface {
     protected outputResizeListener?: () => void;
     protected renderedLines: string[] = [];
     protected terminalRow = 0;
-    protected clickTargets: TerminalClickTarget[] = [];
+    protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
 
@@ -603,6 +617,25 @@ export class TuiTerminalSurface {
 
     get lastRenderedLines(): string[] {
         return this.renderedLines.slice();
+    }
+
+    get clickTargets(): TerminalClickTarget[] {
+        return this.clickTargetsCache.slice();
+    }
+
+    /**
+     * Row (0-based, terminal-absolute) where the rendered content root starts.
+     *
+     * Every render branch in `renderPrimaryTerminalScreen` aligns the content
+     * root to terminal row 0 (it clears via `\x1b[H`/`\x1b[J` and rewrites from
+     * the top), and the incremental update model assumes the content never
+     * scrolls (it rewinds with `\x1b[A` to the content root). Deriving this from
+     * `terminalRow` is wrong because `placeCursor` (prompt mode) overwrites
+     * `terminalRow` with the content-relative cursor row, which would yield a
+     * negative offset and shift every click hit-test downward.
+     */
+    getTerminalRootStartRow(): number {
+        return 0;
     }
 
     get lastTerminalRow(): number {
@@ -633,10 +666,8 @@ export class TuiTerminalSurface {
         this.renderState = undefined;
         this.renderedLines = [];
         this.terminalRow = 0;
-        this.clickTargets = [];
+        this.clickTargetsCache = [];
         this.scheduled = false;
-        this.mousePress = undefined;
-        this.mouseHandedOff = false;
     }
 
     requestRender(): void {
@@ -662,7 +693,7 @@ export class TuiTerminalSurface {
         const width = this.resolveWidth();
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width });
         const lines = layout.lines || [];
-        this.clickTargets = (layout.clickTargets || []).slice();
+        this.clickTargetsCache = (layout.clickTargets || []).slice();
         const cursorTarget = layout.cursorTargets?.[0];
         const cursorMode = this.resolveCursorMode();
         const cursorRow = cursorMode === 'prompt' && cursorTarget
@@ -688,8 +719,16 @@ export class TuiTerminalSurface {
         return result;
     }
 
-    dispatchMouse(mouse: SelectMenuMouseEvent): boolean {
-        if (this.mouseHandedOff || !mouse) {
+    dispatchClickAt(node?: ConsoleNode): boolean {
+        if (this.destroyed || !node?.dispatchEvent) {
+            return false;
+        }
+        node.dispatchEvent({ type: 'click', target: node } as unknown as Event);
+        return true;
+    }
+
+    dispatchMouse(mouse?: SelectMenuMouseEvent): boolean {
+        if (!mouse || this.mouseHandedOff) {
             return false;
         }
         const button = Math.max(0, Math.floor(mouse.button || 0));
@@ -702,8 +741,12 @@ export class TuiTerminalSurface {
             if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
                 return false;
             }
-            const safeRow = Math.max(0, Math.floor((mouse.y || 0) - 1));
-            const target = this.clickTargets.find(item => safeRow >= item.startRow && safeRow < item.endRow);
+            const rootStartRow = this.getTerminalRootStartRow();
+            const targetRow = Math.max(0, Math.floor((mouse.y || 1) - 1) - rootStartRow);
+            const targetColumn = Math.max(0, Math.floor((mouse.x || 1) - 1));
+            const target = this.clickTargetsCache
+                .find(item => targetColumn >= item.x && targetColumn < item.x + item.width
+                    && targetRow >= item.y && targetRow < item.y + item.height);
             return this.dispatchClickAt(target?.node);
         }
         if ((button & 0b1100000) !== 0) {
@@ -723,6 +766,15 @@ export class TuiTerminalSurface {
         return false;
     }
 
+    notifyNonMouseInput(): boolean {
+        if (!this.mouseHandedOff) {
+            return false;
+        }
+        this.mouseHandedOff = false;
+        this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        return true;
+    }
+
     protected isTuiMouseDrag(press: { x: number; y: number }, current: { x: number; y: number }): boolean {
         return Math.abs(current.x - press.x) >= TUI_MOUSE_DRAG_THRESHOLD
             || Math.abs(current.y - press.y) >= TUI_MOUSE_DRAG_THRESHOLD;
@@ -734,21 +786,13 @@ export class TuiTerminalSurface {
         this.resolveOutput()?.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
     }
 
-    notifyNonMouseInput(): boolean {
-        if (!this.mouseHandedOff) {
+    protected isPrimaryMouseRelease(mouse?: SelectMenuMouseEvent): boolean {
+        if (!mouse?.release) {
             return false;
         }
-        this.mouseHandedOff = false;
-        this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
-        return true;
-    }
-
-    dispatchClickAt(node?: ConsoleNode): boolean {
-        if (!node?.dispatchEvent) {
-            return false;
-        }
-        node.dispatchEvent({ type: 'click' } as Event);
-        return true;
+        const button = Math.max(0, Math.floor(mouse.button || 0));
+        const motionOrWheelMask = 0b1100000;
+        return (button & motionOrWheelMask) === 0 && (button & 0b11) === 0;
     }
 
     destroy(): void {
@@ -821,15 +865,6 @@ export class TuiTerminalSurface {
         }
         output.off('resize', this.outputResizeListener);
         this.outputResizeListener = undefined;
-    }
-
-    protected isPrimaryMouseRelease(mouse?: SelectMenuMouseEvent): boolean {
-        if (!mouse?.release) {
-            return false;
-        }
-        const button = Math.max(0, Math.floor(mouse.button || 0));
-        const motionOrWheelMask = 0b1100000;
-        return (button & motionOrWheelMask) === 0 && (button & 0b11) === 0;
     }
 }
 

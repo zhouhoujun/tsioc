@@ -8,7 +8,6 @@ import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleApprovalsPanelComponent,
     AgentConsoleComponent,
-    AgentConsoleDashboardPanelComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
@@ -23,8 +22,8 @@ import {
     AgentUiModule
 } from '../src';
 
-@Suite('Agent Console Renderer')
-export class AgentConsoleRendererTest {
+@Suite('Agent Console Dashboard Renderer')
+export class AgentConsoleDashboardRendererTest {
     ctx!: ApplicationContext;
 
     @Before()
@@ -33,6 +32,9 @@ export class AgentConsoleRendererTest {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
     }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
 
     @Test('renders agent console through console template module')
     async render() {
@@ -46,12 +48,12 @@ export class AgentConsoleRendererTest {
             { id: 'chat-2', current: false, messageCount: 1, updatedAt: 1, workspace: '/tmp/workspace-b' } as any
         ]);
         ref.instance.sessionState.setTasksCount(1);
+        ref.instance.sessionState.setStatus('running');
         ref.instance.sessionState.setTokenUsage({
             promptTokens: 120,
             completionTokens: 1080,
             totalTokens: 1200
         });
-        await ref.render();
         await Promise.resolve();
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
@@ -59,7 +61,7 @@ export class AgentConsoleRendererTest {
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const lines = renderer.renderToLines(root);
         const sessionsPanel = ref.hostView.query(AgentConsoleSessionsPanelComponent) as ComponentRef<AgentConsoleSessionsPanelComponent>;
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         const sessionLines = renderer.renderToLines(sessionsPanel.hostView.rootNodes[0]);
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
         const inputLines = renderer.renderToLines(inputPanel.hostView.rootNodes[0]);
@@ -67,8 +69,8 @@ export class AgentConsoleRendererTest {
         expect(root.tagName).toEqual('div');
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
-        expect(dashboardPanel).toBeTruthy();
-        expect(lines.some(line => line.toLowerCase().includes('dashboard'))).toBe(true);
+        expect(workingPanel).toBeTruthy();
+        expect(workingPanel.instance.dashboardTextLabel).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('•') && line.includes('world'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
@@ -92,7 +94,6 @@ export class AgentConsoleRendererTest {
             { id: 'p1', content: 'Design architecture', status: 'in_progress' },
             { id: 'p2', content: 'Generate project structure', status: 'pending' }
         ] as any);
-        await ref.render();
         await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -116,7 +117,6 @@ export class AgentConsoleRendererTest {
             { id: 'p1', content: 'Design architecture', status: 'in_progress' },
             { id: 'p2', content: 'Generate project structure', status: 'pending' }
         ] as any, 'chat-a', 'thread');
-        await ref.render();
         await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -136,7 +136,6 @@ export class AgentConsoleRendererTest {
             { id: 'p1', content: 'Design architecture', status: 'completed' },
             { id: 'p2', content: 'Generate project structure', status: 'completed' }
         ] as any);
-        await ref.render();
         await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -150,21 +149,22 @@ export class AgentConsoleRendererTest {
     @Test('hides dashboard when only completed plan todos remain')
     async hideDashboardWhenOnlyCompletedPlanTodosRemain() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('idle');
         ref.instance.sessionState.setPlanTodos([
             { id: 'p1', content: 'Design architecture', status: 'completed' },
             { id: 'p2', content: 'Generate project structure', status: 'completed' }
         ] as any);
-        await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(ref.instance.showDashboardPanel).toBe(false);
-        expect(dashboardPanel.instance.shouldShow).toBe(false);
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(ref.instance.showWorkingPanel).toBe(false);
+        expect(workingPanel.instance.shouldShow).toBe(false);
     }
 
     @Test('dashboard shows coding task counters when no plan todos exist')
     async dashboardShowsCodingTaskCountersWithoutPlanTodos() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
         ref.instance.sessionState.setReviewTasks([{
             id: 'task-1',
             title: 'Patch handlers',
@@ -178,13 +178,12 @@ export class AgentConsoleRendererTest {
             status: 'completed',
             updatedAt: 10
         } as any]);
-        await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.shouldShow).toBe(true);
-        expect(dashboardPanel.instance.dashboardCountersLabel.includes('tasks 1/2')).toBe(true);
-        expect(dashboardPanel.instance.dashboardDetailLabel.includes('task task-1 · Patch handlers · running')).toBe(true);
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.shouldShow).toBe(true);
+        expect(workingPanel.instance.dashboardCountersLabel.includes('tasks 1/2')).toBe(true);
+        expect(workingPanel.instance.dashboardDetailLabel.includes('task task-1 · Patch handlers · running')).toBe(true);
     }
 
     @Test('dashboard shows tool run stats with success rate and average duration')
@@ -206,8 +205,8 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        const stats = dashboardPanel.instance.dashboardStatsLabel;
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        const stats = workingPanel.instance.dashboardStatsLabel;
 
         expect(stats.includes('runs 4')).toBe(true);
         expect(stats.includes('ok 2')).toBe(true);
@@ -225,8 +224,8 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.dashboardStatsLabel).toBe('');
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.dashboardStatsLabel).toBe('');
     }
 
     @Test('dashboard shows summary quality digest when recorded')
@@ -239,9 +238,9 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.shouldShow).toBe(true);
-        const quality = dashboardPanel.instance.dashboardQualityLabel;
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.shouldShow).toBe(true);
+        const quality = workingPanel.instance.dashboardQualityLabel;
         expect(quality.startsWith('quality · ')).toBe(true);
         expect(quality.includes('deepseek')).toBe(true);
         expect(quality.includes('avg 84.2')).toBe(true);
@@ -259,10 +258,10 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('usage · ');
-        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('day 2 turns');
-        expect(dashboardPanel.instance.dashboardUsageLabel).toContain('all 9 turns');
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.dashboardUsageLabel).toContain('usage · ');
+        expect(workingPanel.instance.dashboardUsageLabel).toContain('day 2 turns');
+        expect(workingPanel.instance.dashboardUsageLabel).toContain('all 9 turns');
     }
 
     @Test('dashboard omits quality line when no digest recorded')
@@ -273,8 +272,8 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.dashboardQualityLabel).toBe('');
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.dashboardQualityLabel).toBe('');
     }
 
     @Test('dashboard shows turn diagnostics digest when recorded')
@@ -287,9 +286,9 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.shouldShow).toBe(true);
-        const diagnostics = dashboardPanel.instance.dashboardTurnDiagnosticsLabel;
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.shouldShow).toBe(true);
+        const diagnostics = workingPanel.instance.dashboardTurnDiagnosticsLabel;
         expect(diagnostics.startsWith('diagnostics · ')).toBe(true);
         expect(diagnostics.includes('12 turns')).toBe(true);
         expect(diagnostics.includes('empty 8.3%')).toBe(true);
@@ -304,18 +303,14 @@ export class AgentConsoleRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const dashboardPanel = ref.hostView.query(AgentConsoleDashboardPanelComponent) as ComponentRef<AgentConsoleDashboardPanelComponent>;
-        expect(dashboardPanel.instance.dashboardTurnDiagnosticsLabel).toBe('');
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.dashboardTurnDiagnosticsLabel).toBe('');
     }
 
     @Test('root output keeps dashboard visible for coding tasks without plan todos')
     async rootOutputKeepsDashboardVisibleForCodingTasksWithoutPlanTodos() {
-        const ctx = await Application.run(AgentConsoleComponent, {
-            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
-        });
-        try {
-            const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-            ref.instance.sessionState.setStatus('idle');
+            const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+            ref.instance.sessionState.setStatus('running');
             ref.instance.sessionState.setReviewTasks([{
                 id: 'task-1',
                 title: 'Patch handlers',
@@ -332,15 +327,29 @@ export class AgentConsoleRendererTest {
             await ref.render();
             await Promise.resolve();
 
-            const renderer = ctx.get(ConsoleRenderer);
+            const renderer = this.ctx.get(ConsoleRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
             const lines = renderer.renderToLines(root);
-            expect(lines.some(line => line.toLowerCase().includes('dashboard'))).toBe(true);
+            const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
             expect(lines.some(line => line.includes('tasks 1/2'))).toBe(true);
-        } finally {
-            await ctx.close();
-        }
+            expect(workingPanel.instance.dashboardTextLabel.includes('tasks 1/2')).toBe(true);
     }
+
+}
+
+@Suite('Agent Console Messages Renderer')
+export class AgentConsoleMessagesRendererTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
 
     @Test('renders message history before jobs panel in root output')
     async renderMessagesBeforeJobsPanel() {
@@ -421,7 +430,7 @@ export class AgentConsoleRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 5 more lines. /messages + Enter to view'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 4 more lines. Click to expand'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
@@ -455,34 +464,30 @@ export class AgentConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            const previewRow = surface.lastRenderedLines.findIndex(line => line.includes('/messages + Enter to view'));
-            expect(previewRow).toBeGreaterThanOrEqual(0);
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 1,
-                y: previewRow + 1,
-                release: true
-            })).toBe(true);
+            const previewLine = surface.lastRenderedLines.findIndex(line => line.includes('Click to expand'));
+            expect(previewLine).toBeGreaterThanOrEqual(0);
+            const expandTarget = surface.clickTargets.find(target =>
+                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+            expect(expandTarget).toBeDefined();
+            expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
             await Promise.resolve();
             await Promise.resolve();
 
             expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
             expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
-            expect(surface.lastRenderedLines.some(line => line.includes('/messages + Enter to view'))).toBe(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(false);
             const expandedRow = surface.lastRenderedLines.findIndex(line => line.includes('line 12'));
             expect(expandedRow).toBeGreaterThanOrEqual(0);
 
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 1,
-                y: expandedRow + 1,
-                release: true
-            })).toBe(true);
+            const collapseTarget = surface.clickTargets.find(target =>
+                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+            expect(collapseTarget).toBeDefined();
+            expect(surface.dispatchClickAt(collapseTarget?.node)).toBe(true);
             await Promise.resolve();
             await Promise.resolve();
 
             expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
-            expect(surface.lastRenderedLines.some(line => line.includes('/messages + Enter to view'))).toBe(true);
+            expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -523,14 +528,12 @@ export class AgentConsoleRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            const previewRow = surface.lastRenderedLines.findIndex(line => line.includes('/messages + Enter to view'));
-            expect(previewRow).toBeGreaterThanOrEqual(0);
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 1,
-                y: previewRow + 1,
-                release: true
-            })).toBe(true);
+            const previewLine = surface.lastRenderedLines.findIndex(line => line.includes('Click to expand'));
+            expect(previewLine).toBeGreaterThanOrEqual(0);
+            const expandTarget = surface.clickTargets.find(target =>
+                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+            expect(expandTarget).toBeDefined();
+            expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
             await Promise.resolve();
             await Promise.resolve();
 
@@ -590,6 +593,22 @@ export class AgentConsoleRendererTest {
 
         expect(visibleIds).toEqual(['u3', 'a4', 'u5', 'a5']);
     }
+
+}
+
+@Suite('Agent Console Operational Panels Renderer')
+export class AgentConsoleOperationalPanelsRendererTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
 
     @Test('renders working line with token usage while running')
     async renderWorkingLine() {
@@ -747,6 +766,22 @@ export class AgentConsoleRendererTest {
         expect(messageLines.some(line => line.includes('line7'))).toBe(true);
         expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
     }
+
+}
+
+@Suite('Agent Console Review Renderer')
+export class AgentConsoleReviewRendererTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
 
     @Test('renders coding task review panel with diff and worker details')
     async renderCodingTaskReviewPanel() {
@@ -917,11 +952,7 @@ export class AgentConsoleRendererTest {
 
     @Test('renders coding task inspector panel with task summary')
     async renderCodingTaskInspectorPanel() {
-        const ctx = await Application.run(AgentConsoleComponent, {
-            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
-        });
-        try {
-            const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+            const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
             ref.instance.sessionState.setTaskRecords([{
                 id: 'task-0',
                 sourceSessionId: 'chat-b',
@@ -1017,10 +1048,8 @@ export class AgentConsoleRendererTest {
             } as any]);
             ref.instance.sessionState.setSelectedReviewTaskId('task-1');
             ref.instance.sessionState.setTasksFocused(true);
-            await ref.render();
-            await Promise.resolve();
-
             const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+
             expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 2')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('task-0 · Initial patch')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
@@ -1040,9 +1069,6 @@ export class AgentConsoleRendererTest {
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('checkpoints 1 total')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('1.')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('Edit handlers')).toBe(true);
-        } finally {
-            await ctx.close();
-        }
     }
 
     @Test('tasks panel falls back to coding tasks when plan todos are completed')
@@ -1061,10 +1087,8 @@ export class AgentConsoleRendererTest {
         } as any]);
         ref.instance.sessionState.setSelectedReviewTaskId('task-1');
         ref.instance.sessionState.setTasksFocused(true);
-        await ref.render();
-        await Promise.resolve();
-
         const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+
         expect(tasksPanel.instance.tasksSummaryLabel.includes('plan 2')).toBe(false);
         expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1/1')).toBe(true);
         expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
@@ -1086,10 +1110,10 @@ export class AgentConsoleRendererTest {
         } as any]);
         ref.instance.sessionState.setSelectedScheduledTaskId('job-1');
         ref.instance.sessionState.setJobsFocused(true);
-        await ref.render();
+        const jobsPanel = ref.hostView.query(AgentConsoleJobsPanelComponent) as ComponentRef<AgentConsoleJobsPanelComponent>;
+        await jobsPanel.render();
 
         const renderer = this.ctx.get(ConsoleRenderer);
-        const jobsPanel = ref.hostView.query(AgentConsoleJobsPanelComponent) as ComponentRef<AgentConsoleJobsPanelComponent>;
         const jobLines = renderer.renderToLines(jobsPanel.hostView.rootNodes[0]);
 
         expect(jobLines.some(line => line.includes('jobs 1'))).toBe(true);
@@ -1097,6 +1121,22 @@ export class AgentConsoleRendererTest {
         expect(jobLines.some(line => line.includes('pause/resume'))).toBe(true);
         expect(jobLines.some(line => line.includes('session console'))).toBe(true);
     }
+
+}
+
+@Suite('Agent Console TUI Renderer')
+export class AgentConsoleTuiRendererTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
 
     @Test('renders agent console panels when created from module context for tui chat')
     async renderFromModuleContext() {
@@ -1449,8 +1489,4 @@ export class AgentConsoleRendererTest {
         expect(sessionLines.some(line => line.includes('chat-2'))).toBe(false);
     }
 
-    @After()
-    async clean() {
-        await this.ctx?.close();
-    }
 }

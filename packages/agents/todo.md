@@ -791,3 +791,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - agent-ui `view-model.spec.ts`：rename/pin/unpin/snapshot/restore/snapshot-delete 命令 + 列表 label 优先 title + 📌 角标。
 
 实现顺序：agent（契约 → InMemory → TypeOrm entity）→ gateway（SessionInfo → HTTP → RPC）→ agent-ui（state/service → 命令）→ 测试 → 回归（agent/agent-gateway/agent-ui tsc + 全量测试）→ todo.md 收尾 + 提交。
+
+## P45 打磨（已完成）：session 固定/重命名/快照
+
+1. ~~会话元数据与快照契约~~ → 已完成：`AgentState` / `SessionStore` 增加 `title`、`pinned` 及 snapshot CRUD；InMemory 与 TypeORM 实现均支持持久化、恢复和删除。
+2. ~~gateway HTTP / RPC~~ → 已完成：session title/pin/snapshot 全套 HTTP 路由与 `session.title.set`、`session.pin.set`、`session.snapshot.*` RPC，并按 pinned 优先排序会话列表。
+3. ~~agent-ui 命令与展示~~ → 已完成：`/title`、`/pin`、`/unpin`、`/snapshot`、`/snapshots` 命令，列表展示标题与固定标记，支持快照恢复/删除。
+4. ~~测试与回归~~ → 已完成：agent 518、agent-gateway 148、agent-ui 312 passing；session/persistent-session、gateway HTTP/RPC、console 命令及既有 SSH、vim、dashboard 行为全量通过。

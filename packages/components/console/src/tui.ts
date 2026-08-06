@@ -134,6 +134,7 @@ export class TuiRenderer extends ConsoleRenderer {
         const regionId = this.resolveRenderRegionId(element);
         const regionStart = regionId ? lines.length : -1;
         const clickStart = this.hasClickHandler(element) ? lines.length : -1;
+        const elementStartRow = lines.length;
         const finishRegion = () => {
             if (!regionId || lines.length <= regionStart) {
                 return;
@@ -147,8 +148,10 @@ export class TuiRenderer extends ConsoleRenderer {
             }
             clickTargets.push({
                 node: element,
-                startRow: clickStart,
-                endRow: lines.length
+                x: 0,
+                y: clickStart,
+                width: width ?? this.resolveMaxLineWidth(lines.slice(clickStart)),
+                height: lines.length - clickStart
             });
         };
 
@@ -160,6 +163,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     lines.push(...this.renderInlineLines(element, { ...styleMap, 'font-weight': 'bold' }, width));
                 }
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -171,6 +175,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -181,6 +186,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -188,6 +194,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -419,9 +426,11 @@ export class TuiRenderer extends ConsoleRenderer {
                 });
                 childClickTargets.forEach(target => {
                     clickTargets.push({
-                        ...target,
-                        startRow: start + offset.row + target.startRow,
-                        endRow: start + offset.row + target.endRow
+                        node: target.node,
+                        x: offset.column + target.x,
+                        y: start + offset.row + target.y,
+                        width: target.width,
+                        height: target.height
                     });
                 });
                 if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
@@ -450,6 +459,38 @@ export class TuiRenderer extends ConsoleRenderer {
 
     protected hasClickHandler(element?: ConsoleElement): boolean {
         return !!element?.events?.listenerCount?.('click');
+    }
+
+    protected collectNestedClickTargets(
+        element: ConsoleElement,
+        startRow: number,
+        endRow: number,
+        lines: string[],
+        width: number | undefined,
+        clickTargets: TerminalClickTarget[],
+        visited: WeakSet<object>
+    ): void {
+        element.childNodes.forEach(child => {
+            if (!(child instanceof ConsoleElement) || visited.has(child)) {
+                return;
+            }
+            visited.add(child);
+            const childElement = child as ConsoleElement;
+            const styleMap = this.getStyleMap(childElement);
+            if (String(styleMap.display || '').trim().toLowerCase() === 'none') {
+                return;
+            }
+            if (this.hasClickHandler(childElement)) {
+                clickTargets.push({
+                    node: childElement,
+                    x: 0,
+                    y: startRow,
+                    width: width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow)),
+                    height: endRow - startRow
+                });
+            }
+            this.collectNestedClickTargets(childElement, startRow, endRow, lines, width, clickTargets, visited);
+        });
     }
 
     protected getInheritedStyleMap(styleMap: Record<string, string>): Record<string, string> {
@@ -530,6 +571,10 @@ export class TuiRenderer extends ConsoleRenderer {
             framed.push(`${this.applyAnsi('└', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┘', styleMap, undefined, true)}`);
         }
         return framed;
+    }
+
+    protected resolveMaxLineWidth(lines: string[]): number {
+        return lines.reduce((max, line) => Math.max(max, getDisplayWidth(this.stripAnsi(line))), 0);
     }
 
     protected resolveBlockContentOffset(styleMap: Record<string, string>): { row: number; column: number } {

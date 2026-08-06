@@ -233,265 +233,6 @@ export class AgentConsoleStatusPanelComponent {
 }
 
 @Component({
-    selector: 'agent-console-dashboard-panel',
-    imports: CONSOLE_BASE_IMPORTS,
-    template: `
-    <div class="console-panel console-dashboard-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{dashboardSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="dashboardCountersLabel">{{dashboardCountersLabel}}</label>
-        <label v-style="statsStyle" v-show="dashboardStatsLabel">{{dashboardStatsLabel}}</label>
-        <label v-style="qualityStyle" v-show="dashboardUsageLabel">{{dashboardUsageLabel}}</label>
-        <label v-style="qualityStyle" v-show="dashboardQualityLabel">{{dashboardQualityLabel}}</label>
-        <label v-style="qualityStyle" v-show="dashboardCompactionLabel">{{dashboardCompactionLabel}}</label>
-        <label v-style="qualityStyle" v-show="dashboardTurnDiagnosticsLabel">{{dashboardTurnDiagnosticsLabel}}</label>
-        <label v-style="detailStyle" v-show="dashboardDetailLabel">{{dashboardDetailLabel}}</label>
-    </div>
-    `
-})
-export class AgentConsoleDashboardPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
-    }
-
-    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
-
-    protected get activeTheme(): AgentConsoleTheme {
-        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
-    }
-
-    protected get activeThemeStyles(): AgentConsoleThemeStyles {
-        return resolvePanelThemeStyles(this.state, this.theme);
-    }
-
-    get shellStyle() {
-        return this.shouldShow ? resolveSectionFrameStyle(this.activeThemeStyles.messagesShell) : {};
-    }
-
-    get accentStyle() {
-        return this.activeThemeStyles.toolsAccent;
-    }
-
-    get metaStyle() {
-        return this.activeThemeStyles.statusLabel;
-    }
-
-    get detailStyle() {
-        return this.activeThemeStyles.statusValue;
-    }
-
-    get statsStyle() {
-        return this.activeThemeStyles.statusValue;
-    }
-
-    get dashboardSummaryLabel(): string {
-        const parts = [
-            this.state.status || 'idle',
-            this.state.workspace ? `workspace ${this.workspaceLabel(this.state.workspace)}` : '',
-            this.state.projectLabel ? `project ${this.state.projectLabel}` : ''
-        ].filter(Boolean);
-        return parts.length ? `dashboard · ${parts.join(' · ')}` : 'dashboard';
-    }
-
-    get dashboardCountersLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        const activeTasks = this.activeDashboardTaskCount;
-        const totalTasks = this.totalDashboardTaskCount;
-        const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
-        const activeApprovals = this.state.pendingApprovals.length;
-        const activeTools = this.state.runningTools.length;
-        const activities = this.state.activities.length;
-        const totalTokens = this.state.tokenUsage.totalTokens || 0;
-        return [
-            `approvals ${formatCompactNumber(activeApprovals)}`,
-            `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}`,
-            `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}`,
-            `tools ${formatCompactNumber(activeTools)}`,
-            `activity ${formatCompactNumber(activities)}`,
-            totalTokens ? `tokens ${formatCompactNumber(totalTokens)}` : ''
-        ].filter(Boolean).join(' · ');
-    }
-
-    get dashboardStatsLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        const runs = this.state.toolRuns;
-        if (!runs.length) {
-            return '';
-        }
-        const completed = runs.filter(run => run.status !== 'running');
-        const running = runs.length - completed.length;
-        const success = completed.filter(run => run.status === 'success').length;
-        const failed = completed.length - success;
-        const durations = completed
-            .map(run => run.durationMs)
-            .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-        const avgDuration = durations.length
-            ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
-            : 0;
-        const successRate = completed.length ? Math.round((success / completed.length) * 100) : 0;
-        return [
-            `runs ${runs.length}`,
-            `ok ${success}`,
-            `fail ${failed}`,
-            running ? `running ${running}` : '',
-            completed.length ? `success ${successRate}%` : '',
-            durations.length ? `avg ${avgDuration}ms` : ''
-        ].filter(Boolean).join(' · ');
-    }
-
-    get qualityStyle() {
-        return this.activeThemeStyles.statusNoticeValue;
-    }
-
-    get dashboardQualityLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return this.state.summaryQualityDigest ? `quality · ${this.state.summaryQualityDigest}` : '';
-    }
-
-    get dashboardUsageLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return this.state.usageDigest ? `usage · ${this.state.usageDigest}` : '';
-    }
-
-    get dashboardCompactionLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return this.state.compactionDigest ? `compaction · ${this.state.compactionDigest}` : '';
-    }
-
-    get dashboardTurnDiagnosticsLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return this.state.turnDiagnosticsDigest ? `diagnostics · ${this.state.turnDiagnosticsDigest}` : '';
-    }
-
-    get dashboardDetailLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        const lines: string[] = [];
-        if (this.state.contextPreparationSummary) {
-            lines.push(this.state.contextPreparationSummary);
-        }
-        if (this.state.projectSummary) {
-            lines.push(`project summary ${this.summarize(this.state.projectSummary)}`);
-        }
-        if (this.state.notice) {
-            lines.push(`notice ${this.summarize(this.state.notice)}`);
-        }
-        if (this.state.lastError) {
-            lines.push(`error ${this.summarize(this.state.lastError)}`);
-        }
-        const runningToolRuns = this.state.toolRuns.filter(r => r.status === 'running');
-        if (runningToolRuns.length) {
-            for (const run of runningToolRuns.slice(0, 2)) {
-                const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
-                const summary = run.inputSummary || run.message || run.name;
-                lines.push(`▶ ${run.name}${attempt} · ${this.summarize(summary)}`);
-            }
-        }
-        const latestToolRun = this.state.toolRuns.find(r => r.status !== 'running') || this.state.toolRuns[0];
-        if (latestToolRun && !runningToolRuns.includes(latestToolRun)) {
-            const summary = latestToolRun.outputSummary || latestToolRun.inputSummary || latestToolRun.message || latestToolRun.error || latestToolRun.name;
-            lines.push(`tool ${latestToolRun.name} ${latestToolRun.status}${latestToolRun.durationMs != null ? ` ${latestToolRun.durationMs}ms` : ''} · ${this.summarize(summary)}`);
-        }
-        const latestActivity = this.state.activities[this.state.activities.length - 1];
-        if (latestActivity) {
-            lines.push(`activity ${latestActivity.kind} · ${this.summarize(latestActivity.message)}`);
-        }
-        const latestJob = this.latestScheduledTask();
-        if (latestJob) {
-            lines.push(`job ${latestJob.id} · ${this.summarize(latestJob.prompt)} · ${latestJob.running ? 'running' : latestJob.paused ? 'paused' : 'idle'}`);
-        }
-        const latestApproval = this.state.pendingApprovals[this.state.pendingApprovals.length - 1];
-        if (latestApproval) {
-            lines.push(`approval ${latestApproval.toolName} · ${this.summarize(latestApproval.reason)}`);
-        }
-        const latestTask = this.latestReviewTask();
-        if (latestTask && !this.hasActivePlanTodos) {
-            lines.push(`task ${latestTask.id} · ${this.summarize(latestTask.title)} · ${latestTask.status || 'idle'}`);
-        }
-        return lines.join('\n');
-    }
-
-    get shouldShow(): boolean {
-        return !!this.state.status
-            && (
-                this.state.status !== 'idle'
-                || !!this.state.notice
-                || !!this.state.lastError
-                || !!this.state.projectLabel
-                || !!this.state.projectSummary
-                || !!this.state.contextPreparationSummary
-                || !!this.state.pendingApprovals.length
-                || !!this.state.scheduledTasks.length
-                || this.hasActivePlanTodos
-                || !!this.state.reviewTaskChoices.length
-                || !!this.state.toolRuns.length
-                || !!this.state.activities.length
-                || !!this.state.runningTools.length
-                || (this.state.tokenUsage.totalTokens || 0) > 0
-            );
-    }
-
-    protected get totalDashboardTaskCount(): number {
-        return this.hasActivePlanTodos ? this.state.planTodos.length : this.state.reviewTaskChoices.length;
-    }
-
-    protected get activeDashboardTaskCount(): number {
-        if (this.hasActivePlanTodos) {
-            return this.state.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
-        }
-        return this.state.reviewTaskChoices.filter(task => this.isActiveReviewTask(task)).length;
-    }
-
-    protected get hasActivePlanTodos(): boolean {
-        return this.state.planTodos.some(item => item.status === 'pending' || item.status === 'in_progress');
-    }
-
-    protected latestScheduledTask(): ScheduledAgentTask | undefined {
-        return this.state.scheduledTasks
-            .slice()
-            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
-    }
-
-    protected latestReviewTask(): AgentConsoleReviewTaskItem | undefined {
-        return this.state.reviewTaskChoices
-            .slice()
-            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
-    }
-
-    protected isActiveReviewTask(task?: AgentConsoleReviewTaskItem | null): boolean {
-        const status = String(task?.status || '').trim().toLowerCase();
-        return status === 'planned' || status === 'running';
-    }
-
-    protected workspaceLabel(workspace?: string): string {
-        const text = String(workspace || '').trim();
-        if (!text) {
-            return '';
-        }
-        const segments = text.split(/[\\/]/).filter(Boolean);
-        return segments[segments.length - 1] || text;
-    }
-
-    protected summarize(value: string): string {
-        const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
-            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
-            : text;
-    }
-}
-
-@Component({
     selector: 'agent-console-input-panel',
     imports: CONSOLE_FORM_IMPORTS,
     template: `
@@ -802,6 +543,22 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         return this.activeThemeStyles.toolsAccent;
     }
 
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get statsStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get qualityStyle() {
+        return this.activeThemeStyles.statusNoticeValue;
+    }
+
     get promptTokens(): number {
         return this.state.tokenUsage.promptTokens;
     }
@@ -835,11 +592,11 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     }
 
     get shouldShow(): boolean {
-        return this.state.status === 'running' || this.state.status === 'reasoning';
+        return this.hasWorkingState;
     }
 
     get workingDetail(): string {
-        if (!this.shouldShow) {
+        if (!this.hasWorkingState) {
             return '';
         }
         const parts = [`(${this.elapsedLabel} • wait for reply)`];
@@ -849,7 +606,15 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             parts.push(this.runningLabel);
         }
         parts.push(`${this.totalTokens} tokens`);
+        const dashboard = this.dashboardTextLabel;
+        if (dashboard) {
+            parts.push(dashboard);
+        }
         return ` ${parts.join(' · ')}`;
+    }
+
+    protected get hasWorkingState(): boolean {
+        return this.state.status === 'running' || this.state.status === 'reasoning';
     }
 
     get toolRunProgressBar(): string {
@@ -873,7 +638,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     }
 
     get animatedLabel(): string {
-        if (!this.shouldShow) {
+        if (!this.hasWorkingState) {
             return '';
         }
         const running = this.state.runningTools;
@@ -900,6 +665,205 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
 
     get animatedGlowRadius(): number {
         return 1;
+    }
+
+    get dashboardSummaryLabel(): string {
+        const parts = [
+            this.state.status || 'idle',
+            this.state.workspace ? `workspace ${this.workspaceLabel(this.state.workspace)}` : '',
+            this.state.projectLabel ? `project ${this.state.projectLabel}` : ''
+        ].filter(Boolean);
+        return parts.length ? `dashboard · ${parts.join(' · ')}` : 'dashboard';
+    }
+
+    get dashboardTextLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return [
+            this.dashboardCountersLabel,
+            this.dashboardStatsLabel,
+            this.dashboardUsageLabel,
+            this.dashboardQualityLabel,
+            this.dashboardCompactionLabel,
+            this.dashboardTurnDiagnosticsLabel,
+            this.dashboardDetailLabel
+        ].filter(Boolean).join(' · ');
+    }
+
+    get dashboardCountersLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const activeTasks = this.activeDashboardTaskCount;
+        const totalTasks = this.totalDashboardTaskCount;
+        const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
+        const activeApprovals = this.state.pendingApprovals.length;
+        const activeTools = this.state.runningTools.length;
+        const activities = this.state.activities.length;
+        const totalTokens = this.state.tokenUsage.totalTokens || 0;
+        return [
+            activeApprovals > 0 ? `approvals ${formatCompactNumber(activeApprovals)}` : '',
+            this.state.scheduledTasks.length > 0 ? `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}` : '',
+            totalTasks > 0 ? `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}` : '',
+            activeTools > 0 ? `tools ${formatCompactNumber(activeTools)}` : '',
+            activities > 0 ? `activity ${formatCompactNumber(activities)}` : '',
+            totalTokens > 0 ? `tokens ${formatCompactNumber(totalTokens)}` : ''
+        ].filter(Boolean).join(' · ');
+    }
+
+    get dashboardStatsLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const runs = this.state.toolRuns;
+        if (!runs.length) {
+            return '';
+        }
+        const completed = runs.filter(run => run.status !== 'running');
+        const running = runs.length - completed.length;
+        const success = completed.filter(run => run.status === 'success').length;
+        const failed = completed.length - success;
+        const durations = completed
+            .map(run => run.durationMs)
+            .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+        const avgDuration = durations.length
+            ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
+            : 0;
+        const successRate = completed.length ? Math.round((success / completed.length) * 100) : 0;
+        return [
+            runs.length > 0 ? `runs ${runs.length}` : '',
+            success > 0 ? `ok ${success}` : '',
+            failed > 0 ? `fail ${failed}` : '',
+            running > 0 ? `running ${running}` : '',
+            completed.length > 0 ? `success ${successRate}%` : '',
+            durations.length > 0 ? `avg ${avgDuration}ms` : ''
+        ].filter(Boolean).join(' · ');
+    }
+
+    get dashboardQualityLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.summaryQualityDigest ? `quality · ${this.state.summaryQualityDigest}` : '';
+    }
+
+    get dashboardUsageLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.usageDigest ? `usage · ${this.state.usageDigest}` : '';
+    }
+
+    get dashboardCompactionLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.compactionDigest ? `compaction · ${this.state.compactionDigest}` : '';
+    }
+
+    get dashboardTurnDiagnosticsLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.turnDiagnosticsDigest ? `diagnostics · ${this.state.turnDiagnosticsDigest}` : '';
+    }
+
+    get dashboardDetailLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const lines: string[] = [];
+        if (this.state.contextPreparationSummary) {
+            lines.push(this.state.contextPreparationSummary);
+        }
+        if (this.state.projectSummary) {
+            lines.push(`project summary ${this.summarize(this.state.projectSummary)}`);
+        }
+        if (this.state.notice) {
+            lines.push(`notice ${this.summarize(this.state.notice)}`);
+        }
+        if (this.state.lastError) {
+            lines.push(`error ${this.summarize(this.state.lastError)}`);
+        }
+        const runningToolRuns = this.state.toolRuns.filter(r => r.status === 'running');
+        if (runningToolRuns.length) {
+            for (const run of runningToolRuns.slice(0, 2)) {
+                const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
+                const summary = run.inputSummary || run.message || run.name;
+                lines.push(`▶ ${run.name}${attempt} · ${this.summarize(summary)}`);
+            }
+        }
+        const latestToolRun = this.state.toolRuns.find(r => r.status !== 'running') || this.state.toolRuns[0];
+        if (latestToolRun && !runningToolRuns.includes(latestToolRun)) {
+            const summary = latestToolRun.outputSummary || latestToolRun.inputSummary || latestToolRun.message || latestToolRun.error || latestToolRun.name;
+            lines.push(`tool ${latestToolRun.name} ${latestToolRun.status}${latestToolRun.durationMs != null ? ` ${latestToolRun.durationMs}ms` : ''} · ${this.summarize(summary)}`);
+        }
+        const latestActivity = this.state.activities[this.state.activities.length - 1];
+        if (latestActivity) {
+            lines.push(`activity ${latestActivity.kind} · ${this.summarize(latestActivity.message)}`);
+        }
+        const latestJob = this.latestScheduledTask();
+        if (latestJob) {
+            lines.push(`job ${latestJob.id} · ${this.summarize(latestJob.prompt)} · ${latestJob.running ? 'running' : latestJob.paused ? 'paused' : 'idle'}`);
+        }
+        const latestApproval = this.state.pendingApprovals[this.state.pendingApprovals.length - 1];
+        if (latestApproval) {
+            lines.push(`approval ${latestApproval.toolName} · ${this.summarize(latestApproval.reason)}`);
+        }
+        const latestTask = this.latestReviewTask();
+        if (latestTask && !this.hasActivePlanTodos) {
+            lines.push(`task ${latestTask.id} · ${this.summarize(latestTask.title)} · ${latestTask.status || 'idle'}`);
+        }
+        return lines.join(' · ');
+    }
+
+    protected get totalDashboardTaskCount(): number {
+        return this.hasActivePlanTodos ? this.state.planTodos.length : this.state.reviewTaskChoices.length;
+    }
+
+    protected get activeDashboardTaskCount(): number {
+        if (this.hasActivePlanTodos) {
+            return this.state.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        }
+        return this.state.reviewTaskChoices.filter(task => this.isActiveReviewTask(task)).length;
+    }
+
+    protected get hasActivePlanTodos(): boolean {
+        return this.state.planTodos.some(item => item.status === 'pending' || item.status === 'in_progress');
+    }
+
+    protected latestScheduledTask(): ScheduledAgentTask | undefined {
+        return this.state.scheduledTasks
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
+    }
+
+    protected latestReviewTask(): AgentConsoleReviewTaskItem | undefined {
+        return this.state.reviewTaskChoices
+            .slice()
+            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0];
+    }
+
+    protected isActiveReviewTask(task?: AgentConsoleReviewTaskItem | null): boolean {
+        const status = String(task?.status || '').trim().toLowerCase();
+        return status === 'planned' || status === 'running';
+    }
+
+    protected workspaceLabel(workspace?: string): string {
+        const text = String(workspace || '').trim();
+        if (!text) {
+            return '';
+        }
+        const segments = text.split(/[\\/]/).filter(Boolean);
+        return segments[segments.length - 1] || text;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
     }
 
     animatedCharAt(index: number): string {
@@ -2031,12 +1995,19 @@ export class AgentConsoleMessageTokensComponent {
     imports: [LabelComponent, SpanDirective, AgentConsoleMessageTokensComponent],
     template: `
     <label class="message-line" v-style="itemStyle">
-        <span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="tokens"></agent-console-message-tokens></span>
+        <span v-style="statusStyle">{{status}}</span>
+        <span v-style="roleStyle" v-show="role">{{role}}</span>
+        <span v-style="metaStyle" v-show="meta">{{meta}}</span>
+        <span v-style="prefixStyle" v-show="prefix">{{prefix}}</span>
+        <span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span>
+        <span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent" @click="toggleMessageDetail">{{toggleContent}}</span>
     </label>
     `
 })
 export class AgentConsoleMessageLineComponent {
     @Attribute() line?: AgentConsoleRenderedLine;
+
+    constructor(private state: AgentConsoleSessionState) {}
 
     get itemStyle(): Record<string, string> {
         return this.line?.itemStyle || {};
@@ -2066,8 +2037,35 @@ export class AgentConsoleMessageLineComponent {
         return this.line?.prefixStyle || {};
     }
 
+    get meta(): string {
+        return this.line?.meta || '';
+    }
+
+    get metaStyle(): Record<string, string> {
+        return this.line?.metaStyle || {};
+    }
+
+    get toggleContent(): string {
+        return this.line?.previewCollapsed ? this.line.content : '';
+    }
+
+    toggleMessageDetail(): void {
+        const messageId = String(this.line?.messageId || '').trim();
+        if (!messageId) return;
+        if (this.state.messageDetailOpen && this.state.selectedMessageId === messageId) {
+            this.state.closeMessageDetail();
+            return;
+        }
+        this.state.setSelectedMessageId(messageId);
+        this.state.openMessageDetail();
+    }
+
     get tokens(): Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> {
         return this.line?.tokens || [];
+    }
+
+    get contentTokens(): Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> {
+        return this.line?.previewCollapsed ? [] : this.tokens;
     }
 
     get lineStyle(): Record<string, string> {
@@ -2154,12 +2152,13 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="line in renderedLines">
-            <label class="message-line" v-style="line.itemStyle" @click="onMessageLineClick(line)">
+            <label class="message-line" v-style="line.itemStyle">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
                 <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
                 <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-                <span v-style="line.lineStyle">{{line.content}}</span>
+                <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="onMessageLineClick(line)">{{line.toggleContent}}</span>
+                <span v-style="line.lineStyle" v-else>{{line.content}}</span>
             </label>
         </div>
     </div>
@@ -2301,8 +2300,35 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
-        if (this.state.messagesFocused || this.state.messageDetailOpen) {
+        if (this.state.messagesFocused) {
             return this.messageItems;
+        }
+        if (this.state.messageDetailOpen) {
+            return this.messageItems.map(item => {
+                if (!item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
+                    return item;
+                }
+                const baseLine = item.lines[item.lines.length - 1];
+                const content = 'Click to collapse';
+                const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
+                return {
+                    ...item,
+                    lines: [...item.lines, {
+                        ...baseLine,
+                        previewCollapsed: true,
+                        prefix: '',
+                        prefixStyle: {},
+                        content,
+                        toggleContent: content,
+                        tokens: [{ text: content, tone: 'muted', style: toggleStyle } as AgentConsoleMarkdownToken as any],
+                        itemStyle: {
+                            ...(baseLine.itemStyle || {}),
+                            padding: '1em 1ch'
+                        },
+                        lineStyle: toggleStyle
+                    }]
+                };
+            });
         }
         return this.messageItems.map(item => this.truncateMessageItem(item));
     }
@@ -2312,27 +2338,32 @@ export class AgentConsoleMessagesPanelComponent {
             return item;
         }
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
-        const hiddenCount = item.lines.length - lines.length + 1;
+        const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
-        const previewText = `… ${hiddenCount} more lines. /messages + Enter to view`;
+        const toggleText = `… ${hiddenCount} more lines. Click to expand`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
-            cursor: 'pointer',
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
         };
-        lines[lines.length - 1] = {
+        const toggleStyle = { ...previewStyle, cursor: 'pointer' };
+        lines.push({
             ...baseLine,
             previewCollapsed: true,
             prefix: '',
             prefixStyle: {},
-            content: previewText,
+            content: toggleText,
+            toggleContent: toggleText,
             tokens: [{
-                text: previewText,
+                text: toggleText,
                 tone: 'muted',
-                style: previewStyle
+                style: toggleStyle
             } as AgentConsoleMarkdownToken as any],
-            lineStyle: previewStyle
-        };
+            itemStyle: {
+                ...(baseLine.itemStyle || {}),
+                padding: '1em 1ch'
+            },
+            lineStyle: toggleStyle
+        });
         return {
             ...item,
             lines
@@ -2375,12 +2406,14 @@ export class AgentConsoleMessagesPanelComponent {
     imports: [PanelComponent],
     template: `
     <panel
-        :summary="detailSummaryLabel"
-        :hint="detailHintLabel"
-        :detailLines="detailLines"
-        :visibleLines="state.consoleOptions.messageDetailVisibleLines"
         :expanded="state.messageDetailOpen"
-        @expandedChange="onExpandedChange"></panel>
+        @expandedChange="onExpandedChange">
+        <panel-header>{{detailSummaryLabel}}</panel-header>
+        <panel-summary>{{detailHintLabel}}</panel-summary>
+        <panel-body>
+            <label v-for="line in detailLines">{{line}}</label>
+        </panel-body>
+    </panel>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {

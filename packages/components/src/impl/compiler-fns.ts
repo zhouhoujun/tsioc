@@ -488,7 +488,6 @@ export function applyDirectiveToElement(
 ): void {
     const elementRef = injector.getElementRef(element);
     const directiveRef = (directive as Factoriable).ƿfac?.(injector, { elementRef, context });
-
     if (!directiveRef) return;
 
     // 附加指令到环境
@@ -1119,8 +1118,7 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
             
             // Setup if chain for conditional directives
             if (dirDef.dirType === DirectiveType.Conditional && instance instanceof BaseIfDirective) {
-                const parentEl = instance instanceof VIfDirective ? effectiveParent : (instance as any).parentNode;
-                setupIfChain(instance, parentEl ?? effectiveParent ?? null);
+                setupIfChain(instance, effectiveParent ?? null);
             }
 
             // Setup switch directive
@@ -1185,11 +1183,8 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
         renderer.removeAttribute(el, selector);
     });
 
-    const templateEl = el as RElement;
-    if (templateEl.childNodes?.length) {
-        walkNodesForBindings(templateEl.childNodes, renderer, delimiter);
-    }
-
+    // Child bindings were already created by bindingElement; re-walking here would
+    // reset node[BINDINGS] and wipe nested structural containers' binding factories.
     bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
 }
 
@@ -1216,13 +1211,8 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
         renderer.removeAttribute(container, selector);
     });
 
-    // Walk child nodes of the template element for bindings
-    // This ensures expressions like {{ item.name }} inside v-for templates get their bindings
-    const templateEl = el as RElement;
-    if (templateEl.childNodes?.length) {
-        walkNodesForBindings(templateEl.childNodes, renderer, delimiter);
-    }
-
+    // Child bindings were already created by bindingElement; re-walking here would
+    // reset node[BINDINGS] and wipe nested structural containers' binding factories.
     bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
 }
 

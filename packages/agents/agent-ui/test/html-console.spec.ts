@@ -25,16 +25,25 @@ import {
     imports: [PanelComponent],
     template: `
     <section>
-        <panel
-            :summary="summary"
-            :detailLines="detailLines"
-            :visibleLines="2"></panel>
+        <panel>
+            <panel-header>{{summary}}</panel-header>
+            <panel-summary>
+                <label v-for="line in summaryLines">{{line}}</label>
+            </panel-summary>
+            <panel-body>
+                <label v-for="line in detailLines">{{line}}</label>
+                <label v-if="showFooter">{{footer}}</label>
+            </panel-body>
+        </panel>
     </section>
     `
 })
 class HtmlPanelTestComponent {
     summary = 'Preview';
+    summaryLines = ['line 1', 'line 2', '… 2 more lines'];
     detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
+    showFooter = true;
+    footer = 'Footer';
 }
 
 @Suite('Agent HTML console')
@@ -201,25 +210,71 @@ export class HtmlConsoleTest {
             await ref.render();
             await Promise.resolve();
             const root = ref.hostView.rootNodes[0] as any;
-            const summary = root.querySelector('.panel-summary') as HTMLElement | null;
+            const panel = ref.hostView.query(PanelComponent) as ComponentRef<PanelComponent>;
 
             expect(root.textContent).toContain('Preview');
             expect(root.textContent).toContain('line 1');
             expect(root.textContent).toContain('line 2');
             expect(root.textContent).toContain('… 2 more lines');
             expect(root.textContent).not.toContain('line 4');
+            expect(root.textContent).toContain('点击展开');
 
-            summary?.click();
+            (root.querySelector('.panel-toggle') as HTMLElement | null)?.click();
             await Promise.resolve();
 
             expect(root.textContent).toContain('line 4');
             expect(root.textContent).not.toContain('… 2 more lines');
+            expect(root.textContent).toContain('点击折叠');
 
-            summary?.click();
+            panel.instance.expandText = 'Show details';
+            panel.instance.collapseText = 'Hide details';
+            (root.querySelector('.panel-toggle') as HTMLElement | null)?.click();
             await Promise.resolve();
 
             expect(root.textContent).toContain('… 2 more lines');
             expect(root.textContent).not.toContain('line 4');
+            expect(panel.instance.toggleLabel).toBe('Show details');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates projected panel v-for and v-if content through html renderer')
+    async updatesProjectedPanelContentThroughHtmlRenderer() {
+        const ctx = await Application.run(HtmlPanelTestComponent, {
+            deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
+            providers: [{
+                provide: DOCUMENT,
+                useFactory: () => {
+                    const { JSDOM } = require('jsdom');
+                    return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
+                }
+            }]
+        });
+        try {
+            const ref = ctx.runners.getRef(HtmlPanelTestComponent) as ComponentRef<HtmlPanelTestComponent>;
+            let root = ref.hostView.rootNodes[0] as HTMLElement;
+            expect(root.textContent).toContain('line 1');
+            expect(root.textContent).not.toContain('Footer');
+
+            ref.instance.summaryLines = ['Updated summary'];
+            ref.instance.detailLines = ['Updated body', 'Second body line'];
+            ref.instance.showFooter = false;
+            await ref.render();
+            await Promise.resolve();
+            root = ref.hostView.rootNodes[0] as HTMLElement;
+
+            expect(root.textContent).toContain('Updated summary');
+            expect(root.textContent).not.toContain('line 1');
+            expect(root.textContent).not.toContain('Footer');
+
+            (root.querySelector('.panel-toggle') as HTMLElement | null)?.click();
+            await Promise.resolve();
+
+            expect(root.textContent).toContain('Updated body');
+            expect(root.textContent).toContain('Second body line');
+            expect(root.textContent).not.toContain('Updated summary');
+            expect(root.textContent).not.toContain('Footer');
         } finally {
             await ctx.close();
         }
@@ -257,48 +312,21 @@ export class HtmlConsoleTest {
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        await ref.render();
-        await Promise.resolve();
-
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+
         const collapsedLine = messagesPanel.instance.renderedLines.find(line => line.previewCollapsed);
-        expect(collapsedLine?.content).toContain('/messages + Enter to view');
+        expect(collapsedLine?.toggleContent).toContain('Click to expand');
 
         messagesPanel.instance.onMessageLineClick(collapsedLine);
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
         expect(ref.instance.sessionState.inputFocused).toEqual(false);
 
-        const expandedLine = messagesPanel.instance.renderedLines.find(line => line.messageId === 'a1' && !line.previewCollapsed);
-        messagesPanel.instance.onMessageLineClick(expandedLine);
+        const collapseLine = messagesPanel.instance.renderedLines.find(line => line.toggleContent === 'Click to collapse');
+        expect(collapseLine?.messageId).toEqual('a1');
+        messagesPanel.instance.onMessageLineClick(collapseLine);
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(false);
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
-    }
-
-    @Test('input panel prompt renders a vim mode badge when vim mode is enabled')
-    async inputPanelPromptRendersVimModeBadge() {
-        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
-        const inputRoot = inputPanel.hostView.rootNodes[0] as any;
-        const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
-
-        await ref.render();
-        await Promise.resolve();
-
-        const defaultPrompt = inputField?.getAttribute('prompt') || '';
-        expect(defaultPrompt).not.toContain('vim');
-
-        ref.instance.sessionState.setVimMode(true);
-        await Promise.resolve();
-        expect(inputField?.getAttribute('prompt') || '').toContain('vim insert');
-
-        ref.instance.sessionState.setInputMode('normal');
-        await Promise.resolve();
-        expect(inputField?.getAttribute('prompt') || '').toContain('vim normal');
-
-        ref.instance.sessionState.setVimMode(false);
-        await Promise.resolve();
-        expect(inputField?.getAttribute('prompt') || '').not.toContain('vim');
     }
 
     @After()

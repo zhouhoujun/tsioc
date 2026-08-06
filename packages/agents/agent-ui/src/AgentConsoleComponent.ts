@@ -8,6 +8,7 @@ import {
     ConsoleTerminalSurfaceAccessor,
     ConsoleTerminalSurfaceLifecycle,
     decodeConsoleTextChunk,
+    SelectMenuMouseEvent,
     shouldSkipConsoleHistoryEntry,
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
@@ -29,7 +30,6 @@ const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
     template: `
     <div class="agent-console">
         <agent-console-brand-panel></agent-console-brand-panel>
-        <agent-console-dashboard-panel v-show="showDashboardPanel"></agent-console-dashboard-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
@@ -1874,25 +1874,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get showStatusPanel(): boolean {
         return !!this.state.notice || !!this.state.pendingApprovals.length;
-    }
-
-    get showDashboardPanel(): boolean {
-        return !!this.state.status && (
-            this.state.status !== 'idle'
-            || !!this.state.notice
-            || !!this.state.lastError
-            || !!this.state.projectLabel
-            || !!this.state.projectSummary
-            || !!this.state.contextPreparationSummary
-            || !!this.state.pendingApprovals.length
-            || !!this.state.scheduledTasks.length
-            || this.state.hasActivePlanTodos()
-            || !!this.state.reviewTaskChoices.length
-            || !!this.state.toolRuns.length
-            || !!this.state.activities.length
-            || !!this.state.runningTools.length
-            || (this.state.tokenUsage.totalTokens || 0) > 0
-        );
     }
 
     get showSessionsPanel(): boolean {
@@ -5126,14 +5107,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return -1;
     }
 
+    protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
+        this.surfaceAccessor?.dispatchMouse?.(mouse);
+    }
+
     async handleTerminalInput(
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ): Promise<void> {
         if (decoded.mouse) {
-            this.surfaceAccessor?.dispatchTerminalMouse(decoded.mouse);
+            this.dispatchTerminalMouseAt(decoded.mouse);
             return;
         }
+        this.surfaceAccessor?.notifyNonMouseInput?.();
         if (this.state.isSshShellActive && this.sshShell) {
             const raw = decodeConsoleTextChunk(chunk);
             if (raw === SSH_SHELL_DETACH_SEQUENCE) {

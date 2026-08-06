@@ -17,6 +17,7 @@ export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
 export interface AgentConsoleRenderedLine {
     messageId?: string;
     previewCollapsed?: boolean;
+    toggleContent?: string;
     statusKind?: AgentConsoleMessageStatus;
     statusLabel?: string;
     status?: string;

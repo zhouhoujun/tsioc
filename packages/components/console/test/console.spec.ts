@@ -192,17 +192,27 @@ class ConsolePanelTestComponent {
     imports: [PanelComponent],
     template: `
     <section>
-        <panel
-            :summary="summary"
-            :detailLines="detailLines"
-            :visibleLines="2"></panel>
+        <panel>
+            <panel-header>{{summary}}</panel-header>
+            <panel-summary>
+                <label v-for="line in summaryLines">{{line}}</label>
+            </panel-summary>
+            <panel-body>
+                <label v-for="line in detailLines">{{line}}</label>
+                <label v-if="showFooter">{{footer}}</label>
+            </panel-body>
+        </panel>
     </section>
     `
 })
 class ConsoleFoldPanelTestComponent {
     summary = 'Preview';
+    summaryLines = ['line 1', 'line 2', '… 2 more lines'];
     detailLines = ['line 1', 'line 2', 'line 3', 'line 4'];
+    showFooter = true;
+    footer = 'Footer';
 }
+
 
 @Component({
     selector: 'console-cjk-test',
@@ -755,13 +765,14 @@ export class ConsoleRendererTest {
             expect(surface.lastRenderedLines.join('\n')).toContain('line 2');
             expect(surface.lastRenderedLines.join('\n')).toContain('… 2 more lines');
             expect(surface.lastRenderedLines.join('\n')).not.toContain('line 4');
+            expect(surface.lastRenderedLines.join('\n')).toContain('点击展开');
 
-            const summaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
-            expect(summaryRow).toBeGreaterThanOrEqual(0);
+            const expandRow = surface.lastRenderedLines.findIndex(line => line.includes('点击展开'));
+            expect(expandRow).toBeGreaterThanOrEqual(0);
             expect(surface.dispatchMouse({
                 button: 0,
-                x: 1,
-                y: summaryRow + 1,
+                x: 3,
+                y: expandRow + 1,
                 release: true
             })).toBe(true);
             await Promise.resolve();
@@ -769,12 +780,13 @@ export class ConsoleRendererTest {
 
             expect(surface.lastRenderedLines.join('\n')).toContain('line 4');
             expect(surface.lastRenderedLines.join('\n')).not.toContain('… 2 more lines');
+            expect(surface.lastRenderedLines.join('\n')).toContain('点击折叠');
 
-            const expandedSummaryRow = surface.lastRenderedLines.findIndex(line => line.includes('Preview'));
+            const collapseRow = surface.lastRenderedLines.findIndex(line => line.includes('点击折叠'));
             expect(surface.dispatchMouse({
                 button: 0,
-                x: 1,
-                y: expandedSummaryRow + 1,
+                x: 3,
+                y: collapseRow + 1,
                 release: true
             })).toBe(true);
             await Promise.resolve();
@@ -787,6 +799,53 @@ export class ConsoleRendererTest {
             await ctx.close();
         }
     }
+
+    @Test('updates projected panel summary and body from dynamic v-for and v-if content')
+    async updatesProjectedPanelContent() {
+        const ctx = await Application.run(ConsoleFoldPanelTestComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleFoldPanelTestComponent) as ComponentRef<ConsoleFoldPanelTestComponent>;
+            const panel = ref.hostView.query(PanelComponent) as ComponentRef<PanelComponent>;
+
+            expect(panel.instance.headerLines).toEqual(['Preview']);
+            expect(panel.instance.summaryLines).toEqual(['line 1', 'line 2', '… 2 more lines']);
+            expect(panel.instance.bodyLines).toEqual(['line 1', 'line 2', 'line 3', 'line 4', 'Footer']);
+            expect(panel.instance.hasSummary).toBe(true);
+            expect(panel.instance.bodyVisible).toBe(false);
+            expect(panel.instance.toggleLabel).toBe('点击展开');
+
+            panel.instance.locale = 'en-US';
+            expect(panel.instance.toggleLabel).toBe('Click to expand');
+
+            panel.instance.expandText = 'Show details';
+            panel.instance.collapseText = 'Hide details';
+            expect(panel.instance.toggleLabel).toBe('Show details');
+
+            ref.instance.summaryLines = ['Updated summary'];
+            ref.instance.detailLines = ['Updated body', 'Second body line'];
+            ref.instance.showFooter = false;
+
+            expect(panel.instance.summaryLines).toEqual(['Updated summary']);
+            expect(panel.instance.bodyLines).toEqual(['Updated body', 'Second body line']);
+
+            panel.instance.toggle();
+            expect(panel.instance.expanded).toBe(true);
+            expect(panel.instance.bodyVisible).toBe(true);
+            expect(panel.instance.toggleLabel).toBe('Hide details');
+
+            ref.instance.summaryLines = [];
+            panel.instance.expanded = false;
+            expect(panel.instance.hasSummary).toBe(false);
+            expect(panel.instance.bodyVisible).toBe(true);
+            panel.instance.toggle();
+            expect(panel.instance.expanded).toBe(false);
+        } finally {
+            await ctx.close();
+        }
+    }
+
 
     @Test('prefers six digit hex colors in tui renderer')
     prefersSixDigitHexColors() {
