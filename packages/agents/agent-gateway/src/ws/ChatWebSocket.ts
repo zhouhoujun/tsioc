@@ -8,7 +8,7 @@ import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionQueue } from '../auth/SessionQueue';
 import { AppRpcServer } from '../app-rpc/AppRpcServer';
-import { AudioSessionHandler, AudioSessionEvents, AudioSessionState } from '../audio';
+import { AudioSessionHandler, AudioSessionEvents, AudioSessionState, AudioFrameQuota } from '../audio';
 
 const MAGIC_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const MAX_WS_MESSAGE_BYTES = 64 * 1024;
@@ -34,7 +34,8 @@ export class ChatWebSocket {
         private owners: SessionOwnerStore,
         private sessionQueue: SessionQueue,
         @Optional() private rpc?: AppRpcServer | null,
-        @Optional() private audio?: AudioSessionHandler | null
+        @Optional() private audio?: AudioSessionHandler | null,
+        @Optional() private quota?: AudioFrameQuota | null
     ) {
     }
 
@@ -73,6 +74,7 @@ export class ChatWebSocket {
 
         socket.on('close', () => {
             this.sessionQueue.remove(sessionId);
+            this.quota?.resetSession(sessionId);
             const state = this.audioStates.get(socket);
             if (state) {
                 void this.audio?.cancelSession(state).catch(() => undefined);
@@ -102,7 +104,9 @@ export class ChatWebSocket {
             }
 
             if (result.opcode === 0x02) {
-                this.handleAudioFrame(socket, result.payload, sessionId);
+                if (this.handleAudioFrame(socket, result.payload, sessionId)) {
+                    return Buffer.alloc(0);
+                }
                 continue;
             }
 
@@ -141,12 +145,26 @@ export class ChatWebSocket {
         }
     }
 
-    private handleAudioFrame(socket: DuplexSocket, payload: Buffer, sessionId: string): void {
+    private handleAudioFrame(socket: DuplexSocket, payload: Buffer, sessionId: string): boolean {
         const state = this.audioStates.get(socket);
         if (!state || !this.audio) {
-            return;
+            return false;
+        }
+        if (this.quota) {
+            const decision = this.quota.check(sessionId, payload);
+            if (!decision.allowed) {
+                void this.audio.cancelSession(state).catch(() => undefined);
+                this.writeJson(socket, {
+                    type: 'audio-error',
+                    sessionId,
+                    error: `audio quota exceeded: ${decision.reason ?? 'unknown'}`
+                });
+                socket.end();
+                return true;
+            }
         }
         this.audio.feedAudio(state, payload, this.audioEvents(socket, sessionId));
+        return false;
     }
 
     /**
@@ -168,6 +186,7 @@ export class ChatWebSocket {
                     this.audioStates.set(socket, this.audio.createSessionState());
                 }
                 const current = this.audioStates.get(socket)!;
+                this.quota?.resetSession(sessionId);
                 const result = this.audio.startSession(current);
                 this.writeJson(socket, {
                     type: 'audio-status',
@@ -185,6 +204,7 @@ export class ChatWebSocket {
                 }
                 const audio = this.audio;
                 void audio.endSession(state, events, sessionId).then(() => {
+                    this.quota?.resetSession(sessionId);
                     this.writeJson(socket, { type: 'audio-status', sessionId, available: audio.isAvailable, active: false });
                 }).catch(() => undefined);
                 break;
@@ -193,6 +213,7 @@ export class ChatWebSocket {
                 if (state) {
                     void this.audio.cancelSession(state).catch(() => undefined);
                 }
+                this.quota?.resetSession(sessionId);
                 this.writeJson(socket, { type: 'audio-status', sessionId, available: this.audio.isAvailable, active: false });
                 break;
             }

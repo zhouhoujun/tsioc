@@ -1,5 +1,28 @@
 import { HttpAuthOptions } from '@tsdi/security';
 
+/**
+ * Per-key audio frame quota limits enforced on the WebSocket audio channel.
+ */
+export interface AudioFrameQuotaOptions {
+    /**
+     * Maximum bytes per single audio frame. Defaults to 1 MiB.
+     */
+    maxFrameBytes?: number;
+    /**
+     * Maximum total audio bytes per session (reset on start/end/cancel/close).
+     * Defaults to 10 MiB.
+     */
+    maxSessionBytes?: number;
+    /**
+     * Maximum audio frames accepted per sliding window. Defaults to 12000.
+     */
+    maxFramesPerWindow?: number;
+    /**
+     * Sliding window duration in ms. Defaults to 60000.
+     */
+    windowMs?: number;
+}
+
 export interface GatewayConfig {
     /** HTTP listen host */
     host?: string;
@@ -19,6 +42,8 @@ export interface GatewayConfig {
     cors?: boolean;
     /** CORS allowed origins */
     corsOrigins?: string[];
+    /** Audio frame quota control for the WebSocket audio channel */
+    audioQuota?: AudioFrameQuotaOptions;
 }
 
 export const defaultGatewayConfig: GatewayConfig = {
@@ -29,5 +54,6 @@ export const defaultGatewayConfig: GatewayConfig = {
     rateLimitMax: 100,
     rateLimitWindowMs: 60_000,
     cors: true,
-    corsOrigins: ['*']
+    corsOrigins: ['*'],
+    audioQuota: undefined
 };

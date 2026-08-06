@@ -27,6 +27,7 @@ import { AppRpcServer } from './app-rpc/AppRpcServer';
 import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
 import { ChatWebSocket } from './ws/ChatWebSocket';
 import { AudioSessionHandler } from './audio/AudioSessionHandler';
+import { AudioFrameQuota } from './audio/AudioFrameQuota';
 import { GatewayConfig } from './contracts/GatewayConfig';
 import { createAgentGatewayProviders } from './provider';
 
@@ -59,7 +60,8 @@ import { createAgentGatewayProviders } from './provider';
         AppRpcHandler,
         StdioAppRpcServer,
         ChatWebSocket,
-        AudioSessionHandler
+        AudioSessionHandler,
+        AudioFrameQuota
     ],
     exports: [
         GatewayServer,
@@ -86,7 +88,8 @@ import { createAgentGatewayProviders } from './provider';
         AppRpcHandler,
         StdioAppRpcServer,
         ChatWebSocket,
-        AudioSessionHandler
+        AudioSessionHandler,
+        AudioFrameQuota
     ]
 })
 export class AgentGatewayModule {
