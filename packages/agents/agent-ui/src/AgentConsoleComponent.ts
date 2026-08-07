@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
-import { AudioCaptureAdapter, FileAdapter } from '@tsdi/common';
+import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
 import {
     clampConsoleTextCursor,
     ConsoleTextChunk,
@@ -92,7 +92,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ConsoleTerminalSurfaceAccessor) private surfaceAccessor?: ConsoleTerminalSurfaceAccessor | null,
         @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
         @Optional() private sshManager?: SshConnectionManager | null,
-        @Optional() private audioCapture?: AudioCaptureAdapter | null
+        @Optional() private audioCapture?: AudioCaptureAdapter | null,
+        @Optional() private audioPlayback?: AudioPlaybackAdapter | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -832,7 +833,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 await this.stopVoiceCapture(false);
                 const result = await this.sessionService.endVoiceSession(sessionId);
                 if (result?.ok && result.transcribed) {
-                    this.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}`);
+                    const playbackError = await this.playVoiceReply(result);
+                    this.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
                 } else {
                     this.notify(result?.error || (result?.transcribed ? `Transcribed: ${result.transcribed}` : 'Voice session produced no transcription.'));
                 }
@@ -922,6 +924,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.audioCapture.stop();
         await this.voiceCaptureFeed;
         this.voiceCaptureSessionId = '';
+    }
+
+    protected async playVoiceReply(result: Record<string, any>): Promise<string | undefined> {
+        const audio = result?.audio;
+        if (!this.audioPlayback || !Array.isArray(audio?.chunks) || audio.chunks.length === 0) {
+            return undefined;
+        }
+        if (!this.audioPlayback.isAvailable) {
+            return this.audioPlayback.missingComponents.join(', ') || 'playback adapter unavailable';
+        }
+        try {
+            const chunks = audio.chunks.map((chunk: string) => this.decodeVoiceAudioChunk(chunk));
+            await this.audioPlayback.play(chunks, {
+                format: audio.format as AudioPlaybackFormat,
+                sampleRate: 16000,
+                channels: 1
+            });
+            return undefined;
+        } catch (error: any) {
+            return error?.message ?? String(error);
+        }
+    }
+
+    protected decodeVoiceAudioChunk(value: string): Uint8Array {
+        const bufferCtor = (globalThis as any).Buffer;
+        if (bufferCtor) {
+            return new Uint8Array(bufferCtor.from(value, 'base64'));
+        }
+        if (typeof globalThis.atob === 'function') {
+            const binary = globalThis.atob(value);
+            return Uint8Array.from(binary, char => char.charCodeAt(0));
+        }
+        throw new Error('Base64 decoding is unavailable in this environment.');
     }
 
     /**
@@ -2373,6 +2408,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     onDestroy(): void {
         this.destroyed = true;
         void this.stopVoiceCapture(true).catch(() => undefined);
+        void Promise.resolve(this.audioPlayback?.stop()).catch(() => undefined);
         this.clearStreamingMessageState();
         this.clearInputHistoryRestoreTimers();
         this.state.copyFocusedTextAction = undefined;

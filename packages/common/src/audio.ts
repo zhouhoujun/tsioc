@@ -87,3 +87,26 @@ export abstract class AudioCaptureAdapter {
      */
     abstract cancel(): Promise<void> | void;
 }
+
+export type AudioPlaybackFormat = 'pcm16k' | 'wav' | 'webm' | 'mp3';
+
+export interface AudioPlaybackOptions {
+    format: AudioPlaybackFormat;
+    sampleRate?: number;
+    channels?: number;
+}
+
+/** Platform audio output used to play synthesized agent replies. */
+@Abstract()
+export abstract class AudioPlaybackAdapter {
+    get isAvailable(): boolean {
+        return true;
+    }
+
+    get missingComponents(): string[] {
+        return [];
+    }
+
+    abstract play(chunks: Uint8Array[], options: AudioPlaybackOptions): Promise<void> | void;
+    abstract stop(): Promise<void> | void;
+}

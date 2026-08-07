@@ -844,3 +844,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 2. ~~RPC 音频响应缺少体积边界~~ → 已完成：`AgentGatewayAudioOptions.maxResponseAudioBytes`（默认 10 MiB）限制单次 RPC 响应收集的合成音频；超出后停止收集并返回 `truncated: true`，WebSocket 原有二进制流式回传不受影响。
 3. ~~缓冲上限自动 end 丢失 session 归属~~ → 已完成：`AudioSessionHandler.feedAudio` 接受 owning `sessionId`，RPC / WebSocket 调用均透传；达到 `maxBufferedBytes` 自动转写时继续写入原会话，不再创建 `audio-{timestamp}` 临时会话。RPC end 后同时移除 per-session audio state。
 4. 测试：handler 自动 end 断言原 sessionId；RPC 全流程断言 TTS 被调用、格式/音频 chunk/字节数；新增响应 cap 截断测试。agent-gateway 全量 184 passing，`tsc --noEmit` clean。
+
+## P51 打磨（已完成）：平台音频播放与 console 双向闭环
+
+1. ~~RPC 返回 TTS 音频但 console 不播放~~ → 已完成：`@tsdi/common` 新增 `AudioPlaybackAdapter` / `AudioPlaybackOptions` / `AudioPlaybackFormat`；`AgentConsoleComponent` 可选注入播放器，`/voice stop` 解码 base64 音频并播放，播放不可用/失败时保留文字转写与 reply 并追加提示，component destroy 时停止播放。
+2. **Node 实现**：`NodeAudioPlaybackAdapter` 探测 `aplay` / `ffplay` / `play`（允许显式 command/args）；为规避当前 Node 24 + ts-node 8 子进程 pipe 基线异常，使用权限 `0600` 的临时音频文件传给播放器，结束后强制清理；PCM 传入 16 kHz/mono/S16_LE 参数。注册到 `ServerCommonModule`。
+3. **browser 实现**：`BrowserAudioPlaybackAdapter` 使用 Blob + object URL + Audio，stop 时 pause 并 revoke URL；注册到 `BrowserCommonModule`。
+4. 测试：platform-browser 5 passing（capture 3 + playback 2）；platform-server 新增 playback 2 条均通过（全量 16 passing，另有 3 条既有 Node capture stdout 时序失败，Node 24 + ts-node 8 环境基线）；agent-ui 新增播放成功/不可用 2 条，全量 325 passing，agent-ui `tsc --noEmit` clean。platform 根级 `tsc` 仍被既有 activities API 漂移阻断，与本次 common/audio 改动无关。

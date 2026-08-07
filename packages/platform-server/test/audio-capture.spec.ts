@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { NodeAudioCaptureAdapter } from '@tsdi/platform-server/common';
+import { NodeAudioCaptureAdapter, NodeAudioPlaybackAdapter } from '@tsdi/platform-server/common';
 
 const PCM_STREAM_SCRIPT = `
 const buf = Buffer.alloc(320, 1);
@@ -133,5 +133,25 @@ export class NodeAudioCaptureTest {
         expect(() => adapter.start({ onChunk: () => undefined })).toThrow(/already active/);
         await adapter.stop();
         await recorder.endPromise;
+    }
+}
+
+@Suite('Node audio playback adapter')
+export class NodeAudioPlaybackTest {
+    @Test('node playback reports a missing configured command')
+    missingCommand() {
+        const adapter = new NodeAudioPlaybackAdapter({ command: 'no-such-player-xyz' });
+        expect(adapter.isAvailable).toBe(false);
+        expect(adapter.missingComponents[0]).toContain('not found');
+    }
+
+    @Test('node playback pipes all chunks to the configured player')
+    async pipesChunks() {
+        const script = "const fs=require('fs');process.exit(fs.readFileSync(process.argv[1]).length===5?0:4);";
+        const adapter = new NodeAudioPlaybackAdapter({ command: 'node', args: ['-e', script] });
+
+        await adapter.play([Buffer.from('he'), Buffer.from('llo')], { format: 'pcm16k' });
+
+        expect(adapter.isAvailable).toBe(true);
     }
 }

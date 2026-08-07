@@ -1,7 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
 import { spawn, spawnSync, ChildProcessByStdio } from 'child_process';
 import { Readable } from 'stream';
-import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioCaptureAdapterOptions } from '@tsdi/common';
+import { promises as fs } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioCaptureAdapterOptions, AudioPlaybackAdapter, AudioPlaybackOptions } from '@tsdi/common';
 
 type AudioCaptureProc = ChildProcessByStdio<null, Readable, Readable>;
 
@@ -226,5 +229,93 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
             proc.once('close', done);
             proc.once('error', done);
         });
+    }
+}
+
+export interface NodeAudioPlaybackAdapterOptions {
+    command?: string;
+    args?: string[];
+}
+
+const PLAYBACK_DETECT_ORDER = ['aplay', 'ffplay', 'play'];
+
+/** Plays synthesized audio by piping it to an installed command-line player. */
+@Injectable()
+export class NodeAudioPlaybackAdapter extends AudioPlaybackAdapter {
+    private readonly resolvedCommand: string | null;
+    private proc: ReturnType<typeof spawn> | null = null;
+
+    constructor(private readonly options: NodeAudioPlaybackAdapterOptions = {}) {
+        super();
+        this.resolvedCommand = this.resolveCommand(options.command);
+    }
+
+    get isAvailable(): boolean {
+        return this.resolvedCommand !== null;
+    }
+
+    get missingComponents(): string[] {
+        return this.resolvedCommand ? [] : [this.options.command
+            ? `audio playback command '${this.options.command}' not found on PATH`
+            : `no supported audio playback command found on PATH (probed ${PLAYBACK_DETECT_ORDER.join(', ')})`];
+    }
+
+    async play(chunks: Uint8Array[], options: AudioPlaybackOptions): Promise<void> {
+        if (!this.resolvedCommand) {
+            throw new Error(this.missingComponents[0]);
+        }
+        await this.stop();
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'tsdi-audio-'));
+        const audioPath = path.join(tempDir, `reply.${options.format === 'pcm16k' ? 'pcm' : options.format}`);
+        try {
+            await fs.writeFile(audioPath, Buffer.concat(chunks.map(chunk => Buffer.from(chunk))), { mode: 0o600 });
+            const proc = spawn(this.resolvedCommand, this.buildArgs(options, audioPath), { stdio: ['ignore', 'ignore', 'pipe'] });
+            this.proc = proc;
+            let stderr = '';
+            proc.stderr?.on('data', chunk => { stderr += String(chunk); });
+            await new Promise<void>((resolve, reject) => {
+                proc.once('error', reject);
+                proc.once('close', code => code === 0 || code === null
+                    ? resolve()
+                    : reject(new Error(`audio playback process exited with code ${code}${stderr.trim() ? `: ${stderr.trim()}` : ''}`)));
+            });
+        } finally {
+            this.proc = null;
+            await fs.rm(tempDir, { recursive: true, force: true });
+        }
+    }
+
+    async stop(): Promise<void> {
+        const proc = this.proc;
+        if (!proc) return;
+        this.proc = null;
+        proc.kill('SIGTERM');
+    }
+
+    private resolveCommand(preferred?: string): string | null {
+        const candidates = preferred ? [preferred] : PLAYBACK_DETECT_ORDER;
+        return candidates.find(command => {
+            try {
+                return spawnSync(command, ['--version'], { stdio: 'ignore', timeout: 3000 }).status === 0;
+            } catch {
+                return false;
+            }
+        }) ?? null;
+    }
+
+    private buildArgs(options: AudioPlaybackOptions, audioPath: string): string[] {
+        if (this.options.args) return [...this.options.args, audioPath];
+        if (this.resolvedCommand === 'aplay') {
+            return options.format === 'pcm16k'
+                ? ['-q', '-t', 'raw', '-f', 'S16_LE', '-r', String(options.sampleRate ?? 16000), '-c', String(options.channels ?? 1), audioPath]
+                : ['-q', audioPath];
+        }
+        if (this.resolvedCommand === 'ffplay') {
+            const input = options.format === 'pcm16k'
+                ? ['-f', 's16le', '-ar', String(options.sampleRate ?? 16000), '-ac', String(options.channels ?? 1)]
+                : [];
+            return ['-nodisp', '-autoexit', '-loglevel', 'quiet', ...input, '-i', audioPath];
+        }
+        return ['-q', audioPath];
     }
 }

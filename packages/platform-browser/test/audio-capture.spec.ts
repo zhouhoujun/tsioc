@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { After, Suite, Test } from '@tsdi/unit';
-import { MediaRecorderAudioCaptureAdapter } from '@tsdi/platform-browser/common';
+import { BrowserAudioPlaybackAdapter, MediaRecorderAudioCaptureAdapter } from '@tsdi/platform-browser/common';
 
 function waitFor(condition: () => boolean, timeoutMs = 3000): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -101,6 +101,7 @@ export class MediaRecorderAudioCaptureTest {
     async cleanup() {
         delete (globalThis as any).navigator;
         delete (globalThis as any).MediaRecorder;
+        delete (globalThis as any).Audio;
     }
 
     @Test('media recorder adapter: reports missing surface when unavailable')
@@ -146,5 +147,42 @@ export class MediaRecorderAudioCaptureTest {
         await adapter.cancel();
         expect(recorder.ended).toBe(false);
         expect(recorder.error).toBe(null);
+    }
+}
+
+@Suite('Browser audio playback adapter')
+export class BrowserAudioPlaybackTest {
+    @After()
+    cleanup() {
+        delete (globalThis as any).Audio;
+    }
+
+    @Test('browser playback reports unavailable audio surface')
+    unavailable() {
+        const adapter = new BrowserAudioPlaybackAdapter();
+        expect(adapter.isAvailable).toBe(false);
+    }
+
+    @Test('browser playback creates, plays and releases an object URL')
+    async playsAndStops() {
+        const calls: string[] = [];
+        (globalThis as any).Audio = class {
+            constructor(public url: string) { calls.push(`create:${url}`); }
+            async play() { calls.push('play'); }
+            pause() { calls.push('pause'); }
+        };
+        const originalCreate = (globalThis as any).URL.createObjectURL;
+        const originalRevoke = (globalThis as any).URL.revokeObjectURL;
+        (globalThis as any).URL.createObjectURL = () => 'blob:test-audio';
+        (globalThis as any).URL.revokeObjectURL = (url: string) => calls.push(`revoke:${url}`);
+        try {
+            const adapter = new BrowserAudioPlaybackAdapter();
+            await adapter.play([Uint8Array.from([1, 2, 3])], { format: 'mp3' });
+            await adapter.stop();
+            expect(calls).toEqual(['create:blob:test-audio', 'play', 'pause', 'revoke:blob:test-audio']);
+        } finally {
+            (globalThis as any).URL.createObjectURL = originalCreate;
+            (globalThis as any).URL.revokeObjectURL = originalRevoke;
+        }
     }
 }

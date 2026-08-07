@@ -1,11 +1,11 @@
 import { Module } from '@tsdi/ioc';
-import { AudioCaptureAdapter, StreamAdapter, FileAdapter, ResponseStatusFormater, ContentSendAdapter } from '@tsdi/common';
+import { AudioCaptureAdapter, AudioPlaybackAdapter, StreamAdapter, FileAdapter, ResponseStatusFormater, ContentSendAdapter } from '@tsdi/common';
 import { NodeResponseStatusFormater } from './formater';
 import { ContentSendAdapterImpl } from './send';
 
 import { NodeFileAdapter } from './file';
 import { NodeStreamAdapter } from './stream';
-import { NodeAudioCaptureAdapter } from './audio';
+import { NodeAudioCaptureAdapter, NodeAudioPlaybackAdapter } from './audio';
 
 
 
@@ -15,7 +15,8 @@ import { NodeAudioCaptureAdapter } from './audio';
         { provide: FileAdapter, useClass: NodeFileAdapter },
         { provide: ContentSendAdapter, useClass: ContentSendAdapterImpl },
         { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater },
-        { provide: AudioCaptureAdapter, useClass: NodeAudioCaptureAdapter }
+        { provide: AudioCaptureAdapter, useClass: NodeAudioCaptureAdapter },
+        { provide: AudioPlaybackAdapter, useClass: NodeAudioPlaybackAdapter }
     ]
 })
 export class ServerCommonModule {

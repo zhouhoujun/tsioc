@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioCaptureAdapterOptions } from '@tsdi/common';
+import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioCaptureAdapterOptions, AudioPlaybackAdapter, AudioPlaybackOptions } from '@tsdi/common';
 
 /**
  * Options for {@link MediaRecorderAudioCaptureAdapter}.
@@ -179,5 +179,47 @@ export class MediaRecorderAudioCaptureAdapter extends AudioCaptureAdapter {
         return typeof navigator !== 'undefined'
             && !!navigator?.mediaDevices?.getUserMedia
             && typeof (globalThis as any).MediaRecorder === 'function';
+    }
+}
+
+/** Plays synthesized audio using the browser's Blob/Audio APIs. */
+@Injectable()
+export class BrowserAudioPlaybackAdapter extends AudioPlaybackAdapter {
+    private audio: any = null;
+    private objectUrl = '';
+
+    get isAvailable(): boolean {
+        return typeof (globalThis as any).Audio === 'function'
+            && typeof (globalThis as any).Blob === 'function'
+            && typeof (globalThis as any).URL?.createObjectURL === 'function';
+    }
+
+    get missingComponents(): string[] {
+        return this.isAvailable ? [] : ['Audio/Blob/URL.createObjectURL'];
+    }
+
+    async play(chunks: Uint8Array[], options: AudioPlaybackOptions): Promise<void> {
+        if (!this.isAvailable) throw new Error(`audio playback unavailable: missing ${this.missingComponents.join(', ')}`);
+        await this.stop();
+        const mime = options.format === 'pcm16k' ? 'audio/L16' : `audio/${options.format}`;
+        const blob = new (globalThis as any).Blob(chunks, { type: mime });
+        this.objectUrl = (globalThis as any).URL.createObjectURL(blob);
+        const audio = new (globalThis as any).Audio(this.objectUrl);
+        this.audio = audio;
+        try {
+            await audio.play();
+        } catch (error) {
+            await this.stop();
+            throw error;
+        }
+    }
+
+    async stop(): Promise<void> {
+        this.audio?.pause?.();
+        this.audio = null;
+        if (this.objectUrl) {
+            (globalThis as any).URL.revokeObjectURL?.(this.objectUrl);
+            this.objectUrl = '';
+        }
     }
 }

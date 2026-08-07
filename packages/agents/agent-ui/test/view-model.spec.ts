@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { createReadStream } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
-import { AudioCaptureAdapter, AudioCaptureSessionEvents, Encodings, FileAdapter, FileDirectoryEntry, IReadable } from '@tsdi/common';
+import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioPlaybackAdapter, AudioPlaybackOptions, Encodings, FileAdapter, FileDirectoryEntry, IReadable } from '@tsdi/common';
 import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
@@ -137,6 +137,18 @@ class AudioCaptureStub extends AudioCaptureAdapter {
     override async stop(): Promise<void> { this.stops++; this.events?.onEnd?.(); }
     override async cancel(): Promise<void> { this.cancels++; }
     emit(chunk: string): void { this.events?.onChunk?.(Buffer.from(chunk)); }
+}
+
+class AudioPlaybackStub extends AudioPlaybackAdapter {
+    plays: Array<{ chunks: Uint8Array[]; options: AudioPlaybackOptions }> = [];
+    stops = 0;
+    available = true;
+    override get isAvailable(): boolean { return this.available; }
+    override get missingComponents(): string[] { return this.available ? [] : ['speaker']; }
+    override async play(chunks: Uint8Array[], options: AudioPlaybackOptions): Promise<void> {
+        this.plays.push({ chunks, options });
+    }
+    override async stop(): Promise<void> { this.stops++; }
 }
 
 class RuntimeStub {
@@ -744,6 +756,12 @@ class AppRpcStub {
                 ok: true,
                 transcribed: 'hello voice input',
                 reply: 'voice reply from gateway',
+                audio: {
+                    format: 'pcm16k',
+                    chunks: [Buffer.from('voice audio').toString('base64')],
+                    totalBytes: 11,
+                    truncated: false
+                },
                 active: false
             };
         }
@@ -1242,7 +1260,8 @@ function createConsoleParts(
     appRpc?: AppRpcStub,
     agentOptions?: any,
     inputHistoryStore?: InputHistoryStoreStub,
-    audioCapture?: AudioCaptureAdapter
+    audioCapture?: AudioCaptureAdapter,
+    audioPlayback?: AudioPlaybackAdapter
 ) {
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, appRpc as any, app as any);
@@ -1266,7 +1285,8 @@ function createConsoleParts(
         undefined,
         app as any,
         undefined,
-        audioCapture
+        audioCapture,
+        audioPlayback
     );
     return { state, bridge, component, sessionService: sessions };
 }
@@ -3182,6 +3202,51 @@ export class AgentConsoleComponentTest {
         expect(appRpc.audioStatesBySession.has('voice-5')).toEqual(false);
         expect(component.notice).toContain('Transcribed: hello voice input');
         expect(component.notice).toContain('Reply: voice reply from gateway');
+    }
+
+    @Test('voice stop plays synthesized RPC audio through the platform adapter')
+    async voiceStopPlaysSynthesizedAudio() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const playback = new AudioPlaybackStub();
+        const { state, component } = createConsoleParts(
+            runtime, scheduler, new ToolRegistryStub(), undefined, undefined,
+            undefined, undefined, appRpc, undefined, undefined, undefined, playback
+        );
+        state.sessionId = 'voice-playback';
+        await component.onInit();
+        component.input = '/voice start';
+        await component.submit();
+
+        component.input = '/voice stop';
+        await component.submit();
+
+        expect(playback.plays.length).toBe(1);
+        expect(playback.plays[0].options.format).toBe('pcm16k');
+        expect(Buffer.from(playback.plays[0].chunks[0]).toString()).toBe('voice audio');
+    }
+
+    @Test('voice stop preserves text reply when platform playback is unavailable')
+    async voiceStopReportsPlaybackUnavailable() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const playback = new AudioPlaybackStub();
+        playback.available = false;
+        const { state, component } = createConsoleParts(
+            runtime, scheduler, new ToolRegistryStub(), undefined, undefined,
+            undefined, undefined, appRpc, undefined, undefined, undefined, playback
+        );
+        state.sessionId = 'voice-no-playback';
+        await component.onInit();
+        component.input = '/voice start';
+        await component.submit();
+        component.input = '/voice stop';
+        await component.submit();
+
+        expect(component.notice).toContain('Reply: voice reply from gateway');
+        expect(component.notice).toContain('Audio playback unavailable: speaker');
     }
 
     @Test('voice cancel command cancels an active voice session')
