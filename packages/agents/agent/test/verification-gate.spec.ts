@@ -11,7 +11,8 @@ import { defaultAgentOptions } from '../src/options';
 import { VerificationGate } from '../src/harness/VerificationGate';
 import { EvidenceLedger } from '../src/harness/EvidenceLedger';
 import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
-import { buildAttemptSignature, buildRepairPrompt, buildExplorationGuidancePrompt } from '../src/harness/RepairExploration';
+import { buildAttemptSignature, buildRepairPrompt, buildExplorationGuidancePrompt, collectResolvedRepairHints } from '../src/harness/RepairExploration';
+import { TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
 
 class FakeApp {
     events: any[] = [];
@@ -383,6 +384,49 @@ export class VerificationGateRuntimeTest {
         expect(prompts[0]).toContain('across 1 attempt(s)');
         expect(result.message.content).toEqual('task completed after repair');
     }
+
+    @Test('a signature repaired in a prior turn is hinted in the next turn\'s repair prompt')
+    async crossTurnHintReuse() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const firstModel = new FailThenSucceedModelAdapter();
+        const firstRuntime = buildRuntime(firstModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        await firstRuntime.runTurn('s1', 'hello');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst.length).toEqual(1);
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        expect((recordsAfterFirst[0].metadata?.falsifiedSignatures as string[]).length).toEqual(1);
+
+        const secondModel = new FailThenSucceedModelAdapter();
+        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        const result = await secondRuntime.runTurn('s1', 'hello');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).toContain('Prior success from an earlier turn');
+        expect(prompts[0]).toContain('repaired in session s1');
+        expect(result.message.content).toEqual('task completed after repair');
+    }
+
+    @Test('a signature that was never repaired produces no hint in the next turn')
+    async crossTurnNoHintWhenUnresolved() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const failedModel = new FailingModelAdapter();
+        const failedRuntime = buildRuntime(failedModel, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 1 }, store);
+        await failedRuntime.runTurn('s1', 'hello');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst.length).toEqual(1);
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(false);
+
+        const secondModel = new FailThenSucceedModelAdapter();
+        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        await secondRuntime.runTurn('s1', 'hello');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+    }
 }
 
 @Suite('Repair exploration (P53)')
@@ -456,5 +500,108 @@ export class RepairExplorationTest {
         expect(prompt).toContain('different tool');
         expect(prompt).toContain('different path');
         expect(prompt).toContain('declare blocked');
+    }
+}
+
+@Suite('Repair hint reuse (P54)')
+export class RepairHintReuseTest {
+    private entry(toolName: string, inputSummary: string, reason: string, round: number) {
+        return {
+            id: `e-${round}-${toolName}`,
+            turnId: 't1',
+            sessionId: 's1',
+            toolName,
+            status: 'error' as const,
+            inputSummary,
+            error: 'boom',
+            falsificationReason: reason,
+            createdAt: Date.now()
+        };
+    }
+
+    private attempt(round: number, entries: any[]): any {
+        return {
+            round,
+            entries,
+            signatures: entries.map(entry => buildAttemptSignature(entry.toolName, entry.inputSummary)),
+            reasons: entries.map(entry => entry.falsificationReason ?? entry.error ?? 'failed')
+        };
+    }
+
+    private record(createdAt: number, resolved: boolean, signatures: string[], sessionId = 's1'): TurnDiagnosticsRecord {
+        return {
+            id: `r-${createdAt}`,
+            sessionId,
+            createdAt,
+            emptyResponseRetryCount: 0,
+            followUpRecoveryCount: 0,
+            followUpContextRewritten: false,
+            finalAssistantWasClarification: false,
+            repeatedClarificationDetected: false,
+            compactionCount: 0,
+            totalTokenSavings: 0,
+            metadata: {
+                repairResolved: resolved,
+                falsifiedSignatures: signatures
+            }
+        };
+    }
+
+    @Test('collectResolvedRepairHints returns hints only for signatures resolved in prior records')
+    async collectsOnlyResolvedMatchingSignatures() {
+        const echoSig = buildAttemptSignature('echo', 'a');
+        const terminalSig = buildAttemptSignature('terminal', 'run test');
+        const records = [
+            this.record(3, true, [echoSig]),
+            this.record(2, false, [terminalSig]),
+            this.record(1, true, [echoSig, terminalSig])
+        ];
+
+        const hints = collectResolvedRepairHints(records, [echoSig, terminalSig]);
+
+        expect(hints.length).toEqual(2);
+        const bySignature = new Map(hints.map(hint => [hint.signature, hint]));
+        expect(bySignature.has(echoSig)).toEqual(true);
+        expect(bySignature.has(terminalSig)).toEqual(true);
+        expect(hints[0].resolvedAt).toEqual(3);
+    }
+
+    @Test('collectResolvedRepairHints skips signatures the current turn has not falsified')
+    async skipsUnwantedSignatures() {
+        const otherSig = buildAttemptSignature('echo', 'unrelated');
+        const hints = collectResolvedRepairHints([this.record(1, true, [otherSig])], [buildAttemptSignature('echo', 'a')]);
+
+        expect(hints.length).toEqual(0);
+    }
+
+    @Test('buildRepairPrompt surfaces prior resolved hints')
+    async repairPromptSurfacesResolvedHints() {
+        const attempt = this.attempt(1, [this.entry('write_file', '/w/a.ts', 'write did not change', 1)]);
+        const hint = { signature: buildAttemptSignature('write_file', '/w/a.ts'), sessionId: 's9', resolvedAt: 100 };
+
+        const prompt = buildRepairPrompt([attempt], 0, { resolvedHints: [hint] });
+
+        expect(prompt).toContain('Prior success from an earlier turn');
+        expect(prompt).toContain(hint.signature);
+        expect(prompt).toContain('repaired in session s9');
+    }
+
+    @Test('buildExplorationGuidancePrompt surfaces prior resolved hints')
+    async explorationPromptSurfacesResolvedHints() {
+        const attempt = this.attempt(1, [this.entry('terminal', 'run test', 'exit 1', 1)]);
+        const hint = { signature: buildAttemptSignature('terminal', 'run test'), sessionId: 's9', resolvedAt: 100 };
+
+        const prompt = buildExplorationGuidancePrompt([attempt], [hint]);
+
+        expect(prompt).toContain('Prior success from an earlier turn');
+        expect(prompt).toContain(hint.signature);
+    }
+
+    @Test('buildRepairPrompt omits the hint section when there are no resolved hints')
+    async repairPromptOmitsHintsSectionWhenEmpty() {
+        const attempt = this.attempt(1, [this.entry('write_file', '/w/a.ts', 'write did not change', 1)]);
+        const prompt = buildRepairPrompt([attempt], 0, { resolvedHints: [] });
+
+        expect(prompt).not.toContain('Prior success from an earlier turn');
     }
 }

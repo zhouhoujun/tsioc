@@ -39,7 +39,7 @@ import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiag
 import { EvidenceLedger } from '../harness/EvidenceLedger';
 import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
-import { FalsificationAttempt, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt } from '../harness/RepairExploration';
+import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
@@ -74,6 +74,7 @@ interface TurnRecoveryState {
     attemptHistory: FalsificationAttempt[];
     repeatAttempts: number;
     writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
+    repairHints: ResolvedRepairHint[];
     terminated: boolean;
     terminationMessage: string;
 }
@@ -252,7 +253,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
-            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
+            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery);
             await this.runTurnHooks('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
@@ -342,7 +343,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
-                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger);
+                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery);
                 await this.runTurnHooks('afterTurn', sessionId, {
                     sessionId,
                     principalId,
@@ -1052,10 +1053,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger): Promise<void> {
+    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger, recovery?: TurnRecoveryState): Promise<void> {
         if (!this.turnDiagnosticsStore || !diagnostics) {
             return;
         }
+        const falsifiedSignatures = [...new Set(recovery?.attemptHistory.flatMap(attempt => attempt.signatures) ?? [])];
         const record: TurnDiagnosticsRecord = {
             id: this.uuid.generate(),
             sessionId,
@@ -1075,7 +1077,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
                 falsificationCount: diagnostics.falsificationCount ?? 0,
                 repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
-                repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0
+                repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0,
+                repairResolved: falsifiedSignatures.length > 0 && !recovery?.terminated,
+                falsifiedSignatures
             }
         };
         try {
@@ -1111,6 +1115,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             attemptHistory: [],
             repeatAttempts: 0,
             writeHints: [],
+            repairHints: [],
             terminated: false,
             terminationMessage: ''
         };
@@ -1154,8 +1159,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             const escalate = recovery.consecutiveFalsifications >= 2;
             const prompt = escalate
-                ? buildExplorationGuidancePrompt(recovery.attemptHistory)
-                : buildRepairPrompt(recovery.attemptHistory, recovery.repeatAttempts);
+                ? buildExplorationGuidancePrompt(recovery.attemptHistory, recovery.repairHints)
+                : buildRepairPrompt(recovery.attemptHistory, recovery.repeatAttempts, { resolvedHints: recovery.repairHints });
             return this.injectSystemPrompt(request, prompt);
         }
         return undefined;
@@ -1202,6 +1207,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             signatures,
             reasons: [...result.reasons]
         });
+        if (recovery.attemptHistory.length === 1) {
+            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, signatures);
+        }
 
         if (turnContext.diagnostics) {
             turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
@@ -1211,6 +1219,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (recovery.consecutiveFalsifications >= maxRepairRounds) {
             recovery.terminated = true;
             recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
+        }
+    }
+
+    private async loadResolvedRepairHints(sessionId: string, signatures: string[]): Promise<ResolvedRepairHint[]> {
+        if (!this.turnDiagnosticsStore || signatures.length === 0) {
+            return [];
+        }
+        try {
+            const records = await this.turnDiagnosticsStore.list(sessionId, { limit: 50 });
+            return collectResolvedRepairHints(records, signatures);
+        } catch {
+            return [];
         }
     }
 

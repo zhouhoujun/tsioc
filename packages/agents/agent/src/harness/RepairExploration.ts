@@ -1,4 +1,5 @@
 import { ToolEvidenceEntry } from './EvidenceLedger';
+import { TurnDiagnosticsRecord } from './TurnDiagnosticsStore';
 
 /**
  * One falsified tool round accumulated for exploration context (P53).
@@ -24,6 +25,18 @@ export interface RepairPromptOptions {
     maxEvidencePerAttempt?: number;
     /** Max attempts rendered in the summary. Default 8. */
     maxAttempts?: number;
+    /** Cross-turn resolved-repair hints to surface (P54). */
+    resolvedHints?: ResolvedRepairHint[];
+}
+
+/** Cross-turn hint that a falsified signature was repaired successfully in a prior turn (P54). */
+export interface ResolvedRepairHint {
+    /** Attempt signature that was eventually repaired. */
+    signature: string;
+    /** Session where the resolution was observed. */
+    sessionId: string;
+    /** Timestamp of the resolved turn's diagnostics record. */
+    resolvedAt: number;
 }
 
 export const DEFAULT_REPAIR_MAX_EVIDENCE_PER_ATTEMPT = 4;
@@ -51,6 +64,43 @@ export const EXPLORATION_STRATEGY_CATEGORIES = [
 
 function entryReason(entry: ToolEvidenceEntry): string {
     return entry.falsificationReason ?? entry.error ?? 'failed';
+}
+
+/**
+ * Collect cross-turn hints (P54): which of the given attempt signatures were
+ * repaired successfully in a prior resolved turn.
+ *
+ * A diagnostics record counts as "resolved" when its metadata carries
+ * `repairResolved: true` (persisted by the runtime at turn end) and lists the
+ * falsified signatures under `falsifiedSignatures`. Hints are ordered newest
+ * first and deduplicated by signature, so the repair prompt can tell the model
+ * "this exact failure was fixed before" instead of re-exploring from scratch.
+ */
+export function collectResolvedRepairHints(records: TurnDiagnosticsRecord[], signatures: string[]): ResolvedRepairHint[] {
+    const wanted = new Set(signatures);
+    const hints = new Map<string, ResolvedRepairHint>();
+    for (const record of [...records].sort((a, b) => b.createdAt - a.createdAt)) {
+        const metadata = record.metadata;
+        if (!metadata || metadata.repairResolved !== true || !Array.isArray(metadata.falsifiedSignatures)) {
+            continue;
+        }
+        for (const signature of metadata.falsifiedSignatures as string[]) {
+            if (wanted.has(signature) && !hints.has(signature)) {
+                hints.set(signature, { signature, sessionId: record.sessionId, resolvedAt: record.createdAt });
+            }
+        }
+    }
+    return [...hints.values()];
+}
+
+function appendResolvedHints(lines: string[], hints: ResolvedRepairHint[]): void {
+    if (hints.length === 0) {
+        return;
+    }
+    lines.push('Prior success from an earlier turn: these exact failures were repaired successfully before — reuse that repair approach:');
+    for (const hint of hints) {
+        lines.push(`- Signature "${hint.signature}" (repaired in session ${hint.sessionId})`);
+    }
 }
 
 /**
@@ -121,6 +171,8 @@ export function buildRepairPrompt(attempts: FalsificationAttempt[], repeatAttemp
         lines.push(`Previously attempted and rejected: ${rejectedSummary}`);
     }
 
+    appendResolvedHints(lines, options?.resolvedHints ?? []);
+
     const repeatWarning = repeatAttempts > 0
         ? ` You repeated ${repeatAttempts} already-rejected call(s).`
         : '';
@@ -139,7 +191,7 @@ export function buildRepairPrompt(attempts: FalsificationAttempt[], repeatAttemp
  * fires on repeating tool calls without errors): this one is evidence-driven
  * and enumerates exactly what was rejected before demanding a new strategy.
  */
-export function buildExplorationGuidancePrompt(attempts: FalsificationAttempt[]): string {
+export function buildExplorationGuidancePrompt(attempts: FalsificationAttempt[], resolvedHints?: ResolvedRepairHint[]): string {
     const lines: string[] = ['You have repeatedly failed with similar tool attempts. Approaches already tried and rejected:'];
     const visible = attempts.slice(-(DEFAULT_REPAIR_MAX_ATTEMPTS));
     if (visible.length === 0) {
@@ -155,6 +207,7 @@ export function buildExplorationGuidancePrompt(attempts: FalsificationAttempt[])
             lines.push(`- Attempt ${attempt.round}: Tool "${entry.toolName}" → ${entryReason(entry)}${repeatNote}`);
         }
     }
+    appendResolvedHints(lines, resolvedHints ?? []);
     lines.push(
         'Pick a strategy category you have NOT tried yet:',
         ...EXPLORATION_STRATEGY_CATEGORIES.map(category => `- ${category}`),

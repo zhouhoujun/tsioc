@@ -866,3 +866,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - `maybeInjectRecoveryPrompt`：普通修复注入 `buildRepairPrompt`（累计）；`consecutiveFalsifications >= 2` 升级为 `buildExplorationGuidancePrompt`（替代原先泛化的 `LOOP_RECOVERY_SYSTEM_PROMPT`，该常量保留给 A4 doom-loop 场景）。
    - `AgentTurnDiagnostics` 新增可选 `repairRoundsUsed` / `repeatedAttemptCount`，经 `recordTurnDiagnostics` 写入 `TurnDiagnosticsRecord.metadata`；`buildFalsificationSummaryMessage` 改为按尝试编号累计列出 + 重复尝试提示。
 2. 测试：`verification-gate.spec.ts` 新增 P53 纯函数套件 4 条（签名规范化、累计修复 prompt 含重复标注、空历史 fallback、探索指令枚举策略）+ 运行时 3 条（跨尝试累计 prompt、重复标注、diagnostics 持久化），并更新升级用例断言为探索指令。agent 全量 525 passing，`tsc --noEmit` clean。
+
+## P54 打磨（已完成）：跨会话修复经验复用（Cross-turn repair hint reuse）
+
+1. ~~被证伪且最终修复的签名未持久化，未来 turn 会从头重新探索~~ → 已完成（`@tsdi/agent`）：
+   - `src/harness/RepairExploration.ts` 新增 `ResolvedRepairHint`（signature / sessionId / resolvedAt）与 `collectResolvedRepairHints(records, signatures)`：按 `createdAt` 倒序扫描 `TurnDiagnosticsRecord`，仅当 metadata 带 `repairResolved: true` 且 `falsifiedSignatures` 命中当前签名时产出 hint（按签名去重、新者优先）。`buildRepairPrompt` 经 `RepairPromptOptions.resolvedHints`、`buildExplorationGuidancePrompt` 经新参数接收 hints，渲染 "Prior success from an earlier turn" 段；无 hints 时完全省略。`export *` 自动覆盖新符号。
+   - `DefaultAgentRuntime`：`TurnRecoveryState` 新增 `repairHints`；`runVerificationGate` 在该 turn 首次证伪（`attemptHistory.length === 1`）时经 `loadResolvedRepairHints` 从 `turnDiagnosticsStore.list(sessionId, { limit: 50 })` 加载并存入 recovery；`maybeInjectRecoveryPrompt` 将 hints 传入两个 prompt；`recordTurnDiagnostics` 新增 `recovery` 参数，持久化 `repairResolved`（有证伪且未 terminated）与去重后的 `falsifiedSignatures`（2 个调用点同步更新）。
+2. 测试：`verification-gate.spec.ts` 新增 P54 纯函数套件 5 条（仅命中已解决签名、跳过无关签名、两个 prompt 渲染 hint 段、空 hints 省略）+ 运行时 2 条（turn 1 修复成功后 turn 2 同签名提示 "Prior success"；未解决签名不产生 hint，`repairResolved` 断言）。agent 全量 532 passing，`tsc --noEmit` clean。
