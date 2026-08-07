@@ -799,7 +799,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.throwIfTurnCancelled(sessionId);
             const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
             if (termination) {
-                return { sessionId, message: this.createMessage('assistant', termination) };
+                return { sessionId, message: await this.completeTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination) };
             }
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
@@ -869,8 +869,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.throwIfTurnCancelled(sessionId);
             const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
             if (termination) {
-                yield { type: 'text', content: `\n\n${termination}\n\n` };
-                return { sessionId, message: this.createMessage('assistant', termination) };
+                const message = yield* this.completeStreamingTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination);
+                return { sessionId, message };
             }
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
@@ -1332,6 +1332,62 @@ export class DefaultAgentRuntime extends AgentRuntime {
             ? `\nNote: ${recovery.repeatAttempts} already-rejected attempt(s) were repeated.`
             : '';
         return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s) across ${attempts.length} attempt(s).\n${lines.join('\n')}${repeatNote}\nEnding the turn with a failure summary.`;
+    }
+
+    private buildTerminationWrapUpMessage(termination: string): AgentMessage {
+        return this.createMessage(
+            'user',
+            `The turn is ending because tool execution failed verification. ${termination}\n\nPlease provide a brief, natural final response to the user, in the same language the user used, explaining what was attempted, what failed, and any partial results or next steps. Do not call any more tools.`
+        );
+    }
+
+    private async completeTerminationMessage(
+        sessionId: string,
+        query: string,
+        currentUserMessageId: string,
+        turnContext: TurnExecutionContext,
+        termination: string
+    ): Promise<AgentMessage> {
+        await this.sessions.append(sessionId, this.buildTerminationWrapUpMessage(termination));
+        try {
+            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const finalResponse = await this.modelAdapter.complete(
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+            );
+            await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
+            const text = String(finalResponse.message ?? '').trim();
+            if (text) {
+                return this.createMessage('assistant', text, undefined, undefined, finalResponse.metadata);
+            }
+        } catch {
+            // wrap-up failure must not mask the raw termination summary
+        }
+        return this.createMessage('assistant', termination);
+    }
+
+    private async *completeStreamingTerminationMessage(
+        sessionId: string,
+        query: string,
+        currentUserMessageId: string,
+        turnContext: TurnExecutionContext,
+        termination: string
+    ): AsyncGenerator<StreamChunk, AgentMessage, void> {
+        await this.sessions.append(sessionId, this.buildTerminationWrapUpMessage(termination));
+        try {
+            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const finalResponse = yield* this.collectStreamingResponse(
+                sessionId,
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+            );
+            const text = String(finalResponse.message ?? '').trim();
+            if (text) {
+                return this.createMessage('assistant', text, undefined, undefined, finalResponse.metadata);
+            }
+        } catch {
+            // wrap-up failure must not mask the raw termination summary
+        }
+        yield { type: 'text', content: `\n\n${termination}\n\n` };
+        return this.createMessage('assistant', termination);
     }
 
     private async publishTurnDiagnosticsEvent(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
