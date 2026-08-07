@@ -430,7 +430,7 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 4 more lines. Press Enter or click to expand'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 4 more lines. Click to expand'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
@@ -628,7 +628,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
 
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
-        expect(workingLines.some(line => line.includes('wait for response'))).toBe(true);
+        expect(workingLines.some(line => line.includes('正在整理结果'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
         expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(true);
         expect(workingLines.some(line => line.includes('User:'))).toBe(false);

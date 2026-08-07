@@ -4705,7 +4705,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             return;
         }
-        const content = String(chunk?.content || '').trim();
+        const content = this.describeStreamEventContent(eventType, chunk);
         if (!content) {
             return;
         }
@@ -4732,6 +4732,32 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 status
             });
         });
+    }
+
+    protected describeStreamEventContent(eventType: string, chunk: any): string {
+        const content = String(chunk?.content || '').trim();
+        const toolName = String(chunk?.toolName || '').trim();
+        if (!toolName || !eventType.startsWith('tool_')) {
+            return content;
+        }
+        const labels: Record<string, string> = {
+            list_dir: '检查目录', glob_search: '搜索文件', content_search: '搜索代码',
+            read_file: '读取文件', write_file: '创建文件', edit_file: '修改文件',
+            apply_patch: '应用修改', mkdir: '创建目录', todo: '更新计划',
+            ask_user: '等待你的选择', coding_task: '执行实现任务', git_operations: '检查版本状态'
+        };
+        const label = labels[toolName] || toolName.replace(/[._-]+/g, ' ');
+        const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
+        if (eventType === 'tool_invoked') {
+            return `正在${label}${detail ? ` · ${detail}` : ''}`;
+        }
+        if (eventType === 'tool_completed') {
+            return `${label}完成${detail ? ` · ${detail}` : ''}`;
+        }
+        if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
+            return '未检测到 Git 仓库，继续处理文件';
+        }
+        return eventType === 'tool_failed' ? `${label}未完成` : content;
     }
 
     protected resolveToolEventKey(eventType: string, chunk: any): string | undefined {

@@ -605,9 +605,10 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             parts.push(progress);
             parts.push(this.runningLabel);
         } else {
-            const latest = this.state.activities[this.state.activities.length - 1];
+            const latest = [...this.state.activities].reverse().find(activity =>
+                activity.kind !== 'model' && activity.kind !== 'turn'
+            );
             parts.push(latest?.message || '正在整理结果');
-            parts.push('wait for response');
         }
         if (this.totalTokens > 0) {
             parts.push(`${this.totalTokens} tokens`);

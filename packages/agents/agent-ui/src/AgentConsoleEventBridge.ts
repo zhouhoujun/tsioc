@@ -343,7 +343,8 @@ export class AgentConsoleEventBridge {
 
     protected describeToolTimelineEvent(toolName: string, summary?: string): string {
         const resolvedSummary = this.summarizeToolEventDetail(toolName, summary);
-        return resolvedSummary ? `${toolName} · ${resolvedSummary}` : toolName;
+        const label = this.describeToolName(toolName);
+        return resolvedSummary ? `${label} · ${resolvedSummary}` : label;
     }
 
     protected describeToolName(toolName: string): string {
