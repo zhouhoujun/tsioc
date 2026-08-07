@@ -27,7 +27,7 @@ export abstract class StreamingTranscriptionAdapter {
      * Declared audio format accepted by this adapter.
      * Defaults to 'pcm16k' (raw 16 kHz mono PCM).
      */
-    readonly format: 'pcm16k' | 'wav' = 'pcm16k';
+    readonly format: 'pcm16k' | 'wav' | 'webm' = 'pcm16k';
 
     /**
      * Feed an audio chunk into the current transcription session.

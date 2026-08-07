@@ -5854,6 +5854,25 @@ export class AppRpcServerAudioTest {
         expect(statusDone.result.bufferedBytes).toBe(0);
     }
 
+    @Test('audio.start negotiates the capture format and rejects incompatible input')
+    async startNegotiatesAudioFormat() {
+        const { rpc, store } = this.makeRpc(true);
+        await store.get('s-1');
+
+        const accepted = await this.handle(rpc, 'audio.start', { sessionId: 's-1', format: 'pcm16k' });
+        expect(accepted.result.ok).toBe(true);
+        expect(accepted.result.format).toBe('pcm16k');
+        await this.handle(rpc, 'audio.cancel', { sessionId: 's-1' });
+
+        const incompatible = await this.handle(rpc, 'audio.start', { sessionId: 's-1', format: 'webm' });
+        expect(incompatible.result.ok).toBe(false);
+        expect(incompatible.result.format).toBe('pcm16k');
+        expect(incompatible.result.error).toContain("unsupported audio format 'webm'");
+
+        const invalid = await this.handle(rpc, 'audio.start', { sessionId: 's-1', format: 'mp3' });
+        expect(invalid.error.code).toBe(-32602);
+    }
+
     @Test('audio.feed and audio.end reject when no session was started')
     async feedAndEndWithoutStart() {
         const { rpc, store } = this.makeRpc(true);

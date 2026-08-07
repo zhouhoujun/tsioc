@@ -811,7 +811,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const sub = (arg || '').trim().split(/\s+/)[0];
         switch (sub) {
             case 'start': {
-                const result = await this.sessionService.startVoiceSession(sessionId);
+                const result = await this.sessionService.startVoiceSession(
+                    sessionId,
+                    this.audioCapture ? { format: this.audioCapture.format } : undefined
+                );
                 if (result?.ok) {
                     const captureError = await this.startVoiceCapture(sessionId);
                     if (captureError) {

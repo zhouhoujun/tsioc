@@ -642,11 +642,15 @@ export class AgentConsoleSessionService {
         return result ?? { available: false, active: false, bufferedBytes: 0 };
     }
 
-    async startVoiceSession(sessionId: string, context?: any): Promise<Record<string, any>> {
+    async startVoiceSession(
+        sessionId: string,
+        options?: { format?: 'pcm16k' | 'wav' | 'webm' },
+        context?: any
+    ): Promise<Record<string, any>> {
         if (!this.appRpc || !sessionId) {
             return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
         }
-        return (await this.appRpc.request('audio.start', { sessionId }, context)) ?? { ok: false, error: 'no response from gateway' };
+        return (await this.appRpc.request('audio.start', { sessionId, ...options }, context)) ?? { ok: false, error: 'no response from gateway' };
     }
 
     async feedVoiceAudio(sessionId: string, chunk: Uint8Array, context?: any): Promise<Record<string, any>> {

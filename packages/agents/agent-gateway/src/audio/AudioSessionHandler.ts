@@ -26,6 +26,8 @@ export interface AudioSessionState {
      * Whether a transcription/turn is currently in flight.
      */
     processing: boolean;
+    /** Input format negotiated when the session starts. */
+    inputFormat?: 'pcm16k' | 'wav' | 'webm';
 }
 
 export interface AudioSessionEvents {
@@ -92,15 +94,27 @@ export class AudioSessionHandler {
         };
     }
 
-    startSession(state: AudioSessionState): { ok: boolean; error?: string } {
+    startSession(
+        state: AudioSessionState,
+        inputFormat?: 'pcm16k' | 'wav' | 'webm'
+    ): { ok: boolean; error?: string; format?: 'pcm16k' | 'wav' | 'webm' } {
         if (!this.isAvailable) {
             return { ok: false, error: `audio unavailable: missing ${this.missingComponents.join(' and ')}` };
+        }
+        const requestedFormat = inputFormat ?? this.transcription!.format;
+        if (requestedFormat !== this.transcription!.format) {
+            return {
+                ok: false,
+                error: `unsupported audio format '${requestedFormat}'; transcription adapter accepts '${this.transcription!.format}'`,
+                format: this.transcription!.format
+            };
         }
         state.active = true;
         state.buffered = [];
         state.bufferedBytes = 0;
         state.processing = false;
-        return { ok: true };
+        state.inputFormat = requestedFormat;
+        return { ok: true, format: requestedFormat };
     }
 
     /**

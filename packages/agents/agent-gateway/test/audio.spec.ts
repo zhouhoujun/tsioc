@@ -117,6 +117,19 @@ export class AudioSessionHandlerTest {
         expect(okState.active).toBe(true);
     }
 
+    @Test('startSession rejects audio formats not accepted by the transcription adapter')
+    startSessionRejectsFormatMismatch() {
+        const { handler } = this.makeHandler();
+        const state = handler.createSessionState();
+
+        const result = handler.startSession(state, 'webm');
+
+        expect(result.ok).toBe(false);
+        expect(result.format).toBe('pcm16k');
+        expect(result.error).toContain("unsupported audio format 'webm'");
+        expect(state.active).toBe(false);
+    }
+
     @Test('feedAudio buffers chunks only while the session is active')
     async feedBuffersOnlyWhileActive() {
         const { handler } = this.makeHandler();

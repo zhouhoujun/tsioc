@@ -829,3 +829,11 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - adapter 不可用或启动失败时自动回滚 gateway audio session；采集/上传错误通过 console notice 呈现并取消远端会话。
 2. ~~P47 遗留的 WebSocket 音频配额~~ → 已由 `51b447dcd` 完成：`AudioFrameQuota` 覆盖单帧大小、会话累计字节和滑动窗口帧率限制；session owner ACL 在 WebSocket upgrade 的 `resolveSessionId` 中沿用 `SessionOwnerStore.canResume`。
 3. 测试：agent-ui 新增 3 条（平台 chunk 在 `audio.end` 前上传、采集不可用回滚、cancel 中止采集），全量 323 passing；agent-ui `tsc --noEmit` clean。
+
+## P49 打磨（已完成）：音频输入格式协商
+
+1. ~~browser `webm` / Node `pcm16k` 音频未经协商直接送入 STT~~ → 已完成（agent-gateway + agent-ui）：
+   - `StreamingTranscriptionAdapter.format` 扩展为 `pcm16k | wav | webm`；`AudioSessionHandler.startSession(state, inputFormat?)` 在激活会话前校验 capture 格式与 STT 接受格式，失败时返回明确的 accepted format 且不保存活动会话。未传格式的旧客户端继续采用 adapter 默认格式。
+   - RPC `audio.start` 接受并校验 `format`，非法枚举返回 `-32602`，不兼容格式返回 `{ ok: false, format, error }`；WebSocket audio start 控制消息同步支持相同协商与错误响应。
+   - `AgentConsoleSessionService.startVoiceSession` 透传格式；`AgentConsoleComponent` 从平台 `AudioCaptureAdapter.format` 读取实际格式。因此 browser `webm` 不再被静默送入只接受 PCM 的 STT，Node `pcm16k` 路径保持直通。
+2. 测试：gateway 新增 handler / RPC / WebSocket 格式协商 3 条，agent-ui 平台采集测试增加 format 透传断言。全量 agent-gateway 183、agent-ui 323 passing；两包 `tsc --noEmit` clean。

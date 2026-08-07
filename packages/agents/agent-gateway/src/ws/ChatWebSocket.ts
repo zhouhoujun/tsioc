@@ -182,17 +182,31 @@ export class ChatWebSocket {
         const events = this.audioEvents(socket, sessionId);
         switch (action) {
             case 'start': {
+                if (message.format !== undefined && !['pcm16k', 'wav', 'webm'].includes(message.format)) {
+                    this.writeJson(socket, {
+                        type: 'audio-status',
+                        sessionId,
+                        available: this.audio.isAvailable,
+                        active: false,
+                        error: `unsupported audio format '${message.format}'`
+                    });
+                    break;
+                }
                 if (!state) {
                     this.audioStates.set(socket, this.audio.createSessionState());
                 }
                 const current = this.audioStates.get(socket)!;
                 this.quota?.resetSession(sessionId);
-                const result = this.audio.startSession(current);
+                const requestedFormat = ['pcm16k', 'wav', 'webm'].includes(message.format)
+                    ? message.format
+                    : undefined;
+                const result = this.audio.startSession(current, requestedFormat);
                 this.writeJson(socket, {
                     type: 'audio-status',
                     sessionId,
                     available: this.audio.isAvailable,
                     active: result.ok,
+                    format: result.format,
                     error: result.error
                 });
                 break;

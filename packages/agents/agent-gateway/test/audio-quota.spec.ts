@@ -230,6 +230,19 @@ export class ChatWebSocketQuotaTest {
         expect(quota.sessionUsage('s1')).toBe(0);
     }
 
+    @Test('start action reports incompatible and invalid audio formats')
+    startRejectsUnsupportedFormat() {
+        const { ws, socket } = this.makeWs();
+
+        (ws as any).handleAudioControl(socket, { type: 'audio', action: 'start', format: 'webm' }, 's1');
+        expect(lastTextFrame(socket).error).toContain("transcription adapter accepts 'pcm16k'");
+        expect((ws as any).audioStates.get(socket).active).toBe(false);
+
+        (ws as any).handleAudioControl(socket, { type: 'audio', action: 'start', format: 'mp3' }, 's1');
+        expect(lastTextFrame(socket).error).toBe("unsupported audio format 'mp3'");
+        expect((ws as any).audioStates.get(socket).active).toBe(false);
+    }
+
     @Test('socket close resets the session quota budget')
     closeResetsSessionQuota() {
         const { ws, socket, quota } = this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));

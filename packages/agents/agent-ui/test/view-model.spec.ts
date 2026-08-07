@@ -896,12 +896,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
         return { available: false, active: false, bufferedBytes: 0 };
     }
 
-    override async startVoiceSession(sessionId: string): Promise<Record<string, any>> {
+    override async startVoiceSession(
+        sessionId: string,
+        options?: { format?: 'pcm16k' | 'wav' | 'webm' }
+    ): Promise<Record<string, any>> {
         const rpc = this.rpcRef;
         if (!rpc || !sessionId) {
             return { ok: false, error: 'voice session requires a connected gateway and sessionId' };
         }
-        return (await rpc.request('audio.start', { sessionId })) ?? { ok: false, error: 'no response from gateway' };
+        return (await rpc.request('audio.start', { sessionId, ...options })) ?? { ok: false, error: 'no response from gateway' };
     }
 
     override async feedVoiceAudio(sessionId: string, chunk: Uint8Array): Promise<Record<string, any>> {
@@ -3116,6 +3119,7 @@ export class AgentConsoleComponentTest {
 
         expect(capture.starts).toBe(1);
         expect(capture.stops).toBe(1);
+        expect(appRpc.calls.find(call => call.method === 'audio.start')?.params?.format).toBe('pcm16k');
         const feed = appRpc.calls.find(call => call.method === 'audio.feed');
         expect(Buffer.from(feed?.params?.chunk, 'base64').toString()).toBe('hello');
         expect(appRpc.calls.findIndex(call => call.method === 'audio.feed')).toBeLessThan(appRpc.calls.findIndex(call => call.method === 'audio.end'));

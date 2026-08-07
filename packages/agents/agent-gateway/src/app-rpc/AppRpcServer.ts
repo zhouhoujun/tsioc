@@ -1519,9 +1519,15 @@ export class AppRpcServer {
             return { sessionId, ok: false, error: 'audio unavailable: missing streaming STT and TTS adapters' };
         }
         const state = this.audioStatesBySession.get(sessionId) ?? this.audio.createSessionState();
-        const result = this.audio.startSession(state);
-        this.audioStatesBySession.set(sessionId, state);
-        return { sessionId, ok: result.ok, error: result.error, available: this.audio.isAvailable };
+        const format = typeof params?.format === 'string' ? params.format : undefined;
+        if (format && !['pcm16k', 'wav', 'webm'].includes(format)) {
+            throw new AppRpcError(-32602, `Invalid params: unsupported audio format '${format}'`);
+        }
+        const result = this.audio.startSession(state, format);
+        if (result.ok) {
+            this.audioStatesBySession.set(sessionId, state);
+        }
+        return { sessionId, ...result, available: this.audio.isAvailable };
     }
 
     private async feedAudioChunk(params: any, context: AppRpcRequestContext): Promise<any> {
