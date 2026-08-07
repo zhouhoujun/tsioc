@@ -1,6 +1,7 @@
 import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { FileAdapter, IReadable } from '@tsdi/common';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
 import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
@@ -10,6 +11,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { VerificationGate } from '../src/harness/VerificationGate';
 import { EvidenceLedger } from '../src/harness/EvidenceLedger';
+import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
 import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
 import { buildAttemptSignature, buildRepairPrompt, buildExplorationGuidancePrompt, collectResolvedRepairHints } from '../src/harness/RepairExploration';
 import { TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
@@ -307,6 +309,250 @@ class StreamingLoopModelAdapter extends EchoModelAdapter {
         yield { type: 'tool_call', toolCalls: [{ id: `tool-stream-${this.count}`, name: 'echo', input: { value: 'loop' } }] };
         yield { type: 'done' };
     }
+}
+
+class MemoryFileAdapter extends FileAdapter {
+    files = new Map<string, string>();
+
+    seed(path: string, content: string): void {
+        this.files.set(path, content);
+    }
+
+    isAbsolute(path: string): boolean {
+        return path.startsWith('/');
+    }
+
+    normalize(path: string): string {
+        return path;
+    }
+
+    join(...paths: string[]): string {
+        return paths.join('/');
+    }
+
+    resolve(...paths: string[]): string {
+        return paths.join('/');
+    }
+
+    extname(path: string): string {
+        const index = path.lastIndexOf('.');
+        return index >= 0 ? path.slice(index) : '';
+    }
+
+    existsSync(path: string): boolean {
+        return this.files.has(path);
+    }
+
+    read(): IReadable {
+        throw new Error('read stream not supported in MemoryFileAdapter');
+    }
+
+    async find(): Promise<null> {
+        return null;
+    }
+
+    async readText(path: string): Promise<string> {
+        const content = this.files.get(path);
+        if (content === undefined) {
+            throw new Error(`ENOENT: ${path}`);
+        }
+        return content;
+    }
+
+    readTextSync(path: string): string {
+        const content = this.files.get(path);
+        if (content === undefined) {
+            throw new Error(`ENOENT: ${path}`);
+        }
+        return content;
+    }
+
+    async readJSON<T = any>(path: string): Promise<T> {
+        return JSON.parse(await this.readText(path));
+    }
+
+    readJSONSync<T = any>(path: string): T {
+        return JSON.parse(this.readTextSync(path));
+    }
+
+    async writeText(path: string, content: string): Promise<void> {
+        this.files.set(path, content);
+    }
+
+    async mkdir(): Promise<void> {
+        return;
+    }
+
+    async remove(path: string): Promise<void> {
+        this.files.delete(path);
+    }
+}
+
+class NoDiffWriteFileTool {
+    name = 'write_file';
+
+    constructor(
+        private filePath: string,
+        private adapter: MemoryFileAdapter
+    ) {
+    }
+
+    getDefinition() {
+        return {
+            name: this.name,
+            description: 'writes a known string',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: true }
+        };
+    }
+
+    async captureFileSnapshot(): Promise<any> {
+        try {
+            return { filePath: this.filePath, before: await this.adapter.readText(this.filePath) };
+        } catch {
+            return { filePath: this.filePath, before: null };
+        }
+    }
+
+    async invoke(): Promise<any> {
+        const current = await this.adapter.readText(this.filePath);
+        await this.adapter.writeText(this.filePath, current);
+        return { ok: true };
+    }
+}
+
+class SequentialWriteFileTool {
+    name = 'write_file';
+    private calls = 0;
+
+    constructor(
+        private filePath: string,
+        private adapter: MemoryFileAdapter,
+        private fixedContent: string
+    ) {
+    }
+
+    getDefinition() {
+        return {
+            name: this.name,
+            description: 'writes a known string',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: true }
+        };
+    }
+
+    async captureFileSnapshot(): Promise<any> {
+        try {
+            return { filePath: this.filePath, before: await this.adapter.readText(this.filePath) };
+        } catch {
+            return { filePath: this.filePath, before: null };
+        }
+    }
+
+    async invoke(): Promise<any> {
+        this.calls++;
+        if (this.calls === 1) {
+            const current = await this.adapter.readText(this.filePath);
+            await this.adapter.writeText(this.filePath, current);
+            return { ok: true };
+        }
+        await this.adapter.writeText(this.filePath, this.fixedContent);
+        return { ok: true };
+    }
+}
+
+class WriteFileToolRegistry extends ToolRegistry {
+    constructor(private tool: any) {
+        super();
+    }
+    getTools(): any[] {
+        return [this.tool];
+    }
+    getTool(name: string): any {
+        return this.tool.name === name ? this.tool : undefined;
+    }
+    async invoke(name: string): Promise<any> {
+        return this.tool.name === name ? this.tool.invoke() : null;
+    }
+}
+
+class WriteOnceModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-write-1', name: 'write_file', input: {} }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
+class FalsifyThenFixWriteModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-write-1', name: 'write_file', input: {} }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                toolCalls: [{ id: 'tool-write-2', name: 'write_file', input: {} }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'write fixed',
+            stopReason: 'end'
+        };
+    }
+}
+
+// Constructor indices: turnDiagnosticsStore=15, fileSnapshotStore=17, fileAdapter=19.
+function buildWriteRuntime(
+    model: any,
+    registry: ToolRegistry,
+    options: any = {},
+    diagnosticsStore?: InMemoryTurnDiagnosticsStore,
+    sessions?: InMemorySessionStore,
+    fileAdapter?: FileAdapter,
+    fileSnapshotStore?: FileSnapshotStore
+): DefaultAgentRuntime {
+    const args: any[] = [
+        model,
+        registry,
+        sessions ?? new InMemorySessionStore(),
+        new InMemoryMemoryStore(),
+        new SimpleSessionSummarizer(),
+        { ...defaultAgentOptions, ...options },
+        new FakeApp() as any,
+        new RandomUuidGenerator()
+    ];
+    while (args.length < 15) {
+        args.push(undefined);
+    }
+    args.push(diagnosticsStore);
+    while (args.length < 17) {
+        args.push(undefined);
+    }
+    args.push(fileSnapshotStore);
+    args.push(undefined);
+    args.push(fileAdapter);
+    return new (DefaultAgentRuntime as any)(...args) as DefaultAgentRuntime;
 }
 
 function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: InMemoryTurnDiagnosticsStore, sessions?: InMemorySessionStore): DefaultAgentRuntime {
@@ -756,6 +1002,76 @@ export class VerificationGateRuntimeTest {
         const prompts = injectedRecoveryPrompts(secondModel);
         expect(prompts.length).toEqual(1);
         expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+    }
+
+    @Test('a declared write with no diff is falsified at runtime and gets a file snapshot')
+    async falsifiesNoDiffWriteAtRuntime() {
+        const fileAdapter = new MemoryFileAdapter();
+        fileAdapter.seed('/w/note.txt', 'same');
+        const tool = new NoDiffWriteFileTool('/w/note.txt', fileAdapter);
+        const model = new WriteOnceModelAdapter();
+        const runtime = buildWriteRuntime(
+            model,
+            new WriteFileToolRegistry(tool),
+            { maxToolRounds: 8 },
+            undefined,
+            undefined,
+            fileAdapter,
+            new FileSnapshotStore()
+        );
+
+        const result = await runtime.runTurn('s1', 'write it');
+
+        expect(result.message.content).toEqual('done');
+        expect(runtime.listFileSnapshots('s1').length).toEqual(1);
+        const prompts = injectedRecoveryPrompts(model);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).toContain('verification gate falsified');
+        expect(prompts[0]).toContain('Declared write to \'/w/note.txt\' but file content did not change.');
+    }
+
+    @Test('a no-diff write falsification carries a repair recipe into a later turn of the same session')
+    async writeFalsificationRecipeReusedAcrossTurns() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const fileAdapter = new MemoryFileAdapter();
+        fileAdapter.seed('/w/note.txt', 'same');
+
+        const firstModel = new FalsifyThenFixWriteModelAdapter();
+        const firstRuntime = buildWriteRuntime(
+            firstModel,
+            new WriteFileToolRegistry(new SequentialWriteFileTool('/w/note.txt', fileAdapter, 'changed')),
+            { maxToolRounds: 8 },
+            store,
+            undefined,
+            fileAdapter,
+            new FileSnapshotStore()
+        );
+        const firstResult = await firstRuntime.runTurn('s1', 'write it');
+        expect(firstResult.message.content).toEqual('write fixed');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        const recipes = recordsAfterFirst[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string }> }>;
+        expect(recipes.length).toEqual(1);
+        expect(recipes[0].signature).toEqual('write_file::');
+        expect(recipes[0].fixes.some(fix => fix.toolName === 'write_file')).toEqual(true);
+
+        const secondModel = new WriteOnceModelAdapter();
+        const secondRuntime = buildWriteRuntime(
+            secondModel,
+            new WriteFileToolRegistry(new NoDiffWriteFileTool('/w/note.txt', fileAdapter)),
+            { maxToolRounds: 8 },
+            store,
+            undefined,
+            fileAdapter,
+            new FileSnapshotStore()
+        );
+        await secondRuntime.runTurn('s1', 'write it again');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).toContain('Prior success from an earlier turn');
+        expect(prompts[0]).toContain('Signature "write_file::" (repaired in session s1)');
     }
 }
 

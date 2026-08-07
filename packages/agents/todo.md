@@ -910,3 +910,11 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 同一签名重复证伪不再重复查询（covered 判定短路）；单 attempt 行为与 P54 完全一致。
    - 两条提示路径（`buildRepairPrompt` 与升级后的 `buildExplorationGuidancePrompt`）都渲染 `resolvedHints`，因此后续轮次的新签名证伪也会在修复/探索提示里看到「此失败此前修复过」。
 2. 测试：`verification-gate.spec.ts` 新增 1 条（turn A 修复 echo::y 留配方；turn B 先证伪 x、再证伪 y：第一次修复提示不含 hint，第二次含 `Signature "echo::y" (repaired in session s1)`）。agent 全量 **545 passing**（544+1），`tsc --noEmit` clean。
+
+## P60 打磨（已完成）：write 工具证伪的运行时全链路测试（Runtime write-falsification coverage）
+
+1. ~~write 证伪链（`captureWriteFalsificationHint` → writeHints → gate 证伪 → 快照/配方/跨会话提示）只有单元级覆盖（直接喂 writeHints 给 `VerificationGate.verify`），无经 `DefaultAgentRuntime.runTurn` 的运行时端到端测试~~ → 已完成（`@tsdi/agent` test）：
+   - `verification-gate.spec.ts` 新增 `MemoryFileAdapter`（内存版 FileAdapter）与 `NoDiffWriteFileTool`（invoke 写相同内容 → before===after 触发 hint，带 `captureFileSnapshot`）、`SequentialWriteFileTool`（首次无 diff 证伪、二次写 diff 通过）、`WriteFileToolRegistry`、`WriteOnceModelAdapter`、`FalsifyThenFixWriteModelAdapter`；`buildWriteRuntime` 按构造函数索引（turnDiagnosticsStore=15、fileSnapshotStore=17、fileAdapter=19）注入。
+   - 测试 1（单 turn）：write_file 无 diff → `listFileSnapshots('s1')` 1 条 + 修复提示含 `verification gate falsified` 与 `Declared write to '/w/note.txt' but file content did not change.`。
+   - 测试 2（跨 turn）：turn A 无 diff 证伪后二次写 diff 通过 → `repairResolved: true`、配方签名 `write_file::` 且 fixes 为 write_file；turn B 同文件再写无 diff → 提示含 `Signature "write_file::" (repaired in session s1)`。
+2. verification-gate.spec 37 passing（35+2），agent 全量 **547 passing**（545+2），`tsc --noEmit` clean。
