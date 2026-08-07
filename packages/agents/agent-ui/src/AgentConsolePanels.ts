@@ -2897,12 +2897,26 @@ export class AgentConsoleActivityPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        return this.activities.slice(-this.state.consoleOptions.activityVisibleItems).map(activity => ({
-            kind: `${activity.kind}: `,
+        const compact = this.activities.filter((activity, index, all) => {
+            const previous = all[index - 1];
+            return !previous || previous.kind !== activity.kind || previous.message !== activity.message;
+        });
+        return compact.slice(-this.state.consoleOptions.activityVisibleItems).map(activity => ({
+            kind: `${this.activityKindLabel(activity.kind)} `,
             message: this.summarize(activity.message),
             kindStyle: styleTextToObject(this.activeTheme.toolsAccent),
             messageStyle: styleTextToObject(this.activeTheme.statusValue)
         }));
+    }
+
+    protected activityKindLabel(kind: string): string {
+        switch (kind) {
+            case 'tool': return '›';
+            case 'model': return '·';
+            case 'error': return 'error:';
+            case 'rollback': return '<';
+            default: return '·';
+        }
     }
 
     get shouldShow(): boolean {
