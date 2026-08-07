@@ -104,13 +104,21 @@ export class AgentExtensionHooksTest {
         expect(identityPrompt).toContain('inspect the resulting git diff');
         expect(identityPrompt).toContain('Do not stop after only a plan');
         expect(identityPrompt).toContain('one concise clarification question');
-        expect(identityPrompt).toContain('Classify the request before acting');
-        expect(identityPrompt).toContain('Do not declare completion before verification');
         expect(toolsPrompt).toContain('prefer `coding_task`');
-        expect(toolsPrompt).toContain('Classify intent before choosing tools');
-        expect(toolsPrompt).toContain('use `ask_user` only for a genuinely blocking product decision');
         expect(toolsPrompt).toContain('use `git_operations` with `action: "diff"`');
         expect(toolsPrompt).toContain('do not stop at a bare summary');
+    }
+
+    @Test('builtin implementation skill carries the delivery workflow')
+    async builtinImplementationSkillCarriesDeliveryWorkflow() {
+        const { getBuiltinSkills, resetBuiltinSkillsCache } = require('@tsdi/agent-tools/skills');
+        resetBuiltinSkillsCache();
+        const skill = getBuiltinSkills().find((item: any) => item.id === 'implement');
+
+        expect(skill?.summary).toContain('Implement requested code');
+        expect(skill?.aliases).toEqual(['build', 'code', 'tdd']);
+        expect(skill?.promptFull).toContain('failing test first');
+        expect(skill?.promptFull).toContain('Do not stop at a proposal');
     }
 
     @Test('turn interceptors can short-circuit turns through IoC providers')

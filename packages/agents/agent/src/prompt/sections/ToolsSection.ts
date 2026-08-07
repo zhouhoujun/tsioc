@@ -33,13 +33,11 @@ export class ToolsSection extends PromptSection {
             lines.push('');
             lines.push('For substantial coding or test-writing tasks, prefer `coding_task` so discovery, edits, and verification happen within one coordinated tool run.');
             lines.push('If the user asked for an actual code change, default to executing the change with tools instead of replying with instructions alone.');
-            lines.push('For a multi-file build, use `todo` to track the plan, then execute implementation and tests through `coding_task`; use `ask_user` only for a genuinely blocking product decision.');
         }
         if (toolNames.has('todo') || toolNames.has('project_intel')) {
             lines.push('');
             lines.push('For pure answer-generation tasks such as designs, plans, explanations, and proposals, do not call `todo` or `project_intel` unless the user explicitly asked for tracked execution, a handoff summary, or workspace/project analysis.');
         }
-        lines.push('Classify intent before choosing tools: design/discuss/explain/evaluate/propose requests are answer-only unless workspace inspection is requested; generate/create/build/implement/scaffold/write/modify/fix/deliver requests require workspace changes and verification.');
         if (toolNames.has('git_operations')) {
             lines.push('');
             lines.push('When you finish code changes, use `git_operations` with `action: "diff"` to inspect the resulting patch before your final answer.');
