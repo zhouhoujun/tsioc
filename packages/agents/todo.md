@@ -894,3 +894,11 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 1. ~~P56 持久化的 `workspaceId` 在 gateway 的 turn diagnostics 表面上不可见，跨会话聚合视图（P2 剩余）缺 workspace 维度~~ → 已完成（`@tsdi/agent-gateway`）：
    - `src/api/TurnDiagnosticsHandler.ts`：`toView` 新增 `workspaceId`（无则 null）；新增路由 `GET /api/turn-diagnostics/workspace?workspaceId=...&limit=...`——workspaceId 必填（缺省 400），经 `listOwnedSessionIds` 取当前 principal 拥有会话集合后，以 `list(undefined, { workspaceId, limit, order: 'DESC' })` 跨会话取该 workspace 最新记录并过滤到 owned 会话，保证不向请求者泄漏其他 principal 的会话记录。
 2. 测试：`gateway-server.spec.ts` `TurnDiagnosticsHandler` 套件新增 3 条（同 owner 跨会话 workspace 列表、DESC 新者优先且排除异 owner 会话、workspaceId 缺失 400；view 含 workspaceId）。gateway 全量 187 passing，`tsc --noEmit` clean。
+
+## P58 打磨（已完成）：同一 turn 内每个被修复的签名都获得修复配方（Complete repair recipe capture）
+
+1. ~~P55 的配方捕获仅在「通过证伪的门」且 `repairRecipes.length === 0` 时触发，导致同一 turn 内先后修复的多个签名只有第一个拿到配方；且会把「未重试证伪签名、仅做了无关调用」的轮次误记为修复配方~~ → 已完成（`@tsdi/agent` `DefaultAgentRuntime`）：
+   - 捕获时机改为**每个 gate 都检查**（包括仍被证伪的轮次）：`runVerificationGate` 先分离本轮 goodEntries（排除被证伪条目），若存在未覆盖签名的 attempt 且本轮有良好工具证据，则按签名去重合并配方。
+   - `buildRepairRecipes` 从「只看最后一个 attempt」改为**遍历全部 attempts、按签名去重**，并加 engagement 判定：签名在本轮 good entries 中重现（同 tool+同 input，重试成功）**或**本轮有同 toolName 的调用（输入修正成功）才算修复，否则不生成配方——修复了「被忽略的证伪 + 无关通过调用」被误记为修复配方的问题。
+   - 效果：跨轮 mid-streak 修复（某签名在其证伪轮次内已修复、而轮次因另一签名仍被证伪）也会被正确捕获，且 fixes 用该轮 good entries（不夹带被证伪条目）。
+2. 测试：`verification-gate.spec.ts` `VerificationGateRuntimeTest` 新增 3 条（顺序双签名修复均捕获；mid-streak 修复捕获且 fixes 精确；忽略证伪不产生臆造配方）。agent 全量 **544 passing**（541+3），`tsc --noEmit` clean。

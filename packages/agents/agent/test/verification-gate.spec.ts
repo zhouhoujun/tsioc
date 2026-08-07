@@ -126,6 +126,125 @@ class FailThenSucceedModelAdapter extends EchoModelAdapter {
     }
 }
 
+class InputFailureToolRegistry extends EchoToolRegistry {
+    private inputFailures: Map<string, number>;
+
+    constructor(config: Record<string, number>) {
+        super();
+        this.inputFailures = new Map();
+        for (const [input, failures] of Object.entries(config)) {
+            this.inputFailures.set(input, failures);
+        }
+    }
+
+    async invoke(_name: string, input: any): Promise<any> {
+        const key = String(input?.value ?? input);
+        const remaining = this.inputFailures.get(key) ?? 0;
+        if (remaining > 0) {
+            this.inputFailures.set(key, remaining - 1);
+            throw new Error(`boom on ${key}`);
+        }
+        return input;
+    }
+}
+
+class SequentialRepairsModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count <= 4) {
+            return {
+                toolCalls: [{ id: `tool-seq-${this.count}`, name: 'echo', input: { value: this.count <= 2 ? 'x' : 'y' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'both repaired',
+            stopReason: 'end'
+        };
+    }
+}
+
+class MidStreakRepairModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-mid-1', name: 'echo', input: { value: 'x' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                toolCalls: [
+                    { id: 'tool-mid-2a', name: 'echo', input: { value: 'x' } },
+                    { id: 'tool-mid-2b', name: 'echo', input: { value: 'bad' } }
+                ],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 3) {
+            return {
+                toolCalls: [{ id: 'tool-mid-3', name: 'echo', input: { value: 'bad' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'repaired all',
+            stopReason: 'end'
+        };
+    }
+}
+
+class TwoToolRegistry extends EchoToolRegistry {
+    getTools() {
+        return [
+            { name: 'echo', description: 'echo input' } as any,
+            { name: 'other', description: 'other tool' } as any
+        ];
+    }
+
+    async invoke(name: string, input: any): Promise<any> {
+        if (name === 'echo' && String(input?.value ?? input) === 'x') {
+            throw new Error('boom on x');
+        }
+        return input;
+    }
+}
+
+class IgnoreFailureModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-ign-1', name: 'echo', input: { value: 'x' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                toolCalls: [{ id: 'tool-ign-2', name: 'other', input: { value: 'whatever' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
 class StreamingLoopModelAdapter extends EchoModelAdapter {
     requests: any[] = [];
     private count = 0;
@@ -432,6 +551,66 @@ export class VerificationGateRuntimeTest {
         const prompts = injectedRecoveryPrompts(secondModel);
         expect(prompts.length).toEqual(1);
         expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+    }
+
+    @Test('every signature repaired within a turn gets a repair recipe, not just the first')
+    async capturesRecipesForEveryRepairedSignature() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const runtime = buildRuntime(new SequentialRepairsModelAdapter(), new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8 }, store);
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('both repaired');
+        const records = await store.list('s1');
+        expect(records[0].metadata?.repairResolved).toEqual(true);
+        expect(records[0].metadata?.falsificationCount).toEqual(2);
+        const recipes = records[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string }> }>;
+        expect(recipes.length).toEqual(2);
+        const signatures = new Set(recipes.map(recipe => recipe.signature));
+        const falsifiedSignatures = records[0].metadata?.falsifiedSignatures as string[];
+        expect(falsifiedSignatures.length).toEqual(2);
+        for (const signature of falsifiedSignatures) {
+            expect(signatures.has(signature)).toEqual(true);
+        }
+        for (const recipe of recipes) {
+            expect(recipe.fixes.length).toBeGreaterThan(0);
+            expect(recipe.fixes.every(fix => fix.toolName === 'echo')).toEqual(true);
+        }
+    }
+
+    @Test('a signature repaired in a round whose gate is still falsified by another signature is captured')
+    async capturesRecipesForMidStreakRepairs() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const runtime = buildRuntime(new MidStreakRepairModelAdapter(), new InputFailureToolRegistry({ x: 1, bad: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('repaired all');
+        const records = await store.list('s1');
+        const recipes = records[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string; inputSummary?: string }> }>;
+        expect(recipes.length).toEqual(2);
+        const signatureToRecipe = new Map(recipes.map(recipe => [recipe.signature, recipe]));
+        const falsifiedSignatures = records[0].metadata?.falsifiedSignatures as string[];
+        expect(falsifiedSignatures.length).toEqual(2);
+        for (const signature of falsifiedSignatures) {
+            expect(signatureToRecipe.has(signature)).toEqual(true);
+        }
+        const xRecipe = [...signatureToRecipe.values()].find(recipe => recipe.signature.endsWith('::x'));
+        const badRecipe = [...signatureToRecipe.values()].find(recipe => recipe.signature.endsWith('::bad'));
+        expect(xRecipe?.fixes.some(fix => fix.inputSummary === 'x')).toEqual(true);
+        expect(badRecipe?.fixes.some(fix => fix.inputSummary === 'bad')).toEqual(true);
+    }
+
+    @Test('an ignored falsification does not fabricate a recipe from unrelated passing calls')
+    async ignoresUnrelatedPassingRoundForRecipes() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const runtime = buildRuntime(new IgnoreFailureModelAdapter(), new TwoToolRegistry(), { maxToolRounds: 8 }, store);
+
+        await runtime.runTurn('s1', 'hello');
+
+        const records = await store.list('s1');
+        expect(records[0].metadata?.falsificationCount).toEqual(1);
+        expect(records[0].metadata?.repairRecipes).toBeUndefined();
     }
 
     @Test('a signature repaired in a prior session of the same workspace is hinted in a new session')

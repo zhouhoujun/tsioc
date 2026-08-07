@@ -1198,10 +1198,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const gate = new VerificationGate({ writeTools });
         const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
         recovery.writeHints = [];
-        if (!result.falsified) {
-            if (recovery.attemptHistory.length > 0 && recovery.consecutiveFalsifications > 0 && recovery.repairRecipes.length === 0) {
-                recovery.repairRecipes = this.buildRepairRecipes(recovery.attemptHistory, turnContext.evidenceLedger?.entriesFrom(startIndex) ?? []);
+        const roundEntries = turnContext.evidenceLedger?.entriesFrom(startIndex) ?? [];
+        const falsifiedIds = new Set(result.falsifiedEvidence.map(entry => entry.id).filter(Boolean));
+        const goodEntries = roundEntries.filter(entry => !falsifiedIds.has(entry.id));
+        if (recovery.attemptHistory.length > 0 && recovery.consecutiveFalsifications > 0 && goodEntries.length > 0) {
+            const covered = new Set(recovery.repairRecipes.map(recipe => recipe.signature));
+            for (const recipe of this.buildRepairRecipes(recovery.attemptHistory, goodEntries)) {
+                if (!covered.has(recipe.signature)) {
+                    recovery.repairRecipes.push(recipe);
+                    covered.add(recipe.signature);
+                }
             }
+        }
+        if (!result.falsified) {
             recovery.consecutiveFalsifications = 0;
             return;
         }
@@ -1242,9 +1251,24 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (fixEntries.length === 0 || attempts.length === 0) {
             return [];
         }
-        const lastAttempt = attempts[attempts.length - 1];
         const fixes = fixEntries.map(entry => ({ toolName: entry.toolName, inputSummary: entry.inputSummary }));
-        return lastAttempt.signatures.map(signature => ({ signature, fixes }));
+        const goodSignatures = new Set(fixEntries.map(entry => buildAttemptSignature(entry.toolName, entry.inputSummary)));
+        const goodTools = new Set(fixEntries.map(entry => entry.toolName));
+        const recipes: TurnRepairRecipe[] = [];
+        const seen = new Set<string>();
+        for (const attempt of attempts) {
+            for (const signature of attempt.signatures) {
+                if (seen.has(signature)) {
+                    continue;
+                }
+                seen.add(signature);
+                const engaged = goodSignatures.has(signature) || attempt.entries.some(entry => goodTools.has(entry.toolName));
+                if (engaged) {
+                    recipes.push({ signature, fixes });
+                }
+            }
+        }
+        return recipes;
     }
 
     private async loadResolvedRepairHints(sessionId: string, signatures: string[], workspace?: string): Promise<ResolvedRepairHint[]> {
