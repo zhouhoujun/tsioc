@@ -307,6 +307,8 @@ export class CodingTaskTool implements AgentTool {
             rollback: rollbackSummary
         });
         const aggregate = this.buildWorkerAggregate(execution.workers);
+        const deliveryIncomplete = this.isDeliveryGoal(working.goal)
+            && !working.actions.some(action => action.status === 'completed' && this.isImplementationAction(action.tool));
 
         const finalStatus = execution.failedActionId ? 'failed' : 'completed';
         const saved = this.store.patch(sessionId, working.id, {
@@ -345,6 +347,10 @@ export class CodingTaskTool implements AgentTool {
             workers: saved.result?.workers ?? [],
             aggregate: saved.result?.aggregate,
             report: saved.result?.report,
+            deliveryIncomplete,
+            ...(deliveryIncomplete ? {
+                nextSteps: ['write the requested source files', 'run the relevant tests or build', 'inspect the resulting diff']
+            } : {}),
             summary: saved.result?.report?.summary,
             nextSteps: saved.result?.report?.nextSteps,
             risks: saved.result?.report?.risks,
@@ -1416,6 +1422,14 @@ export class CodingTaskTool implements AgentTool {
         }
         const gitAction = typeof action.input?.action === 'string' ? action.input.action.trim() : '';
         return !!gitAction && !CodingTaskTool.READ_ONLY_GIT_ACTIONS.has(gitAction);
+    }
+
+    private isDeliveryGoal(goal: string): boolean {
+        return /(?:generate|create|build|implement|scaffold|write|modify|fix|deliver|生成|创建|搭建|实现|编写|修改|修复|交付)/i.test(String(goal || ''));
+    }
+
+    private isImplementationAction(tool: string): boolean {
+        return new Set(['write_file', 'edit_file', 'apply_patch', 'mkdir', 'copy_file', 'move_file', 'delete_file', 'terminal', 'process.start', 'coding_task']).has(tool);
     }
 
     private async setupWorktreeIfNeeded(
