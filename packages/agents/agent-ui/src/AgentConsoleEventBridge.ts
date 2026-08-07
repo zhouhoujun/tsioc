@@ -350,21 +350,7 @@ export class AgentConsoleEventBridge {
     }
 
     protected describeToolName(toolName: string): string {
-        const labels: Record<string, string> = {
-            list_dir: '检查目录',
-            glob_search: '搜索文件',
-            content_search: '搜索代码',
-            read_file: '读取文件',
-            write_file: '创建文件',
-            edit_file: '修改文件',
-            apply_patch: '应用修改',
-            mkdir: '创建目录',
-            todo: '更新计划',
-            ask_user: '等待你的选择',
-            coding_task: '执行实现任务',
-            git_operations: '检查版本状态'
-        };
-        return labels[toolName] || toolName.replace(/[._-]+/g, ' ');
+        return this.translator?.translate(`agent.tool.${toolName}`) || toolName.replace(/[._-]+/g, ' ');
     }
 
     protected describeToolActivity(toolName: string, status: 'running' | 'completed'): string {

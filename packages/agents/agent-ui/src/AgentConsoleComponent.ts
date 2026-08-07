@@ -13,6 +13,7 @@ import {
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
+import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
@@ -93,7 +94,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
         @Optional() private sshManager?: SshConnectionManager | null,
         @Optional() private audioCapture?: AudioCaptureAdapter | null,
-        @Optional() private audioPlayback?: AudioPlaybackAdapter | null
+        @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
+        @Optional() private translator?: TranslatorService | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -4740,13 +4742,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!toolName || !eventType.startsWith('tool_')) {
             return content;
         }
-        const labels: Record<string, string> = {
-            list_dir: '检查目录', glob_search: '搜索文件', content_search: '搜索代码',
-            read_file: '读取文件', write_file: '创建文件', edit_file: '修改文件',
-            apply_patch: '应用修改', mkdir: '创建目录', todo: '更新计划',
-            ask_user: '等待你的选择', coding_task: '执行实现任务', git_operations: '检查版本状态'
-        };
-        const label = labels[toolName] || toolName.replace(/[._-]+/g, ' ');
+        const label = this.translator?.translate(`agent.tool.${toolName}`)
+            || toolName.replace(/[._-]+/g, ' ');
         const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
         if (eventType === 'tool_invoked') {
             return `正在${label}${detail ? ` · ${detail}` : ''}`;

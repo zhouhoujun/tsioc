@@ -902,15 +902,12 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     get runningLabel(): string {
         const count = this.state.runningTools.length;
         if (!count) {
-            return '处理中';
+            return this.translator?.translate('agent.turn.working') || 'Working';
         }
         if (count === 1 && this.isTerminalTool(this.state.runningTools[0])) {
-            return '后台命令执行中';
+            return this.translator?.translate('agent.turn.backgroundCommand') || 'Running a background command';
         }
-        if (count === 1) {
-            return '正在执行 1 项操作';
-        }
-        return `正在执行 ${count} 项操作`;
+        return this.translator?.translate('agent.turn.toolsRunning', { count }) || `Running ${count} operations`;
     }
 
     protected describeTool(toolName: string): string {
