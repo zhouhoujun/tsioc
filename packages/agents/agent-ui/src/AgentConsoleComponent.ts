@@ -4414,7 +4414,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setLastError('');
             this.state.clearPendingAttachments();
             this.state.clearActivities();
-            this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
+            this.state.pushActivity('turn', this.state.summarize(draft));
             this.state.setMessages([...baseMessages, userMsg, asstMsg]);
         });
         try {
@@ -4489,7 +4489,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setLastError('');
             this.state.clearPendingAttachments();
             this.state.clearActivities();
-            this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
+            this.state.pushActivity('turn', this.state.summarize(value));
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
         });
 

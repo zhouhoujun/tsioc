@@ -599,18 +599,20 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         if (!this.hasWorkingState) {
             return '';
         }
-        const parts = [`(${this.elapsedLabel} • wait for reply)`];
+        const parts = [this.elapsedLabel];
         if (this.state.runningTools.length) {
             const progress = this.toolRunProgressBar;
             parts.push(progress);
             parts.push(this.runningLabel);
+        } else {
+            parts.push('waiting for response');
         }
         parts.push(`${this.totalTokens} tokens`);
         const dashboard = this.dashboardTextLabel;
         if (dashboard) {
             parts.push(dashboard);
         }
-        return ` ${parts.join(' · ')}`;
+        return ` · ${parts.join(' · ')}`;
     }
 
     protected get hasWorkingState(): boolean {
@@ -700,14 +702,12 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
         const activeApprovals = this.state.pendingApprovals.length;
         const activeTools = this.state.runningTools.length;
-        const activities = this.state.activities.length;
         const totalTokens = this.state.tokenUsage.totalTokens || 0;
         return [
             activeApprovals > 0 ? `approvals ${formatCompactNumber(activeApprovals)}` : '',
             this.state.scheduledTasks.length > 0 ? `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}` : '',
             totalTasks > 0 ? `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}` : '',
             activeTools > 0 ? `tools ${formatCompactNumber(activeTools)}` : '',
-            activities > 0 ? `activity ${formatCompactNumber(activities)}` : '',
             totalTokens > 0 ? `tokens ${formatCompactNumber(totalTokens)}` : ''
         ].filter(Boolean).join(' · ');
     }
@@ -801,7 +801,8 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         }
         const latestActivity = this.state.activities[this.state.activities.length - 1];
         if (latestActivity) {
-            lines.push(`activity ${latestActivity.kind} · ${this.summarize(latestActivity.message)}`);
+            const label = latestActivity.kind === 'turn' ? 'request' : latestActivity.kind;
+            lines.push(`${label}: ${this.summarize(latestActivity.message)}`);
         }
         const latestJob = this.latestScheduledTask();
         if (latestJob) {

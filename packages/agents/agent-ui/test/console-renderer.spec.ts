@@ -620,6 +620,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
             completionTokens: 80,
             totalTokens: 200
         });
+        ref.instance.sessionState.pushActivity('turn', 'Design an exam system');
         await ref.render();
 
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -627,8 +628,11 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
 
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
-        expect(workingLines.some(line => line.includes('wait for reply'))).toBe(true);
+        expect(workingLines.some(line => line.includes('waiting for response'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
+        expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(true);
+        expect(workingLines.some(line => line.includes('User:'))).toBe(false);
+        expect(workingLines.some(line => line.includes('activity turn'))).toBe(false);
     }
 
     @Test('renders focused tool list with selected tool details')
@@ -1267,7 +1271,7 @@ export class AgentConsoleTuiRendererTest {
             const renderer = tuiCtx.get(ConsoleRenderer);
             const activityPanel = consoleRef.hostView.query(AgentConsoleActivityPanelComponent) as ComponentRef<AgentConsoleActivityPanelComponent>;
 
-            consoleRef.instance.sessionState.pushActivity('turn', 'User: hello');
+            consoleRef.instance.sessionState.pushActivity('turn', 'hello');
             consoleRef.instance.sessionState.pushActivity('error', 'submit failed');
             await Promise.resolve();
 

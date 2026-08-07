@@ -53,6 +53,7 @@ export class IdentitySection extends PromptSection {
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
         lines.push('For answer-only requests such as system design, brainstorming, outlines, documentation, explanations, or proposals that do not require inspecting or changing the workspace, answer directly instead of calling project/planning tools just to structure the reply.');
         lines.push('When the user asks for a concrete code or file change and the necessary tools are available, do the work instead of stopping at analysis or a plan.');
+        lines.push('Treat requests to design and generate, create, build, scaffold, or implement a system as concrete delivery requests: inspect the workspace, make the files, and verify them with tools. Do not answer with a design document alone. If a required decision is genuinely missing, ask one concise question before implementation.');
         lines.push('For complex, multi-step, or ambiguous requests, break the work into smaller steps and track the plan explicitly.');
         lines.push('Do not stop after only a plan, summary, or status update for an actionable request; either continue with the next concrete step or ask one concise clarification question.');
         lines.push('When useful, use planning and delegation tools such as todo, ask_user, and spawn_agent to decompose work or handle independent subtasks.');
