@@ -24,6 +24,8 @@ export interface AgentConsoleMarkdownLine {
 export interface AgentConsoleMarkdownRenderOptions {
     compactBlankLines?: boolean;
     preserveFenceMarkers?: boolean;
+    /** Render the body of an unclosed ``` fence as plain text instead of code lines. */
+    treatUnclosedFenceAsText?: boolean;
 }
 
 const INLINE_MARKDOWN_RE = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|`([^`]+)`|\*([^*]+)\*|_([^_]+)_/g;
@@ -38,10 +40,16 @@ export function renderAgentConsoleMarkdownLines(
     const sourceLines = String(normalizedContent || '').replace(/\r/g, '').split('\n');
     const rendered: AgentConsoleMarkdownLine[] = [];
     let inFence = false;
+    let unclosedFenceStart = -1;
+    let unclosedFenceRenderStart = -1;
 
-    sourceLines.forEach(sourceLine => {
+    sourceLines.forEach((sourceLine, sourceIndex) => {
         const trimmed = sourceLine.trim();
         if (trimmed.startsWith('```')) {
+            if (!inFence && options.treatUnclosedFenceAsText && unclosedFenceStart < 0) {
+                unclosedFenceStart = sourceIndex;
+                unclosedFenceRenderStart = rendered.length;
+            }
             if (options.preserveFenceMarkers) {
                 rendered.push({
                     rawText: sourceLine,
@@ -50,6 +58,10 @@ export function renderAgentConsoleMarkdownLines(
                 });
             }
             inFence = !inFence;
+            if (!inFence) {
+                unclosedFenceStart = -1;
+                unclosedFenceRenderStart = -1;
+            }
             return;
         }
 
@@ -67,6 +79,15 @@ export function renderAgentConsoleMarkdownLines(
 
         rendered.push(renderAgentConsoleMarkdownTextLine(sourceLine));
     });
+
+    if (unclosedFenceRenderStart >= 0 && options.treatUnclosedFenceAsText) {
+        const unclosedSection = sourceLines.slice(unclosedFenceStart);
+        rendered.splice(
+            unclosedFenceRenderStart,
+            rendered.length - unclosedFenceRenderStart,
+            ...unclosedSection.map(sourceLine => renderAgentConsoleMarkdownTextLine(sourceLine))
+        );
+    }
 
     return options.compactBlankLines ? compactMarkdownLines(rendered) : rendered;
 }

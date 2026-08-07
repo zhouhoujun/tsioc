@@ -73,8 +73,8 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content.includes('{')).toEqual(false);
     }
 
-    @Test('keeps streaming assistant content as plain text until completion')
-    renderStreamingAssistantAsPlainText() {
+    @Test('renders streaming assistant markdown with full code fences and a blinking cursor')
+    renderStreamingAssistantMarkdown() {
         const items = renderAgentConsoleMessageItems([
             {
                 id: 'a1',
@@ -85,12 +85,49 @@ export class AgentConsoleMessageRendererDispatchTest {
             }
         ] as any);
 
-        expect(items[0].lines[0].content).toEqual('**bold**');
+        expect(items[0].lines[0].content).toEqual('bold');
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].lines[0].statusKind).toEqual('running');
         expect(items[0].lines[0].statusStyle?.color).toBeTruthy();
+        expect(items[0].lines.some(line => line.prefix === '│ ' && line.content.includes('const x = 1;'))).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(false);
+        expect(items[0].lines[items[0].lines.length - 1].content.endsWith('▍')).toBe(true);
+    }
+
+    @Test('renders an unclosed streaming fence as plain text with a blinking cursor')
+    renderStreamingUnclosedFenceAsText() {
+        const items = renderAgentConsoleMessageItems([
+            {
+                id: 'a2',
+                role: 'assistant',
+                content: 'before\n```ts\nconst y = 2;',
+                createdAt: 1,
+                metadata: { streaming: true }
+            }
+        ] as any);
+
+        expect(items[0].lines[0].content).toEqual('before');
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(true);
-        expect(items[0].lines.some(line => line.content.includes('const x = 1;'))).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('const y = 2;'))).toBe(true);
+        expect(items[0].lines.some(line => line.prefix === '│ ')).toBe(false);
+        expect(items[0].lines[items[0].lines.length - 1].content.endsWith('▍')).toBe(true);
+    }
+
+    @Test('renders only a blinking cursor for an empty streaming assistant message')
+    renderStreamingEmptyMessageCursor() {
+        const items = renderAgentConsoleMessageItems([
+            {
+                id: 'a3',
+                role: 'assistant',
+                content: '',
+                createdAt: 1,
+                metadata: { streaming: true }
+            }
+        ] as any);
+
+        expect(items[0].lines.length).toEqual(1);
+        expect(items[0].lines[0].content).toEqual('▍');
+        expect(items[0].lines[0].statusKind).toEqual('running');
     }
 
     @Test('keeps user input raw instead of markdown-formatting it')

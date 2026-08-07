@@ -5356,6 +5356,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case 'submit':
                 await this.submit();
                 return;
+            case 'cancelTurn':
+                if (this.isTurnInProgress()) {
+                    const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
+                    this.notify(cancelled
+                        ? 'Cancelling current turn...'
+                        : 'No running turn to cancel.');
+                }
+                return;
             case 'textInput':
                 await this.state.processRawChunk(rawChunk, {
                     submitOnEnter,

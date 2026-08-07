@@ -3600,6 +3600,9 @@ export class AgentConsoleSessionState {
             await this.dismissFocusLayer();
             return true;
         }
+        if (this.status === 'running' || this.status === 'reasoning') {
+            return true;
+        }
         return false;
     }
 
@@ -4218,6 +4221,9 @@ export class AgentConsoleSessionState {
             if (this.vimMode && this.inputMode === 'insert') {
                 this.setInputMode('normal');
                 return { handled: true };
+            }
+            if (this.status === 'running' || this.status === 'reasoning') {
+                return { handled: true, action: 'cancelTurn' };
             }
             await this.handleEscapeKey();
             return { handled: true };

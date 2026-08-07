@@ -56,6 +56,7 @@ import {
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
+const REASONING_MESSAGE_PREVIEW_LINES = 4;
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
@@ -924,7 +925,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
                 return;
             }
             this.frame = (this.frame + 1) % Math.max(this.animatedLabel.length, 1);
-        }, 200);
+        }, 500);
         this.frameTimer.unref?.();
     }
 
@@ -2248,6 +2249,7 @@ export class AgentConsoleMessagesPanelComponent {
             theme: this.activeTheme,
             selectedMessageId: this.state.selectedMessageId,
             messagesFocused: this.state.messagesFocused,
+            streaming: this.state.status === 'running' || this.state.status === 'reasoning',
             statusLabels: this.state.consoleOptions.messageStatusLabels,
             statusSymbol: this.state.consoleOptions.messageStatusSymbol
         });
@@ -2308,7 +2310,9 @@ export class AgentConsoleMessagesPanelComponent {
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
         if (this.state.messagesFocused) {
-            return this.messageItems;
+            return this.messageItems.map(item => this.isReasoningMessageItem(item)
+                ? this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES)
+                : item);
         }
         if (this.state.messageDetailOpen) {
             return this.messageItems.map(item => {
@@ -2340,11 +2344,21 @@ export class AgentConsoleMessagesPanelComponent {
         return this.messageItems.map(item => this.truncateMessageItem(item));
     }
 
-    protected truncateMessageItem(item: AgentConsoleRenderedMessageItem): AgentConsoleRenderedMessageItem {
-        if (item.lines.length <= COLLAPSED_MESSAGE_PREVIEW_LINES) {
+    protected isReasoningMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
+        return item.lines.some(line => {
+            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
+            return message?.metadata?.uiEventType === 'reasoning';
+        });
+    }
+
+    protected truncateMessageItem(
+        item: AgentConsoleRenderedMessageItem,
+        previewLines: number = COLLAPSED_MESSAGE_PREVIEW_LINES
+    ): AgentConsoleRenderedMessageItem {
+        if (item.lines.length <= previewLines) {
             return item;
         }
-        const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
+        const lines = item.lines.slice(0, previewLines);
         const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
         const toggleText = this.translator?.translate('agent.message.expand', { count: hiddenCount })

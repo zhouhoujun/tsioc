@@ -64,6 +64,7 @@ export interface AgentConsoleMessageRenderContext {
     theme?: AgentConsoleTheme;
     selectedMessageId?: string;
     messagesFocused?: boolean;
+    streaming?: boolean;
     statusLabels?: AgentConsoleMessageStatusLabels;
     statusSymbol?: string;
 }
@@ -177,19 +178,27 @@ export function renderAgentConsoleMessageItem(
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const displayContent = resolveMessageDisplayContent(message, templateKind);
-    const markdownLines = message?.metadata?.streaming || templateKind === 'user'
-        ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
+    const streaming = !!(message?.metadata?.streaming || context.streaming);
+    const markdownLines = streaming || templateKind === 'user'
+        ? streaming
+            ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
+            : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
         : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel);
-    const fallbackLine = templateKind === 'assistant'
-        ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
-        : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
+    const fallbackLine = streaming
+        ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
+        : templateKind === 'assistant'
+            ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
+            : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
     const lines = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
+        const cursorTokens = streaming && isLast && markdownLines.length
+            ? [...(line.tokens || []), { text: '▍' } as AgentConsoleMarkdownToken]
+            : line.tokens || [];
         const rendered = buildRenderedLine(
-            line,
+            { ...line, tokens: cursorTokens },
             isFirst ? renderer.lead(rowSelected) : renderer.continuationLead(rowSelected),
             roleLabel,
             renderer,
