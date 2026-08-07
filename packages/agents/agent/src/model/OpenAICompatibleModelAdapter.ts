@@ -890,12 +890,18 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 external.addEventListener('abort', onExternalAbort, { once: true });
             }
         }
-        if (timeout && timeout > 0) {
+        const armTotalTimer = () => {
+            if (!timeout || timeout <= 0) {
+                return;
+            }
+            if (totalHandle) {
+                clearTimeout(totalHandle);
+            }
             totalHandle = setTimeout(() => {
                 abortReason = `Model stream timed out after ${timeout}ms.`;
                 controller.abort();
             }, timeout);
-        }
+        };
         const armStallTimer = () => {
             if (!timeout || timeout <= 0) {
                 return;
@@ -913,6 +919,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             }, stallTimeout);
         };
 
+        armTotalTimer();
         armStallTimer();
         return {
             signal: controller.signal,
@@ -928,6 +935,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 }
             },
             markActivity() {
+                // Reasoning streams emit chunks continuously, so a one-shot
+                // total cap would abort a live-but-long reasoning turn. Re-arm
+                // both timers on any activity; only a silent stream is aborted.
+                armTotalTimer();
                 armStallTimer();
             },
             getAbortReason() {

@@ -1214,7 +1214,7 @@ export class ModelProviderTest {
             context.markActivity();
             context.cleanup();
 
-            expect(delays).toEqual([120000, 120000, 120000]);
+            expect(delays).toEqual([120000, 120000, 120000, 120000]);
         } finally {
             globalThis.setTimeout = originalSetTimeout;
             globalThis.clearTimeout = originalClearTimeout;
