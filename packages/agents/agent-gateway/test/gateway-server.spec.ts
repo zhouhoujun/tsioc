@@ -2562,6 +2562,126 @@ export class TurnDiagnosticsHandlerTest {
         expect(status).toEqual(400);
     }
 
+    @Test('lists workspace diagnostics across owned sessions newest first')
+    async listsWorkspaceDiagnosticsForOwnedSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-1');
+        await owners.create('s3', 'user-2');
+        const diagnostics = {
+            async list(sessionId?: string, options?: { limit?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }) {
+                const records = [
+                    { id: 't1', sessionId: 's1', workspaceId: '/ws/x', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null },
+                    { id: 't2', sessionId: 's2', workspaceId: '/ws/x', createdAt: 2, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null },
+                    { id: 't3', sessionId: 's3', workspaceId: '/ws/x', createdAt: 3, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null },
+                    { id: 't4', sessionId: 's1', workspaceId: '/ws/y', createdAt: 4, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null }
+                ];
+                let result = records;
+                if (sessionId) {
+                    result = result.filter(record => record.sessionId === sessionId);
+                }
+                if (options?.workspaceId) {
+                    result = result.filter(record => record.workspaceId === options.workspaceId);
+                }
+                if (options?.order === 'DESC') {
+                    result = [...result].sort((a, b) => b.createdAt - a.createdAt);
+                }
+                if (options?.limit) {
+                    result = result.slice(0, options.limit);
+                }
+                return result;
+            }
+        } as any;
+        const handler = new TurnDiagnosticsHandler(diagnostics, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/workspace' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/turn-diagnostics/workspace?workspaceId=%2Fws%2Fx' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.workspaceId).toEqual('/ws/x');
+        expect(data.records.map((record: any) => record.id)).toEqual(['t2', 't1']);
+        expect(data.records[0].workspaceId).toEqual('/ws/x');
+        expect(data.records.every((record: any) => record.sessionId !== 's3')).toEqual(true);
+    }
+
+    @Test('requires workspaceId for workspace turn diagnostics access')
+    async requiresWorkspaceId() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/workspace' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/turn-diagnostics/workspace' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(400);
+    }
+
+    @Test('workspace diagnostics exclude records from sessions owned by other principals')
+    async excludesForeignSessionsFromWorkspaceList() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-1');
+        await owners.create('s3', 'user-2');
+        const diagnostics = {
+            async list(sessionId?: string, options?: { limit?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }) {
+                const records = [
+                    { id: 't1', sessionId: 's1', workspaceId: '/ws/x', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null },
+                    { id: 't3', sessionId: 's3', workspaceId: '/ws/x', createdAt: 3, emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: null, compactionLevel: null, promptCache: null }
+                ];
+                let result = records;
+                if (sessionId) {
+                    result = result.filter(record => record.sessionId === sessionId);
+                }
+                if (options?.workspaceId) {
+                    result = result.filter(record => record.workspaceId === options.workspaceId);
+                }
+                if (options?.order === 'DESC') {
+                    result = [...result].sort((a, b) => b.createdAt - a.createdAt);
+                }
+                if (options?.limit) {
+                    result = result.slice(0, options.limit);
+                }
+                return result;
+            }
+        } as any;
+        const handler = new TurnDiagnosticsHandler(diagnostics, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/workspace' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/turn-diagnostics/workspace?workspaceId=%2Fws%2Fx' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.map((record: any) => record.id)).toEqual(['t3']);
+    }
+
     @Test('aggregates turn diagnostics scoped to an owned session')
     async aggregatesScopedStats() {
         const store = new InMemorySessionStore();

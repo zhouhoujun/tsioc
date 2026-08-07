@@ -36,6 +36,26 @@ export class TurnDiagnosticsHandler {
                 .end(JSON.stringify({ records }));
         };
 
+        const listWorkspaceDiagnostics: RouteHandler = async (req, res) => {
+            const host = req.headers?.host ?? 'localhost';
+            const url = new URL(req.url ?? '/api/turn-diagnostics/workspace', `http://${host}`);
+            const workspaceId = url.searchParams.get('workspaceId')?.trim();
+            if (!workspaceId) {
+                res.writeHead(400, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ error: 'workspaceId required' }));
+                return;
+            }
+            const principalId = getRequestPrincipalId(req);
+            const ownedSessionIds = new Set(await this.listOwnedSessionIds(principalId));
+            const limitRaw = url.searchParams.get('limit')?.trim();
+            const limit = limitRaw && /^\d+$/.test(limitRaw) ? Math.min(parseInt(limitRaw, 10), 200) : 200;
+            const records = (await this.diagnostics.list(undefined, { workspaceId, limit, order: 'DESC' }))
+                .filter(record => ownedSessionIds.has(record.sessionId))
+                .map(record => this.toView(record));
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ workspaceId, records }));
+        };
+
         const aggregateStats: RouteHandler = async (req, res) => {
             const host = req.headers?.host ?? 'localhost';
             const url = new URL(req.url ?? '/api/turn-diagnostics/stats', `http://${host}`);
@@ -90,6 +110,7 @@ export class TurnDiagnosticsHandler {
 
         return [
             { method: 'GET', path: '/api/turn-diagnostics', handler: listTurnDiagnostics },
+            { method: 'GET', path: '/api/turn-diagnostics/workspace', handler: listWorkspaceDiagnostics },
             { method: 'GET', path: '/api/turn-diagnostics/stats', handler: aggregateStats },
             { method: 'GET', path: '/api/turn-diagnostics/trend', handler: trendStats }
         ];
@@ -108,6 +129,7 @@ export class TurnDiagnosticsHandler {
         return {
             id: record.id,
             sessionId: record.sessionId,
+            workspaceId: record.workspaceId ?? null,
             createdAt: record.createdAt,
             emptyResponseRetryCount: record.emptyResponseRetryCount,
             followUpRecoveryCount: record.followUpRecoveryCount,

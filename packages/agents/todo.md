@@ -888,3 +888,9 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 三个 store 实现同步：`InMemoryTurnDiagnosticsStore`（过滤 + 排序）、`TypeOrmTurnDiagnosticsStore`（append 写入、where 过滤、`toRecord` 将 null 归一为 undefined）、`DefaultTurnDiagnosticsStore`（签名透传）；`AgentTurnDiagnosticsEntity` 新增 `workspaceId` varchar nullable 列（B1 加 `evidence` 列同款先例）。
    - `DefaultAgentRuntime`：`recordTurnDiagnostics` 新增 `workspace` 参数并持久化 `workspaceId`（2 个调用点传 `turnContext.workspace`，由 `resolveSessionWorkspace` 从 session state / cwd 派生）；`loadResolvedRepairHints(sessionId, signatures, workspace?)` 在 workspace 已知时改为 `list(undefined, { workspaceId, limit: 50, order: 'DESC' })` 跨会话检索，未知时回退 session 作用域——同一 workspace 的新会话自动继承先前会话的修复经验，跨 workspace 不泄漏。
 2. 测试：`turn-diagnostics.spec.ts` 新增 2 条（in-memory workspace 过滤 + DESC 排序 + session 组合过滤；TypeORM workspaceId 持久化往返 + 过滤 + `null → undefined`）；`verification-gate.spec.ts` 运行时新增 3 条（同 workspace 两个 session：s1 修复后 s2 获得 hint 且记录 `workspaceId` 已持久化；异 workspace 无 hint 泄漏；无 workspace 时 hint 保持 session 作用域），`buildRuntime` 支持注入自定义 session store。agent 全量 541 passing，`tsc --noEmit` clean。
+
+## P57 打磨（已完成）：gateway 暴露 workspace 维度 turn diagnostics 视图（Workspace diagnostics surface）
+
+1. ~~P56 持久化的 `workspaceId` 在 gateway 的 turn diagnostics 表面上不可见，跨会话聚合视图（P2 剩余）缺 workspace 维度~~ → 已完成（`@tsdi/agent-gateway`）：
+   - `src/api/TurnDiagnosticsHandler.ts`：`toView` 新增 `workspaceId`（无则 null）；新增路由 `GET /api/turn-diagnostics/workspace?workspaceId=...&limit=...`——workspaceId 必填（缺省 400），经 `listOwnedSessionIds` 取当前 principal 拥有会话集合后，以 `list(undefined, { workspaceId, limit, order: 'DESC' })` 跨会话取该 workspace 最新记录并过滤到 owned 会话，保证不向请求者泄漏其他 principal 的会话记录。
+2. 测试：`gateway-server.spec.ts` `TurnDiagnosticsHandler` 套件新增 3 条（同 owner 跨会话 workspace 列表、DESC 新者优先且排除异 owner 会话、workspaceId 缺失 400；view 含 workspaceId）。gateway 全量 187 passing，`tsc --noEmit` clean。
