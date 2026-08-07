@@ -24,6 +24,7 @@ interface OpenAIMessage {
     content?: string | OpenAIContentPart[] | null;
     name?: string;
     tool_call_id?: string;
+    reasoning_content?: string;
     tool_calls?: Array<{
         id: string;
         type: 'function';
@@ -501,19 +502,23 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     ): OpenAIMessage[] {
         const result: OpenAIMessage[] = [];
         let activeToolCallIds: Set<string> | undefined;
+        let pendingReasoningContent: string | undefined;
 
         for (const message of messages) {
             if (message.role === 'assistant' && this.hasToolCalls(message)) {
+                const reasoningContent = String(message.metadata?.reasoningContent || '').trim() || undefined;
                 const toolCalls = this.getToolCalls(message).filter(call => call.input !== undefined);
                 if (toolCalls.length) {
                     result.push({
                         role: 'assistant',
                         content: getAgentMessageText(message) || null,
-                        tool_calls: toolCalls.map(call => this.mapToolCall(call, toolNameMap))
+                        tool_calls: toolCalls.map(call => this.mapToolCall(call, toolNameMap)),
+                        ...(reasoningContent ? { reasoning_content: reasoningContent } : {})
                     });
                     activeToolCallIds = new Set(toolCalls.map(call => call.id));
                 } else {
                     activeToolCallIds = undefined;
+                    pendingReasoningContent = reasoningContent;
                 }
                 continue;
             }
@@ -524,7 +529,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     result.push({
                         role: 'assistant',
                         content: null,
-                        tool_calls: [this.mapSyntheticToolCall(message, toolCallId, toolNameMap)]
+                        tool_calls: [this.mapSyntheticToolCall(message, toolCallId, toolNameMap)],
+                        ...(pendingReasoningContent ? { reasoning_content: pendingReasoningContent } : {})
                     });
                     activeToolCallIds = new Set([toolCallId]);
                 }
@@ -539,10 +545,18 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             }
 
             activeToolCallIds = undefined;
-            result.push({
+            pendingReasoningContent = undefined;
+            const mapped: OpenAIMessage = {
                 role: message.role,
                 content: this.mapMessageContent(message)
-            });
+            };
+            if (message.role === 'assistant') {
+                const reasoningContent = String(message.metadata?.reasoningContent || '').trim();
+                if (reasoningContent) {
+                    mapped.reasoning_content = reasoningContent;
+                }
+            }
+            result.push(mapped);
         }
 
         return result;

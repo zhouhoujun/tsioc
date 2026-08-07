@@ -1433,4 +1433,126 @@ export class ModelProviderTest {
         expect(call?.body.reasoning_effort).toEqual('high');
         expect(call?.body.temperature).toBeUndefined();
     }
+
+    @Test('echoes reasoning_content back and sends real tool_calls with input on follow-up requests')
+    async echoesReasoningContentAndToolCalls() {
+        let call: { url: string; body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            call = { url, body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'done', reasoning_content: 'follow-up reasoning' },
+                            finish_reason: 'stop'
+                        }],
+                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        await adapter.complete({
+            sessionId: 's-reasoning-echo',
+            summary: '',
+            memory: [],
+            messages: [
+                { id: '1', role: 'user', content: 'list my memories', createdAt: 1 },
+                {
+                    id: '2',
+                    role: 'assistant',
+                    content: '',
+                    createdAt: 2,
+                    metadata: {
+                        reasoningContent: 'I need to search memory for the topic',
+                        toolCalls: [{ id: 'tool-1', name: 'memory.search', input: { query: 'topic' } }]
+                    }
+                },
+                {
+                    id: '3',
+                    role: 'tool',
+                    name: 'memory.search',
+                    toolCallId: 'tool-1',
+                    content: '{"items":[]}',
+                    createdAt: 3,
+                    metadata: { toolCallInput: { query: 'topic' } }
+                },
+                { id: '4', role: 'user', content: 'continue', createdAt: 4 }
+            ],
+            tools: []
+        });
+
+        const assistantMsg = call?.body.messages[1];
+        const toolMsg = call?.body.messages[2];
+        expect(assistantMsg.role).toEqual('assistant');
+        expect(assistantMsg.reasoning_content).toEqual('I need to search memory for the topic');
+        expect(assistantMsg.tool_calls).toEqual([{
+            id: 'tool-1',
+            type: 'function',
+            function: { name: 'memory.search', arguments: '{"query":"topic"}' }
+        }]);
+        expect(toolMsg.role).toEqual('tool');
+        expect(toolMsg.tool_call_id).toEqual('tool-1');
+    }
+
+    @Test('echoes reasoning_content on plain multi-turn assistant messages')
+    async echoesReasoningContentOnPlainAssistantMessages() {
+        let call: { url: string; body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            call = { url, body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'final answer' },
+                            finish_reason: 'stop'
+                        }],
+                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        await adapter.complete({
+            sessionId: 's-reasoning-plain',
+            summary: '',
+            memory: [],
+            messages: [
+                { id: '1', role: 'user', content: 'why is the sky blue', createdAt: 1 },
+                {
+                    id: '2',
+                    role: 'assistant',
+                    content: 'short answer',
+                    createdAt: 2,
+                    metadata: { reasoningContent: 'Rayleigh scattering' }
+                },
+                { id: '3', role: 'user', content: 'more detail', createdAt: 3 }
+            ],
+            tools: []
+        });
+
+        expect(call?.body.messages[1].role).toEqual('assistant');
+        expect(call?.body.messages[1].reasoning_content).toEqual('Rayleigh scattering');
+        expect(call?.body.messages[1].tool_calls).toBeUndefined();
+    }
 }
