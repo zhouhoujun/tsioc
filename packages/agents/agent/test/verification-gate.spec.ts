@@ -245,6 +245,58 @@ class IgnoreFailureModelAdapter extends EchoModelAdapter {
     }
 }
 
+class RepairYModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1 || this.count === 2) {
+            return {
+                toolCalls: [{ id: `tool-y-${this.count}`, name: 'echo', input: { value: 'y' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'y repaired',
+            stopReason: 'end'
+        };
+    }
+}
+
+class XThenYRepairModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-xy-1', name: 'echo', input: { value: 'x' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                toolCalls: [{ id: 'tool-xy-2', name: 'echo', input: { value: 'y' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 3) {
+            return {
+                toolCalls: [{ id: 'tool-xy-3', name: 'echo', input: { value: 'y' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'x abandoned, y repaired',
+            stopReason: 'end'
+        };
+    }
+}
+
 class StreamingLoopModelAdapter extends EchoModelAdapter {
     requests: any[] = [];
     private count = 0;
@@ -611,6 +663,29 @@ export class VerificationGateRuntimeTest {
         const records = await store.list('s1');
         expect(records[0].metadata?.falsificationCount).toEqual(1);
         expect(records[0].metadata?.repairRecipes).toBeUndefined();
+    }
+
+    @Test('cross-turn hints are reloaded for signatures first falsified later in the same turn')
+    async reloadsHintsForLaterFalsifiedSignatures() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const firstRuntime = buildRuntime(new RepairYModelAdapter(), new InputFailureToolRegistry({ y: 1 }), { maxToolRounds: 8 }, store);
+        const firstResult = await firstRuntime.runTurn('s1', 'hello');
+        expect(firstResult.message.content).toEqual('y repaired');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        expect(recordsAfterFirst[0].metadata?.falsifiedSignatures).toEqual(['echo::y']);
+
+        const model = new XThenYRepairModelAdapter();
+        const runtime = buildRuntime(model, new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('x abandoned, y repaired');
+        const prompts = injectedRecoveryPrompts(model);
+        expect(prompts.length).toEqual(2);
+        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+        expect(prompts[1]).toContain('Prior success from an earlier turn');
+        expect(prompts[1]).toContain('Signature "echo::y" (repaired in session s1)');
     }
 
     @Test('a signature repaired in a prior session of the same workspace is hinted in a new session')

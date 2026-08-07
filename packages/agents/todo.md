@@ -902,3 +902,11 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - `buildRepairRecipes` 从「只看最后一个 attempt」改为**遍历全部 attempts、按签名去重**，并加 engagement 判定：签名在本轮 good entries 中重现（同 tool+同 input，重试成功）**或**本轮有同 toolName 的调用（输入修正成功）才算修复，否则不生成配方——修复了「被忽略的证伪 + 无关通过调用」被误记为修复配方的问题。
    - 效果：跨轮 mid-streak 修复（某签名在其证伪轮次内已修复、而轮次因另一签名仍被证伪）也会被正确捕获，且 fixes 用该轮 good entries（不夹带被证伪条目）。
 2. 测试：`verification-gate.spec.ts` `VerificationGateRuntimeTest` 新增 3 条（顺序双签名修复均捕获；mid-streak 修复捕获且 fixes 精确；忽略证伪不产生臆造配方）。agent 全量 **544 passing**（541+3），`tsc --noEmit` clean。
+
+## P59 打磨（已完成）：同一 turn 内后续证伪的新签名也会加载跨会话修复提示（Reload hints for late falsified signatures）
+
+1. ~~跨会话 hints（`repairHints`）只在 `attemptHistory.length === 1`（首次证伪）时加载，后续轮次中首次出现的**新签名**拿不到其历史修复提示~~ → 已完成（`@tsdi/agent` `DefaultAgentRuntime`）：
+   - `runVerificationGate` 改为每次证伪后检查：若本轮签名存在未被现有 `repairHints` 覆盖的，则按「attemptHistory 全量去重签名」重载 hints 并替换（`collectResolvedRepairHints` 内部按签名去重、DESC 排序，重载结果稳定）。
+   - 同一签名重复证伪不再重复查询（covered 判定短路）；单 attempt 行为与 P54 完全一致。
+   - 两条提示路径（`buildRepairPrompt` 与升级后的 `buildExplorationGuidancePrompt`）都渲染 `resolvedHints`，因此后续轮次的新签名证伪也会在修复/探索提示里看到「此失败此前修复过」。
+2. 测试：`verification-gate.spec.ts` 新增 1 条（turn A 修复 echo::y 留配方；turn B 先证伪 x、再证伪 y：第一次修复提示不含 hint，第二次含 `Signature "echo::y" (repaired in session s1)`）。agent 全量 **545 passing**（544+1），`tsc --noEmit` clean。

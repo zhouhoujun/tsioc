@@ -1232,8 +1232,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             signatures,
             reasons: [...result.reasons]
         });
-        if (recovery.attemptHistory.length === 1) {
-            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, signatures, turnContext.workspace);
+        const coveredHintSignatures = new Set(recovery.repairHints.map(hint => hint.signature));
+        if (signatures.some(signature => !coveredHintSignatures.has(signature))) {
+            const hintSignatures = [...new Set(recovery.attemptHistory.flatMap(attempt => attempt.signatures))];
+            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, hintSignatures, turnContext.workspace);
         }
 
         if (turnContext.diagnostics) {
