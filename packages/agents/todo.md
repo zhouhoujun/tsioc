@@ -818,4 +818,14 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - **agent-ui**（`@tsdi/agent-ui`）：`AgentConsoleSessionService` 新增 `getVoiceStatus` / `startVoiceSession` / `feedVoiceAudio`（`Buffer.from(chunk).toString('base64')`）/ `endVoiceSession` / `cancelVoiceSession`（RPC 优先，无 RPC 优雅降级）；`AgentConsoleComponent` 新增 `/voice start|stop|cancel|status` 命令族（`handleVoiceCommand`，取 `state.sessionId`，start 提示说话、stop 输出 Transcribed/Reply、cancel 幂等提示、status 显示 available/active/buffered + missing 组件 + usage）；`AgentConsoleSessionState.commandHints` 白名单补 `/voice`（否则 `handleCommand` 的 whitelist 检查拦截报 `Unknown command`）。
    - 测试：gateway 新增音频 RPC 8 条（`gateway-server.spec.ts` 无 handler 降级 / start·feed·end 全流程 base64 / 未 start 拒绝 / chunk 参数校验 `-32602` / cancel 幂等 / foreign `-32003` / 缺 sessionId `-32602`）+ WebSocket 音频通道 13 条（`audio.spec.ts`）；agent-ui view-model 新增 8 条（status 可用性 / active+buffered / missing 降级 / start / stop 转写+回复 / cancel / 无会话提示 / 无 RPC 降级），`AppRpcStub` 增 `audio.*` 分支 + `audioStatesBySession` + `audioStatusOverride`，`SessionServiceStub` 增 5 个 voice* override（rpcRef 转发）。
    - 全量回归：agent 518 / agent-gateway 169 / agent-ui 320 passing；agent、agent-gateway、agent-ui tsc 干净。
-   - 遗留：`AudioCaptureAdapter` 尚无具体采集实现（Echo 示例在测试内），WebSocket 音频帧无 ACL/配额上限（防御性字节上限已有）。
+   - 后续已收口：`AudioCaptureAdapter` 的 Node / browser 实现位于 `platform-server/common` 与 `platform-browser/common`；WebSocket 音频帧配额由后续提交 `51b447dcd` 补齐。
+
+## P48 打磨（已完成）：平台音频采集接入 console voice 管线
+
+1. ~~`AudioCaptureAdapter` 生产实现未接入 `/voice`~~ → 已完成（`@tsdi/agent-ui`）：
+   - `AgentConsoleComponent` 可选注入 `@tsdi/common` 的 `AudioCaptureAdapter`，因此 CLI 的 `ServerCommonModule` 自动使用 `NodeAudioCaptureAdapter`，browser 运行时自动使用 `MediaRecorderAudioCaptureAdapter`，不重复实现平台采集。
+   - `/voice start` 在 gateway `audio.start` 成功后启动本地采集；采集 chunk 经串行队列调用 `audio.feed`，避免异步帧乱序。未注入 adapter 时保留外部客户端自行 feed 的兼容行为。
+   - `/voice stop` 先停止采集并等待已排队 chunk 全部上传，再调用 `audio.end`，修复尾帧丢失竞态；`/voice cancel` 与 component destroy 会取消平台采集并清理本地状态。
+   - adapter 不可用或启动失败时自动回滚 gateway audio session；采集/上传错误通过 console notice 呈现并取消远端会话。
+2. ~~P47 遗留的 WebSocket 音频配额~~ → 已由 `51b447dcd` 完成：`AudioFrameQuota` 覆盖单帧大小、会话累计字节和滑动窗口帧率限制；session owner ACL 在 WebSocket upgrade 的 `resolveSessionId` 中沿用 `SessionOwnerStore.canResume`。
+3. 测试：agent-ui 新增 3 条（平台 chunk 在 `audio.end` 前上传、采集不可用回滚、cancel 中止采集），全量 323 passing；agent-ui `tsc --noEmit` clean。

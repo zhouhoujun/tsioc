@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
-import { FileAdapter } from '@tsdi/common';
+import { AudioCaptureAdapter, FileAdapter } from '@tsdi/common';
 import {
     clampConsoleTextCursor,
     ConsoleTextChunk,
@@ -65,6 +65,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected draftLines: string[] = [];
     protected destroyed = false;
     protected sshShell: SshShellSession | null = null;
+    protected voiceCaptureSessionId = '';
+    protected voiceCaptureFeed: Promise<void> = Promise.resolve();
     protected openSessionRequestId = 0;
     protected openReviewRequestId = 0;
     protected activateModelRequestId = 0;
@@ -89,7 +91,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ComponentRef) private componentRef?: ComponentRef<AgentConsoleComponent> | null,
         @Optional() @Inject(ConsoleTerminalSurfaceAccessor) private surfaceAccessor?: ConsoleTerminalSurfaceAccessor | null,
         @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
-        @Optional() private sshManager?: SshConnectionManager | null
+        @Optional() private sshManager?: SshConnectionManager | null,
+        @Optional() private audioCapture?: AudioCaptureAdapter | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -810,6 +813,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case 'start': {
                 const result = await this.sessionService.startVoiceSession(sessionId);
                 if (result?.ok) {
+                    const captureError = await this.startVoiceCapture(sessionId);
+                    if (captureError) {
+                        await this.sessionService.cancelVoiceSession(sessionId).catch(() => undefined);
+                        this.notify(`Voice capture could not be started: ${captureError}`);
+                        return true;
+                    }
                     this.notify(`Voice session started (${sessionId}). Speak into the capture device; run /voice stop to transcribe.`);
                 } else {
                     this.notify(result?.error || 'Voice session could not be started.');
@@ -817,6 +826,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             }
             case 'stop': {
+                await this.stopVoiceCapture(false);
                 const result = await this.sessionService.endVoiceSession(sessionId);
                 if (result?.ok && result.transcribed) {
                     this.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}`);
@@ -826,6 +836,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             }
             case 'cancel': {
+                await this.stopVoiceCapture(true);
                 const result = await this.sessionService.cancelVoiceSession(sessionId);
                 if (result?.ok) {
                     this.notify(result.cancelled ? 'Voice session cancelled.' : 'No voice session was active.');
@@ -845,6 +856,69 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             }
         }
+    }
+
+    protected async startVoiceCapture(sessionId: string): Promise<string | undefined> {
+        if (!this.audioCapture) {
+            return undefined;
+        }
+        if (!this.audioCapture.isAvailable) {
+            return this.audioCapture.missingComponents.join(', ') || 'capture adapter unavailable';
+        }
+        if (this.voiceCaptureSessionId) {
+            return `capture already active for ${this.voiceCaptureSessionId}`;
+        }
+        this.voiceCaptureSessionId = sessionId;
+        this.voiceCaptureFeed = Promise.resolve();
+        try {
+            await this.audioCapture.start({
+                onChunk: chunk => {
+                    this.voiceCaptureFeed = this.voiceCaptureFeed.then(async () => {
+                        if (this.voiceCaptureSessionId !== sessionId || !this.sessionService) {
+                            return;
+                        }
+                        const result = await this.sessionService.feedVoiceAudio(sessionId, chunk);
+                        if (result?.ok === false) {
+                            throw new Error(result.error || 'audio upload failed');
+                        }
+                    }).catch(error => {
+                        if (this.voiceCaptureSessionId === sessionId) {
+                            this.voiceCaptureSessionId = '';
+                            this.notify(`Voice capture error: ${error?.message ?? String(error)}`);
+                            void Promise.resolve(this.audioCapture?.cancel()).catch(() => undefined);
+                            void this.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
+                        }
+                    });
+                },
+                // Keep the session id until stopVoiceCapture drains queued chunks.
+                onEnd: () => undefined,
+                onError: error => {
+                    if (this.voiceCaptureSessionId === sessionId) {
+                        this.voiceCaptureSessionId = '';
+                        this.notify(`Voice capture error: ${error.message}`);
+                        void this.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
+                    }
+                }
+            }, { format: this.audioCapture.format, sampleRate: 16000, channels: 1 });
+            return undefined;
+        } catch (error: any) {
+            this.voiceCaptureSessionId = '';
+            return error?.message ?? String(error);
+        }
+    }
+
+    protected async stopVoiceCapture(cancel: boolean): Promise<void> {
+        if (!this.audioCapture || !this.voiceCaptureSessionId) {
+            return;
+        }
+        if (cancel) {
+            this.voiceCaptureSessionId = '';
+            await this.audioCapture.cancel();
+            return;
+        }
+        await this.audioCapture.stop();
+        await this.voiceCaptureFeed;
+        this.voiceCaptureSessionId = '';
     }
 
     /**
@@ -2295,6 +2369,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     onDestroy(): void {
         this.destroyed = true;
+        void this.stopVoiceCapture(true).catch(() => undefined);
         this.clearStreamingMessageState();
         this.clearInputHistoryRestoreTimers();
         this.state.copyFocusedTextAction = undefined;

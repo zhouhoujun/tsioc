@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { createReadStream } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
-import { Encodings, FileAdapter, FileDirectoryEntry, IReadable } from '@tsdi/common';
+import { AudioCaptureAdapter, AudioCaptureSessionEvents, Encodings, FileAdapter, FileDirectoryEntry, IReadable } from '@tsdi/common';
 import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
@@ -117,6 +117,26 @@ class TestFileAdapter extends FileAdapter {
             return [];
         }
     }
+}
+
+class AudioCaptureStub extends AudioCaptureAdapter {
+    events?: AudioCaptureSessionEvents;
+    starts = 0;
+    stops = 0;
+    cancels = 0;
+    available = true;
+    startError?: Error;
+
+    override get isAvailable(): boolean { return this.available; }
+    override get missingComponents(): string[] { return this.available ? [] : ['microphone']; }
+    override async start(events: AudioCaptureSessionEvents): Promise<void> {
+        this.starts++;
+        if (this.startError) throw this.startError;
+        this.events = events;
+    }
+    override async stop(): Promise<void> { this.stops++; this.events?.onEnd?.(); }
+    override async cancel(): Promise<void> { this.cancels++; }
+    emit(chunk: string): void { this.events?.onChunk?.(Buffer.from(chunk)); }
 }
 
 class RuntimeStub {
@@ -1218,7 +1238,8 @@ function createConsoleParts(
     sessionService?: SessionServiceStub,
     appRpc?: AppRpcStub,
     agentOptions?: any,
-    inputHistoryStore?: InputHistoryStoreStub
+    inputHistoryStore?: InputHistoryStoreStub,
+    audioCapture?: AudioCaptureAdapter
 ) {
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, appRpc as any, app as any);
@@ -1240,7 +1261,9 @@ function createConsoleParts(
         inputHistoryStore as any,
         undefined,
         undefined,
-        app as any
+        app as any,
+        undefined,
+        audioCapture
     );
     return { state, bridge, component, sessionService: sessions };
 }
@@ -3073,6 +3096,67 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.some(call => call.method === 'audio.start' && call.params?.sessionId === 'voice-4')).toEqual(true);
         expect(appRpc.audioStatesBySession.has('voice-4')).toEqual(true);
         expect(component.notice).toContain('Voice session started (voice-4)');
+    }
+
+    @Test('voice capture streams platform audio chunks before ending the gateway session')
+    async voiceCaptureStreamsChunks() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const capture = new AudioCaptureStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc, undefined, undefined, capture);
+        state.sessionId = 'voice-capture';
+        await component.onInit();
+
+        component.input = '/voice start';
+        await component.submit();
+        capture.emit('hello');
+        component.input = '/voice stop';
+        await component.submit();
+
+        expect(capture.starts).toBe(1);
+        expect(capture.stops).toBe(1);
+        const feed = appRpc.calls.find(call => call.method === 'audio.feed');
+        expect(Buffer.from(feed?.params?.chunk, 'base64').toString()).toBe('hello');
+        expect(appRpc.calls.findIndex(call => call.method === 'audio.feed')).toBeLessThan(appRpc.calls.findIndex(call => call.method === 'audio.end'));
+    }
+
+    @Test('voice start rolls back the gateway session when platform capture is unavailable')
+    async voiceCaptureUnavailableRollsBack() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const capture = new AudioCaptureStub();
+        capture.available = false;
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc, undefined, undefined, capture);
+        state.sessionId = 'voice-unavailable';
+        await component.onInit();
+
+        component.input = '/voice start';
+        await component.submit();
+
+        expect(appRpc.audioStatesBySession.has('voice-unavailable')).toBe(false);
+        expect(appRpc.calls.some(call => call.method === 'audio.cancel')).toBe(true);
+        expect(component.notice).toContain('microphone');
+    }
+
+    @Test('voice cancel aborts platform capture before cancelling the gateway session')
+    async voiceCancelAbortsCapture() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const capture = new AudioCaptureStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc, undefined, undefined, capture);
+        state.sessionId = 'voice-cancel-capture';
+        await component.onInit();
+        component.input = '/voice start';
+        await component.submit();
+
+        component.input = '/voice cancel';
+        await component.submit();
+
+        expect(capture.cancels).toBe(1);
+        expect(appRpc.calls.findIndex(call => call.method === 'audio.cancel')).toBeGreaterThan(-1);
     }
 
     @Test('voice stop command transcribes and replies through rpc')
