@@ -3,8 +3,9 @@ import { Suite, Test } from '@tsdi/unit';
 import { NodeAudioCaptureAdapter, NodeAudioPlaybackAdapter } from '@tsdi/platform-server/common';
 
 const PCM_STREAM_SCRIPT = `
+const fs = require('fs');
 const buf = Buffer.alloc(320, 1);
-const iv = setInterval(() => process.stdout.write(buf), 20);
+const iv = setInterval(() => fs.appendFileSync(process.env.TSDI_AUDIO_OUTPUT, buf), 20);
 process.on('SIGTERM', () => {
     clearInterval(iv);
     process.exit(0);
@@ -12,8 +13,9 @@ process.on('SIGTERM', () => {
 `;
 
 const PCM_EXIT_SCRIPT = `
+const fs = require('fs');
 const buf = Buffer.alloc(320, 1);
-process.stdout.write(buf);
+fs.appendFileSync(process.env.TSDI_AUDIO_OUTPUT, buf);
 process.exit(0);
 `;
 

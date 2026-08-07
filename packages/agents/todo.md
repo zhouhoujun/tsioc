@@ -850,4 +850,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 1. ~~RPC 返回 TTS 音频但 console 不播放~~ → 已完成：`@tsdi/common` 新增 `AudioPlaybackAdapter` / `AudioPlaybackOptions` / `AudioPlaybackFormat`；`AgentConsoleComponent` 可选注入播放器，`/voice stop` 解码 base64 音频并播放，播放不可用/失败时保留文字转写与 reply 并追加提示，component destroy 时停止播放。
 2. **Node 实现**：`NodeAudioPlaybackAdapter` 探测 `aplay` / `ffplay` / `play`（允许显式 command/args）；为规避当前 Node 24 + ts-node 8 子进程 pipe 基线异常，使用权限 `0600` 的临时音频文件传给播放器，结束后强制清理；PCM 传入 16 kHz/mono/S16_LE 参数。注册到 `ServerCommonModule`。
 3. **browser 实现**：`BrowserAudioPlaybackAdapter` 使用 Blob + object URL + Audio，stop 时 pause 并 revoke URL；注册到 `BrowserCommonModule`。
-4. 测试：platform-browser 5 passing（capture 3 + playback 2）；platform-server 新增 playback 2 条均通过（全量 16 passing，另有 3 条既有 Node capture stdout 时序失败，Node 24 + ts-node 8 环境基线）；agent-ui 新增播放成功/不可用 2 条，全量 325 passing，agent-ui `tsc --noEmit` clean。platform 根级 `tsc` 仍被既有 activities API 漂移阻断，与本次 common/audio 改动无关。
+4. 测试：platform-browser 5 passing（capture 3 + playback 2）；platform-server 新增 playback 2 条均通过（P52 后全量 19 passing）；agent-ui 新增播放成功/不可用 2 条，全量 325 passing，agent-ui `tsc --noEmit` clean。platform 根级 `tsc` 仍被既有 activities API 漂移阻断，与本次 common/audio 改动无关。
+
+## P52 打磨（已完成）：Node capture 子进程流兼容性修复
+
+1. ~~Node 24 + ts-node 8 下录音子进程 stdout 丢失~~ → 已完成：`NodeAudioCaptureAdapter` 每次 capture 创建私有临时目录与 `0600` PCM 文件，内置 `arecord` / `sox` / `ffmpeg` 直接写文件，adapter 每 20ms 增量读取新增字节并触发 `onChunk`；关闭时最后 drain，stop/cancel/error 后统一删除临时目录。
+2. **自定义命令兼容**：新增 `TSDI_AUDIO_OUTPUT` 环境变量供命令写入采集数据，同时保留原 stdout 监听，不破坏已有自定义 capture 命令。测试脚本改走输出文件，覆盖持续采集、cancel、自然结束、非零退出与 double start。
+3. 验证：platform-server 全量 19 passing（P51 时的 3 条 capture 失败全部恢复），临时文件 playback 与 capture 两条路径均通过；根级 `tsc` 的既有 activities API 漂移仍不在本轮范围内。

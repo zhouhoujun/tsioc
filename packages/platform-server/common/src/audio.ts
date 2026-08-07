@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { spawn, spawnSync, ChildProcessByStdio } from 'child_process';
 import { Readable } from 'stream';
-import { promises as fs } from 'fs';
+import { promises as fs, closeSync, mkdtempSync, openSync, readSync, rmSync, statSync, writeFileSync } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioCaptureAdapterOptions, AudioPlaybackAdapter, AudioPlaybackOptions } from '@tsdi/common';
@@ -19,6 +19,8 @@ export interface NodeAudioCaptureAdapterOptions extends AudioCaptureAdapterOptio
     command?: string;
     /**
      * Extra arguments appended before the generated format arguments.
+     * Custom commands can write capture bytes to `TSDI_AUDIO_OUTPUT`; stdout
+     * remains supported for backwards compatibility.
      */
     args?: string[];
     /**
@@ -59,6 +61,10 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
     private stopping = false;
     private cancelled = false;
     private ended = false;
+    private captureTempDir = '';
+    private capturePath = '';
+    private captureOffset = 0;
+    private capturePoll?: ReturnType<typeof setInterval>;
 
     constructor(private readonly options: NodeAudioCaptureAdapterOptions = {}) {
         super();
@@ -97,9 +103,14 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
         const device = nodeOptions?.device ?? this.options.device ?? 'default';
         const extraArgs = nodeOptions?.args ?? this.options.args ?? [];
 
-        const { cmd, args } = this.buildCommand(sampleRate, channels, device, extraArgs);
-        const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        this.prepareCaptureFile();
+        const { cmd, args } = this.buildCommand(sampleRate, channels, device, extraArgs, this.capturePath);
+        const proc = spawn(cmd, args, {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, TSDI_AUDIO_OUTPUT: this.capturePath }
+        });
         this.proc = proc;
+        this.capturePoll = setInterval(() => this.drainCaptureFile(events), 20);
 
         proc.stdout.on('data', (chunk: Buffer) => {
             if (this.proc !== proc || this.stopping || this.cancelled) {
@@ -119,6 +130,7 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
             }
             this.ended = true;
             this.proc = null;
+            this.cleanupCaptureFile();
             const session = this.session;
             this.session = null;
             session?.onError?.(error);
@@ -130,6 +142,8 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
             }
             this.ended = true;
             this.proc = null;
+            this.drainCaptureFile(events);
+            this.cleanupCaptureFile();
             const session = this.session;
             this.session = null;
             if (this.cancelled) {
@@ -186,28 +200,64 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
         }
     }
 
-    private buildCommand(sampleRate: number, channels: number, device: string, extraArgs: string[]): { cmd: string; args: string[] } {
+    private buildCommand(sampleRate: number, channels: number, device: string, extraArgs: string[], outputPath: string): { cmd: string; args: string[] } {
         const command = this.resolvedCommand!;
         if (command === 'arecord') {
             return {
                 cmd: command,
-                args: [...extraArgs, '-D', device, '-f', 'S16_LE', '-r', String(sampleRate), '-c', String(channels), '-t', 'raw']
+                args: [...extraArgs, '-D', device, '-f', 'S16_LE', '-r', String(sampleRate), '-c', String(channels), '-t', 'raw', outputPath]
             };
         }
         if (command === 'sox') {
             return {
                 cmd: command,
-                args: [...extraArgs, '-d', '-t', 'raw', '-r', String(sampleRate), '-c', String(channels), '-b', '16', '-e', 'signed-integer', '-']
+                args: [...extraArgs, '-d', '-t', 'raw', '-r', String(sampleRate), '-c', String(channels), '-b', '16', '-e', 'signed-integer', outputPath]
             };
         }
         if (command === 'ffmpeg') {
             return {
                 cmd: command,
-                args: [...extraArgs, '-f', 'alsa', '-i', device, '-ar', String(sampleRate), '-ac', String(channels), '-f', 's16le', '-']
+                args: [...extraArgs, '-f', 'alsa', '-i', device, '-ar', String(sampleRate), '-ac', String(channels), '-f', 's16le', '-y', outputPath]
             };
         }
         // Custom command: rely on the caller-provided args entirely.
         return { cmd: command, args: extraArgs };
+    }
+
+    private prepareCaptureFile(): void {
+        this.cleanupCaptureFile();
+        this.captureTempDir = mkdtempSync(path.join(os.tmpdir(), 'tsdi-capture-'));
+        this.capturePath = path.join(this.captureTempDir, 'capture.pcm');
+        writeFileSync(this.capturePath, Buffer.alloc(0), { mode: 0o600 });
+        this.captureOffset = 0;
+    }
+
+    private drainCaptureFile(events: AudioCaptureSessionEvents): void {
+        if (!this.capturePath || this.cancelled) return;
+        try {
+            const size = statSync(this.capturePath).size;
+            if (size <= this.captureOffset) return;
+            const chunk = Buffer.alloc(size - this.captureOffset);
+            const fd = openSync(this.capturePath, 'r');
+            try {
+                const bytesRead = readSync(fd, chunk, 0, chunk.length, this.captureOffset);
+                this.captureOffset += bytesRead;
+                if (bytesRead > 0) events.onChunk?.(new Uint8Array(chunk.buffer, chunk.byteOffset, bytesRead));
+            } finally {
+                closeSync(fd);
+            }
+        } catch {
+            // The process may rotate/remove the file while it is closing.
+        }
+    }
+
+    private cleanupCaptureFile(): void {
+        if (this.capturePoll) clearInterval(this.capturePoll);
+        this.capturePoll = undefined;
+        if (this.captureTempDir) rmSync(this.captureTempDir, { recursive: true, force: true });
+        this.captureTempDir = '';
+        this.capturePath = '';
+        this.captureOffset = 0;
     }
 
     private waitClose(proc: AudioCaptureProc, timeoutMs: number): Promise<void> {
