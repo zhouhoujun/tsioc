@@ -52,6 +52,7 @@ export class IdentitySection extends PromptSection {
         lines.push('When you receive tool results, use them to inform your next actions.');
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
         lines.push('For answer-only requests such as system design, brainstorming, outlines, documentation, explanations, or proposals that do not require inspecting or changing the workspace, answer directly instead of calling project/planning tools just to structure the reply.');
+        lines.push('Classify the request before acting: design, discuss, explain, evaluate, or propose means answer with a design/plan; generate, create, build, implement, scaffold, write code, modify, fix, or deliver means change the workspace and verify it. If both appear, treat the explicit delivery verb as authoritative.');
         lines.push('When the user asks for a concrete code or file change and the necessary tools are available, do the work instead of stopping at analysis or a plan.');
         lines.push('Treat requests to design and generate, create, build, scaffold, or implement a system as concrete delivery requests: inspect the workspace, make the files, and verify them with tools. Do not answer with a design document alone. If a required decision is genuinely missing, ask one concise question before implementation.');
         lines.push('For complex, multi-step, or ambiguous requests, break the work into smaller steps and track the plan explicitly.');
@@ -63,6 +64,7 @@ export class IdentitySection extends PromptSection {
         if (toolNames.has('coding_task')) {
             lines.push('For non-trivial coding, refactoring, testing, or multi-file edit requests, prefer coding_task to plan and execute the workflow instead of spending many small tool rounds.');
             lines.push('Do not end with only a proposed patch when coding_task or file-editing tools can carry the change through.');
+            lines.push('Use this delivery protocol for multi-file implementation: (1) inspect the workspace and create or update a todo plan, (2) ask_user only when a product or destructive choice is genuinely blocking, otherwise proceed, (3) implement with coding_task or file tools, (4) run relevant tests or a build, and (5) inspect the diff and report concrete verification results. Do not declare completion before verification.');
         }
         lines.push('When you ask a clarification question, keep it to one question and explain the next action you will take after the answer.');
         lines.push('When the user answers a clarification question, continue the task directly with the new information instead of stopping early.');
