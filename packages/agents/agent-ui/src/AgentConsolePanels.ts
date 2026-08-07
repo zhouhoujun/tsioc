@@ -605,9 +605,13 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             parts.push(progress);
             parts.push(this.runningLabel);
         } else {
-            parts.push('waiting for response');
+            const latest = this.state.activities[this.state.activities.length - 1];
+            parts.push(latest?.message || '正在整理结果');
+            parts.push('wait for response');
         }
-        parts.push(`${this.totalTokens} tokens`);
+        if (this.totalTokens > 0) {
+            parts.push(`${this.totalTokens} tokens`);
+        }
         const dashboard = this.dashboardTextLabel;
         if (dashboard) {
             parts.push(dashboard);
@@ -2341,7 +2345,7 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
-        const toggleText = `… ${hiddenCount} more lines. Press Enter or click to expand`;
+        const toggleText = `… ${hiddenCount} more lines. Click to expand`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)

@@ -133,7 +133,7 @@ export class AgentConsoleEventBridge {
                     toolCallId: event.receipt?.toolCallId,
                     updatedAt: Date.now()
                 });
-                this.state.pushActivity('tool', `Running ${event.toolName}`);
+                this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'running'));
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary), {
                         eventType: 'tool_invoked',
@@ -166,7 +166,7 @@ export class AgentConsoleEventBridge {
                     toolCallId: event.receipt?.toolCallId,
                     updatedAt: Date.now()
                 });
-                this.state.pushActivity('tool', `Completed ${event.toolName}`);
+                this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'completed'));
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
                         eventType: 'tool_completed',
@@ -197,7 +197,10 @@ export class AgentConsoleEventBridge {
                     toolCallId: event.receipt?.toolCallId,
                     updatedAt: Date.now()
                 });
-                this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
+                const nonGitRepo = event.toolName === 'git_operations' && /not a Git repository/i.test(event.error.message);
+                this.state.pushActivity('error', nonGitRepo
+                    ? '未检测到 Git 仓库，继续使用文件工具完成任务'
+                    : `${this.describeToolName(event.toolName)} 未完成：${event.error.message}`);
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), `${event.toolName} failed: ${event.error.message}`, {
                         eventType: 'tool_failed',
@@ -341,6 +344,29 @@ export class AgentConsoleEventBridge {
     protected describeToolTimelineEvent(toolName: string, summary?: string): string {
         const resolvedSummary = this.summarizeToolEventDetail(toolName, summary);
         return resolvedSummary ? `${toolName} · ${resolvedSummary}` : toolName;
+    }
+
+    protected describeToolName(toolName: string): string {
+        const labels: Record<string, string> = {
+            list_dir: '检查目录',
+            glob_search: '搜索文件',
+            content_search: '搜索代码',
+            read_file: '读取文件',
+            write_file: '创建文件',
+            edit_file: '修改文件',
+            apply_patch: '应用修改',
+            mkdir: '创建目录',
+            todo: '更新计划',
+            ask_user: '等待你的选择',
+            coding_task: '执行实现任务',
+            git_operations: '检查版本状态'
+        };
+        return labels[toolName] || toolName.replace(/[._-]+/g, ' ');
+    }
+
+    protected describeToolActivity(toolName: string, status: 'running' | 'completed'): string {
+        const name = this.describeToolName(toolName);
+        return status === 'running' ? `正在${name}` : `${name}完成`;
     }
 
     protected summarizeToolEventDetail(toolName: string, summary?: string): string {
