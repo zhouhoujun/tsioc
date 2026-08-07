@@ -1,6 +1,6 @@
 import { Application } from '@tsdi/core';
 import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
-import { AgentUiConfigService } from '@tsdi/agent-ui';
+import { AgentUiConfigService, AgentUiResolvedConfig } from '@tsdi/agent-ui';
 import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -69,6 +69,29 @@ async function loadImagePart(filePath: string): Promise<NonNullable<AgentTurnMes
 
 function createConfigService(options: AgentCliOptions): AgentUiConfigService {
     return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
+}
+
+/**
+ * Ensure the resolved workspace and file tool root directories exist before the
+ * application boots. Config resolution stays side-effect free so `doctor` can
+ * report a missing workspace directory.
+ */
+export async function ensureAgentWorkspace(resolved: AgentUiResolvedConfig): Promise<void> {
+    const directories = new Set<string>();
+    if (resolved.workspace) {
+        directories.add(resolved.workspace);
+    }
+    const fileRootDir = resolved.tools?.file?.rootDir;
+    if (fileRootDir) {
+        directories.add(fileRootDir);
+    }
+    for (const dir of directories) {
+        try {
+            await fs.mkdir(dir, { recursive: true });
+        } catch {
+            // workspace creation failure is surfaced by tool execution; do not block bootstrap
+        }
+    }
 }
 
 export function createAgentSandboxRuntimeProvider(): any {
@@ -142,6 +165,7 @@ export function withAdapterProviders(baseOptions: AgentCliOptions = {}): any[] {
 export async function runAgentApplication(options: AgentCliOptions, agentOptions: any, extraProviders: any[] = []): Promise<any> {
     const config = createConfigService(options);
     const resolved = config.resolve();
+    await ensureAgentWorkspace(resolved);
     return Application.run(AgentModule, {
         deps: [ServerCommonModule],
         providers: [
@@ -162,6 +186,7 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
 export async function runAgentRpcApplication(options: AgentCliOptions, agentOptions: any = {}, extraProviders: any[] = []): Promise<any> {
     const config = createConfigService(options);
     const resolved = config.resolve();
+    await ensureAgentWorkspace(resolved);
     return Application.run(AgentAppServerModule, {
         deps: [ServerCommonModule],
         providers: [
