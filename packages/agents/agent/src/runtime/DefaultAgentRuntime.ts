@@ -75,8 +75,14 @@ interface TurnRecoveryState {
     repeatAttempts: number;
     writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
     repairHints: ResolvedRepairHint[];
+    repairRecipes: TurnRepairRecipe[];
     terminated: boolean;
     terminationMessage: string;
+}
+
+interface TurnRepairRecipe {
+    signature: string;
+    fixes: Array<{ toolName: string; inputSummary?: string }>;
 }
 
 interface ToolCompensationEntry {
@@ -1058,6 +1064,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         const falsifiedSignatures = [...new Set(recovery?.attemptHistory.flatMap(attempt => attempt.signatures) ?? [])];
+        const repairRecipes = recovery?.repairRecipes ?? [];
+        const metadata: Record<string, any> = {
+            loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
+            falsificationCount: diagnostics.falsificationCount ?? 0,
+            repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
+            repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0,
+            repairResolved: falsifiedSignatures.length > 0 && !recovery?.terminated,
+            falsifiedSignatures
+        };
+        if (repairRecipes.length > 0) {
+            metadata.repairRecipes = repairRecipes;
+        }
         const record: TurnDiagnosticsRecord = {
             id: this.uuid.generate(),
             sessionId,
@@ -1073,14 +1091,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             compactionLevel: diagnostics.compactionLevel,
             promptCache: diagnostics.promptCache,
             evidence: evidenceLedger?.snapshot(),
-            metadata: {
-                loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
-                falsificationCount: diagnostics.falsificationCount ?? 0,
-                repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
-                repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0,
-                repairResolved: falsifiedSignatures.length > 0 && !recovery?.terminated,
-                falsifiedSignatures
-            }
+            metadata
         };
         try {
             await this.turnDiagnosticsStore.append(record);
@@ -1116,6 +1127,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             repeatAttempts: 0,
             writeHints: [],
             repairHints: [],
+            repairRecipes: [],
             terminated: false,
             terminationMessage: ''
         };
@@ -1186,6 +1198,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
         recovery.writeHints = [];
         if (!result.falsified) {
+            if (recovery.attemptHistory.length > 0 && recovery.consecutiveFalsifications > 0 && recovery.repairRecipes.length === 0) {
+                recovery.repairRecipes = this.buildRepairRecipes(recovery.attemptHistory, turnContext.evidenceLedger?.entriesFrom(startIndex) ?? []);
+            }
             recovery.consecutiveFalsifications = 0;
             return;
         }
@@ -1220,6 +1235,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
             recovery.terminated = true;
             recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
         }
+    }
+
+    private buildRepairRecipes(attempts: FalsificationAttempt[], fixEntries: ToolEvidenceEntry[]): TurnRepairRecipe[] {
+        if (fixEntries.length === 0 || attempts.length === 0) {
+            return [];
+        }
+        const lastAttempt = attempts[attempts.length - 1];
+        const fixes = fixEntries.map(entry => ({ toolName: entry.toolName, inputSummary: entry.inputSummary }));
+        return lastAttempt.signatures.map(signature => ({ signature, fixes }));
     }
 
     private async loadResolvedRepairHints(sessionId: string, signatures: string[]): Promise<ResolvedRepairHint[]> {

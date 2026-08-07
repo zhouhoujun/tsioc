@@ -37,7 +37,17 @@ export interface ResolvedRepairHint {
     sessionId: string;
     /** Timestamp of the resolved turn's diagnostics record. */
     resolvedAt: number;
+    /** Tool calls that passed the verification gate after the falsification (P55). */
+    fixes?: RepairFix[];
 }
+
+/** One tool call that repaired a falsified signature (P55). */
+export interface RepairFix {
+    toolName: string;
+    inputSummary?: string;
+}
+
+const MAX_RESOLVED_HINTS_RENDERED = 4;
 
 export const DEFAULT_REPAIR_MAX_EVIDENCE_PER_ATTEMPT = 4;
 export const DEFAULT_REPAIR_MAX_ATTEMPTS = 8;
@@ -72,9 +82,12 @@ function entryReason(entry: ToolEvidenceEntry): string {
  *
  * A diagnostics record counts as "resolved" when its metadata carries
  * `repairResolved: true` (persisted by the runtime at turn end) and lists the
- * falsified signatures under `falsifiedSignatures`. Hints are ordered newest
- * first and deduplicated by signature, so the repair prompt can tell the model
- * "this exact failure was fixed before" instead of re-exploring from scratch.
+ * falsified signatures under `falsifiedSignatures`. When the record also
+ * carries `repairRecipes` (P55), the hint includes the concrete tool calls
+ * that passed the verification gate after the falsification. Hints are ordered
+ * newest first and deduplicated by signature, so the repair prompt can tell
+ * the model "this exact failure was fixed before" instead of re-exploring from
+ * scratch.
  */
 export function collectResolvedRepairHints(records: TurnDiagnosticsRecord[], signatures: string[]): ResolvedRepairHint[] {
     const wanted = new Set(signatures);
@@ -84,9 +97,12 @@ export function collectResolvedRepairHints(records: TurnDiagnosticsRecord[], sig
         if (!metadata || metadata.repairResolved !== true || !Array.isArray(metadata.falsifiedSignatures)) {
             continue;
         }
+        const recipes = Array.isArray(metadata.repairRecipes) ? metadata.repairRecipes as Array<{ signature: string; fixes: RepairFix[] }> : [];
         for (const signature of metadata.falsifiedSignatures as string[]) {
             if (wanted.has(signature) && !hints.has(signature)) {
-                hints.set(signature, { signature, sessionId: record.sessionId, resolvedAt: record.createdAt });
+                const recipe = recipes.find(item => item.signature === signature);
+                const fixes = recipe?.fixes?.length ? recipe.fixes : undefined;
+                hints.set(signature, { signature, sessionId: record.sessionId, resolvedAt: record.createdAt, fixes });
             }
         }
     }
@@ -98,8 +114,11 @@ function appendResolvedHints(lines: string[], hints: ResolvedRepairHint[]): void
         return;
     }
     lines.push('Prior success from an earlier turn: these exact failures were repaired successfully before — reuse that repair approach:');
-    for (const hint of hints) {
-        lines.push(`- Signature "${hint.signature}" (repaired in session ${hint.sessionId})`);
+    for (const hint of hints.slice(0, MAX_RESOLVED_HINTS_RENDERED)) {
+        const fixes = hint.fixes && hint.fixes.length > 0
+            ? ` retry with ${hint.fixes.map(fix => `Tool "${fix.toolName}"${fix.inputSummary ? ` (input "${fix.inputSummary}")` : ''}`).join(', ')}`
+            : '';
+        lines.push(`- Signature "${hint.signature}" (repaired in session ${hint.sessionId})${fixes}`);
     }
 }
 
