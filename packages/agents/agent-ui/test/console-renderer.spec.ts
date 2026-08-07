@@ -1284,6 +1284,32 @@ export class AgentConsoleTuiRendererTest {
         }
     }
 
+    @Test('activity panel groups repeated steps without consuming timeline rows')
+    async renderActivityPanelGroupsRepeatedSteps() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(ConsoleRenderer);
+            const activityPanel = consoleRef.hostView.query(AgentConsoleActivityPanelComponent) as ComponentRef<AgentConsoleActivityPanelComponent>;
+
+            consoleRef.instance.sessionState.pushActivity('tool', 'Inspect   directory');
+            consoleRef.instance.sessionState.pushActivity('tool', 'Inspect directory');
+            consoleRef.instance.sessionState.pushActivity('model', 'Preparing the response');
+            await Promise.resolve();
+
+            const lines = renderer.renderToLines(activityPanel.hostView.rootNodes[0]);
+            expect(lines.filter((line: string) => line.includes('Inspect directory')).length).toBe(1);
+            expect(lines.some((line: string) => line.includes('Inspect directory ×2'))).toBe(true);
+            expect(lines.some((line: string) => line.includes('Preparing the response'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('terminal surface updates working state and input from shared component state')
     async terminalSurfaceUpdatesSharedState() {
         const tuiCtx = await Application.run(AgentModule, {

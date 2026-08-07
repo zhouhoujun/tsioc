@@ -2897,16 +2897,42 @@ export class AgentConsoleActivityPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        const compact = this.activities.filter((activity, index, all) => {
-            const previous = all[index - 1];
-            return !previous || previous.kind !== activity.kind || previous.message !== activity.message;
-        });
+        const compact = this.activities.reduce<Array<AgentConsoleActivity & { repeatCount: number }>>((items, activity) => {
+            const previous = items[items.length - 1];
+            if (previous?.kind === activity.kind && this.normalizedMessage(previous.message) === this.normalizedMessage(activity.message)) {
+                previous.repeatCount += 1;
+                previous.createdAt = activity.createdAt;
+                return items;
+            }
+            items.push({ ...activity, repeatCount: 1 });
+            return items;
+        }, []);
         return compact.slice(-this.state.consoleOptions.activityVisibleItems).map(activity => ({
             kind: `${this.activityKindLabel(activity.kind)} `,
-            message: this.summarize(activity.message),
-            kindStyle: styleTextToObject(this.activeTheme.toolsAccent),
-            messageStyle: styleTextToObject(this.activeTheme.statusValue)
+            message: `${this.summarize(activity.message)}${activity.repeatCount > 1 ? ` ×${activity.repeatCount}` : ''}`,
+            kindStyle: this.activityKindStyle(activity.kind),
+            messageStyle: this.activityMessageStyle(activity.kind)
         }));
+    }
+
+    protected activityKindStyle(kind: AgentConsoleActivity['kind']): Record<string, string> {
+        if (kind === 'error') {
+            return styleTextToObject(this.activeTheme.statusErrorLabel);
+        }
+        if (kind === 'rollback') {
+            return styleTextToObject(this.activeTheme.statusNoticeLabel);
+        }
+        return styleTextToObject(this.activeTheme.toolsAccent);
+    }
+
+    protected activityMessageStyle(kind: AgentConsoleActivity['kind']): Record<string, string> {
+        if (kind === 'error') {
+            return styleTextToObject(this.activeTheme.statusErrorValue);
+        }
+        if (kind === 'model') {
+            return styleTextToObject(this.activeTheme.statusLabel);
+        }
+        return styleTextToObject(this.activeTheme.statusValue);
     }
 
     protected activityKindLabel(kind: string): string {
@@ -2952,10 +2978,14 @@ export class AgentConsoleActivityPanelComponent {
     }
 
     protected summarize(value: string): string {
-        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        const text = this.normalizedMessage(value);
         return text.length > this.state.consoleOptions.summaryMaxLength
-            ? `${text.slice(0, this.state.consoleOptions.summaryMaxLength)}...`
+            ? `${text.slice(0, Math.max(1, this.state.consoleOptions.summaryMaxLength - 1)).trimEnd()}…`
             : text;
+    }
+
+    protected normalizedMessage(value: string): string {
+        return String(value || '').replace(/\s+/g, ' ').trim();
     }
 }
 
