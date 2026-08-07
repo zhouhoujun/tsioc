@@ -170,7 +170,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     cleanup();
                     return this.retry(request, attempt, response.status);
                 }
-                throw new Error(`Model request failed with ${response.status}`);
+                const detail = await this.readResponseError(response);
+                throw new Error(`Model request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
             }
 
             const body = await response.json() as OpenAIChatCompletionResponse;
@@ -231,7 +232,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             }
 
             if (!response.ok) {
-                throw new Error(`Model streaming request failed with ${response.status}`);
+                const detail = await this.readResponseError(response);
+                throw new Error(`Model streaming request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
             }
 
             const reader = response.body?.getReader();
@@ -424,6 +426,24 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
     private isRetryable(status: number): boolean {
         return status === 429 || status === 500 || status === 502 || status === 503;
+    }
+
+    private async readResponseError(response: Response): Promise<string> {
+        try {
+            const text = (await response.text()).trim();
+            if (!text) {
+                return '';
+            }
+            try {
+                const parsed = JSON.parse(text) as { error?: { message?: string }; message?: string };
+                const message = parsed?.error?.message ?? parsed?.message;
+                return message ? String(message) : text.slice(0, 300);
+            } catch {
+                return text.slice(0, 300);
+            }
+        } catch {
+            return '';
+        }
     }
 
     private async retry(request: ModelRequest, attempt: number, _lastStatus: number): Promise<ModelResponse> {

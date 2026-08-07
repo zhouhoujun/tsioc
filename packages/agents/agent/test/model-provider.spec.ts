@@ -1555,4 +1555,42 @@ export class ModelProviderTest {
         expect(call?.body.messages[1].reasoning_content).toEqual('Rayleigh scattering');
         expect(call?.body.messages[1].tool_calls).toBeUndefined();
     }
+
+    @Test('includes the api error body in model request failures')
+    async includesErrorBodyInModelRequestFailures() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => {
+            return {
+                ok: false,
+                status: 400,
+                async text() {
+                    return JSON.stringify({
+                        error: { message: 'The reasoning_content in the thinking mode must be passed back to the API.' }
+                    });
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        try {
+            await adapter.complete({
+                sessionId: 's-error-body',
+                summary: '',
+                memory: [],
+                messages: [{ id: '1', role: 'user', content: 'hello', createdAt: 1 }],
+                tools: []
+            });
+            throw new Error('expected the request to fail');
+        } catch (error: any) {
+            expect(String(error.message)).toContain('Model request failed with 400');
+            expect(String(error.message)).toContain('must be passed back to the API');
+        }
+    }
 }
