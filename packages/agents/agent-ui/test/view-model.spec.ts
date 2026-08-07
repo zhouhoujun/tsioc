@@ -1619,7 +1619,7 @@ export class AgentConsoleComponentTest {
         const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
             'Analyzing request',
-            '读取文件完成 · src/index.ts'
+            'read file completed · src/index.ts'
         ]);
         expect(component.sessionState.displayMessages.some(message => message.content === 'Patched handler')).toEqual(true);
     }
@@ -1800,9 +1800,9 @@ export class AgentConsoleComponentTest {
         const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
             'Analyzing request',
-            '读取文件完成 · src/index.ts',
+            'read file completed · src/index.ts',
             'Analyzing request',
-            '读取文件完成 · src/index.ts'
+            'read file completed · src/index.ts'
         ]);
         expect(new Set(eventMessages.map(message => message.metadata?.uiEventKey)).size).toEqual(4);
     }

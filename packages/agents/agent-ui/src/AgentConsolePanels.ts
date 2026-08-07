@@ -2172,7 +2172,8 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 })
 export class AgentConsoleMessagesPanelComponent {
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService | null
     ) {
     }
 
@@ -2315,7 +2316,7 @@ export class AgentConsoleMessagesPanelComponent {
                     return item;
                 }
                 const baseLine = item.lines[item.lines.length - 1];
-                const content = 'Click to collapse';
+                const content = this.translator?.translate('agent.message.collapse') || 'Click to collapse';
                 const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
                 return {
                     ...item,
@@ -2346,7 +2347,8 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
-        const toggleText = `… ${hiddenCount} more lines. Click to expand`;
+        const toggleText = this.translator?.translate('agent.message.expand', { count: hiddenCount })
+            || `… ${hiddenCount} more lines. Click to expand`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)

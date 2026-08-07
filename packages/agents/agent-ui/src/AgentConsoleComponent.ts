@@ -4746,15 +4746,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             || toolName.replace(/[._-]+/g, ' ');
         const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
         if (eventType === 'tool_invoked') {
-            return `正在${label}${detail ? ` · ${detail}` : ''}`;
+            return (this.translator?.translate('agent.tool.invoked', { label }) || `Running ${label}`)
+                + (detail ? ` · ${detail}` : '');
         }
         if (eventType === 'tool_completed') {
-            return `${label}完成${detail ? ` · ${detail}` : ''}`;
+            return (this.translator?.translate('agent.tool.completed', { label }) || `${label} completed`)
+                + (detail ? ` · ${detail}` : '');
         }
         if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
-            return '未检测到 Git 仓库，继续处理文件';
+            return this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected; continuing with files';
         }
-        return eventType === 'tool_failed' ? `${label}未完成` : content;
+        return eventType === 'tool_failed'
+            ? (this.translator?.translate('agent.tool.failed', { label }) || `${label} failed`)
+            : content;
     }
 
     protected resolveToolEventKey(eventType: string, chunk: any): string | undefined {
