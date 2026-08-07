@@ -48,6 +48,10 @@ export interface AgentTurnDiagnostics {
     loopRecoveryCount?: number;
     /** Number of tool rounds falsified by the verification gate (B2). */
     falsificationCount?: number;
+    /** Number of distinct falsified rounds accumulated (P53 exploration history). */
+    repairRoundsUsed?: number;
+    /** Number of falsified entries that repeated an already-rejected attempt (P53). */
+    repeatedAttemptCount?: number;
 }
 
 function summarizeEventInput(input: any): string | undefined {

@@ -39,6 +39,7 @@ import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiag
 import { EvidenceLedger } from '../harness/EvidenceLedger';
 import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
+import { FalsificationAttempt, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
@@ -70,6 +71,8 @@ interface TurnRecoveryState {
     consecutiveFalsifications: number;
     totalFalsifications: number;
     falsifiedEvidence: ToolEvidenceEntry[];
+    attemptHistory: FalsificationAttempt[];
+    repeatAttempts: number;
     writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
     terminated: boolean;
     terminationMessage: string;
@@ -1070,7 +1073,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             evidence: evidenceLedger?.snapshot(),
             metadata: {
                 loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
-                falsificationCount: diagnostics.falsificationCount ?? 0
+                falsificationCount: diagnostics.falsificationCount ?? 0,
+                repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
+                repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0
             }
         };
         try {
@@ -1103,6 +1108,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             consecutiveFalsifications: 0,
             totalFalsifications: 0,
             falsifiedEvidence: [],
+            attemptHistory: [],
+            repeatAttempts: 0,
             writeHints: [],
             terminated: false,
             terminationMessage: ''
@@ -1142,11 +1149,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             recovery.repairInjections++;
             if (turnContext.diagnostics) {
                 turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
+                turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
+                turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
             }
             const escalate = recovery.consecutiveFalsifications >= 2;
             const prompt = escalate
-                ? LOOP_RECOVERY_SYSTEM_PROMPT
-                : this.buildFalsificationRepairPrompt(recovery.falsifiedEvidence);
+                ? buildExplorationGuidancePrompt(recovery.attemptHistory)
+                : buildRepairPrompt(recovery.attemptHistory, recovery.repeatAttempts);
             return this.injectSystemPrompt(request, prompt);
         }
         return undefined;
@@ -1183,8 +1192,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         recovery.consecutiveFalsifications++;
         recovery.totalFalsifications++;
         recovery.repairPending = true;
+
+        const signatures = result.falsifiedEvidence.map(entry => buildAttemptSignature(entry.toolName, entry.inputSummary));
+        const knownSignatures = new Set(recovery.attemptHistory.flatMap(attempt => attempt.signatures));
+        recovery.repeatAttempts += signatures.filter(signature => knownSignatures.has(signature)).length;
+        recovery.attemptHistory.push({
+            round: recovery.totalFalsifications,
+            entries: result.falsifiedEvidence,
+            signatures,
+            reasons: [...result.reasons]
+        });
+
         if (turnContext.diagnostics) {
             turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
+            turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
+            turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
         }
         if (recovery.consecutiveFalsifications >= maxRepairRounds) {
             recovery.terminated = true;
@@ -1217,26 +1239,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private buildFalsificationRepairPrompt(evidence: ToolEvidenceEntry[]): string {
-        const lines = evidence.slice(0, 8).map(entry => {
-            const reason = entry.falsificationReason ?? entry.error ?? 'failed';
-            return `- Tool "${entry.toolName}": ${reason}`;
-        });
-        const summary = lines.length ? lines.join('\n') : '- No specific evidence recorded.';
-        return `A verification gate falsified the previous tool results:\n${summary}\nFix the underlying issue and retry with a different approach. If the issue cannot be fixed, state clearly that you are blocked and explain why.`;
-    }
-
     private buildLoopBlockedMessage(injections: number): string {
         return `I detected a repeating tool-call loop that did not resolve after ${injections} recovery attempt(s). Ending the turn with the results gathered so far.`;
     }
 
     private buildFalsificationSummaryMessage(recovery: TurnRecoveryState): string {
-        const lines = recovery.falsifiedEvidence.slice(0, 8).map(entry => {
-            const reason = entry.falsificationReason ?? entry.error ?? 'failed';
-            return `- Tool "${entry.toolName}": ${reason}`;
+        const attempts = recovery.attemptHistory;
+        if (attempts.length === 0) {
+            return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s).\nEnding the turn with a failure summary.`;
+        }
+        const lines = attempts.slice(-8).map(attempt => {
+            const entries = attempt.entries.slice(0, 4).map(entry => {
+                const reason = entry.falsificationReason ?? entry.error ?? 'failed';
+                return `- Tool "${entry.toolName}": ${reason}`;
+            });
+            return `Attempt ${attempt.round}:\n${entries.join('\n')}`;
         });
-        const summary = lines.length ? lines.join('\n') : '- No specific evidence recorded.';
-        return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s).\n${summary}\nEnding the turn with a failure summary.`;
+        const repeatNote = recovery.repeatAttempts > 0
+            ? `\nNote: ${recovery.repeatAttempts} already-rejected attempt(s) were repeated.`
+            : '';
+        return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s) across ${attempts.length} attempt(s).\n${lines.join('\n')}${repeatNote}\nEnding the turn with a failure summary.`;
     }
 
     private async publishTurnDiagnosticsEvent(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {

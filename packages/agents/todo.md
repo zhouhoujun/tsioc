@@ -857,3 +857,12 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
 1. ~~Node 24 + ts-node 8 下录音子进程 stdout 丢失~~ → 已完成：`NodeAudioCaptureAdapter` 每次 capture 创建私有临时目录与 `0600` PCM 文件，内置 `arecord` / `sox` / `ffmpeg` 直接写文件，adapter 每 20ms 增量读取新增字节并触发 `onChunk`；关闭时最后 drain，stop/cancel/error 后统一删除临时目录。
 2. **自定义命令兼容**：新增 `TSDI_AUDIO_OUTPUT` 环境变量供命令写入采集数据，同时保留原 stdout 监听，不破坏已有自定义 capture 命令。测试脚本改走输出文件，覆盖持续采集、cancel、自然结束、非零退出与 double start。
 3. 验证：platform-server 全量 19 passing（P51 时的 3 条 capture 失败全部恢复），临时文件 playback 与 capture 两条路径均通过；根级 `tsc` 的既有 activities API 漂移仍不在本轮范围内。
+
+## P53 打磨（已完成）：探索式修复循环（Exploration-aware repair loop）
+
+1. ~~修复循环只呈现最后一轮失败证据，无跨轮探索上下文~~ → 已完成（`@tsdi/agent`）：
+   - 新增纯函数模块 `src/harness/RepairExploration.ts`：`FalsificationAttempt` 类型（round / entries / signatures / reasons）、`buildAttemptSignature`（toolName + 规范化 inputSummary 的重复检测签名）、`buildRepairPrompt`（累计渲染全部被证伪尝试，带编号、逐轮明细、"repeated attempt" 标注、按工具去重的 rejected 计数，以及重复次数警告）、`buildExplorationGuidancePrompt`（升级用探索指令，枚举已尝试且被拒的路径 + 4 类策略：diagnose first / different tool / different path / declare blocked）。`src/index.ts` 导出。
+   - `TurnRecoveryState` 新增 `attemptHistory`（append-only，永不被覆盖）与 `repeatAttempts`；`runVerificationGate` 每轮生成签名、检测与历史重复的尝试并累计，随后 push 当前轮快照。
+   - `maybeInjectRecoveryPrompt`：普通修复注入 `buildRepairPrompt`（累计）；`consecutiveFalsifications >= 2` 升级为 `buildExplorationGuidancePrompt`（替代原先泛化的 `LOOP_RECOVERY_SYSTEM_PROMPT`，该常量保留给 A4 doom-loop 场景）。
+   - `AgentTurnDiagnostics` 新增可选 `repairRoundsUsed` / `repeatedAttemptCount`，经 `recordTurnDiagnostics` 写入 `TurnDiagnosticsRecord.metadata`；`buildFalsificationSummaryMessage` 改为按尝试编号累计列出 + 重复尝试提示。
+2. 测试：`verification-gate.spec.ts` 新增 P53 纯函数套件 4 条（签名规范化、累计修复 prompt 含重复标注、空历史 fallback、探索指令枚举策略）+ 运行时 3 条（跨尝试累计 prompt、重复标注、diagnostics 持久化），并更新升级用例断言为探索指令。agent 全量 525 passing，`tsc --noEmit` clean。
