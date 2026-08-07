@@ -837,3 +837,10 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - RPC `audio.start` 接受并校验 `format`，非法枚举返回 `-32602`，不兼容格式返回 `{ ok: false, format, error }`；WebSocket audio start 控制消息同步支持相同协商与错误响应。
    - `AgentConsoleSessionService.startVoiceSession` 透传格式；`AgentConsoleComponent` 从平台 `AudioCaptureAdapter.format` 读取实际格式。因此 browser `webm` 不再被静默送入只接受 PCM 的 STT，Node `pcm16k` 路径保持直通。
 2. 测试：gateway 新增 handler / RPC / WebSocket 格式协商 3 条，agent-ui 平台采集测试增加 format 透传断言。全量 agent-gateway 183、agent-ui 323 passing；两包 `tsc --noEmit` clean。
+
+## P50 打磨（已完成）：RPC TTS 回程与音频会话归属修正
+
+1. ~~RPC `audio.end` 未消费 TTS 音频~~ → 已完成：`AppRpcServer.endAudioSession` 注册 `onAudioChunk`，响应新增 `audio: { format, chunks, totalBytes, truncated }`，chunk 使用 base64 编码；因此 RPC console 路径会真实执行 `StreamingTtsAdapter.synthesizeStream`，不再只有文字 reply。
+2. ~~RPC 音频响应缺少体积边界~~ → 已完成：`AgentGatewayAudioOptions.maxResponseAudioBytes`（默认 10 MiB）限制单次 RPC 响应收集的合成音频；超出后停止收集并返回 `truncated: true`，WebSocket 原有二进制流式回传不受影响。
+3. ~~缓冲上限自动 end 丢失 session 归属~~ → 已完成：`AudioSessionHandler.feedAudio` 接受 owning `sessionId`，RPC / WebSocket 调用均透传；达到 `maxBufferedBytes` 自动转写时继续写入原会话，不再创建 `audio-{timestamp}` 临时会话。RPC end 后同时移除 per-session audio state。
+4. 测试：handler 自动 end 断言原 sessionId；RPC 全流程断言 TTS 被调用、格式/音频 chunk/字节数；新增响应 cap 截断测试。agent-gateway 全量 184 passing，`tsc --noEmit` clean。

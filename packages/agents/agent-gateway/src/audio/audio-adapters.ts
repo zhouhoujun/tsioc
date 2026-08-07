@@ -97,4 +97,6 @@ export interface AgentGatewayAudioOptions {
      * an {@link endAudio} (defensive cap, default 10 MiB).
      */
     maxBufferedBytes?: number;
+    /** Maximum synthesized audio bytes included in a single RPC response. */
+    maxResponseAudioBytes?: number;
 }

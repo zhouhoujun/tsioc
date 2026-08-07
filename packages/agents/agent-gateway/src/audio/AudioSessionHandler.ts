@@ -85,6 +85,14 @@ export class AudioSessionHandler {
         return missing;
     }
 
+    get outputFormat(): 'pcm16k' | 'wav' | 'mp3' | undefined {
+        return this.tts?.format;
+    }
+
+    get maxResponseAudioBytes(): number {
+        return this.options?.maxResponseAudioBytes ?? 10 * 1024 * 1024;
+    }
+
     createSessionState(): AudioSessionState {
         return {
             active: false,
@@ -121,7 +129,12 @@ export class AudioSessionHandler {
      * Feed one audio chunk into the current session.
      * Returns false when no session is active (caller should ignore the frame).
      */
-    feedAudio(state: AudioSessionState, chunk: Uint8Array, events: AudioSessionEvents = {}): boolean {
+    feedAudio(
+        state: AudioSessionState,
+        chunk: Uint8Array,
+        events: AudioSessionEvents = {},
+        sessionId?: string
+    ): boolean {
         if (!state.active || state.processing || !this.transcription) {
             return false;
         }
@@ -129,7 +142,7 @@ export class AudioSessionHandler {
         state.bufferedBytes += chunk.byteLength;
         const cap = this.options?.maxBufferedBytes ?? this.defaultOptions.maxBufferedBytes;
         if (state.bufferedBytes >= cap) {
-            void this.endSession(state, events);
+            void this.endSession(state, events, sessionId);
         }
         return true;
     }

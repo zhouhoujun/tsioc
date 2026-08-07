@@ -163,7 +163,7 @@ export class ChatWebSocket {
                 return true;
             }
         }
-        this.audio.feedAudio(state, payload, this.audioEvents(socket, sessionId));
+        this.audio.feedAudio(state, payload, this.audioEvents(socket, sessionId), sessionId);
         return false;
     }
 

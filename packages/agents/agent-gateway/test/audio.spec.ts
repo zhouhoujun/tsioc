@@ -222,13 +222,13 @@ export class AudioSessionHandlerTest {
         handler.startSession(state);
         const audioChunks: Uint8Array[] = [];
         const events = { onAudioChunk: (chunk: Uint8Array) => audioChunks.push(chunk) };
-        handler.feedAudio(state, Buffer.from('aaa'), events);
-        handler.feedAudio(state, Buffer.from('bbb'), events);
+        handler.feedAudio(state, Buffer.from('aaa'), events, 'owned-session');
+        handler.feedAudio(state, Buffer.from('bbb'), events, 'owned-session');
         await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(state.bufferedBytes).toBe(0);
         expect(turns.length).toBe(1);
-        expect(turns[0]).toMatch(/^audio-\d+\|aaabbb$/);
+        expect(turns[0]).toBe('owned-session|aaabbb');
         expect(tts.synthesized).toEqual(['echo:aaabbb']);
         expect(audioChunks.length).toBe(1);
     }

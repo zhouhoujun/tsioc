@@ -1538,7 +1538,7 @@ export class AppRpcServer {
             return { sessionId, ok: false, error: 'no active audio session; call audio.start first' };
         }
         const chunk = this.requireAudioChunk(params?.chunk);
-        const accepted = this.audio?.feedAudio(state, chunk) ?? false;
+        const accepted = this.audio?.feedAudio(state, chunk, {}, sessionId) ?? false;
         return { sessionId, ok: accepted, bufferedBytes: state.bufferedBytes };
     }
 
@@ -1552,12 +1552,36 @@ export class AppRpcServer {
         let transcribed: string | undefined;
         let reply: string | undefined;
         let error: string | undefined;
+        const audioChunks: string[] = [];
+        let audioBytes = 0;
+        let audioTruncated = false;
         await this.audio?.endSession(state, {
             onTranscribed: text => { transcribed = text; },
             onReply: text => { reply = text; },
+            onAudioChunk: chunk => {
+                if (audioBytes + chunk.byteLength > this.audio!.maxResponseAudioBytes) {
+                    audioTruncated = true;
+                    return;
+                }
+                audioBytes += chunk.byteLength;
+                audioChunks.push(Buffer.from(chunk).toString('base64'));
+            },
             onError: err => { error = err.message; }
         }, sessionId);
-        return { sessionId, ok: !error, transcribed, reply, error };
+        this.audioStatesBySession.delete(sessionId);
+        return {
+            sessionId,
+            ok: !error,
+            transcribed,
+            reply,
+            error,
+            audio: audioChunks.length || audioTruncated ? {
+                format: this.audio?.outputFormat,
+                chunks: audioChunks,
+                totalBytes: audioBytes,
+                truncated: audioTruncated
+            } : undefined
+        };
     }
 
     private async cancelAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {

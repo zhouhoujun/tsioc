@@ -5768,7 +5768,7 @@ class RpcEchoTtsAdapter extends StreamingTtsAdapter {
 
 @Suite('AppRpcServer audio RPC')
 export class AppRpcServerAudioTest {
-    private makeRpc(withAudio: boolean): {
+    private makeRpc(withAudio: boolean, audioOptions?: { maxResponseAudioBytes?: number }): {
         rpc: AppRpcServer;
         stt: RpcEchoTranscriptionAdapter;
         tts: RpcEchoTtsAdapter;
@@ -5794,7 +5794,7 @@ export class AppRpcServerAudioTest {
         const sessions = new SessionHandler(runtime, store, owners);
         const stt = new RpcEchoTranscriptionAdapter();
         const tts = new RpcEchoTtsAdapter();
-        const audio = withAudio ? new AudioSessionHandler(runtime, stt, tts) : null;
+        const audio = withAudio ? new AudioSessionHandler(runtime, stt, tts, audioOptions) : null;
         const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null,null,null,null,null,null,audio as any);
         return { rpc, stt, tts, turns, store };
     }
@@ -5847,7 +5847,11 @@ export class AppRpcServerAudioTest {
         expect(end.result.reply).toBe('echo:hello');
         expect(turns).toEqual(['s-1|hello']);
         expect(stt.chunks.length).toBe(2);
-        expect(tts.synthesized).toEqual([]);
+        expect(tts.synthesized).toEqual(['echo:hello']);
+        expect(end.result.audio.format).toBe('pcm16k');
+        expect(end.result.audio.totalBytes).toBe(Buffer.byteLength('[tts:echo:hello]'));
+        expect(Buffer.from(end.result.audio.chunks[0], 'base64').toString()).toBe('[tts:echo:hello]');
+        expect(end.result.audio.truncated).toBe(false);
 
         const statusDone = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
         expect(statusDone.result.active).toBe(false);
@@ -5871,6 +5875,24 @@ export class AppRpcServerAudioTest {
 
         const invalid = await this.handle(rpc, 'audio.start', { sessionId: 's-1', format: 'mp3' });
         expect(invalid.error.code).toBe(-32602);
+    }
+
+    @Test('audio.end caps synthesized audio included in RPC responses')
+    async endCapsSynthesizedAudio() {
+        const { rpc, tts, store } = this.makeRpc(true, { maxResponseAudioBytes: 4 });
+        await store.get('s-1');
+        await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
+        await this.handle(rpc, 'audio.feed', {
+            sessionId: 's-1',
+            chunk: Buffer.from('hello').toString('base64')
+        });
+
+        const end = await this.handle(rpc, 'audio.end', { sessionId: 's-1' });
+
+        expect(tts.synthesized).toEqual(['echo:hello']);
+        expect(end.result.audio.chunks).toEqual([]);
+        expect(end.result.audio.totalBytes).toBe(0);
+        expect(end.result.audio.truncated).toBe(true);
     }
 
     @Test('audio.feed and audio.end reject when no session was started')
