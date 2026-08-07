@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { WeaknessMiner, mineWeaknesses, normalizeErrorSignature } from '../src/harness/WeaknessMiner';
+import { WeaknessMiner, mineWeaknesses, normalizeErrorSignature, buildSuggestionHarnessProfilePatch } from '../src/harness/WeaknessMiner';
 import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
 import { InMemoryAuditSink } from '../src/harness/InMemoryAuditSink';
 import { TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
@@ -214,5 +214,91 @@ export class WeaknessMinerTest {
         const scoped = await miner.mine({ sessionIds: ['s-other'] });
         expect(scoped.totalTurns).toEqual(0);
         expect(scoped.empty).toEqual(true);
+    }
+}
+
+@Suite('Suggestion harness profile patch (P61)')
+export class SuggestionHarnessProfilePatchTest {
+    private suggestion(kind: 'approval' | 'sandbox' | 'verification' | 'tool', toolName?: string) {
+        return { kind, toolName, message: `msg for ${kind}` } as any;
+    }
+
+    @Test('approval suggestions fold their tools into requireApproval on the default base')
+    foldsApprovalSuggestionsIntoRequireApproval() {
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('approval', 'terminal'),
+            this.suggestion('approval', 'shell.exec')
+        ]);
+        expect(patch.profile.requireApproval).toContain('terminal');
+        expect(patch.profile.requireApproval).toContain('shell.exec');
+        expect(patch.changes.some(line => line.startsWith('requireApproval:'))).toEqual(true);
+    }
+
+    @Test('tool suggestions also map to requireApproval as checkpoints')
+    mapsToolSuggestionsToRequireApproval() {
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('tool', 'web_search')
+        ]);
+        expect(patch.profile.requireApproval).toContain('web_search');
+    }
+
+    @Test('sandbox suggestions tighten the mode to network-block')
+    sandboxSuggestionTightensMode() {
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('sandbox')
+        ]);
+        expect(patch.profile.sandbox?.mode).toEqual('network-block');
+        expect(patch.changes.some(line => line.startsWith('sandbox:'))).toEqual(true);
+    }
+
+    @Test('verification suggestions append tools to verificationWriteTools')
+    verificationSuggestionAppendsWriteTools() {
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('verification', 'write_file')
+        ]);
+        expect(patch.profile.verificationWriteTools).toContain('write_file');
+    }
+
+    @Test('duplicate tools and existing rules are deduplicated')
+    deduplicatesTools() {
+        const base = {
+            name: 'base',
+            version: 1,
+            requireApproval: ['terminal'],
+            verificationWriteTools: ['write_file', 'edit_file'],
+            granularCategories: ['sandbox']
+        } as any;
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('approval', 'terminal'),
+            this.suggestion('approval', 'terminal'),
+            this.suggestion('verification', 'write_file')
+        ], base);
+        expect(patch.profile.requireApproval!.filter(rule => rule === 'terminal').length).toEqual(1);
+        expect(patch.profile.verificationWriteTools!.filter(tool => tool === 'write_file').length).toEqual(1);
+        expect(patch.changes.length).toEqual(0);
+    }
+
+    @Test('no suggestions leaves the base profile unchanged with an empty diff')
+    noSuggestionsYieldsNoChanges() {
+        const base = {
+            name: 'custom',
+            version: 1,
+            maxRepairRounds: 3,
+            granularCategories: []
+        } as any;
+        const patch = buildSuggestionHarnessProfilePatch([], base);
+        expect(patch.profile.name).toEqual('custom');
+        expect(patch.profile.maxRepairRounds).toEqual(3);
+        expect(patch.changes).toEqual([]);
+    }
+
+    @Test('derived granular categories reflect the folded approval rules')
+    derivesGranularCategoriesFromFoldedRules() {
+        const patch = buildSuggestionHarnessProfilePatch([
+            this.suggestion('approval', 'web_search'),
+            this.suggestion('approval', 'terminal')
+        ]);
+        expect(patch.profile.granularCategories).toContain('network');
+        expect(patch.profile.granularCategories).toContain('sandbox');
     }
 }

@@ -918,3 +918,11 @@ P34 Tier1/Tier2 全部落地后，与 Codex / opencode 的能力差已从「结�
    - 测试 1（单 turn）：write_file 无 diff → `listFileSnapshots('s1')` 1 条 + 修复提示含 `verification gate falsified` 与 `Declared write to '/w/note.txt' but file content did not change.`。
    - 测试 2（跨 turn）：turn A 无 diff 证伪后二次写 diff 通过 → `repairResolved: true`、配方签名 `write_file::` 且 fixes 为 write_file；turn B 同文件再写无 diff → 提示含 `Signature "write_file::" (repaired in session s1)`。
 2. verification-gate.spec 37 passing（35+2），agent 全量 **547 passing**（545+2），`tsc --noEmit` clean。
+
+## P61 打磨（已完成）：建议驱动 Harness Profile Patch（Suggestion-driven governance patch）
+
+1. ~~B3 WeaknessMiner 只产出建议（approval/sandbox/verification/tool），从不映射成 HarnessProfile 变更——「挖掘→建议→应用」闭环缺最后一环~~ → 已完成（`@tsdi/agent` + `agent-cli`）：
+   - `src/harness/WeaknessMiner.ts` 新增 `HarnessSuggestionProfilePatch`（`{ profile, changes }`）与纯函数 `buildSuggestionHarnessProfilePatch(suggestions, base?)`：`approval`/`tool` 建议把工具追加进 `requireApproval`（Set 去重，保留既有字符串规则）；`sandbox` 建议把 `sandbox.mode` 收紧为 `network-block`；`verification` 建议把工具追加进 `verificationWriteTools`；base 缺省取内置 `default` profile；`changes` = `diffHarnessProfiles(base, patched)` 可读行；`granularCategories` 随折叠后的规则重新派生。`export *` 自动导出。
+   - **CLI**：`tsdi-agent harness audit --profile-patch` 在人类可读审计报告后追加 `Suggested harness profile patch:` 视图（逐条 diff + 结果 profile 摘要）；`--json` 时报告携带 `profilePatch` 字段；新 `formatHarnessProfilePatchView`。
+   - 测试：`weakness-miner.spec.ts` 新增 P61 Suite 7 条（approval 折叠进 requireApproval 且含 diff 行、tool 建议映射为 checkpoint、sandbox 收紧 network-block、verification 追加 write tools、重复与既有规则去重且 diff 干净、无建议零变更、派生 granular categories）；`cli.spec.ts` +1（patch 视图含 diff 行与摘要、无变更兜底文案）。
+2. agent 全量 **554 passing**（547+7），agent-cli **52 passing**（51+1），agent/agent-cli `tsc --noEmit` clean。

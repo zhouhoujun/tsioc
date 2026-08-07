@@ -884,6 +884,25 @@ export class AgentCliTest {
         expect(empty).toContain('(no differences)');
     }
 
+    @Test('formats the suggested harness profile patch view')
+    formatsHarnessProfilePatchView() {
+        const { formatHarnessProfilePatchView } = require('../src/harness-command');
+        const text = formatHarnessProfilePatchView(
+            { name: 'default', version: 1, requireApproval: ['terminal'], maxRepairRounds: 2, sandbox: { mode: 'network-block' } },
+            ['sandbox: workspace → network-block', 'requireApproval: [shell.exec] → [shell.exec, terminal]']
+        );
+        expect(text).toContain('Suggested harness profile patch:');
+        expect(text).toContain('sandbox: workspace → network-block');
+        expect(text).toContain('approval rules 1');
+        expect(text).toContain('sandbox network-block');
+
+        const none = formatHarnessProfilePatchView(
+            { name: 'default', version: 1 },
+            []
+        );
+        expect(none).toContain('no governance changes implied');
+    }
+
     @Test('uses persistent session and memory stores across cli app restarts')
     async usesPersistentStoresAcrossCliRestarts() {
         const root = await this.createRoot();

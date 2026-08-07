@@ -254,6 +254,7 @@ function createAgentCli(): Command {
         .option('--root <dir>', 'Agent config root.')
         .option('--workspace <dir>', 'Workspace directory for file tools.')
         .option('--session <id>', 'Restrict the audit to one session.')
+        .option('--profile-patch', 'Also print the governance profile patch implied by the suggestions.')
         .option('--json', 'Output JSON.')
         .action(async (options: any) => {
             await runAgentHarnessAudit(options);

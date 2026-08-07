@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@tsdi/ioc';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from './TurnDiagnosticsStore';
 import { AgentAuditRecord, AuditSink } from './AuditSink';
 import { ToolEvidenceEntry } from './EvidenceLedger';
+import { HarnessProfile, createDefaultHarnessProfile, deriveGranularCategories, diffHarnessProfiles } from './HarnessProfile';
 
 /**
  * B3: failure-pattern mining (Self-Harness Weakness Mining runtime counterpart).
@@ -273,6 +274,69 @@ export function mineWeaknesses(
         falsifiedDistribution,
         suggestions,
         empty: entries.length === 0 && totalTurns === 0
+    };
+}
+
+export interface HarnessSuggestionProfilePatch {
+    /** Governance profile produced by applying the suggestions. */
+    profile: HarnessProfile;
+    /** Human-readable governance changes vs the base profile (diffHarnessProfiles lines). */
+    changes: string[];
+}
+
+/**
+ * Fold harness audit suggestions into a versioned HarnessProfile patch
+ * (Self-Harness: weakness mining drives the harness's own governance).
+ *
+ * Mapping: approval/tool suggestions append their tool to requireApproval;
+ * sandbox suggestions tighten sandbox mode to 'network-block'; verification
+ * suggestions append their tool to verificationWriteTools. Rules are
+ * deduplicated and the base profile (or the built-in 'default') is preserved.
+ * The returned `changes` are the readable diff lines against the base, so a
+ * caller can preview exactly what applying the suggestions would alter.
+ */
+export function buildSuggestionHarnessProfilePatch(
+    suggestions: HarnessAuditSuggestion[],
+    base?: HarnessProfile | undefined
+): HarnessSuggestionProfilePatch {
+    const profile: HarnessProfile = {
+        ...(base ?? createDefaultHarnessProfile())
+    };
+    const approval = new Set<string>();
+    for (const rule of profile.requireApproval ?? []) {
+        if (typeof rule === 'string') {
+            approval.add(rule);
+        }
+    }
+    const writeTools = new Set(profile.verificationWriteTools ?? []);
+    for (const suggestion of suggestions) {
+        if (suggestion.kind === 'approval' || suggestion.kind === 'tool') {
+            if (suggestion.toolName) {
+                approval.add(suggestion.toolName);
+            }
+        }
+        if (suggestion.kind === 'sandbox') {
+            profile.sandbox = {
+                ...(profile.sandbox ?? {}),
+                mode: 'network-block'
+            };
+        }
+        if (suggestion.kind === 'verification') {
+            if (suggestion.toolName) {
+                writeTools.add(suggestion.toolName);
+            }
+        }
+    }
+    if (approval.size > 0) {
+        profile.requireApproval = [...approval];
+    }
+    if (writeTools.size > 0) {
+        profile.verificationWriteTools = [...writeTools];
+    }
+    profile.granularCategories = deriveGranularCategories(profile.requireApproval);
+    return {
+        profile,
+        changes: diffHarnessProfiles(base ?? createDefaultHarnessProfile(), profile)
     };
 }
 

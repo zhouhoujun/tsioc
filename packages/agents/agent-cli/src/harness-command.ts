@@ -1,4 +1,4 @@
-import { AGENT_OPTIONS, WeaknessMiner, diffHarnessProfiles, getBuiltinHarnessProfiles, mergeAgentOptions, resolveHarnessProfile, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, WeaknessMiner, buildSuggestionHarnessProfilePatch, diffHarnessProfiles, getBuiltinHarnessProfiles, mergeAgentOptions, resolveHarnessProfile, snapshotHarnessProfile } from '@tsdi/agent';
 import { AgentCliOptions, resolveCliConfig } from './config';
 import { runAgentApplication } from './run-command';
 
@@ -209,7 +209,7 @@ export function formatHarnessAuditReport(report: Record<string, any>): string {
     return lines.join('\n');
 }
 
-export async function runAgentHarnessAudit(options: AgentCliOptions & { json?: boolean; session?: string }, io: HarnessCliIo = {}): Promise<Record<string, any> | null> {
+export async function runAgentHarnessAudit(options: AgentCliOptions & { json?: boolean; session?: string; profilePatch?: boolean }, io: HarnessCliIo = {}): Promise<Record<string, any> | null> {
     const stdout = io.stdout || process.stdout;
     const ctx = await runAgentApplication(options, {});
     try {
@@ -224,11 +224,28 @@ export async function runAgentHarnessAudit(options: AgentCliOptions & { json?: b
                 : 'No harness failure data recorded yet.\n');
             return report ?? null;
         }
+        const patch = buildSuggestionHarnessProfilePatch(report.suggestions);
+        const result = { ...report, profilePatch: patch };
         stdout.write(options.json
-            ? JSON.stringify(report, null, 2) + '\n'
-            : formatHarnessAuditReport(report as Record<string, any>) + '\n');
-        return report as Record<string, any>;
+            ? JSON.stringify(result, null, 2) + '\n'
+            : options.profilePatch
+                ? formatHarnessAuditReport(result as Record<string, any>) + '\n\n' + formatHarnessProfilePatchView(patch.profile, patch.changes) + '\n'
+                : formatHarnessAuditReport(report as Record<string, any>) + '\n');
+        return result as Record<string, any>;
     } finally {
         await ctx.close();
     }
+}
+
+export function formatHarnessProfilePatchView(profile: Record<string, any>, changes: string[]): string {
+    const lines: string[] = [];
+    lines.push('Suggested harness profile patch:');
+    if (!changes.length) {
+        lines.push('- no governance changes implied by these suggestions');
+        return lines.join('\n');
+    }
+    changes.forEach(line => lines.push(`- ${line}`));
+    lines.push('');
+    lines.push(`Resulting profile: ${profile.name}  |  v${profile.version}  |  approval rules ${Array.isArray(profile.requireApproval) ? profile.requireApproval.length : 0}  |  repair ${profile.maxRepairRounds ?? '-'}  |  loop-recover ${profile.maxLoopRecoveries ?? '-'}  |  sandbox ${profile.sandbox?.mode ?? '-'}`);
+    return lines.join('\n');
 }
