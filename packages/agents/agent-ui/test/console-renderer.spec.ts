@@ -430,7 +430,7 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 4 more lines. Click to expand'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 4 more lines. Press Enter or click to expand'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 

@@ -2341,7 +2341,7 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
-        const toggleText = `… ${hiddenCount} more lines. Click to expand`;
+        const toggleText = `… ${hiddenCount} more lines. Press Enter or click to expand`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)

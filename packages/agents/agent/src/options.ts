@@ -118,7 +118,9 @@ export interface AgentOptions {
 
 export const defaultAgentOptions: AgentOptions = {
     name: 'HermesAgent',
-    maxToolRounds: 4,
+    // Generation tasks commonly need discovery, planning, several edits, and
+    // verification. Four rounds stops them before the first usable artifact.
+    maxToolRounds: 12,
     maxRepairRounds: 2,
     maxLoopRecoveries: 3,
     session: {
