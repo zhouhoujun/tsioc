@@ -20,3 +20,4 @@ export * from './AgentConsoleSuggestions';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleWorkspaceMentions';
 export * from './agent-ui.module';
+export * from './agent-ui.i18n';

@@ -1,5 +1,7 @@
 import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
+import { Optional } from '@tsdi/ioc';
+import { TranslatorService } from '@tsdi/i18n';
 import { basenameAgentPath } from '@tsdi/agent';
 import {
     buildTerminalBrandBlock,
@@ -504,7 +506,8 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     protected frameTimer?: ReturnType<typeof setInterval>;
 
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService | null
     ) {
     }
 
@@ -608,7 +611,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             const latest = [...this.state.activities].reverse().find(activity =>
                 activity.kind !== 'model' && activity.kind !== 'turn'
             );
-            parts.push(latest?.message || '正在整理结果');
+            parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
         }
         if (this.totalTokens > 0) {
             parts.push(`${this.totalTokens} tokens`);
@@ -650,9 +653,9 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         }
         const running = this.state.runningTools;
         if (!running.length) {
-            return 'Working';
+            return this.translator?.translate('agent.turn.working') || 'Working';
         }
-        return 'Waiting';
+        return this.translator?.translate('agent.turn.running') || 'Running';
     }
 
     get workingSuffixLabel(): string {
@@ -899,15 +902,15 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     get runningLabel(): string {
         const count = this.state.runningTools.length;
         if (!count) {
-            return 'running';
+            return '处理中';
         }
         if (count === 1 && this.isTerminalTool(this.state.runningTools[0])) {
-            return '1 background terminal running';
+            return '后台命令执行中';
         }
         if (count === 1) {
-            return `1 tool running`;
+            return '正在执行 1 项操作';
         }
-        return `${count} tools running`;
+        return `正在执行 ${count} 项操作`;
     }
 
     protected describeTool(toolName: string): string {

@@ -20,6 +20,7 @@ import {
     AgentTurnStartedEvent
 } from '@tsdi/agent';
 import { ToolRegistry } from '@tsdi/agent';
+import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 @Injectable()
@@ -33,7 +34,8 @@ export class AgentConsoleEventBridge {
         private runtime: AgentRuntime,
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
-        @Optional() private app?: ApplicationContext | null
+        @Optional() private app?: ApplicationContext | null,
+        @Optional() private translator?: TranslatorService | null
     ) {
         this.stateRef = state;
     }
@@ -61,7 +63,7 @@ export class AgentConsoleEventBridge {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.batch(() => {
                 this.state.setStatus('running');
-                this.state.pushActivity('turn', 'Turn started');
+                this.state.pushActivity('turn', this.translator?.translate('agent.turn.understanding') || 'Understanding the request');
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('turn-start'), 'Analyzing request', {
                         eventType: 'turn_started',
