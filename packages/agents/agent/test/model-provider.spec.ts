@@ -3,6 +3,12 @@ import { After, Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentModule, AnthropicModelAdapter, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent, resolvePromptCachePolicy } from '../src';
 
+class StreamingTimeoutInspectableAdapter extends OpenAICompatibleModelAdapter {
+    openStreamingTimeoutContext() {
+        return this.createStreamingTimeoutContext();
+    }
+}
+
 @Suite('Agent model providers')
 export class ModelProviderTest {
     private originalFetch: any;
@@ -1183,6 +1189,36 @@ export class ModelProviderTest {
         expect(received[1]?.type).toEqual('done');
         expect(received[1]?.usage?.totalTokens).toEqual(7);
         expect(received[1]?.metadata?.fallback).toEqual('non_stream');
+    }
+
+    @Test('honours the configured timeout for stream inactivity')
+    async honoursConfiguredStreamingInactivityTimeout() {
+        const originalSetTimeout = globalThis.setTimeout;
+        const originalClearTimeout = globalThis.clearTimeout;
+        const delays: number[] = [];
+        (globalThis as any).setTimeout = (_callback: () => void, delay?: number) => {
+            delays.push(Number(delay));
+            return { delay };
+        };
+        (globalThis as any).clearTimeout = () => undefined;
+
+        try {
+            const adapter = new StreamingTimeoutInspectableAdapter({
+                provider: 'openai-compatible',
+                model: 'gpt-5.4',
+                baseUrl: 'https://example.com',
+                apiKey: 'test-key',
+                timeoutMs: 120000
+            });
+            const context = adapter.openStreamingTimeoutContext();
+            context.markActivity();
+            context.cleanup();
+
+            expect(delays).toEqual([120000, 120000, 120000]);
+        } finally {
+            globalThis.setTimeout = originalSetTimeout;
+            globalThis.clearTimeout = originalClearTimeout;
+        }
     }
 
     @Test('routes explicit request profile to the matching profile skipping complexity matching')

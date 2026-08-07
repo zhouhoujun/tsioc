@@ -347,6 +347,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 if (done) {
                     break;
                 }
+                markActivity();
                 buffer += decoder.decode(value, { stream: true });
 
                 const lines = buffer.split('\n');
@@ -888,7 +889,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             if (stallHandle) {
                 clearTimeout(stallHandle);
             }
-            const stallTimeout = Math.min(timeout, 15000);
+            // Reasoning models can legitimately stay silent while planning or
+            // assembling tool calls. Honour the configured timeout instead of
+            // imposing an undocumented 15-second ceiling.
+            const stallTimeout = timeout;
             stallHandle = setTimeout(() => {
                 abortReason = `Model stream stalled after ${stallTimeout}ms without output.`;
                 controller.abort();
