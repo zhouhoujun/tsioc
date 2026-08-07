@@ -1706,7 +1706,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     ): Promise<{ message?: AgentMessage }> {
         if (response.toolCalls?.length) {
             const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
-                toolCalls: response.toolCalls.map(toolCall => ({ id: toolCall.id, name: toolCall.name })),
+                toolCalls: response.toolCalls.map(toolCall => ({ id: toolCall.id, name: toolCall.name, input: toolCall.input })),
                 model: response.metadata?.model,
                 provider: response.metadata?.provider,
                 finishReason: response.metadata?.finishReason,
