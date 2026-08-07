@@ -2545,7 +2545,27 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return messages;
         }
         const currentUserMessage = messages.find(message => message.id === currentUserMessageId);
-        const recentMessages = messages.slice(-recentLimit);
+        // Never slice mid tool-round: orphaned tool results force the adapter to synthesize assistant tool-call messages without reasoning_content (thinking-mode 400).
+        let sliceStart = messages.length - recentLimit;
+        if (messages[sliceStart]?.role === 'tool') {
+            const leadingToolCallId = messages[sliceStart].toolCallId;
+            let probe = sliceStart;
+            while (probe > 0 && messages[probe].role === 'tool') {
+                probe--;
+            }
+            const owner = messages[probe];
+            const toolCalls = owner?.metadata?.toolCalls;
+            const ownerMatches = owner?.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0
+                && (!leadingToolCallId || toolCalls.some((call: { id?: string }) => call.id === leadingToolCallId));
+            if (ownerMatches) {
+                sliceStart = probe;
+            } else {
+                while (sliceStart < messages.length && messages[sliceStart]?.role === 'tool') {
+                    sliceStart++;
+                }
+            }
+        }
+        const recentMessages = messages.slice(sliceStart);
         if (!currentUserMessage || recentMessages.some(message => message.id === currentUserMessage.id)) {
             return recentMessages;
         }

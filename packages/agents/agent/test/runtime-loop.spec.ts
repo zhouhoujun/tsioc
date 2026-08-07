@@ -1032,6 +1032,71 @@ export class RuntimeLoopTest {
         expect(stored.map(msg => msg.content)).toEqual(['old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'newest', 'captured']);
     }
 
+    @Test('keeps assistant tool-call message that issued retained tool results when trimming recent messages')
+    async keepsAssistantToolCallMessageWhenTrimmingRecentMessages() {
+        const model = new CapturingModelAdapter();
+        const sessions = new InMemorySessionStore();
+        await sessions.append('s1', { id: 'm1', role: 'user', content: '设计并生成一个在线考试系统', createdAt: 1 } as any);
+        await sessions.append('s1', {
+            id: 'm2', role: 'assistant', content: 'checking',
+            metadata: {
+                toolCalls: [
+                    { id: 't1', name: 'list_dir', input: { path: '' } },
+                    { id: 't2', name: 'time', input: {} }
+                ],
+                reasoningContent: 'reasoning-1'
+            }, createdAt: 2
+        } as any);
+        await sessions.append('s1', { id: 'm3', role: 'tool', name: 'list_dir', content: 'err', toolCallId: 't1', createdAt: 3 } as any);
+        await sessions.append('s1', { id: 'm4', role: 'tool', name: 'time', content: 'now', toolCallId: 't2', createdAt: 4 } as any);
+        await sessions.append('s1', {
+            id: 'm5', role: 'assistant', content: 'again',
+            metadata: {
+                toolCalls: [{ id: 't3', name: 'list_dir', input: { path: '.' } }],
+                reasoningContent: 'reasoning-2'
+            }, createdAt: 5
+        } as any);
+        await sessions.append('s1', { id: 'm6', role: 'tool', name: 'list_dir', content: 'dir', toolCallId: 't3', createdAt: 6 } as any);
+        await sessions.append('s1', {
+            id: 'm7', role: 'assistant', content: 'planning',
+            metadata: {
+                toolCalls: [{ id: 't4', name: 'todo', input: { todos: [] } }],
+                reasoningContent: 'reasoning-3'
+            }, createdAt: 7
+        } as any);
+        await sessions.append('s1', { id: 'm8', role: 'tool', name: 'todo', content: 'ok', toolCallId: 't4', createdAt: 8 } as any);
+
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 6, summaryThreshold: 999 } },
+            new FakeApp() as any,
+            new RandomUuidGenerator()
+        );
+
+        await runtime.runTurn('s1', 'newest');
+
+        const sent = model.requests[0].messages as any[];
+        const issuedToolCallIds = new Set<string>();
+        for (const msg of sent) {
+            if (msg.role === 'assistant' && Array.isArray(msg.metadata?.toolCalls)) {
+                for (const call of msg.metadata.toolCalls) {
+                    issuedToolCallIds.add(call.id);
+                }
+            }
+        }
+        for (const msg of sent) {
+            if (msg.role === 'tool') {
+                expect(issuedToolCallIds.has(msg.toolCallId)).toEqual(true);
+            }
+        }
+        expect(sent.some(msg => msg.id === 'm2')).toEqual(true);
+        expect(sent[sent.length - 1].content).toEqual('newest');
+    }
+
     @Test('sends relevant memory search results to model')
     async sendsRelevantMemorySearchResultsToModel() {
         const model = new CapturingModelAdapter();
