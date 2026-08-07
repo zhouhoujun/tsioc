@@ -17,6 +17,7 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
         await repo.save(repo.create({
             id: record.id,
             sessionId: record.sessionId,
+            workspaceId: record.workspaceId ?? null,
             createdAt: record.createdAt,
             emptyResponseRetryCount: record.emptyResponseRetryCount,
             followUpRecoveryCount: record.followUpRecoveryCount,
@@ -33,11 +34,19 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
         }));
     }
 
-    async list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<TurnDiagnosticsRecord[]> {
+    async list(sessionId?: string, options?: { limit?: number; offset?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }): Promise<TurnDiagnosticsRecord[]> {
         const repo = this.adapter.getRepository(AgentTurnDiagnosticsEntity);
+        const where: Record<string, any> = {};
+        if (sessionId) {
+            where.sessionId = sessionId;
+        }
+        if (options?.workspaceId) {
+            where.workspaceId = options.workspaceId;
+        }
+        const sort: 'ASC' | 'DESC' = options?.order ?? 'ASC';
         const records = await repo.find({
-            where: sessionId ? ({ sessionId } as any) : undefined,
-            order: { createdAt: 'ASC', id: 'ASC' } as any,
+            where: Object.keys(where).length > 0 ? where : undefined,
+            order: { createdAt: sort, id: sort },
             skip: options?.offset ?? 0,
             take: options?.limit ?? 200
         });
@@ -66,6 +75,7 @@ export class TypeOrmTurnDiagnosticsStore extends TurnDiagnosticsStore {
         return {
             id: record.id,
             sessionId: record.sessionId,
+            workspaceId: record.workspaceId ?? undefined,
             createdAt: Number(record.createdAt),
             emptyResponseRetryCount: record.emptyResponseRetryCount,
             followUpRecoveryCount: record.followUpRecoveryCount,

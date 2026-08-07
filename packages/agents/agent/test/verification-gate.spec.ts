@@ -138,11 +138,11 @@ class StreamingLoopModelAdapter extends EchoModelAdapter {
     }
 }
 
-function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: InMemoryTurnDiagnosticsStore): DefaultAgentRuntime {
+function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: InMemoryTurnDiagnosticsStore, sessions?: InMemorySessionStore): DefaultAgentRuntime {
     const args: any[] = [
         model,
         registry,
-        new InMemorySessionStore(),
+        sessions ?? new InMemorySessionStore(),
         new InMemoryMemoryStore(),
         new SimpleSessionSummarizer(),
         { ...defaultAgentOptions, ...options },
@@ -428,6 +428,76 @@ export class VerificationGateRuntimeTest {
         const secondModel = new FailThenSucceedModelAdapter();
         const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
         await secondRuntime.runTurn('s1', 'hello');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+    }
+
+    @Test('a signature repaired in a prior session of the same workspace is hinted in a new session')
+    async crossSessionHintReuseWithinSameWorkspace() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const sessions = new InMemorySessionStore();
+        await sessions.setWorkspace('s1', '/ws/proj');
+        await sessions.setWorkspace('s2', '/ws/proj');
+
+        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        await firstRuntime.runTurn('s1', 'hello');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].workspaceId).toEqual('/ws/proj');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondModel = new FailThenSucceedModelAdapter();
+        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        const result = await secondRuntime.runTurn('s2', 'hello');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).toContain('Prior success from an earlier turn');
+        expect(prompts[0]).toContain('repaired in session s1');
+        expect(prompts[0]).toContain('retry with Tool "echo"');
+        expect(result.message.content).toEqual('task completed after repair');
+    }
+
+    @Test('repair hints do not leak across different workspaces')
+    async noHintsAcrossDifferentWorkspaces() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const sessions = new InMemorySessionStore();
+        await sessions.setWorkspace('s1', '/ws/a');
+        await sessions.setWorkspace('s2', '/ws/b');
+
+        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        await firstRuntime.runTurn('s1', 'hello');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].workspaceId).toEqual('/ws/a');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondModel = new FailThenSucceedModelAdapter();
+        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        await secondRuntime.runTurn('s2', 'hello');
+
+        const prompts = injectedRecoveryPrompts(secondModel);
+        expect(prompts.length).toEqual(1);
+        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+    }
+
+    @Test('without a workspace, repair hints stay scoped to the current session')
+    async noWorkspaceKeepsHintsSessionScoped() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        const sessions = new InMemorySessionStore();
+
+        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        await firstRuntime.runTurn('s1', 'hello');
+
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].workspaceId).toBeUndefined();
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondModel = new FailThenSucceedModelAdapter();
+        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
+        await secondRuntime.runTurn('s2', 'hello');
 
         const prompts = injectedRecoveryPrompts(secondModel);
         expect(prompts.length).toEqual(1);

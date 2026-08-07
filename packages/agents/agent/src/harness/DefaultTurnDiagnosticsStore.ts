@@ -21,7 +21,7 @@ export class DefaultTurnDiagnosticsStore extends TurnDiagnosticsStore {
         await store.append(record);
     }
 
-    async list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<TurnDiagnosticsRecord[]> {
+    async list(sessionId?: string, options?: { limit?: number; offset?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }): Promise<TurnDiagnosticsRecord[]> {
         const store = this.resolveStore();
         return store.list(sessionId, options);
     }

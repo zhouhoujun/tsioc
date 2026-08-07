@@ -11,6 +11,11 @@ import { EvidenceLedgerSnapshot } from './EvidenceLedger';
 export interface TurnDiagnosticsRecord {
     id: string;
     sessionId: string;
+    /** Optional workspace identity (P56). Scopes cross-session hint reuse so a
+     *  fresh session in the same workspace can borrow repair experience without
+     *  leaking it across unrelated workspaces. Optional so older records remain
+     *  readable. */
+    workspaceId?: string;
     createdAt: number;
     emptyResponseRetryCount: number;
     followUpRecoveryCount: number;
@@ -179,7 +184,7 @@ export function buildTurnDiagnosticsTrend(
 @Abstract()
 export abstract class TurnDiagnosticsStore {
     abstract append(record: TurnDiagnosticsRecord): Promise<void>;
-    abstract list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<TurnDiagnosticsRecord[]>;
+    abstract list(sessionId?: string, options?: { limit?: number; offset?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }): Promise<TurnDiagnosticsRecord[]>;
     abstract aggregate(sessionIds?: string[]): Promise<TurnDiagnosticsAggregate>;
     /** Time-bucketed trend points, optionally scoped to a set of sessions. */
     abstract trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]>;

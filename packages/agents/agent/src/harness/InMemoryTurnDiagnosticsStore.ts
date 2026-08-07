@@ -9,11 +9,15 @@ export class InMemoryTurnDiagnosticsStore extends TurnDiagnosticsStore {
         this.records = [...this.records, this.cloneRecord(record)];
     }
 
-    async list(sessionId?: string, options?: { limit?: number; offset?: number }): Promise<TurnDiagnosticsRecord[]> {
+    async list(sessionId?: string, options?: { limit?: number; offset?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }): Promise<TurnDiagnosticsRecord[]> {
         const offset = options?.offset ?? 0;
         const limit = options?.limit ?? this.records.length;
-        return this.records
-            .filter(record => !sessionId || record.sessionId === sessionId)
+        const ordered = [...this.records].sort((a, b) => {
+            const byTime = options?.order === 'DESC' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt;
+            return byTime || (options?.order === 'DESC' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id));
+        });
+        return ordered
+            .filter(record => (!sessionId || record.sessionId === sessionId) && (!options?.workspaceId || record.workspaceId === options.workspaceId))
             .slice(offset, offset + limit)
             .map(record => this.cloneRecord(record));
     }

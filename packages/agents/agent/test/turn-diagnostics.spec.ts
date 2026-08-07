@@ -180,6 +180,22 @@ export class TurnDiagnosticsStoreTest {
         expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('t-b');
     }
 
+    @Test('in-memory turn diagnostics store filters by workspace and supports newest-first order')
+    async inMemoryFiltersByWorkspaceAndOrders() {
+        const store = new InMemoryTurnDiagnosticsStore();
+        await store.append(makeRecord({ id: 't-a', sessionId: 's1', workspaceId: '/ws/x', createdAt: 1 }));
+        await store.append(makeRecord({ id: 't-b', sessionId: 's2', workspaceId: '/ws/x', createdAt: 2 }));
+        await store.append(makeRecord({ id: 't-c', sessionId: 's1', workspaceId: '/ws/y', createdAt: 3 }));
+        const scoped = await store.list(undefined, { workspaceId: '/ws/x' });
+        expect(scoped.map(record => record.id)).toEqual(['t-a', 't-b']);
+        const newestFirst = await store.list(undefined, { workspaceId: '/ws/x', order: 'DESC' });
+        expect(newestFirst.map(record => record.id)).toEqual(['t-b', 't-a']);
+        const combined = await store.list('s2', { workspaceId: '/ws/x' });
+        expect(combined.map(record => record.id)).toEqual(['t-b']);
+        const missing = await store.list(undefined, { workspaceId: '/ws/z' });
+        expect(missing.length).toEqual(0);
+    }
+
     @Test('aggregate turn diagnostics computes rates and totals across sessions')
     async aggregateComputesRates() {
         const store = new InMemoryTurnDiagnosticsStore();
@@ -360,6 +376,34 @@ export class TurnDiagnosticsStoreTest {
             const stored = await adapter.getRepository(AgentTurnDiagnosticsEntity).findOne({ where: { id: 'db-t1' } as any });
             expect(stored?.repeatedClarificationDetected).toEqual(true);
             expect(Number(stored?.createdAt)).toEqual(10);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('typeorm turn diagnostics store persists workspace identity and filters by it')
+    async typeOrmPersistsWorkspaceAndFilters() {
+        const ctx = await Application.run(TurnDiagnosticsOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const store = new TypeOrmTurnDiagnosticsStore(adapter);
+            await store.append(makeRecord({ id: 'db-ws-1', sessionId: 's-db-a', workspaceId: '/ws/x', createdAt: 10 }));
+            await store.append(makeRecord({ id: 'db-ws-2', sessionId: 's-db-b', workspaceId: '/ws/x', createdAt: 20 }));
+            await store.append(makeRecord({ id: 'db-ws-3', sessionId: 's-db-c', workspaceId: '/ws/y', createdAt: 30 }));
+            await store.append(makeRecord({ id: 'db-ws-4', sessionId: 's-db-a', createdAt: 40 }));
+
+            const scoped = await store.list(undefined, { workspaceId: '/ws/x', order: 'DESC' });
+            expect(scoped.map(record => record.id)).toEqual(['db-ws-2', 'db-ws-1']);
+            expect(scoped[0].workspaceId).toEqual('/ws/x');
+            expect(scoped[0].sessionId).toEqual('s-db-b');
+
+            const combined = await store.list('s-db-a', { workspaceId: '/ws/x' });
+            expect(combined.map(record => record.id)).toEqual(['db-ws-1']);
+
+            const stored = await adapter.getRepository(AgentTurnDiagnosticsEntity).findOne({ where: { id: 'db-ws-1' } as any });
+            expect(stored?.workspaceId).toEqual('/ws/x');
+            const recordWithoutWorkspace = await store.list('s-db-a');
+            expect(recordWithoutWorkspace.find(record => record.id === 'db-ws-4')?.workspaceId).toBeUndefined();
         } finally {
             await ctx.close();
         }

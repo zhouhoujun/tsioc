@@ -259,7 +259,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
-            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery);
+            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
             await this.runTurnHooks('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
@@ -349,7 +349,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
-                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery);
+                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
                 await this.runTurnHooks('afterTurn', sessionId, {
                     sessionId,
                     principalId,
@@ -1059,7 +1059,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger, recovery?: TurnRecoveryState): Promise<void> {
+    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger, recovery?: TurnRecoveryState, workspace?: string): Promise<void> {
         if (!this.turnDiagnosticsStore || !diagnostics) {
             return;
         }
@@ -1079,6 +1079,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const record: TurnDiagnosticsRecord = {
             id: this.uuid.generate(),
             sessionId,
+            workspaceId: workspace,
             createdAt: Date.now(),
             emptyResponseRetryCount: diagnostics.emptyResponseRetryCount,
             followUpRecoveryCount: diagnostics.followUpRecoveryCount,
@@ -1223,7 +1224,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             reasons: [...result.reasons]
         });
         if (recovery.attemptHistory.length === 1) {
-            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, signatures);
+            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, signatures, turnContext.workspace);
         }
 
         if (turnContext.diagnostics) {
@@ -1246,12 +1247,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return lastAttempt.signatures.map(signature => ({ signature, fixes }));
     }
 
-    private async loadResolvedRepairHints(sessionId: string, signatures: string[]): Promise<ResolvedRepairHint[]> {
+    private async loadResolvedRepairHints(sessionId: string, signatures: string[], workspace?: string): Promise<ResolvedRepairHint[]> {
         if (!this.turnDiagnosticsStore || signatures.length === 0) {
             return [];
         }
         try {
-            const records = await this.turnDiagnosticsStore.list(sessionId, { limit: 50 });
+            const records = workspace
+                ? await this.turnDiagnosticsStore.list(undefined, { workspaceId: workspace, limit: 50, order: 'DESC' })
+                : await this.turnDiagnosticsStore.list(sessionId, { limit: 50, order: 'DESC' });
             return collectResolvedRepairHints(records, signatures);
         } catch {
             return [];

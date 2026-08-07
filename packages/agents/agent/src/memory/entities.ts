@@ -327,6 +327,9 @@ export class AgentTurnDiagnosticsEntity {
     @Column()
     sessionId!: string;
 
+    @Column({ type: 'varchar', nullable: true })
+    workspaceId!: string | null;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
 
