@@ -201,8 +201,11 @@ export class AgentConsoleEventBridge {
                 });
                 const nonGitRepo = event.toolName === 'git_operations' && /not a Git repository/i.test(event.error.message);
                 this.state.pushActivity('error', nonGitRepo
-                    ? '未检测到 Git 仓库，继续使用文件工具完成任务'
-                    : `${this.describeToolName(event.toolName)} 未完成：${event.error.message}`);
+                    ? (this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected; continuing with files')
+                    : (this.translator?.translate('agent.tool.failedWithError', {
+                        label: this.describeToolName(event.toolName),
+                        error: event.error.message
+                    }) || `${this.describeToolName(event.toolName)} failed: ${event.error.message}`));
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), `${event.toolName} failed: ${event.error.message}`, {
                         eventType: 'tool_failed',
@@ -355,7 +358,9 @@ export class AgentConsoleEventBridge {
 
     protected describeToolActivity(toolName: string, status: 'running' | 'completed'): string {
         const name = this.describeToolName(toolName);
-        return status === 'running' ? `正在${name}` : `${name}完成`;
+        return status === 'running'
+            ? (this.translator?.translate('agent.tool.invoked', { label: name }) || `Running ${name}`)
+            : (this.translator?.translate('agent.tool.completed', { label: name }) || `${name} completed`);
     }
 
     protected summarizeToolEventDetail(toolName: string, summary?: string): string {

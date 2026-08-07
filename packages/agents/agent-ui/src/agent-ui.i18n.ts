@@ -21,7 +21,7 @@ export const agentUiEnglish: TranslationBundle = {
                 read_file: 'Read file', write_file: 'Create file', edit_file: 'Edit file', apply_patch: 'Apply changes',
                 mkdir: 'Create directory', todo: 'Update plan', ask_user: 'Waiting for your input',
                 coding_task: 'Run implementation task', git_operations: 'Check version control',
-                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', gitMissing: 'Git repository not detected; continuing with files'
+                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected; continuing with files'
             }
         }
     }
@@ -48,7 +48,7 @@ export const agentUiChinese: TranslationBundle = {
                 read_file: '读取文件', write_file: '创建文件', edit_file: '修改文件', apply_patch: '应用修改',
                 mkdir: '创建目录', todo: '更新计划', ask_user: '等待你的输入',
                 coding_task: '执行实现任务', git_operations: '检查版本状态',
-                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', gitMissing: '未检测到 Git 仓库，继续处理文件'
+                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库，继续处理文件'
             }
         }
     }
