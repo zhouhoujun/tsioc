@@ -83,8 +83,11 @@ export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRe
     }
 
     async destroy(): Promise<void> {
-        await this.runners.stop();
-        super.destroy();
+        try {
+            await this.runners.stop();
+        } finally {
+            super.destroy();
+        }
     }
 
 }

@@ -374,8 +374,7 @@ export class AppRpcServer {
     }
 
     private async getAppState(params: any, context: AppRpcRequestContext): Promise<any> {
-        const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
-        const workspace = String(uiConsole?.workspace || '');
+        const workspace = this.resolveWorkspace();
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : await this.resolveAppStateSessionId(workspace, context);
@@ -406,14 +405,14 @@ export class AppRpcServer {
     }
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
-        const workspace = this.requireString(params?.workspace, 'app.inputHistory.get workspace');
+        const workspace = this.resolveHistoryRequestWorkspace(params);
         const principalIds = this.resolveHistoryPrincipalIds(context);
         const records = this.listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
         return this.mergeConsoleInputHistoryEntries(records.map(record => this.parseInputHistoryEntries(record.value)));
     }
 
     private async putInputHistory(params: any, context: AppRpcRequestContext): Promise<{ workspace: string; entries: string[] }> {
-        const workspace = this.requireString(params?.workspace, 'app.inputHistory.put workspace');
+        const workspace = this.resolveHistoryRequestWorkspace(params);
         const sessionId = this.optionalSessionId(params);
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
@@ -1971,10 +1970,24 @@ export class AppRpcServer {
         await this.sessions.setWorkspace(sessionId, workspace);
     }
 
-    private resolveWorkspace(): string | undefined {
+    private resolveWorkspace(): string {
         const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
         const workspace = String(uiConsole?.workspace || '').trim();
-        return workspace || undefined;
+        // Workspace is an agent-side concern: when no workspace is configured,
+        // fall back to the agent process's current working directory so input
+        // history (and session workspace) is naturally scoped per launch
+        // directory, mirroring shell up-arrow history behavior.
+        return workspace || process.cwd();
+    }
+
+    private resolveHistoryRequestWorkspace(params: any): string {
+        const requested = typeof params?.workspace === 'string' && params.workspace.trim()
+            ? params.workspace.trim()
+            : '';
+        if (requested) {
+            return requested;
+        }
+        return this.resolveWorkspace();
     }
 
     private async saveReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {

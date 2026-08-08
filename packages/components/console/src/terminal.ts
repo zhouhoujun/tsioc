@@ -319,7 +319,10 @@ export class ConsoleTerminalInputController {
         }
         this.started = true;
         this.dataHandler = (chunk: ConsoleTextChunk) => {
-            void this.options.onChunk(this.decoder.decode(chunk), chunk);
+            const result = this.options.onChunk(this.decoder.decode(chunk), chunk);
+            if (result && typeof (result as Promise<void>).catch === 'function') {
+                (result as Promise<void>).catch(() => undefined);
+            }
         };
         this.input.on('data', this.dataHandler);
         this.input.setRawMode?.(true);

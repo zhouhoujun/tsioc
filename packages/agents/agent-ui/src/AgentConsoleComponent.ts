@@ -65,6 +65,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
+    protected closing = false;
     protected sshShell: SshShellSession | null = null;
     protected voiceCaptureSessionId = '';
     protected voiceCaptureFeed: Promise<void> = Promise.resolve();
@@ -95,7 +96,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private sshManager?: SshConnectionManager | null,
         @Optional() private audioCapture?: AudioCaptureAdapter | null,
         @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
-        @Optional() private translator?: TranslatorService | null
+        @Optional() private translator?: TranslatorService
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -5278,6 +5279,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ): Promise<void> {
+        if (this.closing) {
+            return;
+        }
         if (decoded.mouse) {
             this.dispatchTerminalMouseAt(decoded.mouse);
             return;
@@ -5368,13 +5372,25 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async requestTerminalExit(message?: string): Promise<void> {
         const exitMessage = String(message || '').trim();
+        if (this.closing) {
+            return;
+        }
+        this.closing = true;
         if (!this.app) {
             if (exitMessage) {
                 this.notify(exitMessage);
             }
             return;
         }
-        await this.app.close();
+        try {
+            await this.app.close();
+        } catch {
+            // Teardown must not surface as an unhandled rejection: the Ctrl+C
+            // path invokes this fire-and-forget, and /exit awaits it. The core
+            // destroy() fix guarantees super.destroy() (component onDestroy:
+            // terminal restore + history persist) still runs even when a
+            // @Shutdown handler throws during runners.stop().
+        }
         if (exitMessage && typeof globalThis.console?.log === 'function') {
             globalThis.console.log(exitMessage);
         }

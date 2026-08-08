@@ -4044,9 +4044,16 @@ export class AgentConsoleSessionState {
         if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
-                await this.handleFocusKey(focusKey);
+                const consumed = await this.handleFocusKey(focusKey);
+                if (consumed) {
+                    return { handled: true, action: 'focusKey' };
+                }
             }
-            return { handled: true, action: 'focusKey' };
+            // Focus layer did not consume the key: let up/down fall through
+            // to history navigation, keep swallowing other keys.
+            if (controlKey !== 'up' && controlKey !== 'down') {
+                return { handled: true, action: 'focusKey' };
+            }
         }
 
         if (rawText === '\u001b' && !controlKey) {
@@ -4085,9 +4092,17 @@ export class AgentConsoleSessionState {
             return { handled: true };
         }
 
-        if ((controlKey === 'up' || controlKey === 'down') && this.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
-            const navigated = this.navigateInputHistory(controlKey === 'up' ? -1 : 1);
-            return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
+        if (controlKey === 'up' || controlKey === 'down') {
+            // Shell-like: up/down recalls history at the prompt unless a
+            // blocking interaction (menu/lock/modal/text prompt) is active.
+            if (!this.hasBlockingSelectMenu()
+                && !this.inputLocked
+                && !this.modalPromptActive
+                && !options.hasActiveTextPrompt) {
+                const navigated = this.navigateInputHistory(controlKey === 'up' ? -1 : 1);
+                return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
+            }
+            return { handled: true };
         }
 
         if (controlKey === 'up' || controlKey === 'down' || controlKey === 'tab' || controlKey === 'escape') {
