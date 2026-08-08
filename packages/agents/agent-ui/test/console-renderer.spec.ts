@@ -70,7 +70,9 @@ export class AgentConsoleDashboardRendererTest {
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(workingPanel).toBeTruthy();
-        expect(workingPanel.instance.dashboardTextLabel).toBeTruthy();
+        const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
+        expect(workingLines.some(line => line.includes('Working'))).toBe(true);
+        expect(workingLines.some(line => line.includes('1200 tokens'))).toBe(true);
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('•') && line.includes('world'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
@@ -332,7 +334,7 @@ export class AgentConsoleDashboardRendererTest {
             const lines = renderer.renderToLines(root);
             const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
             expect(lines.some(line => line.includes('tasks 1/2'))).toBe(true);
-            expect(workingPanel.instance.dashboardTextLabel.includes('tasks 1/2')).toBe(true);
+            expect(workingPanel.instance.dashboardCountersLabel.includes('tasks 1/2')).toBe(true);
     }
 
 }
@@ -630,7 +632,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
         expect(workingLines.some(line => line.includes('Preparing the response'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
-        expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(true);
+        expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(false);
         expect(workingLines.some(line => line.includes('User:'))).toBe(false);
         expect(workingLines.some(line => line.includes('activity turn'))).toBe(false);
     }

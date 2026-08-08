@@ -1,7 +1,15 @@
 import { Module } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { AgentModule } from '@tsdi/agent';
+import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
+import { agentUiChinese, agentUiEnglish } from './agent-ui.i18n';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
+
+function resolveDefaultLocale(): string {
+    const env = (globalThis as any)?.process?.env || {};
+    const lang = String(env.LANG || env.LC_ALL || '').toLowerCase();
+    return /^zh|_cn/i.test(lang) ? 'zh-CN' : 'en';
+}
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
@@ -35,7 +43,11 @@ import {
 @Module({
     imports: [
         ComponentsModule,
-        AgentModule
+        AgentModule,
+        I18nModule.withLocales({
+            en: agentUiEnglish,
+            'zh-CN': agentUiChinese
+        }, resolveDefaultLocale())
     ],
     bootstrap: [
         AgentConsoleComponent
@@ -66,6 +78,7 @@ import {
         AgentConsoleSelectPanelComponent
     ],
     providers: [
+        ...I18N_PROVIDERS,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleEventBridge,

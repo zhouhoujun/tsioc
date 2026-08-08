@@ -35,7 +35,7 @@ export class AgentConsoleEventBridge {
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
         @Optional() private app?: ApplicationContext | null,
-        @Optional() private translator?: TranslatorService | null
+        @Optional() private translator?: TranslatorService
     ) {
         this.stateRef = state;
     }

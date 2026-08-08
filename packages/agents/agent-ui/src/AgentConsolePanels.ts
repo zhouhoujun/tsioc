@@ -39,7 +39,6 @@ import {
     renderAgentConsoleMarkdownLines
 } from './AgentConsoleMarkdown';
 import {
-    AgentConsoleMessageTemplateKind,
     AgentConsoleRenderedLine,
     AgentConsoleRenderedMessageItem,
     renderAgentConsoleMessageItems,
@@ -58,7 +57,6 @@ const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSO
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
-const WORKING_DOT_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
@@ -490,12 +488,8 @@ export class AgentConsoleInputPanelComponent {
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
         <label class="working-line">
-            <span v-style="dotStyle">{{dotFrame}}</span>
             <span v-style="labelStyle">{{workingLabel}}</span>
             <span v-style="lineStyle">{{workingDetail}}</span>
-        </label>
-        <label class="working-dashboard-line" v-show="dashboardTextLabel">
-            <span v-style="labelStyle">{{dashboardTextLabel}}</span>
         </label>
     </div>
     `
@@ -503,7 +497,7 @@ export class AgentConsoleInputPanelComponent {
 export class AgentConsoleWorkingPanelComponent {
     constructor(
         private state: AgentConsoleSessionState,
-        @Optional() private translator?: TranslatorService | null
+        @Optional() private translator?: TranslatorService
     ) {
     }
 
@@ -610,7 +604,12 @@ export class AgentConsoleWorkingPanelComponent {
             parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
         }
         if (this.totalTokens > 0) {
-            parts.push(`${this.totalTokens} tokens`);
+            parts.push(this.translator?.translate('agent.dashboard.tokens', { count: this.totalTokens })
+                || `${this.totalTokens} tokens`);
+        }
+        const dashboard = this.dashboardCountersLabel;
+        if (dashboard) {
+            parts.push(dashboard);
         }
         return ` · ${parts.join(' · ')}`;
     }
@@ -636,64 +635,7 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get workingLabel(): string {
-        return `${this.animatedLabel}${this.workingSuffixLabel}`;
-    }
-
-    get animatedLabel(): string {
-        if (!this.hasWorkingState) {
-            return '';
-        }
-        const running = this.state.runningTools;
-        if (!running.length) {
-            return this.translator?.translate('agent.turn.working') || 'Working';
-        }
-        return this.translator?.translate('agent.turn.running') || 'Running';
-    }
-
-    get workingSuffixLabel(): string {
-        const running = this.state.runningTools;
-        if (!running.length) {
-            return '';
-        }
-        if (running.length === 1) {
-            return ` for ${this.describeTool(running[0])}`;
-        }
-        return ' for tools';
-    }
-
-    get dotFrame(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return WORKING_DOT_FRAMES[Math.floor(Date.now() / 300) % WORKING_DOT_FRAMES.length];
-    }
-
-    get dotStyle(): Record<string, string> {
-        return this.accentStyle;
-    }
-
-    get dashboardSummaryLabel(): string {
-        const parts = [
-            this.state.status || 'idle',
-            this.state.workspace ? `workspace ${this.workspaceLabel(this.state.workspace)}` : '',
-            this.state.projectLabel ? `project ${this.state.projectLabel}` : ''
-        ].filter(Boolean);
-        return parts.length ? `dashboard · ${parts.join(' · ')}` : 'dashboard';
-    }
-
-    get dashboardTextLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return [
-            this.dashboardCountersLabel,
-            this.dashboardStatsLabel,
-            this.dashboardUsageLabel,
-            this.dashboardQualityLabel,
-            this.dashboardCompactionLabel,
-            this.dashboardTurnDiagnosticsLabel,
-            this.dashboardDetailLabel
-        ].filter(Boolean).join(' · ');
+        return `• ${this.translator?.translate('agent.turn.working') || 'Working'}`;
     }
 
     get dashboardCountersLabel(): string {
@@ -705,13 +647,19 @@ export class AgentConsoleWorkingPanelComponent {
         const runningJobs = this.state.scheduledTasks.filter(task => task.running).length;
         const activeApprovals = this.state.pendingApprovals.length;
         const activeTools = this.state.runningTools.length;
-        const totalTokens = this.state.tokenUsage.totalTokens || 0;
+        const translate = (key: string, params: Record<string, any>, fallback: string) =>
+            this.translator?.translate(key, params) || fallback;
         return [
-            activeApprovals > 0 ? `approvals ${formatCompactNumber(activeApprovals)}` : '',
-            this.state.scheduledTasks.length > 0 ? `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}` : '',
-            totalTasks > 0 ? `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}` : '',
-            activeTools > 0 ? `tools ${formatCompactNumber(activeTools)}` : '',
-            totalTokens > 0 ? `tokens ${formatCompactNumber(totalTokens)}` : ''
+            activeApprovals > 0 ? translate('agent.dashboard.approvals', { count: formatCompactNumber(activeApprovals) }, `approvals ${formatCompactNumber(activeApprovals)}`) : '',
+            this.state.scheduledTasks.length > 0 ? translate('agent.dashboard.jobs', {
+                running: formatCompactNumber(runningJobs),
+                total: formatCompactNumber(this.state.scheduledTasks.length)
+            }, `jobs ${formatCompactNumber(runningJobs)}/${formatCompactNumber(this.state.scheduledTasks.length)}`) : '',
+            totalTasks > 0 ? translate('agent.dashboard.tasks', {
+                active: formatCompactNumber(activeTasks),
+                total: formatCompactNumber(totalTasks)
+            }, `tasks ${formatCompactNumber(activeTasks)}/${formatCompactNumber(totalTasks)}`) : '',
+            activeTools > 0 ? translate('agent.dashboard.tools', { count: formatCompactNumber(activeTools) }, `tools ${formatCompactNumber(activeTools)}`) : ''
         ].filter(Boolean).join(' · ');
     }
 
@@ -802,14 +750,9 @@ export class AgentConsoleWorkingPanelComponent {
             const summary = latestToolRun.outputSummary || latestToolRun.inputSummary || latestToolRun.message || latestToolRun.error || latestToolRun.name;
             lines.push(`tool ${latestToolRun.name} ${latestToolRun.status}${latestToolRun.durationMs != null ? ` ${latestToolRun.durationMs}ms` : ''} · ${this.summarize(summary)}`);
         }
-        const latestActivity = this.state.activities[this.state.activities.length - 1];
-        if (latestActivity) {
-            const label = latestActivity.kind === 'turn' ? 'request' : latestActivity.kind;
-            lines.push(`${label}: ${this.summarize(latestActivity.message)}`);
-        }
         const latestJob = this.latestScheduledTask();
         if (latestJob) {
-            lines.push(`job ${latestJob.id} · ${this.summarize(latestJob.prompt)} · ${latestJob.running ? 'running' : latestJob.paused ? 'paused' : 'idle'}`);
+            lines.push(`job ${latestJob.id} · ${latestJob.running ? 'running' : latestJob.paused ? 'paused' : 'idle'}`);
         }
         const latestApproval = this.state.pendingApprovals[this.state.pendingApprovals.length - 1];
         if (latestApproval) {
@@ -902,10 +845,6 @@ export class AgentConsoleWorkingPanelComponent {
             return this.translator?.translate('agent.turn.backgroundCommand') || 'Running a background command';
         }
         return this.translator?.translate('agent.turn.toolsRunning', { count }) || `Running ${count} operations`;
-    }
-
-    protected describeTool(toolName: string): string {
-        return this.isTerminalTool(toolName) ? 'background terminal' : toolName;
     }
 
     protected isTerminalTool(toolName: string): boolean {
@@ -2150,7 +2089,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 export class AgentConsoleMessagesPanelComponent {
     constructor(
         private state: AgentConsoleSessionState,
-        @Optional() private translator?: TranslatorService | null
+        @Optional() private translator?: TranslatorService
     ) {
     }
 

@@ -12,6 +12,13 @@ export const agentUiEnglish: TranslationBundle = {
                 toolsRunning: 'Running {count} operations',
                 backgroundCommand: 'Running a background command'
             },
+            dashboard: {
+                approvals: 'approvals {count}',
+                jobs: 'jobs {running}/{total}',
+                tasks: 'tasks {active}/{total}',
+                tools: 'tools {count}',
+                tokens: '{count} tokens'
+            },
             message: {
                 expand: '… {count} more lines. Click to expand',
                 collapse: 'Click to collapse'
@@ -38,6 +45,13 @@ export const agentUiChinese: TranslationBundle = {
                 running: '执行中',
                 toolsRunning: '正在执行 {count} 项操作',
                 backgroundCommand: '后台命令执行中'
+            },
+            dashboard: {
+                approvals: '审批 {count}',
+                jobs: '任务 {running}/{total}',
+                tasks: '任务 {active}/{total}',
+                tools: '工具 {count}',
+                tokens: '{count} tokens'
             },
             message: {
                 expand: '… 还有 {count} 行，点击展开',
