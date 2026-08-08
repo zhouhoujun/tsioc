@@ -107,5 +107,11 @@ export async function runAgentConsole(
         ]
     });
 
+    // The TUI owns its lifecycle: /exit and Ctrl+C destroy the application
+    // context, so the CLI must terminate the process once teardown finishes.
+    // Without this the process lingers on stdin/resource handles and the
+    // exit command appears to do nothing.
+    ctx.onDestroy(() => process.exit(0));
+
     await ctx.get(AgentRuntime).start();
 }
