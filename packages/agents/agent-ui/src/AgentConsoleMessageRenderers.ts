@@ -178,14 +178,15 @@ export function renderAgentConsoleMessageItem(
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const displayContent = resolveMessageDisplayContent(message, templateKind);
-    const streaming = !!(message?.metadata?.streaming || context.streaming);
+    const messageStreaming = !!(message?.metadata?.streaming);
+    const streaming = messageStreaming || !!context.streaming;
     const markdownLines = streaming || templateKind === 'user'
         ? streaming
             ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
             : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
         : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel);
-    const fallbackLine = streaming
+    const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
         : templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
@@ -194,7 +195,7 @@ export function renderAgentConsoleMessageItem(
     const lines = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
-        const cursorTokens = streaming && isLast && markdownLines.length
+        const cursorTokens = messageStreaming && isLast && markdownLines.length
             ? [...(line.tokens || []), { text: '▍' } as AgentConsoleMarkdownToken]
             : line.tokens || [];
         const rendered = buildRenderedLine(
