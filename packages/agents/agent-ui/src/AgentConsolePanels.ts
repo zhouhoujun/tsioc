@@ -487,9 +487,15 @@ export class AgentConsoleInputPanelComponent {
     imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
-        <label class="working-line">
-            <span v-style="labelStyle">{{workingLabel}}</span>
-            <span v-style="lineStyle">{{workingDetail}}</span>
+        <label class="working-line" v-style="workingLineStyle">
+            <span v-style="animatedCharStyleAt(0)">{{animatedCharAt(0)}}</span>
+            <span v-style="animatedCharStyleAt(1)">{{animatedCharAt(1)}}</span>
+            <span v-style="animatedCharStyleAt(2)">{{animatedCharAt(2)}}</span>
+            <span v-style="animatedCharStyleAt(3)">{{animatedCharAt(3)}}</span>
+            <span v-style="animatedCharStyleAt(4)">{{animatedCharAt(4)}}</span>
+            <span v-style="animatedCharStyleAt(5)">{{animatedCharAt(5)}}</span>
+            <span v-style="animatedCharStyleAt(6)">{{animatedCharAt(6)}}</span>
+            <span v-style="labelStyle">{{workingDetail}}</span>
         </label>
     </div>
     `
@@ -526,6 +532,13 @@ export class AgentConsoleWorkingPanelComponent {
 
     get lineStyle() {
         return this.activeThemeStyles.workingValue;
+    }
+
+    get workingLineStyle(): Record<string, string> {
+        return {
+            ...this.activeThemeStyles.workingValue,
+            padding: '0.6em 1ch 1em'
+        };
     }
 
     get labelStyle() {
@@ -611,7 +624,7 @@ export class AgentConsoleWorkingPanelComponent {
         if (dashboard) {
             parts.push(dashboard);
         }
-        return ` · ${parts.join(' · ')}`;
+        return ` ${parts.join(' · ')}`;
     }
 
     protected get hasWorkingState(): boolean {
@@ -635,7 +648,29 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get workingLabel(): string {
-        return `• ${this.translator?.translate('agent.turn.working') || 'Working'}`;
+        return this.animatedLabel;
+    }
+
+    get animatedLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.translator?.translate('agent.turn.working') || 'Working';
+    }
+
+    get activeAnimatedCharIndex(): number {
+        const length = Math.max(this.animatedLabel.length, 1);
+        return Math.floor(Date.now() / 200) % length;
+    }
+
+    animatedCharAt(index: number): string {
+        return this.animatedLabel[index] || '';
+    }
+
+    animatedCharStyleAt(index: number): Record<string, string> {
+        return Math.abs(index - this.activeAnimatedCharIndex) <= 1
+            ? this.accentStyle
+            : this.labelStyle;
     }
 
     get dashboardCountersLabel(): string {
@@ -2209,8 +2244,11 @@ export class AgentConsoleMessagesPanelComponent {
             return;
         }
         const sameMessageSelected = this.state.selectedMessageId === messageId;
-        if (sameMessageSelected && this.state.messageDetailOpen) {
+        if (sameMessageSelected && this.state.messageDetailOpen && line?.toggleContent) {
             this.state.closeMessageDetail();
+            return;
+        }
+        if (!line?.toggleContent) {
             return;
         }
         this.state.setSelectedMessageId(messageId);
