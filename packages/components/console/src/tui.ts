@@ -135,6 +135,7 @@ export class TuiRenderer extends ConsoleRenderer {
         const regionStart = regionId ? lines.length : -1;
         const clickStart = this.hasClickHandler(element) ? lines.length : -1;
         const elementStartRow = lines.length;
+        const contentStartRow = elementStartRow + this.resolveBoxPadding(styleMap.padding).top;
         const finishRegion = () => {
             if (!regionId || lines.length <= regionStart) {
                 return;
@@ -163,7 +164,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     lines.push(...this.renderInlineLines(element, { ...styleMap, 'font-weight': 'bold' }, width));
                 }
-                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -175,7 +176,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
-                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -186,7 +187,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
                 }
-                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
@@ -194,7 +195,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
-                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : elementStartRow, lines.length, lines, width, clickTargets, visited);
+                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
                 finishRegion();
                 return;
