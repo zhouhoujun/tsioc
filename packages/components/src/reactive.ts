@@ -9,6 +9,7 @@ const SUBSCRIBABLE_NOTIFY = Symbol('__SUBSCRIBABLE_NOTIFY');
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
 const subscribableEffects = new WeakMap<object, WeakMap<ReactiveEffect, () => void>>();
+const proxyCache = new WeakMap<object, any>();
 
 // // 检查是否为Node节点
 // function isNode(target: any): target is RNode {
@@ -31,7 +32,7 @@ export function canReactive(target: any) {
     if (!target || !isObject(target) || target[noReact]) {
         return false
     }
-    if (hasReactiveFlag(target) && !isSubscribable(target)) {
+    if (hasReactiveFlag(target)) {
         return false
     }
     // if (isNode(target)) return false;
@@ -80,6 +81,12 @@ function bindSubscribableEffect(target: object, effect: ReactiveEffect): void {
 }
 
 export function reactive(target: any, effect: ReactiveEffect, computeds?: ComputedMetadata[]) {
+    // 同一raw目标复用同一proxy，保证track/trigger落在同一effect的depsMap
+    const cached = proxyCache.get(target);
+    if (cached) {
+        return cached;
+    }
+
     // 直接返回，不进行代理
     if (!canReactive(target)) {
         return target;
@@ -116,7 +123,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
                 if (isNative(target)) {
                     res = res.bind(target);
                 }
-            } else if (canReactive(res)) {
+            } else if (canReactive(res) || proxyCache.has(res)) {
                 return reactive(res, effect);
             }
 
@@ -175,6 +182,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
         configurable: false,
         enumerable: false
     });
+    proxyCache.set(target, proxy);
 
     return proxy;
 }

@@ -463,9 +463,6 @@ export class AgentConsoleSessionState {
     commandHints = ['/help', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots'];
 
     protected activeToolSet = new Set<string>();
-    protected listeners = new Set<() => void>();
-    protected notificationBatchDepth = 0;
-    protected notificationPending = false;
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
@@ -492,29 +489,24 @@ export class AgentConsoleSessionState {
         if (meta.workspace !== undefined) {
             this.workspace = meta.workspace;
         }
-        this.notify();
         return this;
     }
 
     setTitle(title: string): void {
         this.title = title;
-        this.notify();
     }
 
     setProvider(provider: string): void {
         this.provider = provider;
-        this.notify();
     }
 
     setModel(model: string): void {
         this.model = model;
-        this.notify();
     }
 
     setWorkspace(workspace: string): void {
         this.workspace = workspace;
         this.refreshInputSuggestions();
-        this.notify();
     }
 
     setProjectContext(context?: {
@@ -527,40 +519,33 @@ export class AgentConsoleSessionState {
         this.projectLabel = String(context?.projectLabel || '').trim();
         this.projectSummary = String(context?.projectSummary || '').trim();
         this.projectSessionCount = Math.max(0, Number(context?.projectSessionCount || 0));
-        this.notify();
     }
 
     setSummaryQualityDigest(digest: string): void {
         this.summaryQualityDigest = String(digest || '').trim();
-        this.notify();
     }
 
     setUsageDigest(digest: string): void {
         this.usageDigest = String(digest || '').trim();
-        this.notify();
     }
 
     setCompactionDigest(digest: string): void {
         this.compactionDigest = String(digest || '').trim();
-        this.notify();
     }
 
     setTurnDiagnosticsDigest(digest: string): void {
         this.turnDiagnosticsDigest = String(digest || '').trim();
-        this.notify();
     }
 
     setContextPreparation(report?: ContextPreparationReport | null): void {
         if (!report) {
             this.contextPreparation = null;
-            this.notify();
             return;
         }
         this.contextPreparation = {
             ...report,
             summary: this.formatContextPreparationSummary(report)
         };
-        this.notify();
     }
 
     get contextPreparationSummary(): string {
@@ -573,17 +558,14 @@ export class AgentConsoleSessionState {
 
     setModelProfile(modelProfile: string): void {
         this.modelProfile = modelProfile;
-        this.notify();
     }
 
     setOneShotModelProfile(modelProfile: string): void {
         this.oneShotModelProfile = String(modelProfile || '').trim();
-        this.notify();
     }
 
     setPlanMode(enabled: boolean): void {
         this.planMode = enabled;
-        this.notify();
     }
 
     get effectiveVimBindings(): Record<string, string> {
@@ -596,7 +578,6 @@ export class AgentConsoleSessionState {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
         }
-        this.notify();
     }
 
     setInputMode(mode: ConsoleInputMode): void {
@@ -608,7 +589,6 @@ export class AgentConsoleSessionState {
         if (mode === 'insert') {
             this.vimPendingKey = '';
         }
-        this.notify();
     }
 
     setVimBinding(key: string, action: string): boolean {
@@ -617,7 +597,6 @@ export class AgentConsoleSessionState {
             return false;
         }
         this.vimBindings = { ...this.vimBindings, [normalizedKey]: action };
-        this.notify();
         return true;
     }
 
@@ -629,14 +608,12 @@ export class AgentConsoleSessionState {
         const next = { ...this.vimBindings };
         delete next[normalizedKey];
         this.vimBindings = next;
-        this.notify();
         return true;
     }
 
     resetVimBindings(): void {
         this.vimBindings = {};
         this.vimPendingKey = '';
-        this.notify();
     }
 
     handleVimKey(key: string): boolean {
@@ -646,7 +623,6 @@ export class AgentConsoleSessionState {
         const resolution = resolveConsoleVimKey(key, this.effectiveVimBindings, this.vimPendingKey || undefined);
         if (resolution.pending !== undefined) {
             this.vimPendingKey = resolution.pending;
-            this.notify();
             return true;
         }
         this.vimPendingKey = '';
@@ -715,34 +691,6 @@ export class AgentConsoleSessionState {
                 return false;
         }
         return true;
-    }
-
-    subscribe(listener: () => void): () => void {
-        this.listeners.add(listener);
-        return () => {
-            this.listeners.delete(listener);
-        };
-    }
-
-    batch<T>(work: () => T): T {
-        this.notificationBatchDepth += 1;
-        try {
-            return work();
-        } finally {
-            this.notificationBatchDepth = Math.max(0, this.notificationBatchDepth - 1);
-            if (!this.notificationBatchDepth && this.notificationPending) {
-                this.notificationPending = false;
-                Array.from(this.listeners.values()).forEach(listener => listener());
-            }
-        }
-    }
-
-    notify(): void {
-        if (this.notificationBatchDepth > 0) {
-            this.notificationPending = true;
-            return;
-        }
-        Array.from(this.listeners.values()).forEach(listener => listener());
     }
 
     protected syncDerivedInputFocus(): void {
@@ -880,7 +828,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.activities = [];
-        this.notify();
     }
 
     get displayMessages(): AgentMessage[] {
@@ -904,7 +851,6 @@ export class AgentConsoleSessionState {
                 this.messageDetailColumnScroll = 0;
             }
         }
-        this.notify();
     }
 
     appendMessage(message: AgentMessage): void {
@@ -1080,7 +1026,6 @@ export class AgentConsoleSessionState {
             this.messageDetailColumnScroll = 0;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedMessageId(messageId: string): void {
@@ -1090,7 +1035,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = messageId;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-        this.notify();
     }
 
     moveMessageSelection(delta: number): void {
@@ -1103,7 +1047,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-        this.notify();
     }
 
     moveMessageSelectionPage(delta: number, pageSize?: number): void {
@@ -1117,7 +1060,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-        this.notify();
     }
 
     selectFirstMessage(): void {
@@ -1128,7 +1070,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[0].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-        this.notify();
     }
 
     selectLastMessage(): void {
@@ -1139,7 +1080,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-        this.notify();
     }
 
     get selectedMessage(): AgentMessage | undefined {
@@ -1154,7 +1094,6 @@ export class AgentConsoleSessionState {
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     closeMessageDetail(): void {
@@ -1165,7 +1104,6 @@ export class AgentConsoleSessionState {
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     scrollMessageDetail(delta: number): void {
@@ -1175,7 +1113,6 @@ export class AgentConsoleSessionState {
         const lines = this.messageDetailLines;
         const maxScroll = Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
         this.messageDetailScroll = Math.max(0, Math.min(maxScroll, this.messageDetailScroll + delta));
-        this.notify();
     }
 
     scrollMessageDetailPage(delta: number, pageSize?: number): void {
@@ -1194,7 +1131,6 @@ export class AgentConsoleSessionState {
         this.messageDetailScroll = position === 'start'
             ? 0
             : Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
-        this.notify();
     }
 
     get messageDetailLines(): string[] {
@@ -1238,7 +1174,6 @@ export class AgentConsoleSessionState {
         }
         const maxScroll = Math.max(0, this.messageDetailMaxColumn - 1);
         this.messageDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.messageDetailColumnScroll + delta));
-        this.notify();
     }
 
     scrollMessageDetailColumnsToEdge(position: 'start' | 'end'): void {
@@ -1248,7 +1183,6 @@ export class AgentConsoleSessionState {
         this.messageDetailColumnScroll = position === 'start'
             ? 0
             : Math.max(0, this.messageDetailMaxColumn - 1);
-        this.notify();
     }
 
     setStatus(status: string): void {
@@ -1263,7 +1197,6 @@ export class AgentConsoleSessionState {
             this.turnStartedAt = 0;
         }
         this.status = nextStatus;
-        this.notify();
     }
 
     setTools(tools: AgentConsoleToolItem[]): void {
@@ -1277,7 +1210,6 @@ export class AgentConsoleSessionState {
             this.selectedToolName = this.tools[0].name;
         }
         this.refreshInputSuggestions();
-        this.notify();
     }
 
     setTokenUsage(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
@@ -1293,7 +1225,6 @@ export class AgentConsoleSessionState {
             completionTokens: completionTokens || 0,
             totalTokens: totalTokens || 0
         };
-        this.notify();
     }
 
     setInput(value: string, cursor = value.length): void {
@@ -1301,7 +1232,6 @@ export class AgentConsoleSessionState {
         this.inputCursor = clampConsoleTextCursor(this.input, cursor);
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     pushInputHistory(value: string): void {
@@ -1375,7 +1305,6 @@ export class AgentConsoleSessionState {
         this.inputCursor = clampConsoleTextCursor(this.input, cursor);
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     moveInputCursor(delta: number): void {
@@ -1390,12 +1319,10 @@ export class AgentConsoleSessionState {
 
     setInputFocused(focused: boolean): void {
         this.inputFocused = !!focused;
-        this.notify();
     }
 
     setInputPlaceholder(value: string): void {
         this.inputPlaceholder = String(value || '').trim();
-        this.notify();
     }
 
     get inputPlaceholderLabel(): string {
@@ -1415,12 +1342,10 @@ export class AgentConsoleSessionState {
 
     setPendingAttachments(attachments: AgentConsolePendingAttachment[]): void {
         this.pendingAttachments = attachments.slice();
-        this.notify();
     }
 
     appendPendingAttachment(attachment: AgentConsolePendingAttachment): void {
         this.pendingAttachments = [...this.pendingAttachments, attachment];
-        this.notify();
     }
 
     clearPendingAttachments(): void {
@@ -1428,17 +1353,14 @@ export class AgentConsoleSessionState {
             return;
         }
         this.pendingAttachments = [];
-        this.notify();
     }
 
     setLastError(message: string): void {
         this.lastError = message;
-        this.notify();
     }
 
     setTasksCount(value: number): void {
         this.tasksCount = value;
-        this.notify();
     }
 
     setSessions(sessions: AgentConsoleSessionItem[]): void {
@@ -1450,7 +1372,6 @@ export class AgentConsoleSessionState {
         } else {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
-        this.notify();
     }
 
     setSessionsFocused(focused: boolean): void {
@@ -1459,12 +1380,10 @@ export class AgentConsoleSessionState {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setProjects(projects: AgentConsoleProjectItem[]): void {
         this.projects = projects.slice();
-        this.notify();
     }
 
     setProjectsFocused(focused: boolean): void {
@@ -1473,12 +1392,10 @@ export class AgentConsoleSessionState {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setThreads(threads: AgentConsoleThreadItem[]): void {
         this.threads = threads.slice();
-        this.notify();
     }
 
     setThreadsFocused(focused: boolean): void {
@@ -1487,13 +1404,11 @@ export class AgentConsoleSessionState {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setToolRunsFocused(focused: boolean): void {
         this.toolRunsFocused = focused;
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedSessionId(sessionId: string): void {
@@ -1501,7 +1416,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedSessionId = sessionId;
-        this.notify();
     }
 
     moveSessionSelection(delta: number): void {
@@ -1511,7 +1425,6 @@ export class AgentConsoleSessionState {
         const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
         const nextIndex = (currentIndex + delta + this.sessions.length) % this.sessions.length;
         this.selectedSessionId = this.sessions[nextIndex].id;
-        this.notify();
     }
 
     moveSessionSelectionPage(delta: number, pageSize?: number): void {
@@ -1522,7 +1435,6 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
         const nextIndex = Math.max(0, Math.min(this.sessions.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedSessionId = this.sessions[nextIndex].id;
-        this.notify();
     }
 
     selectFirstSession(): void {
@@ -1530,7 +1442,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedSessionId = this.sessions[0].id;
-        this.notify();
     }
 
     selectLastSession(): void {
@@ -1538,7 +1449,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedSessionId = this.sessions[this.sessions.length - 1].id;
-        this.notify();
     }
 
     get selectedSession(): AgentConsoleSessionItem | undefined {
@@ -1592,7 +1502,6 @@ export class AgentConsoleSessionState {
         } else {
             this.selectedScheduledTaskId = this.scheduledTasks[0].id;
         }
-        this.notify();
     }
 
     setJobsFocused(focused: boolean): void {
@@ -1601,7 +1510,6 @@ export class AgentConsoleSessionState {
             this.selectedScheduledTaskId = this.scheduledTasks[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedScheduledTaskId(taskId: string): void {
@@ -1609,7 +1517,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedScheduledTaskId = taskId;
-        this.notify();
     }
 
     moveScheduledTaskSelection(delta: number): void {
@@ -1619,7 +1526,6 @@ export class AgentConsoleSessionState {
         const currentIndex = Math.max(0, this.scheduledTasks.findIndex(item => item.id === this.selectedScheduledTaskId));
         const nextIndex = (currentIndex + delta + this.scheduledTasks.length) % this.scheduledTasks.length;
         this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
-        this.notify();
     }
 
     moveScheduledTaskSelectionPage(delta: number, pageSize?: number): void {
@@ -1630,7 +1536,6 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.sessionsVisibleItems;
         const nextIndex = Math.max(0, Math.min(this.scheduledTasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
-        this.notify();
     }
 
     selectFirstScheduledTask(): void {
@@ -1638,7 +1543,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedScheduledTaskId = this.scheduledTasks[0].id;
-        this.notify();
     }
 
     selectLastScheduledTask(): void {
@@ -1646,7 +1550,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedScheduledTaskId = this.scheduledTasks[this.scheduledTasks.length - 1].id;
-        this.notify();
     }
 
     get selectedScheduledTask(): ScheduledAgentTask | undefined {
@@ -1655,14 +1558,12 @@ export class AgentConsoleSessionState {
 
     setTaskRecords(tasks: Record<string, any>[]): void {
         this.taskRecords = tasks.slice();
-        this.notify();
     }
 
     setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread'): void {
         this.planTodos = todos.slice();
         this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
         this.planScope = scope || '';
-        this.notify();
     }
 
     hasActivePlanTodos(): boolean {
@@ -1676,7 +1577,6 @@ export class AgentConsoleSessionState {
         this.planTodos = [];
         this.planTodoSourceSessionId = '';
         this.planScope = '';
-        this.notify();
     }
 
     setTasksFocused(focused: boolean): void {
@@ -1686,7 +1586,6 @@ export class AgentConsoleSessionState {
             this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(this.filteredReviewTaskChoices[0]);
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedReviewTaskId(taskId: string): void {
@@ -1696,7 +1595,6 @@ export class AgentConsoleSessionState {
         }
         this.selectedReviewTaskId = taskId;
         this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(matched);
-        this.notify();
     }
 
     moveTaskSelection(delta: number): void {
@@ -1708,7 +1606,6 @@ export class AgentConsoleSessionState {
         const nextIndex = (currentIndex + delta + tasks.length) % tasks.length;
         this.selectedReviewTaskId = tasks[nextIndex].id;
         this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[nextIndex]);
-        this.notify();
     }
 
     moveTaskSelectionPage(delta: number, pageSize?: number): void {
@@ -1721,7 +1618,6 @@ export class AgentConsoleSessionState {
         const nextIndex = Math.max(0, Math.min(tasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedReviewTaskId = tasks[nextIndex].id;
         this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[nextIndex]);
-        this.notify();
     }
 
     selectFirstTask(): void {
@@ -1731,7 +1627,6 @@ export class AgentConsoleSessionState {
         }
         this.selectedReviewTaskId = tasks[0].id;
         this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[0]);
-        this.notify();
     }
 
     selectLastTask(): void {
@@ -1741,7 +1636,6 @@ export class AgentConsoleSessionState {
         }
         this.selectedReviewTaskId = tasks[tasks.length - 1].id;
         this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(tasks[tasks.length - 1]);
-        this.notify();
     }
 
     get selectedTask(): Record<string, any> | undefined {
@@ -1772,7 +1666,6 @@ export class AgentConsoleSessionState {
             this.selectedTaskLineageRootId = '';
         }
         this.syncFilteredTaskSelection();
-        this.notify();
     }
 
     focusSelectedTaskLineageFilter(): boolean {
@@ -1783,7 +1676,6 @@ export class AgentConsoleSessionState {
         this.selectedTaskFilter = 'lineage';
         this.selectedTaskLineageRootId = rootId;
         this.syncFilteredTaskSelection();
-        this.notify();
         return true;
     }
 
@@ -1840,7 +1732,6 @@ export class AgentConsoleSessionState {
             this.selectedToolName = this.tools[0].name;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedToolName(toolName: string): void {
@@ -1848,7 +1739,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedToolName = toolName;
-        this.notify();
     }
 
     moveToolSelection(delta: number): void {
@@ -1858,7 +1748,6 @@ export class AgentConsoleSessionState {
         const currentIndex = Math.max(0, this.tools.findIndex(item => item.name === this.selectedToolName));
         const nextIndex = (currentIndex + delta + this.tools.length) % this.tools.length;
         this.selectedToolName = this.tools[nextIndex].name;
-        this.notify();
     }
 
     moveToolSelectionPage(delta: number, pageSize?: number): void {
@@ -1869,7 +1758,6 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
         const nextIndex = Math.max(0, Math.min(this.tools.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedToolName = this.tools[nextIndex].name;
-        this.notify();
     }
 
     selectFirstTool(): void {
@@ -1877,7 +1765,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedToolName = this.tools[0].name;
-        this.notify();
     }
 
     selectLastTool(): void {
@@ -1885,7 +1772,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedToolName = this.tools[this.tools.length - 1].name;
-        this.notify();
     }
 
     get selectedTool(): AgentConsoleToolItem | undefined {
@@ -1898,7 +1784,6 @@ export class AgentConsoleSessionState {
         }
         const nextIndex = (this.selectedToolRunIndex + delta + this.toolRuns.length) % this.toolRuns.length;
         this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
-        this.notify();
     }
 
     moveToolRunSelectionPage(delta: number, pageSize?: number): void {
@@ -1908,7 +1793,6 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
         const nextIndex = this.selectedToolRunIndex + (delta * Math.max(1, resolvedPageSize));
         this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
-        this.notify();
     }
 
     selectFirstToolRun(): void {
@@ -1916,7 +1800,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedToolRunIndex = 0;
-        this.notify();
     }
 
     selectLastToolRun(): void {
@@ -1924,7 +1807,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedToolRunIndex = this.toolRuns.length - 1;
-        this.notify();
     }
 
     get selectedToolRun(): AgentConsoleToolRun | undefined {
@@ -1937,7 +1819,6 @@ export class AgentConsoleSessionState {
             this.selectedApprovalId = this.pendingApprovals[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     setSelectedApprovalId(approvalId: string): void {
@@ -1945,7 +1826,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedApprovalId = approvalId;
-        this.notify();
     }
 
     moveApprovalSelection(delta: number): void {
@@ -1955,7 +1835,6 @@ export class AgentConsoleSessionState {
         const currentIndex = Math.max(0, this.pendingApprovals.findIndex(item => item.id === this.selectedApprovalId));
         const nextIndex = (currentIndex + delta + this.pendingApprovals.length) % this.pendingApprovals.length;
         this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
-        this.notify();
     }
 
     moveApprovalSelectionPage(delta: number, pageSize?: number): void {
@@ -1966,7 +1845,6 @@ export class AgentConsoleSessionState {
         const resolvedPageSize = pageSize ?? this.consoleOptions.approvalSelectionPageSize;
         const nextIndex = Math.max(0, Math.min(this.pendingApprovals.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
-        this.notify();
     }
 
     selectFirstApproval(): void {
@@ -1974,7 +1852,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedApprovalId = this.pendingApprovals[0].id;
-        this.notify();
     }
 
     selectLastApproval(): void {
@@ -1982,7 +1859,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectedApprovalId = this.pendingApprovals[this.pendingApprovals.length - 1].id;
-        this.notify();
     }
 
     get selectedApproval(): AgentConsoleApprovalRequest | undefined {
@@ -1992,7 +1868,6 @@ export class AgentConsoleSessionState {
     setReviewTasks(tasks: AgentConsoleReviewTaskItem[]): void {
         this.reviewTaskChoices = tasks.slice();
         this.syncFilteredTaskSelection();
-        this.notify();
     }
 
     openReview(
@@ -2052,7 +1927,6 @@ export class AgentConsoleSessionState {
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     closeReview(): void {
@@ -2064,7 +1938,6 @@ export class AgentConsoleSessionState {
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     clearReview(): void {
@@ -2088,7 +1961,6 @@ export class AgentConsoleSessionState {
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     get reviewExecutionMode(): 'sequential' | 'parallel' | null {
@@ -2161,7 +2033,6 @@ export class AgentConsoleSessionState {
         this.selectedReviewFileIndex = 0;
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
-        this.notify();
     }
 
     moveReviewGroupSelection(delta: number): void {
@@ -2177,7 +2048,6 @@ export class AgentConsoleSessionState {
         this.selectedReviewFileIndex = 0;
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
-        this.notify();
     }
 
     setReviewPatchFilter(filter: AgentConsoleReviewPatchFilter): void {
@@ -2186,7 +2056,6 @@ export class AgentConsoleSessionState {
         }
         this.selectedReviewPatchFilter = filter;
         this.resetReviewDetailViewport();
-        this.notify();
     }
 
     setReviewFileAnnotation(status: 'approved' | 'rejected', comment?: string, filePath?: string): void {
@@ -2200,7 +2069,6 @@ export class AgentConsoleSessionState {
         };
         this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
-        this.notify();
     }
 
     clearReviewFileAnnotation(filePath?: string): void {
@@ -2210,7 +2078,6 @@ export class AgentConsoleSessionState {
         delete this.reviewFileAnnotations[path];
         this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
-        this.notify();
     }
 
     approveAllReviewFiles(comment?: string): void {
@@ -2225,7 +2092,6 @@ export class AgentConsoleSessionState {
         }
         this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
-        this.notify();
     }
 
     clearAllReviewAnnotations(): void {
@@ -2233,7 +2099,6 @@ export class AgentConsoleSessionState {
         this.reviewFileAnnotations = {};
         this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
-        this.notify();
     }
 
     getReviewAnnotationSummary(): string[] {
@@ -2319,7 +2184,6 @@ export class AgentConsoleSessionState {
         this.selectedReviewFileIndex = nextIndex;
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
-        this.notify();
     }
 
     moveReviewFileSelection(delta: number): void {
@@ -2334,7 +2198,6 @@ export class AgentConsoleSessionState {
         this.selectedReviewFileIndex = nextIndex;
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
-        this.notify();
     }
 
     get reviewDetailLines(): string[] {
@@ -2443,7 +2306,6 @@ export class AgentConsoleSessionState {
         const lines = this.reviewDetailLines;
         const maxScroll = Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
         this.reviewDetailScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailScroll + delta));
-        this.notify();
     }
 
     scrollReviewDetailPage(delta: number, pageSize?: number): void {
@@ -2462,7 +2324,6 @@ export class AgentConsoleSessionState {
         this.reviewDetailScroll = position === 'start'
             ? 0
             : Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
-        this.notify();
     }
 
     jumpReviewHunk(direction: -1 | 1): void {
@@ -2491,7 +2352,6 @@ export class AgentConsoleSessionState {
             }
         }
         this.reviewDetailScroll = renderedOffset >= 0 ? Math.max(0, base + renderedOffset - 2) : 0;
-        this.notify();
     }
 
     scrollReviewDetailColumns(delta: number): void {
@@ -2500,7 +2360,6 @@ export class AgentConsoleSessionState {
         }
         const maxScroll = Math.max(0, this.reviewDetailMaxColumn - 1);
         this.reviewDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailColumnScroll + delta));
-        this.notify();
     }
 
     scrollReviewDetailColumnsToEdge(position: 'start' | 'end'): void {
@@ -2510,30 +2369,25 @@ export class AgentConsoleSessionState {
         this.reviewDetailColumnScroll = position === 'start'
             ? 0
             : Math.max(0, this.reviewDetailMaxColumn - 1);
-        this.notify();
     }
 
     setNotice(message: string): void {
         this.notice = message;
-        this.notify();
     }
 
     setCommandHints(commands: string[]): void {
         this.commandHints = Array.from(new Set(commands.filter(Boolean)));
         this.refreshInputSuggestions();
-        this.notify();
     }
 
     setWorkspaceMentionResolver(resolver?: AgentConsoleWorkspaceMentionResolver): void {
         this.workspaceMentionResolver = resolver;
         this.refreshInputSuggestions();
-        this.notify();
     }
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
         this.themeStyles = resolveAgentConsoleThemeStyles(this.theme);
-        this.notify();
     }
 
     setConsoleOptions(options?: AgentConsoleOptions | null): void {
@@ -2549,7 +2403,6 @@ export class AgentConsoleSessionState {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
         }
-        this.notify();
     }
 
     setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {
@@ -2565,7 +2418,6 @@ export class AgentConsoleSessionState {
             this.selectedApprovalId = this.pendingApprovals[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     upsertPendingApproval(request: AgentConsoleApprovalRequest): void {
@@ -2579,7 +2431,6 @@ export class AgentConsoleSessionState {
             this.selectedApprovalId = this.pendingApprovals[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     removePendingApproval(requestId: string): void {
@@ -2595,7 +2446,6 @@ export class AgentConsoleSessionState {
             this.selectedApprovalId = this.pendingApprovals[0].id;
         }
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<string | undefined> {
@@ -2621,7 +2471,6 @@ export class AgentConsoleSessionState {
             parentMenuAction: currentAction
         };
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     handleSelectKey(key: string): boolean {
@@ -2693,7 +2542,6 @@ export class AgentConsoleSessionState {
     closeSelectMenu(): void {
         this.selectMenu = undefined;
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     async dismissFocusLayer(): Promise<boolean> {
@@ -2706,12 +2554,10 @@ export class AgentConsoleSessionState {
             return true;
         }
         if (this.messageDetailOpen) {
-            this.batch(() => {
-                this.closeMessageDetail();
-                if (this.messagesFocused) {
-                    this.setMessagesFocused(false);
-                }
-            });
+            this.closeMessageDetail();
+            if (this.messagesFocused) {
+                this.setMessagesFocused(false);
+            }
             return true;
         }
         if (this.messagesFocused) {
@@ -2762,7 +2608,6 @@ export class AgentConsoleSessionState {
             return;
         }
         this.selectMenu.selectedIndex = Math.max(0, Math.min(this.selectMenu.options.length - 1, index));
-        this.notify();
     }
 
     moveSelectMenu(delta: number): void {
@@ -2771,7 +2616,6 @@ export class AgentConsoleSessionState {
         }
         const next = (this.selectMenu.selectedIndex + delta + this.selectMenu.options.length) % this.selectMenu.options.length;
         this.selectMenu.selectedIndex = next;
-        this.notify();
     }
 
     get selectedSelectMenuOption(): AgentConsoleSelectOption | undefined {
@@ -2877,7 +2721,6 @@ export class AgentConsoleSessionState {
             parentMenuAction: currentAction
         };
         this.syncDerivedInputFocus();
-        this.notify();
     }
 
     async resolveSelectMenu(value: string | undefined): Promise<void> {
@@ -2932,7 +2775,6 @@ export class AgentConsoleSessionState {
                 this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
                 this.refreshInputSuggestions();
                 this.syncDerivedInputFocus();
-                this.notify();
             };
         };
 
@@ -2949,20 +2791,17 @@ export class AgentConsoleSessionState {
                 return;
             }
             applySuggestions(options);
-            this.notify();
         }).catch(() => undefined);
     }
 
     setRunningTool(toolName: string): void {
         this.activeToolSet.add(toolName);
         this.runningTools = Array.from(this.activeToolSet.values()).sort();
-        this.notify();
     }
 
     clearRunningTool(toolName: string): void {
         this.activeToolSet.delete(toolName);
         this.runningTools = Array.from(this.activeToolSet.values()).sort();
-        this.notify();
     }
 
     clearToolActivity(): void {
@@ -2972,7 +2811,6 @@ export class AgentConsoleSessionState {
         this.activeToolSet.clear();
         this.runningTools = [];
         this.toolRuns = [];
-        this.notify();
     }
 
     pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
@@ -2990,7 +2828,6 @@ export class AgentConsoleSessionState {
                 createdAt: Date.now()
             }
         ];
-        this.notify();
     }
 
     upsertToolRun(run: AgentConsoleToolRun): void {
@@ -2998,7 +2835,6 @@ export class AgentConsoleSessionState {
         next.unshift(run);
         this.toolRuns = next.slice(0, this.consoleOptions.storedToolRunsLimit);
         this.selectedToolRunIndex = Math.max(0, Math.min(this.selectedToolRunIndex, this.toolRuns.length - 1));
-        this.notify();
     }
 
     summarize(value: string): string {
@@ -3359,7 +3195,6 @@ export class AgentConsoleSessionState {
             this.foldedReviewHunks.add(key);
         }
         this.clampReviewDetailScroll();
-        this.notify();
     }
 
     protected clampReviewDetailScroll(): void {
@@ -3456,7 +3291,6 @@ export class AgentConsoleSessionState {
         }
         this.reviewSideBySide = !this.reviewSideBySide;
         this.clampReviewDetailScroll();
-        this.notify();
     }
 
     protected buildReviewFoldedHunkSummary(hunk: AgentConsoleReviewHunk): string {
@@ -3590,7 +3424,6 @@ export class AgentConsoleSessionState {
                 this.selectMenu = parentMenu;
                 this.selectMenuAction = currentMenu.parentMenuAction;
                 this.syncDerivedInputFocus();
-                this.notify();
                 return true;
             }
             await this.cancelSelectMenu();
@@ -4168,7 +4001,6 @@ export class AgentConsoleSessionState {
             }
         }
 
-        this.notify();
         return {
             submitted,
             confirmedSelection: next.shouldConfirmSelection

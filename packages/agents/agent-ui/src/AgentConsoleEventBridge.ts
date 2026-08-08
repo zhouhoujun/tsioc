@@ -61,7 +61,6 @@ export class AgentConsoleEventBridge {
 
         bind(AgentTurnStartedEvent, (event: AgentTurnStartedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.setStatus('running');
                 this.state.pushActivity('turn', this.translator?.translate('agent.turn.understanding') || 'Understanding the request');
                 if (!this.appRpc) {
@@ -71,7 +70,6 @@ export class AgentConsoleEventBridge {
                         status: 'running'
                     });
                 }
-            });
         });
 
         bind(AgentStreamChunkEvent, (event: AgentStreamChunkEvent) => {
@@ -88,7 +86,6 @@ export class AgentConsoleEventBridge {
 
         bind(AgentTurnCancelledEvent, (event: AgentTurnCancelledEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.setStatus('cancelled');
                 this.state.clearToolActivity();
                 this.state.pushActivity('turn', 'Turn cancelled');
@@ -99,7 +96,6 @@ export class AgentConsoleEventBridge {
                         status: 'failed'
                     });
                 }
-            });
         });
 
         bind(AgentCompensationEvent, (event: AgentCompensationEvent) => {
@@ -114,15 +110,12 @@ export class AgentConsoleEventBridge {
 
         bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.setContextPreparation(event.report);
                 this.state.pushActivity('model', `Context ${event.report.strategy}: ${event.report.beforeTokens}→${event.report.afterTokens}`);
-            });
         });
 
         bind(AgentToolInvokedEvent, (event: AgentToolInvokedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.setRunningTool(event.toolName);
                 this.state.upsertToolRun({
                     name: event.toolName,
@@ -143,12 +136,10 @@ export class AgentConsoleEventBridge {
                         status: 'running'
                     });
                 }
-            });
         });
 
         bind(AgentToolCompletedEvent, async (event: AgentToolCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.clearRunningTool(event.toolName);
                 if (event.toolName === 'todo') {
                     this.state.setPlanTodos(this.normalizePlanTodos(event.output));
@@ -176,13 +167,11 @@ export class AgentConsoleEventBridge {
                         status: 'success'
                     });
                 }
-            });
             await this.refreshTools();
         });
 
         bind(AgentToolFailedEvent, (event: AgentToolFailedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.clearRunningTool(event.toolName);
                 this.state.setLastError(event.error.message);
                 this.state.upsertToolRun({
@@ -213,12 +202,10 @@ export class AgentConsoleEventBridge {
                         status: 'error'
                     });
                 }
-            });
         });
 
         bind(AgentModelCompletedEvent, (event: AgentModelCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 if (event.response.metadata?.provider && !this.state.provider) {
                     this.state.setProvider(String(event.response.metadata.provider));
                 }
@@ -227,12 +214,10 @@ export class AgentConsoleEventBridge {
                 }
                 this.state.setTokenUsage(event.response.metadata?.usage);
                 this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
-            });
         });
 
         bind(AgentApprovalRequestedEvent, (event: AgentApprovalRequestedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.upsertPendingApproval({
                     id: event.request.id,
                     toolName: event.request.toolName,
@@ -246,32 +231,26 @@ export class AgentConsoleEventBridge {
                     expiresAt: event.request.expiresAt ?? Date.now() + event.request.timeoutMs
                 });
                 this.state.pushActivity('tool', `Approval required for ${event.request.toolName}`);
-            });
         });
 
         bind(AgentApprovalCompletedEvent, (event: AgentApprovalCompletedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.removePendingApproval(event.request.id);
                 this.state.pushActivity(
                     'tool',
                     `${event.approved ? 'Approved' : 'Denied'} ${event.request.toolName}`
                 );
-            });
         });
 
         bind(AgentApprovalFailedEvent, (event: AgentApprovalFailedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.removePendingApproval(event.request.id);
                 this.state.setLastError(event.error.message);
                 this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
-            });
         });
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.batch(() => {
                 this.state.setStatus('error');
                 this.state.setLastError(event.error.message);
                 this.state.pushActivity('error', event.error.message);
@@ -283,7 +262,6 @@ export class AgentConsoleEventBridge {
                     });
                 }
                 this.state.appendAssistantErrorMessage(event.error.message);
-            });
         });
 
         this.subscribed = true;

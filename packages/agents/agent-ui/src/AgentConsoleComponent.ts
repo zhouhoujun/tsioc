@@ -1900,7 +1900,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.openReviewRequestId++;
         this.taskViewContextVersion++;
-        this.state.batch(() => {
             this.state.configure({ sessionId: target.id });
             this.state.setMessagesFocused(false);
             this.state.setSessionsFocused(false);
@@ -1920,7 +1919,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setLastError('');
             this.state.setNotice('');
             this.state.setInput('', 0);
-        });
         await this.refreshSessions(target.id);
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
@@ -2543,7 +2541,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             ...(cacheEntryKey ? { [cacheEntryKey]: { ...annotations } } : {})
         });
         this.state.reviewFileAnnotations = { ...annotations };
-        this.state.notify();
     }
 
     protected extractReviewAnnotations(
@@ -2850,7 +2847,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
         };
 
-        this.state.batch(() => {
             this.state.setSessionsFocused(false);
             this.state.setTasksFocused(false);
             this.state.setJobsFocused(false);
@@ -2865,7 +2861,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             });
             this.state.setNotice('');
             this.state.setLastError('');
-        });
         await this.restoreReviewAnnotationsCacheFromDiskForScope({
             cacheKey: `${String(reviewTask?.sourceSessionId || reviewTask?.sessionId || sessionId || '').trim()}:${resolvedTaskId}`.replace(/^:/, ''),
             selectedTaskId: resolvedTaskId,
@@ -3127,10 +3122,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds = this.resolveProjectSessionIdsFor(sessionId)): Promise<any[]> {
         if (!this.appRpc) {
             if (sessionId === this.state.sessionId) {
-                this.state.batch(() => {
                     this.state.setTaskRecords([]);
                     this.state.setReviewTasks([]);
-                });
             }
             return [];
         }
@@ -3156,10 +3149,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (sessionId !== this.state.sessionId) {
             return tasks;
         }
-        this.state.batch(() => {
             this.state.setTaskRecords(tasks);
             this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));
-        });
         return tasks;
     }
 
@@ -3246,7 +3237,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             : preferredTaskId && tasks.some((task: any) => task.id === preferredTaskId)
                 ? preferredTaskId
                 : tasks[0].id;
-        this.state.batch(() => {
             this.state.setSessionsFocused(false);
             this.state.setToolsFocused(false);
             this.state.setApprovalsFocused(false);
@@ -3258,7 +3248,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setTasksFocused(true);
             this.state.setNotice('');
             this.state.setLastError('');
-        });
         return true;
     }
 
@@ -3376,7 +3365,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         const tasks = this.scheduler.getTasks();
-        this.state.batch(() => {
             this.state.setScheduledTasks(tasks);
             this.state.setSessionsFocused(false);
             this.state.setTasksFocused(false);
@@ -3391,7 +3379,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             this.state.setNotice('');
             this.state.setLastError('');
-        });
         return true;
     }
 
@@ -4409,7 +4396,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             createdAt: Date.now(),
             metadata: { streaming: true }
         };
-        this.state.batch(() => {
             const baseMessages = this.state.messages.slice();
             this.state.setInput('');
             this.state.setStatus('running');
@@ -4418,24 +4404,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.clearActivities();
             this.state.pushActivity('turn', this.state.summarize(draft));
             this.state.setMessages([...baseMessages, userMsg, asstMsg]);
-        });
         try {
             await this.runTurnStream(prompt, asstMsg, turnMessage, profile);
             this.clearStreamingMessageState();
             this.ensureMessageAtTail(asstMsg.id);
-            this.state.batch(() => {
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
                 }
-            });
         } catch (error: any) {
             this.clearStreamingMessageState();
-            this.state.batch(() => {
                 this.state.setStatus('error');
                 this.state.setLastError(error.message || 'Unknown');
                 this.state.pushActivity('error', error.message || 'Unknown');
                 this.state.appendAssistantErrorMessage(error.message || 'Unknown');
-            });
         } finally {
             this.state.clearTurnEventScope(turnScope);
         }
@@ -4484,7 +4465,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             createdAt: Date.now(),
             metadata: { streaming: true }
         };
-        this.state.batch(() => {
             const baseMessages = this.state.messages.slice();
             this.state.setInput('');
             this.state.setStatus('running');
@@ -4493,26 +4473,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.clearActivities();
             this.state.pushActivity('turn', this.state.summarize(value));
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
-        });
 
         try {
             await this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
-            this.state.batch(() => {
                 this.state.setStatus('error');
                 this.state.setLastError(message);
                 this.state.pushActivity('error', message);
                 this.state.appendAssistantErrorMessage(message);
-            });
         } finally {
             this.ensureMessageAtTail(assistantMessage.id);
-            this.state.batch(() => {
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
                 }
                 this.state.setTasksCount(this.scheduler.getTasks().length);
-            });
             void this.refreshTurnArtifacts();
             this.state.clearTurnEventScope(turnScope);
         }
@@ -4563,16 +4538,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const result = await this.executeTurn(prompt, message, profile);
         if (result && 'message' in result) {
             assistantMessage.content = result.message.content;
-            this.state.batch(() => {
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
                 }
-            });
         }
     }
 
     protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
-        this.state.batch(() => {
             if (chunk?.usage) {
                 this.state.setTokenUsage(chunk.usage);
             }
@@ -4630,7 +4602,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.replaceStreamingAssistantMessage(assistantMessage);
                 this.state.setTokenUsage(chunk.message.metadata?.usage);
             }
-        });
     }
 
     protected consumeStreamEventChunk(chunk: any): void {
@@ -4667,13 +4638,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         if (eventType === 'context_prepared') {
             if (chunk?.report) {
-                this.state.batch(() => {
                     this.state.setContextPreparation(chunk.report);
                     this.state.pushActivity(
                         'model',
                         `Context ${chunk.report.strategy}: ${chunk.report.beforeTokens}→${chunk.report.afterTokens}`
                     );
-                });
                 return;
             }
             const contextContent = String(chunk?.content || '').trim();
@@ -4719,7 +4688,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 : eventType === 'reasoning'
                     ? this.state.qualifyUiEventKey('reasoning')
                     : undefined);
-        this.state.batch(() => {
             if (eventKey) {
                 this.state.upsertUiEventMessage(eventKey, content, {
                     eventType,
@@ -4733,7 +4701,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 label,
                 status
             });
-        });
     }
 
     protected describeStreamEventContent(eventType: string, chunk: any): string {
@@ -5915,7 +5882,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (requestId !== this.activateModelRequestId || sessionId !== this.state.sessionId) {
                 return;
             }
-            this.state.batch(() => {
                 this.state.setModelProfile(String(result?.modelProfile || name));
                 if (result?.provider) {
                     this.state.setProvider(String(result.provider));
@@ -5923,7 +5889,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 if (result?.model) {
                     this.state.setModel(String(result.model));
                 }
-            });
             this.notify(`Switched model profile to ${name}.`);
             return;
         }
@@ -5935,7 +5900,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.options.model = this.options.model || {};
         this.options.model.defaultProfile = name;
         const resolved = this.resolveModelProfileConfig(name);
-        this.state.batch(() => {
             this.state.setModelProfile(name);
             if (resolved.provider) {
                 this.state.setProvider(resolved.provider);
@@ -5943,7 +5907,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (resolved.model) {
                 this.state.setModel(resolved.model);
             }
-        });
         this.notify(`Switched model profile to ${name}.`);
     }
 

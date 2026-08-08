@@ -295,10 +295,10 @@ export class CaseDirective {
         if (lookupNode) {
             addPendingCase(lookupNode, this);
         }
-        if (this._switchDirective) {
+        if (this._switchDirective && typeof this._switchDirective.unregisterCase === 'function') {
             this._switchDirective.unregisterCase(this);
-            this._switchDirective = null;
         }
+        this._switchDirective = null;
     }
 
     private bindToSwitch(nextSwitch: SwitchDirective) {
@@ -384,10 +384,10 @@ export class DefaultDirective {
         if (lookupNode) {
             addPendingDefault(lookupNode, this);
         }
-        if (this._switchDirective) {
+        if (this._switchDirective && typeof this._switchDirective.unregisterDefault === 'function') {
             this._switchDirective.unregisterDefault(this);
-            this._switchDirective = null;
         }
+        this._switchDirective = null;
     }
 
     private bindToSwitch(nextSwitch: SwitchDirective) {

@@ -7458,10 +7458,6 @@ export class AgentConsoleComponentTest {
     @Test('session state dedupes identical ui event upserts')
     sessionStateDedupesIdenticalUiEventUpserts() {
         const state = new AgentConsoleSessionState();
-        let notifications = 0;
-        state.subscribe(() => {
-            notifications++;
-        });
 
         state.upsertUiEventMessage('turn-start', 'Analyzing request', {
             eventType: 'turn_started',
@@ -7481,7 +7477,6 @@ export class AgentConsoleComponentTest {
 
         expect(state.displayMessages.length).toEqual(1);
         expect(state.displayMessages[0].content).toEqual('Working');
-        expect(notifications).toEqual(2);
     }
 
     @Test('session state supports message detail open and scroll')

@@ -330,8 +330,10 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         const context = new NodeInjector(injector, options);
         // Keep component instance resolution local to this node-scoped injector.
         InjectUtil.register(context, [typeRef.type as any]);
-        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+        if (!injector.has(ReactiveEffect)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        } else {
+            context.setValue(ReactiveEffect, injector.get(ReactiveEffect))
         }
         
         if (!context.has(Renderer) && injector.has(Renderer)) {

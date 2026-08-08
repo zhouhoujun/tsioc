@@ -2,8 +2,8 @@ import { isType, Module, ResolveInterceptorFn, Runtime, Type } from '@tsdi/ioc';
 import { ApplicationContext, bootstrapApplication, EnvironmentOption } from '@tsdi/core';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
-// import { ReactiveEffect } from './effect';
-// import { DefaultReactiveEffect } from './impl/effect';
+import { ReactiveEffect } from './effect';
+import { DefaultReactiveEffect } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VElseDirective, VElseIfDirective, VIfDirective } from './directives/if.dir';
 import { DirectiveFactory } from './refs/directive';
@@ -29,8 +29,8 @@ import { componentResolvers } from './impl/resolvers';
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
-        componentResolvers
-        // { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
+        componentResolvers,
+        { provide: ReactiveEffect, useFactory: () => new DefaultReactiveEffect() }
     ],
     exports: [
         VForDirective,

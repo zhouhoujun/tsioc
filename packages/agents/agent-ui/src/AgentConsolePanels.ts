@@ -1,4 +1,4 @@
-import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -58,6 +58,7 @@ const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSO
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
+const WORKING_DOT_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
@@ -489,23 +490,17 @@ export class AgentConsoleInputPanelComponent {
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
         <label class="working-line">
-            <span v-style="animatedCharStyleAt(0)">{{animatedCharAt(0)}}</span>
-            <span v-style="animatedCharStyleAt(1)">{{animatedCharAt(1)}}</span>
-            <span v-style="animatedCharStyleAt(2)">{{animatedCharAt(2)}}</span>
-            <span v-style="animatedCharStyleAt(3)">{{animatedCharAt(3)}}</span>
-            <span v-style="animatedCharStyleAt(4)">{{animatedCharAt(4)}}</span>
-            <span v-style="animatedCharStyleAt(5)">{{animatedCharAt(5)}}</span>
-            <span v-style="animatedCharStyleAt(6)">{{animatedCharAt(6)}}</span>
-            <span v-style="labelStyle">{{workingSuffixLabel}}</span>
+            <span v-style="dotStyle">{{dotFrame}}</span>
+            <span v-style="labelStyle">{{workingLabel}}</span>
             <span v-style="lineStyle">{{workingDetail}}</span>
+        </label>
+        <label class="working-dashboard-line" v-show="dashboardTextLabel">
+            <span v-style="labelStyle">{{dashboardTextLabel}}</span>
         </label>
     </div>
     `
 })
-export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestroy {
-    protected frame = 0;
-    protected frameTimer?: ReturnType<typeof setInterval>;
-
+export class AgentConsoleWorkingPanelComponent {
     constructor(
         private state: AgentConsoleSessionState,
         @Optional() private translator?: TranslatorService | null
@@ -617,10 +612,6 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         if (this.totalTokens > 0) {
             parts.push(`${this.totalTokens} tokens`);
         }
-        const dashboard = this.dashboardTextLabel;
-        if (dashboard) {
-            parts.push(dashboard);
-        }
         return ` · ${parts.join(' · ')}`;
     }
 
@@ -670,12 +661,15 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         return ' for tools';
     }
 
-    get activeAnimatedCharIndex(): number {
-        return this.frame % Math.max(this.animatedLabel.length, 1);
+    get dotFrame(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return WORKING_DOT_FRAMES[Math.floor(Date.now() / 300) % WORKING_DOT_FRAMES.length];
     }
 
-    get animatedGlowRadius(): number {
-        return 1;
+    get dotStyle(): Record<string, string> {
+        return this.accentStyle;
     }
 
     get dashboardSummaryLabel(): string {
@@ -876,15 +870,8 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             : text;
     }
 
-    animatedCharAt(index: number): string {
-        return this.animatedLabel[index] || '';
-    }
-
-    animatedCharStyleAt(index: number): Record<string, string> {
-        return Math.abs(index - this.activeAnimatedCharIndex) <= this.animatedGlowRadius
-            ? this.accentStyle
-            : this.labelStyle;
-    }
+    protected lastElapsedSeconds = -1;
+    protected lastElapsedLabel = '0s';
 
     get elapsedLabel(): string {
         const startedAt = this.state.turnStartedAt;
@@ -892,12 +879,18 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
             return '0s';
         }
         const totalSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-        if (totalSeconds < 60) {
-            return `${totalSeconds}s`;
+        if (totalSeconds === this.lastElapsedSeconds) {
+            return this.lastElapsedLabel;
         }
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return `${minutes}m ${seconds}s`;
+        this.lastElapsedSeconds = totalSeconds;
+        if (totalSeconds < 60) {
+            this.lastElapsedLabel = `${totalSeconds}s`;
+        } else {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            this.lastElapsedLabel = `${minutes}m ${seconds}s`;
+        }
+        return this.lastElapsedLabel;
     }
 
     get runningLabel(): string {
@@ -917,23 +910,6 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
 
     protected isTerminalTool(toolName: string): boolean {
         return /terminal|process|shell|exec|command/i.test(String(toolName || ''));
-    }
-
-    onAfterViewInit(): void {
-        this.frameTimer = setInterval(() => {
-            if (!this.shouldShow) {
-                return;
-            }
-            this.frame = (this.frame + 1) % Math.max(this.animatedLabel.length, 1);
-        }, 500);
-        this.frameTimer.unref?.();
-    }
-
-    onDestroy(): void {
-        if (this.frameTimer) {
-            clearInterval(this.frameTimer);
-            this.frameTimer = undefined;
-        }
     }
 }
 
