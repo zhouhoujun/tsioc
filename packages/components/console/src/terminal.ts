@@ -238,6 +238,8 @@ export interface TuiTerminalSurfaceOptions {
     stablePrefixRows?: number | ((lines: string[]) => number);
     stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
+    /** How long (ms) after a mouse-selection handoff before the surface reclaims mouse tracking automatically. Defaults to `TUI_MOUSE_HANDOFF_RECLAIM_MS`. */
+    mouseHandoffReclaimMs?: number;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -610,6 +612,7 @@ export class TuiTerminalSurface {
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
+    protected reclaimTimer?: ReturnType<typeof setTimeout>;
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -731,8 +734,15 @@ export class TuiTerminalSurface {
     }
 
     dispatchMouse(mouse?: SelectMenuMouseEvent): boolean {
-        if (!mouse || this.mouseHandedOff) {
+        if (!mouse) {
             return false;
+        }
+        if (this.mouseHandedOff) {
+            this.reclaimMouseTracking();
+            // swallow the handoff's own release so the drag ends without a phantom click
+            if (mouse.release) {
+                return false;
+            }
         }
         const button = Math.max(0, Math.floor(mouse.button || 0));
         if (mouse.release) {
@@ -773,9 +783,42 @@ export class TuiTerminalSurface {
         if (!this.mouseHandedOff) {
             return false;
         }
+        this.clearMouseReclaim();
         this.mouseHandedOff = false;
         this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
         return true;
+    }
+
+    protected scheduleMouseReclaim(): void {
+        this.clearMouseReclaim();
+        this.reclaimTimer = setTimeout(() => {
+            this.reclaimTimer = undefined;
+            this.reclaimMouseTracking();
+        }, this.resolveMouseHandoffReclaimMs());
+        this.reclaimTimer.unref?.();
+    }
+
+    protected reclaimMouseTracking(): void {
+        this.clearMouseReclaim();
+        if (!this.mouseHandedOff) {
+            return;
+        }
+        this.mouseHandedOff = false;
+        this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+    }
+
+    protected clearMouseReclaim(): void {
+        if (this.reclaimTimer) {
+            clearTimeout(this.reclaimTimer);
+            this.reclaimTimer = undefined;
+        }
+    }
+
+    protected resolveMouseHandoffReclaimMs(): number {
+        const configured = typeof this.options.mouseHandoffReclaimMs === 'number'
+            ? this.options.mouseHandoffReclaimMs
+            : TUI_MOUSE_HANDOFF_RECLAIM_MS;
+        return Math.max(50, configured);
     }
 
     protected isTuiMouseDrag(press: { x: number; y: number }, current: { x: number; y: number }): boolean {
@@ -787,6 +830,7 @@ export class TuiTerminalSurface {
         this.mousePress = undefined;
         this.mouseHandedOff = true;
         this.resolveOutput()?.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
+        this.scheduleMouseReclaim();
     }
 
     protected isPrimaryMouseRelease(mouse?: SelectMenuMouseEvent): boolean {
@@ -800,6 +844,7 @@ export class TuiTerminalSurface {
 
     destroy(): void {
         this.destroyed = true;
+        this.clearMouseReclaim();
         this.detach();
         this.unbindOutputResize();
     }
@@ -1150,6 +1195,7 @@ export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x
 export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 3;
+export const TUI_MOUSE_HANDOFF_RECLAIM_MS = 2000;
 
 export function buildClearScreenSequence(clearScrollback = false): string {
     return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;

@@ -1233,7 +1233,7 @@ export class ConsoleRendererTest {
         }
     }
 
-    @Test('hands terminal selection off on tui drag and re-arms on keyboard input')
+    @Test('hands terminal selection off on tui drag and reclaims on the next mouse event')
     async handsTerminalSelectionOffOnTuiDrag() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
             deps: [TuiTemplateModule, ComponentsModule]
@@ -1272,7 +1272,8 @@ export class ConsoleRendererTest {
             expect(writes).toContain('\x1b[?1000l\x1b[?1002l\x1b[?1006l');
             expect(ref.instance.selected).toBe('');
 
-            // no click is dispatched for the drag, even on a late release.
+            // the handoff's own release is swallowed even when it lands inside
+            // a row: the drag ends without a phantom click.
             expect(surface.dispatchMouse({
                 button: 0,
                 x: 12,
@@ -1281,12 +1282,12 @@ export class ConsoleRendererTest {
             })).toBe(false);
             expect(ref.instance.selected).toBe('');
 
-            // keyboard input re-arms mouse tracking.
-            expect(surface.notifyNonMouseInput()).toBe(true);
+            // the release reclaimed mouse tracking automatically, so no
+            // keyboard input is needed to re-arm.
             expect(writes).toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
             expect(surface.notifyNonMouseInput()).toBe(false);
 
-            // clicks work again after re-arm.
+            // clicks work again without any keyboard input.
             expect(surface.dispatchMouse({
                 button: 0,
                 x: 2,
