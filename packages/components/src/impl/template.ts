@@ -122,7 +122,11 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         }
 
         if (node.childNodes?.length) {
-            node.childNodes.forEach(n => {
+            // Snapshot before iterating: binding factories (e.g. IF-BRANCH) insert anchor
+            // views into childNodes while running, which would shift indices and cause
+            // the same node to be re-processed while later siblings get skipped.
+            // Array.from handles both array (console renderer) and NodeList (DOM renderer) childNodes.
+            Array.from(node.childNodes as ArrayLike<RNode>).forEach(n => {
                 this.bindings(n, context, effect, injector)
             });
         }

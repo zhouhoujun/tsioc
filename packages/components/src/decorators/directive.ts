@@ -87,7 +87,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             def.selector = normalizedParts.join(',');
             const dirSelector = attrParts.join(',');
             const custSelector = custParts.join(',');
-            if (dirSelector) {
+            if (dirSelector && dirSelector !== def.selector) {
                 def.exportProviders.push({ provide: DIRECTIVES, useValue: { ...def, selector: dirSelector }, multi: true });
             }
             if (custSelector) {

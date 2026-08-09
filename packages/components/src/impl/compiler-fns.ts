@@ -1162,29 +1162,21 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
  * @param delimiter 分隔符正则表达式
  */
 export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
+    const parent = renderer.parentNode(el);
     const container = createContainer(renderer, dirDef.selector);
     container[BINDINGS] = [];
 
-    const parent = renderer.parentNode(el);
     if (parent) {
         renderer.insertBefore(parent, container, el);
         renderer.removeChild(parent, el);
-        if (el.childNodes?.length) {
-            const childNodes = [...el.childNodes];
-            childNodes.forEach(child => {
-                if (child.nodeType === 1 || child.nodeType === 32) {
-                    renderer.appendChild(container, child);
-                }
-            });
-        }
     }
 
     selectors.forEach(selector => {
         renderer.removeAttribute(el, selector);
     });
 
-    // Child bindings were already created by bindingElement; re-walking here would
-    // reset node[BINDINGS] and wipe nested structural containers' binding factories.
+    // Keep el's subtree as template content (mirroring processIterableBinding):
+    // moving it out would bind nested conditionals eagerly regardless of this directive's visibility.
     bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
 }
 

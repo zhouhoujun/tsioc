@@ -11,36 +11,42 @@ interface IfChain {
     parentNode: RNode;
 }
 
-const ifChains = new WeakMap<RNode, IfChain>();
+const ifChains = new WeakMap<RNode, IfChain[]>();
 
-function getOrCreateIfChain(parentNode: RNode): IfChain {
-    let chain = ifChains.get(parentNode);
-    if (!chain) {
-        chain = { root: null!, siblings: [], parentNode };
-        ifChains.set(parentNode, chain);
+function getIfChains(parentNode: RNode): IfChain[] {
+    let chains = ifChains.get(parentNode);
+    if (!chains) {
+        chains = [];
+        ifChains.set(parentNode, chains);
     }
-    return chain;
+    return chains;
 }
 
 function registerToIfChain(directive: BaseIfDirective, parentNode: RNode | null): BaseIfDirective | null {
     if (!parentNode) return null;
-    
-    const chain = getOrCreateIfChain(parentNode);
-    
-    if (!chain.root) {
-        chain.root = directive;
+
+    const chains = getIfChains(parentNode);
+
+    // each v-if starts a new independent chain; v-else-if / v-else attach to the most recent one
+    if (directive instanceof VIfDirective) {
+        chains.push({ root: directive, siblings: [], parentNode });
         return null;
     }
-    
-    const lastSibling = chain.siblings.length > 0 
-        ? chain.siblings[chain.siblings.length - 1] 
+
+    if (chains.length === 0) return null;
+
+    const chain = chains[chains.length - 1];
+    if (!chain.root) return null;
+
+    const lastSibling = chain.siblings.length > 0
+        ? chain.siblings[chain.siblings.length - 1]
         : chain.root;
-    
+
     (directive as any)._rootDirective = chain.root;
     (directive as any)._prevDirective = lastSibling;
     (lastSibling as any)._nextDirective = directive;
     chain.siblings.push(directive);
-    
+
     return chain.root;
 }
 
@@ -196,7 +202,8 @@ export class VElseIfDirective extends BaseIfDirective {
     protected override shouldShow(): boolean {
         if (this._condition !== true) return false;
         const root = (this as any)._rootDirective as BaseIfDirective | null;
-        if (root && root._hasView) return false;
+        if (!root) return false;
+        if (root._hasView) return false;
         let prev = (this as any)._prevDirective as BaseIfDirective | null;
         while (prev && prev !== root) {
             if (prev._hasView) return false;
@@ -222,7 +229,8 @@ export class VElseDirective extends BaseIfDirective {
 
     protected override shouldShow(): boolean {
         const root = (this as any)._rootDirective as BaseIfDirective | null;
-        if (root && root._hasView) return false;
+        if (!root) return false;
+        if (root._hasView) return false;
         let prev = (this as any)._prevDirective as BaseIfDirective | null;
         while (prev && prev !== root) {
             if (prev._hasView) return false;
