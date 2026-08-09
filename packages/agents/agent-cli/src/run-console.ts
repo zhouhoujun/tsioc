@@ -1,5 +1,5 @@
 import { TuiConsoleModule } from '@tsdi/components/console';
-import { AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions } from '@tsdi/agent';
+import { AgentHookCommandExecutor, mergeAgentOptions } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
 import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
@@ -88,7 +88,7 @@ export async function runAgentConsole(
     const resolved = config.resolve(options);
     await ensureAgentWorkspace(resolved);
     const runtimeAgentOptions = buildConsoleAgentOptions(config, options, agentOptions);
-    const ctx = await runAgentUi(ui.entry, {
+    await runAgentUi(ui.entry, {
         consoleModule: ui.consoleModule,
         agentOptions: runtimeAgentOptions,
         deps: [ServerCommonModule, AgentAppServerModule],
@@ -107,11 +107,8 @@ export async function runAgentConsole(
         ]
     });
 
-    // The TUI owns its lifecycle: /exit and Ctrl+C destroy the application
-    // context, so the CLI must terminate the process once teardown finishes.
-    // Without this the process lingers on stdin/resource handles and the
-    // exit command appears to do nothing.
-    ctx.onDestroy(() => process.exit(0));
-
-    await ctx.get(AgentRuntime).start();
+    // Application.run 已通过 bootstrap/@Runner 自动启动 AgentRuntime 与 TUI 生命周期。
+    // /exit 和 Ctrl+C 经 requestTerminalExit -> app.close() 销毁应用上下文，
+    // ConsoleTerminalApplicationLifecycleService 的 @Shutdown/onDestroy 停止
+    // stdin 输入与表面渲染，agent 完成 teardown 后进程自然退出，无需强制退出。
 }

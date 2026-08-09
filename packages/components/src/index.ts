@@ -39,4 +39,7 @@ export { createTemplateRef } from './impl/template';
 
 export * from './components';
 
+export * from './directives/animation';
+export * from './directives/animated-text';
+
 export * from './impl/html';

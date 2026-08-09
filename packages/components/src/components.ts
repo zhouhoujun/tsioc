@@ -14,6 +14,8 @@ import { CaseDirective, SwitchDirective } from './directives/switch-case.dir';
 import { TemplateOutletDirective } from './directives/template-outlet.dir';
 import { VShowDirective } from './directives/show.dir';
 import { VBindDirective, VOnDirective } from './directives/bind.dir';
+import { AnimatedFrameDirective } from './directives/animation';
+import { AnimatedTextDirective, AnimatedTextLifecycleService } from './directives/animated-text';
 import { componentResolvers } from './impl/resolvers';
 
 
@@ -44,7 +46,9 @@ import { componentResolvers } from './impl/resolvers';
         TemplateOutletDirective,
         VShowDirective,
         VBindDirective,
-        VOnDirective
+        VOnDirective,
+        AnimatedFrameDirective,
+        AnimatedTextDirective
     ]
 })
 export class ComponentsModule {

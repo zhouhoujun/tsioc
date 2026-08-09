@@ -5,6 +5,7 @@ import {
     ConsoleTerminalSurfaceLifecycle,
     ConsoleTerminalApplicationLifecycleService
 } from '@tsdi/components/console';
+import { AnimatedTextLifecycleService } from '@tsdi/components';
 import { AgentUiModule } from './agent-ui.module';
 
 export interface AgentUiApplicationOptions {
@@ -33,10 +34,11 @@ export async function runAgentUi(
                     deps: [ApplicationRunners],
                     useFactory: (runners: ApplicationRunners) => runners.getRef(ui)?.instance
                 },
+                AnimatedTextLifecycleService,
                 ...(options.providers || []),
                 ...(options.agentOptions ? [{ provide: AGENT_OPTIONS, useValue: options.agentOptions }] : [])
             ],
-            bootstrap: [ui, ConsoleTerminalApplicationLifecycleService]
+            bootstrap: [ui, ConsoleTerminalApplicationLifecycleService, AnimatedTextLifecycleService]
         }
     });
 }
