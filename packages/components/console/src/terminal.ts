@@ -1209,9 +1209,7 @@ export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x
 export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 3;
-// Re-enable tracking shortly after native text selection starts so a subsequent
-// click can reach the application and terminate the terminal selection.
-export const TUI_MOUSE_HANDOFF_RECLAIM_MS = 150;
+export const TUI_MOUSE_HANDOFF_RECLAIM_MS = 2000;
 
 export function buildClearScreenSequence(clearScrollback = false): string {
     return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;
