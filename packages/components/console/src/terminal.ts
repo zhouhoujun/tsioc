@@ -240,6 +240,8 @@ export interface TuiTerminalSurfaceOptions {
     scheduler?: (task: () => void) => void;
     /** How long (ms) after a mouse-selection handoff before the surface reclaims mouse tracking automatically. Defaults to `TUI_MOUSE_HANDOFF_RECLAIM_MS`. */
     mouseHandoffReclaimMs?: number;
+    /** Whether mouse tracking sequences may be written at all. Defaults to true; the runtime passes the lifecycle's `shouldEnableTerminalMouseTracking` value down. */
+    mouseTrackingEnabled?: boolean;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -538,7 +540,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             width: () => resolveTerminalSize(this.output || {}).columns,
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
-            cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt'
+            cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
+            mouseTrackingEnabled: this.mouseTrackingEnabled
         });
         this.surface.render();
     }
@@ -752,11 +755,11 @@ export class TuiTerminalSurface {
             return false;
         }
         if (this.mouseHandedOff) {
-            this.reclaimMouseTracking();
-            // swallow the handoff's own release so the drag ends without a phantom click
-            if (mouse.release) {
-                return false;
-            }
+            // keep tracking disabled through the clear window so a native click
+            // can terminate the selection; in-flight drag-tail reports only
+            // extend the window instead of prematurely reclaiming tracking.
+            this.scheduleMouseReclaim();
+            return false;
         }
         const button = Math.max(0, Math.floor(mouse.button || 0));
         if (mouse.release) {
@@ -774,7 +777,9 @@ export class TuiTerminalSurface {
             const target = this.clickTargetsCache
                 .find(item => targetColumn >= item.x && targetColumn < item.x + item.width
                     && targetRow >= item.y && targetRow < item.y + item.height);
-            return this.dispatchClickAt(target?.node);
+            const dispatched = this.dispatchClickAt(target?.node);
+            this.clearTerminalSelection();
+            return dispatched;
         }
         if ((button & 0b1100000) !== 0) {
             if ((button & 32) !== 0
@@ -845,6 +850,22 @@ export class TuiTerminalSurface {
         this.mouseHandedOff = true;
         this.resolveOutput()?.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
         this.scheduleMouseReclaim();
+    }
+
+    protected clearTerminalSelection(): void {
+        if (this.destroyed || this.options.mouseTrackingEnabled === false) {
+            return;
+        }
+        const output = this.resolveOutput();
+        if (!output) {
+            return;
+        }
+        // Terminate a stale native selection after a completed click. Emulators
+        // like xterm.js clear the selection whenever the application changes the
+        // mouse tracking protocol, so cycling tracking off/on deselects without
+        // leaving the terminal in a handed-off state; terminals that keep the
+        // selection through mode changes simply ignore the cycle.
+        output.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE + TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
     }
 
     protected isPrimaryMouseRelease(mouse?: SelectMenuMouseEvent): boolean {
@@ -1209,7 +1230,10 @@ export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x
 export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 3;
-export const TUI_MOUSE_HANDOFF_RECLAIM_MS = 2000;
+// How long the surface keeps mouse tracking disabled after a selection handoff
+// so a native click can terminate the selection before tracking is reclaimed.
+// In-flight drag-tail reports extend this window; keyboard input reclaims sooner.
+export const TUI_MOUSE_HANDOFF_RECLAIM_MS = 5000;
 
 export function buildClearScreenSequence(clearScrollback = false): string {
     return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;

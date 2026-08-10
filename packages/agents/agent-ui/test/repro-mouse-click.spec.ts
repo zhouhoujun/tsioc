@@ -101,8 +101,8 @@ export class MouseClickPathReproTest {
         expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
     }
 
-    @Test('drag handoff reclaims on the next mouse event so clicks keep working')
-    async dragHandoffReclaimsOnNextMouseEvent() {
+    @Test('drag handoff keeps tracking off for the clear window and reclaims on keyboard')
+    async dragHandoffKeepsTrackingOffUntilKeyboardReclaim() {
         const { consoleRef, surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
         const expandTarget = this.findToggleTarget(surface);
         expect(expandTarget).toBeDefined();
@@ -119,12 +119,19 @@ export class MouseClickPathReproTest {
         surface.dispatchMouse(motion.mouse);
         expect((surface as any).mouseHandedOff).toBe(true);
 
-        // the next mouse event reclaims tracking (release far outside any target hits nothing)
+        // the next mouse event (the handoff's own release) does NOT reclaim:
+        // tracking stays off so a native click can terminate the selection
         const release = decoder.decode(`\x1b[<0;1;99m`);
         expect(surface.dispatchMouse(release.mouse)).toBe(false);
+        expect((surface as any).mouseHandedOff).toBe(true);
+
+        // keyboard input reclaims tracking immediately
+        expect(surface.notifyNonMouseInput()).toBe(true);
         expect((surface as any).mouseHandedOff).toBe(false);
 
-        // a subsequent plain click on the toggle expands the message without keyboard input
+        // a subsequent plain click on the toggle expands the message without
+        // further keyboard input, and cycles tracking off/on to clear the
+        // native selection left over from the drag
         const click = decoder.decode(`\x1b[<0;${sx};${sy}M`);
         surface.dispatchMouse(click.mouse);
         const clickUp = decoder.decode(`\x1b[<0;${sx};${sy}m`);

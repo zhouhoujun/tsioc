@@ -1233,7 +1233,7 @@ export class ConsoleRendererTest {
         }
     }
 
-    @Test('hands terminal selection off on tui drag and reclaims on the next mouse event')
+    @Test('hands terminal selection off on tui drag and keeps tracking off for the clear window')
     async handsTerminalSelectionOffOnTuiDrag() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
             deps: [TuiTemplateModule, ComponentsModule]
@@ -1282,12 +1282,20 @@ export class ConsoleRendererTest {
             })).toBe(false);
             expect(ref.instance.selected).toBe('');
 
-            // the release reclaimed mouse tracking automatically, so no
-            // keyboard input is needed to re-arm.
+            // the release must NOT reclaim tracking: tracking stays disabled
+            // through the clear window so a native click can terminate the
+            // terminal selection.
+            expect((surface as any).mouseHandedOff).toBe(true);
+            expect(writes).not.toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
+
+            // keyboard input reclaims tracking immediately.
+            expect(surface.notifyNonMouseInput()).toBe(true);
             expect(writes).toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
             expect(surface.notifyNonMouseInput()).toBe(false);
 
-            // clicks work again without any keyboard input.
+            // clicks work again without any further keyboard input, and the
+            // completed click cycles tracking off/on to clear any native
+            // selection left over from the handoff.
             expect(surface.dispatchMouse({
                 button: 0,
                 x: 2,
@@ -1295,6 +1303,9 @@ export class ConsoleRendererTest {
                 release: true
             })).toBe(true);
             expect(ref.instance.selected).toBe('2');
+            expect(writes.join('')).toContain(
+                '\x1b[?1000l\x1b[?1002l\x1b[?1006l\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+            );
         } finally {
             surface?.destroy();
             await ctx.close();
@@ -1337,7 +1348,12 @@ export class ConsoleRendererTest {
                 release: true
             })).toBe(true);
             expect(ref.instance.selected).toBe('2');
-            expect(writes.join('')).not.toContain('\x1b[?1000l');
+            // a plain click never hands off tracking; it only cycles tracking
+            // off/on to clear any native selection and ends re-enabled.
+            expect((surface as any).mouseHandedOff).toBe(false);
+            expect(writes.join('')).toContain(
+                '\x1b[?1000l\x1b[?1002l\x1b[?1006l\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+            );
         } finally {
             surface?.destroy();
             await ctx.close();
