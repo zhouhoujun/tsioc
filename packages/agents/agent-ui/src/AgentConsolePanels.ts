@@ -2259,22 +2259,23 @@ export class AgentConsoleMessagesPanelComponent {
                 const baseLine = item.lines[item.lines.length - 1];
                 const content = this.translator?.translate('agent.message.collapse') || 'Click to collapse';
                 const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
+                const toggleLine = {
+                    ...baseLine,
+                    previewCollapsed: true,
+                    prefix: '',
+                    prefixStyle: {},
+                    content,
+                    toggleContent: content,
+                    tokens: [{ text: content, tone: 'muted', style: toggleStyle } as AgentConsoleMarkdownToken as any],
+                    itemStyle: {
+                        ...(baseLine.itemStyle || {}),
+                        padding: '1em 1ch'
+                    },
+                    lineStyle: toggleStyle
+                };
                 return {
                     ...item,
-                    lines: [...item.lines, {
-                        ...baseLine,
-                        previewCollapsed: true,
-                        prefix: '',
-                        prefixStyle: {},
-                        content,
-                        toggleContent: content,
-                        tokens: [{ text: content, tone: 'muted', style: toggleStyle } as AgentConsoleMarkdownToken as any],
-                        itemStyle: {
-                            ...(baseLine.itemStyle || {}),
-                            padding: '1em 1ch'
-                        },
-                        lineStyle: toggleStyle
-                    }]
+                    lines: [toggleLine, ...item.lines]
                 };
             });
         }

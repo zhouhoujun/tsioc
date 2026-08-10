@@ -26,7 +26,7 @@ export class MouseClickPathReproTest {
     @AfterEach()
     async clean() { await this.ctx?.close(); }
 
-    protected async buildSurface(opts?: Partial<import('@tsdi/components/console').TuiTerminalSurfaceOptions>) {
+    protected async buildSurface(opts?: Partial<import('@tsdi/components/console').TuiTerminalSurfaceOptions>, lineCount = 12) {
         const componentFactory = this.ctx.get(ComponentFactory);
         const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: this.ctx });
         await consoleRef.render();
@@ -34,7 +34,7 @@ export class MouseClickPathReproTest {
 
         consoleRef.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: 'hello', createdAt: 0 } as any,
-            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
+            { id: 'a1', role: 'assistant', content: Array.from({ length: lineCount }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
         ]);
         await Promise.resolve();
         await Promise.resolve();
@@ -99,6 +99,24 @@ export class MouseClickPathReproTest {
         await Promise.resolve();
         expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
         expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
+    }
+
+    @Test('keeps collapse toggle clickable when expanded content exceeds the viewport')
+    async collapseToggleStaysVisibleForLargeMessages() {
+        const { consoleRef, surface } = await this.buildSurface(undefined, 120);
+        const expandTarget = this.findToggleTarget(surface);
+        expect(expandTarget).toBeDefined();
+        expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const collapseTarget = this.findToggleTarget(surface);
+        expect(collapseTarget).toBeDefined();
+        expect(collapseTarget!.y).toBeLessThan(surface.lastRenderedLines.length);
+        expect(surface.dispatchClickAt(collapseTarget?.node)).toBe(true);
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
     }
 
     @Test('drag handoff reclaims on the next mouse event so clicks keep working')
