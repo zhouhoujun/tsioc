@@ -32,6 +32,7 @@ import { componentResolvers } from './impl/resolvers';
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         componentResolvers,
+        AnimatedTextLifecycleService,
         { provide: ReactiveEffect, useFactory: () => new DefaultReactiveEffect() }
     ],
     exports: [
@@ -48,7 +49,8 @@ import { componentResolvers } from './impl/resolvers';
         VBindDirective,
         VOnDirective,
         AnimatedFrameDirective,
-        AnimatedTextDirective
+        AnimatedTextDirective,
+        AnimatedTextLifecycleService
     ]
 })
 export class ComponentsModule {

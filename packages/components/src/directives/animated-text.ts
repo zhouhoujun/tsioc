@@ -126,6 +126,11 @@ export class AnimatedTextDirective {
             this._text = next;
             this.scanOffset = 0;
             this.render();
+            if (this.charList.length) {
+                this.startTick();
+            } else {
+                this.stopTick();
+            }
         }
     }
 
@@ -170,6 +175,7 @@ export class AnimatedTextDirective {
         const list = this.charList;
         const head = this.scanIndex;
         const merged: { text: string; style: Record<string, string> }[] = [];
+        let pendingSpace = '';
         list.forEach((ch, i) => {
             let style = this.baseStyle || {};
             if (i === head) {
@@ -177,21 +183,24 @@ export class AnimatedTextDirective {
             } else if (i < head) {
                 style = this.trailStyle || style;
             }
-            // 空格字符并入前一字符 span：独立空格 span 会被 TUI/HTML 渲染器
-            // trim 丢弃，导致 '• Working' 前缀的空格消失。
-            if (ch === ' ' && merged.length) {
-                const prev = merged[merged.length - 1];
-                prev.text += ' ';
+            // 独立空格 span 会被 TUI/HTML 渲染器丢弃；前置到下一个字符
+            // 可跨 ANSI 样式边界保留光扫文本中的单词间距。
+            if (ch === ' ') {
+                pendingSpace += ch;
                 return;
             }
-            merged.push({ text: ch, style });
+            merged.push({ text: `${pendingSpace}${ch}`, style });
+            pendingSpace = '';
         });
+        if (pendingSpace && merged.length) {
+            merged[merged.length - 1].text += pendingSpace;
+        }
         return merged;
     }
 
     onInit(): void {
-        this.render();
         if (this.charList.length) {
+            this.render();
             this.startTick();
         }
     }

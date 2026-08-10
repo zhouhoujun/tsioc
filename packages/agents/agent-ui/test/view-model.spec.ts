@@ -2050,6 +2050,48 @@ export class AgentConsoleComponentTest {
         expect(state.input).toEqual('first');
     }
 
+    @Test('terminal arrows browse non-command history from the current directory and restore the draft')
+    async terminalArrowsBrowseCurrentDirectoryHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const historyStore = new InputHistoryStoreStub();
+        const currentDirectory = process.cwd();
+        historyStore.setScopedEntries(currentDirectory, 'chat-a', ['older prompt', '/help']);
+        historyStore.setScopedEntries(currentDirectory, 'chat-b', ['newer prompt']);
+        historyStore.setScopedEntries('/tmp/another-workspace', 'chat-c', ['other workspace prompt']);
+        const { component, state } = createConsoleParts(
+            runtime,
+            scheduler,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console' } },
+            historyStore
+        );
+
+        await component.onInit();
+        state.setInput('draft text', 'draft text'.length);
+
+        const press = (controlKey: 'up' | 'down') => (component as any).handleTerminalInput(
+            { text: controlKey === 'up' ? '\u001b[A' : '\u001b[B', controlKey, partial: false },
+            controlKey === 'up' ? '\u001b[A' : '\u001b[B'
+        );
+        await press('up');
+        expect(state.input).toEqual('newer prompt');
+        await press('up');
+        expect(state.input).toEqual('older prompt');
+        await press('down');
+        expect(state.input).toEqual('newer prompt');
+        await press('down');
+        expect(state.input).toEqual('draft text');
+        expect(state.getInputHistoryEntries()).not.toContain('/help');
+        expect(state.getInputHistoryEntries()).not.toContain('other workspace prompt');
+        expect(historyStore.workspaces[0]).toEqual(currentDirectory);
+    }
+
     @Test('input history store aggregates local memory entries across workspace sessions')
     async inputHistoryStoreAggregatesLocalMemoryEntriesAcrossWorkspaceSessions() {
         const memory = new InMemoryMemoryStore();

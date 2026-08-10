@@ -2803,7 +2803,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected resolveHistoryWorkspace(): string {
-        return String(this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
+        const configured = String(this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
+        if (configured) {
+            return configured;
+        }
+        return String((globalThis as any)?.process?.cwd?.() || '').trim();
     }
 
     protected async openCodingTaskReview(
@@ -5380,6 +5384,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (exitMessage) {
                 this.notify(exitMessage);
             }
+            this.surfaceAccessor?.stopTerminal?.();
             return;
         }
         try {
@@ -5390,6 +5395,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             // destroy() fix guarantees super.destroy() (component onDestroy:
             // terminal restore + history persist) still runs even when a
             // @Shutdown handler throws during runners.stop().
+        } finally {
+            this.surfaceAccessor?.stopTerminal?.();
         }
         if (exitMessage && typeof globalThis.console?.log === 'function') {
             globalThis.console.log(exitMessage);

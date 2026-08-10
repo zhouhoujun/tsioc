@@ -11,7 +11,7 @@ import {
 import { Runner, Shutdown } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } from '@tsdi/ioc';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
-import { RNode, Renderer } from '@tsdi/components';
+import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
@@ -281,12 +281,15 @@ export abstract class ConsoleTerminalInputHandler {
 @Abstract()
 export abstract class ConsoleTerminalSurfaceLifecycle {
     abstract getTerminalRoot(): RNode | RNode[] | undefined;
+    shouldEnableTerminalMouseTracking?(): boolean;
     shouldPlaceTerminalCursor?(): boolean;
     resolveTerminalCursorMode?(): 'prompt' | 'bottom';
 }
 
 @Abstract()
 export abstract class ConsoleTerminalSurfaceAccessor {
+    [noReact] = true;
+    stopTerminal?(): void;
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract getClickTargets(): TerminalClickTarget[];
@@ -407,20 +410,29 @@ export class ConsoleTerminalInputLifecycleService extends ConsoleTerminalInputLi
 export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfaceAccessor {
     protected surface: TuiTerminalSurface | null = null;
     protected root?: RNode | RNode[];
+    protected mouseTrackingEnabled = true;
     protected readonly output = (globalThis as any).process?.stdout;
     protected readonly useAlternateScreen = shouldUseAlternateScreen();
     protected attachTimer?: ReturnType<typeof setTimeout>;
 
     constructor(
-        private injector: Injector
+        private injector: Injector,
+        @Optional() private inputLifecycle?: ConsoleTerminalInputLifecycleService
     ) {
         super();
     }
 
+    stopTerminal(): void {
+        this.stopRendering();
+        this.inputLifecycle?.stop();
+    }
+
     startRendering(): void {
-        if (!this.injector.get(ConsoleTerminalSurfaceLifecycle, null)) {
+        const lifecycle = this.injector.get(ConsoleTerminalSurfaceLifecycle, null);
+        if (!lifecycle) {
             return;
         }
+        this.mouseTrackingEnabled = lifecycle.shouldEnableTerminalMouseTracking?.() !== false;
         this.prepare();
         this.attach();
     }
@@ -498,7 +510,9 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.useAlternateScreen) {
             this.output.write('\x1b[?1049h');
         }
-        this.output.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        if (this.mouseTrackingEnabled) {
+            this.output.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        }
         this.output.write(buildClearScreenSequence(false));
     }
 

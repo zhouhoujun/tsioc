@@ -42,7 +42,7 @@ export class DefaultReactiveEffect implements ReactiveEffect {
             // 如果是生命周期钩子变化，立即执行
             // 必须经由 run() 执行，以便重跑期间 activeEffects 生效，
             // 使重跑过程中首次读取的依赖也能被 track 收集。
-            const run = () => deps.forEach(effectFn => this.run(effectFn));
+            const run = () => Array.from(deps).forEach(effectFn => this.run(effectFn));
             isLifecycleHook ? run() : (this.scheduler ? this.scheduler(run) : run());
         }
     }

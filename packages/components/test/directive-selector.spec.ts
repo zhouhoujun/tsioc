@@ -3,7 +3,8 @@ import { Suite, Test } from '@tsdi/unit';
 import { Component, Directive } from '../src';
 import { CUSTOM_ELEMENTS } from '../src';
 import { DirectiveDef, DirectiveType } from '../src/refs/directive';
-import { getClassRef } from '@tsdi/ioc';
+import { getClassRef, Injectable } from '@tsdi/ioc';
+import { directorResovler } from '../src/impl/resolvers';
 
 @Suite('directive selector test')
 export class DirectiveSelectorTest {
@@ -128,6 +129,22 @@ export class DirectiveSelectorTest {
         expect(def.selector).toEqual('my-el');
         const hasCustomExport = def.exportProviders?.some(p => (p as any).provide === CUSTOM_ELEMENTS);
         expect(hasCustomExport).toBeTruthy();
+    }
+
+    @Test('should not resolve injectable services as directives')
+    testInjectableIsNotDirective() {
+        @Injectable()
+        class StateService {
+        }
+
+        const expected = {};
+        const resolved = directorResovler(
+            { type: StateService } as any,
+            (() => expected) as any,
+            {} as any
+        );
+
+        expect(resolved).toBe(expected);
     }
 }
 

@@ -2,7 +2,7 @@ import { AbstractType, ResolveInterceptorFn, isBaseOf, getDef, Provider, Type, i
 import { NodeInjector, NODES_RESOLVERS } from '../refs/injector';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
-import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
+import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable, factoryKey } from '../refs/directive';
 import { ComponentRef, ComponentDef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
 import { Renderer } from '../renderer/Renderer';
@@ -120,8 +120,9 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
     const paramType = (input.provider ?? input.type) as Type;
     const dirDef = getDef<DirectiveDef>(paramType);
     const dirType = dirDef?.dirType;
+    const isDirective = typeof dirDef?.[factoryKey] === 'function';
     
-    if (dirDef) {
+    if (isDirective) {
         if (input.provider) {
             return next(input, context);
         }

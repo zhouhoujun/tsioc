@@ -587,12 +587,13 @@ export class ConsoleRenderer implements Renderer {
     renderToLines(node: RNode | RNode[]): string[] {
         const nodes = isArray(node) ? node : [node];
         const lines: string[] = [];
-        const collectText = (current: ConsoleNode): string => {
+        const collectText = (current: ConsoleNode, nested = false): string => {
             if (current instanceof ConsoleText || current instanceof ConsoleComment) {
                 return current.textContent;
             }
             if (current instanceof ConsoleElement) {
-                return current.childNodes.map(child => collectText(child)).join('').trim();
+                const text = current.childNodes.map(child => collectText(child, true)).join('');
+                return nested ? text : text.trim();
             }
             return '';
         };

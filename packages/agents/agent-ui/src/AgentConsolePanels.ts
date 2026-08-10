@@ -488,14 +488,13 @@ export class AgentConsoleInputPanelComponent {
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
         <label class="working-line" v-style="workingLineStyle">
-            <span v-style="animatedCharStyleAt(0)">{{animatedCharAt(0)}}</span>
-            <span v-style="animatedCharStyleAt(1)">{{animatedCharAt(1)}}</span>
-            <span v-style="animatedCharStyleAt(2)">{{animatedCharAt(2)}}</span>
-            <span v-style="animatedCharStyleAt(3)">{{animatedCharAt(3)}}</span>
-            <span v-style="animatedCharStyleAt(4)">{{animatedCharAt(4)}}</span>
-            <span v-style="animatedCharStyleAt(5)">{{animatedCharAt(5)}}</span>
-            <span v-style="animatedCharStyleAt(6)">{{animatedCharAt(6)}}</span>
-            <span v-style="labelStyle">{{workingDetail}}</span>
+            <span animated-text
+                render-region="agent-working-animation"
+                :text="animatedLabel"
+                :active-style="accentStyle"
+                :trail-style="labelStyle"
+                :base-style="labelStyle">{{animatedLabel}}</span>
+            <span v-style="labelStyle"> {{workingDetail}}</span>
         </label>
     </div>
     `
@@ -655,22 +654,7 @@ export class AgentConsoleWorkingPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        return this.translator?.translate('agent.turn.working') || 'Working';
-    }
-
-    get activeAnimatedCharIndex(): number {
-        const length = Math.max(this.animatedLabel.length, 1);
-        return Math.floor(Date.now() / 200) % length;
-    }
-
-    animatedCharAt(index: number): string {
-        return this.animatedLabel[index] || '';
-    }
-
-    animatedCharStyleAt(index: number): Record<string, string> {
-        return Math.abs(index - this.activeAnimatedCharIndex) <= 1
-            ? this.accentStyle
-            : this.labelStyle;
+        return `• ${this.translator?.translate('agent.turn.working') || 'Working'}`;
     }
 
     get dashboardCountersLabel(): string {
