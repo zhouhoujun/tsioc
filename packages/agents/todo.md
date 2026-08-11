@@ -76,12 +76,12 @@
 - 测试：`agent/test/git-step-snapshot.spec.ts`（store 捕获/diff/revert/unrevert/list/clear + runtime 链路 + 模块装配，revert 链路覆盖见 Runtime 套件）、`agent-gateway/test/gateway-server.spec.ts`（git_snapshot RPC + REST 路由）。
 - 剩余（消费侧）：`agent-ui` review 面板复用会话 diff（本轮已交付 RPC/REST + 运行时 API，面板接入另排）。
 
-### P72 · AGENTS.md 指令链升级（G5）—— 中优先
+### P72 · AGENTS.md 指令链升级（G5）—— 中优先 ✅ 已完成
 
 - `AGENTS.override.md` 优先于 `AGENTS.md`；`projectDocFallbackFilenames`；`projectDocMaxBytes`（默认 32KiB）上限截断；root→cwd 自根向叶拼接、近端覆盖远端。
 - `findAgentsDoc` 返回指令链（多文件有序），`ProjectContextSection` 消费新返回结构。
 - 锚点：`agent/src/project/agents-doc.ts`、`agent/src/project/init-agents-doc.ts`、`agent/src/prompt/sections/ProjectContextSection.ts`、`agent/src/options.ts`。
-- 测试：`agent/test/project-context.spec.ts`（override 优先级、fallback、截断）。
+- 测试：`agent/test/agents-doc.spec.ts`（override 优先级、fallback、截断、链式发现/渲染、结构分析）。
 
 ### P73 · 语义记忆检索（G7）—— 中优先
 
@@ -142,4 +142,6 @@ P70（声明式 agent 原型，G6）已落地：`AgentArchetype` 配置（name/d
 
 P71（Git step 快照 + 消息级 revert/unrevert + 会话 diff，G2）主体已落地：`GitStepSnapshotStore`（`git stash create` + pinned refs 捕获整树，不污染历史；`capture/diff/revert/unrevert/list/clear` + `listReverts` 审计）注册为 DI 工厂（读 `AgentOptions.gitStepSnapshots`）；`AgentRuntime` 新增 `listGitStepSnapshots/revertGitStepSnapshot/unrevertGitStepSnapshot/diffGitStepSnapshot` 抽象 API，`DefaultAgentRuntime` 在 turn begin 捕获、结果消息绑定、消息级 revert/unrevert/diff；gateway 暴露 REST（`/api/sessions/:id/git-snapshots*`，含 diff/revert/unrevert 动作）与 RPC（`session.git_snapshot.list/diff/revert/unrevert`）。回归：agent 596 / agent-gateway 192 passing，两包构建 clean；新增测试覆盖 store 全链路、runtime 绑定 + revert 恢复、模块装配、RPC/REST 路由。剩余：agent-ui review 面板消费会话 diff。
 
-P72–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P72（AGENTS.md 指令链升级，G5）已落地：`findAgentsDoc` 返回 root→cwd 有序指令链（每目录候选按 override → 主文件名 → fallback 去重、先存在者胜，`AGENTS.override.md` 优先于 `AGENTS.md`）；`projectDocFallbackFilenames`/`projectDocMaxBytes`（默认 32KiB，Buffer 按字节截断且不劈开多字节字符）接入 `ProjectContextSection`（带 mtime 缓存失效）；walk 起点改为工作目录——cwd 在 pinned root 内时从 cwd 起、root 处 `stopAt` 收束，否则回退 pinned root；`initAgentsDoc`/`analyzeProjectStructure`/`collectExtensions` 重构为注入式 `FileAdapter` 驱动（`list/readTextSync/join/extname`），彻底移除 agent 源码对 node `fs/os/path` 的直接依赖（`Buffer` 改自 `buffer` 包，兼容浏览器/Node），`initAgentsDoc` 要求显式 `fileAdapter`、缺失时优雅失败；agent-ui `/init` 将 ApplicationContext 解析的 `FileAdapter` 传入。回归：agent 603 / agent-ui 353 passing，两包 `tsc --noEmit` clean；新增测试覆盖链式发现、override 优先、fallback、字节截断、链式 section 渲染、结构分析语言检测。
+
+P73–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
