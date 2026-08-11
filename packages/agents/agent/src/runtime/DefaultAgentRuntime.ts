@@ -950,6 +950,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turnContext.diagnostics.compressionRatio = report.compressionRatio;
             turnContext.diagnostics.compactionLevel = report.level;
         }
+        if (report.replayed && turnContext?.diagnostics) {
+            turnContext.diagnostics.replayCount = (turnContext.diagnostics.replayCount || 0) + 1;
+            turnContext.diagnostics.replayKind = report.replayKind;
+        }
 
         // Auto-synthesise cross-session experiences when compaction happened
         if (this.contextManager.isExperienceMemoryEnabled() && preparedHistory.report.strategy !== 'unchanged') {
@@ -1050,6 +1054,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             toolMessagesCompacted: report.toolMessagesCompacted,
             compressionRatio: report.compressionRatio,
             cumulativeTokenSavings: report.cumulativeTokenSavings,
+            replayed: report.replayed,
+            replayKind: report.replayKind,
             createdAt: Date.now()
         };
         try {
@@ -1070,6 +1076,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             falsificationCount: diagnostics.falsificationCount ?? 0,
             repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
             repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0,
+            replayCount: diagnostics.replayCount ?? 0,
+            replayKind: diagnostics.replayKind,
             repairResolved: falsifiedSignatures.length > 0 && !recovery?.terminated,
             falsifiedSignatures
         };

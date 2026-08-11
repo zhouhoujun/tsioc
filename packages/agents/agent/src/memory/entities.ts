@@ -312,6 +312,12 @@ export class AgentCompactionHistoryEntity {
     @Column({ type: 'int' })
     cumulativeTokenSavings!: number;
 
+    @Column({ type: 'boolean', default: false })
+    replayed!: boolean;
+
+    @Column({ type: 'varchar', nullable: true })
+    replayKind!: string | null;
+
     @Column({ type: 'simple-json', nullable: true })
     metadata!: Record<string, any> | null;
 

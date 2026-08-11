@@ -51,6 +51,8 @@ export class CompactionHistoryHandler {
                     toolMessagesCompacted: record.toolMessagesCompacted,
                     compressionRatio: record.compressionRatio,
                     cumulativeTokenSavings: record.cumulativeTokenSavings,
+                    replayed: record.replayed,
+                    replayKind: record.replayKind ?? null,
                     createdAt: record.createdAt,
                     metadata: record.metadata ?? null
                 }));

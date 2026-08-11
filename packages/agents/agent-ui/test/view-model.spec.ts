@@ -3551,6 +3551,7 @@ export class AgentConsoleComponentTest {
             toolMessagesCompacted: 0,
             compressionRatio: 50,
             cumulativeTokenSavings: 4000,
+            replayed: false,
             createdAt: 1
         }];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);

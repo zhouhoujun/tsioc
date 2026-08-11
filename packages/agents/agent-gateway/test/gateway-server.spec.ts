@@ -2034,6 +2034,7 @@ export class CompactionHistoryHandlerTest {
                     toolMessagesCompacted: 0,
                     compressionRatio: 50,
                     cumulativeTokenSavings: 4000,
+                    replayed: false,
                     createdAt: 1
                 }, {
                     id: 'c2',
@@ -2053,6 +2054,7 @@ export class CompactionHistoryHandlerTest {
                     toolMessagesCompacted: 0,
                     compressionRatio: 75,
                     cumulativeTokenSavings: 9000,
+                    replayed: false,
                     createdAt: 2
                 }, {
                     id: 'c3',
@@ -2072,6 +2074,7 @@ export class CompactionHistoryHandlerTest {
                     toolMessagesCompacted: 0,
                     compressionRatio: 40,
                     cumulativeTokenSavings: 2000,
+                    replayed: false,
                     createdAt: 3
                 }];
                 return records.filter(record => !sessionId || record.sessionId === sessionId);
@@ -4159,6 +4162,7 @@ export class AppRpcServerTest {
                     toolMessagesCompacted: 0,
                     compressionRatio: 50,
                     cumulativeTokenSavings: 4000,
+                    replayed: false,
                     createdAt: 1
                 }, {
                     id: 'c2',
@@ -4178,6 +4182,7 @@ export class AppRpcServerTest {
                     toolMessagesCompacted: 0,
                     compressionRatio: 75,
                     cumulativeTokenSavings: 9000,
+                    replayed: false,
                     createdAt: 2
                 }].filter(record => record.sessionId === sessionId);
             }
@@ -5416,7 +5421,8 @@ export class AppRpcHandlerTest {
                     prunedMessageCount: 5,
                     toolMessagesCompacted: 0,
                     compressionRatio: 38,
-                    cumulativeTokenSavings: 3000
+                    cumulativeTokenSavings: 3000,
+                    replayed: false
                 }));
                 events.onTurnDiagnostics(new AgentTurnDiagnosticsEvent(events, sessionId, {
                     emptyResponseRetryCount: 0,
@@ -5779,7 +5785,8 @@ export class StdioAppRpcServerTest {
             prunedMessageCount: 0,
             toolMessagesCompacted: 8,
             compressionRatio: 67,
-            cumulativeTokenSavings: 9000
+            cumulativeTokenSavings: 9000,
+            replayed: false
         }));
 
         const history = events.getHistory('s-1');

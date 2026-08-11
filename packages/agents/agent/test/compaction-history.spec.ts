@@ -95,6 +95,7 @@ function makeRecord(partial: Partial<CompactionHistoryRecord> = {}): CompactionH
         toolMessagesCompacted: 0,
         compressionRatio: 50,
         cumulativeTokenSavings: 4000,
+        replayed: false,
         createdAt: 1,
         ...partial
     };

@@ -29,6 +29,8 @@ export class TypeOrmCompactionHistoryStore extends CompactionHistoryStore {
             toolMessagesCompacted: record.toolMessagesCompacted,
             compressionRatio: record.compressionRatio,
             cumulativeTokenSavings: record.cumulativeTokenSavings,
+            replayed: record.replayed,
+            replayKind: record.replayKind,
             createdAt: record.createdAt,
             metadata: record.metadata
         }));
@@ -82,6 +84,8 @@ export class TypeOrmCompactionHistoryStore extends CompactionHistoryStore {
             toolMessagesCompacted: record.toolMessagesCompacted,
             compressionRatio: record.compressionRatio,
             cumulativeTokenSavings: record.cumulativeTokenSavings,
+            replayed: record.replayed,
+            replayKind: (record.replayKind ?? undefined) as CompactionHistoryRecord['replayKind'],
             createdAt: Number(record.createdAt),
             metadata: record.metadata ?? undefined
         };

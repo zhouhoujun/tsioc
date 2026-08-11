@@ -53,6 +53,10 @@ export interface AgentTurnDiagnostics {
     compressionRatio?: number;
     /** Latest compaction level applied. */
     compactionLevel?: string;
+    /** Number of compaction replays applied (G3): last-user-message replay or continue-prompt injection. */
+    replayCount?: number;
+    /** Latest compaction replay kind applied. */
+    replayKind?: 'last-user-message' | 'continue-prompt';
     /** Prompt cache provider support / applied policy observed from the final model response. */
     promptCache?: PromptCacheRuntimeMetadata;
     /** Number of loop-recovery prompts injected for this turn (A4). */

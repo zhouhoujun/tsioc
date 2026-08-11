@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentMessage } from '../runtime/AgentMessage';
+import { AgentMessage, getAgentMessageImageParts, getAgentMessageText } from '../runtime/AgentMessage';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { MemoryStore } from '../memory/MemoryStore';
@@ -49,6 +49,12 @@ export interface ContextPreparationReport {
     compressionRatio: number;
     /** Cumulative tokens saved across all prepareHistory calls */
     cumulativeTokenSavings: number;
+    /** Whether a compaction replay was applied: the last user message was
+     *  re-appended after a hard overflow, or a synthetic continue prompt was
+     *  injected after a proactive compaction. */
+    replayed: boolean;
+    /** Which replay strategy was applied: 'last-user-message' or 'continue-prompt'. */
+    replayKind?: 'last-user-message' | 'continue-prompt';
 }
 
 /**
@@ -457,7 +463,7 @@ export class AgentContextManager {
                 if (sessionId) {
                     this.stashOriginalMessages(sessionId, messages, level);
                 }
-                return prepared;
+                return this.applyCompactionReplay(messages, prepared, beforeTokens);
             }
             const prepared = this.pruneHistory(workingMessages);
             const afterTokens = this.estimateMessages(prepared);
@@ -472,7 +478,7 @@ export class AgentContextManager {
                 this.stashOriginalMessages(sessionId, messages, level);
             }
 
-            return {
+            return this.applyCompactionReplay(messages, {
                 messages: prepared,
                 report: this.createPreparationReport({
                     strategy: prepared === messages && toolPrepared.compactedCount === 0 ? 'unchanged' : 'pruned',
@@ -490,7 +496,7 @@ export class AgentContextManager {
                     compressionRatio,
                     cumulativeTokenSavings: this.cumulativeTokenSavings
                 })
-            };
+            }, beforeTokens);
         }
 
         // Stash originals before medium/deep compaction for detail recovery
@@ -498,7 +504,80 @@ export class AgentContextManager {
             this.stashOriginalMessages(sessionId, messages, level);
         }
 
-        return this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level);
+        return this.applyCompactionReplay(messages, await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level), beforeTokens);
+    }
+
+    /**
+     * After a compaction pass that modified history, apply compaction replay:
+     * a hard overflow (beforeTokens >= maxHistoryTokens) re-appends the last
+     * user message (media parts replaced with `[Attached <type>: <name>]`
+     * text placeholders) so the model keeps seeing the current instruction;
+     * a proactive compaction injects a synthetic "Continue if you have next
+     * steps." user message so the turn keeps driving forward. The replay is
+     * observable via `report.replayed` / `report.replayKind`.
+     */
+    private applyCompactionReplay(messages: AgentMessage[], prepared: { messages: AgentMessage[]; report: ContextPreparationReport }, beforeTokens: number): { messages: AgentMessage[]; report: ContextPreparationReport } {
+        const report = prepared.report;
+        const modified = report.strategy !== 'unchanged' || report.toolMessagesCompacted > 0;
+        if (!modified || !report.compactionTriggered) {
+            return prepared;
+        }
+
+        const hardOverflow = beforeTokens >= this.budget.maxHistoryTokens;
+        if (hardOverflow) {
+            const lastUserMessage = this.findLastUserMessage(messages);
+            if (!lastUserMessage || prepared.messages.some(message => message.id === lastUserMessage.id)) {
+                return prepared;
+            }
+            return {
+                messages: [...prepared.messages, this.buildUserMessageReplay(lastUserMessage)],
+                report: { ...report, replayed: true, replayKind: 'last-user-message' }
+            };
+        }
+
+        const tail = prepared.messages[prepared.messages.length - 1];
+        if (tail?.role === 'user' && /^Continue if you have next steps[.!]?$/i.test(String(tail.content || '').trim())) {
+            return prepared;
+        }
+        return {
+            messages: [...prepared.messages, this.createContinuePromptMessage()],
+            report: { ...report, replayed: true, replayKind: 'continue-prompt' }
+        };
+    }
+
+    private findLastUserMessage(messages: AgentMessage[]): AgentMessage | undefined {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'user') {
+                return messages[i];
+            }
+        }
+        return undefined;
+    }
+
+    private buildUserMessageReplay(message: AgentMessage): AgentMessage {
+        const text = getAgentMessageText(message);
+        const placeholders = getAgentMessageImageParts(message).map(part => {
+            const name = part.name?.trim();
+            return name ? `[Attached image: ${name}]` : '[Attached image]';
+        });
+        const content = [text, ...placeholders].filter(Boolean).join('\n');
+        return {
+            id: `replay-${message.id}`,
+            role: 'user',
+            content: content || '[Attached media]',
+            createdAt: Date.now(),
+            metadata: { ...(message.metadata ?? {}), replay: 'last-user-message' }
+        };
+    }
+
+    private createContinuePromptMessage(): AgentMessage {
+        return {
+            id: `replay-continue-${Date.now()}`,
+            role: 'user',
+            content: 'Continue if you have next steps.',
+            createdAt: Date.now(),
+            metadata: { replay: 'continue-prompt' }
+        };
     }
 
     async compactHistory(messages: AgentMessage[]): Promise<AgentMessage[]> {
@@ -1470,9 +1549,10 @@ export class AgentContextManager {
             .replace(/\s+/g, '_');
     }
 
-    private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount'>): ContextPreparationReport {
+    private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount' | 'replayed'>): ContextPreparationReport {
         return {
             ...report,
+            replayed: false,
             prunedMessageCount: Math.max(0, report.beforeMessageCount - report.afterMessageCount)
         };
     }

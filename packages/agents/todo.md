@@ -36,7 +36,7 @@
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G1–G10）。每项完成后更新「已完成（历史）」。
 
-### P67 · 编辑 → LSP 诊断反馈闭环（G1）—— 高优先
+### P67 · 编辑 → LSP 诊断反馈闭环（G1）—— 高优先 ✅ 已完成（b217b080c）
 
 - `write_file` / `edit_file` / `apply_patch` 执行成功后，对受影响文件触发 `textDocument/didChange` → 拉取（pull）或等待缓存 diagnostics → 追加为工具结果附带的 `lspDiagnostics` 字段（有界：最多 N 条/截断），不阻塞写入。
 - diagnostics 注入 `VerificationGate` 作为新证据源（`evidence.verification == 'lsp'`），与 declared-vs-actual 并行。
@@ -44,7 +44,7 @@
 - 锚点：`agent-tools/lsp/lsp-client.ts`（didChange 支持）、`agent-tools/lsp/lsp-manager.ts`（按扩展名路由）、`agent-tools/files/*.tool.ts`（编辑工具后置钩子）、`agent/src/harness/VerificationGate.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`。
 - 测试：`agent-tools/test/lsp.spec.ts`（fake LSP server 端到端）、`agent/test/verification-gate.spec.ts`（lsp 证据合并）。
 
-### P68 · Compaction replay + 媒体占位符（G3）—— 高优先
+### P68 · Compaction replay + 媒体占位符（G3）—— 高优先 ✅ 已完成
 
 - 压缩完成后：若为硬性 overflow，克隆最后用户消息（媒体附件 → `[Attached <type>: <name>]` 文本占位符）重放入口；若为主动压缩，注入「Continue if you have next steps」合成提示。
 - `AgentContextPreparedEvent` / `CompactionHistoryStore` 增加 `replayed` 标记，保持观测可回归。
@@ -131,4 +131,8 @@ P0–P61 全部打磨条目（含 P34/P35 Tier1/Tier2 与 A/B 面、P42–P45 �
 
 P62–P66（agent-ui 渲染性能优化）已收口：P62 点动画改时间派生（移除 setInterval）、P64 `elapsedLabel` 秒级稳定化、P65 SessionState Proxy 驱动（去 ~130 处 notify/batch）已随 f6339d205 落地；P63 布局层缓存验证失败已回退（教训见根 AGENT.md）；P66 动画帧基准随后续"`• Working` 静态标签 + dashboard 并入工作行"的新设计取消（无动画即无需动画帧基准）。架构约束（响应式驱动、禁定时器、时间派生、跨平台无 node API、响应式代理机制）已沉淀至根 AGENT.md。
 
-P67–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P67（编辑 → LSP 诊断反馈闭环，G1）已随 b217b080c 落地：编辑工具（write/edit/apply_patch）执行后触发 `textDocument/didChange` → 拉取缓存 diagnostics → 追加为工具结果 `lspDiagnostics`（有界截断、不阻塞写入）；注入 `VerificationGate` 为 `evidence.verification == 'lsp'` 新证据源；支持 `lsp.diagnosticsOnEdit: boolean | 'auto'` 开关、无 LSP 配置静默降级。
+
+P68（Compaction replay + 媒体占位符，G3）已落地：`AgentContextManager` preparation 流水线在压缩后重放——硬性 overflow 克隆最后用户消息（媒体附件 → `[Attached <type>: <name>]` 文本占位符）`replayKind: 'last-user-message'`；主动压缩注入「Continue if you have next steps」`replayKind: 'continue-prompt'`，并防重复注入；`CompactionHistoryRecord`（必填 `replayed` + `replayKind`）/ `AgentTurnDiagnostics`（`replayCount`/`replayKind`）/ `ContextPreparationReport` 全链路传播，TypeOrm 实体加列、gateway DTO 透出。回归：agent 572 / agent-gateway 187 / agent-ui 334 passing，三包构建 clean，测试覆盖 overflow 重放、媒体占位、主动继续、防重复四场景。
+
+P69–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。

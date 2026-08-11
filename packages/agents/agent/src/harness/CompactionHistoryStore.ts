@@ -28,6 +28,9 @@ export interface CompactionHistoryRecord {
     compressionRatio: number;
     /** Cumulative tokens saved across all prepareHistory calls */
     cumulativeTokenSavings: number;
+    /** Whether a compaction replay was applied ('last-user-message' or 'continue-prompt'). */
+    replayed: boolean;
+    replayKind?: 'last-user-message' | 'continue-prompt';
     createdAt: number;
     metadata?: Record<string, any>;
 }

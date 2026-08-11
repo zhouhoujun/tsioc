@@ -1168,6 +1168,91 @@ export class ContextCompactionTest {
         // Only 3 data points (< 4 deltas needed) → no adjustment
         expect(asTestCtx(ctx).dynamicCompactionMinTokens).toEqual(2000);
     }
+
+    /* --- compaction replay (G3) --- */
+
+    @Test('overflow replay re-appends the last user message when compaction drops it')
+    async overflowReplayReappendsLastUserMessage() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 800, compactionMinTokens: 200, recentMessageWindow: 2 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 3);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: '继续', createdAt: 2 },
+            ...this.makeLongMessages(12)
+        ];
+        const prepared = await ctx.prepareHistory(messages);
+
+        expect(prepared.report.compactionTriggered).toEqual(true);
+        expect(prepared.report.replayed).toEqual(true);
+        expect(prepared.report.replayKind).toEqual('last-user-message');
+        expect(prepared.messages.some(message => message.id === 'u1')).toEqual(false);
+        const tail = prepared.messages[prepared.messages.length - 1];
+        expect(tail.id).toMatch(/^replay-/);
+        expect(tail.role).toEqual('user');
+        expect(String(tail.content || '').trim()).toEqual('继续');
+        expect(tail.metadata?.replay).toEqual('last-user-message');
+    }
+
+    @Test('overflow replay replaces media parts with text placeholders')
+    async overflowReplayUsesMediaPlaceholders() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 800, compactionMinTokens: 200, recentMessageWindow: 2 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 3);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            {
+                id: 'u1',
+                role: 'user',
+                content: '',
+                parts: [
+                    { type: 'image', imageUrl: 'data:image/png;base64,aaa', name: 'screenshot.png' },
+                    { type: 'image', imageUrl: 'data:image/png;base64,bbb' }
+                ],
+                createdAt: 2
+            },
+            ...this.makeLongMessages(12)
+        ];
+        const prepared = await ctx.prepareHistory(messages);
+
+        expect(prepared.report.replayed).toEqual(true);
+        expect(prepared.report.replayKind).toEqual('last-user-message');
+        const tail = prepared.messages[prepared.messages.length - 1];
+        expect(tail.content).toContain('[Attached image: screenshot.png]');
+        expect(tail.content).toContain('[Attached image]');
+    }
+
+    @Test('proactive compaction injects a continue prompt when not overflowing')
+    async proactiveCompactionInjectsContinuePrompt() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 10);
+        const messages = this.makeToolMessages(8);
+        const prepared = await ctx.prepareHistory(messages);
+
+        expect(prepared.report.compactionTriggered).toEqual(true);
+        expect(prepared.report.replayed).toEqual(true);
+        expect(prepared.report.replayKind).toEqual('continue-prompt');
+        const tail = prepared.messages[prepared.messages.length - 1];
+        expect(tail.role).toEqual('user');
+        expect(String(tail.content || '').trim()).toEqual('Continue if you have next steps.');
+        expect(tail.metadata?.replay).toEqual('continue-prompt');
+    }
+
+    @Test('continue prompt is not duplicated when the tail is already a continue message')
+    async continuePromptNotDuplicated() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 10);
+        const messages = this.makeToolMessages(8);
+        messages.push({ id: 'u-continue', role: 'user', content: 'Continue if you have next steps.', createdAt: Date.now() + 100 });
+        const prepared = await ctx.prepareHistory(messages);
+
+        expect(prepared.report.replayed).toEqual(false);
+        const continueMessages = prepared.messages.filter(message => /^Continue if you have next steps[.!]?$/i.test(String(message.content || '').trim()));
+        expect(continueMessages.length).toEqual(1);
+        expect(prepared.messages[prepared.messages.length - 1].id).toEqual('u-continue');
+    }
 }
 
 @Suite('Agent cross-session experience synthesis')
