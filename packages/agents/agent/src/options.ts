@@ -127,6 +127,10 @@ export interface AgentOptions {
     defaultArchetype?: string;
     /** P71: git-backed step snapshots with message-level revert/unrevert. */
     gitStepSnapshots?: AgentGitStepSnapshotOptions;
+    /** P72: filenames tried per directory when the primary project doc is missing (e.g. ['CLAUDE.md']). */
+    projectDocFallbackFilenames?: string[];
+    /** P72: per-file byte cap for project docs (default 32KiB). */
+    projectDocMaxBytes?: number;
     hooks?: AgentHooksOptions;
 }
 
@@ -179,7 +183,9 @@ export const defaultAgentOptions: AgentOptions = {
         input: '',
         output: ''
     },
-    defaultArchetype: DEFAULT_ARCHETYPE
+    defaultArchetype: DEFAULT_ARCHETYPE,
+    projectDocFallbackFilenames: ['AGENTS.md'],
+    projectDocMaxBytes: 32768
 };
 
 export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
