@@ -386,6 +386,12 @@ export class AgentConsoleSessionState {
     approvalsFocused = false;
     selectedApprovalId = '';
     reviewOpen = false;
+    gitSnapshotOpen = false;
+    gitSnapshotDetailLines: string[] = [];
+    gitSnapshotDetailScroll = 0;
+    gitSnapshotDetailColumnScroll = 0;
+    gitSnapshotHeaderLabel = '';
+    gitSnapshotStatsLabel = '';
     reviewTask?: Record<string, any> | null;
     reviewDiff?: any | null;
     reviewWorkers: AgentConsoleReviewWorker[] = [];
@@ -460,7 +466,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots'];
+    commandHints = ['/help', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -1940,6 +1946,59 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
+    openGitSnapshotDetail(header: string, lines: string[], stats?: string): void {
+        this.gitSnapshotOpen = true;
+        this.gitSnapshotHeaderLabel = header;
+        this.gitSnapshotStatsLabel = stats || '';
+        this.gitSnapshotDetailLines = lines.slice();
+        this.gitSnapshotDetailScroll = 0;
+        this.gitSnapshotDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    closeGitSnapshotDetail(): void {
+        if (!this.gitSnapshotOpen && this.gitSnapshotDetailScroll === 0 && this.gitSnapshotDetailColumnScroll === 0) {
+            return;
+        }
+        this.gitSnapshotOpen = false;
+        this.gitSnapshotDetailLines = [];
+        this.gitSnapshotDetailScroll = 0;
+        this.gitSnapshotDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    scrollGitSnapshotDetail(delta: number): void {
+        if (!this.gitSnapshotOpen) {
+            return;
+        }
+        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        const maxScroll = Math.max(0, this.gitSnapshotDetailLines.length - visible);
+        this.gitSnapshotDetailScroll = Math.max(0, Math.min(maxScroll, this.gitSnapshotDetailScroll + delta));
+    }
+
+    scrollGitSnapshotDetailPage(delta: number, pageSize?: number): void {
+        if (!this.gitSnapshotOpen) {
+            return;
+        }
+        const resolvedPageSize = pageSize ?? this.consoleOptions.reviewDetailPageSize;
+        this.scrollGitSnapshotDetail(delta * Math.max(1, resolvedPageSize));
+    }
+
+    scrollGitSnapshotDetailToEdge(position: 'start' | 'end'): void {
+        if (!this.gitSnapshotOpen) {
+            return;
+        }
+        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        this.gitSnapshotDetailScroll = position === 'start' ? 0 : Math.max(0, this.gitSnapshotDetailLines.length - visible);
+    }
+
+    scrollGitSnapshotDetailColumns(delta: number): void {
+        if (!this.gitSnapshotOpen) {
+            return;
+        }
+        this.gitSnapshotDetailColumnScroll = Math.max(0, this.gitSnapshotDetailColumnScroll + delta);
+    }
+
     clearReview(): void {
         this.syncCurrentReviewAnnotationCache();
         this.reviewTask = null;
@@ -2547,6 +2606,10 @@ export class AgentConsoleSessionState {
     async dismissFocusLayer(): Promise<boolean> {
         if (this.selectMenu) {
             await this.cancelSelectMenu();
+            return true;
+        }
+        if (this.gitSnapshotOpen) {
+            this.closeGitSnapshotDetail();
             return true;
         }
         if (this.reviewOpen) {
@@ -3429,7 +3492,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
+        if (this.gitSnapshotOpen || this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
@@ -3480,6 +3543,43 @@ export class AgentConsoleSessionState {
         const normalized = String(key || '').trim().toLowerCase();
         if (!normalized) {
             return false;
+        }
+        if (this.gitSnapshotOpen) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.gitSnapshotDetailLines.slice(this.gitSnapshotDetailScroll).join('\n'), 'git snapshot diff');
+                    return true;
+                case 'down':
+                    this.scrollGitSnapshotDetail(1);
+                    return true;
+                case 'up':
+                    this.scrollGitSnapshotDetail(-1);
+                    return true;
+                case 'left':
+                    this.scrollGitSnapshotDetailColumns(-4);
+                    return true;
+                case 'right':
+                    this.scrollGitSnapshotDetailColumns(4);
+                    return true;
+                case 'pageup':
+                    this.scrollGitSnapshotDetailPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollGitSnapshotDetailPage(1);
+                    return true;
+                case 'home':
+                    this.scrollGitSnapshotDetailToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollGitSnapshotDetailToEdge('end');
+                    return true;
+                default:
+                    return false;
+            }
         }
         if (this.reviewOpen) {
             if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {

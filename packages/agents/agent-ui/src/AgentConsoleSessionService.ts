@@ -341,6 +341,62 @@ export class AgentConsoleSessionService {
         await this.sessionStore?.deleteSnapshot(sessionId, snapshotId);
     }
 
+    async listGitStepSnapshots(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!sessionId) {
+            return [];
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.git_snapshot.list', { sessionId }, context);
+            return Array.isArray(result) ? result : [];
+        }
+        if (this.runtime && typeof this.runtime.listGitStepSnapshots === 'function') {
+            return this.runtime.listGitStepSnapshots(sessionId) ?? [];
+        }
+        return [];
+    }
+
+    async diffGitStepSnapshot(sessionId: string, ref: string, context?: any): Promise<Record<string, any> | null> {
+        if (!sessionId || !ref) {
+            return null;
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.git_snapshot.diff', { sessionId, ref }, context);
+            return result && typeof result === 'object' ? result : null;
+        }
+        if (this.runtime && typeof this.runtime.diffGitStepSnapshot === 'function') {
+            return this.runtime.diffGitStepSnapshot(sessionId, ref) ?? null;
+        }
+        return null;
+    }
+
+    async revertGitStepSnapshot(sessionId: string, messageId: string, context?: any): Promise<Record<string, any>> {
+        if (!sessionId || !messageId) {
+            return { reverted: false, error: 'sessionId and messageId are required' };
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.git_snapshot.revert', { sessionId, messageId }, context);
+            return result && typeof result === 'object' ? result : { reverted: false };
+        }
+        if (this.runtime && typeof this.runtime.revertGitStepSnapshot === 'function') {
+            return this.runtime.revertGitStepSnapshot(sessionId, messageId) ?? { reverted: false };
+        }
+        return { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    async unrevertGitStepSnapshot(sessionId: string, context?: any): Promise<Record<string, any>> {
+        if (!sessionId) {
+            return { reverted: false, error: 'sessionId is required' };
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.git_snapshot.unrevert', { sessionId }, context);
+            return result && typeof result === 'object' ? result : { reverted: false };
+        }
+        if (this.runtime && typeof this.runtime.unrevertGitStepSnapshot === 'function') {
+            return this.runtime.unrevertGitStepSnapshot(sessionId) ?? { reverted: false };
+        }
+        return { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
     async cancelTurn(sessionId: string, context?: any): Promise<boolean> {
         if (!sessionId) {
             return false;

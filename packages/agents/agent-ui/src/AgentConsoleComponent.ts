@@ -39,6 +39,7 @@ const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
         <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
         <agent-console-jobs-panel v-show="showJobsPanel"></agent-console-jobs-panel>
         <agent-console-review-panel v-show="showReviewPanel"></agent-console-review-panel>
+        <agent-console-git-snapshot-panel v-show="showGitSnapshotPanel"></agent-console-git-snapshot-panel>
         <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
         <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
@@ -2064,6 +2065,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return !!this.state.reviewOpen;
     }
 
+    get showGitSnapshotPanel(): boolean {
+        return !!this.state.gitSnapshotOpen;
+    }
+
     get showActivityPanel(): boolean {
         return false;
     }
@@ -3248,6 +3253,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setMessagesFocused(false);
             this.state.closeMessageDetail();
             this.state.closeReview();
+            this.state.closeGitSnapshotDetail();
             this.state.setSelectedReviewTaskId(selectedTaskId);
             this.state.setTasksFocused(true);
             this.state.setNotice('');
@@ -3377,6 +3383,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setMessagesFocused(false);
             this.state.closeMessageDetail();
             this.state.closeReview();
+            this.state.closeGitSnapshotDetail();
             this.state.setJobsFocused(true);
             if (taskId) {
                 this.state.setSelectedScheduledTaskId(taskId);
@@ -3548,6 +3555,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/unpin', value: '/unpin', description: 'unpin the current session' },
                     { label: '/snapshot', value: '/snapshot', description: 'snapshot current session: /snapshot [label]' },
                     { label: '/snapshots', value: '/snapshots', description: 'list / restore / delete session snapshots' },
+                    { label: '/git-snapshots', value: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert' },
                     { label: '/messages', value: '/messages', description: 'messages' },
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
                     { label: '/tasks', value: '/tasks', description: 'task inspector' },
@@ -3678,6 +3686,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setMessagesFocused(false);
                 this.state.closeMessageDetail();
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setToolsFocused(true);
                 return true;
             case '/ssh':
@@ -3816,6 +3825,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setMessagesFocused(false);
                 this.state.closeMessageDetail();
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setApprovalsFocused(true);
                 return true;
             }
@@ -3976,6 +3986,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
@@ -3990,6 +4001,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
@@ -4076,6 +4088,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
                 return true;
             }
+            case '/git-snapshots':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runGitSnapshotsCommand(String(parsed.args || '').trim());
+                return true;
             case '/toolruns':
                 if (!this.state.toolRuns.length) {
                     this.notify('No tool runs available.');
@@ -4090,6 +4109,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setJobsFocused(false);
                 this.state.closeMessageDetail();
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setToolRunsFocused(true);
                 return true;
             case '/search':
@@ -4204,6 +4224,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 {
                     const project = await this.select(
                         'Projects',
@@ -4242,6 +4263,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     await this.refreshSessions();
                 }
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 {
                     if (!this.state.threads.length) {
                         this.notify('No threads available.');
@@ -4281,6 +4303,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             case '/messages':
                 this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
                 this.state.setSessionsFocused(false);
                 this.state.setMessagesFocused(true);
                 return true;
@@ -5924,6 +5947,155 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         } catch (error) {
             this.notify(`Failed to ${direction}: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    protected async runGitSnapshotsCommand(args: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            this.notify('No current session for git snapshots.');
+            return;
+        }
+        const parts = args.split(/\s+/).filter(Boolean);
+        const operation = parts[0] || 'list';
+        const ref = parts[1] || '';
+        if (operation === 'revert' || operation === 'restore') {
+            if (!ref) {
+                this.notify('Usage: /git-snapshots revert <messageId>');
+                return;
+            }
+            const confirmed = await this.select(
+                `Revert working tree to snapshot of message ${ref}?`,
+                [
+                    { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
+                    { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
+                ],
+                1,
+                this.state.consoleOptions.selectHint
+            );
+            if (confirmed !== 'yes') {
+                return;
+            }
+            const result = await this.sessionService.revertGitStepSnapshot(sessionId, ref);
+            if (result?.reverted === true) {
+                this.notify(`Working tree reverted to snapshot of message ${ref}. Use /git-snapshots unrevert to restore.`);
+            } else {
+                this.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
+            }
+            return;
+        }
+        if (operation === 'unrevert') {
+            const confirmed = await this.select(
+                'Restore the working tree captured before the last git revert?',
+                [
+                    { label: 'unrevert', value: 'yes', detail: 'restore the working tree' },
+                    { label: 'cancel', value: 'no', detail: 'keep the reverted working tree' }
+                ],
+                1,
+                this.state.consoleOptions.selectHint
+            );
+            if (confirmed !== 'yes') {
+                return;
+            }
+            const result = await this.sessionService.unrevertGitStepSnapshot(sessionId);
+            if (result?.reverted === true) {
+                this.notify('Working tree restored after last git revert.');
+            } else {
+                this.notify(`Unrevert failed: ${String(result?.error || 'unknown error')}`);
+            }
+            return;
+        }
+        if (operation === 'diff') {
+            if (!ref) {
+                this.notify('Usage: /git-snapshots diff <messageId|snapshotId>');
+                return;
+            }
+            await this.openGitSnapshotDiff(ref);
+            return;
+        }
+        if (operation !== 'list') {
+            this.notify('Usage: /git-snapshots [list|diff <ref>|revert <messageId>|unrevert]');
+            return;
+        }
+        await this.openGitSnapshotList();
+    }
+
+    protected async openGitSnapshotList(): Promise<void> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            this.notify('No current session for git snapshots.');
+            return;
+        }
+        const snapshots = await this.sessionService.listGitStepSnapshots(sessionId);
+        if (!snapshots.length) {
+            this.notify('No git step snapshots for the current session. Run an agent turn in a git workspace first.');
+            return;
+        }
+        const choice = await this.select(
+            `Git step snapshots (${snapshots.length})`,
+            snapshots.map((snapshot, index) => {
+                const label = String(snapshot.label || snapshot.messageId || `snapshot-${index + 1}`).trim();
+                const createdAt = snapshot.createdAt ? ` · ${new Date(snapshot.createdAt).toLocaleString()}` : '';
+                return {
+                    label: `${label}${createdAt}`,
+                    value: String(snapshot.messageId || snapshot.id || index),
+                    detail: String(snapshot.id || '')
+                };
+            }),
+            0,
+            this.state.consoleOptions.selectHint
+        );
+        if (!choice) {
+            return;
+        }
+        await this.openGitSnapshotDiff(choice);
+    }
+
+    protected async openGitSnapshotDiff(ref: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            this.notify('No current session for git snapshot diff.');
+            return;
+        }
+        const diff = await this.sessionService.diffGitStepSnapshot(sessionId, ref);
+        if (!diff) {
+            this.notify(`No git step snapshot found for ${ref}.`);
+            return;
+        }
+        const lines = this.buildGitSnapshotDiffLines(diff);
+        if (!lines.length) {
+            this.notify(`Snapshot ${ref} has no working tree changes to show.`);
+            return;
+        }
+        const fileCount = Array.isArray(diff.files) ? diff.files.length : 0;
+        this.state.closeReview();
+        this.state.openGitSnapshotDetail(
+            `git snapshot ${ref}`,
+            lines,
+            [`ref ${ref}`, fileCount ? `files ${fileCount}` : 'files -'].join(' · ')
+        );
+    }
+
+    protected buildGitSnapshotDiffLines(diff: Record<string, any>): string[] {
+        const lines: string[] = [];
+        const rawPatch = String(diff.rawPatch ?? diff.patch ?? '');
+        if (rawPatch) {
+            const parts = rawPatch.replace(/\r\n/g, '\n').split('\n');
+            while (parts.length && parts[parts.length - 1] === '') {
+                parts.pop();
+            }
+            lines.push(...parts);
+            return lines;
+        }
+        const files = Array.isArray(diff.files) ? diff.files : [];
+        for (const file of files) {
+            const filePath = String(file?.filePath ?? file?.path ?? '?');
+            lines.push(`diff --git a/${filePath} b/${filePath}`);
+            const status = String(file?.status ?? '');
+            if (status) {
+                lines.push(`status: ${status}`);
+            }
+        }
+        return lines;
     }
 
     protected async activateModelProfile(profileName: string): Promise<void> {

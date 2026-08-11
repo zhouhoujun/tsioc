@@ -2813,6 +2813,148 @@ export class AgentConsoleReviewPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-git-snapshot-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-git-snapshot-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{gitSnapshotSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="gitSnapshotStatsLabel">{{gitSnapshotStatsLabel}}</label>
+        <label v-style="hintStyle">{{gitSnapshotHintLabel}}</label>
+        <label v-style="detailLineStyleAt(index)" v-for="index in detailIndexes">
+            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span v-style="detailLineContentStyle">{{detailLineContentAt(index)}}</span>
+        </label>
+    </div>
+    `
+})
+export class AgentConsoleGitSnapshotPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get shellStyle() {
+        return this.shouldShow
+            ? {
+                padding: '1em 1ch',
+                ...(styleTextToObject(this.activeTheme.messagesShell))
+            }
+            : {};
+    }
+
+    get accentStyle() {
+        return styleTextToObject(this.activeTheme.toolsAccent);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get metaStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get detailStyle() {
+        return styleTextToObject(this.activeTheme.statusValue);
+    }
+
+    get detailLineContentStyle() {
+        return {
+            ...styleTextToObject(this.activeTheme.statusValue),
+            'white-space': 'nowrap'
+        };
+    }
+
+    get lineNumberStyle() {
+        return styleTextToObject(this.activeTheme.messageDetailLineNumber);
+    }
+
+    get shouldShow(): boolean {
+        return !!this.state.gitSnapshotOpen;
+    }
+
+    get contentLines(): string[] {
+        return this.state.gitSnapshotDetailLines;
+    }
+
+    get visibleLines(): string[] {
+        const lines = this.contentLines;
+        const start = Math.max(0, Math.min(lines.length, this.state.gitSnapshotDetailScroll));
+        return lines.slice(start, start + this.state.consoleOptions.reviewDetailVisibleLines);
+    }
+
+    get detailIndexes(): number[] {
+        return Array.from({ length: this.state.consoleOptions.reviewDetailVisibleLines }, (_value, index) => index);
+    }
+
+    get gitSnapshotSummaryLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const header = this.state.gitSnapshotHeaderLabel || 'git snapshot diff';
+        const total = this.contentLines.length;
+        const start = Math.min(total, this.state.gitSnapshotDetailScroll + 1);
+        const end = Math.min(total, this.state.gitSnapshotDetailScroll + this.visibleLines.length);
+        const column = this.state.gitSnapshotDetailColumnScroll + 1;
+        const totalColumns = Math.max(1, this.gitSnapshotDetailMaxColumn);
+        return `${header}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+    }
+
+    get gitSnapshotHintLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return 'up/down scroll · left/right pan · pg jump · home/end edge · y copy · esc close';
+    }
+
+    get gitSnapshotStatsLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.gitSnapshotStatsLabel;
+    }
+
+    get gitSnapshotDetailMaxColumn(): number {
+        return this.contentLines.reduce((max, line) => Math.max(max, line.length), 0);
+    }
+
+    detailLineNumberAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const lineNumber = this.state.gitSnapshotDetailScroll + index + 1;
+        return `${String(lineNumber).padStart(3, ' ')}| `;
+    }
+
+    detailLineContentAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const start = Math.max(0, this.state.gitSnapshotDetailColumnScroll);
+        return line.slice(start);
+    }
+
+    detailLineStyleAt(index: number): Record<string, string> {
+        return {
+            display: 'block',
+            'white-space': 'nowrap',
+            ...(index < this.visibleLines.length ? this.detailLineContentStyle : {})
+        };
+    }
+}
+
+@Component({
     selector: 'agent-console-activity-panel',
     imports: CONSOLE_BASE_IMPORTS,
     template: `
