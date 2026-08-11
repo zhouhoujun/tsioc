@@ -25,6 +25,8 @@ import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
 import { ExperienceDistiller } from './memory/ExperienceDistiller';
 import { AgentMemoryRetriever, DefaultAgentMemoryRetriever } from './memory/AgentMemoryRetriever';
 import { DeterministicExperienceDistiller } from './memory/DeterministicExperienceDistiller';
+import { SemanticMemoryRanker } from './memory/MemoryEmbedder';
+import { MemorySearchService } from './memory/MemorySearchService';
 import { AgentScheduler } from './scheduler/AgentScheduler';
 import { IntervalAgentScheduler } from './scheduler/IntervalAgentScheduler';
 import { AgentRuntime } from './runtime/AgentRuntime';
@@ -141,6 +143,8 @@ import { createAgentProviders } from './provider';
         { provide: MemoryStore, useExisting: DefaultMemoryStore, asDefault: true },
         DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
+        SemanticMemoryRanker,
+        MemorySearchService,
         { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
         DeterministicExperienceDistiller,
         { provide: ExperienceDistiller, useExisting: DeterministicExperienceDistiller },
