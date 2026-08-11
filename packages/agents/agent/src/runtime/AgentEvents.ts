@@ -11,6 +11,16 @@ import { ContextPreparationReport } from '../context/AgentContextManager';
 
 const MAX_EVENT_INPUT_SUMMARY_CHARS = 200;
 
+export interface AgentToolLspDiagnostic {
+    path?: string;
+    message: string;
+    severity?: number;
+    code?: string | number;
+    source?: string;
+    startLine?: number;
+    endLine?: number;
+}
+
 export interface AgentToolExecutionReceipt {
     receiptId: string;
     toolCallId: string;
@@ -22,6 +32,7 @@ export interface AgentToolExecutionReceipt {
     durationMs?: number;
     error?: string;
     attemptCount?: number;
+    lspDiagnostics?: AgentToolLspDiagnostic[];
     sandboxCapability?: AgentToolSandboxCapability;
     sandboxPolicy?: SandboxPolicy | null;
     sandboxSupported?: boolean;

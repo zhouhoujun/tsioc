@@ -7,6 +7,7 @@ import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { readFileSnapshot } from './snapshot';
 import { runFormatter } from './formatter';
+import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 
 @Injectable()
 export class WriteFileTool implements AgentTool {
@@ -63,6 +64,7 @@ export class WriteFileTool implements AgentTool {
         await fs.writeFile(absolutePath, content, 'utf8');
 
         const format = await runFormatter(absolutePath, this.options?.format);
+        const lspDiagnostics = await collectLspDiagnostics(this.options, absolutePath);
 
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
@@ -70,7 +72,8 @@ export class WriteFileTool implements AgentTool {
             created: !existed,
             overwritten: existed,
             formatted: format.attempted ? format.formatted ?? null : undefined,
-            formatFailure: format.attempted && format.failure ? format.failure : undefined
+            formatFailure: format.attempted && format.failure ? format.failure : undefined,
+            lspDiagnostics
         };
     }
 

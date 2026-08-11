@@ -7,6 +7,7 @@ import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { LspClient } from '../lsp/lsp-client';
 import { LspServerManager } from '../lsp/lsp-manager';
+import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 import {
     disposeLspManagers,
     LspDefinitionTool,
@@ -79,10 +80,70 @@ function handle(msg) {
 }
 `;
 
+const MOCK_FEEDBACK_SERVER_SOURCE = `
+const readline = require('readline');
+let buffer = '';
+let docs = {};
+process.stdin.on('data', chunk => { buffer += chunk.toString('utf8'); processFrames(); });
+function processFrames() {
+  for (;;) {
+    const idx = buffer.indexOf('\\r\\n\\r\\n');
+    if (idx < 0) return;
+    const m = /Content-Length:\\s*(\\d+)/i.exec(buffer.slice(0, idx));
+    if (!m) { buffer = buffer.slice(idx + 4); continue; }
+    const len = Number(m[1]);
+    if (buffer.length < idx + 4 + len) return;
+    const body = buffer.slice(idx + 4, idx + 4 + len);
+    buffer = buffer.slice(idx + 4 + len);
+    handle(JSON.parse(body));
+  }
+}
+function send(msg) {
+  const body = JSON.stringify(msg);
+  process.stdout.write('Content-Length: ' + Buffer.byteLength(body) + '\\r\\n\\r\\n' + body);
+}
+function handle(msg) {
+  if (msg.method === 'initialize') {
+    send({ jsonrpc: '2.0', id: msg.id, result: {
+      capabilities: { definitionProvider: false, referencesProvider: false, documentSymbolProvider: false, diagnosticProvider: { interFileDependencies: true, workspaceDiagnostics: false } },
+      serverInfo: { name: 'mock-feedback' }
+    } });
+    return;
+  }
+  if (msg.method === 'initialized') return;
+  if (msg.method === 'textDocument/didOpen') {
+    docs[msg.params.textDocument.uri] = msg.params.textDocument.text;
+    return;
+  }
+  if (msg.method === 'textDocument/didChange') {
+    const change = msg.params.contentChanges && msg.params.contentChanges.length ? msg.params.contentChanges[msg.params.contentChanges.length - 1] : null;
+    if (change) docs[msg.params.textDocument.uri] = change.text;
+    return;
+  }
+  if (msg.method === 'textDocument/diagnostic') {
+    const content = docs[msg.params.textDocument.uri] || '';
+    const items = content.indexOf('broken') >= 0
+      ? [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } }, severity: 1, source: 'mock', message: 'mock broken error' }]
+      : [];
+    send({ jsonrpc: '2.0', id: msg.id, result: { kind: 'full', resultId: 'r1', items } });
+    return;
+  }
+  if (msg.method === 'shutdown') { send({ jsonrpc: '2.0', id: msg.id, result: null }); return; }
+  if (msg.method === 'exit') { process.exit(0); }
+}
+`;
+
 async function writeMockServer(): Promise<string> {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lsp-mock-'));
     const file = path.join(dir, 'mock-server.js');
     await fs.writeFile(file, MOCK_SERVER_SOURCE, 'utf8');
+    return file;
+}
+
+async function writeFeedbackMockServer(): Promise<string> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lsp-feedback-'));
+    const file = path.join(dir, 'mock-server.js');
+    await fs.writeFile(file, MOCK_FEEDBACK_SERVER_SOURCE, 'utf8');
     return file;
 }
 
@@ -253,5 +314,76 @@ export class LspToolsTest {
         expect(result.available).toEqual(false);
         expect(result.extension).toEqual('.py');
         expect(result.message).toContain('No LSP server configured');
+    }
+}
+
+@Suite('LSP edit feedback')
+export class LspEditFeedbackTest {
+    private async writeSampleFile(script: string, content: string): Promise<string> {
+        const filePath = path.join(path.dirname(script), 'sample.ts');
+        await fs.writeFile(filePath, content, 'utf8');
+        return filePath;
+    }
+
+    @Test('collectLspDiagnostics pushes the edited content and returns the server diagnostics')
+    async collectsDiagnosticsAfterEdit() {
+        const script = await writeFeedbackMockServer();
+        try {
+            const filePath = await this.writeSampleFile(script, 'const clean = 1;');
+            const options = { lsp: { servers: { '.ts': mockServerOptions(script) } } };
+
+            const diagnostics = await collectLspDiagnostics(options, filePath);
+
+            expect(diagnostics).toBeDefined();
+            expect(diagnostics!.length).toEqual(0);
+
+            await fs.writeFile(filePath, 'const broken = 1;', 'utf8');
+            const afterEdit = await collectLspDiagnostics(options, filePath);
+
+            expect(afterEdit!.length).toEqual(1);
+            expect(afterEdit![0].message).toEqual('mock broken error');
+            expect(afterEdit![0].severity).toEqual(1);
+        } finally {
+            await disposeLspManagers();
+            await fs.rm(path.dirname(script), { recursive: true, force: true });
+        }
+    }
+
+    @Test('collectLspDiagnostics returns undefined when diagnosticsOnEdit is disabled')
+    async respectsDiagnosticsOnEditToggle() {
+        const script = await writeFeedbackMockServer();
+        try {
+            const filePath = await this.writeSampleFile(script, 'const broken = 1;');
+            const options = { lsp: { servers: { '.ts': mockServerOptions(script) }, diagnosticsOnEdit: false } };
+
+            const diagnostics = await collectLspDiagnostics(options, filePath);
+
+            expect(diagnostics).toBeUndefined();
+        } finally {
+            await disposeLspManagers();
+            await fs.rm(path.dirname(script), { recursive: true, force: true });
+        }
+    }
+
+    @Test('collectLspDiagnostics returns undefined when no server is configured')
+    async returnsUndefinedWithoutServer() {
+        const diagnostics = await collectLspDiagnostics({}, '/ws/sample.ts');
+        expect(diagnostics).toBeUndefined();
+    }
+
+    @Test('collectLspDiagnostics caps the diagnostics list')
+    async capsDiagnosticsList() {
+        const script = await writeFeedbackMockServer();
+        try {
+            const filePath = await this.writeSampleFile(script, 'const broken = 1;');
+            const options = { lsp: { servers: { '.ts': mockServerOptions(script) } } };
+
+            const diagnostics = await collectLspDiagnostics(options, filePath, 1);
+
+            expect(diagnostics!.length).toEqual(1);
+        } finally {
+            await disposeLspManagers();
+            await fs.rm(path.dirname(script), { recursive: true, force: true });
+        }
     }
 }

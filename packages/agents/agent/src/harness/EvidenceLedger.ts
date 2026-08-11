@@ -19,6 +19,16 @@ export interface ToolEvidenceEntry {
     exitCode?: number;
     durationMs?: number;
     error?: string;
+    /** LSP diagnostics reported for the file(s) touched by a write tool. */
+    lspDiagnostics?: Array<{
+        path?: string;
+        message: string;
+        severity?: number;
+        code?: string | number;
+        source?: string;
+        startLine?: number;
+        endLine?: number;
+    }>;
     /** Set by the verification gate (B2) when this claim was falsified. */
     falsified?: boolean;
     falsificationReason?: string;
@@ -77,6 +87,7 @@ export class EvidenceLedger {
             exitCode: entry.exitCode,
             durationMs: entry.durationMs,
             error: entry.error,
+            lspDiagnostics: entry.lspDiagnostics,
             falsified: entry.falsified,
             falsificationReason: entry.falsificationReason,
             createdAt: Date.now()

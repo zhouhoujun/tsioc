@@ -6,6 +6,7 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { runFormatter } from './formatter';
+import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 
 const BEGIN_MARKER = '*** Begin Patch';
 const END_MARKER = '*** End Patch';
@@ -314,6 +315,7 @@ export class ApplyPatchTool implements AgentTool {
         await commitPlan(plan);
 
         const formatResults = [];
+        const lspFeedback: { path: string; diagnostics: import('../lsp/lsp-feedback').LspDiagnosticSummary[] }[] = [];
         for (const file of plan.files) {
             if (file.after === null) {
                 continue;
@@ -326,6 +328,10 @@ export class ApplyPatchTool implements AgentTool {
                     failure: format.failure
                 });
             }
+            const diagnostics = await collectLspDiagnostics(this.options, file.absolutePath);
+            if (diagnostics && diagnostics.length > 0) {
+                lspFeedback.push({ path: file.relativePath, diagnostics });
+            }
         }
 
         return {
@@ -336,7 +342,8 @@ export class ApplyPatchTool implements AgentTool {
                 change: file.change
             })),
             bytesWritten: plan.files.reduce((sum, file) => sum + (file.after?.length ?? 0), 0),
-            formatted: formatResults.length ? formatResults : undefined
+            formatted: formatResults.length ? formatResults : undefined,
+            lspDiagnostics: lspFeedback.length ? lspFeedback : undefined
         };
     }
 

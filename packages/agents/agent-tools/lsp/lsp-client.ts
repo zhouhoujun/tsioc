@@ -39,6 +39,8 @@ export class LspClient {
         diagnosticProvider: false
     };
     private diagnosticsByUri = new Map<string, LspDiagnostic[]>();
+    private openDocuments = new Set<string>();
+    private documentVersionByUri = new Map<string, number>();
 
     constructor(
         private server: LspServerOptions,
@@ -81,6 +83,45 @@ export class LspClient {
 
     getDiagnostics(uri: string): LspDiagnostic[] {
         return this.diagnosticsByUri.get(uri) ?? [];
+    }
+
+    isDocumentOpen(uri: string): boolean {
+        return this.openDocuments.has(uri);
+    }
+
+    async didOpen(uri: string, text: string): Promise<void> {
+        await this.ensureInitialized();
+        if (this.openDocuments.has(uri)) {
+            return;
+        }
+        this.openDocuments.add(uri);
+        const version = (this.documentVersionByUri.get(uri) ?? 0) + 1;
+        this.documentVersionByUri.set(uri, version);
+        this.notify('textDocument/didOpen', {
+            textDocument: { uri, languageId: this.languageIdFor(uri), version, text }
+        });
+    }
+
+    async didChange(uri: string, text: string): Promise<void> {
+        await this.ensureInitialized();
+        if (!this.openDocuments.has(uri)) {
+            await this.didOpen(uri, text);
+            return;
+        }
+        const version = (this.documentVersionByUri.get(uri) ?? 0) + 1;
+        this.documentVersionByUri.set(uri, version);
+        this.notify('textDocument/didChange', {
+            textDocument: { uri, version },
+            contentChanges: [{ text }]
+        });
+    }
+
+    async didClose(uri: string): Promise<void> {
+        if (!this.openDocuments.has(uri)) {
+            return;
+        }
+        this.openDocuments.delete(uri);
+        this.notify('textDocument/didClose', { textDocument: { uri } });
     }
 
     async definition(uri: string, position: LspPosition): Promise<LspLocation[]> {
@@ -336,5 +377,39 @@ export class LspClient {
     private toFileUri(rootDir: string): string {
         const resolved = rootDir.replace(/\\/g, '/');
         return resolved.startsWith('file://') ? resolved : `file://${resolved.startsWith('/') ? '' : '/'}${resolved}`;
+    }
+
+    private languageIdFor(uri: string): string {
+        const ext = uri.includes('.') ? uri.slice(uri.lastIndexOf('.') + 1).toLowerCase() : '';
+        const map: Record<string, string> = {
+            ts: 'typescript',
+            tsx: 'typescriptreact',
+            js: 'javascript',
+            jsx: 'javascriptreact',
+            py: 'python',
+            go: 'go',
+            rs: 'rust',
+            java: 'java',
+            c: 'c',
+            h: 'c',
+            cpp: 'cpp',
+            hpp: 'cpp',
+            cs: 'csharp',
+            rb: 'ruby',
+            php: 'php',
+            swift: 'swift',
+            kt: 'kotlin',
+            scala: 'scala',
+            sh: 'shellscript',
+            bash: 'shellscript',
+            json: 'json',
+            yml: 'yaml',
+            yaml: 'yaml',
+            md: 'markdown',
+            html: 'html',
+            css: 'css',
+            sql: 'sql'
+        };
+        return map[ext] || 'plaintext';
     }
 }

@@ -39,7 +39,9 @@ export const DEFAULT_VERIFICATION_MAX_EVIDENCE_SUMMARY = 8;
  * Structured falsification checks run at the end of every tool round:
  *  (a) a tool errored or exited non-zero (terminal / lsp_diagnostics /
  *      execute_code failures all surface as error evidence entries);
- *  (b) a declared write produced no actual diff (before === after).
+ *  (b) a declared write produced no actual diff (before === after);
+ *  (c) a successful write left error-level (severity 1) LSP diagnostics on
+ *      the file(s) it touched.
  *
  * Only evidence recorded since `startIndex` is considered so a previous
  * round's failures are not re-falsified. When falsified, the failing entries
@@ -83,6 +85,29 @@ export class VerificationGate {
                 if (!result.falsifiedEvidence.some(existing => existing.id === entry.id)) {
                     result.falsifiedEvidence.push({ ...entry, falsificationReason: hint.reason });
                 }
+            }
+        }
+
+        // (c) successful writes that left error-level (severity 1) diagnostics.
+        for (const entry of roundEntries) {
+            if (entry.status !== 'success' || !entry.lspDiagnostics?.length) {
+                continue;
+            }
+            const errors = entry.lspDiagnostics.filter(diagnostic => diagnostic.severity === 1);
+            if (!errors.length) {
+                continue;
+            }
+            const pathLabel = errors[0].path ? ` in '${errors[0].path}'` : '';
+            const first = errors[0];
+            const location = first.startLine !== undefined
+                ? ` (line ${first.startLine + 1})`
+                : '';
+            result.falsified = true;
+            result.reasons.push(
+                `Tool "${entry.toolName}" left ${errors.length} LSP error(s)${pathLabel}: ${first.message}${location}`
+            );
+            if (!result.falsifiedEvidence.some(existing => existing.id === entry.id)) {
+                result.falsifiedEvidence.push({ ...entry, falsificationReason: `LSP error: ${first.message}` });
             }
         }
 

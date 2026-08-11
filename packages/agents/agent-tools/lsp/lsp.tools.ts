@@ -7,8 +7,7 @@ import { LspServerManager } from './lsp-manager';
 
 const lspManagers = new Map<object, LspServerManager>();
 
-function resolveLspManager(options?: AgentToolsOptions): LspServerManager {
-    const key = (options ?? {}) as object;
+export function resolveLspManager(options?: AgentToolsOptions): LspServerManager {    const key = (options ?? {}) as object;
     let manager = lspManagers.get(key);
     if (!manager) {
         const lsp = options?.lsp ?? {};
@@ -22,7 +21,7 @@ function resolveLspManager(options?: AgentToolsOptions): LspServerManager {
     return manager;
 }
 
-function toFileUri(filePath: string): string {
+export function toFileUri(filePath: string): string {
     const normalized = filePath.replace(/\\/g, '/');
     return normalized.startsWith('file://') ? normalized : `file://${normalized.startsWith('/') ? '' : '/'}${normalized}`;
 }

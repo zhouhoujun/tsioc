@@ -5,7 +5,7 @@ import { AgentToolDefinition } from '../tools/AgentTool';
 import { ToolSchemaValidator } from './ToolSchemaValidator';
 import { RateLimitManager } from './RateLimitManager';
 import { OutputGuard } from './OutputGuard';
-import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent } from '../runtime/AgentEvents';
+import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent, AgentToolLspDiagnostic } from '../runtime/AgentEvents';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
@@ -76,7 +76,8 @@ export class ToolExecutionCoordinator {
                     status: 'success',
                     durationMs: Math.max(0, Date.now() - startedAt),
                     outputSummary: this.summarize(definition.name, redactedOutput),
-                    attemptCount: attempt
+                    attemptCount: attempt,
+                    lspDiagnostics: extractLspDiagnostics(rawOutput)
                 };
                 await this.publishAudit({
                     id: completedReceipt.receiptId,
@@ -279,4 +280,64 @@ export class ToolExecutionCoordinator {
         }
         await new Promise(resolve => setTimeout(resolve, delayMs));
     }
+}
+
+export function extractLspDiagnostics(output: unknown): AgentToolLspDiagnostic[] | undefined {
+    if (!output || typeof output !== 'object') {
+        return undefined;
+    }
+    const value = output as Record<string, unknown>;
+    const raw = value.lspDiagnostics;
+    if (raw === undefined || raw === null) {
+        return undefined;
+    }
+    if (Array.isArray(raw)) {
+        const diagnostics: AgentToolLspDiagnostic[] = [];
+        for (const item of raw) {
+            if (!item || typeof item !== 'object') {
+                continue;
+            }
+            const diagnostic = item as Record<string, unknown>;
+            const nestedDiagnostics = Array.isArray(diagnostic.diagnostics) ? diagnostic.diagnostics as unknown[] : undefined;
+            if (typeof diagnostic.message !== 'string' && !nestedDiagnostics) {
+                continue;
+            }
+            if (nestedDiagnostics) {
+                // apply_patch shape: { path, diagnostics: [...] }
+                for (const nested of nestedDiagnostics) {
+                    const parsed = parseLspDiagnostic(nested, diagnostic.path);
+                    if (parsed) {
+                        diagnostics.push(parsed);
+                    }
+                }
+            } else {
+                // write_file / edit_file shape: { message, severity, ... }
+                const parsed = parseLspDiagnostic(item, undefined);
+                if (parsed) {
+                    diagnostics.push(parsed);
+                }
+            }
+        }
+        return diagnostics.length ? diagnostics : undefined;
+    }
+    return undefined;
+}
+
+function parseLspDiagnostic(item: unknown, pathHint?: unknown): AgentToolLspDiagnostic | null {
+    if (!item || typeof item !== 'object') {
+        return null;
+    }
+    const diagnostic = item as Record<string, unknown>;
+    if (typeof diagnostic.message !== 'string') {
+        return null;
+    }
+    return {
+        path: typeof diagnostic.path === 'string' ? diagnostic.path : (typeof pathHint === 'string' ? pathHint : undefined),
+        message: diagnostic.message,
+        severity: typeof diagnostic.severity === 'number' ? diagnostic.severity : undefined,
+        code: typeof diagnostic.code === 'string' || typeof diagnostic.code === 'number' ? diagnostic.code : undefined,
+        source: typeof diagnostic.source === 'string' ? diagnostic.source : undefined,
+        startLine: typeof diagnostic.startLine === 'number' ? diagnostic.startLine : undefined,
+        endLine: typeof diagnostic.endLine === 'number' ? diagnostic.endLine : undefined
+    };
 }

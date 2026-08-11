@@ -635,6 +635,71 @@ export class VerificationGateTest {
         expect(snapshot.entries[0].falsified).toEqual(true);
         expect(snapshot.entries[0].falsificationReason).toContain('exit 1');
     }
+
+    @Test('falsifies successful writes that left error-level LSP diagnostics')
+    async falsifiesWritesWithErrorLevelLspDiagnostics() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({
+            toolName: 'write_file',
+            status: 'success',
+            inputSummary: '/w/a.ts',
+            lspDiagnostics: [{ message: 'Cannot find name "x"', severity: 1, startLine: 3 }]
+        });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 0);
+
+        expect(result.falsified).toEqual(true);
+        expect(result.reasons.length).toEqual(1);
+        expect(result.reasons[0]).toContain('write_file');
+        expect(result.reasons[0]).toContain('LSP error');
+        expect(result.reasons[0]).toContain('Cannot find name "x"');
+        expect(result.falsifiedEvidence.length).toEqual(1);
+        expect(result.falsifiedEvidence[0].falsificationReason).toContain('LSP error');
+    }
+
+    @Test('ignores warnings and info-level LSP diagnostics in the gate')
+    async ignoresNonErrorLspDiagnostics() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({
+            toolName: 'edit_file',
+            status: 'success',
+            inputSummary: '/w/a.ts',
+            lspDiagnostics: [
+                { message: 'unused variable', severity: 2 },
+                { message: 'deprecated api', severity: 4 }
+            ]
+        });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 0);
+
+        expect(result.falsified).toEqual(false);
+    }
+
+    @Test('combines apply_patch diagnostics from multiple files into one falsification')
+    async falsifiesApplyPatchWithNestedFileDiagnostics() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({
+            toolName: 'apply_patch',
+            status: 'success',
+            inputSummary: 'patch',
+            lspDiagnostics: [
+                { path: 'a.ts', message: 'ok', severity: 2 },
+                { path: 'b.ts', message: 'Type error', severity: 1, startLine: 0 }
+            ]
+        });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 0);
+
+        expect(result.falsified).toEqual(true);
+        expect(result.reasons[0]).toContain("in 'b.ts'");
+        expect(result.reasons[0]).toContain('Type error');
+    }
 }
 
 @Suite('Doom-loop recovery (A4)')

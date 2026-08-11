@@ -281,6 +281,14 @@ export interface AgentToolsLspOptions {
     /** File-extension ('.ts', '.py', ...) to LSP server launch options. */
     servers?: Record<string, import('../lsp/types').LspServerOptions>;
     timeoutMs?: number;
+    /**
+     * Whether write/edit tools attach diagnostics after a successful write.
+     * 'auto' (default) enables the feedback only when at least one LSP server
+     * is configured; true forces it; false disables it.
+     */
+    diagnosticsOnEdit?: boolean | 'auto';
+    /** Maximum number of diagnostics attached to a tool result. Default 20. */
+    maxDiagnosticsOnEdit?: number;
 }
 
 export interface AgentToolsOptions {
@@ -436,6 +444,12 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
             servers: (options.mcp.servers ?? []).slice(),
             clientInfo: options.mcp.clientInfo ? { ...options.mcp.clientInfo } : undefined
         } : undefined,
+        lsp: options?.lsp
+            ? {
+                ...options.lsp,
+                servers: options.lsp.servers ? { ...options.lsp.servers } : undefined
+            }
+            : undefined,
         registration: {
             ...(defaultAgentToolsOptions.registration ?? {}),
             ...(options?.registration ?? {}),

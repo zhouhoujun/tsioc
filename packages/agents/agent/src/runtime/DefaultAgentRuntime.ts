@@ -1841,7 +1841,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             inputSummary: receipt.inputSummary,
             outputSummary: receipt.outputSummary,
             durationMs: receipt.durationMs,
-            error: receipt.error ?? error?.message
+            error: receipt.error ?? error?.message,
+            lspDiagnostics: receipt.lspDiagnostics
         });
     }
 
