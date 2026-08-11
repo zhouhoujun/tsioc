@@ -11,6 +11,8 @@ export abstract class PromptSection {
     abstract render(context: PromptSectionContext): string | Promise<string>;
     /** Priority: lower numbers render first */
     priority?: number = 100;
+    /** Static content safe for prompt-cache prefixes. Dynamic segments set this false so they render last. */
+    cacheable?: boolean = true;
 }
 
 export interface PromptSectionContext {

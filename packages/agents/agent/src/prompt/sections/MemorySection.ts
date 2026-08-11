@@ -8,6 +8,8 @@ import { Injectable } from '@tsdi/ioc';
 export class MemorySection extends PromptSection {
     name(): string { return 'memory'; }
     priority = 30;
+    /** Retrieved memory changes per turn - rendered after the cacheable prefix. */
+    cacheable = false;
 
     render(context: PromptSectionContext): string {
         if (!context.memory) return '';

@@ -30,6 +30,8 @@ export interface PromptCacheRuntimeMetadata {
     appliedScopes?: AgentPromptCacheScope[];
     observedCachedPromptTokens?: number;
     observedCreatedPromptTokens?: number;
+    /** True when this request's static prefix (system prompt + tools) differs from the previous request's, i.e. the provider cache prefix was broken by a mid-session change. */
+    prefixBroken?: boolean;
 }
 
 export interface AgentModelConfig {
@@ -113,6 +115,7 @@ export function buildPromptCacheRuntimeMetadata(
         appliedScopes?: AgentPromptCacheScope[];
         observedCachedPromptTokens?: number;
         observedCreatedPromptTokens?: number;
+        prefixBroken?: boolean;
     }
 ): PromptCacheRuntimeMetadata {
     return {
@@ -123,6 +126,7 @@ export function buildPromptCacheRuntimeMetadata(
         appliedStrategy: metadata.appliedStrategy,
         appliedScopes: metadata.appliedScopes,
         observedCachedPromptTokens: metadata.observedCachedPromptTokens,
-        observedCreatedPromptTokens: metadata.observedCreatedPromptTokens
+        observedCreatedPromptTokens: metadata.observedCreatedPromptTokens,
+        prefixBroken: metadata.prefixBroken
     };
 }

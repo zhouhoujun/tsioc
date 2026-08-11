@@ -5,7 +5,7 @@ import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
+import { AgentModelOptions, PromptCacheRuntimeMetadata, ResolvedAgentPromptCachePolicy, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
 
 type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
@@ -13,6 +13,7 @@ type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
 interface OpenAIContentPart {
     type: 'text' | 'image_url';
     text?: string;
+    cache_control?: { type: 'ephemeral' | 'persistent' };
     image_url?: {
         url: string;
         detail?: 'auto' | 'low' | 'high';
@@ -132,6 +133,9 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
     readonly provider: string;
 
+    private lastStaticPrefixHash?: string;
+    private staticPrefixBroken = false;
+
     constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
         super();
         this.provider = String(this.options.provider || '').trim().toLowerCase() || 'openai-compatible';
@@ -193,7 +197,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     reasoningContent,
                     usage: this.normalizeUsage(body.usage),
                     providerUsage: body.usage,
-                    promptCache: this.buildPromptCacheMetadata(body.usage)
+                    promptCache: this.buildPromptCacheMetadata(body.usage, requestBody)
                 }
             };
         } finally {
@@ -271,7 +275,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                             usage: this.normalizeUsage(event.usage),
                             metadata: {
                                 providerUsage: event.usage,
-                                promptCache: this.buildPromptCacheMetadata(event.usage)
+                                promptCache: this.buildPromptCacheMetadata(event.usage, reqBody)
                             }
                         }];
                     }
@@ -323,7 +327,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                             provider: this.options.provider,
                             model: this.resolveModel(),
                             providerUsage: event.usage,
-                            promptCache: this.buildPromptCacheMetadata(event.usage)
+                            promptCache: this.buildPromptCacheMetadata(event.usage, reqBody)
                         }
                     });
                 }
@@ -457,10 +461,16 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         toolNameMap: Map<string, string> = new Map()
     ): OpenAIChatCompletionRequest {
         const reasoning = request.reasoning === true;
+        const messages = this.mapRequestMessages(request, toolNameMap);
+        const tools = request.tools.length ? request.tools.map(tool => this.mapTool(tool, toolNameMap)) : undefined;
+        if (this.provider === 'openai') {
+            this.applySystemCacheAnnotation(messages);
+        }
+        this.trackStaticPrefix(messages, tools ?? []);
         return {
             model: this.resolveModel(),
-            messages: this.mapRequestMessages(request, toolNameMap),
-            tools: request.tools.length ? request.tools.map(tool => this.mapTool(tool, toolNameMap)) : undefined,
+            messages,
+            tools,
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: reasoning ? undefined : this.options.temperature,
             max_tokens: this.options.maxTokens,
@@ -479,6 +489,63 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         };
     }
 
+    protected shouldCacheSystemPrompt(
+        text: string,
+        policy: ResolvedAgentPromptCachePolicy = resolvePromptCachePolicy(this.options.promptCache)
+    ): boolean {
+        if (!policy.enabled || this.provider !== 'openai') {
+            return false;
+        }
+        if (!policy.scopes.some(scope => scope === 'system' || scope === 'summary' || scope === 'memory')) {
+            return false;
+        }
+        const normalized = String(text || '').trim();
+        if (!normalized) {
+            return false;
+        }
+        if (policy.minContentChars && normalized.length < policy.minContentChars) {
+            return false;
+        }
+        return true;
+    }
+
+    private applySystemCacheAnnotation(messages: OpenAIMessage[]): void {
+        const policy = resolvePromptCachePolicy(this.options.promptCache);
+        const systemIndex = messages.findIndex(message => message.role === 'system');
+        if (systemIndex < 0) {
+            return;
+        }
+        const text = typeof messages[systemIndex].content === 'string' ? messages[systemIndex].content : '';
+        if (!this.shouldCacheSystemPrompt(text, policy)) {
+            return;
+        }
+        const type = policy.strategy === 'persistent' ? 'persistent' : 'ephemeral';
+        messages[systemIndex] = {
+            ...messages[systemIndex],
+            content: [{ type: 'text', text, cache_control: { type } }]
+        };
+    }
+
+    protected computeStaticPrefixHash(messages: OpenAIMessage[], tools: OpenAIToolDefinition[]): string {
+        const systemText = messages
+            .filter(message => message.role === 'system')
+            .map(message => typeof message.content === 'string' ? message.content : JSON.stringify(message.content))
+            .join('\n');
+        const toolText = tools.map(tool => tool.function?.name ?? '').join(',');
+        const input = `${systemText}\n---tools---\n${toolText}`;
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+            hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
+        }
+        return String(hash);
+    }
+
+    private trackStaticPrefix(messages: OpenAIMessage[], tools: OpenAIToolDefinition[]): void {
+        const hash = this.computeStaticPrefixHash(messages, tools);
+        this.staticPrefixBroken = this.lastStaticPrefixHash !== undefined && this.lastStaticPrefixHash !== hash;
+        this.lastStaticPrefixHash = hash;
+    }
+
     private normalizeUsage(usage?: OpenAIChatCompletionResponse['usage']): ModelTokenUsage | undefined {
         if (!usage) {
             return undefined;
@@ -495,8 +562,23 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         request: ModelRequest,
         toolNameMap: Map<string, string> = new Map()
     ): OpenAIMessage[] {
+        const mapped = this.mapMessages(request.messages, toolNameMap);
         const contextMessages = this.mapContextMessages(request.summary, request.memory);
-        return contextMessages.concat(this.mapMessages(request.messages, toolNameMap));
+        if (!contextMessages.length) {
+            return mapped;
+        }
+        // Keep the static system prompt at the front of the prefix; the
+        // dynamic summary/memory segments must follow it, never precede it,
+        // otherwise the provider prompt cache breaks on every turn.
+        const firstSystemIndex = mapped.findIndex(message => message.role === 'system');
+        if (firstSystemIndex < 0) {
+            return contextMessages.concat(mapped);
+        }
+        return [
+            ...mapped.slice(0, firstSystemIndex + 1),
+            ...contextMessages,
+            ...mapped.slice(firstSystemIndex + 1)
+        ];
     }
 
     protected mapContextMessages(summary?: string, memory: AgentMemoryRecord[] = []): OpenAIMessage[] {
@@ -1025,20 +1107,33 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             usage: completed.metadata?.usage,
             metadata: {
                 ...completed.metadata,
-                promptCache: completed.metadata?.promptCache ?? this.buildPromptCacheMetadata(completed.metadata?.providerUsage),
+                promptCache: completed.metadata?.promptCache ?? this.buildPromptCacheMetadata(completed.metadata?.providerUsage, this.createRequest(request, new Map())),
                 fallback: 'non_stream'
             }
         };
     }
 
-    private buildPromptCacheMetadata(usage?: OpenAIChatCompletionResponse['usage']) {
+    private buildPromptCacheMetadata(
+        usage?: OpenAIChatCompletionResponse['usage'],
+        requestBody?: OpenAIChatCompletionRequest
+    ) {
         const requested = resolvePromptCachePolicy(this.options.promptCache);
+        const annotated = !!requestBody?.messages?.some(message =>
+            Array.isArray(message.content)
+            && message.content.some(part => !!(part as OpenAIContentPart).cache_control?.type)
+        );
+        const supported: PromptCacheRuntimeMetadata['supported'] =
+            this.provider === 'openai' ? 'full'
+            : this.provider === 'deepseek' ? 'partial'
+            : 'observe_only';
         return buildPromptCacheRuntimeMetadata(this.options.promptCache, {
             provider: this.options.provider ?? 'openai-compatible',
-            supported: 'observe_only',
-            applied: false,
-            appliedStrategy: requested.strategy,
-            observedCachedPromptTokens: usage?.prompt_tokens_details?.cached_tokens
+            supported,
+            applied: annotated,
+            appliedStrategy: annotated ? requested.strategy : undefined,
+            appliedScopes: annotated ? ['system'] : undefined,
+            observedCachedPromptTokens: usage?.prompt_tokens_details?.cached_tokens,
+            prefixBroken: this.staticPrefixBroken
         });
     }
 }

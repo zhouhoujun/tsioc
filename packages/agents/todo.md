@@ -51,13 +51,13 @@
 - 锚点：`agent/src/context/AgentContextManager.ts`（preparation 流水线）、`agent/src/runtime/DefaultAgentRuntime.ts`（turn 入口）、`agent/src/harness/CompactionHistoryStore.ts`。
 - 测试：`agent/test/context-compaction.spec.ts`（overflow 重放、媒体占位、主动继续）。
 
-### P69 · Prompt cache 请求侧落地 + 系统提示分段（G4）—— 高优先
+### P69 · Prompt cache 请求侧落地 + 系统提示分段（G4）—— 高优先 ✅ 已完成
 
 - 系统提示按 cacheable（identity/rules/tools/skills 目录/项目上下文）与 non-cacheable（日期时间/动态上下文）分段，静态段前置。
 - OpenAI-compatible 适配器（含 deepseek）请求侧发出 cache 注解（OpenAI `cache_control`/`cached` 前缀或 deepseek context caching 语义），从 observe-only 升级为请求侧控制。
 - 缓存破坏检测：tools/model/sandbox 中途变更时避免重排前缀（codex 教训）。
 - 锚点：`agent/src/model/OpenAICompatibleModelAdapter.ts`、`agent/src/model/PromptCachePolicy.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent/src/prompt/sections/*`。
-- 测试：`agent/test/model-adapter.spec.ts`（cache 注解断言、前缀稳定性）。
+- 测试：`agent/test/model-provider.spec.ts`（cache 注解断言、前缀稳定性）。
 
 ### P70 · 声明式 agent 原型：plan/build/review（G6）—— 中优先
 
@@ -135,4 +135,6 @@ P67（编辑 → LSP 诊断反馈闭环，G1）已随 b217b080c 落地：编辑�
 
 P68（Compaction replay + 媒体占位符，G3）已落地：`AgentContextManager` preparation 流水线在压缩后重放——硬性 overflow 克隆最后用户消息（媒体附件 → `[Attached <type>: <name>]` 文本占位符）`replayKind: 'last-user-message'`；主动压缩注入「Continue if you have next steps」`replayKind: 'continue-prompt'`，并防重复注入；`CompactionHistoryRecord`（必填 `replayed` + `replayKind`）/ `AgentTurnDiagnostics`（`replayCount`/`replayKind`）/ `ContextPreparationReport` 全链路传播，TypeOrm 实体加列、gateway DTO 透出。回归：agent 572 / agent-gateway 187 / agent-ui 334 passing，三包构建 clean，测试覆盖 overflow 重放、媒体占位、主动继续、防重复四场景。
 
-P69–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P69（Prompt cache 请求侧落地 + 系统提示分段，G4）已落地：`PromptSection` 新增 `cacheable` 标记（DateTime/Memory 段置 false），`SystemPromptBuilder` 静态段（identity/project/tools）前置、动态段（date-time/memory）后置，保证 prompt 前缀稳定；`OpenAICompatibleModelAdapter` 从 observe-only 升级为请求侧控制——openai provider 对 system 消息标注 `cache_control: {type: 'ephemeral'|'persistent'}`（supported 'full'），deepseek 依赖自动 context caching（supported 'partial'、不注解），其余 openai-compatible 保持 observe_only；修复前缀破坏 bug（动态 summary/memory 从 system prompt 之前移到之后）；新增静态前缀 hash 跨请求比较，tools/system 变更时 `PromptCacheRuntimeMetadata.prefixBroken` 置 true。回归：agent 579 / agent-gateway 187 / agent-ui 334 passing，三包构建 clean；新增测试覆盖 cache_control 注解、summary/memory 后置、deepseek partial、前缀破坏检测、分段渲染顺序。
+
+P70–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。

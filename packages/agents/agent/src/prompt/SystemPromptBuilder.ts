@@ -36,7 +36,16 @@ export class SystemPromptBuilder {
             extra: context.extra
         };
 
-        const sorted = [...this.sections].sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
+        // Cacheable (static) sections render first so the prompt prefix stays
+        // stable across turns; dynamic sections (date-time, memory) follow.
+        const sorted = [...this.sections].sort((a, b) => {
+            const aCacheable = a.cacheable !== false;
+            const bCacheable = b.cacheable !== false;
+            if (aCacheable !== bCacheable) {
+                return aCacheable ? -1 : 1;
+            }
+            return (a.priority ?? 100) - (b.priority ?? 100);
+        });
         const parts: string[] = [];
 
         for (const section of sorted) {

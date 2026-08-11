@@ -450,6 +450,211 @@ export class ModelProviderTest {
         expect(result.metadata?.promptCache?.observedCachedPromptTokens).toEqual(3);
     }
 
+    @Test('openai provider annotates system message with cache_control ephemeral')
+    async openaiProviderAnnotatesSystemPrompt() {
+        const calls: Array<{ body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            calls.push({ body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+                        usage: {
+                            prompt_tokens: 8,
+                            completion_tokens: 2,
+                            total_tokens: 10,
+                            prompt_tokens_details: { cached_tokens: 3 }
+                        }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai',
+            model: 'gpt-5.4',
+            baseUrl: 'https://api.openai.com',
+            apiKey: 'test-key',
+            promptCache: {
+                enabled: true,
+                strategy: 'ephemeral',
+                scopes: ['system']
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-openai-cache',
+            summary: '',
+            memory: [],
+            messages: [
+                { id: 'sys', role: 'system', content: 'You are a helpful agent.', createdAt: 1 },
+                { id: 'u1', role: 'user', content: 'hi', createdAt: 2 }
+            ],
+            tools: [{
+                name: 'echo',
+                description: 'echo input',
+                inputSchema: { type: 'object', properties: { value: { type: 'string' } } }
+            }]
+        });
+
+        const body = calls[0].body;
+        expect(body.messages[0].role).toEqual('system');
+        expect(Array.isArray(body.messages[0].content)).toEqual(true);
+        expect(body.messages[0].content[0].text).toContain('You are a helpful agent.');
+        expect(body.messages[0].content[0].cache_control.type).toEqual('ephemeral');
+        expect(result.metadata?.promptCache?.supported).toEqual('full');
+        expect(result.metadata?.promptCache?.applied).toEqual(true);
+        expect(result.metadata?.promptCache?.appliedScopes).toEqual(['system']);
+        expect(result.metadata?.promptCache?.observedCachedPromptTokens).toEqual(3);
+    }
+
+    @Test('summary and memory system messages follow the static system prompt')
+    async summaryAndMemoryFollowStaticSystemPrompt() {
+        let body: any;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            body = JSON.parse(init.body);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 8, completion_tokens: 2, total_tokens: 10 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'hermes-70b',
+            baseUrl: 'https://gateway.example',
+            apiKey: 'test-key'
+        });
+
+        await adapter.complete({
+            sessionId: 's1',
+            summary: 'recent summary',
+            memory: [{ id: 'm1', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 }],
+            messages: [
+                { id: 'sys', role: 'system', content: 'STATIC SYSTEM PROMPT', createdAt: 1 },
+                { id: 'u1', role: 'user', content: 'hello', createdAt: 2 }
+            ],
+            tools: []
+        });
+
+        expect(body.messages[0].role).toEqual('system');
+        expect(body.messages[0].content).toEqual('STATIC SYSTEM PROMPT');
+        expect(body.messages[1].role).toEqual('system');
+        expect(body.messages[1].content).toContain('Session summary');
+        expect(body.messages[2].role).toEqual('system');
+        expect(body.messages[2].content).toContain('Memory');
+        expect(body.messages[3].role).toEqual('user');
+        expect(body.messages[3].content).toEqual('hello');
+    }
+
+    @Test('deepseek provider reports partial prompt cache support without annotations')
+    async deepseekReportsPartialPromptCache() {
+        let body: any;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            body = JSON.parse(init.body);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+                        usage: {
+                            prompt_tokens: 8,
+                            completion_tokens: 2,
+                            total_tokens: 10,
+                            prompt_tokens_details: { cached_tokens: 5 }
+                        }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://api.deepseek.com',
+            apiKey: 'test-key',
+            promptCache: true
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-deepseek',
+            summary: '',
+            memory: [],
+            messages: [
+                { id: 'sys', role: 'system', content: 'You are a helpful agent.', createdAt: 1 },
+                { id: 'u1', role: 'user', content: 'hi', createdAt: 2 }
+            ],
+            tools: []
+        });
+
+        expect(body.messages[0].content).toEqual('You are a helpful agent.');
+        expect(Array.isArray(body.messages[0].content)).toEqual(false);
+        expect(result.metadata?.promptCache?.supported).toEqual('partial');
+        expect(result.metadata?.promptCache?.applied).toEqual(false);
+        expect(result.metadata?.promptCache?.observedCachedPromptTokens).toEqual(5);
+    }
+
+    @Test('adapter detects static prefix breakage across requests')
+    async adapterDetectsStaticPrefixBreakage() {
+        const calls: Array<{ body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            calls.push({ body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 8, completion_tokens: 2, total_tokens: 10 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'hermes-70b',
+            baseUrl: 'https://gateway.example',
+            apiKey: 'test-key'
+        });
+
+        const request = (tools: any[]): any => ({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [
+                { id: 'sys', role: 'system', content: 'STATIC SYSTEM PROMPT', createdAt: 1 },
+                { id: 'u1', role: 'user', content: 'hello', createdAt: 2 }
+            ],
+            tools
+        });
+
+        const first = await adapter.complete(request([]));
+        const broken = await adapter.complete(request([{
+            name: 'new_tool',
+            description: 'new tool',
+            inputSchema: { type: 'object', properties: {} }
+        }]));
+        const stable = await adapter.complete(request([{
+            name: 'new_tool',
+            description: 'new tool',
+            inputSchema: { type: 'object', properties: {} }
+        }]));
+        expect(calls[0].body.messages[0].content).toEqual('STATIC SYSTEM PROMPT');
+        expect((first.metadata?.promptCache as any)?.prefixBroken).toEqual(false);
+        expect((broken.metadata?.promptCache as any)?.prefixBroken).toEqual(true);
+        expect((stable.metadata?.promptCache as any)?.prefixBroken).toEqual(false);
+    }
+
     @Test('routes keyword matched prompts to hermes openai compatible provider')
     async routesKeywordMatchedPromptsToHermesProvider() {
         const calls: Array<{ url: string; body: any; auth: string | undefined }> = [];
