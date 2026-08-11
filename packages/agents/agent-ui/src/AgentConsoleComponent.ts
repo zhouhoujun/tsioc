@@ -12,6 +12,7 @@ import {
     shouldSkipConsoleHistoryEntry,
     TerminalInputSequenceResult
 } from '@tsdi/components/console';
+import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
@@ -574,9 +575,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected encodeBase64(bytes: Uint8Array): string {
-        const bufferCtor = (globalThis as any).Buffer;
-        if (bufferCtor) {
-            return bufferCtor.from(bytes).toString('base64');
+        if (typeof Buffer !== 'undefined') {
+            return Buffer.from(bytes).toString('base64');
         }
         if (typeof globalThis.btoa === 'function') {
             let binary = '';
@@ -951,9 +951,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected decodeVoiceAudioChunk(value: string): Uint8Array {
-        const bufferCtor = (globalThis as any).Buffer;
-        if (bufferCtor) {
-            return new Uint8Array(bufferCtor.from(value, 'base64'));
+        if (typeof Buffer !== 'undefined') {
+            return new Uint8Array(Buffer.from(value, 'base64'));
         }
         if (typeof globalThis.atob === 'function') {
             const binary = globalThis.atob(value);
@@ -5766,10 +5765,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.sshShell = shell;
         this.state.sshShell = { hostId: id };
-        shell.stream.on('data', (chunk: Buffer | string) => {
+        shell.stream.on('data', (chunk: Uint8Array | string) => {
             this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
         });
-        shell.stream.stderr?.on('data', (chunk: Buffer | string) => {
+        shell.stream.stderr?.on('data', (chunk: Uint8Array | string) => {
             this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
         });
         const onEnd = () => {

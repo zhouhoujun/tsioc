@@ -1,4 +1,5 @@
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';

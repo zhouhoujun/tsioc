@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import { Buffer } from 'buffer';
 
 const ALGO = 'aes-256-gcm';
 const IV_LENGTH = 12;

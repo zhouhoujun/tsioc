@@ -1,4 +1,5 @@
 import * as http from 'http';
+import { Buffer } from 'buffer';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { HttpAuthOptions, HttpAuthService } from '@tsdi/security';
 import { AGENT_CHANNEL_OPTIONS } from '../tokens';

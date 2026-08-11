@@ -1,5 +1,6 @@
 import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import { HttpAuthService, JWTService } from '@tsdi/security';

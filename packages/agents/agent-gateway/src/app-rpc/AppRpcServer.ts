@@ -1,4 +1,5 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';

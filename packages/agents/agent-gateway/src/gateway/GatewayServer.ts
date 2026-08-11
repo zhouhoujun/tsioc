@@ -1,4 +1,5 @@
 import * as http from 'http';
+import { Buffer } from 'buffer';
 import { Inject, Injectable } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
 import { GATEWAY_CONFIG } from '../tokens';

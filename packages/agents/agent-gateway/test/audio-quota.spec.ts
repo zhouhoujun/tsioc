@@ -1,4 +1,5 @@
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
 import { InMemorySessionStore } from '@tsdi/agent';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';

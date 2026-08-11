@@ -1,4 +1,5 @@
 import { Client, ClientChannel, ConnectConfig } from 'ssh2';
+import { Buffer } from 'buffer';
 import { SshHostConfig, defaultSshHostConfig, resolveSshAuth, resolveSshHostKey } from './ssh-config';
 
 export interface SshExecResult {

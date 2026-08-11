@@ -1,5 +1,6 @@
 import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { promises as fs } from 'fs';
 import * as os from 'os';
 import * as path from 'path';

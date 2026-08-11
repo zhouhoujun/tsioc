@@ -1,4 +1,5 @@
 import { Writable, Readable } from 'stream';
+import { Buffer } from 'buffer';
 import { Injectable } from '@tsdi/ioc';
 import { AppRpcServer } from './AppRpcServer';
 import { AppRpcError, AppRpcRequestContext } from '../contracts/AppRpc';

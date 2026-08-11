@@ -1,4 +1,5 @@
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
 import { HmacSignatureService, HttpAuthService, JWTService } from '@tsdi/security';
 import { WebhookAgentChannel } from '../src/adapters/WebhookAgentChannel';

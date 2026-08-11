@@ -1,4 +1,5 @@
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
 import { Server, Client, Connection, Session, utils } from 'ssh2';
 import { SshClient } from '../src/ssh-client';

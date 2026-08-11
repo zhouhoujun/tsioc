@@ -32,7 +32,8 @@
     "@tsdi/components/console": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31"
-    ,"@tsdi/i18n": "6.0.31"
+    ,"@tsdi/i18n": "6.0.31",
+    "buffer": "^6.0.3"
   },
   "peerDependencies": {
     "@tsdi/agent-ssh": "6.0.31"

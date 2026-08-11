@@ -1,5 +1,6 @@
 import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
+import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
 import { LightweightAgentRunner, runWithConcurrency } from '../src';
 import { createDelegationCipher, resolveDelegationCipherKey } from '../src/delegation/crypto';
