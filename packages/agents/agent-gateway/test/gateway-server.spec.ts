@@ -5261,6 +5261,276 @@ export class AppRpcServerTest {
         expect(calls).toEqual(['undo:uf-s1', 'redo:uf-s1']);
     }
 
+    @Test('git_snapshot create/list/diff/revert/unrevert route to runtime through json-rpc')
+    async gitSnapshotRpcRoundTrip() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const calls: string[] = [];
+        const snapshot = { id: 'snap-1', sessionId: 'git-s1', workspace: '/ws/app', commit: 'abc123', messageId: 'msg-1', createdAt: 1 };
+        const runtime = {
+            captureGitStepSnapshot(sessionId: string, workspace: string, messageId?: string) {
+                calls.push(`capture:${sessionId}:${workspace}:${messageId}`);
+                return { ...snapshot, messageId: messageId || 'msg-1' };
+            },
+            listGitStepSnapshots(sessionId: string) {
+                calls.push(`list:${sessionId}`);
+                return [snapshot];
+            },
+            diffGitStepSnapshot(sessionId: string, ref: string) {
+                calls.push(`diff:${sessionId}:${ref}`);
+                return { ref, files: [{ filePath: 'a.txt', status: 'modified', insertions: 1, deletions: 1 }] };
+            },
+            async revertGitStepSnapshot(sessionId: string, messageId: string) {
+                calls.push(`revert:${sessionId}:${messageId}`);
+                return { reverted: true, sessionId, messageId, commit: 'abc123', restoredFiles: 1 };
+            },
+            async unrevertGitStepSnapshot(sessionId: string) {
+                calls.push(`unrevert:${sessionId}`);
+                return { reverted: true, sessionId, restoredFiles: 1 };
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        await store.setWorkspace('git-s1', '/ws/app');
+        await owners.create('git-s1', 'user-1');
+
+        const createResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.git_snapshot.create',
+            params: { sessionId: 'git-s1', messageId: 'msg-1' }
+        }, { principalId: 'user-1' });
+        expect((createResponse as any).result.captured).toEqual(true);
+        expect((createResponse as any).result.snapshot.id).toEqual('snap-1');
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.git_snapshot.list',
+            params: { sessionId: 'git-s1' }
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.length).toEqual(1);
+
+        const diffResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'session.git_snapshot.diff',
+            params: { sessionId: 'git-s1', messageId: 'msg-1' }
+        }, { principalId: 'user-1' });
+        expect((diffResponse as any).result.files[0].filePath).toEqual('a.txt');
+
+        const revertResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'session.git_snapshot.revert',
+            params: { sessionId: 'git-s1', messageId: 'msg-1' }
+        }, { principalId: 'user-1' });
+        expect((revertResponse as any).result.reverted).toEqual(true);
+
+        const unrevertResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'session.git_snapshot.unrevert',
+            params: { sessionId: 'git-s1' }
+        }, { principalId: 'user-1' });
+        expect((unrevertResponse as any).result.reverted).toEqual(true);
+
+        expect(calls).toEqual([
+            'capture:git-s1:/ws/app:msg-1',
+            'list:git-s1',
+            'diff:git-s1:msg-1',
+            'revert:git-s1:msg-1',
+            'unrevert:git-s1'
+        ]);
+    }
+
+    @Test('git_snapshot create reports uncaptured state and requires a workspace')
+    async gitSnapshotCreateEdgeCases() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            captureGitStepSnapshot() {
+                return null;
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        await store.setWorkspace('git-s2', '/ws/app');
+        await owners.create('git-s2', 'user-1');
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.git_snapshot.create',
+            params: { sessionId: 'git-s2' }
+        }, { principalId: 'user-1' });
+        expect((response as any).result.captured).toEqual(false);
+        expect((response as any).result.reason).toBeTruthy();
+
+        await owners.create('git-s3', 'user-1');
+        const noWorkspaceResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.git_snapshot.create',
+            params: { sessionId: 'git-s3' }
+        }, { principalId: 'user-1' });
+        expect((noWorkspaceResponse as any).error.code).toEqual(-32603);
+        expect((noWorkspaceResponse as any).error.message).toContain('no workspace');
+    }
+
+    @Test('git_snapshot diff and revert validate required params')
+    async gitSnapshotRpcValidation() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            captureGitStepSnapshot() {
+                return null;
+            },
+            diffGitStepSnapshot() {
+                return null;
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        await owners.create('git-s4', 'user-1');
+
+        const diffResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.git_snapshot.diff',
+            params: { sessionId: 'git-s4' }
+        }, { principalId: 'user-1' });
+        expect((diffResponse as any).error.code).toEqual(-32603);
+        expect((diffResponse as any).error.message).toContain('ref');
+
+        const revertResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.git_snapshot.revert',
+            params: { sessionId: 'git-s4' }
+        }, { principalId: 'user-1' });
+        expect((revertResponse as any).error.code).toEqual(-32603);
+        expect((revertResponse as any).error.message).toContain('messageId');
+    }
+
+    @Test('git_snapshot rpc rejects foreign session access')
+    async gitSnapshotRpcRejectsForeignSession() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            captureGitStepSnapshot() {
+                return null;
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        await store.setWorkspace('git-locked', '/ws/app');
+        await owners.create('git-locked', 'user-1');
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.git_snapshot.create',
+            params: { sessionId: 'git-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+        expect((response as any).error.message).toEqual('Forbidden');
+    }
+
+    @Test('git snapshots REST routes expose create/list/diff/revert/unrevert')
+    async gitSnapshotRestRoutesRoundTrip() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        const snapshot = { id: 'snap-1', sessionId: 'git-s1', workspace: '/ws/app', commit: 'abc123', messageId: 'msg-1', createdAt: 1 };
+        const runtime = {
+            captureGitStepSnapshot() {
+                return snapshot;
+            },
+            listGitStepSnapshots() {
+                return [snapshot];
+            },
+            diffGitStepSnapshot() {
+                return { ref: 'msg-1', files: [{ filePath: 'a.txt', status: 'modified', insertions: 1, deletions: 1 }] };
+            },
+            async revertGitStepSnapshot() {
+                return { reverted: true, sessionId: 'git-s1', messageId: 'msg-1' };
+            },
+            async unrevertGitStepSnapshot() {
+                return { reverted: true, sessionId: 'git-s1' };
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const handler = new SessionHandler(runtime, store, owners);
+        await store.setWorkspace('git-s1', '/ws/app');
+        await owners.create('git-s1', 'user-1');
+
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+
+        const captureBody = (res: any) => {
+            let body = '';
+            res.end = (value?: string) => {
+                body = value ?? '';
+                return res;
+            };
+            return () => body;
+        };
+
+        const routes = handler.getRoutes();
+        const createRoute = routes.find(route => route.path === '/api/sessions/:id/git-snapshots' && route.method === 'POST')!;
+        const createRes = { writeHead: () => createRes } as any;
+        const readCreate = captureBody(createRes);
+        await createRoute.handler(req, createRes, { id: 'git-s1' }, { messageId: 'msg-1' });
+        expect(JSON.parse(readCreate()).captured).toEqual(true);
+        expect(JSON.parse(readCreate()).snapshot.id).toEqual('snap-1');
+
+        const listRoute = routes.find(route => route.path === '/api/sessions/:id/git-snapshots' && route.method === 'GET')!;
+        const listRes = { writeHead: () => listRes } as any;
+        const readList = captureBody(listRes);
+        await listRoute.handler(req, listRes, { id: 'git-s1' });
+        expect(JSON.parse(readList()).length).toEqual(1);
+
+        const diffRoute = routes.find(route => route.path === '/api/sessions/:id/git-snapshots/diff' && route.method === 'POST')!;
+        const diffRes = { writeHead: () => diffRes } as any;
+        const readDiff = captureBody(diffRes);
+        await diffRoute.handler(req, diffRes, { id: 'git-s1' }, { messageId: 'msg-1' });
+        expect(JSON.parse(readDiff()).files[0].filePath).toEqual('a.txt');
+
+        const revertRoute = routes.find(route => route.path === '/api/sessions/:id/git-snapshots/revert' && route.method === 'POST')!;
+        const revertRes = { writeHead: () => revertRes } as any;
+        const readRevert = captureBody(revertRes);
+        await revertRoute.handler(req, revertRes, { id: 'git-s1' }, { messageId: 'msg-1' });
+        expect(JSON.parse(readRevert()).reverted).toEqual(true);
+
+        const unrevertRoute = routes.find(route => route.path === '/api/sessions/:id/git-snapshots/unrevert' && route.method === 'POST')!;
+        const unrevertRes = { writeHead: () => unrevertRes } as any;
+        const readUnrevert = captureBody(unrevertRes);
+        await unrevertRoute.handler(req, unrevertRes, { id: 'git-s1' });
+        expect(JSON.parse(readUnrevert()).reverted).toEqual(true);
+    }
+
     @Test('session export returns transcript through json-rpc')
     async sessionExportThroughJsonRpc() {
         const store = new InMemorySessionStore();
