@@ -277,6 +277,7 @@ export class RuntimeFileUndoRedoTest {
                 undefined,
                 store,
                 undefined,
+                undefined,
                 fileAdapter
             );
 
@@ -318,6 +319,7 @@ export class RuntimeFileUndoRedoTest {
             undefined,
             undefined,
             undefined,
+            undefined,
             new NodeTestFileAdapter()
         );
         const result = await runtime.undoFileChange('s1');
@@ -337,6 +339,7 @@ export class RuntimeFileUndoRedoTest {
             defaultAgentOptions,
             new FakeApp() as any,
             new RandomUuidGenerator(),
+            undefined,
             undefined,
             undefined,
             undefined,

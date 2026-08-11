@@ -27,6 +27,7 @@ import { AgentContextManager, ContextPreparationReport, SynthesisOptions, Synthe
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { FileSnapshot, FileSnapshotPart, FileSnapshotStore } from '../harness/FileSnapshotStore';
+import { GitRevertResult, GitStepDiff, GitStepSnapshot, GitStepSnapshotStore } from '../harness/GitStepSnapshotStore';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
@@ -115,6 +116,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnAborts = new Map<string, AbortController>();
     protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
+    protected pendingGitStepSnapshots = new Map<string, string>();
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
     constructor(
@@ -136,6 +138,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore,
         @Optional() protected delegationGraph?: DelegationGraphStore | null,
         @Optional() protected fileSnapshotStore?: FileSnapshotStore,
+        @Optional() protected gitStepSnapshotStore?: GitStepSnapshotStore,
         @Optional() protected appArgs?: ApplicationArguments | null,
         @Optional() protected fileAdapter?: FileAdapter | null,
         @Optional() protected hookExecutor?: AgentHookCommandExecutor | null
@@ -261,8 +264,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turn: { status: 'started', message: input.input }
         });
 
+        this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
+
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
+            this.bindGitStepSnapshot(input.sessionId, result.message.id);
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
@@ -279,6 +285,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
+            this.pendingGitStepSnapshots.delete(input.sessionId);
             if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
                 await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
                 await this.runTurnHooks('afterTurn', input.sessionId, {
@@ -351,8 +358,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 turn: { status: 'started', message: input }
             });
 
+            this.beginGitStepSnapshot(sessionId, turnContext.workspace);
+
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
+                this.bindGitStepSnapshot(sessionId, result.message.id);
                 await this.sessions.append(sessionId, result.message);
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
@@ -370,6 +380,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
                 yield { type: 'done' };
             } catch (error) {
+                this.pendingGitStepSnapshots.delete(sessionId);
                 if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
                     await this.rollbackTurnCompensations(sessionId, 'cancelled');
                     await this.runTurnHooks('afterTurn', sessionId, {
@@ -688,6 +699,67 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override listFileSnapshots(sessionId: string): FileSnapshot[] {
         return this.fileSnapshotStore?.list(sessionId) ?? [];
+    }
+
+    override captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): GitStepSnapshot | null {
+        if (!this.gitStepSnapshotStore) {
+            return null;
+        }
+        const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
+        if (snapshot) {
+            this.bindGitStepSnapshot(sessionId, messageId);
+        }
+        return snapshot;
+    }
+
+    override async revertGitStepSnapshot(sessionId: string, messageId: string): Promise<GitRevertResult> {
+        return this.gitStepSnapshotStore?.revert(messageId, sessionId)
+            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    override async unrevertGitStepSnapshot(sessionId: string): Promise<GitRevertResult> {
+        return this.gitStepSnapshotStore?.unrevert(sessionId)
+            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    override listGitStepSnapshots(sessionId: string): GitStepSnapshot[] {
+        return this.gitStepSnapshotStore?.list(sessionId) ?? [];
+    }
+
+    override diffGitStepSnapshot(sessionId: string, ref: string): GitStepDiff | null {
+        const store = this.gitStepSnapshotStore;
+        if (!store) {
+            return null;
+        }
+        const snapshot = store.resolveByMessage(ref) ?? store.get(ref);
+        return snapshot ? store.diff(snapshot) : null;
+    }
+
+    protected beginGitStepSnapshot(sessionId: string, workspace?: string): void {
+        if (!this.gitStepSnapshotStore || !workspace) {
+            return;
+        }
+        try {
+            const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
+            if (snapshot) {
+                this.pendingGitStepSnapshots.set(sessionId, snapshot.id);
+            }
+        } catch {
+            // a snapshot failure must not break a turn
+        }
+    }
+
+    protected bindGitStepSnapshot(sessionId: string, messageId: string): void {
+        const pendingId = this.pendingGitStepSnapshots.get(sessionId);
+        this.pendingGitStepSnapshots.delete(sessionId);
+        if (!pendingId || !this.gitStepSnapshotStore) {
+            return;
+        }
+        try {
+            this.gitStepSnapshotStore.bind(pendingId, messageId);
+        } catch {
+            // binding failure leaves an unbound snapshot, diff still works by id
+        }
     }
 
     private async pushFileSnapshot(sessionId: string, snapshot: FileSnapshot | null): Promise<void> {

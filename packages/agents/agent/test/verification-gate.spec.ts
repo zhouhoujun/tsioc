@@ -522,7 +522,7 @@ class FalsifyThenFixWriteModelAdapter extends EchoModelAdapter {
     }
 }
 
-// Constructor indices: turnDiagnosticsStore=15, fileSnapshotStore=17, fileAdapter=19.
+// Constructor indices: turnDiagnosticsStore=15, fileSnapshotStore=17, gitStepSnapshotStore=18, appArgs=19, fileAdapter=20.
 function buildWriteRuntime(
     model: any,
     registry: ToolRegistry,
@@ -550,6 +550,7 @@ function buildWriteRuntime(
         args.push(undefined);
     }
     args.push(fileSnapshotStore);
+    args.push(undefined);
     args.push(undefined);
     args.push(fileAdapter);
     return new (DefaultAgentRuntime as any)(...args) as DefaultAgentRuntime;

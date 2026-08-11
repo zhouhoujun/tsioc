@@ -222,6 +222,64 @@ export abstract class AgentRuntime {
     }
 
     /**
+     * Capture the current working tree as a git-backed step snapshot and bind
+     * it to the given session message id. Returns null when the workspace is
+     * not a git repo or has no tracked changes. Override in runtimes backed by
+     * a GitStepSnapshotStore.
+     */
+    captureGitStepSnapshot(
+        _sessionId: string,
+        _workspace: string,
+        _messageId: string
+    ): import('../harness/GitStepSnapshotStore').GitStepSnapshot | null {
+        return null;
+    }
+
+    /**
+     * Revert the working tree to the git snapshot bound to a session message
+     * id (full-tree restore). Override in runtimes backed by a
+     * GitStepSnapshotStore.
+     */
+    async revertGitStepSnapshot(
+        _sessionId: string,
+        _messageId: string
+    ): Promise<import('../harness/GitStepSnapshotStore').GitRevertResult> {
+        return { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    /**
+     * Restore the working tree captured just before the last git revert for a
+     * session. Override in runtimes backed by a GitStepSnapshotStore.
+     */
+    async unrevertGitStepSnapshot(
+        _sessionId: string
+    ): Promise<import('../harness/GitStepSnapshotStore').GitRevertResult> {
+        return { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    /**
+     * List the git step snapshots captured for a session (oldest first).
+     * Override in runtimes backed by a GitStepSnapshotStore.
+     */
+    listGitStepSnapshots(
+        _sessionId: string
+    ): import('../harness/GitStepSnapshotStore').GitStepSnapshot[] {
+        return [];
+    }
+
+    /**
+     * Diff a session's git step snapshot (by message id or snapshot id) against
+     * the current working tree. Override in runtimes backed by a
+     * GitStepSnapshotStore.
+     */
+    diffGitStepSnapshot(
+        _sessionId: string,
+        _ref: string
+    ): import('../harness/GitStepSnapshotStore').GitStepDiff | null {
+        return null;
+    }
+
+    /**
      * Register an in-process JS function hook for a lifecycle stage. Function
      * hooks run before shell hooks for the same stage, and a `beforeTool`
      * function hook may return `input` on its result to rewrite the tool input

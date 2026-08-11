@@ -241,6 +241,7 @@ export class AgentExtensionHooksTest {
             undefined,
             undefined,
             undefined,
+            undefined,
             new StaticHookExecutor()
         );
 
