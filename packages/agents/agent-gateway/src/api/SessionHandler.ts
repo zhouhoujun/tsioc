@@ -265,6 +265,114 @@ export class SessionHandler {
                 .end(JSON.stringify({ status: 'deleted' }));
         };
 
+        const listGitStepSnapshots: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const snapshots = this.runtime.listGitStepSnapshots(sessionId);
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(snapshots));
+        };
+
+        const createGitStepSnapshot: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            try {
+                const state = await this.sessions.get(sessionId);
+                const workspace = String(state.workspace || '').trim();
+                if (!workspace) {
+                    res.writeHead(400).end(JSON.stringify({ error: 'session has no workspace configured' }));
+                    return;
+                }
+                const messageId = typeof body?.messageId === 'string' ? body.messageId.trim() : '';
+                const snapshot = this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
+                if (!snapshot) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' })
+                        .end(JSON.stringify({ captured: false, reason: 'workspace is not a git repo or has no tracked changes' }));
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify({ captured: true, snapshot }));
+            } catch (err: any) {
+                res.writeHead(500).end(JSON.stringify({ error: err?.message ?? 'git snapshot failed' }));
+            }
+        };
+
+        const diffGitStepSnapshot: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const ref = String(body?.ref || body?.snapshotId || body?.messageId || '').trim();
+            if (!ref) {
+                res.writeHead(400).end(JSON.stringify({ error: 'ref (messageId or snapshotId) required' }));
+                return;
+            }
+            const diff = this.runtime.diffGitStepSnapshot(sessionId, ref);
+            if (!diff) {
+                res.writeHead(404).end(JSON.stringify({ error: `no git step snapshot found for ${ref}` }));
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(diff));
+        };
+
+        const revertGitStepSnapshot: RouteHandler = async (req, res, params, body) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            const messageId = String(body?.messageId || body?.ref || '').trim();
+            if (!messageId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'messageId required' }));
+                return;
+            }
+            try {
+                const result = await this.runtime.revertGitStepSnapshot(sessionId, messageId);
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify(result));
+            } catch (err: any) {
+                res.writeHead(500).end(JSON.stringify({ error: err?.message ?? 'revert failed' }));
+            }
+        };
+
+        const unrevertGitStepSnapshot: RouteHandler = async (req, res, params) => {
+            const sessionId = params['id'];
+            if (!sessionId) {
+                res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!await this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
+            try {
+                const result = await this.runtime.unrevertGitStepSnapshot(sessionId);
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                    .end(JSON.stringify(result));
+            } catch (err: any) {
+                res.writeHead(500).end(JSON.stringify({ error: err?.message ?? 'unrevert failed' }));
+            }
+        };
+
         return [
             { method: 'GET', path: '/api/sessions', handler: listSessions },
             { method: 'GET', path: '/api/sessions/projects', handler: listProjects },
@@ -278,6 +386,11 @@ export class SessionHandler {
             { method: 'POST', path: '/api/sessions/:id/snapshots', handler: createSnapshot },
             { method: 'POST', path: '/api/sessions/:id/snapshots/:snapshotId/restore', handler: restoreSnapshot },
             { method: 'DELETE', path: '/api/sessions/:id/snapshots/:snapshotId', handler: deleteSnapshot },
+            { method: 'GET', path: '/api/sessions/:id/git-snapshots', handler: listGitStepSnapshots },
+            { method: 'POST', path: '/api/sessions/:id/git-snapshots', handler: createGitStepSnapshot },
+            { method: 'POST', path: '/api/sessions/:id/git-snapshots/diff', handler: diffGitStepSnapshot },
+            { method: 'POST', path: '/api/sessions/:id/git-snapshots/revert', handler: revertGitStepSnapshot },
+            { method: 'POST', path: '/api/sessions/:id/git-snapshots/unrevert', handler: unrevertGitStepSnapshot },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
         ];
     }

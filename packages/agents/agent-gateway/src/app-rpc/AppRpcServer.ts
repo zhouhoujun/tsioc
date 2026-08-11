@@ -164,6 +164,11 @@ export class AppRpcServer {
                         'session.snapshot.list',
                         'session.snapshot.restore',
                         'session.snapshot.delete',
+                        'session.git_snapshot.create',
+                        'session.git_snapshot.list',
+                        'session.git_snapshot.diff',
+                        'session.git_snapshot.revert',
+                        'session.git_snapshot.unrevert',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -265,6 +270,16 @@ export class AppRpcServer {
                 return this.restoreSessionSnapshot(params, context);
             case 'session.snapshot.delete':
                 return this.deleteSessionSnapshot(params, context);
+            case 'session.git_snapshot.create':
+                return this.createGitStepSnapshot(params, context);
+            case 'session.git_snapshot.list':
+                return this.listGitStepSnapshots(params, context);
+            case 'session.git_snapshot.diff':
+                return this.diffGitStepSnapshot(params, context);
+            case 'session.git_snapshot.revert':
+                return this.revertGitStepSnapshot(params, context);
+            case 'session.git_snapshot.unrevert':
+                return this.unrevertGitStepSnapshot(params, context);
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -537,6 +552,58 @@ export class AppRpcServer {
         }
         await this.sessions.deleteSnapshot(sessionId, snapshotId);
         return { deleted: true, sessionId, snapshotId };
+    }
+
+    private async createGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = await this.sessions.get(sessionId);
+        const workspace = String(state.workspace || '').trim();
+        if (!workspace) {
+            throw new Error('session has no workspace configured');
+        }
+        const messageId = typeof params?.messageId === 'string' ? params.messageId.trim() : '';
+        const snapshot = this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
+        if (!snapshot) {
+            return { captured: false, sessionId, reason: 'workspace is not a git repo or has no tracked changes' };
+        }
+        return { captured: true, sessionId, snapshot };
+    }
+
+    private async listGitStepSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.runtime.listGitStepSnapshots(sessionId);
+    }
+
+    private async diffGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const ref = String(params?.ref || params?.snapshotId || params?.messageId || '').trim();
+        if (!ref) {
+            throw new Error('ref (messageId or snapshotId) required');
+        }
+        const diff = this.runtime.diffGitStepSnapshot(sessionId, ref);
+        if (!diff) {
+            throw new Error(`no git step snapshot found for ${ref}`);
+        }
+        return diff;
+    }
+
+    private async revertGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const messageId = String(params?.messageId || params?.ref || '').trim();
+        if (!messageId) {
+            throw new Error('messageId required');
+        }
+        return this.runtime.revertGitStepSnapshot(sessionId, messageId);
+    }
+
+    private async unrevertGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.runtime.unrevertGitStepSnapshot(sessionId);
     }
 
     private async exportSession(params: any, context: AppRpcRequestContext): Promise<any> {
