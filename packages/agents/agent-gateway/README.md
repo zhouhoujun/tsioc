@@ -49,13 +49,15 @@ npm run test:coverage
 The package includes handlers for:
 
 - health checks
-- session management
+- session management (including git-backed step snapshots under `/api/sessions/:id/git-snapshots` with create/list/diff/revert/unrevert)
 - memory access
 - tool definition listing
 - audit log inspection
 - event history and broadcast delivery
 
 These handlers expose `getRoutes()` and must be registered into `GatewayServer` explicitly via `addRoute(...)` or `addRoutes(...)`.
+
+The JSON-RPC surface (`AppRpcServer`) mirrors the REST routes with `session.git_snapshot.create`, `session.git_snapshot.list`, `session.git_snapshot.diff`, `session.git_snapshot.revert`, and `session.git_snapshot.unrevert`, listed under `app.capabilities`.
 
 Tool listing APIs are read-only: they expose registry definitions and activation state, but do not activate deferred tools. MCP-backed tools exposed through the gateway still obey the runtime session-activation and allowlist rules enforced by `@tsdi/agent` and `@tsdi/agent-tools`.
 

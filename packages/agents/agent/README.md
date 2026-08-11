@@ -166,6 +166,7 @@ while complex prompts are routed to `deepseek-v4-pro`.
 | Cross-session durable session / memory state | Implemented | `src/memory/TypeOrmSessionStore.ts`, `src/memory/TypeOrmMemoryStore.ts` |
 | Gateway audit visibility | Implemented in sibling package | `packages/agents/agent-gateway/src/api/AuditHandler.ts` |
 | Tool compensation / rollback | Implemented | `src/runtime/DefaultAgentRuntime.ts`, tool `compensate()` hooks (`src/tools/AgentTool.ts`) |
+| Git-backed step snapshots (P71) | Implemented | `src/harness/GitStepSnapshotStore.ts` (`git stash create` + pinned refs), turn begin/bind in `src/runtime/DefaultAgentRuntime.ts`, RPC `session.git_snapshot.*` and `/api/sessions/:id/git-snapshots*` in `@tsdi/agent-gateway` |
 | Strong sandbox isolation | Partial / future phase | policy hooks + capability defaults (`src/harness/ToolSandboxPolicy.ts`), no universal sandbox runtime |
 
 ## Control-plane notes
