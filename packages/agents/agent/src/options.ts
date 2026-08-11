@@ -84,6 +84,13 @@ export interface AgentSandboxOptions {
  * extension matches `extensions`, the tool runs `command <file>` and ignores
  * failures (a broken formatter never blocks the write).
  */
+export interface AgentGitStepSnapshotOptions {
+    /** git command timeout in ms (default 10000). */
+    timeoutMs?: number;
+    /** remove untracked files created after the snapshot during revert (default true). */
+    cleanUntracked?: boolean;
+}
+
 export interface AgentFormatterOptions {
     /** Formatter command invoked as `command <filePath>` (e.g. 'prettier', 'npx prettier --write'). */
     command: string;
@@ -118,6 +125,8 @@ export interface AgentOptions {
     archetypes?: Record<string, AgentArchetype>;
     /** P70: archetype used when a session has no explicit override (default 'build'). */
     defaultArchetype?: string;
+    /** P71: git-backed step snapshots with message-level revert/unrevert. */
+    gitStepSnapshots?: AgentGitStepSnapshotOptions;
     hooks?: AgentHooksOptions;
 }
 

@@ -74,6 +74,7 @@ export * from './harness/ToolExecutionCoordinator';
 export * from './harness/SandboxExecutor';
 export * from './harness/sandbox-exec';
 export * from './harness/FileSnapshotStore';
+export * from './harness/GitStepSnapshotStore';
 export * from './harness/ToolSandboxPolicy';
 export * from './hooks/AgentHooks';
 export * from './prompt/SystemPromptBuilder';
