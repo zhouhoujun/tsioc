@@ -345,8 +345,9 @@ export class AnthropicModelAdapter extends ModelAdapter {
             }));
         }
 
-        if (this.options.temperature != null) {
-            body.temperature = this.options.temperature;
+        const temperature = request.temperature ?? this.options.temperature;
+        if (temperature != null) {
+            body.temperature = temperature;
         }
 
         if (request.reasoning === true || ((this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0)) {

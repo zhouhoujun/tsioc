@@ -472,7 +472,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             messages,
             tools,
             tool_choice: request.tools.length ? 'auto' : undefined,
-            temperature: reasoning ? undefined : this.options.temperature,
+            temperature: reasoning ? undefined : (request.temperature ?? this.options.temperature),
             max_tokens: this.options.maxTokens,
             ...(reasoning ? { reasoning_effort: 'high' as const } : {})
         };

@@ -36,4 +36,11 @@ export interface ModelRequest {
      * undefined the adapter keeps its option-level default.
      */
     reasoning?: boolean;
+    /**
+     * P74: per-request temperature override. When set, adapters use this value
+     * instead of their option-level temperature (which is ignored entirely
+     * while `reasoning` is enabled). Used by the summary agent to force
+     * deterministic output (temperature 0) regardless of the adapter default.
+     */
+    temperature?: number;
 }

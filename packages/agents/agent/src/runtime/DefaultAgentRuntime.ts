@@ -19,6 +19,7 @@ import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '
 import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
+import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
 import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
@@ -141,7 +142,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected gitStepSnapshotStore?: GitStepSnapshotStore,
         @Optional() protected appArgs?: ApplicationArguments | null,
         @Optional() protected fileAdapter?: FileAdapter | null,
-        @Optional() protected hookExecutor?: AgentHookCommandExecutor | null
+        @Optional() protected hookExecutor?: AgentHookCommandExecutor | null,
+        @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent | null
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -245,7 +247,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             input.message?.metadata,
             input.message?.parts
         );
-        await this.sessions.append(input.sessionId, userMessage);
+        const appended = await this.sessions.append(input.sessionId, userMessage);
+        if (appended.messages.length === 1) {
+            void this.ensureSessionTitle(input.sessionId).catch(() => undefined);
+        }
         const turnContext: TurnExecutionContext = {
             principalId: input.principalId,
             workspace: await this.resolveSessionWorkspace(input.sessionId),
@@ -271,6 +276,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.bindGitStepSnapshot(input.sessionId, result.message.id);
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
+            void this.refreshSessionSummary(input.sessionId).catch(() => undefined);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
             await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
@@ -339,7 +345,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 message?.metadata,
                 message?.parts
             );
-            await this.sessions.append(sessionId, userMessage);
+            const appended = await this.sessions.append(sessionId, userMessage);
+            if (appended.messages.length === 1) {
+                void this.ensureSessionTitle(sessionId).catch(() => undefined);
+            }
             const turnContext: TurnExecutionContext = {
                 principalId,
                 workspace: await this.resolveSessionWorkspace(sessionId),
@@ -365,6 +374,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.bindGitStepSnapshot(sessionId, result.message.id);
                 await this.sessions.append(sessionId, result.message);
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
+                void this.refreshSessionSummary(sessionId).catch(() => undefined);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
                 await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
@@ -2655,6 +2665,46 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             receipt,
             error: new Error(error)
         };
+    }
+
+    async ensureSessionTitle(sessionId: string): Promise<string | undefined> {
+        const sessionOptions = this.options.session ?? {};
+        if (sessionOptions.autoTitle === false || !this.summaryAgent) {
+            return (await this.sessions.get(sessionId)).title;
+        }
+        const state = await this.sessions.get(sessionId);
+        if (state.title || !state.messages.length) {
+            return state.title;
+        }
+        try {
+            const result = await this.summaryAgent.generate(state.messages);
+            if (result.title) {
+                await this.sessions.setTitle(sessionId, result.title);
+            }
+            return result.title ?? state.title;
+        } catch {
+            return state.title;
+        }
+    }
+
+    async refreshSessionSummary(sessionId: string): Promise<string | undefined> {
+        const sessionOptions = this.options.session ?? {};
+        if (sessionOptions.autoSummary === false || !this.summaryAgent) {
+            return (await this.sessions.get(sessionId)).focusSummary ?? undefined;
+        }
+        const state = await this.sessions.get(sessionId);
+        if (state.focusSummary || !state.messages.length) {
+            return state.focusSummary ?? undefined;
+        }
+        try {
+            const result = await this.summaryAgent.generate(state.messages);
+            if (result.summary) {
+                await this.sessions.setProjectMetadata(sessionId, { focusSummary: result.summary });
+            }
+            return result.summary ?? state.focusSummary ?? undefined;
+        } catch {
+            return state.focusSummary ?? undefined;
+        }
     }
 
     private resolveApprovalManager(approvalManager?: ToolApprovalManager): ToolApprovalManager | undefined {

@@ -7,6 +7,24 @@ import { AgentArchetype, DEFAULT_ARCHETYPE } from './archetype/AgentArchetype';
 export interface AgentSessionOptions {
     summaryThreshold?: number;
     recentMessages?: number;
+    /**
+     * P74: automatically generate a session title after the first user message
+     * (default: true). When false, titles are only set explicitly through
+     * SessionStore.setTitle (e.g. the gateway `/title` route).
+     */
+    autoTitle?: boolean;
+    /**
+     * P74: automatically generate a display summary (persisted as
+     * `focusSummary` project metadata) for new sessions (default: true).
+     * Existing manually-set focusSummary values are never overwritten.
+     */
+    autoSummary?: boolean;
+    /** P74: max title length enforced by the deterministic fallback (default 60). */
+    titleMaxLength?: number;
+    /** P74: max display summary length enforced by the deterministic fallback (default 160). */
+    summaryMaxLength?: number;
+    /** P74: optional model profile used for LLM title/summary generation. */
+    titleProfile?: string;
 }
 
 export interface AgentContextOptions {
@@ -143,7 +161,11 @@ export const defaultAgentOptions: AgentOptions = {
     maxLoopRecoveries: 3,
     session: {
         summaryThreshold: 8,
-        recentMessages: 6
+        recentMessages: 6,
+        autoTitle: true,
+        autoSummary: true,
+        titleMaxLength: 60,
+        summaryMaxLength: 160
     },
     context: {
         maxHistoryTokens: 32000,

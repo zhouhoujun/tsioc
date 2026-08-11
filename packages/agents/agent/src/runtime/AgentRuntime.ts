@@ -304,4 +304,27 @@ export abstract class AgentRuntime {
     ): void {
         // no-op by default
     }
+
+    /**
+     * P74: ensure the session has an automatically generated title, generating
+     * one from the conversation transcript when the session has no title yet
+     * and automatic titles are enabled. Returns the session title (existing or
+     * newly generated), or undefined when no title is available/derived.
+     * Override this in concrete runtimes that support automatic titles.
+     */
+    async ensureSessionTitle(_sessionId: string): Promise<string | undefined> {
+        return undefined;
+    }
+
+    /**
+     * P74: ensure the session has an automatically generated display summary,
+     * generating one when the session has no focusSummary yet and automatic
+     * summaries are enabled. An existing manually-set focusSummary is never
+     * overwritten. Returns the focusSummary (existing or newly generated), or
+     * undefined when none is available/derived.
+     * Override this in concrete runtimes that support automatic summaries.
+     */
+    async refreshSessionSummary(_sessionId: string): Promise<string | undefined> {
+        return undefined;
+    }
 }

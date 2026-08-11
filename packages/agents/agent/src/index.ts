@@ -101,6 +101,9 @@ export * from './memory/TypeOrmMemoryStore';
 export * from './memory/TypeOrmSessionStore';
 export * from './memory/SimpleSessionSummarizer';
 export * from './memory/LLMSessionSummarizer';
+export * from './memory/AgentSummaryAgent';
+export * from './memory/DeterministicAgentSummaryAgent';
+export * from './memory/LLMAgentSummaryAgent';
 export * from './memory/entities';
 
 export * from './scheduler/AgentScheduler';
