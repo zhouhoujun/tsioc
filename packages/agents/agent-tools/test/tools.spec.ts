@@ -98,7 +98,7 @@ import { resolveAgentRootSettings } from '../src/settings';
 import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText } from '@tsdi/agent';
+import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText, DefaultAgentMemoryRetriever, MemoryEmbedder } from '@tsdi/agent';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, LightweightAgentRunner, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool, PlaywrightBrowserTool as ExportedPlaywrightBrowserTool } from '../browser';
@@ -207,6 +207,15 @@ function createSessionContext(overrides?: { sessionId?: string; memory?: InMemor
         memory: new InMemoryMemoryStore(),
         ...overrides
     };
+}
+
+const MEMORY_VOCAB = ['router', 'cache', 'network', 'policy', 'memory', 'shared'];
+
+class TestMemoryEmbedder extends MemoryEmbedder {
+    async embed(text: string): Promise<number[]> {
+        const tokens = text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+        return MEMORY_VOCAB.map(word => tokens.filter(token => token === word).length);
+    }
 }
 
 @Suite('Agent tools package')
@@ -1694,6 +1703,57 @@ export class AgentToolsPackageTest {
             scopeError = err as Error;
         }
         expect(scopeError?.message).toContain('scope');
+    }
+
+    @Test('memory search supports semantic and hybrid modes through the retriever')
+    async memorySearchSupportsSemanticAndHybridModes() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', createdAt: 1 });
+        await store.put({ id: 's1-note2', sessionId: 's1', key: 'note', value: 'cache network', scope: 'session', createdAt: 2 });
+        await store.put({ id: 'global-note', key: 'policy', value: 'shared policy', scope: 'global', createdAt: 3 });
+        const retriever = new DefaultAgentMemoryRetriever(store, undefined, new TestMemoryEmbedder());
+        const tool = new MemorySearchTool(retriever);
+
+        const semantic = await tool.invoke({ query: 'router cache', mode: 'semantic', limit: 3 }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(semantic.records.map((record: any) => record.key)).toEqual(['topic', 'note', 'policy']);
+
+        const hybrid = await tool.invoke({ query: 'cache', mode: 'hybrid', limit: 3 }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(hybrid.records.map((record: any) => record.key)).toEqual(['topic', 'note', 'policy']);
+
+        const strict = await tool.invoke({ query: 'router cache', mode: 'semantic', minScore: 0.9 }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(strict.records.map((record: any) => record.key)).toEqual(['topic']);
+    }
+
+    @Test('memory search without retriever falls back to keyword store search')
+    async memorySearchWithoutRetrieverFallsBackToKeywordStoreSearch() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', createdAt: 1 });
+        const tool = new MemorySearchTool();
+
+        const result = await tool.invoke({ query: 'router', mode: 'semantic' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(result.records.map((record: any) => record.key)).toEqual(['topic']);
+    }
+
+    @Test('memory search validates mode and minScore')
+    async memorySearchValidatesModeAndMinScore() {
+        const store = new InMemoryMemoryStore();
+        const tool = new MemorySearchTool();
+
+        let modeError: Error | undefined;
+        try {
+            await tool.invoke({ query: 'cache', mode: 'vector' }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            modeError = err as Error;
+        }
+        expect(modeError?.message).toContain('mode');
+
+        let scoreError: Error | undefined;
+        try {
+            await tool.invoke({ query: 'cache', minScore: 2 }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            scoreError = err as Error;
+        }
+        expect(scoreError?.message).toContain('minScore');
     }
 
     @Test('memory delete removes only visible records')
