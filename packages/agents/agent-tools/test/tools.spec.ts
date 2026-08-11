@@ -2714,12 +2714,12 @@ export class AgentToolsPackageTest {
     async builtinSkillLoaderImportsPackagedSkillFiles() {
         resetBuiltinSkillsCache();
         const builtins = loadBuiltinSkills(path.resolve(__dirname, '../skills/builtin'));
-        expect(builtins.map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+        expect(builtins.map(skill => skill.id)).toEqual(['codebase', 'implement', 'plan', 'web-research']);
         expect(builtins[0].title).toEqual('Codebase Exploration');
         expect(builtins[0].summary).toEqual('Explore the repository before making changes.');
         expect(builtins[0].tools?.map(tool => tool.name)).toEqual(['read_file', 'glob_search', 'content_search', 'todo']);
-        expect(builtins[1].promptFull).toContain('Use this skill when the user wants an implementation plan');
-        expect(getBuiltinSkills().map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+        expect(builtins[2].promptFull).toContain('Use this skill when the user wants an implementation plan');
+        expect(getBuiltinSkills().map(skill => skill.id)).toEqual(['codebase', 'implement', 'plan', 'web-research']);
     }
 
     @Test('skill list returns projected skills and filters by query')
@@ -2795,7 +2795,7 @@ export class AgentToolsPackageTest {
         });
         try {
             const builtinRegistry = builtinCtx.get(LocalSkillRegistry);
-            expect(builtinRegistry.list().map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+            expect(builtinRegistry.list().map(skill => skill.id)).toEqual(['codebase', 'implement', 'plan', 'web-research']);
         } finally {
             await builtinCtx.close();
         }
@@ -2973,7 +2973,7 @@ export class AgentToolsPackageTest {
             const skillRegistry = ctx.get(LocalSkillRegistry);
             expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'read_skill')).toEqual(true);
             expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'skill_list')).toEqual(true);
-            expect(skillRegistry.list().map(skill => skill.id).sort()).toEqual(['codebase', 'plan', 'router', 'web-research']);
+            expect(skillRegistry.list().map(skill => skill.id).sort()).toEqual(['codebase', 'implement', 'plan', 'router', 'web-research']);
 
             const runtime = ctx.get(AgentRuntime);
             await runtime.runTurn('s1', 'hello');
