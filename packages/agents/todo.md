@@ -67,13 +67,14 @@
 - 锚点：`agent/src/options.ts`、`agent/src/runtime/AgentRuntime.ts`（原型解析）、`agent-tools/src/options.ts`、`agent-ui`（原型切换命令）。
 - 测试：`agent/test/runtime-loop.spec.ts`（plan 只读约束）、`agent-tools/test/tools.spec.ts`。
 
-### P71 · Git step 快照 + 消息级 revert/unrevert + 会话 diff（G2）—— 中优先
+### P71 · Git step 快照 + 消息级 revert/unrevert + 会话 diff（G2）—— 中优先 ✅ 主体已完成
 
 - 每 step-start 以 git 临时 ref/commit 捕获工作树（不污染历史），绑定到会话消息 id；提供 `revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态。
-- 会话 diff 计算（`GET /api/session/:id/diff?messageId=` 类接口，对齐 opencode），供 review 面板复用。
-- 与现有 FileSnapshotStore 并存：git 快照用于整树恢复，FileSnapshot 用于精确 undo。
-- 锚点：`agent/src/harness/FileSnapshotStore.ts`（复用 seam）、`agent-tools/git/git-operations.tool.ts`、`agent-gateway/src/api/SessionHandler.ts`、`agent-ui` review 面板。
-- 测试：`agent/test/turn-cancel.spec.ts`（revert 链路）、`agent-gateway/test/gateway-server.spec.ts`。
+- 会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC，对齐 opencode），供 review 面板复用。
+- 与现有 FileSnapshotStore 并存：git 快照用于整树恢复，FileSnapshot 用于精确 undo（两者均为可选运行时 ctor 槽，可同时注册）。
+- 锚点：`agent/src/harness/GitStepSnapshotStore.ts`（git stash create + pinned refs）、`agent/src/runtime/AgentRuntime.ts`（list/revert/unrevert/diff API）、`agent/src/runtime/DefaultAgentRuntime.ts`（turn begin 捕获 + 结果消息绑定）、`agent/src/agent.module.ts`（DI 工厂，读 `AgentOptions.gitStepSnapshots`）、`agent-gateway/src/api/SessionHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- 测试：`agent/test/git-step-snapshot.spec.ts`（store 捕获/diff/revert/unrevert/list/clear + runtime 链路 + 模块装配，revert 链路覆盖见 Runtime 套件）、`agent-gateway/test/gateway-server.spec.ts`（git_snapshot RPC + REST 路由）。
+- 剩余（消费侧）：`agent-ui` review 面板复用会话 diff（本轮已交付 RPC/REST + 运行时 API，面板接入另排）。
 
 ### P72 · AGENTS.md 指令链升级（G5）—— 中优先
 
@@ -139,4 +140,6 @@ P69（Prompt cache 请求侧落地 + 系统提示分段，G4）已落地：`Prom
 
 P70（声明式 agent 原型，G6）已落地：`AgentArchetype` 配置（name/description/mode/permissions 规则集/prompt/model/steps）对齐 opencode `Agent.Info`；内置 `plan`（只读 + 允许写 plans 目录）、`build`（默认全量）、`review`（只读 + git/lsp 验证）三原型；`setPlanMode` 收敛为 plan 原型会话实例，`isPlanMode` 由 `resolveArchetypeConfig().readOnly` 派生；`buildArchetypeModeHint` 对纯 build 原型返回空串保证默认系统提示逐字节不变；原型切换向非空会话注入 build-switch 风格系统消息；工具门控优先级 deny > allow > readOnly（writePaths 命中放行，`prefix*` 通配）；agent-tools 新增 `ARCHETYPE_TOOL_GROUPS` + `resolveArchetypeToolGroups`（build 全量 / plan 只读查询 / review 查询+验证）；agent-ui 新增 `/archetype [name]` 命令 + `/status` 展示 archetype；gateway 新增 `session.archetype.set/get` RPC。回归：agent 587 / agent-gateway 187 / agent-ui 334 / agent-tools 193 passing，四包构建 clean；新增测试覆盖默认解析、plan/review/build 门控、writePaths 放行、deny 规则、切换消息注入、模式提示、工具组映射。
 
-P71–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P71（Git step 快照 + 消息级 revert/unrevert + 会话 diff，G2）主体已落地：`GitStepSnapshotStore`（`git stash create` + pinned refs 捕获整树，不污染历史；`capture/diff/revert/unrevert/list/clear` + `listReverts` 审计）注册为 DI 工厂（读 `AgentOptions.gitStepSnapshots`）；`AgentRuntime` 新增 `listGitStepSnapshots/revertGitStepSnapshot/unrevertGitStepSnapshot/diffGitStepSnapshot` 抽象 API，`DefaultAgentRuntime` 在 turn begin 捕获、结果消息绑定、消息级 revert/unrevert/diff；gateway 暴露 REST（`/api/sessions/:id/git-snapshots*`，含 diff/revert/unrevert 动作）与 RPC（`session.git_snapshot.list/diff/revert/unrevert`）。回归：agent 596 / agent-gateway 192 passing，两包构建 clean；新增测试覆盖 store 全链路、runtime 绑定 + revert 恢复、模块装配、RPC/REST 路由。剩余：agent-ui review 面板消费会话 diff。
+
+P72–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
