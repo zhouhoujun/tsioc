@@ -23,6 +23,7 @@ import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
 import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnDiagnosticsEvent } from '../src/runtime/AgentEvents';
+import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 
 class FakeApp {
     events: any[] = [];
@@ -2643,5 +2644,251 @@ export class RuntimeLoopTest {
         } finally {
             await ctx.close();
         }
+    }
+}
+
+class ArchetypeProbeTool {
+    name: string;
+    invoked = 0;
+
+    constructor(name: string, private readOnly = false) {
+        this.name = name;
+    }
+
+    getDefinition() {
+        return {
+            name: this.name,
+            description: 'archetype probe tool',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: this.readOnly ? { readOnly: true } : { sideEffect: true }
+        };
+    }
+
+    async invoke(): Promise<any> {
+        this.invoked++;
+        return { ok: true };
+    }
+}
+
+class ArchetypeToolRegistry extends ToolRegistry {
+    constructor(private tool: any) {
+        super();
+    }
+
+    getTools() {
+        return [this.tool];
+    }
+
+    getTool(name: string) {
+        return this.tool.name === name ? this.tool : undefined;
+    }
+
+    async invoke(name: string): Promise<any> {
+        return this.tool.name === name ? this.tool.invoke({}) : null;
+    }
+}
+
+class ArchetypeToolCallAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    constructor(private toolName: string, private toolInput: any) {
+        super();
+    }
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        const messages: any[] = request.messages || [];
+        const last = messages[messages.length - 1];
+        if (!last || last.role === 'user') {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-1', name: this.toolName, input: this.toolInput }]
+            };
+        }
+        return { message: 'done', stopReason: 'end' };
+    }
+}
+
+function createArchetypeRuntime(
+    adapter: any,
+    tool: any,
+    options = defaultAgentOptions,
+    promptBuilder?: any
+): DefaultAgentRuntime {
+    return new DefaultAgentRuntime(
+        adapter,
+        new ArchetypeToolRegistry(tool),
+        new InMemorySessionStore(),
+        new InMemoryMemoryStore(),
+        new SimpleSessionSummarizer(),
+        options,
+        new FakeApp() as any,
+        new RandomUuidGenerator(),
+        undefined,
+        promptBuilder
+    );
+}
+
+@Suite('Agent archetypes')
+export class AgentArchetypeTest {
+    @Test('default archetype is build and sessions resolve independently')
+    async defaultArchetypeIsBuild() {
+        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        expect(runtime.getSessionArchetype('s1')).toEqual('build');
+        expect(runtime.isPlanMode('s1')).toEqual(false);
+
+        runtime.setSessionArchetype('s1', 'plan');
+        expect(runtime.getSessionArchetype('s1')).toEqual('plan');
+        expect(runtime.isPlanMode('s1')).toEqual(true);
+        expect(runtime.getSessionArchetype('s2')).toEqual('build');
+        expect(runtime.isPlanMode('s2')).toEqual(false);
+
+        runtime.setSessionArchetype('s1', undefined);
+        expect(runtime.getSessionArchetype('s1')).toEqual('build');
+        expect(runtime.isPlanMode('s1')).toEqual(false);
+    }
+
+    @Test('setPlanMode collapses onto the plan archetype')
+    async setPlanModeDelegatesToArchetype() {
+        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        runtime.setPlanMode('s1', true);
+        expect(runtime.getSessionArchetype('s1')).toEqual('plan');
+        expect(runtime.isPlanMode('s1')).toEqual(true);
+        runtime.setPlanMode('s1', false);
+        expect(runtime.getSessionArchetype('s1')).toEqual('build');
+        expect(runtime.isPlanMode('s1')).toEqual(false);
+    }
+
+    @Test('plan archetype denies write tools and allows read-only tools')
+    async planArchetypeGatesTools() {
+        const writeTool = new ArchetypeProbeTool('write_tool');
+        const writeAdapter = new ArchetypeToolCallAdapter('write_tool', { key: 'k' });
+        const writeRuntime = createArchetypeRuntime(writeAdapter, writeTool);
+        writeRuntime.setSessionArchetype('s1', 'plan');
+
+        await writeRuntime.runTurn('s1', 'store it');
+        expect(writeTool.invoked).toEqual(0);
+        const writeFeedback = JSON.stringify(writeAdapter.requests[1].messages);
+        expect(writeFeedback).toContain('disabled in plan mode');
+
+        const readTool = new ArchetypeProbeTool('read_tool', true);
+        const readAdapter = new ArchetypeToolCallAdapter('read_tool', {});
+        const readRuntime = createArchetypeRuntime(readAdapter, readTool);
+        readRuntime.setSessionArchetype('s1', 'plan');
+
+        await readRuntime.runTurn('s1', 'look it up');
+        expect(readTool.invoked).toEqual(1);
+    }
+
+    @Test('plan archetype allows write tools only under configured write paths')
+    async planArchetypeWritePathsCarveOut() {
+        const plansTool = new ArchetypeProbeTool('write_tool');
+        const plansAdapter = new ArchetypeToolCallAdapter('write_tool', { file: 'plans/step-1.md' });
+        const plansRuntime = createArchetypeRuntime(plansAdapter, plansTool);
+        plansRuntime.setSessionArchetype('s1', 'plan');
+
+        await plansRuntime.runTurn('s1', 'write the plan');
+        expect(plansTool.invoked).toEqual(1);
+
+        const srcTool = new ArchetypeProbeTool('write_tool');
+        const srcAdapter = new ArchetypeToolCallAdapter('write_tool', { file: 'src/impl.ts' });
+        const srcRuntime = createArchetypeRuntime(srcAdapter, srcTool);
+        srcRuntime.setSessionArchetype('s1', 'plan');
+
+        await srcRuntime.runTurn('s1', 'write the code');
+        expect(srcTool.invoked).toEqual(0);
+    }
+
+    @Test('review archetype enforces read-only and injects a distinct mode hint')
+    async reviewArchetypeEnforcesReadOnly() {
+        const tool = new ArchetypeProbeTool('write_tool');
+        const adapter = new ArchetypeToolCallAdapter('write_tool', {});
+        const builder = new SystemPromptBuilder([{
+            priority: 0,
+            name: () => 'test',
+            render: async () => 'Test prompt'
+        }]);
+        const runtime = createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
+        runtime.setSessionArchetype('s1', 'review');
+
+        await runtime.runTurn('s1', 'review the diff');
+        expect(tool.invoked).toEqual(0);
+        const systemMessage = String(adapter.requests[0].messages[0].content || '');
+        expect(systemMessage).toContain('REVIEW MODE');
+        expect(systemMessage).toContain('read-only');
+        expect(systemMessage).not.toContain('PLAN MODE');
+    }
+
+    @Test('build archetype allows write tools and keeps the plain system prompt')
+    async buildArchetypeAllowsWrites() {
+        const tool = new ArchetypeProbeTool('write_tool');
+        const adapter = new ArchetypeToolCallAdapter('write_tool', {});
+        const builder = new SystemPromptBuilder([{
+            priority: 0,
+            name: () => 'test',
+            render: async () => 'Test prompt'
+        }]);
+        const runtime = createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
+        runtime.setSessionArchetype('s1', 'build');
+
+        await runtime.runTurn('s1', 'implement it');
+        expect(tool.invoked).toEqual(1);
+        const systemMessage = String(adapter.requests[0].messages[0].content || '');
+        expect(systemMessage).not.toContain('Session mode');
+    }
+
+    @Test('archetype switch appends a switch message to an active transcript')
+    async archetypeSwitchAppendsMessage() {
+        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        await runtime.runTurn('s1', 'hello');
+        expect((await runtime.getMessages('s1')).length).toEqual(2);
+
+        runtime.setSessionArchetype('s1', 'plan');
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const messages = await runtime.getMessages('s1');
+        expect(messages.length).toEqual(3);
+        expect(messages[2].role).toEqual('system');
+        expect(String(messages[2].content)).toContain('Archetype switch');
+        expect(String(messages[2].content)).toContain('plan');
+    }
+
+    @Test('custom archetypes join built-ins and deny rules are enforced')
+    async customArchetypeAndDenyRule() {
+        const options = {
+            ...defaultAgentOptions,
+            archetypes: {
+                guard: {
+                    name: 'guard',
+                    description: 'supervised read-only guard',
+                    mode: 'primary' as const,
+                    readOnly: true,
+                    permissions: {
+                        deny: ['write_tool']
+                    }
+                }
+            }
+        };
+        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'), options);
+        const names = runtime.listArchetypes();
+        expect(names).toContain('build');
+        expect(names).toContain('plan');
+        expect(names).toContain('review');
+        expect(names).toContain('guard');
+
+        runtime.setSessionArchetype('s1', 'guard');
+        expect(runtime.isPlanMode('s1')).toEqual(true);
+
+        const tool = new ArchetypeProbeTool('write_tool');
+        const adapter = new ArchetypeToolCallAdapter('write_tool', { file: 'plans/step-1.md' });
+        const gateRuntime = createArchetypeRuntime(adapter, tool, options);
+        gateRuntime.setSessionArchetype('s1', 'guard');
+
+        await gateRuntime.runTurn('s1', 'write the plan');
+        expect(tool.invoked).toEqual(0);
+        const feedback = JSON.stringify(adapter.requests[1].messages);
+        expect(feedback).toContain('is denied by the');
+        expect(feedback).toContain('guard');
     }
 }

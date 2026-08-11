@@ -4,6 +4,71 @@ import { AgentFormatterOptions } from '@tsdi/agent';
 
 export { AgentFormatterOptions };
 
+/**
+ * P70: recommended tool groups per built-in archetype. A plan archetype gets
+ * read/query surface only; build gets everything; review gets read/query plus
+ * verification-oriented groups.
+ */
+export const ARCHETYPE_TOOL_GROUPS: Record<string, Partial<Record<AgentToolGroup, boolean>>> = {
+    build: {
+        filesystem: true,
+        filesystem_write: true,
+        utility: true,
+        web: true,
+        sessions: true,
+        planning: true,
+        process: true,
+        memory: true,
+        project: true,
+        registry: true,
+        http: true,
+        terminal: true,
+        git: true,
+        media: true,
+        agent: true,
+        code_execution: true,
+        knowledge: true,
+        llm: true,
+        capture: true,
+        lsp: true
+    },
+    plan: {
+        filesystem: true,
+        utility: true,
+        web: true,
+        sessions: true,
+        planning: true,
+        memory: true,
+        project: true,
+        registry: true,
+        knowledge: true,
+        lsp: true
+    },
+    review: {
+        filesystem: true,
+        utility: true,
+        web: true,
+        sessions: true,
+        memory: true,
+        project: true,
+        registry: true,
+        git: true,
+        knowledge: true,
+        lsp: true,
+        media: true
+    }
+};
+
+export function resolveArchetypeToolGroups(
+    archetype: string,
+    custom?: Record<string, Partial<Record<AgentToolGroup, boolean>>>
+): Partial<Record<AgentToolGroup, boolean>> {
+    return {
+        ...(ARCHETYPE_TOOL_GROUPS[archetype] ?? ARCHETYPE_TOOL_GROUPS.build),
+        ...(custom?.[archetype] ?? {})
+    };
+}
+
 export interface WebSearchResult {
     title: string;
     url: string;

@@ -3531,6 +3531,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 const helpSelection = await this.select('Help', [
                     { label: '/model', value: '/model', description: 'switch model or queue next-turn profile' },
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
+                    { label: '/archetype', value: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]' },
                     { label: '/vim', value: '/vim', description: 'toggle vim-style normal/insert input mode' },
                     { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset vim key bindings' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
@@ -3614,6 +3615,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 await this.runPlanCommand(parsed.args);
+                return true;
+            case '/archetype':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                await this.runArchetypeCommand(parsed.args);
                 return true;
             case '/vim':
                 await this.runVimCommand(parsed.args);
@@ -5550,6 +5558,27 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
+    protected async runArchetypeCommand(args: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        const name = String(args || '').trim().toLowerCase();
+        try {
+            if (!name) {
+                const current = this.runtime.getSessionArchetype(sessionId);
+                const available = this.runtime.listArchetypes().join(', ');
+                this.notify(`Session archetype: ${current}. Available: ${available}.`);
+                return;
+            }
+            if (this.appRpc) {
+                await this.appRpc.request('session.archetype.set', { sessionId, archetype: name });
+            } else {
+                this.runtime.setSessionArchetype(sessionId, name);
+            }
+            this.notify(`Session ${sessionId} switched to the "${name}" archetype.`);
+        } catch (error) {
+            this.notify(`Failed to set archetype: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     protected async runVimCommand(args: string): Promise<void> {
         const raw = String(args || '').trim().toLowerCase();
         let enabled: boolean;
@@ -5839,12 +5868,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const sessionId = this.state.sessionId;
         let planMode = this.state.planMode;
         let sandboxMode = await this.getSessionSandboxMode(sessionId).catch(() => 'default');
+        let archetype = (this.runtime as any).getSessionArchetype?.(sessionId) ?? 'build';
         if (this.appRpc) {
             const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
             planMode = result?.enabled === true;
+            const archetypeResult = await this.appRpc.request('session.archetype.get', { sessionId }).catch(() => null);
+            if (archetypeResult?.archetype) {
+                archetype = String(archetypeResult.archetype);
+            }
         }
         const model = this.state.modelProfile || this.state.model || 'default';
-        this.notify(`session ${sessionId} · model ${model} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode}`);
+        this.notify(`session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode}`);
     }
 
     protected async setSessionSandboxMode(

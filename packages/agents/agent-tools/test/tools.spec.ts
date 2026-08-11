@@ -46,6 +46,7 @@ import { BackupTool } from '../backup/backup.tool';
 import { ModelRoutingTool } from '../model-routing/model-routing.tool';
 import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
+import { ARCHETYPE_TOOL_GROUPS, resolveArchetypeToolGroups } from '../src/options';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
@@ -6059,4 +6060,61 @@ class MockAdapter {
     async pendingRequests(...args: any[]): Promise<any> { return this.fn(...args); }
     async cancelRequest(...args: any[]): Promise<any> { return this.fn(...args); }
     async define(...args: any[]): Promise<any> { return this.fn(...args); }
+}
+
+@Suite('Archetype tool groups')
+export class ArchetypeToolGroupsTest {
+    @Test('built-in plan group covers read/query surface and excludes writes')
+    async planGroupIsReadOnlySurface() {
+        const groups = resolveArchetypeToolGroups('plan');
+        expect(groups.filesystem).toEqual(true);
+        expect(groups.planning).toEqual(true);
+        expect(groups.filesystem_write).not.toEqual(true);
+        expect(groups.terminal).not.toEqual(true);
+        expect(groups.process).not.toEqual(true);
+        expect(groups.code_execution).not.toEqual(true);
+        expect(groups.git).not.toEqual(true);
+        expect(groups.media).not.toEqual(true);
+    }
+
+    @Test('build group enables the full write surface')
+    async buildGroupEnablesWrites() {
+        const groups = resolveArchetypeToolGroups('build');
+        expect(groups.filesystem_write).toEqual(true);
+        expect(groups.terminal).toEqual(true);
+        expect(groups.process).toEqual(true);
+        expect(groups.code_execution).toEqual(true);
+        expect(groups.git).toEqual(true);
+        expect(groups.media).toEqual(true);
+    }
+
+    @Test('review group adds git verification without write tools')
+    async reviewGroupAddsVerification() {
+        const groups = resolveArchetypeToolGroups('review');
+        expect(groups.git).toEqual(true);
+        expect(groups.lsp).toEqual(true);
+        expect(groups.filesystem).toEqual(true);
+        expect(groups.filesystem_write).not.toEqual(true);
+        expect(groups.terminal).not.toEqual(true);
+        expect(groups.process).not.toEqual(true);
+        expect(groups.code_execution).not.toEqual(true);
+    }
+
+    @Test('unknown archetype falls back to the build surface')
+    async unknownArchetypeFallsBackToBuild() {
+        const groups = resolveArchetypeToolGroups('auditor');
+        expect(groups.filesystem_write).toEqual(true);
+        expect(groups.terminal).toEqual(true);
+    }
+
+    @Test('custom archetype groups override the built-in mapping')
+    async customGroupsOverrideBuiltIn() {
+        const custom = {
+            plan: { terminal: true }
+        };
+        const groups = resolveArchetypeToolGroups('plan', custom);
+        expect(groups.terminal).toEqual(true);
+        expect(groups.filesystem_write).not.toEqual(true);
+        expect(ARCHETYPE_TOOL_GROUPS.plan.terminal).not.toEqual(true);
+    }
 }

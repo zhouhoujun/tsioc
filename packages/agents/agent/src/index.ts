@@ -1,4 +1,5 @@
 export * from './options';
+export * from './archetype/AgentArchetype';
 export * from './tokens';
 export * from './provider';
 export * from './agent.module';

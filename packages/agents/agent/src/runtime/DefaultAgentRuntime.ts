@@ -43,6 +43,14 @@ import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildE
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
+import {
+    AgentArchetype,
+    DEFAULT_ARCHETYPE,
+    buildArchetypeModeHint,
+    buildArchetypeSwitchMessage,
+    listArchetypes,
+    resolveArchetype
+} from '../archetype/AgentArchetype';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -1000,9 +1008,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 dateTime: new Date().toISOString()
             });
             if (systemPrompt) {
-                const modeHint = this.isPlanMode(sessionId)
-                    ? `\n\n## Session mode\nThis session is in PLAN MODE (read-only). Do not call tools that write, modify, or execute with side effects - such calls are denied by the runtime. Propose a plan and wait for the user to switch out of plan mode.`
-                    : '';
+                const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
                 messages = [
                     this.createMessage('system', systemPrompt + modeHint),
                     ...messages
@@ -1568,18 +1574,88 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     protected sessionPlanModes = new Set<string>();
+    protected sessionArchetypes = new Map<string, string>();
     protected sessionSandboxModes = new Map<string, import('../harness/sandbox-exec').SandboxMode>();
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
-            this.sessionPlanModes.add(sessionId);
+            this.setSessionArchetype(sessionId, 'plan');
         } else {
-            this.sessionPlanModes.delete(sessionId);
+            this.setSessionArchetype(sessionId, this.options.defaultArchetype ?? DEFAULT_ARCHETYPE);
         }
     }
 
     isPlanMode(sessionId: string): boolean {
-        return this.sessionPlanModes.has(sessionId);
+        return this.resolveArchetypeConfig(sessionId)?.readOnly === true || this.sessionPlanModes.has(sessionId);
+    }
+
+    setSessionArchetype(sessionId: string, archetype: string | null | undefined): void {
+        const previous = this.getSessionArchetype(sessionId);
+        const next = archetype
+            ? this.normalizeArchetypeName(archetype)
+            : (this.options.defaultArchetype ?? DEFAULT_ARCHETYPE);
+        if (!next) {
+            this.sessionArchetypes.delete(sessionId);
+        } else {
+            this.sessionArchetypes.set(sessionId, next);
+        }
+        const config = this.resolveArchetypeConfig(sessionId);
+        if (config?.readOnly) {
+            this.sessionPlanModes.add(sessionId);
+        } else {
+            this.sessionPlanModes.delete(sessionId);
+        }
+        if (next !== previous) {
+            const switchConfig = resolveArchetype(this.options.archetypes, next);
+            if (switchConfig) {
+                void this.appendArchetypeSwitchMessage(sessionId, switchConfig, previous);
+            }
+        }
+    }
+
+    getSessionArchetype(sessionId: string): string {
+        return this.sessionArchetypes.get(sessionId) ?? this.options.defaultArchetype ?? DEFAULT_ARCHETYPE;
+    }
+
+    listArchetypes(): string[] {
+        return listArchetypes(this.options.archetypes).map(archetype => archetype.name);
+    }
+
+    protected resolveArchetypeConfig(sessionId: string): AgentArchetype | undefined {
+        return resolveArchetype(this.options.archetypes, this.getSessionArchetype(sessionId));
+    }
+
+    protected normalizeArchetypeName(name: string): string {
+        const lower = String(name).trim().toLowerCase();
+        if (lower === 'planner') {
+            return 'plan';
+        }
+        if (lower === 'execute' || lower === 'coder' || lower === 'default') {
+            return DEFAULT_ARCHETYPE;
+        }
+        if (lower === 'audit') {
+            return 'review';
+        }
+        return lower;
+    }
+
+    protected async appendArchetypeSwitchMessage(
+        sessionId: string,
+        config: AgentArchetype,
+        previous: string
+    ): Promise<void> {
+        try {
+            const existing = await this.getMessages(sessionId);
+            if (!existing.length) {
+                return;
+            }
+            await this.sessions.append(
+                sessionId,
+                this.createMessage('system', buildArchetypeSwitchMessage(config, previous))
+            );
+        } catch {
+            // a failed switch note must never break archetype switching
+        }
     }
 
     setSessionSandboxMode(sessionId: string, mode?: import('../harness/sandbox-exec').SandboxMode | null): void {
@@ -1601,6 +1677,66 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return defs;
         }
         return defs.filter(d => d.toolset && filter.has(d.toolset));
+    }
+
+    /**
+     * Archetype tool gate: deny rules win, allow rules pass, then a readOnly
+     * archetype denies write-capable tools unless the input satisfies a
+     * configured write path. Returns the denial reason or undefined to allow.
+     */
+    protected checkArchetypeToolGate(
+        sessionId: string,
+        definition: AgentToolDefinition,
+        input: Record<string, any>
+    ): string | undefined {
+        const archetype = this.resolveArchetypeConfig(sessionId);
+        if (!archetype) {
+            return undefined;
+        }
+        const permission = archetype.permissions;
+        const toolName = definition.name;
+
+        if (permission?.deny?.some(pattern => this.matchToolPattern(toolName, pattern))) {
+            return `Tool "${toolName}" is denied by the "${archetype.name}" archetype.`;
+        }
+        if (permission?.allow?.length && permission.allow.some(pattern => this.matchToolPattern(toolName, pattern))) {
+            return undefined;
+        }
+        if (archetype.readOnly === true && !definition.execution?.readOnly) {
+            if (permission?.writePaths?.length && this.inputMatchesWritePaths(input, permission.writePaths)) {
+                return undefined;
+            }
+            return `Tool "${toolName}" is disabled in ${archetype.name} mode (read-only session).`;
+        }
+        return undefined;
+    }
+
+    protected matchToolPattern(toolName: string, pattern: string): boolean {
+        if (pattern.endsWith('*')) {
+            return toolName.startsWith(pattern.slice(0, -1));
+        }
+        return toolName === pattern;
+    }
+
+    protected inputMatchesWritePaths(input: Record<string, any>, writePaths: string[]): boolean {
+        const candidates: string[] = [];
+        const collect = (value: any): void => {
+            if (typeof value === 'string') {
+                candidates.push(value);
+            } else if (Array.isArray(value)) {
+                value.forEach(collect);
+            } else if (value && typeof value === 'object') {
+                Object.values(value).forEach(collect);
+            }
+        };
+        collect(input);
+        return candidates.some(value => writePaths.some(prefix => {
+            const normalizedValue = value.replace(/^[./\\]+/, '');
+            const normalizedPrefix = prefix.replace(/^[./\\]+/, '').replace(/\/+$/, '');
+            return normalizedValue === normalizedPrefix
+                || normalizedValue.startsWith(normalizedPrefix + '/')
+                || normalizedValue.startsWith(normalizedPrefix + '\\');
+        }));
     }
 
     private async *collectStreamingResponse(
@@ -1922,14 +2058,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, `Tool "${toolCall.name}" definition was not found.`);
         }
 
-        if (this.isPlanMode(sessionId) && !definition.execution?.readOnly) {
-            const reason = `Tool "${toolCall.name}" is disabled in plan mode (read-only session).`;
+        const archetypeGate = this.checkArchetypeToolGate(sessionId, definition, toolCallInput);
+        if (archetypeGate) {
             return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
-                error: reason
-            }, reason, { sessionId, reason });
+                error: archetypeGate
+            }, archetypeGate, { sessionId, reason: archetypeGate });
         }
 
         const activationError = await this.ensureToolActivation(sessionId, definition);

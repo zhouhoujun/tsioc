@@ -2,6 +2,7 @@ import { AgentModelOptions } from './model/ModelProviderOptions';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
+import { AgentArchetype, DEFAULT_ARCHETYPE } from './archetype/AgentArchetype';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -113,6 +114,10 @@ export interface AgentOptions {
     sandbox?: AgentSandboxOptions;
     /** A7: best-effort source formatter for generated edits (write tools only). */
     format?: AgentFormatterOptions;
+    /** P70: named session archetypes; custom entries override built-ins by name. */
+    archetypes?: Record<string, AgentArchetype>;
+    /** P70: archetype used when a session has no explicit override (default 'build'). */
+    defaultArchetype?: string;
     hooks?: AgentHooksOptions;
 }
 
@@ -164,7 +169,8 @@ export const defaultAgentOptions: AgentOptions = {
         sessionId: 'default',
         input: '',
         output: ''
-    }
+    },
+    defaultArchetype: DEFAULT_ARCHETYPE
 };
 
 export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
@@ -213,6 +219,10 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
             ...defaultAgentOptions.sandbox,
             ...profileSandbox,
             ...(options?.sandbox ?? {})
+        },
+        archetypes: {
+            ...(defaultAgentOptions.archetypes ?? {}),
+            ...(options?.archetypes ?? {})
         },
         hooks: {
             ...(defaultAgentOptions.hooks ?? {}),

@@ -133,7 +133,8 @@ export abstract class AgentRuntime {
      * Enable or disable read-only plan mode for a session. While enabled, tools
      * that are not declared read-only are denied before execution, so the agent
      * may inspect state, search memory, and propose changes without mutating
-     * anything.
+     * anything. Delegates to the `plan` archetype when the runtime supports
+     * archetypes (see setSessionArchetype).
      * Override this in concrete runtimes that support session-scoped plan mode.
      */
     setPlanMode(_sessionId: string, _enabled: boolean): void {
@@ -147,6 +148,34 @@ export abstract class AgentRuntime {
     isPlanMode(_sessionId: string): boolean {
         // no-op by default
         return false;
+    }
+
+    /**
+     * P70: set the active archetype for a session ('build' | 'plan' | 'review'
+     * or a custom name from AgentOptions.archetypes). Pass undefined/null to
+     * restore the configured default archetype. Plan mode is derived from the
+     * active archetype's readOnly flag.
+     * Override this in concrete runtimes that support session-scoped archetypes.
+     */
+    setSessionArchetype(_sessionId: string, _archetype: string | null | undefined): void {
+        // no-op by default
+    }
+
+    /**
+     * P70: the active archetype name for a session (resolved with the
+     * configured default).
+     * Override this in concrete runtimes that support session-scoped archetypes.
+     */
+    getSessionArchetype(_sessionId: string): string {
+        return 'build';
+    }
+
+    /**
+     * P70: names of all available archetypes (built-ins plus configured).
+     * Override this in concrete runtimes that support session-scoped archetypes.
+     */
+    listArchetypes(): string[] {
+        return ['build', 'plan', 'review'];
     }
 
     /**

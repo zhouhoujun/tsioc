@@ -59,7 +59,7 @@
 - 锚点：`agent/src/model/OpenAICompatibleModelAdapter.ts`、`agent/src/model/PromptCachePolicy.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent/src/prompt/sections/*`。
 - 测试：`agent/test/model-provider.spec.ts`（cache 注解断言、前缀稳定性）。
 
-### P70 · 声明式 agent 原型：plan/build/review（G6）—— 中优先
+### P70 · 声明式 agent 原型：plan/build/review（G6）—— 中优先 ✅ 已完成
 
 - 引入 `AgentArchetype` 配置（name/description/mode: primary|subagent/permission 规则集/prompt/model/steps），对齐 opencode `Agent.Info` 与 codex `[agents]`。
 - 内置 `plan`（只读 + 仅允许写 plans 目录）、`build`（默认全量）、`review`（只读 + 文档工具）三个原型；`setPlanMode` 收敛为 plan 原型的会话实例。
@@ -137,4 +137,6 @@ P68（Compaction replay + 媒体占位符，G3）已落地：`AgentContextManage
 
 P69（Prompt cache 请求侧落地 + 系统提示分段，G4）已落地：`PromptSection` 新增 `cacheable` 标记（DateTime/Memory 段置 false），`SystemPromptBuilder` 静态段（identity/project/tools）前置、动态段（date-time/memory）后置，保证 prompt 前缀稳定；`OpenAICompatibleModelAdapter` 从 observe-only 升级为请求侧控制——openai provider 对 system 消息标注 `cache_control: {type: 'ephemeral'|'persistent'}`（supported 'full'），deepseek 依赖自动 context caching（supported 'partial'、不注解），其余 openai-compatible 保持 observe_only；修复前缀破坏 bug（动态 summary/memory 从 system prompt 之前移到之后）；新增静态前缀 hash 跨请求比较，tools/system 变更时 `PromptCacheRuntimeMetadata.prefixBroken` 置 true。回归：agent 579 / agent-gateway 187 / agent-ui 334 passing，三包构建 clean；新增测试覆盖 cache_control 注解、summary/memory 后置、deepseek partial、前缀破坏检测、分段渲染顺序。
 
-P70–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P70（声明式 agent 原型，G6）已落地：`AgentArchetype` 配置（name/description/mode/permissions 规则集/prompt/model/steps）对齐 opencode `Agent.Info`；内置 `plan`（只读 + 允许写 plans 目录）、`build`（默认全量）、`review`（只读 + git/lsp 验证）三原型；`setPlanMode` 收敛为 plan 原型会话实例，`isPlanMode` 由 `resolveArchetypeConfig().readOnly` 派生；`buildArchetypeModeHint` 对纯 build 原型返回空串保证默认系统提示逐字节不变；原型切换向非空会话注入 build-switch 风格系统消息；工具门控优先级 deny > allow > readOnly（writePaths 命中放行，`prefix*` 通配）；agent-tools 新增 `ARCHETYPE_TOOL_GROUPS` + `resolveArchetypeToolGroups`（build 全量 / plan 只读查询 / review 查询+验证）；agent-ui 新增 `/archetype [name]` 命令 + `/status` 展示 archetype；gateway 新增 `session.archetype.set/get` RPC。回归：agent 587 / agent-gateway 187 / agent-ui 334 / agent-tools 193 passing，四包构建 clean；新增测试覆盖默认解析、plan/review/build 门控、writePaths 放行、deny 规则、切换消息注入、模式提示、工具组映射。
+
+P71–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。

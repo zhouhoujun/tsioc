@@ -152,6 +152,8 @@ export class AppRpcServer {
                         'session.export',
                         'session.plan_mode.set',
                         'session.plan_mode.get',
+                        'session.archetype.set',
+                        'session.archetype.get',
                         'session.sandbox_mode.set',
                         'session.sandbox_mode.get',
                         'session.undo_file',
@@ -239,6 +241,10 @@ export class AppRpcServer {
                 return this.setSessionPlanMode(params, context);
             case 'session.plan_mode.get':
                 return this.getSessionPlanMode(params, context);
+            case 'session.archetype.set':
+                return this.setSessionArchetype(params, context);
+            case 'session.archetype.get':
+                return this.getSessionArchetype(params, context);
             case 'session.sandbox_mode.set':
                 return this.setSessionSandboxMode(params, context);
             case 'session.sandbox_mode.get':
@@ -582,6 +588,24 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
+    }
+
+    private async setSessionArchetype(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const archetype = params?.archetype ? String(params.archetype) : undefined;
+        this.runtime.setSessionArchetype(sessionId, archetype);
+        return { sessionId, archetype: this.runtime.getSessionArchetype(sessionId) };
+    }
+
+    private async getSessionArchetype(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return {
+            sessionId,
+            archetype: this.runtime.getSessionArchetype(sessionId),
+            available: this.runtime.listArchetypes()
+        };
     }
 
     private async setSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
