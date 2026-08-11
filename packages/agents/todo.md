@@ -83,7 +83,7 @@
 - 锚点：`agent/src/project/agents-doc.ts`、`agent/src/project/init-agents-doc.ts`、`agent/src/prompt/sections/ProjectContextSection.ts`、`agent/src/options.ts`。
 - 测试：`agent/test/agents-doc.spec.ts`（override 优先级、fallback、截断、链式发现/渲染、结构分析）。
 
-### P73 · 语义记忆检索（G7）—— 中优先
+### P73 · 语义记忆检索（G7）—— 中优先 ✅ 已完成
 
 - 可选 embedding 提供者（注入 `MemoryEmbedder` token，无配置时回退关键词）；`memory.search` 增加 `mode: 'semantic' | 'keyword' | 'hybrid'`。
 - 结果合并现有记忆/经验蒸馏管线（`AgentMemoryRetriever`），不破坏现有确定性路径。
@@ -144,4 +144,6 @@ P71（Git step 快照 + 消息级 revert/unrevert + 会话 diff，G2）主体已
 
 P72（AGENTS.md 指令链升级，G5）已落地：`findAgentsDoc` 返回 root→cwd 有序指令链（每目录候选按 override → 主文件名 → fallback 去重、先存在者胜，`AGENTS.override.md` 优先于 `AGENTS.md`）；`projectDocFallbackFilenames`/`projectDocMaxBytes`（默认 32KiB，Buffer 按字节截断且不劈开多字节字符）接入 `ProjectContextSection`（带 mtime 缓存失效）；walk 起点改为工作目录——cwd 在 pinned root 内时从 cwd 起、root 处 `stopAt` 收束，否则回退 pinned root；`initAgentsDoc`/`analyzeProjectStructure`/`collectExtensions` 重构为注入式 `FileAdapter` 驱动（`list/readTextSync/join/extname`），彻底移除 agent 源码对 node `fs/os/path` 的直接依赖（`Buffer` 改自 `buffer` 包，兼容浏览器/Node），`initAgentsDoc` 要求显式 `fileAdapter`、缺失时优雅失败；agent-ui `/init` 将 ApplicationContext 解析的 `FileAdapter` 传入。回归：agent 603 / agent-ui 353 passing，两包 `tsc --noEmit` clean；新增测试覆盖链式发现、override 优先、fallback、字节截断、链式 section 渲染、结构分析语言检测。
 
-P73–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
+P73（语义记忆检索，G7）已落地：新增 `MemoryEmbedder`（abstract + `MEMORY_EMBEDDER` DI token）与 `cosineSimilarity`、`SemanticMemoryRanker`（embed key+value → cosine 排序，`topK`/`minScore` 过滤）；`MemorySearchService` 编排 `keyword`（store 子串匹配）/`semantic`（embed query → 全量可见记录排序）/`hybrid`（semantic 排序在前 + keyword 独有记录按 id 去重附加）三模式，无 embedder 时 semantic/hybrid 静默降级 keyword；`AgentMemoryRetriever` 输入扩展 `mode`/`limit`/`minScore`，直接构造时以 ad-hoc service 保持语义路径可用；agent 内置与 agent-tools 的 `memory.search` 工具均支持 `mode`/`minScore`，注入可选 `AgentMemoryRetriever`（无注入回退 `context.memory`）；新 API 从 agent index 导出。回归：agent 617 / agent-tools 270 passing（agent-tools 另有 1 个既有 apply-patch 临时目录失败，基线即存在），两包 `tsc --noEmit` clean；新增测试覆盖 cosine 纯函数、ranker 排序/过滤/cap、service 三模式 + 降级 + limit、retriever 语义/降级/参数透传、tools mode 校验与回退。
+
+P74–P78（差距打磨计划，2026-08 排定）未开始；启动时逐项更新本段。
