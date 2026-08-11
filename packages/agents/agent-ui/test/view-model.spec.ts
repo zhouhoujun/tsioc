@@ -387,12 +387,26 @@ class AppRpcStub {
     sandboxModes = new Map<string, string>();
     audioStatesBySession = new Map<string, { bufferedBytes: number; chunks: string[] }>();
     audioStatusOverride: Record<string, any> | null = null;
+    gitStepSnapshots: any[] = [];
+    gitStepSnapshotDiffs = new Map<string, any>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
         this.calls.push({ method, params, context });
         if (method === 'app.state') {
             return this.state;
+        }
+        if (method === 'session.git_snapshot.list') {
+            return this.gitStepSnapshots || [];
+        }
+        if (method === 'session.git_snapshot.diff') {
+            return this.gitStepSnapshotDiffs.get(String(params?.ref || '')) ?? null;
+        }
+        if (method === 'session.git_snapshot.revert') {
+            return { reverted: true, messageId: params?.messageId };
+        }
+        if (method === 'session.git_snapshot.unrevert') {
+            return { reverted: true };
         }
         if (method === 'tools.list') {
             return this.tools || [];
@@ -813,6 +827,24 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return result ?? null;
         }
         return null;
+    }
+
+    override async listGitStepSnapshots(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('session.git_snapshot.list', { sessionId }, context);
+            return Array.isArray(result) ? result : [];
+        }
+        return super.listGitStepSnapshots(sessionId, context);
+    }
+
+    override async diffGitStepSnapshot(sessionId: string, ref: string, context?: any): Promise<Record<string, any> | null> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('session.git_snapshot.diff', { sessionId, ref }, context);
+            return result && typeof result === 'object' ? result : null;
+        }
+        return super.diffGitStepSnapshot(sessionId, ref, context);
     }
 
     override async exportSession(sessionId: string, options?: { format?: 'json' | 'jsonl' }): Promise<any> {
@@ -6565,6 +6597,126 @@ export class AgentConsoleComponentTest {
         expect(await service.cancelTurn('')).toEqual(false);
     }
 
+    @Test('session service lists git step snapshots through app rpc')
+    async sessionServiceListsGitStepSnapshotsThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        appRpc.gitStepSnapshots = [
+            { id: 'snap-1', messageId: 'msg-1', label: 'first step', createdAt: 1 },
+            { id: 'snap-2', messageId: 'msg-2', label: 'second step', createdAt: 2 }
+        ];
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const snapshots = await service.listGitStepSnapshots('chat-1');
+
+        expect(snapshots.map(item => item.messageId)).toEqual(['msg-1', 'msg-2']);
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.list' && call.params?.sessionId === 'chat-1')).toEqual(true);
+    }
+
+    @Test('session service lists git step snapshots from the local runtime without app rpc')
+    async sessionServiceListsGitStepSnapshotsFromLocalRuntime() {
+        const runtime = {
+            listGitStepSnapshots: (sessionId: string) => sessionId === 'chat-1'
+                ? [{ id: 'snap-1', messageId: 'msg-1', label: 'step', createdAt: 1 }]
+                : []
+        } as any;
+        const service = new AgentConsoleSessionService(undefined, undefined, runtime);
+
+        expect(await service.listGitStepSnapshots('chat-1')).toHaveLength(1);
+        expect(await service.listGitStepSnapshots('chat-2')).toEqual([]);
+    }
+
+    @Test('session service returns no git step snapshots without a session')
+    async sessionServiceReturnsNoGitStepSnapshotsWithoutSession() {
+        const service = new AgentConsoleSessionService(undefined, undefined, undefined);
+
+        expect(await service.listGitStepSnapshots('')).toEqual([]);
+    }
+
+    @Test('session service diffs a git step snapshot through app rpc')
+    async sessionServiceDiffsGitStepSnapshotThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        appRpc.gitStepSnapshotDiffs.set('msg-1', {
+            ref: 'msg-1',
+            files: [{ filePath: 'src/a.ts', status: 'modified' }],
+            rawPatch: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+        });
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const diff = await service.diffGitStepSnapshot('chat-1', 'msg-1');
+
+        expect(diff?.files?.[0]?.filePath).toEqual('src/a.ts');
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.diff' && call.params?.ref === 'msg-1')).toEqual(true);
+    }
+
+    @Test('session service returns null when a git step snapshot diff is missing')
+    async sessionServiceReturnsNullWhenGitStepSnapshotDiffMissing() {
+        const appRpc = new AppRpcStub();
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        expect(await service.diffGitStepSnapshot('chat-1', 'missing-ref')).toBeNull();
+    }
+
+    @Test('session service returns null for a git snapshot diff without a ref')
+    async sessionServiceReturnsNullForGitSnapshotDiffWithoutRef() {
+        const appRpc = new AppRpcStub();
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        expect(await service.diffGitStepSnapshot('chat-1', '')).toBeNull();
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.diff')).toEqual(false);
+    }
+
+    @Test('session service reverts a git step snapshot through app rpc')
+    async sessionServiceRevertsGitStepSnapshotThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const result = await service.revertGitStepSnapshot('chat-1', 'msg-1');
+
+        expect(result.reverted).toEqual(true);
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.revert' && call.params?.messageId === 'msg-1')).toEqual(true);
+    }
+
+    @Test('session service unreverts a git step snapshot through app rpc')
+    async sessionServiceUnrevertsGitStepSnapshotThroughAppRpc() {
+        const appRpc = new AppRpcStub();
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const result = await service.unrevertGitStepSnapshot('chat-1');
+
+        expect(result.reverted).toEqual(true);
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.unrevert' && call.params?.sessionId === 'chat-1')).toEqual(true);
+    }
+
+    @Test('session service reverts a git step snapshot through the local runtime without app rpc')
+    async sessionServiceRevertsGitStepSnapshotThroughLocalRuntime() {
+        const runtime = {
+            revertGitStepSnapshot: async (sessionId: string, messageId: string) => ({ reverted: true, messageId }),
+            unrevertGitStepSnapshot: async () => ({ reverted: true })
+        } as any;
+        const service = new AgentConsoleSessionService(undefined, undefined, runtime);
+
+        expect((await service.revertGitStepSnapshot('chat-1', 'msg-1')).reverted).toEqual(true);
+        expect((await service.unrevertGitStepSnapshot('chat-1')).reverted).toEqual(true);
+    }
+
+    @Test('session service reports a failed revert without a message id')
+    async sessionServiceReportsFailedRevertWithoutMessageId() {
+        const appRpc = new AppRpcStub();
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const result = await service.revertGitStepSnapshot('chat-1', '');
+
+        expect(result.reverted).toEqual(false);
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.revert')).toEqual(false);
+    }
+
+    @Test('session service reports a failed unrevert without a session')
+    async sessionServiceReportsFailedUnrevertWithoutSession() {
+        const service = new AgentConsoleSessionService(undefined, undefined, undefined);
+
+        expect((await service.unrevertGitStepSnapshot('')).reverted).toEqual(false);
+    }
+
     @Test('session service prefers project id grouping when metadata exists')
     async sessionServicePrefersProjectIdGrouping() {
         const store = new WorkspaceSessionStoreStub();
@@ -6896,6 +7048,137 @@ export class AgentConsoleComponentTest {
             }
         ]);
         expect(component.sessionState.projects.map(item => item.label)).toEqual(['Investigate flaky worker startup']);
+    }
+
+    @Test('git-snapshots command diff opens the git snapshot detail panel through app rpc')
+    async gitSnapshotsCommandDiffOpensDetailPanelThroughAppRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.gitStepSnapshotDiffs.set('msg-1', {
+            ref: 'msg-1',
+            files: [{ filePath: 'src/a.ts', status: 'modified' }],
+            rawPatch: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await (component as any).openSession('chat-1');
+
+        await (component as any).handleCommand('/git-snapshots diff msg-1');
+
+        expect(component.sessionState.gitSnapshotOpen).toEqual(true);
+        expect(component.sessionState.gitSnapshotDetailLines).toEqual(['diff --git a/src/a.ts b/src/a.ts', '+new line']);
+        expect(component.sessionState.gitSnapshotHeaderLabel).toContain('msg-1');
+        expect(component.sessionState.gitSnapshotStatsLabel).toContain('files 1');
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.diff' && call.params?.ref === 'msg-1')).toEqual(true);
+    }
+
+    @Test('git-snapshots command diff falls back to the local runtime without app rpc')
+    async gitSnapshotsCommandDiffFallsBackToLocalRuntime() {
+        const runtime = new RuntimeStub();
+        (runtime as any).diffGitStepSnapshot = (sessionId: string, ref: string) => ({
+            ref,
+            files: [{ filePath: 'src/a.ts', status: 'modified' }],
+            rawPatch: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+        });
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).openSession('chat-1');
+
+        await (component as any).handleCommand('/git-snapshots diff msg-1');
+
+        expect(component.sessionState.gitSnapshotOpen).toEqual(true);
+        expect(component.sessionState.gitSnapshotDetailLines).toEqual(['diff --git a/src/a.ts b/src/a.ts', '+new line']);
+    }
+
+    @Test('git-snapshots command diff without a ref reports usage')
+    async gitSnapshotsCommandDiffWithoutRefReportsUsage() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        await (component as any).openSession('chat-1');
+
+        await (component as any).handleCommand('/git-snapshots diff');
+
+        expect(component.sessionState.gitSnapshotOpen).toEqual(false);
+    }
+
+    @Test('git-snapshots command with an unknown action reports usage')
+    async gitSnapshotsCommandUnknownActionReportsUsage() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        await (component as any).openSession('chat-1');
+
+        await (component as any).handleCommand('/git-snapshots bogus');
+
+        expect(component.sessionState.gitSnapshotOpen).toEqual(false);
+    }
+
+    @Test('git-snapshots command with no snapshots notifies without opening the panel')
+    async gitSnapshotsCommandNoSnapshotsNotifiesWithoutOpeningPanel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await (component as any).openSession('chat-1');
+
+        await (component as any).handleCommand('/git-snapshots');
+
+        expect(component.sessionState.gitSnapshotOpen).toEqual(false);
+        expect(appRpc.calls.some(call => call.method === 'session.git_snapshot.list')).toEqual(true);
+    }
+
+    @Test('git snapshot diff renders the raw patch when present')
+    async gitSnapshotDiffRendersRawPatchWhenPresent() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        const lines = (component as any).buildGitSnapshotDiffLines({
+            rawPatch: 'diff --git a/src/a.ts b/src/a.ts\r\n+line one\r\n-line two\r\n'
+        });
+
+        expect(lines).toEqual(['diff --git a/src/a.ts b/src/a.ts', '+line one', '-line two']);
+    }
+
+    @Test('git snapshot diff renders file summaries when the raw patch is missing')
+    async gitSnapshotDiffRendersFileSummariesWhenRawPatchMissing() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        const lines = (component as any).buildGitSnapshotDiffLines({
+            files: [
+                { filePath: 'src/a.ts', status: 'modified' },
+                { path: 'src/b.ts', status: 'added' }
+            ]
+        });
+
+        expect(lines).toEqual([
+            'diff --git a/src/a.ts b/src/a.ts',
+            'status: modified',
+            'diff --git a/src/b.ts b/src/b.ts',
+            'status: added'
+        ]);
+    }
+
+    @Test('git snapshot state opens and closes the detail panel with scroll state')
+    async gitSnapshotStateOpensAndClosesDetailPanel() {
+        const state = new AgentConsoleSessionState();
+        state.openGitSnapshotDetail('git snapshot msg-1', ['line 1', 'line 2', 'line 3', 'line 4', 'line 5', 'line 6', 'line 7', 'line 8', 'line 9', 'line 10'], 'files 1');
+
+        expect(state.gitSnapshotOpen).toEqual(true);
+        expect(state.gitSnapshotHeaderLabel).toEqual('git snapshot msg-1');
+        expect(state.gitSnapshotStatsLabel).toEqual('files 1');
+
+        state.scrollGitSnapshotDetail(1);
+        expect(state.gitSnapshotDetailScroll).toEqual(1);
+
+        state.closeGitSnapshotDetail();
+        expect(state.gitSnapshotOpen).toEqual(false);
+        expect(state.gitSnapshotDetailLines).toEqual([]);
+        expect(state.gitSnapshotDetailScroll).toEqual(0);
     }
 
     @Test('openSession aggregates project summary, todo, and coding tasks across related sessions')
