@@ -5546,7 +5546,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async runInitCommand(args: string): Promise<void> {
         const force = String(args || '').trim().split(/\s+/).includes('--force');
         try {
-            const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace });
+            const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace, fileAdapter: this.resolveFileAdapter() ?? undefined });
             if (result.created) {
                 this.notify(`Created ${result.file}`);
             } else {
