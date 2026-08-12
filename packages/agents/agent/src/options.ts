@@ -118,6 +118,32 @@ export interface AgentFormatterOptions {
     env?: Record<string, string>;
 }
 
+/**
+ * P79: post-edit verification command options. After a tool round edits
+ * files, the runtime runs package verification commands scoped to the edited
+ * packages and records the results as `verify-command` evidence consumed by
+ * the verification gate (check d).
+ */
+export interface AgentVerificationOptions {
+    /** Master switch; set false to disable verification commands entirely (default true). */
+    enabled?: boolean;
+    /**
+     * Explicit command templates keyed by kind, run verbatim when set
+     * (e.g. `{ typecheck: 'tsc --noEmit', test: 'vitest run --changed' }`).
+     */
+    verifyCommands?: Partial<Record<'test' | 'build' | 'typecheck' | 'lint' | string, string>>;
+    /**
+     * Auto-discovered package.json script names run when present in the edited
+     * package (default ['typecheck', 'lint']; long-running suites like test /
+     * build are opt-in to avoid slowing every edit round).
+     */
+    autoScripts?: string[];
+    /** Per-command timeout in ms (default 120000). */
+    timeoutMs?: number;
+    /** Max output chars captured per command (default 8000). */
+    maxOutputChars?: number;
+}
+
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
@@ -129,6 +155,8 @@ export interface AgentOptions {
     verificationWriteTools?: string[];
     /** B4: reference to a versioned harness governance snapshot (built-in name or inline profile). */
     harnessProfile?: string | HarnessProfile;
+    /** P79: post-edit verification commands (typecheck/lint/build/test) as gate evidence. */
+    verification?: AgentVerificationOptions;
     session?: AgentSessionOptions;
     context?: AgentContextOptions;
     tools?: AgentToolOptions;
@@ -207,7 +235,13 @@ export const defaultAgentOptions: AgentOptions = {
     },
     defaultArchetype: DEFAULT_ARCHETYPE,
     projectDocFallbackFilenames: ['AGENTS.md'],
-    projectDocMaxBytes: 32768
+    projectDocMaxBytes: 32768,
+    verification: {
+        enabled: true,
+        autoScripts: ['typecheck', 'lint'],
+        timeoutMs: 120000,
+        maxOutputChars: 8000
+    }
 };
 
 export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
@@ -264,6 +298,10 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         hooks: {
             ...(defaultAgentOptions.hooks ?? {}),
             ...(options?.hooks ?? {})
+        },
+        verification: {
+            ...(defaultAgentOptions.verification ?? {}),
+            ...(options?.verification ?? {})
         }
     };
 }

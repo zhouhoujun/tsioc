@@ -41,7 +41,10 @@ export const DEFAULT_VERIFICATION_MAX_EVIDENCE_SUMMARY = 8;
  *      execute_code failures all surface as error evidence entries);
  *  (b) a declared write produced no actual diff (before === after);
  *  (c) a successful write left error-level (severity 1) LSP diagnostics on
- *      the file(s) it touched.
+ *      the file(s) it touched;
+ *  (d) a P79 verification command (`verification === 'verify-command'`)
+ *      exited non-zero or timed out — package typecheck/lint/build/test
+ *      failures recorded by the runtime after an edit round.
  *
  * Only evidence recorded since `startIndex` is considered so a previous
  * round's failures are not re-falsified. When falsified, the failing entries
@@ -63,8 +66,11 @@ export class VerificationGate {
         }
         const roundEntries = ledger.entriesFrom(startIndex);
 
-        // (a) tool error / non-zero exit within this round.
+        // (a) tool error / non-zero exit within this round (verify-command handled by (d)).
         for (const entry of roundEntries) {
+            if (entry.verification === 'verify-command') {
+                continue;
+            }
             if (entry.status === 'error' || (entry.exitCode !== undefined && entry.exitCode !== 0)) {
                 result.falsified = true;
                 result.reasons.push(
@@ -109,6 +115,31 @@ export class VerificationGate {
             if (!result.falsifiedEvidence.some(existing => existing.id === entry.id)) {
                 result.falsifiedEvidence.push({ ...entry, falsificationReason: `LSP error: ${first.message}` });
             }
+        }
+
+        // (d) P79 verification commands that failed (non-zero exit / timeout / spawn error).
+        for (const entry of roundEntries) {
+            if (entry.verification !== 'verify-command') {
+                continue;
+            }
+            const failed = entry.status !== 'success' || (entry.exitCode !== undefined && entry.exitCode !== 0);
+            if (!failed) {
+                continue;
+            }
+            const tail = entry.outputSummary && entry.outputSummary.length > 240
+                ? `\n…${entry.outputSummary.slice(-240)}`
+                : entry.outputSummary
+                    ? `\n${entry.outputSummary}`
+                    : '';
+            const detail = entry.error
+                ? `${entry.error}${entry.exitCode !== undefined ? ` (exit ${entry.exitCode})` : ''}`
+                : `exit code ${entry.exitCode ?? 'unknown'}`;
+            result.falsified = true;
+            result.reasons.push(`Verification command failed: ${detail}${tail}`);
+            result.falsifiedEvidence.push({
+                ...entry,
+                falsificationReason: `Verification command failed: ${detail}`
+            });
         }
 
         return result;

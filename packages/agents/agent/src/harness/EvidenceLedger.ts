@@ -32,6 +32,8 @@ export interface ToolEvidenceEntry {
     /** Set by the verification gate (B2) when this claim was falsified. */
     falsified?: boolean;
     falsificationReason?: string;
+    /** Marker for P79 verification-command evidence ('verify-command'). */
+    verification?: string;
     createdAt: number;
 }
 
@@ -90,6 +92,7 @@ export class EvidenceLedger {
             lspDiagnostics: entry.lspDiagnostics,
             falsified: entry.falsified,
             falsificationReason: entry.falsificationReason,
+            verification: entry.verification,
             createdAt: Date.now()
         };
         this.entries.push(normalized);

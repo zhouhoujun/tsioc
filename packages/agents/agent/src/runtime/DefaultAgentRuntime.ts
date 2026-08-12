@@ -41,6 +41,7 @@ import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiag
 import { EvidenceLedger } from '../harness/EvidenceLedger';
 import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
+import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS } from '../harness/VerifyCommandRunner';
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
@@ -84,6 +85,8 @@ interface TurnRecoveryState {
     attemptHistory: FalsificationAttempt[];
     repeatAttempts: number;
     writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
+    /** P79: file paths edited by write tools in the current round (verify-command inputs). */
+    editedFiles: string[];
     repairHints: ResolvedRepairHint[];
     repairRecipes: TurnRepairRecipe[];
     terminated: boolean;
@@ -1223,6 +1226,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             attemptHistory: [],
             repeatAttempts: 0,
             writeHints: [],
+            editedFiles: [],
             repairHints: [],
             repairRecipes: [],
             terminated: false,
@@ -1290,6 +1294,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!recovery) {
             return;
         }
+        await this.runVerificationCommands(sessionId, turnContext);
         const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
         const gate = new VerificationGate({ writeTools });
         const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
@@ -1342,6 +1347,60 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (recovery.consecutiveFalsifications >= maxRepairRounds) {
             recovery.terminated = true;
             recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
+        }
+    }
+
+    private trackEditedFile(turnContext: TurnExecutionContext, toolCall: { name: string }, definition: AgentToolDefinition, fileSnapshot: FileSnapshot | null): void {
+        const recovery = turnContext.recovery;
+        if (!recovery || !fileSnapshot?.filePath) {
+            return;
+        }
+        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
+            return;
+        }
+        recovery.editedFiles.push(fileSnapshot.filePath);
+    }
+
+    private async runVerificationCommands(sessionId: string, turnContext: TurnExecutionContext): Promise<void> {
+        const recovery = turnContext.recovery;
+        const verification = this.options.verification;
+        if (!recovery || verification?.enabled === false) {
+            return;
+        }
+        const editedFiles = recovery.editedFiles;
+        recovery.editedFiles = [];
+        if (editedFiles.length === 0) {
+            return;
+        }
+        try {
+            const runner = new VerifyCommandRunner({
+                verifyCommands: verification?.verifyCommands,
+                autoScripts: verification?.autoScripts,
+                timeoutMs: verification?.timeoutMs,
+                maxOutputChars: verification?.maxOutputChars,
+                workspace: turnContext.workspace
+            });
+            const runs = await runner.run(editedFiles);
+            for (const run of runs) {
+                const timeoutMs = verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS;
+                turnContext.evidenceLedger?.record({
+                    toolName: 'verify-command',
+                    status: run.failed ? 'error' : 'success',
+                    inputSummary: `verify ${run.kind}${run.script ? ` (${run.script})` : ''} in ${run.cwd}`,
+                    outputSummary: run.output,
+                    exitCode: run.exitCode,
+                    durationMs: run.durationMs,
+                    error: run.timedOut
+                        ? `Verification command timed out after ${timeoutMs}ms: ${run.command}`
+                        : run.exitCode !== undefined && run.exitCode !== 0
+                            ? `Verification command exited with code ${run.exitCode}: ${run.command}`
+                            : undefined,
+                    verification: 'verify-command'
+                });
+            }
+        } catch {
+            // verification commands must never break the turn loop
         }
     }
 
@@ -2292,6 +2351,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
             await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
             await this.pushFileSnapshot(sessionId, fileSnapshot);
+            this.trackEditedFile(turnContext, toolCall, definition, fileSnapshot);
             return {
                 toolCall,
                 content: truncated,
@@ -2322,6 +2382,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
             await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
             await this.pushFileSnapshot(sessionId, fileSnapshot);
+            this.trackEditedFile(turnContext, toolCall, definition, fileSnapshot);
             return {
                 toolCall,
                 content: truncated,
