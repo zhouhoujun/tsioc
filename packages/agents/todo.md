@@ -67,14 +67,14 @@
 - 锚点：`agent/src/options.ts`、`agent/src/runtime/AgentRuntime.ts`（原型解析）、`agent-tools/src/options.ts`、`agent-ui`（原型切换命令）。
 - 测试：`agent/test/runtime-loop.spec.ts`（plan 只读约束）、`agent-tools/test/tools.spec.ts`。
 
-### P71 · Git step 快照 + 消息级 revert/unrevert + 会话 diff（G2）—— 中优先 ✅ 主体已完成
+### P71 · Git step 快照 + 消息级 revert/unrevert + 会话 diff（G2）—— 中优先 ✅ 已完成
 
 - 每 step-start 以 git 临时 ref/commit 捕获工作树（不污染历史），绑定到会话消息 id；提供 `revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态。
 - 会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC，对齐 opencode），供 review 面板复用。
 - 与现有 FileSnapshotStore 并存：git 快照用于整树恢复，FileSnapshot 用于精确 undo（两者均为可选运行时 ctor 槽，可同时注册）。
 - 锚点：`agent/src/harness/GitStepSnapshotStore.ts`（git stash create + pinned refs）、`agent/src/runtime/AgentRuntime.ts`（list/revert/unrevert/diff API）、`agent/src/runtime/DefaultAgentRuntime.ts`（turn begin 捕获 + 结果消息绑定）、`agent/src/agent.module.ts`（DI 工厂，读 `AgentOptions.gitStepSnapshots`）、`agent-gateway/src/api/SessionHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
 - 测试：`agent/test/git-step-snapshot.spec.ts`（store 捕获/diff/revert/unrevert/list/clear + runtime 链路 + 模块装配，revert 链路覆盖见 Runtime 套件）、`agent-gateway/test/gateway-server.spec.ts`（git_snapshot RPC + REST 路由）。
-- 剩余（消费侧）：`agent-ui` review 面板复用会话 diff（本轮已交付 RPC/REST + 运行时 API，面板接入另排）。
+- `agent-ui` review 面板已复用会话 diff，并覆盖 list/diff/revert/unrevert 交互。
 
 ### P72 · AGENTS.md 指令链升级（G5）—— 中优先 ✅ 已完成
 
@@ -110,13 +110,13 @@
 - 锚点：`agent/src/model/ModelAdapter.ts`（错误类型）、`agent/src/runtime/DefaultAgentRuntime.ts`（complete/streaming 重试路径）。
 - 测试：`agent/test/model-adapter.spec.ts`（分类 + 退避断言）。
 
-### P77 · 会话 fork（G2 延伸）—— 低优先
+### P77 · 会话 fork（G2 延伸）—— 低优先 ✅ 已完成
 
 - 基于会话 snapshot 的 fork：`fork(sessionId, messageId?)` 创建子会话（branch role），继承 thread 归属（originThreadId），复用现有项目/线程模型。
 - 锚点：`agent/src/memory/SessionStore.ts`（snapshot/restore seam）、`agent-gateway/src/api/SessionHandler.ts`、`agent-ui` `/fork` 命令。
 - 测试：`agent/test/session.spec.ts`、`agent-ui/test/view-model.spec.ts`。
 
-### P78 · 项目记忆闭环：从验证失败回写 AGENTS.md（学习闭环）—— 远期
+### P78 · 项目记忆闭环：从验证失败回写 AGENTS.md（学习闭环）—— 远期 ✅ 已完成
 
 - 循证螺旋发现的高频 falsify 模式 → 生成项目级规则（`AGENTS.md` 或 `.agents/rules/*.md`）草案 → 人审后落地；对齐 codex「修正 agent 错误时更新 AGENTS.md」实践。
 - 锚点：`agent/src/harness/WeaknessMiner.ts`、`agent/src/project/agents-doc.ts`。
