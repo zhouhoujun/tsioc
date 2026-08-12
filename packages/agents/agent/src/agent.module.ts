@@ -42,6 +42,7 @@ import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
 import { FileSnapshotStore } from './harness/FileSnapshotStore';
 import { GitStepSnapshotStore } from './harness/GitStepSnapshotStore';
+import { ReviewFindingsStore } from './harness/ReviewFindingsStore';
 import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
 import { RateLimitManager } from './harness/RateLimitManager';
 import { OutputGuard } from './harness/OutputGuard';
@@ -115,6 +116,7 @@ import { createAgentProviders } from './provider';
         NoopAgentHookCommandExecutor,
         { provide: AgentHookCommandExecutor, useExisting: NoopAgentHookCommandExecutor, asDefault: true },
         FileSnapshotStore,
+        ReviewFindingsStore,
         {
             provide: GitStepSnapshotStore,
             useFactory: (options: AgentOptions) => new GitStepSnapshotStore(options.gitStepSnapshots ?? {}),

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -31,6 +31,7 @@ export class AppRpcServer {
         @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,
         @Optional() private delegation?: DelegationGraphStore | null,
         @Optional() private weaknessMiner?: WeaknessMiner | null,
+        @Optional() private reviewFindings?: ReviewFindingsStore | null,
         @Optional() private audio?: AudioSessionHandler | null
     ) {
     }
@@ -217,7 +218,11 @@ export class AppRpcServer {
                         'delegation.tree',
                         'delegation.lineage',
                         'delegation.children',
-                        'delegation.list'
+                        'delegation.list',
+                        'review.diff',
+                        'review.list',
+                        'review.get',
+                        'review.save'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -377,6 +382,14 @@ export class AppRpcServer {
                 return this.getDelegationChildren(params, context);
             case 'delegation.list':
                 return this.getDelegationList(params, context);
+            case 'review.diff':
+                return this.reviewDiff(params, context);
+            case 'review.list':
+                return this.listReviewRuns(params, context);
+            case 'review.get':
+                return this.getReviewRun(params, context);
+            case 'review.save':
+                return this.saveReviewRun(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1933,6 +1946,127 @@ export class AppRpcServer {
             completedAt: node.completedAt ?? null,
             metadata: node.metadata ?? null,
             children: node.children.map(child => this.toDelegationTreeView(child))
+        };
+    }
+
+    private async reviewDiff(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const base = typeof params?.base === 'string' && params.base.trim() ? params.base.trim() : 'HEAD';
+        const input: Record<string, any> = { base };
+        const range = typeof params?.range === 'string' && params.range.trim() ? params.range.trim() : undefined;
+        if (range) {
+            input.range = range;
+        }
+        if (Array.isArray(params?.paths)) {
+            const paths = params.paths.map((path: unknown) => String(path).trim()).filter((path: string) => !!path);
+            if (paths.length) {
+                input.paths = paths;
+            }
+        }
+        if (typeof params?.includeStats === 'boolean') {
+            input.includeStats = params.includeStats;
+        }
+        if (typeof params?.maxDiffChars === 'number' && Number.isFinite(params.maxDiffChars)) {
+            input.maxDiffChars = params.maxDiffChars;
+        }
+        input.workdir = this.resolveReviewWorkdir(params, sessionId);
+        const output = await this.tools.invoke('review_diff', input, sessionId, context.principalId, input.workdir);
+        return {
+            sessionId,
+            review: output
+        };
+    }
+
+    private resolveReviewWorkdir(params: any, sessionId: string): string {
+        const requested = typeof params?.workdir === 'string' && params.workdir.trim() ? params.workdir.trim() : '';
+        if (requested) {
+            return requested;
+        }
+        const workspace = this.resolveWorkspace();
+        if (workspace) {
+            return workspace;
+        }
+        return process.cwd();
+    }
+
+    private async listReviewRuns(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const commit = typeof params?.commit === 'string' && params.commit.trim() ? params.commit.trim() : undefined;
+        const runs = await this.reviewFindings?.list(sessionId, commit) ?? [];
+        return {
+            sessionId: sessionId ?? null,
+            runs: runs.map(run => this.toReviewRunView(run))
+        };
+    }
+
+    private async getReviewRun(params: any, context: AppRpcRequestContext): Promise<any> {
+        const id = this.requireString(params?.id, 'review.get id');
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : undefined;
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+        }
+        const run = await this.reviewFindings?.get(id) ?? null;
+        if (!run) {
+            throw new AppRpcError(-32004, `Review run '${id}' not found`);
+        }
+        if (!sessionId) {
+            await this.ensureSessionAccess(run.sessionId, context);
+        }
+        return { run: this.toReviewRunView(run) };
+    }
+
+    private async saveReviewRun(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.reviewFindings) {
+            throw new AppRpcError(-32603, 'ReviewFindingsStore is not available');
+        }
+        const run = params?.run;
+        if (!run || typeof run !== 'object') {
+            throw new AppRpcError(-32602, 'Invalid params: run is required');
+        }
+        const id = typeof run.id === 'string' && run.id.trim() ? run.id.trim() : `review-${this.uuid.generate()}`;
+        const base = typeof run.base === 'string' && run.base.trim() ? run.base.trim() : 'HEAD';
+        const files = Array.isArray(run.files) ? run.files.map((file: unknown) => String(file).trim()).filter((file: string) => !!file) : [];
+        const findings = Array.isArray(run.findings) ? run.findings : [];
+        const saved = await this.reviewFindings.save({
+            id,
+            sessionId,
+            base,
+            range: typeof run.range === 'string' && run.range.trim() ? run.range.trim() : undefined,
+            paths: Array.isArray(run.paths) ? run.paths.map((path: unknown) => String(path).trim()).filter((path: string) => !!path) : undefined,
+            commitSha: typeof run.commitSha === 'string' && run.commitSha.trim() ? run.commitSha.trim() : undefined,
+            files,
+            diffSummary: typeof run.diffSummary === 'string' ? run.diffSummary : undefined,
+            createdAt: typeof run.createdAt === 'number' && Number.isFinite(run.createdAt) ? run.createdAt : Date.now(),
+            findings
+        });
+        return {
+            sessionId,
+            run: this.toReviewRunView(saved)
+        };
+    }
+
+    private toReviewRunView(run: import('@tsdi/agent').ReviewRun): Record<string, any> {
+        return {
+            id: run.id,
+            sessionId: run.sessionId,
+            base: run.base,
+            range: run.range ?? null,
+            paths: run.paths ?? null,
+            commitSha: run.commitSha ?? null,
+            files: run.files,
+            diffSummary: run.diffSummary ?? null,
+            createdAt: run.createdAt,
+            findings: run.findings
         };
     }
 

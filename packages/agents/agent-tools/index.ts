@@ -10,6 +10,7 @@ export * from './agent';
 export * from './code-execution';
 export * from './knowledge';
 export * from './git';
+export * from './review';
 export * from './communication';
 export * from './audio';
 export * from './security';

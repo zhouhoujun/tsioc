@@ -77,6 +77,7 @@ export * from './harness/sandbox-exec';
 export * from './harness/FileSnapshotStore';
 export * from './harness/GitStepSnapshotStore';
 export * from './harness/VerifyCommandRunner';
+export * from './harness/ReviewFindingsStore';
 export * from './harness/ToolSandboxPolicy';
 export * from './hooks/AgentHooks';
 export * from './prompt/SystemPromptBuilder';

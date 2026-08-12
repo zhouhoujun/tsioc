@@ -21,6 +21,7 @@ import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
+import { ReviewDiffTool } from '../review/review-diff.tool';
 import { WeatherTool } from '../utility/weather.tool';
 import { SessionSearchTool } from '../sessions/session-search.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
@@ -207,6 +208,19 @@ function createSessionContext(overrides?: { sessionId?: string; memory?: InMemor
         memory: new InMemoryMemoryStore(),
         ...overrides
     };
+}
+
+async function createTempGitRepo(): Promise<string> {
+    const repo = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-review-repo-'));
+    execFileSync('git', ['init', '-q'], { cwd: repo });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repo });
+    execFileSync('git', ['config', 'user.name', 'test'], { cwd: repo });
+    await fs.writeFile(path.join(repo, 'file-a.txt'), 'line one\nline two\n');
+    await fs.writeFile(path.join(repo, 'file-b.txt'), 'line one\nline two\n');
+    execFileSync('git', ['add', '.'], { cwd: repo });
+    execFileSync('git', ['commit', '-q', '-m', 'initial'], { cwd: repo });
+    await fs.writeFile(path.join(repo, 'file-a.txt'), 'line one\nline two\nline three\n');
+    return repo;
 }
 
 const MEMORY_VOCAB = ['router', 'cache', 'network', 'policy', 'memory', 'shared'];
@@ -3839,6 +3853,70 @@ export class AgentToolsPackageTest {
             await new GitOperationsTool({
                 file: { rootDir: workspace }
             } as any).invoke({ action: 'status', workdir: '../outside' }, createSessionContext());
+        } catch (err) {
+            outside = err as Error;
+        }
+        expect(outside?.message).toContain('outside');
+    }
+
+    @Test('review diff gathers a read-only diff with files and stats')
+    async reviewDiffGathersReadOnlyDiff() {
+        const repo = await createTempGitRepo();
+        const tool = new ReviewDiffTool({ file: { rootDir: repo } } as any);
+        const result = await tool.invoke({}, createSessionContext());
+        expect(result.readOnly).toEqual(true);
+        expect(result.base).toEqual('HEAD');
+        expect(Array.isArray(result.files)).toEqual(true);
+        expect(result.files).toContain('file-a.txt');
+        expect(typeof result.diff).toEqual('string');
+        expect(result.diff).toContain('file-a.txt');
+        expect(typeof result.stats).toEqual('string');
+        expect(typeof result.commitSha).toEqual('string');
+    }
+
+    @Test('review diff honors explicit base and path restriction')
+    async reviewDiffHonorsBaseAndPaths() {
+        const repo = await createTempGitRepo();
+        const tool = new ReviewDiffTool({ file: { rootDir: repo } } as any);
+        const result = await tool.invoke({ base: 'HEAD', paths: ['file-a.txt'] }, createSessionContext());
+        expect(result.base).toEqual('HEAD');
+        expect(result.files).toEqual(['file-a.txt']);
+        expect(result.diff).toContain('file-a.txt');
+        expect(result.diff).not.toContain('file-b.txt');
+    }
+
+    @Test('review diff rejects a non-git workdir')
+    async reviewDiffRejectsNonGitWorkdir() {
+        const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-review-'));
+        const tool = new ReviewDiffTool({ file: { rootDir: outside } } as any);
+        let rejected: Error | undefined;
+        try {
+            await tool.invoke({}, createSessionContext());
+        } catch (err) {
+            rejected = err as Error;
+        }
+        expect(rejected?.message).toContain('not a Git repository');
+    }
+
+    @Test('review diff enforces sandbox policy and workspace guard')
+    async reviewDiffEnforcesSandboxPolicyAndWorkspaceGuard() {
+        const repo = await createTempGitRepo();
+        let blocked: Error | undefined;
+        try {
+            await new ReviewDiffTool({
+                file: { rootDir: repo },
+                sandbox: { blockedCommands: ['git'] }
+            } as any).invoke({}, createSessionContext());
+        } catch (err) {
+            blocked = err as Error;
+        }
+        expect(blocked?.message).toContain('blocked by sandbox policy');
+
+        let outside: Error | undefined;
+        try {
+            await new ReviewDiffTool({
+                file: { rootDir: repo }
+            } as any).invoke({ workdir: '../outside' }, createSessionContext());
         } catch (err) {
             outside = err as Error;
         }

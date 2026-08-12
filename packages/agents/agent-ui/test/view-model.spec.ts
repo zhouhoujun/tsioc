@@ -389,6 +389,11 @@ class AppRpcStub {
     audioStatusOverride: Record<string, any> | null = null;
     gitStepSnapshots: any[] = [];
     gitStepSnapshotDiffs = new Map<string, any>();
+    reviewDiffResult: Record<string, any> | null = null;
+    reviewRuns: any[] = [];
+    reviewRunDetail: Record<string, any> | null = null;
+    reviewSaved: any[] = [];
+    runTurnResults: Array<Record<string, any>> = [];
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -407,6 +412,37 @@ class AppRpcStub {
         }
         if (method === 'session.git_snapshot.unrevert') {
             return { reverted: true };
+        }
+        if (method === 'tools.activate') {
+            return { activated: true, name: params?.name, sessionId: params?.sessionId };
+        }
+        if (method === 'review.diff') {
+            if (!this.reviewDiffResult) {
+                throw new Error('review diff unavailable');
+            }
+            return { review: this.reviewDiffResult };
+        }
+        if (method === 'review.list') {
+            const commit = params?.commit;
+            const runs = commit
+                ? this.reviewRuns.filter(run => run.commitSha === commit)
+                : this.reviewRuns;
+            return { runs };
+        }
+        if (method === 'review.get') {
+            return { run: this.reviewRunDetail };
+        }
+        if (method === 'review.save') {
+            this.reviewSaved.push(params?.run);
+            const saved = { id: `review-${this.reviewSaved.length}`, ...(params?.run || {}) };
+            return { run: saved };
+        }
+        if (method === 'run.turn') {
+            const result = this.runTurnResults.shift();
+            if (result === undefined) {
+                return { message: { content: '' } };
+            }
+            return result;
         }
         if (method === 'tools.list') {
             return this.tools || [];
@@ -4169,6 +4205,150 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewTask?.id).toEqual('task-1');
         expect(component.sessionState.reviewExecutionMode).toEqual('parallel');
         expect(component.sessionState.reviewWorkers.length).toEqual(1);
+    }
+
+    @Test('review diff command gathers a git diff and opens the panel without touching the worktree')
+    async reviewDiffCommandOpensGitDiffPanel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewDiffResult = {
+            files: ['src/a.ts'],
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n+new line',
+            stats: '1 file changed, 1 insertion(+)',
+            commitSha: 'abc123'
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review diff';
+        const pending = component.submit();
+        await waitForCondition(() => component.sessionState.reviewOpen);
+
+        expect(appRpc.calls.some(call => call.method === 'tools.activate' && call.params?.name === 'review_diff')).toEqual(true);
+        const diffCall = appRpc.calls.find(call => call.method === 'review.diff');
+        expect(diffCall?.params).toEqual({ sessionId: 'console', base: 'HEAD' });
+        expect(component.sessionState.reviewTask?.id).toEqual('git-diff:HEAD');
+        expect(component.sessionState.reviewTask?.metadata?.reviewMode).toEqual('git-diff');
+        expect(component.notice).toContain('1 file changed');
+        await pending;
+    }
+
+    @Test('review run command runs analysis and saves findings')
+    async reviewRunCommandAnalyzesAndSaves() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewDiffResult = {
+            files: ['src/a.ts'],
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n+new line',
+            stats: '1 file changed, 1 insertion(+)',
+            commitSha: 'abc123'
+        };
+        appRpc.runTurnResults = [{
+            message: {
+                content: '[{"category":"risk","severity":"warning","summary":"unchecked input","anchor":{"file":"src/a.ts","line":3},"suggestion":"validate input"}]'
+            }
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review run';
+        await component.submit();
+
+        const turnCall = appRpc.calls.find(call => call.method === 'run.turn');
+        expect(turnCall?.params?.sessionId).toEqual('console');
+        expect(turnCall?.params?.input).toContain('git diff against HEAD');
+        expect(turnCall?.params?.input).toContain('src/a.ts');
+        const saveCall = appRpc.calls.find(call => call.method === 'review.save');
+        expect(saveCall?.params?.sessionId).toEqual('console');
+        expect(saveCall?.params?.run?.base).toEqual('HEAD');
+        expect(saveCall?.params?.run?.commitSha).toEqual('abc123');
+        expect(saveCall?.params?.run?.findings?.length).toEqual(1);
+        expect(saveCall?.params?.run?.findings[0].category).toEqual('risk');
+        expect(appRpc.reviewSaved.length).toEqual(1);
+        expect(component.sessionState.reviewOpen).toEqual(true);
+    }
+
+    @Test('review run command reports when analysis produced no parseable findings')
+    async reviewRunCommandReportsNoFindings() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewDiffResult = {
+            files: ['src/a.ts'],
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+        };
+        appRpc.runTurnResults = [{ message: { content: 'no issues here' } }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review run';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'run.turn')).toEqual(true);
+        expect(appRpc.reviewSaved.length).toEqual(0);
+        expect(component.sessionState.reviewOpen).toEqual(true);
+    }
+
+    @Test('review findings command lists saved runs filtered by commit')
+    async reviewFindingsCommandListsRuns() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewRuns = [
+            { id: 'r1', base: 'HEAD', files: ['src/a.ts'], findings: [{ id: 'f1' }], commitSha: 'abc123' },
+            { id: 'r2', base: 'HEAD~1', files: ['src/b.ts'], findings: [], commitSha: 'def456' }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review findings';
+        await component.submit();
+
+        const listCall = appRpc.calls.find(call => call.method === 'review.list');
+        expect(listCall?.params).toEqual({ sessionId: 'console' });
+        expect(component.notice).toContain('[r2] HEAD~1 · 1 file · 0 findings');
+
+        component.input = '/review findings abc123';
+        await component.submit();
+
+        const commitCall = appRpc.calls.filter(call => call.method === 'review.list').find(call => call.params?.commit === 'abc123');
+        expect(commitCall?.params).toEqual({ sessionId: 'console', commit: 'abc123' });
+        expect(component.notice).toContain('[r1] HEAD · 1 file · 1 finding');
+    }
+
+    @Test('review show command displays findings of a saved run')
+    async reviewShowCommandDisplaysRunFindings() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewRunDetail = {
+            id: 'r1',
+            base: 'HEAD',
+            files: ['src/a.ts'],
+            findings: [{
+                id: 'f1',
+                category: 'correctness',
+                severity: 'error',
+                summary: 'null deref',
+                anchor: { file: 'src/a.ts', line: 10 },
+                suggestion: 'guard with ?.'
+            }]
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review show r1';
+        await component.submit();
+
+        const getCall = appRpc.calls.find(call => call.method === 'review.get');
+        expect(getCall?.params).toEqual({ sessionId: 'console', id: 'r1' });
+        expect(component.notice).toContain('fix: guard with ?.');
+
+        component.input = '/review show';
+        await component.submit();
+        expect(component.notice).toContain('Usage: /review show <id>');
     }
 
     @Test('approval request selector uses action hint')

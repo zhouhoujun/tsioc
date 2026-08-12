@@ -17,11 +17,12 @@ import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
 import { AuditHandler } from '../src/api/AuditHandler';
+import { ReviewHandler } from '../src/api/ReviewHandler';
 import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { UsageHandler } from '../src/api/UsageHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -2003,6 +2004,120 @@ export class AuditHandlerTest {
 
         await route.handler(req, res, {} as any);
         expect(status).toEqual(403);
+    }
+}
+
+@Suite('ReviewHandler')
+export class ReviewHandlerTest {
+    @Test('lists review runs for owned session and supports commit filtering')
+    async listsReviewRunsForOwnedSession() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        const reviews = {
+            async list(sessionId?: string, commit?: string) {
+                const runs = [{
+                    id: 'r1', sessionId: 's1', base: 'HEAD', files: ['a.ts'],
+                    findings: [{ id: 'f1', category: 'risk', severity: 'warning', summary: 'x' }],
+                    commitSha: 'abc123', createdAt: 1
+                }, {
+                    id: 'r2', sessionId: 's1', base: 'HEAD~1', files: ['b.ts'],
+                    findings: [], commitSha: 'def456', createdAt: 2
+                }, {
+                    id: 'r3', sessionId: 's2', base: 'HEAD', files: ['c.ts'],
+                    findings: [], commitSha: 'abc123', createdAt: 3
+                }];
+                return runs.filter(run => (!sessionId || run.sessionId === sessionId) && (!commit || run.commitSha === commit));
+            }
+        } as any;
+        const handler = new ReviewHandler(reviews, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/reviews' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/reviews?sessionId=s1&commit=abc123' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.runs.length).toEqual(1);
+        expect(data.runs[0].id).toEqual('r1');
+        expect(data.runs[0].findings[0].summary).toEqual('x');
+    }
+
+    @Test('gets a review run by id scoped to the session')
+    async getsReviewRunById() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const reviews = {
+            async get(id: string) {
+                return id === 'r1'
+                    ? { id: 'r1', sessionId: 's1', base: 'HEAD', files: ['a.ts'], findings: [], createdAt: 1 }
+                    : null;
+            }
+        } as any;
+        const handler = new ReviewHandler(reviews, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/reviews/:id' && route.method === 'GET')!;
+        let body = '';
+        let status = 0;
+        const req = { url: '/api/reviews/r1?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(200);
+        expect(JSON.parse(body).run.id).toEqual('r1');
+    }
+
+    @Test('rejects review access for another principal and missing session')
+    async rejectsForeignAndMissingSessionReviewAccess() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new ReviewHandler({ list: async () => [], get: async () => null } as any, owners);
+
+        const listRoute = handler.getRoutes().find(route => route.path === '/api/reviews' && route.method === 'GET')!;
+        let listStatus = 0;
+        const foreignReq = { url: '/api/reviews?sessionId=s1' } as any;
+        setRequestAuth(foreignReq, { token: 'token-2', principalId: 'user-2' });
+        const foreignRes = {
+            writeHead: (code: number) => {
+                listStatus = code;
+                return foreignRes;
+            },
+            end: () => foreignRes
+        } as any;
+        await listRoute.handler(foreignReq, foreignRes, {} as any);
+        expect(listStatus).toEqual(403);
+
+        let missingStatus = 0;
+        const missingReq = { url: '/api/reviews' } as any;
+        setRequestAuth(missingReq, { token: 'token-1', principalId: 'user-1' });
+        const missingRes = {
+            writeHead: (code: number) => {
+                missingStatus = code;
+                return missingRes;
+            },
+            end: () => missingRes
+        } as any;
+        await listRoute.handler(missingReq, missingRes, {} as any);
+        expect(missingStatus).toEqual(400);
     }
 }
 
@@ -5428,6 +5543,142 @@ export class AppRpcServerTest {
         expect((revertResponse as any).error.message).toContain('messageId');
     }
 
+    @Test('review diff/list/get/save route through json-rpc and persist findings')
+    async reviewRpcRoundTrip() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const review = {
+            readOnly: true,
+            base: 'HEAD',
+            commitSha: 'abc123',
+            files: ['src/a.ts'],
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n+new line',
+            stats: '1 file changed, 1 insertion(+)'
+        };
+        const tools = {
+            getToolDefinitions: () => [],
+            async invoke(name: string, input: any, sessionId: string, principalId: string, workdir: string) {
+                expect(name).toEqual('review_diff');
+                expect(input.base).toEqual('HEAD');
+                expect(typeof input.workdir).toEqual('string');
+                expect(input.workdir.length).toBeGreaterThan(0);
+                expect(sessionId).toEqual('rev-s1');
+                expect(principalId).toEqual('user-1');
+                return review;
+            }
+        } as any;
+        const sessions = new SessionHandler({} as any, store, owners);
+        const sink = new InMemoryAuditSink();
+        const reviewFindings = new ReviewFindingsStore(sink);
+        const rpc = new AppRpcServer(
+            { async getMessages() { return []; } } as any,
+            new RandomUuidGenerator(), store, memory, tools, owners, sessions, events,
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+            reviewFindings
+        );
+        await store.setWorkspace('rev-s1', '/ws/app');
+        await owners.create('rev-s1', 'user-1');
+
+        const diffResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'review.diff',
+            params: { sessionId: 'rev-s1', base: 'HEAD' }
+        }, { principalId: 'user-1' });
+        expect((diffResponse as any).result.sessionId).toEqual('rev-s1');
+        expect((diffResponse as any).result.review.files).toEqual(['src/a.ts']);
+        expect((diffResponse as any).result.review.commitSha).toEqual('abc123');
+
+        const saveResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'review.save',
+            params: {
+                sessionId: 'rev-s1',
+                run: {
+                    id: 'review-1',
+                    base: 'HEAD',
+                    commitSha: 'abc123',
+                    files: ['src/a.ts'],
+                    findings: [{
+                        id: 'f1',
+                        category: 'risk',
+                        severity: 'warning',
+                        summary: 'unchecked input',
+                        anchor: { file: 'src/a.ts', line: 3 },
+                        suggestion: 'validate input'
+                    }]
+                }
+            }
+        }, { principalId: 'user-1' });
+        expect((saveResponse as any).result.run.id).toEqual('review-1');
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'review.list',
+            params: { sessionId: 'rev-s1' }
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.runs.length).toEqual(1);
+        expect((listResponse as any).result.runs[0].findings[0].summary).toEqual('unchecked input');
+
+        const getResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'review.get',
+            params: { sessionId: 'rev-s1', id: 'review-1' }
+        }, { principalId: 'user-1' });
+        expect((getResponse as any).result.run.id).toEqual('review-1');
+        expect((getResponse as any).result.run.commitSha).toEqual('abc123');
+    }
+
+    @Test('review get rejects foreign sessions and unknown runs')
+    async reviewRpcValidation() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const sessions = new SessionHandler({} as any, store, owners);
+        const sink = new InMemoryAuditSink();
+        const reviewFindings = new ReviewFindingsStore(sink);
+        const rpc = new AppRpcServer(
+            { async getMessages() { return []; } } as any,
+            new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any,
+            owners, sessions, events,
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+            reviewFindings
+        );
+        await store.setWorkspace('rev-s2', '/ws/app');
+        await owners.create('rev-s2', 'user-1');
+        await owners.create('rev-s3', 'user-1');
+
+        const foreign = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'review.list',
+            params: { sessionId: 'rev-foreign' }
+        }, { principalId: 'user-1' });
+        expect((foreign as any).error).toBeTruthy();
+
+        const unknown = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'review.get',
+            params: { sessionId: 'rev-s2', id: 'missing' }
+        }, { principalId: 'user-1' });
+        expect((unknown as any).error.message).toContain('not found');
+
+        const saveWithoutRun = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'review.save',
+            params: { sessionId: 'rev-s2' }
+        }, { principalId: 'user-1' });
+        expect((saveWithoutRun as any).error.message).toContain('run is required');
+    }
+
     @Test('git_snapshot rpc rejects foreign session access')
     async gitSnapshotRpcRejectsForeignSession() {
         const store = new InMemorySessionStore();
@@ -6193,7 +6444,7 @@ export class AppRpcServerAudioTest {
         const stt = new RpcEchoTranscriptionAdapter();
         const tts = new RpcEchoTtsAdapter();
         const audio = withAudio ? new AudioSessionHandler(runtime, stt, tts, audioOptions) : null;
-        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null,null,null,null,null,null,audio as any);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null,null,null,null,null,null,null,audio as any);
         return { rpc, stt, tts, turns, store };
     }
 

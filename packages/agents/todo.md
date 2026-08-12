@@ -2,129 +2,148 @@
 
 ## 功能总纲
 
-主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile）、prompt cache 支持、上下文压缩 + turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh 等）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）。
+主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）。
 
-## 差距分析（vs Codex / opencode，2026-08）
+## 已实现功能（P67–P80 落地明细，2026-08）
 
-基于对 opencode（sst/opencode，Bun + Effect 运行时）与 Codex（openai/codex，Rust app-server + Responses API）源码/文档的实际对照。结论先行：**主干能力与两者已基本对齐，甚至部分领先；真正的差距集中在「编码反馈闭环」「会话/工作树可回退性」「上下文工程的最后一公里」和「面向第三方客户端的交付面」四个方向**，全部是增量可做、无需推翻现有架构的。
+> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P80 按方向归类的**已实现功能**清单（非计划）。
+
+### 编码反馈闭环
+
+- **P67 · 编辑 → LSP 诊断反馈**：`write_file` / `edit_file` / `apply_patch` 执行成功后触发 `textDocument/didChange` → 拉取缓存 diagnostics → 追加为工具结果 `lspDiagnostics`（有界截断、不阻塞写入）；注入 `VerificationGate` 为 `evidence.verification == 'lsp'` 新证据源（severity 1 过滤），与 declared-vs-actual 并行；支持 `lsp.diagnosticsOnEdit: boolean | 'auto'` 开关、无 LSP 配置静默降级。锚点：`agent-tools/lsp/lsp-client.ts`、`agent-tools/lsp/lsp-manager.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`（`extractLspDiagnostics`）、`agent/src/harness/VerificationGate.ts`。
+- **P71 · Git step 快照 + revert/unrevert**：每 step-start 以 `git stash create` + pinned refs 捕获整树（不污染历史），绑定会话消息 id；`revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态；会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC）；与 FileSnapshotStore 并存（git 整树恢复 + File 精确 undo）。锚点：`agent/src/harness/GitStepSnapshotStore.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/api/SessionHandler.ts`；agent-ui review 面板复用会话 diff。
+- **P76 · 模型请求重试/退避分类**：rate-limit / server(5xx) / network / timeout 四类分类 + 指数退避 + jitter，尊重秒数/HTTP-date `Retry-After`（15 秒上限），OpenAI-compatible 与 Anthropic 共享策略。锚点：`agent/src/model/RetryPolicy.ts`。
+
+### 上下文工程
+
+- **P68 · Compaction replay + 媒体占位符**：硬性 overflow 克隆最后用户消息（媒体附件 → `[Attached <type>: <name>]` 文本占位符）`replayKind: 'last-user-message'`；主动压缩注入「Continue if you have next steps」`replayKind: 'continue-prompt'` 防重复注入；`CompactionHistoryRecord`（`replayed`/`replayKind`）与 `AgentTurnDiagnostics`（`replayCount`/`replayKind`）全链路传播。锚点：`agent/src/context/AgentContextManager.ts`、`agent/src/harness/CompactionHistoryStore.ts`。
+- **P69 · Prompt cache 请求侧落地 + 系统提示分段**：`PromptSection.cacheable` 标记（DateTime/Memory 置 false），静态段（identity/project/tools）前置、动态段后置保证前缀稳定；openai provider 标注 `cache_control: {type: 'ephemeral'|'persistent'}`（supported 'full'）、deepseek 依赖自动 context caching（supported 'partial'）、其余 observe_only；静态前缀 hash 跨请求比较，tools/system 变更时 `PromptCacheRuntimeMetadata.prefixBroken` 置 true。锚点：`agent/src/model/OpenAICompatibleModelAdapter.ts`、`agent/src/model/PromptCachePolicy.ts`、`agent/src/prompt/SystemPromptBuilder.ts`。
+- **P72 · AGENTS.md 指令链升级**：`findAgentsDoc` 返回 root→cwd 有序指令链（override → 主文件名 → fallback 去重，`AGENTS.override.md` 优先）；`projectDocFallbackFilenames` / `projectDocMaxBytes`（32KiB 字节截断不劈多字节字符）；walk 从 cwd 起、root 处 `stopAt` 收束；`initAgentsDoc`/`analyzeProjectStructure` 注入式 `FileAdapter` 驱动，移除 node `fs/os/path` 直接依赖。锚点：`agent/src/project/agents-doc.ts`、`agent/src/project/init-agents-doc.ts`、`agent/src/prompt/sections/ProjectContextSection.ts`。
+- **P73 · 语义记忆检索**：`MemoryEmbedder`（DI token，无配置回退关键词）+ cosine 排序 + `SemanticMemoryRanker`（topK/minScore）；`MemorySearchService` 编排 keyword/semantic/hybrid 三模式（hybrid = semantic 前置 + keyword 独有去重附加）；`memory.search` 支持 `mode`/`minScore`。锚点：`agent/src/memory/AgentMemoryRetriever.ts`、`agent-tools/memory/*`。
+- **P74 · 自动标题/摘要**：首条用户消息异步生成 title/focusSummary，LLM + deterministic 回退，接入 session/project 展示。锚点：`agent/src/memory/LLMAgentSummaryAgent.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`。
+- **P78 · 项目记忆闭环**：`buildAgentsRuleDraft(report)` 将 WeaknessMiner 高频失败渲染为带人工审核标记的 AGENTS.md 规则草案；`harness.audit` 经 `includeDraft: true` 返回，默认不写入项目文件。
+
+### 会话与工作树
+
+- **P77 · 会话 fork**：`SessionStore.fork(sessionId, messageId?)` 完整或截断 transcript 生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway `session.fork` RPC（owner 校验 + 显式/自动 id）。
+
+### 声明式 agent 与交付面
+
+- **P70 · 声明式 agent 原型**：`AgentArchetype`（name/description/mode/permissions 规则集/prompt/model/steps）对齐 opencode `Agent.Info`；内置 `plan`（只读 + 写 plans 目录）、`build`（全量）、`review`（只读 + 验证）三原型；`setPlanMode` 收敛为 plan 原型；工具门控优先级 deny > allow > readOnly（writePaths 命中放行，`prefix*` 通配）；agent-tools `ARCHETYPE_TOOL_GROUPS` + `resolveArchetypeToolGroups`；agent-ui `/archetype` + `/status`；gateway `session.archetype.set/get` RPC。锚点：`agent/src/archetype/AgentArchetype.ts`、`agent-tools/src/options.ts`。
+- **P80 · /review 内联评审命令**：`review` 工具组（`agent-tools/review/review-diff.tool.ts`）对当前 git diff（`git diff HEAD` 或指定 range/文件集）发起只读评审——不改工作树，输出结构化 findings（correctness / risks / suggested-fixes，含文件 + 行锚点）；`review_diff` 只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控；findings 经 `ReviewFindingsStore` 落审计（toolName `review_diff`、`inputSummary='review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`，无 AuditSink 时抛错）供 review 面板展示，可与 commit 绑定审计。agent-gateway：`review.diff/list/get/save` RPC + `GET /api/reviews` REST（sessionId 必填、owner 403、commit 过滤、`/api/reviews/:id`）；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）→ git diff 评审流 + findings 面板 + review.save 落库。锚点：`agent-tools/review/`、`agent/src/harness/ReviewFindingsStore.ts`、`agent-gateway/src/api/ReviewHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-gateway/src/gateway/GatewayBootstrap.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
+- **P75 · Gateway OpenAPI 规范**：从已注册 `GatewayRoute[]` 生成 OpenAPI 3.1 文档（路径参数、认证 scheme、`/rpc` 入口），`GET /openapi.json` 免认证暴露。锚点：`agent-gateway/src/gateway/OpenApiDocument.ts`。
+
+## 差距分析 v2（vs Codex / opencode，2026-08）
+
+### 结论
+
+第一轮差距 G1–G10 已全部闭环（P67–P78，见上）。第二轮对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在五个方向：
+
+1. **验证闭环的最后一公里**：LSP 诊断已闭环（P67），但 build/test 命令结果尚未作为验证证据源接入（G11）。
+2. **独立评审流**：review archetype / review 面板存在，但缺「不改工作树的 git diff 内联评审命令」（G12）。
+3. **跨会话工作流**：fork/thread/scheduler 已有，缺「目标驱动、多日持续推进、完成判定」的 goal 模型（G15）。
+4. **配置与生态迁移**：无 CLAUDE.md / .cursor 导入（G14）、无 provider 目录（G16）、无 skills 远程分发（G19）。
+5. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
+
+全部为增量可做、无需推翻现有架构。
 
 ### 本项目优势（相对 codex/opencode，保持并强化）
 
-1. **循证验证螺旋**（evidence-ledger / verification-gate / weakness-miner / harness-profile + falsify-rate 路由）：codex/opencode 均无系统化的「工具证据 → 声明 vs 实际 → 伪造率 → 修复提示」闭环，这是本项目最独到的差异化主线。
-2. **多代理编排深度**：delegation graph tree/lineage 持久化、worker 自动分类（sessionRole/originThreadId）、thread 终态回写、thread 级 todo/review 聚合、worker-class 模型路由 —— 比 opencode 的 task tool 与 codex 的 subagent 更结构化、可审计。
-3. **上下文压缩的严谨性**：anchor 保留（root goal / 最新 goal / 错误上下文 / 状态工具结果）+ 五字段 summary schema + 质量评分 + 压缩历史观测 —— 比 opencode 的摘要压缩更可度量、可回归。
-4. **审批流 + 补偿/回滚完备性**：granular 类别 + expiry/FIFO/防御清扫 + 审计落库 + LIFO 补偿 + 文件快照 undo/redo —— 超出 opencode 的 ask/allow/deny 两级模型。
+1. **循证验证螺旋**（evidence-ledger / verification-gate / weakness-miner / harness-profile + falsify-rate 路由）：codex/opencode 均无系统化的「工具证据 → 声明 vs 实际 → 伪造率 → 修复提示」闭环，这是本项目最独到的差异化主线；LSP 诊断证据（P67）与 AGENTS 规则草案（P78）进一步加固。
+2. **多代理编排深度**：delegation graph tree/lineage 持久化、worker 自动分类（sessionRole/originThreadId）、thread 终态回写、thread 级 todo/review 聚合、coding_task 结构化任务编排、worker-class 模型路由 —— 比 opencode 的 task tool 与 codex 的 subagent 更结构化、可审计。
+3. **上下文压缩的严谨性**：anchor 保留 + 五字段 summary schema + 质量评分 + 压缩历史观测 + overflow replay/媒体占位（P68）—— 比 opencode 的摘要压缩更可度量、可回归。
+4. **审批流 + 补偿/回滚完备性**：granular 类别 + expiry/FIFO/防御清扫 + 审计落库 + LIFO 补偿 + 文件快照 undo/redo + Git step 快照 revert/unrevert（P71）。
 5. **可观测性覆盖**：turn diagnostics / summary quality / compaction history / delegation / audit 全部持久化并暴露 HTTP + RPC + UI 三层，opencode/codex 均无此厚度。
-6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP stdio + Streamable HTTP + OAuth + server、skills 本地注册表、gateway 多协议 —— 工具广度超过 opencode 内置集。
+6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP stdio + Streamable HTTP + OAuth + server、skills 本地注册表、hooks 双形态（命令 + 进程内函数）、gateway 多协议 + OpenAPI —— 工具广度超过 opencode 内置集。
+7. **跨平台响应式 UI 架构**：TUI/浏览器共用响应式渲染层（数据变化驱动、无定时器刷新、时间派生动画），跨平台约束已沉淀至根 AGENTS.md。
 
-### 真正差距（按优先级排序，P67 起逐项消化）
+### 新差距（按优先级排序，P79 起逐项消化）
 
 | # | 差距 | 对照对象 | 现状证据 | 影响 |
 |---|---|---|---|---|
-| G1 | **编辑 → LSP 诊断反馈闭环缺失** | opencode 每次 edit 后 `textDocument/didChange` → 拉取 diagnostics → 喂回上下文 | 本项目 LSP 仅是只读查询工具（`lsp_definition/references/diagnostics/symbols`），`write/edit/apply_patch` 路径未接入；verification-gate 的 declared-vs-actual 是弱替代 | 高：模型改错后无法自感知，是编码 agent 质量的核心闭环 |
-| G2 | **会话/工作树不可回退到消息级** | opencode step-start git 快照 + revert/unrevert + 会话 diff；codex thread fork | 仅有内容级文件 undo/redo（FileSnapshotStore）与会话 store snapshot；无 git checkpoint 绑定会话状态、无 fork 分支、无会话 diff API | 高：长会话纠错/分支探索体验不足 |
-| G3 | **compaction 后无用户消息 replay** | opencode/codex 压缩后克隆最后用户消息重放（媒体转占位符）或注入「继续」提示 | `AgentContextManager` 压缩后直接进入下一轮，无 replay 步骤（有 recentMessageWindow 缓解，不等价） | 中高：长会话压缩后连续性受损 |
-| G4 | **prompt cache 只读，无请求侧 cache_control** | codex 明确静态内容前置保证前缀缓存命中 | OpenAI-compatible/deepseek 仅 observe usage；系统提示未做 cacheable/non-cacheable 分段（PromptCachePolicy 有 scopes 但 wire 层未落地） | 中高：长会话 token 成本随轮次线性膨胀 |
-| G5 | **AGENTS.md 发现过简** | codex：`AGENTS.override.md` + fallback 文件名 + 32KiB 上限 + root→cwd 拼接优先级 | 本项目 `findFileUpward` 单文件向上查找，遇 home 停止；无 override/fallback/上限/优先级 | 中：项目级规则表达能力不足 |
-| G6 | **无声明式 agent 原型（plan/build/review）** | opencode `Agent.Info`（mode/permission/prompt/model/steps）声明式配置 + plan_enter/build-switch 系统提示；codex `[agents]` | 仅有 `setPlanMode` 会话开关与 per-agent 权限 metadata，无一等公民的原型定义 | 中：agent 复用与分发能力弱 |
-| G7 | **记忆无语义检索** | codex memories；生态 RAG/embedding | `AgentMemoryRetriever` 为关键词匹配；ExperienceDistiller 为确定性规则 | 中：记忆召回质量受限（可复用现有 memory/经验蒸馏优势） |
-| G8 | **无自动标题/摘要 agent** | opencode 首条消息异步 `ensureTitle` + 隐藏 title/summary agent | `SessionStore.setTitle` 为手动调用；LLMSessionSummarizer 仅服务压缩 | 低中：会话导航体验 |
-| G9 | **Gateway 无 OpenAPI/SDK，第三方客户端难接入** | opencode server 暴露 OpenAPI 3.1 + SDK 生成 | gateway 有 JSON-RPC/HTTP/SSE，但无规范描述与官方客户端包 | 中：桌面/IDE/Web 多面的前置阻塞项 |
-| G10 | **模型请求重试策略简** | opencode `session/retry.ts`：错误分类 + 指数退避 + retry-after 尊重 | 有 empty-response 重试、follow-up recovery、total timeout re-arm，但缺 rate-limit/5xx 分类与 retry-after | 低中：高负载下体验不稳 |
+| G11 | **build/test 结果未接入验证闭环** | opencode 编辑后 LSP+测试结果喂回；codex 内置验证习惯 | `VerificationGate` 证据源仅工具执行结果 + LSP 诊断（`entry.lspDiagnostics`，severity 1 过滤）；`execute_code`/`coding_task` 存在但未作为编辑后置验证证据；`RepairExploration` 仅消费 declared-vs-actual | 高：编码反馈闭环的最后一块，模型改错后无「跑测试/编译」自感知 |
+| G12 | ~~无 /review 内联评审命令~~（✅ 2026-08 P80） | codex `/review`（0.144+）：不改工作树评审当前 diff，结构化 findings | review archetype 为手动只读会话；agent-ui review 面板（`reviewTaskChoices`）评审的是子代理任务产物，非 git diff inline 评审；无 findings 落库与 commit 绑定 | 高：独立评审流缺失，交付前自查能力弱 |
+| G13 | **无 pre/post-compaction hooks** | codex hooks GA（0.130+）pre/post-compaction | `AgentLifecycleHookStage` 仅 beforeTurn/afterTurn/beforeTool/afterTool/onApproval 五阶段；`AgentContextManager` 压缩前后无钩子 | 中：压缩时可观测/定制不足（审计、外部同步、通知） |
+| G14 | **无配置迁移（/import）** | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | 仅消费 AGENTS.md 指令链；无 CLAUDE.md / `.cursor/rules` / `.cursor/mcp.json` 解析 | 中：从 Claude Code/Cursor 迁移门槛高 |
+| G15 | **无 Goal 系统（跨会话持久目标）** | codex `/goal`（0.128+）持久化多日工作流 | scheduler 为时间触发定时任务（`IntervalAgentScheduler`）；无目标驱动、跨会话推进、完成判定的 goal 模型 | 中：长期任务无法无人值守持续推进 |
+| G16 | **无 provider 注册表** | opencode models.dev（75+ providers / 1000+ 模型）目录 | profiles 为手写 baseUrl/apiKeyEnv；无 provider 目录自动发现、模型清单、能力推导 | 中：接入新模型/网关成本高 |
+| G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
+| G18 | **无会话分享** | opencode `/share` 只读分享会话 | gateway 有 owner 鉴权 + pairing，但无只读分享链接/脱敏快照导出 | 低中：协作/交付场景缺失 |
+| G19 | **skills 无远程分发** | codex plugin marketplace；opencode skills 目录共享 | `LocalSkillRegistry` 为本地注册表；无 git/registry URL 拉取、版本、更新、冲突检测 | 低中：生态扩展受限 |
+| G20 | **后台子代理 UX** | opencode background subagents（v1.14.51+）用户继续打字时子代理持续工作 | `parallel_spawn`/`nested-agent-runner` 为同步等待；无 fire-and-collect + 完成事件回传 + UI 通知 | 低中：并行体验差距 |
+| G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
+| G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P67+）
+## 打磨计划（P79+）
 
-> 约定：`Pnn-前缀` 对应上表差距编号（G1–G10）。每项完成后更新「已完成（历史）」。
+> 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
 
-### P67 · 编辑 → LSP 诊断反馈闭环（G1）—— 高优先 ✅ 已完成（b217b080c）
+### P79 · build/test 验证反馈闭环（G11）—— 高优先
 
-- `write_file` / `edit_file` / `apply_patch` 执行成功后，对受影响文件触发 `textDocument/didChange` → 拉取（pull）或等待缓存 diagnostics → 追加为工具结果附带的 `lspDiagnostics` 字段（有界：最多 N 条/截断），不阻塞写入。
-- diagnostics 注入 `VerificationGate` 作为新证据源（`evidence.verification == 'lsp'`），与 declared-vs-actual 并行。
-- 支持 `lsp.diagnosticsOnEdit: boolean | 'auto'` 开关；无 LSP 配置时静默降级。
-- 锚点：`agent-tools/lsp/lsp-client.ts`（didChange 支持）、`agent-tools/lsp/lsp-manager.ts`（按扩展名路由）、`agent-tools/files/*.tool.ts`（编辑工具后置钩子）、`agent/src/harness/VerificationGate.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`。
-- 测试：`agent-tools/test/lsp.spec.ts`（fake LSP server 端到端）、`agent/test/verification-gate.spec.ts`（lsp 证据合并）。
+- 编辑工具（write/edit/apply_patch，复用 P67 后置钩子路径）执行后，`VerificationGate` 发起可选「验证动作」：探测包内脚本（package.json `test`/`build`/`typecheck`/`lint`）→ 运行命令 → 捕获 exit code + stdout/stderr（有界截断）→ 作为 `evidence.verification == 'verify-command'` 新证据源，与 lsp / declared-vs-actual 并行。
+- 失败时生成修复提示（复用 `RepairExploration` 提示管线）；支持 `verification.verifyCommands?: { test?: string; build?: string; typecheck?: string }` 显式注入命令模板；默认仅对已知脚本自动发现，无脚本静默降级；默认不跑长耗时测试（仅 `--affected`/单文件或显式配置），超时与防误触。
+- 锚点：`agent/src/harness/VerificationGate.ts`（新证据源 + verify 编排）、`agent/src/harness/RepairExploration.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`（编辑后置钩子）、`agent/src/options.ts`。
+- 测试：`agent/test/verification-gate.spec.ts`（verify-command 证据合并 + 修复提示 + 降级）。
 
-### P68 · Compaction replay + 媒体占位符（G3）—— 高优先 ✅ 已完成
+### P81 · 配置迁移 /import（G14）—— 中优先
 
-- 压缩完成后：若为硬性 overflow，克隆最后用户消息（媒体附件 → `[Attached <type>: <name>]` 文本占位符）重放入口；若为主动压缩，注入「Continue if you have next steps」合成提示。
-- `AgentContextPreparedEvent` / `CompactionHistoryStore` 增加 `replayed` 标记，保持观测可回归。
-- 锚点：`agent/src/context/AgentContextManager.ts`（preparation 流水线）、`agent/src/runtime/DefaultAgentRuntime.ts`（turn 入口）、`agent/src/harness/CompactionHistoryStore.ts`。
-- 测试：`agent/test/context-compaction.spec.ts`（overflow 重放、媒体占位、主动继续）。
+- 新增 `import` 命令（CLI + 工具）：解析 CLAUDE.md（→ 合并进 AGENTS.md 链）、`.cursor/rules/*.md`（→ 项目规则目录）、`.cursor/mcp.json` / Claude Code MCP 配置（→ 本项目 MCP 配置格式）；迁移预览 + 应用两段式，写入前确认。
+- 锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/`（`tsdi-agent import`）、`agent/src/project/agents-doc.ts`（合并写入 seam）。
+- 测试：`agent-tools/test/tools.spec.ts`、`agent-cli/test/*.spec.ts`（CLAUDE.md/.cursor 样例端到端）。
 
-### P69 · Prompt cache 请求侧落地 + 系统提示分段（G4）—— 高优先 ✅ 已完成
+### P82 · pre/post-compaction hooks（G13）—— 低中优先
 
-- 系统提示按 cacheable（identity/rules/tools/skills 目录/项目上下文）与 non-cacheable（日期时间/动态上下文）分段，静态段前置。
-- OpenAI-compatible 适配器（含 deepseek）请求侧发出 cache 注解（OpenAI `cache_control`/`cached` 前缀或 deepseek context caching 语义），从 observe-only 升级为请求侧控制。
-- 缓存破坏检测：tools/model/sandbox 中途变更时避免重排前缀（codex 教训）。
-- 锚点：`agent/src/model/OpenAICompatibleModelAdapter.ts`、`agent/src/model/PromptCachePolicy.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent/src/prompt/sections/*`。
-- 测试：`agent/test/model-provider.spec.ts`（cache 注解断言、前缀稳定性）。
+- `AgentLifecycleHookStage` 扩展 `beforeCompaction` / `afterCompaction`；`AgentContextManager` 压缩前后触发（after 载荷含 summary / 质量分 / 丢弃消息统计），供审计、外部同步、通知定制。
+- 锚点：`agent/src/hooks/AgentHooks.ts`、`agent/src/context/AgentContextManager.ts`。
+- 测试：`agent/test/context-compaction.spec.ts`（触发顺序 + 载荷断言）。
 
-### P70 · 声明式 agent 原型：plan/build/review（G6）—— 中优先 ✅ 已完成
+### P83 · Goal 系统（G15）—— 中优先
 
-- 引入 `AgentArchetype` 配置（name/description/mode: primary|subagent/permission 规则集/prompt/model/steps），对齐 opencode `Agent.Info` 与 codex `[agents]`。
-- 内置 `plan`（只读 + 仅允许写 plans 目录）、`build`（默认全量）、`review`（只读 + 文档工具）三个原型；`setPlanMode` 收敛为 plan 原型的会话实例。
-- `@mention`/斜杠命令切换原型；原型间切换注入 build-switch 风格系统提示。
-- 锚点：`agent/src/options.ts`、`agent/src/runtime/AgentRuntime.ts`（原型解析）、`agent-tools/src/options.ts`、`agent-ui`（原型切换命令）。
-- 测试：`agent/test/runtime-loop.spec.ts`（plan 只读约束）、`agent-tools/test/tools.spec.ts`。
+- 新增 `Goal` 模型（title / objective / successCriteria / status / createdAt / updatedAt / completedAt），会话可关联 goal；跨会话持续推进：turn 结束做完成判定（successCriteria 匹配），未完成自动生成「继续目标」上下文供下一会话（对齐 codex `/goal` 多日工作流）。
+- 与 scheduler 分工：scheduler 时间触发任务；goal 目标驱动 + 人工/agent 双驱动推进。
+- 锚点：`agent/src/goal/GoalStore.ts`（InMemory/TypeOrm）、`agent/src/runtime/DefaultAgentRuntime.ts`（goal 上下文注入 + 完成判定）、`agent-gateway/src/api/GoalHandler.ts`、`agent-ui`（`/goal` 命令 + 状态面板）。
+- 测试：`agent/test/goal.spec.ts`（创建/推进/完成/跨会话恢复）。
 
-### P71 · Git step 快照 + 消息级 revert/unrevert + 会话 diff（G2）—— 中优先 ✅ 已完成
+### P84 · Provider 注册表（G16）—— 中优先
 
-- 每 step-start 以 git 临时 ref/commit 捕获工作树（不污染历史），绑定到会话消息 id；提供 `revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态。
-- 会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC，对齐 opencode），供 review 面板复用。
-- 与现有 FileSnapshotStore 并存：git 快照用于整树恢复，FileSnapshot 用于精确 undo（两者均为可选运行时 ctor 槽，可同时注册）。
-- 锚点：`agent/src/harness/GitStepSnapshotStore.ts`（git stash create + pinned refs）、`agent/src/runtime/AgentRuntime.ts`（list/revert/unrevert/diff API）、`agent/src/runtime/DefaultAgentRuntime.ts`（turn begin 捕获 + 结果消息绑定）、`agent/src/agent.module.ts`（DI 工厂，读 `AgentOptions.gitStepSnapshots`）、`agent-gateway/src/api/SessionHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
-- 测试：`agent/test/git-step-snapshot.spec.ts`（store 捕获/diff/revert/unrevert/list/clear + runtime 链路 + 模块装配，revert 链路覆盖见 Runtime 套件）、`agent-gateway/test/gateway-server.spec.ts`（git_snapshot RPC + REST 路由）。
-- `agent-ui` review 面板已复用会话 diff，并覆盖 list/diff/revert/unrevert 交互。
+- 内置 provider 目录（models.dev 式）：provider 名 → baseUrl / apiKeyEnv / 模型清单 / 能力位（chat、vision、tool-calling、cache 注解支持）；`/model` 交互与 `provider.json` 自动推导，免手写 baseUrl。
+- 锚点：`agent/src/model/provider-registry.ts`、`agent-cli/src/config.ts`（模型选择 UI 消费目录）。
+- 测试：`agent/test/model-provider.spec.ts`（目录解析、能力推导、降级）。
 
-### P72 · AGENTS.md 指令链升级（G5）—— 中优先 ✅ 已完成
+### P85 · Eval 基准 runner（G17）—— 中优先
 
-- `AGENTS.override.md` 优先于 `AGENTS.md`；`projectDocFallbackFilenames`；`projectDocMaxBytes`（默认 32KiB）上限截断；root→cwd 自根向叶拼接、近端覆盖远端。
-- `findAgentsDoc` 返回指令链（多文件有序），`ProjectContextSection` 消费新返回结构。
-- 锚点：`agent/src/project/agents-doc.ts`、`agent/src/project/init-agents-doc.ts`、`agent/src/prompt/sections/ProjectContextSection.ts`、`agent/src/options.ts`。
-- 测试：`agent/test/agents-doc.spec.ts`（override 优先级、fallback、截断、链式发现/渲染、结构分析）。
+- 任务级评估：`repo + issue → agent 运行 → patch + test 结果 → 通过/失败评分`；支持批量跑分与模型/提示回归对比（复用 harness-profile 的 falsify-rate 与 evidence 数据作为过程指标）；报告落库 + gateway 暴露（复用 usage/stats 管线）。
+- 锚点：`agent/src/eval/EvalRunner.ts`、`agent/src/eval/EvalTask.ts`、`agent-gateway/src/api/EvalHandler.ts`。
+- 测试：`agent/test/eval.spec.ts`（fake repo + echo 模型端到端）。
 
-### P73 · 语义记忆检索（G7）—— 中优先 ✅ 已完成
+### P86 · 会话分享（G18）—— 低优先
 
-- 可选 embedding 提供者（注入 `MemoryEmbedder` token，无配置时回退关键词）；`memory.search` 增加 `mode: 'semantic' | 'keyword' | 'hybrid'`。
-- 结果合并现有记忆/经验蒸馏管线（`AgentMemoryRetriever`），不破坏现有确定性路径。
-- 锚点：`agent/src/memory/AgentMemoryRetriever.ts`、`agent/src/memory/MemoryStore.ts`、`agent-tools/memory/*`。
-- 测试：`agent/test/memory.spec.ts`（降级回退）、`agent-tools/test/tools.spec.ts`。
+- 生成只读分享链接/快照：transcript 脱敏（密钥/路径裁剪）+ 只读 token；gateway 增加 share 端点（对齐 opencode `/share`）。
+- 锚点：`agent-gateway/src/api/ShareHandler.ts`、`agent/src/memory/SessionStore.ts`（快照导出 seam）。
+- 测试：`agent-gateway/test/gateway-server.spec.ts`（脱敏 + token 鉴权）。
 
-### P74 · 自动标题/摘要 agent（G8）—— 低中优先
+### P87 · skills 远程市场（G19）—— 低优先
 
-- 首条用户消息后异步 `ensureTitle`（低成本模型/温度固定），回落 deterministic（首句截断）。
-- 会话级结构化摘要独立于压缩摘要（对齐 opencode summary agent），供 `/projects`/`/threads` 展示。
-- 锚点：`agent/src/runtime/DefaultAgentRuntime.ts`（runTurn 入口）、`agent/src/memory/SessionStore.ts`（setTitle/summary）、`agent/src/model/RoutedModelAdapter.ts`。
-- 测试：`agent/test/runtime-loop.spec.ts`、`agent-ui/test/view-model.spec.ts`。
+- `LocalSkillRegistry` 扩展远程源（git URL / registry URL）：拉取、版本、更新、冲突检测（对齐 codex plugin marketplace / Claude Code 插件生态）。
+- 锚点：`agent-tools/skills/local-skill-loader.ts`、`agent-tools/skills/registry/`。
+- 测试：`agent-tools/test/skills.spec.ts`（git 源拉取 + 版本解析）。
 
-### P75 · Gateway OpenAPI 规范（G9）—— 中优先（桌面/IDE 前置）
+### P88 · 后台子代理 UX（G20）—— 低优先
 
-- 为 gateway HTTP 面生成 OpenAPI 3.1 文档（session/message/delegation/audit/compaction/summary-quality 等 handler），JSON-RPC 方法表导出为 schema。
-- 可选：生成 TypeScript 客户端骨架（对齐 opencode SDK 生成思路）。
-- 锚点：`agent-gateway/src/api/*Handler.ts`（收集路由元数据）、`agent-gateway/src/app-rpc/AppRpcServer.ts`（能力表）。
-- 测试：`agent-gateway/test/gateway-server.spec.ts`（spec 快照）。
+- `spawn_agent` 支持后台模式：fire-and-collect（不阻塞当前 turn），完成事件经 gateway 事件流 / agent-ui 通知回传（对齐 opencode background subagents）。
+- 锚点：`agent-tools/src/nested-agent-runner.ts`、`agent-gateway/src/api/EventHandler.ts`、`agent-ui`（后台任务通知）。
+- 测试：`agent-tools/test/*.spec.ts`（后台完成事件 + 结果收集）。
 
-### P76 · 模型请求重试/退避分类（G10）—— 低中优先
+### P89 · LSP server 自动安装（G22）—— 低优先
 
-- 模型请求错误分类：rate-limit / 5xx / 网络 / 超时；rate-limit 尊重 `retry-after`，其余指数退避 + jitter；接入现有 empty-response/follow-up 恢复链。
-- 锚点：`agent/src/model/ModelAdapter.ts`（错误类型）、`agent/src/runtime/DefaultAgentRuntime.ts`（complete/streaming 重试路径）。
-- 测试：`agent/test/model-adapter.spec.ts`（分类 + 退避断言）。
-
-### P77 · 会话 fork（G2 延伸）—— 低优先 ✅ 已完成
-
-- 基于会话 snapshot 的 fork：`fork(sessionId, messageId?)` 创建子会话（branch role），继承 thread 归属（originThreadId），复用现有项目/线程模型。
-- 锚点：`agent/src/memory/SessionStore.ts`（snapshot/restore seam）、`agent-gateway/src/api/SessionHandler.ts`、`agent-ui` `/fork` 命令。
-- 测试：`agent/test/session.spec.ts`、`agent-ui/test/view-model.spec.ts`。
-
-### P78 · 项目记忆闭环：从验证失败回写 AGENTS.md（学习闭环）—— 远期 ✅ 已完成
-
-- 循证螺旋发现的高频 falsify 模式 → 生成项目级规则（`AGENTS.md` 或 `.agents/rules/*.md`）草案 → 人审后落地；对齐 codex「修正 agent 错误时更新 AGENTS.md」实践。
-- 锚点：`agent/src/harness/WeaknessMiner.ts`、`agent/src/project/agents-doc.ts`。
+- lsp-manager 增加语言 → server 安装命令映射（npm/brew 等），首次使用时自动安装/缺失提示（对齐 opencode 30+ auto-install LSP）。
+- 锚点：`agent-tools/lsp/lsp-manager.ts`、`agent-tools/lsp/types.ts`。
+- 测试：`agent-tools/test/lsp.spec.ts`（安装映射 + 缺失降级）。
 
 ## 剩余（远期，未排期）
 
-- **桌面/IDE/Web 多面**（opencode desktop + IDE 扩展 + web console）——需新 UI 工程，暂不排期。
-- **GitHub/GitLab 应用集成**（Codex GitHub Action、opencode GitHub 集成、隐藏自动化 agent）——依赖平台 OAuth。
+- **桌面/IDE/Web 多面（G21）**：opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote —— 需新 UI 工程，暂不排期。
+- **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent）—— 依赖平台 OAuth。
 
 ## 已完成（历史）
 
@@ -155,3 +174,5 @@ P76（模型请求重试/退避分类，G10）已落地：OpenAI-compatible 与 
 P77（会话 fork，G2 延伸）已落地：`SessionStore.fork` 支持完整或按 `messageId` 截断 transcript，生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway 暴露 `session.fork` RPC，带 owner 校验和显式/自动 session id。新增存储层测试。
 
 P78（项目记忆闭环，验证失败回写 AGENTS.md）已落地：新增 `buildAgentsRuleDraft(report)`，将 WeaknessMiner 的高频失败建议渲染为带人工审核标记的 AGENTS.md 规则片段；`harness.audit` 通过 `includeDraft: true` 返回草案，默认不写入或覆盖项目文件。新增草案生成测试。
+
+P80（/review 内联评审命令，G12）已落地：`review` 工具组新增 `review_diff`（`git diff HEAD` 或指定 base/range/paths，只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控，输出结构化 findings + diff + stats，read-only 工具不注册写方法）；`ReviewFindingsStore` 将 findings 落审计（`toolName 'review_diff'`、`id=run.id`、`toolCallId 'review:<id>'`、`inputSummary 'review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`、深拷贝、无 AuditSink 抛错）；agent-gateway 新增 `review.diff/list/get/save` RPC + `ReviewHandler` REST（`GET /api/reviews` 带 sessionId 必填/owner 403/commit 过滤 + `GET /api/reviews/:id`）并接入 `GatewayBootstrap` 路由；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）走 git-diff 评审流并 `review.save` 落库。回归：agent 660 / agent-gateway 197 / agent-ui 358 / agent-tools 274 passing（agent-tools 仍为既有 apply-patch 临时目录 flaky，P73 基线即存在，隔离跑 3/3 通过），四包 `tsc --noEmit` clean；新增测试：agent-tools review diff 只读/路径/base/沙箱 4 例、agent ReviewFindingsStore 5 例、gateway review RPC 2 例 + REST 3 例、agent-ui 5 例。

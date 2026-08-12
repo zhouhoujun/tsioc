@@ -76,6 +76,7 @@ import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
+import { ReviewDiffTool } from '../review/review-diff.tool';
 import { WeatherTool } from '../utility/weather.tool';
 import { SessionSearchTool } from '../sessions/session-search.tool';
 import { SendMessageTool } from '../communication/send-message.tool';
@@ -191,6 +192,7 @@ function provideCodingTaskToolFactory() {
         KnowledgeSearchTool,
         KnowledgeStoreTool,
         GitOperationsTool,
+        ReviewDiffTool,
         WeatherTool,
         SessionSearchTool,
         SendMessageTool,
@@ -328,6 +330,7 @@ function provideCodingTaskToolFactory() {
         KnowledgeSearchTool,
         KnowledgeStoreTool,
         GitOperationsTool,
+        ReviewDiffTool,
         WeatherTool,
         SessionSearchTool,
         SendMessageTool,

@@ -30,7 +30,8 @@ export const ARCHETYPE_TOOL_GROUPS: Record<string, Partial<Record<AgentToolGroup
         knowledge: true,
         llm: true,
         capture: true,
-        lsp: true
+        lsp: true,
+        review: true
     },
     plan: {
         filesystem: true,
@@ -53,6 +54,7 @@ export const ARCHETYPE_TOOL_GROUPS: Record<string, Partial<Record<AgentToolGroup
         project: true,
         registry: true,
         git: true,
+        review: true,
         knowledge: true,
         lsp: true,
         media: true
@@ -232,6 +234,7 @@ export type AgentToolGroup =
     | 'code_execution'
     | 'knowledge'
     | 'git'
+    | 'review'
     | 'communication'
     | 'audio'
     | 'security'
@@ -309,6 +312,7 @@ export type AgentToolItem =
     | 'knowledge_search'
     | 'knowledge_store'
     | 'git_operations'
+    | 'review_diff'
     | 'location'
     | 'weather'
     | 'session_search'

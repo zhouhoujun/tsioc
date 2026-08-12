@@ -2879,6 +2879,246 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async openGitDiffReview(base?: string): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        const resolvedBase = String(base || '').trim() || 'HEAD';
+        const review = await this.fetchGitDiffReview(sessionId, resolvedBase);
+        if (!review) {
+            return true;
+        }
+        const files = Array.isArray(review.files) ? review.files : [];
+        if (!files.length) {
+            this.notify(`No changes to review against ${resolvedBase}.`);
+            return true;
+        }
+        this.openGitDiffReviewPanel(review, resolvedBase);
+        this.notify(`git diff ${resolvedBase}: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
+        return true;
+    }
+
+    protected async runGitDiffReviewAnalysis(base?: string): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        const resolvedBase = String(base || '').trim() || 'HEAD';
+        const review = await this.fetchGitDiffReview(sessionId, resolvedBase);
+        if (!review) {
+            return true;
+        }
+        const files = Array.isArray(review.files) ? review.files : [];
+        const diff = String(review.diff || '');
+        if (!files.length || !diff.trim()) {
+            this.notify(`No changes to review against ${resolvedBase}.`);
+            return true;
+        }
+        this.notify(`Running review analysis against ${resolvedBase}...`);
+        let content = '';
+        try {
+            const turn = await this.appRpc.request('run.turn', {
+                sessionId,
+                input: this.buildGitDiffReviewPrompt(resolvedBase, files, diff)
+            });
+            content = String(turn?.message?.content || '');
+        } catch (error: any) {
+            this.notify(error?.message || 'The review analysis turn failed.');
+            return true;
+        }
+        const findings = this.parseReviewFindingsFromText(content);
+        if (!findings.length) {
+            this.notify('Review produced no parseable findings.');
+            this.openGitDiffReviewPanel(review, resolvedBase);
+            return true;
+        }
+        const saved = await this.saveReviewFindings(sessionId, {
+            base: resolvedBase,
+            commitSha: typeof review.commitSha === 'string' && review.commitSha.trim() ? review.commitSha.trim() : undefined,
+            files,
+            diffSummary: String(review.stats || '').trim() || undefined,
+            findings
+        });
+        if (saved) {
+            this.notify(`${findings.length} finding${findings.length === 1 ? '' : 's'} saved${saved.id ? ` (${saved.id})` : ''}.`);
+        }
+        this.openGitDiffReviewPanel(review, resolvedBase);
+        return true;
+    }
+
+    protected async listReviewFindings(commit?: string): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        try {
+            const result = await this.appRpc.request('review.list', {
+                sessionId,
+                ...(commit ? { commit } : {})
+            });
+            const runs = Array.isArray(result?.runs) ? result.runs : [];
+            if (!runs.length) {
+                this.notify(commit ? `No review runs found for commit ${commit}.` : 'No review runs saved.');
+                return true;
+            }
+            for (const run of runs) {
+                const fileCount = Array.isArray(run.files) ? run.files.length : 0;
+                const findingCount = Array.isArray(run.findings) ? run.findings.length : 0;
+                const sha = String(run.commitSha || '').slice(0, 12);
+                this.notify(`[${run.id}] ${run.base} · ${fileCount} file${fileCount === 1 ? '' : 's'} · ${findingCount} finding${findingCount === 1 ? '' : 's'}${sha ? ` · ${sha}` : ''}`);
+            }
+            return true;
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to list review runs.');
+            return true;
+        }
+    }
+
+    protected async showReviewRun(id: string | undefined): Promise<boolean> {
+        const resolvedId = String(id || '').trim();
+        if (!resolvedId) {
+            this.notify('Review run id is required. Usage: /review show <id>');
+            return true;
+        }
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        try {
+            const result = await this.appRpc.request('review.get', { sessionId, id: resolvedId });
+            const run = result?.run;
+            if (!run) {
+                this.notify(`Review run "${resolvedId}" was not found.`);
+                return true;
+            }
+            const findings = Array.isArray(run.findings) ? run.findings : [];
+            if (!findings.length) {
+                this.notify(`Review run "${resolvedId}" (${run.base}) has no findings.`);
+                return true;
+            }
+            this.notify(`Review run "${resolvedId}" (${run.base}) · ${findings.length} finding${findings.length === 1 ? '' : 's'}:`);
+            for (const finding of findings) {
+                const category = String(finding?.category || 'suggestion');
+                const severity = String(finding?.severity || 'info');
+                const file = String(finding?.anchor?.file || '?');
+                const line = typeof finding?.anchor?.line === 'number' ? `:${finding.anchor.line}` : '';
+                this.notify(`[${category}/${severity}] ${file}${line} ${String(finding?.summary || '')}`);
+                if (String(finding?.suggestion || '').trim()) {
+                    this.notify(`  fix: ${String(finding.suggestion).trim()}`);
+                }
+            }
+            return true;
+        } catch (error: any) {
+            this.notify(error?.message || `Failed to load review run "${resolvedId}".`);
+            return true;
+        }
+    }
+
+    protected buildGitDiffReviewPrompt(base: string, files: string[], diff: string): string {
+        return [
+            `Review the following git diff against ${base}.`,
+            `Changed files (${files.length}): ${files.join(', ')}`,
+            'Analyze the diff and produce a JSON array of findings. Each finding must be an object with:',
+            '- category: "correctness" | "risk" | "suggestion"',
+            '- severity: "error" | "warning" | "info"',
+            '- summary: short one-line description',
+            '- detail: optional longer explanation',
+            '- anchor: optional { "file": string, "line"?: number, "endLine"?: number } pointing into the diff',
+            '- suggestion: optional concrete fix recommendation',
+            'Return only the JSON array, no markdown fences, no prose.',
+            '',
+            '```diff',
+            diff,
+            '```'
+        ].join('\n');
+    }
+
+    protected parseReviewFindingsFromText(text: string): Record<string, any>[] {
+        const trimmed = String(text || '').trim();
+        if (!trimmed) {
+            return [];
+        }
+        const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+        const candidate = fenced ? fenced[1].trim() : trimmed;
+        const start = candidate.indexOf('[');
+        const end = candidate.lastIndexOf(']');
+        if (start < 0 || end <= start) {
+            return [];
+        }
+        try {
+            const parsed = JSON.parse(candidate.slice(start, end + 1));
+            return Array.isArray(parsed)
+                ? parsed.filter((entry): entry is Record<string, any> => !!entry && typeof entry === 'object')
+                : [];
+        } catch {
+            return [];
+        }
+    }
+
+    protected async saveReviewFindings(sessionId: string, run: Record<string, any>): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return null;
+        }
+        try {
+            const result = await this.appRpc.request('review.save', { sessionId, run });
+            return result?.run ?? result ?? null;
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to save the review run.');
+            return null;
+        }
+    }
+
+    protected openGitDiffReviewPanel(review: Record<string, any>, base: string): void {
+        const sessionId = this.state.sessionId;
+        const reviewTask = {
+            id: `git-diff:${base}`,
+            title: `git diff ${base}`,
+            sourceSessionId: sessionId,
+            status: 'done',
+            metadata: { reviewMode: 'git-diff', base }
+        };
+        this.state.setSessionsFocused(false);
+        this.state.setTasksFocused(false);
+        this.state.setJobsFocused(false);
+        this.state.setToolsFocused(false);
+        this.state.setApprovalsFocused(false);
+        this.state.setMessagesFocused(false);
+        this.state.closeMessageDetail();
+        this.state.openReview(reviewTask, { diff: String(review.diff || '') || null });
+        this.state.setNotice('');
+        this.state.setLastError('');
+    }
+
+    protected async fetchGitDiffReview(sessionId: string, base: string): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return null;
+        }
+        try {
+            await this.activateToolForSession('review_diff', sessionId);
+        } catch {
+            // Activation may fail when the tool is not registered; the diff
+            // RPC below then surfaces the precise error.
+        }
+        try {
+            const result = await this.appRpc.request('review.diff', { sessionId, base });
+            if (!result || typeof result !== 'object' || !result.review) {
+                this.notify(`Failed to gather the git diff against ${base}.`);
+                return null;
+            }
+            return result.review as Record<string, any>;
+        } catch (error: any) {
+            this.notify(error?.message || `Failed to gather the git diff against ${base}.`);
+            return null;
+        }
+    }
+
     protected describeCodingTaskRollback(task: any): string {
         const rollback = task?.result?.rollback;
         if (rollback?.available === true) {
@@ -3792,6 +4032,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         this.state.setReviewFileAnnotation('rejected', comment);
                         this.notify(comment ? `File rejected: ${comment}` : 'File rejected.');
                         return true;
+                    }
+                    if (arg === 'diff' || arg.startsWith('diff ')) {
+                        const base = arg.length > 5 ? arg.slice(5).trim() : undefined;
+                        return this.openGitDiffReview(base);
+                    }
+                    if (arg === 'run' || arg.startsWith('run ')) {
+                        const base = arg.length > 4 ? arg.slice(4).trim() : undefined;
+                        return this.runGitDiffReviewAnalysis(base);
+                    }
+                    if (arg === 'findings' || arg.startsWith('findings ')) {
+                        const commit = arg.length > 9 ? arg.slice(9).trim() : undefined;
+                        return this.listReviewFindings(commit);
+                    }
+                    if (arg === 'show' || arg.startsWith('show ')) {
+                        const id = arg.length > 5 ? arg.slice(5).trim() : undefined;
+                        return this.showReviewRun(id);
                     }
                     await this.openCodingTaskReview(arg);
                     return true;

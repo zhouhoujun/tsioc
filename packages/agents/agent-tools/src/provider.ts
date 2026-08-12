@@ -60,6 +60,7 @@ import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
+import { ReviewDiffTool } from '../review/review-diff.tool';
 import { WeatherTool } from '../utility/weather.tool';
 import { SessionSearchTool } from '../sessions/session-search.tool';
 import { SendMessageTool } from '../communication/send-message.tool';
@@ -179,6 +180,7 @@ const toolItems = {
     knowledge_search: KnowledgeSearchTool,
     knowledge_store: KnowledgeStoreTool,
     git_operations: GitOperationsTool,
+    review_diff: ReviewDiffTool,
     weather: WeatherTool,
     session_search: SessionSearchTool,
     send_message: SendMessageTool,
@@ -227,6 +229,7 @@ const toolGroups = {
     code_execution: ['execute_code'],
     knowledge: ['knowledge_search', 'knowledge_store'],
     git: ['git_operations'],
+    review: ['review_diff'],
     communication: ['send_message'],
     audio: ['audio_transcribe', 'text_to_speech'],
     security: ['verifiable_intent', 'security_scan'],
@@ -245,7 +248,7 @@ const toolGroups = {
     lsp: ['lsp_definition', 'lsp_references', 'lsp_diagnostics', 'lsp_symbols']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
-const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
+const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'review', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
@@ -269,6 +272,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     code_execution: 'Sandboxed code execution across multiple languages.',
     knowledge: 'Knowledge base query and store tools.',
     git: 'Git repository operations and history inspection tools.',
+    review: 'Read-only git diff inspection and inline review tools.',
     communication: 'Multi-platform messaging and notification tools.',
     audio: 'Audio transcription and text-to-speech tools.',
     security: 'Intent verification and security scanning tools.',
@@ -286,7 +290,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     ai_cli: 'External AI coding CLI tool invocation (Claude Code, OpenCode, Gemini CLI, Codex CLI).',
     lsp: 'Language Server Protocol queries (definition, references, diagnostics, document symbols).'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'ssh', 'media', 'agent', 'code_execution', 'git', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'ssh', 'media', 'agent', 'code_execution', 'git', 'review', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -431,6 +435,10 @@ export function withKnowledgeTools(): Provider[] {
 
 export function withGitTools(): Provider[] {
     return withAgentTools(...toolGroups.git.map(name => toolItems[name]));
+}
+
+export function withReviewTools(): Provider[] {
+    return withAgentTools(...toolGroups.review.map(name => toolItems[name]));
 }
 
 export function withCommunicationTools(): Provider[] {
@@ -579,6 +587,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         KnowledgeSearchTool,
         KnowledgeStoreTool,
         GitOperationsTool,
+        ReviewDiffTool,
         LocationTool,
         WeatherTool,
         SendMessageTool,
