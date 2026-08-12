@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { CompactionHistoryAggregate, CompactionHistoryRecord, CompactionHistoryStore, CompactionHistoryTrendPoint } from './CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from './InMemoryCompactionHistoryStore';
-import { TypeOrmCompactionHistoryStore } from './TypeOrmCompactionHistoryStore';
+import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
 export class DefaultCompactionHistoryStore extends CompactionHistoryStore {
@@ -40,19 +39,8 @@ export class DefaultCompactionHistoryStore extends CompactionHistoryStore {
         if (this.resolved) {
             return this.resolved;
         }
-        const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmCompactionHistoryStore(adapter) : this.fallback;
+        const adapter = resolveTypeormAdapter(this.app);
+        this.resolved = adapter ? lazyTypeOrmAdapters.getTypeOrmCompactionHistoryStore(adapter) : this.fallback;
         return this.resolved;
-    }
-
-    private tryGetAdapter(): TypeormAdapter | null {
-        if (!this.app) {
-            return null;
-        }
-        try {
-            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            return null;
-        }
     }
 }

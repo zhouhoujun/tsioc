@@ -8,8 +8,11 @@ export type {
 export * from './AgentUiConfigReader';
 export * from './agent-ui-config';
 export * from './run-agent-ui';
+export * from './web-console';
 export * from './AgentConsoleComponent';
 export * from './AgentConsoleEventBridge';
+export * from './AgentConsoleRemoteEventBridge';
+export * from './HttpAgentConsoleAppRpc';
 export * from './AgentConsoleInputHistoryStore';
 export * from './AgentConsoleMarkdown';
 export * from './AgentConsoleMessageRenderers';

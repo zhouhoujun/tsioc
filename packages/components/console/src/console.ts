@@ -1,6 +1,6 @@
-import { JSDOM } from 'jsdom';
 import { EventEmitter } from 'events';
-import { Inject, Injectable, isArray, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { Inject, Injectable, isArray, Module, ModuleWithProviders, Optional, token } from '@tsdi/ioc';
+import { DOCUMENT } from '@tsdi/common';
 import {
     AbstractTemplateCompiler,
     noReact,
@@ -655,12 +655,15 @@ export class ConsoleRenderer implements Renderer {
 export class ConsoleTemplateParser implements TemplateParser {
     [noReact] = true;
 
-    constructor(private renderer: ConsoleRenderer) {
+    constructor(
+        private renderer: ConsoleRenderer,
+        @Optional() @Inject(DOCUMENT) private doc?: Object | null
+    ) {
     }
 
     parse(template: string): RNode[] {
-        const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-        const container = dom.window.document.createElement('div');
+        const document = this.resolveDocument();
+        const container = document.createElement('div');
         container.innerHTML = template.trim();
         const result: RNode[] = [];
         Array.from(container.childNodes).forEach(node => {
@@ -670,6 +673,14 @@ export class ConsoleTemplateParser implements TemplateParser {
             }
         });
         return result;
+    }
+
+    protected resolveDocument(): Document {
+        if (this.doc) {
+            return this.doc as Document;
+        }
+        const { JSDOM } = require('jsdom') as typeof import('jsdom');
+        return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
     }
 
     protected convertNode(node: Node): ConsoleNode | null {

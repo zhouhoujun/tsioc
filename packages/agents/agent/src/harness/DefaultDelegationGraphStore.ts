@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { DelegationEdgeInput, DelegationEdgeRecord, DelegationEdgeStatus, DelegationGraphStore, DelegationTreeNode, DelegationTreeOptions } from './DelegationGraphStore';
 import { InMemoryDelegationGraphStore } from './InMemoryDelegationGraphStore';
-import { TypeOrmDelegationGraphStore } from './TypeOrmDelegationGraphStore';
+import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
 export class DefaultDelegationGraphStore extends DelegationGraphStore {
@@ -45,19 +44,8 @@ export class DefaultDelegationGraphStore extends DelegationGraphStore {
         if (this.resolved) {
             return this.resolved;
         }
-        const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmDelegationGraphStore(adapter, this.uuid) : this.fallback;
+        const adapter = resolveTypeormAdapter(this.app);
+        this.resolved = adapter ? lazyTypeOrmAdapters.getTypeOrmDelegationGraphStore(adapter, this.uuid) : this.fallback;
         return this.resolved;
-    }
-
-    private tryGetAdapter(): TypeormAdapter | null {
-        if (!this.app) {
-            return null;
-        }
-        try {
-            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            return null;
-        }
     }
 }

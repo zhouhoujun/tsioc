@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMemoryRecord, MemoryStore } from './MemoryStore';
 import { InMemoryMemoryStore } from './InMemoryMemoryStore';
-import { TypeOrmMemoryStore } from './TypeOrmMemoryStore';
+import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
 export class DefaultMemoryStore extends MemoryStore {
@@ -40,19 +39,8 @@ export class DefaultMemoryStore extends MemoryStore {
         if (this.resolved) {
             return this.resolved;
         }
-        const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmMemoryStore(adapter) : this.fallback;
+        const adapter = resolveTypeormAdapter(this.app);
+        this.resolved = adapter ? lazyTypeOrmAdapters.getTypeOrmMemoryStore(adapter) : this.fallback;
         return this.resolved;
-    }
-
-    private tryGetAdapter(): TypeormAdapter | null {
-        if (!this.app) {
-            return null;
-        }
-        try {
-            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            return null;
-        }
     }
 }

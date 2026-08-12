@@ -1,12 +1,11 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { SessionStore } from './SessionStore';
 import { InMemorySessionStore } from './InMemorySessionStore';
-import { TypeOrmSessionStore } from './TypeOrmSessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex } from './SessionStore';
+import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
 export class DefaultSessionStore extends SessionStore {
@@ -95,19 +94,8 @@ export class DefaultSessionStore extends SessionStore {
         if (this.resolved) {
             return this.resolved;
         }
-        const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmSessionStore(adapter) : this.fallback;
+        const adapter = resolveTypeormAdapter(this.app);
+        this.resolved = adapter ? lazyTypeOrmAdapters.getTypeOrmSessionStore(adapter) : this.fallback;
         return this.resolved;
-    }
-
-    private tryGetAdapter(): TypeormAdapter | null {
-        if (!this.app) {
-            return null;
-        }
-        try {
-            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            return null;
-        }
     }
 }

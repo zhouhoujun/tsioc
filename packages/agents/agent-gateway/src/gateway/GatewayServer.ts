@@ -1,4 +1,6 @@
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Buffer } from 'buffer';
 import { Inject, Injectable } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
@@ -105,6 +107,9 @@ export class GatewayServer {
         const matched = this.matcher.match(req.method ?? 'GET', pathname);
 
         if (!matched) {
+            if (await this.tryServeStatic(req, res, pathname)) {
+                return;
+            }
             res.writeHead(404, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ error: 'not found', path: pathname }));
             return;
@@ -155,5 +160,76 @@ export class GatewayServer {
             req.on('data', (chunk: Buffer) => chunks.push(chunk));
             req.on('end', () => resolve(Buffer.concat(chunks as Uint8Array[])));
         });
+    }
+
+    private static readonly MIME_TYPES: Record<string, string> = {
+        '.html': 'text/html; charset=utf-8',
+        '.js': 'application/javascript; charset=utf-8',
+        '.mjs': 'application/javascript; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.map': 'application/json; charset=utf-8',
+        '.svg': 'image/svg+xml',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.txt': 'text/plain; charset=utf-8'
+    };
+
+    private async tryServeStatic(req: http.IncomingMessage, res: http.ServerResponse, pathname: string): Promise<boolean> {
+        const staticDir = this.config.staticDir;
+        if (req.method !== 'GET' || !staticDir) {
+            return false;
+        }
+        const root = path.resolve(staticDir);
+        const decoded = decodeURIComponent(pathname);
+        const relative = decoded === '/' ? 'index.html' : decoded.replace(/^\/+/, '');
+        const resolved = path.resolve(root, relative);
+        if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+            res.writeHead(403, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify({ error: 'forbidden', path: pathname }));
+            return true;
+        }
+        let stat: fs.Stats;
+        try {
+            stat = await fs.promises.stat(resolved);
+        } catch {
+            return false;
+        }
+        if (stat.isDirectory()) {
+            const indexPath = path.join(resolved, 'index.html');
+            try {
+                stat = await fs.promises.stat(indexPath);
+            } catch {
+                return false;
+            }
+            return this.writeStaticFile(res, indexPath, stat);
+        }
+        if (!stat.isFile()) {
+            return false;
+        }
+        return this.writeStaticFile(res, resolved, stat);
+    }
+
+    private async writeStaticFile(res: http.ServerResponse, filePath: string, stat: fs.Stats): Promise<boolean> {
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType = GatewayServer.MIME_TYPES[ext] ?? 'application/octet-stream';
+        try {
+            const content = await fs.promises.readFile(filePath);
+            res.writeHead(200, {
+                'Content-Type': contentType,
+                'Content-Length': stat.size,
+                'Cache-Control': 'no-cache'
+            });
+            res.end(content);
+            return true;
+        } catch {
+            return false;
+        }
     }
 }

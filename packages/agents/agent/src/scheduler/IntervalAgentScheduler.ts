@@ -1,14 +1,13 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext, Runner, Shutdown } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentScheduler } from './AgentScheduler';
 import { ScheduledAgentTask } from './ScheduledAgentTask';
 import { NextRunCalculator } from './NextRunCalculator';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { AgentErrorEvent, AgentTaskScheduledEvent } from '../runtime/AgentEvents';
-import { AgentScheduledTaskEntity } from '../memory/entities';
 import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
+import { getTypeOrmAdapterToken, requireLazy, resolveTypeormAdapter, TypeOrmAdapterLike } from '../lazy-typeorm';
 
 @Injectable()
 export class IntervalAgentScheduler extends AgentScheduler {
@@ -17,7 +16,8 @@ export class IntervalAgentScheduler extends AgentScheduler {
     private inFlight = new Map<string, Promise<void>>();
     private stopping = false;
 
-    private adapter?: TypeormAdapter | null;
+    private adapter?: TypeOrmAdapterLike | null;
+    private scheduledTaskEntity?: any;
 
     constructor(
         private runtime: AgentRuntime,
@@ -402,7 +402,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         };
     }
 
-    private async ensureAdapter(): Promise<TypeormAdapter | null> {
+    private async ensureAdapter(): Promise<TypeOrmAdapterLike | null> {
         if (this.adapter !== undefined) {
             return this.adapter;
         }
@@ -410,12 +410,16 @@ export class IntervalAgentScheduler extends AgentScheduler {
             this.adapter = null;
             return this.adapter;
         }
-        try {
-            this.adapter = (this.app as any).get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            this.adapter = null;
-        }
+        this.adapter = resolveTypeormAdapter(this.app as any);
         return this.adapter;
+    }
+
+    private resolveScheduledTaskEntity(): any {
+        if (this.scheduledTaskEntity) {
+            return this.scheduledTaskEntity;
+        }
+        const entities = requireLazy('./memory/entities') as { AgentScheduledTaskEntity?: any };
+        return (this.scheduledTaskEntity = entities.AgentScheduledTaskEntity);
     }
 
     private createFailedTask(task: ScheduledAgentTask, error: Error): ScheduledAgentTask {
@@ -470,9 +474,9 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!adapter) {
             return [];
         }
-        const repo = adapter.getRepository(AgentScheduledTaskEntity);
+        const repo = adapter.getRepository(this.resolveScheduledTaskEntity());
         const records = await repo.find({ order: { createdAt: 'ASC', id: 'ASC' } as any });
-        const tasks = records
+        const tasks = (records as any[])
             .map(record => this.toTask(record))
             .filter(task => !task.cancelled)
             .map(task => this.recoverTask(task));
@@ -486,7 +490,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!adapter) {
             return undefined;
         }
-        const repo = adapter.getRepository(AgentScheduledTaskEntity);
+        const repo = adapter.getRepository(this.resolveScheduledTaskEntity());
         const record = await repo.findOne({ where: { id: taskId } as any });
         return record ? this.recoverTask(this.toTask(record)) : undefined;
     }
@@ -496,7 +500,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!adapter) {
             return;
         }
-        const repo = adapter.getRepository(AgentScheduledTaskEntity);
+        const repo = adapter.getRepository(this.resolveScheduledTaskEntity());
         const entity = repo.create({
             id: task.id,
             sessionId: task.sessionId,
@@ -529,7 +533,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!adapter) {
             return;
         }
-        await adapter.getRepository(AgentScheduledTaskEntity).delete({ id: taskId } as any);
+        await adapter.getRepository(this.resolveScheduledTaskEntity()).delete({ id: taskId } as any);
     }
 
     private recoverTask(task: ScheduledAgentTask): ScheduledAgentTask {
@@ -598,7 +602,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         return NextRunCalculator.nextRun(task, now);
     }
 
-    private toTask(record: AgentScheduledTaskEntity): ScheduledAgentTask {
+    private toTask(record: any): ScheduledAgentTask {
         return {
             id: record.id,
             sessionId: record.sessionId,

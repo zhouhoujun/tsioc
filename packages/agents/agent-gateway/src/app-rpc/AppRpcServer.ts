@@ -1085,6 +1085,34 @@ export class AppRpcServer {
                     status: 'failed',
                     content: 'Turn cancelled'
                 };
+            case 'turn_completed':
+                return {
+                    eventType: 'turn_completed',
+                    label: 'state',
+                    status: 'success',
+                    content: 'Turn completed'
+                };
+            case 'background_task_started':
+                return {
+                    eventType: 'background_task_started',
+                    label: 'tool',
+                    status: 'running',
+                    content: `Background task ${String(data?.taskId || '')} started${data?.goal ? `: ${String(data.goal).slice(0, 120)}` : ''}`
+                };
+            case 'background_task_completed':
+                return {
+                    eventType: 'background_task_completed',
+                    label: 'tool',
+                    status: 'success',
+                    content: `Background task ${String(data?.taskId || '')} completed${data?.summary ? `: ${String(data.summary).slice(0, 120)}` : ''}`
+                };
+            case 'background_task_failed':
+                return {
+                    eventType: 'background_task_failed',
+                    label: 'tool',
+                    status: 'error',
+                    content: `Background task ${String(data?.taskId || '')} failed: ${String(data?.error || 'unknown error')}`
+                };
             case 'approval_requested':
                 return {
                     eventType: 'approval_requested',

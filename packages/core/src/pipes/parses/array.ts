@@ -1,7 +1,6 @@
 import { AbstractType, isBasicType, isString, Type } from '@tsdi/ioc';
 import { Pipe } from '../../metadata';
 import { PipeTransform, invalidPipeArgument } from '../pipe';
-import e = require('express');
 
 const arrJson = /^\[.*\]$/;
 /**

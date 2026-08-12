@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentAuditRecord, AuditSink } from './AuditSink';
 import { InMemoryAuditSink } from './InMemoryAuditSink';
-import { TypeOrmAuditSink } from './TypeOrmAuditSink';
+import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
 export class DefaultAuditSink extends AuditSink {
@@ -30,19 +29,8 @@ export class DefaultAuditSink extends AuditSink {
         if (this.resolved) {
             return this.resolved;
         }
-        const adapter = this.tryGetAdapter();
-        this.resolved = adapter ? new TypeOrmAuditSink(adapter) : this.fallback;
+        const adapter = resolveTypeormAdapter(this.app);
+        this.resolved = adapter ? lazyTypeOrmAdapters.getTypeOrmAuditSink(adapter) : this.fallback;
         return this.resolved;
-    }
-
-    private tryGetAdapter(): TypeormAdapter | null {
-        if (!this.app) {
-            return null;
-        }
-        try {
-            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
-        } catch {
-            return null;
-        }
     }
 }

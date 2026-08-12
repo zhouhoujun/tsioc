@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TSDI Agent Web Console</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+        #agent-console {
+            height: 100vh;
+            overflow: auto;
+            box-sizing: border-box;
+            padding: 12px;
+        }
+        #agent-console .console-panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+        #agent-console textarea.agent-input {
+            width: 100%;
+            background: #0d1117;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 8px;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+        #agent-console textarea.agent-input:focus {
+            border-color: #58a6ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="agent-console"></div>
+    <script>
+        window.__TSDI_AGENT_WEB__ = {
+            baseUrl: (window.__TSDI_AGENT_WEB_BASE_URL__ || window.location.origin || '').replace(/\/+$/, ''),
+            token: window.__TSDI_AGENT_WEB_TOKEN__ || '',
+            sessionId: new URLSearchParams(window.location.search).get('session') || undefined
+        };
+    </script>
+    <script src="./dist/agent-console.js"></script>
+</body>
+</html>

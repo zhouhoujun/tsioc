@@ -46,7 +46,7 @@ import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildE
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
-import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal';
+import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
 import {
     AgentArchetype,
     DEFAULT_ARCHETYPE,

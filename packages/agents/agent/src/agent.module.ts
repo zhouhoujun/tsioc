@@ -49,28 +49,25 @@ import { RateLimitManager } from './harness/RateLimitManager';
 import { OutputGuard } from './harness/OutputGuard';
 import { AuditSink } from './harness/AuditSink';
 import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
-import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
 import { DefaultAuditSink } from './harness/DefaultAuditSink';
 import { CompactionHistoryStore } from './harness/CompactionHistoryStore';
 import { InMemoryCompactionHistoryStore } from './harness/InMemoryCompactionHistoryStore';
-import { TypeOrmCompactionHistoryStore } from './harness/TypeOrmCompactionHistoryStore';
 import { DefaultCompactionHistoryStore } from './harness/DefaultCompactionHistoryStore';
 import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
 import { InMemoryTurnDiagnosticsStore } from './harness/InMemoryTurnDiagnosticsStore';
-import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
 import { DefaultTurnDiagnosticsStore } from './harness/DefaultTurnDiagnosticsStore';
 import { WeaknessMiner } from './harness/WeaknessMiner';
 import { SummaryQualityStore } from './harness/SummaryQualityStore';
 import { InMemorySummaryQualityStore } from './harness/InMemorySummaryQualityStore';
-import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
 import { DefaultSummaryQualityStore } from './harness/DefaultSummaryQualityStore';
 import { DelegationGraphStore } from './harness/DelegationGraphStore';
 import { InMemoryDelegationGraphStore } from './harness/InMemoryDelegationGraphStore';
-import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
 import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
 import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/AgentHooks';
-import { DefaultGoalStore, GoalStore, InMemoryGoalStore, TypeOrmGoalStore } from './goal';
+import { DefaultGoalStore } from './goal/DefaultGoalStore';
+import { GoalStore } from './goal/GoalStore';
+import { InMemoryGoalStore } from './goal/InMemoryGoalStore';
 import { createAgentProviders } from './provider';
 
 @Module({
@@ -88,7 +85,6 @@ import { createAgentProviders } from './provider';
         },
         AgentContextManager,
         InMemoryGoalStore,
-        TypeOrmGoalStore,
         DefaultGoalStore,
         { provide: GoalStore, useExisting: DefaultGoalStore },
         ToolLoopDetector,
@@ -96,24 +92,19 @@ import { createAgentProviders } from './provider';
         RateLimitManager,
         OutputGuard,
         InMemoryAuditSink,
-        TypeOrmAuditSink,
         DefaultAuditSink,
         { provide: AuditSink, useExisting: DefaultAuditSink },
         InMemoryCompactionHistoryStore,
-        TypeOrmCompactionHistoryStore,
         DefaultCompactionHistoryStore,
         { provide: CompactionHistoryStore, useExisting: DefaultCompactionHistoryStore },
         InMemoryTurnDiagnosticsStore,
-        TypeOrmTurnDiagnosticsStore,
         DefaultTurnDiagnosticsStore,
         { provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore },
         WeaknessMiner,
         InMemorySummaryQualityStore,
-        TypeOrmSummaryQualityStore,
         DefaultSummaryQualityStore,
         { provide: SummaryQualityStore, useExisting: DefaultSummaryQualityStore },
         InMemoryDelegationGraphStore,
-        TypeOrmDelegationGraphStore,
         DefaultDelegationGraphStore,
         { provide: DelegationGraphStore, useExisting: DefaultDelegationGraphStore },
         NodeChildProcessSandboxExecutor,
