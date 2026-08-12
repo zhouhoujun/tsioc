@@ -16,6 +16,7 @@ import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
 import { ReviewHandler } from './api/ReviewHandler';
+import { EvalHandler } from './api/EvalHandler';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from './api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from './api/SummaryQualityHandler';
@@ -51,6 +52,7 @@ import { createAgentGatewayProviders } from './provider';
         EventHandler,
         AuditHandler,
         ReviewHandler,
+        EvalHandler,
         CompactionHistoryHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,

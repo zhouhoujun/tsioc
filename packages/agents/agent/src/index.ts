@@ -45,6 +45,8 @@ export * from './tools/BuiltinTools';
 
 export * from './context/AgentContextManager';
 export * from './goal';
+export * from './eval/EvalTask';
+export * from './eval/EvalRunner';
 export * from './harness/ToolSchemaValidator';
 export * from './harness/RateLimitManager';
 export * from './harness/OutputGuard';

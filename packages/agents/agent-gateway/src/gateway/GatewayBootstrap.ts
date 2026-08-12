@@ -9,6 +9,7 @@ import { ApprovalHandler } from '../api/ApprovalHandler';
 import { StatsHandler } from '../api/StatsHandler';
 import { EventHandler } from '../api/EventHandler';
 import { ReviewHandler } from '../api/ReviewHandler';
+import { EvalHandler } from '../api/EvalHandler';
 import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
@@ -34,6 +35,7 @@ export class GatewayBootstrap {
         @Optional() private rpc?: AppRpcHandler | null,
         @Optional() private events?: EventHandler | null,
         @Optional() private reviews?: ReviewHandler | null,
+        @Optional() private evals?: EvalHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
     ) {
@@ -52,6 +54,7 @@ export class GatewayBootstrap {
             ...(this.rpc?.getRoutes() ?? []),
             ...(this.events?.getRoutes() ?? []),
             ...(this.reviews?.getRoutes() ?? []),
+            ...(this.evals?.getRoutes() ?? []),
             ...(this.chatWs?.getRoutes() ?? [])
         ];
 

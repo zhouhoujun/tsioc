@@ -33,6 +33,7 @@ export * from './api/UsageHandler';
 export * from './api/EventHandler';
 export * from './api/AppRpcHandler';
 export * from './api/ReviewHandler';
+export * from './api/EvalHandler';
 
 export * from './ws/ChatWebSocket';
 

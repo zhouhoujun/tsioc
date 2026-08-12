@@ -89,15 +89,9 @@
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
 | G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P85+）
+## 打磨计划（P86+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P85 · Eval 基准 runner（G17）—— 中优先
-
-- 任务级评估：`repo + issue → agent 运行 → patch + test 结果 → 通过/失败评分`；支持批量跑分与模型/提示回归对比（复用 harness-profile 的 falsify-rate 与 evidence 数据作为过程指标）；报告落库 + gateway 暴露（复用 usage/stats 管线）。
-- 锚点：`agent/src/eval/EvalRunner.ts`、`agent/src/eval/EvalTask.ts`、`agent-gateway/src/api/EvalHandler.ts`。
-- 测试：`agent/test/eval.spec.ts`（fake repo + echo 模型端到端）。
 
 ### P86 · 会话分享（G18）—— 低优先
 
@@ -169,3 +163,5 @@ P82（pre/post-compaction hooks，G13）已落地：生命周期阶段扩展 `be
 P83（Goal 系统，G15）已落地：GoalStore 提供内存与 TypeORM 持久化及自动后端选择，支持跨 session 关联、状态转换和 completedAt；runtime 在每次模型请求中注入 active goal 上下文，turn 完成后仅当 assistant 文本覆盖全部显式 successCriteria 时自动完成，无 criteria 目标保留人工判定；gateway 增加 `goal.create/get/list/link/complete/reopen` RPC，agent-ui 增加 `/goal` 全命令面。测试覆盖 create/link、跨会话恢复、complete/reopen、全部 criteria 判定、上下文渲染、TypeORM round-trip 与本地/RPC UI 路径。全量回归：agent 667 / agent-channels 59 / agent-gateway 197 / agent-ui 360 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1643 passing；八包 build clean。
 
 P84（Provider 注册表，G16）已落地：`AgentProviderRegistry` 提供内置 DeepSeek/OpenAI/Anthropic/Gemini/OpenAI-compatible 目录、自定义 `provider.json`（array/map）解析、模型能力合并与 config 补全；CLI provider URL/key-env 解析统一委托 registry，gateway `model.list/activate` 在无显式 profiles 时提供并激活 catalog 模型，UI 展示能力位。新增 registry、CLI 自定义目录测试。回归：agent 667 / agent-cli 58 / agent-gateway 197 / agent-ui 360 / agent-channels 59 / agent-providers 13 / agent-tools 282 / agent-ssh 8，共 1644 passing；八包 build clean。
+
+P85（Eval 基准 runner，G17）已落地：新增 `EvalTask` / `EvalRun` 契约与注入式 `EvalRunner`，支持单任务、批量运行、profile 选择、验证命令结果评分、运行异常降级和报告存储；`InMemoryEvalReportStore` 提供默认落库 seam，gateway 新增 `POST /api/eval/run` 与 `GET /api/eval` 暴露运行及报告列表。测试覆盖成功/失败批量、验证失败评分、异常记录与持久化。

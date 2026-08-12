@@ -39,6 +39,7 @@ import { AgentServer } from './channels/AgentServer';
 import { AgentClient } from './channels/AgentClient';
 import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
+import { EvalRunner } from './eval/EvalRunner';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
 import { FileSnapshotStore } from './harness/FileSnapshotStore';
 import { GitStepSnapshotStore } from './harness/GitStepSnapshotStore';
@@ -166,6 +167,7 @@ import { createAgentProviders } from './provider';
         { provide: AgentScheduler, useClass: IntervalAgentScheduler },
         DefaultAgentRuntime,
         { provide: AgentRuntime, useExisting: DefaultAgentRuntime, asDefault: true },
+        EvalRunner,
         TurnHandler,
         AgentRequestHandler,
         AgentServer,
@@ -180,6 +182,7 @@ import { createAgentProviders } from './provider';
     ],
     exports: [
         DefaultAgentRuntime,
+        EvalRunner,
         LocalToolRegistry,
         DefaultSessionStore,
         InMemorySessionStore,
