@@ -1,5 +1,6 @@
 import { AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
+import { retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -147,7 +148,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             if (!response.ok) {
                 cleanup();
                 if (this.isRetryable(response.status) && attempt <= MAX_RETRIES) {
-                    return this.retry(request, attempt, response.status);
+                    return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
                 const errorBody = await response.text().catch(() => '');
                 throw new Error(`Anthropic request failed: ${response.status} ${errorBody}`);
@@ -579,8 +580,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
         return status === 429 || status === 500 || status === 502 || status === 503 || status === 529;
     }
 
-    private async retry(request: ModelRequest, attempt: number, _status: number): Promise<ModelResponse> {
-        const delay = Math.min(BASE_RETRY_MS * Math.pow(2, attempt - 1) + Math.random() * 500, 15000);
+    private async retry(request: ModelRequest, attempt: number, _status: number, retryAfter?: string | null): Promise<ModelResponse> {
+        const delay = retryDelayMs(attempt, retryAfter);
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.complete(request, attempt + 1);
     }

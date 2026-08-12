@@ -150,4 +150,6 @@ P74（自动标题/摘要 agent，G8）已落地：首条用户消息异步生�
 
 P75（Gateway OpenAPI 规范，G9）已落地：gateway 从已注册 `GatewayRoute[]` 生成 OpenAPI 3.1 文档，支持路径参数、认证 scheme 与 `/rpc` 入口，并通过无需认证的 `GET /openapi.json` 暴露；新增生成器测试。回归：agent-gateway 192 passing，构建 clean。
 
-P76–P78（模型请求重试分类、会话 fork、验证失败回写 AGENTS.md）未开始。
+P76（模型请求重试/退避分类，G10）已落地：OpenAI-compatible 与 Anthropic 共享错误分类和退避策略，支持 rate-limit/server/network/timeout 分类、指数退避+jitter，以及秒数/HTTP-date `Retry-After`（带 15 秒上限）；保留现有最多 3 次重试行为。新增策略单测，agent 回归 638 passing，类型检查 clean。
+
+P77–P78（会话 fork、验证失败回写 AGENTS.md）未开始。

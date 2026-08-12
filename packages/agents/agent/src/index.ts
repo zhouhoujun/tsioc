@@ -9,6 +9,7 @@ export * from './project/agents-doc';
 export * from './project/init-agents-doc';
 
 export * from './model/ModelAdapter';
+export * from './model/RetryPolicy';
 export * from './model/ModelRequest';
 export * from './model/ModelResponse';
 export * from './model/StreamChunk';
