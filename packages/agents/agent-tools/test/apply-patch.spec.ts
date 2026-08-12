@@ -393,8 +393,8 @@ export class ApplyPatchToolTest {
                 undefined,
                 snapshotStore,
                 undefined,
-                new FsFileAdapter() as any,
-                undefined
+                undefined,
+                new FsFileAdapter() as any
             );
 
             snapshotStore.push('s1', {
