@@ -178,6 +178,33 @@ export abstract class SessionStore {
     abstract setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void>;
     abstract setWorkspace(sessionId: string, workspace?: string): Promise<void>;
     abstract setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void>;
+
+    /** Fork a transcript into a new branch session, optionally through a message. */
+    async fork(sessionId: string, messageId?: string, forkSessionId?: string): Promise<AgentState> {
+        const source = await this.get(sessionId);
+        const targetId = String(forkSessionId || '').trim()
+            || `fork-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const end = messageId ? source.messages.findIndex(message => message.id === messageId) : source.messages.length - 1;
+        if (messageId && end < 0) {
+            throw new Error(`Message '${messageId}' not found in session '${sessionId}'.`);
+        }
+        const messages = source.messages.slice(0, end + 1);
+        for (const message of messages) {
+            await this.append(targetId, { ...message });
+        }
+        if (source.summary) await this.setSummary(targetId, source.summary);
+        await this.setWorkspace(targetId, source.workspace);
+        await this.setProjectMetadata(targetId, {
+            projectId: source.projectId,
+            primaryThreadId: source.primaryThreadId || sessionId,
+            originThreadId: source.primaryThreadId || sessionId,
+            sessionRole: 'branch',
+            rootRequest: source.rootRequest,
+            focusSummary: source.focusSummary,
+            threadStatus: 'active'
+        });
+        return this.get(targetId);
+    }
     abstract delete(sessionId: string): void | Promise<void>;
     abstract clear(): void | Promise<void>;
 

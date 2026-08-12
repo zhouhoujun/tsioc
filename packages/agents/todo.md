@@ -152,4 +152,6 @@ P75（Gateway OpenAPI 规范，G9）已落地：gateway 从已注册 `GatewayRou
 
 P76（模型请求重试/退避分类，G10）已落地：OpenAI-compatible 与 Anthropic 共享错误分类和退避策略，支持 rate-limit/server/network/timeout 分类、指数退避+jitter，以及秒数/HTTP-date `Retry-After`（带 15 秒上限）；保留现有最多 3 次重试行为。新增策略单测，agent 回归 638 passing，类型检查 clean。
 
-P77–P78（会话 fork、验证失败回写 AGENTS.md）未开始。
+P77（会话 fork，G2 延伸）已落地：`SessionStore.fork` 支持完整或按 `messageId` 截断 transcript，生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway 暴露 `session.fork` RPC，带 owner 校验和显式/自动 session id。新增存储层测试。
+
+P78（验证失败回写 AGENTS.md）未开始。

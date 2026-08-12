@@ -143,6 +143,7 @@ export class AppRpcServer {
                         'app.inputHistory.get',
                         'app.inputHistory.put',
                         'session.create',
+                        'session.fork',
                         'session.list',
                         'session.list_projects',
                         'session.list_threads',
@@ -228,6 +229,8 @@ export class AppRpcServer {
                 return this.putInputHistory(params, context);
             case 'session.create':
                 return this.createSession(params, context);
+            case 'session.fork':
+                return this.forkSession(params, context);
             case 'session.list':
                 return this.listSessions(context);
             case 'session.list_projects':
@@ -393,6 +396,15 @@ export class AppRpcServer {
             updatedAt: state.updatedAt,
             workspace: state.workspace
         };
+    }
+
+    private async forkSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sourceId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sourceId, context);
+        const state = await this.sessions.fork(sourceId, params?.messageId, params?.forkSessionId);
+        await this.owners.create(state.sessionId, context.principalId);
+        this.sessionHandler.track(state.sessionId);
+        return { sessionId: state.sessionId, sourceSessionId: sourceId, messageCount: state.messages.length };
     }
 
     private async getAppState(params: any, context: AppRpcRequestContext): Promise<any> {
