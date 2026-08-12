@@ -3,6 +3,7 @@ import { AgentMessage, getAgentMessageImageParts, getAgentMessageText } from '..
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { MemoryStore } from '../memory/MemoryStore';
+import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -56,6 +57,22 @@ export interface ContextPreparationReport {
     /** Which replay strategy was applied: 'last-user-message' or 'continue-prompt'. */
     replayKind?: 'last-user-message' | 'continue-prompt';
 }
+
+export interface CompactionHookPayload {
+    phase: 'before' | 'after';
+    sessionId?: string;
+    level: CompactionLevel;
+    beforeMessageCount: number;
+    beforeTokens: number;
+    afterMessageCount?: number;
+    afterTokens?: number;
+    droppedMessageCount?: number;
+    summary?: string;
+    summaryQuality?: number;
+    report?: ContextPreparationReport;
+}
+
+export type CompactionHookRunner = (stage: 'beforeCompaction' | 'afterCompaction', payload: CompactionHookPayload) => void | Promise<void>;
 
 /**
  * A pattern extracted from one or more sessions during cross-session experience synthesis.
@@ -155,6 +172,7 @@ export class AgentContextManager {
     private compactionThreshold = 0;
     private cumulativeTokenSavings = 0;
     private originalMessageStore = new Map<string, StashedContext>();
+    private compactionHookRunner?: CompactionHookRunner;
 
     // Adaptive budget tracking
     private adaptiveEnabled = false;
@@ -184,6 +202,11 @@ export class AgentContextManager {
     setSummarizer(summarizer: SessionSummarizer, compactionThreshold?: number): this {
         this.summarizer = summarizer;
         this.compactionThreshold = compactionThreshold ?? 0;
+        return this;
+    }
+
+    setCompactionHookRunner(runner?: CompactionHookRunner): this {
+        this.compactionHookRunner = runner;
         return this;
     }
 
@@ -444,6 +467,33 @@ export class AgentContextManager {
             ? this.selectCompactionLevel(beforeTokens)
             : 'light';
 
+        if (compactionTriggered && this.compactionHookRunner) {
+            await this.compactionHookRunner('beforeCompaction', {
+                phase: 'before', sessionId, level, beforeMessageCount, beforeTokens
+            });
+        }
+
+        const prepared = await this.prepareHistoryCore(messages, sessionId, beforeMessageCount, beforeTokens, compactionTriggered, level);
+        if (compactionTriggered && this.compactionHookRunner) {
+            const summary = this.extractCompactionSummary(prepared.messages);
+            await this.compactionHookRunner('afterCompaction', {
+                phase: 'after',
+                sessionId,
+                level,
+                beforeMessageCount,
+                beforeTokens,
+                afterMessageCount: prepared.report.afterMessageCount,
+                afterTokens: prepared.report.afterTokens,
+                droppedMessageCount: Math.max(0, beforeMessageCount - prepared.report.afterMessageCount),
+                ...(summary ? { summary, summaryQuality: scoreSummaryQuality(summary).total } : {}),
+                report: prepared.report
+            });
+        }
+        return prepared;
+    }
+
+    private async prepareHistoryCore(messages: AgentMessage[], sessionId: string | undefined, beforeMessageCount: number, beforeTokens: number, compactionTriggered: boolean, level: CompactionLevel): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+
         // compact tool message outputs across all levels (pre-level check)
         const toolPrepared = this.compactToolMessagesForContext(messages);
         const workingMessages = toolPrepared.messages;
@@ -505,6 +555,16 @@ export class AgentContextManager {
         }
 
         return this.applyCompactionReplay(messages, await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level), beforeTokens);
+    }
+
+    private extractCompactionSummary(messages: AgentMessage[]): string | undefined {
+        const prefix = '[Context Summary';
+        const message = messages.find(item => item.role === 'system' && String(item.content || '').startsWith(prefix));
+        if (!message) {
+            return undefined;
+        }
+        const separator = message.content.indexOf('\n');
+        return (separator >= 0 ? message.content.slice(separator + 1) : message.content).trim() || undefined;
     }
 
     /**

@@ -152,6 +152,42 @@ export class ContextCompactionTest {
         expect(result).toBe(messages);
     }
 
+    @Test('prepareHistory runs compaction hooks in order with summary and drop metrics')
+    async prepareHistoryRunsCompactionHooks() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 100, recentMessageWindow: 2 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 5);
+        const events: Array<{ stage: string; payload: any }> = [];
+        ctx.setCompactionHookRunner(async (stage, payload) => {
+            events.push({ stage, payload });
+        });
+
+        const prepared = await ctx.prepareHistory(this.makeLongMessages(12), 'hook-session');
+
+        expect(events.map(event => event.stage)).toEqual(['beforeCompaction', 'afterCompaction']);
+        expect(events[0].payload.phase).toEqual('before');
+        expect(events[0].payload.sessionId).toEqual('hook-session');
+        expect(events[0].payload.beforeMessageCount).toEqual(12);
+        expect(events[1].payload.phase).toEqual('after');
+        expect(events[1].payload.report).toEqual(prepared.report);
+        expect(events[1].payload.summary).toBeTruthy();
+        expect(typeof events[1].payload.summaryQuality).toEqual('number');
+        expect(events[1].payload.droppedMessageCount).toEqual(Math.max(0, 12 - prepared.report.afterMessageCount));
+    }
+
+    @Test('prepareHistory skips compaction hooks when compaction is not triggered')
+    async prepareHistorySkipsHooksWithoutCompaction() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 20);
+        const stages: string[] = [];
+        ctx.setCompactionHookRunner(stage => { stages.push(stage); });
+
+        await ctx.prepareHistory(this.makeMessages(5), 'hook-session');
+
+        expect(stages).toEqual([]);
+    }
+
     @Test('prepareHistory compacts older tool output summaries before full history pruning is needed')
     async prepareHistoryCompactsOlderToolOutput() {
         const ctx = new AgentContextManager();

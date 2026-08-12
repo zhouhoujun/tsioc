@@ -1,6 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
 
-export type AgentLifecycleHookStage = 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval';
+export type AgentLifecycleHookStage = 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval' | 'beforeCompaction' | 'afterCompaction';
 
 export interface AgentHookDefinition {
     name?: string;
@@ -31,6 +31,8 @@ export interface AgentFunctionHooksOptions {
     beforeTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
     afterTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
     onApproval?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    beforeCompaction?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
+    afterCompaction?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
 }
 
 export interface AgentHooksOptions {
@@ -39,6 +41,8 @@ export interface AgentHooksOptions {
     beforeTool?: AgentHookDefinition | AgentHookDefinition[];
     afterTool?: AgentHookDefinition | AgentHookDefinition[];
     onApproval?: AgentHookDefinition | AgentHookDefinition[];
+    beforeCompaction?: AgentHookDefinition | AgentHookDefinition[];
+    afterCompaction?: AgentHookDefinition | AgentHookDefinition[];
     /** In-process JS function hooks. Run before shell hooks for the same stage. */
     functions?: AgentFunctionHooksOptions;
 }
@@ -54,6 +58,19 @@ export interface AgentHookContext {
     executionMode?: 'sequential' | 'parallel';
     approval?: { toolName: string; decision: string; reason?: string };
     turn?: { status: 'started' | 'completed' | 'cancelled' | 'failed'; message?: string; error?: string };
+    compaction?: {
+        phase: 'before' | 'after';
+        sessionId?: string;
+        level: 'light' | 'medium' | 'deep';
+        beforeMessageCount: number;
+        beforeTokens: number;
+        afterMessageCount?: number;
+        afterTokens?: number;
+        droppedMessageCount?: number;
+        summary?: string;
+        summaryQuality?: number;
+        report?: Record<string, any>;
+    };
     metadata?: Record<string, any>;
 }
 
@@ -258,7 +275,7 @@ export class AgentHookManager {
     }
 
     private stages(): AgentLifecycleHookStage[] {
-        return ['beforeTurn', 'afterTurn', 'beforeTool', 'afterTool', 'onApproval'];
+        return ['beforeTurn', 'afterTurn', 'beforeTool', 'afterTool', 'onApproval', 'beforeCompaction', 'afterCompaction'];
     }
 
     private normalizeStageHooks(stage: AgentLifecycleHookStage): AgentHookDefinition[] {

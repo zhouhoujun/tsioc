@@ -172,6 +172,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
+        this.contextManager.setCompactionHookRunner(async (stage, compaction) => {
+            if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
+                return;
+            }
+            await this.runTurnHooks(stage, compaction.sessionId, {
+                sessionId: compaction.sessionId,
+                workspace: await this.resolveSessionWorkspace(compaction.sessionId),
+                stage,
+                compaction
+            });
+        });
     }
 
     async runTurn(
