@@ -34,6 +34,7 @@ import {
     sortProjectSessions,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
+    resolveProviderRegistry,
     normalizeCliArgv,
     runAgentJsonStream,
     runAgentImport,
@@ -1300,6 +1301,16 @@ export class AgentCliTest {
         expect(resolveProviderApiKeyEnv('openai')).toBe('OPENAI_API_KEY');
         expect(resolveProviderApiKeyEnv('openai-compatible')).toBe('OPENAI_API_KEY');
         expect(resolveProviderApiKeyEnv('anthropic')).toBe('ANTHROPIC_API_KEY');
+    }
+
+    @Test('provider registry loads custom provider.json catalog and infers config')
+    async providerRegistryLoadsCustomCatalog() {
+        const root = await this.createRoot();
+        await fs.promises.writeFile(path.join(root, 'provider.json'), JSON.stringify({ providers: { local: { baseUrl: 'http://localhost:11434/v1', apiKeyEnv: 'LOCAL_API_KEY', models: ['coder'] } } }));
+        const registry = resolveProviderRegistry(root);
+        expect(registry.get('local')?.models.map(model => model.id)).toEqual(['coder']);
+        expect(registry.completeConfig({ provider: 'local', model: 'coder' }).baseUrl).toEqual('http://localhost:11434/v1');
+        expect(registry.get('openai')).toBeTruthy();
     }
 
     @Test('provider defaults switch with provider instead of reusing previous provider model')

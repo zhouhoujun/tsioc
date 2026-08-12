@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -1285,6 +1285,15 @@ export class AppRpcServer {
     private listModelProfiles(): any[] {
         const profiles = this.options.model?.profiles || {};
         const current = String(this.options.model?.defaultProfile || '').trim();
+        if (!Object.keys(profiles).length) {
+            return defaultAgentProviderRegistry.list().flatMap(provider => provider.models.map(model => ({
+                name: `${provider.id}/${model.id}`,
+                selected: this.options.model?.provider === provider.id && this.options.model?.model === model.id,
+                provider: provider.id, model: model.id, baseUrl: provider.baseUrl || '',
+                capabilities: defaultAgentProviderRegistry.resolveModel(provider.id, model.id).capabilities,
+                catalog: true
+            })));
+        }
         return Object.entries(profiles)
             .filter(([, profile]) => !!profile)
             .map(([name, profile]) => ({
@@ -1309,7 +1318,18 @@ export class AppRpcServer {
         const profiles = this.options.model?.profiles || {};
         const profile = profiles[name];
         if (!profile) {
-            throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
+            const separator = name.indexOf('/');
+            const providerId = separator > 0 ? name.slice(0, separator) : '';
+            const modelId = separator > 0 ? name.slice(separator + 1) : '';
+            const provider = defaultAgentProviderRegistry.get(providerId);
+            if (!provider || !provider.models.some(model => model.id === modelId)) {
+                throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
+            }
+            this.options.model = {
+                ...(this.options.model || {}), provider: provider.id, model: modelId,
+                baseUrl: provider.baseUrl, apiKeyEnv: provider.apiKeyEnv, defaultProfile: undefined
+            };
+            return { sessionId: sessionId || null, modelProfile: name, provider: provider.id, model: modelId, catalog: true };
         }
         this.options.model = this.options.model || {};
         this.options.model.defaultProfile = name;

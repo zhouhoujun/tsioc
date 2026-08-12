@@ -36,6 +36,10 @@
 
 - **P83 · Goal 系统**：新增 InMemory/TypeORM/Default GoalStore，Goal 含 objective、successCriteria、status 与时间戳；多个 session 可关联同一 goal，active goal 自动注入模型上下文，assistant 输出明确覆盖全部 criteria 时确定性完成，无 criteria 时只允许人工完成；gateway `goal.*` RPC 与 agent-ui `/goal` 命令支持创建、查看、列举、关联、完成和重开。锚点：`agent/src/goal/`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 
+### Provider 目录
+
+- **P84 · Provider 注册表**：新增内置 provider/model 目录与可解析的 `provider.json` 自定义目录，统一提供 baseUrl、apiKeyEnv、模型清单及 chat/vision/tool-calling/prompt-cache/reasoning 能力位；CLI 配置与 gateway `/model` 消费目录，显式配置优先，未知 provider 保持降级。
+
 ### 会话与工作树
 
 - **P77 · 会话 fork**：`SessionStore.fork(sessionId, messageId?)` 完整或截断 transcript 生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway `session.fork` RPC（owner 校验 + 显式/自动 id）。
@@ -77,7 +81,7 @@
 | G13 | ~~无 pre/post-compaction hooks~~（✅ 2026-08 P82） | codex hooks GA（0.130+）pre/post-compaction | lifecycle hooks 已扩展 before/afterCompaction，after 透出 summary、质量分、report 与 drop 统计 | 中：压缩时可观测/定制不足（审计、外部同步、通知） |
 | G14 | ~~无配置迁移（/import）~~（✅ 2026-08 P81） | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 的 preview/apply 幂等迁移 | 中：从 Claude Code/Cursor 迁移门槛高 |
 | G15 | ~~无 Goal 系统（跨会话持久目标）~~（✅ 2026-08 P83） | codex `/goal`（0.128+）持久化多日工作流 | GoalStore 持久化目标与 session 关联，runtime 注入 active goal 并按明确 criteria 完成判定 | 中：长期任务无法无人值守持续推进 |
-| G16 | **无 provider 注册表** | opencode models.dev（75+ providers / 1000+ 模型）目录 | profiles 为手写 baseUrl/apiKeyEnv；无 provider 目录自动发现、模型清单、能力推导 | 中：接入新模型/网关成本高 |
+| G16 | ~~无 provider 注册表~~（✅ 2026-08 P84） | opencode models.dev（75+ providers / 1000+ 模型）目录 | 内置/自定义 provider registry 提供 baseUrl、key env、model catalog 与 capabilities，CLI/gateway 共用 | 中：接入新模型/网关成本高 |
 | G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
 | G18 | **无会话分享** | opencode `/share` 只读分享会话 | gateway 有 owner 鉴权 + pairing，但无只读分享链接/脱敏快照导出 | 低中：协作/交付场景缺失 |
 | G19 | **skills 无远程分发** | codex plugin marketplace；opencode skills 目录共享 | `LocalSkillRegistry` 为本地注册表；无 git/registry URL 拉取、版本、更新、冲突检测 | 低中：生态扩展受限 |
@@ -85,15 +89,9 @@
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
 | G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P84+）
+## 打磨计划（P85+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P84 · Provider 注册表（G16）—— 中优先
-
-- 内置 provider 目录（models.dev 式）：provider 名 → baseUrl / apiKeyEnv / 模型清单 / 能力位（chat、vision、tool-calling、cache 注解支持）；`/model` 交互与 `provider.json` 自动推导，免手写 baseUrl。
-- 锚点：`agent/src/model/provider-registry.ts`、`agent-cli/src/config.ts`（模型选择 UI 消费目录）。
-- 测试：`agent/test/model-provider.spec.ts`（目录解析、能力推导、降级）。
 
 ### P85 · Eval 基准 runner（G17）—— 中优先
 
@@ -169,3 +167,5 @@ P81（配置迁移 `/import`，G14）已落地：新增 `import_config` 工具�
 P82（pre/post-compaction hooks，G13）已落地：生命周期阶段扩展 `beforeCompaction` / `afterCompaction`，shell/function 双形态均可配置；context manager 在真实压缩前后按序触发，after 载荷包含 summary、`scoreSummaryQuality` 总分、完整 report 与 dropped message count；runtime 复用现有 hook manager 和 transcript 持久化，未触发压缩或未配置 hook 时静默跳过。新增 context compaction 测试覆盖顺序、载荷与未触发降级。全量回归：agent 662 / agent-channels 59 / agent-gateway 197 / agent-ui 358 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1636 passing；八包 build clean。
 
 P83（Goal 系统，G15）已落地：GoalStore 提供内存与 TypeORM 持久化及自动后端选择，支持跨 session 关联、状态转换和 completedAt；runtime 在每次模型请求中注入 active goal 上下文，turn 完成后仅当 assistant 文本覆盖全部显式 successCriteria 时自动完成，无 criteria 目标保留人工判定；gateway 增加 `goal.create/get/list/link/complete/reopen` RPC，agent-ui 增加 `/goal` 全命令面。测试覆盖 create/link、跨会话恢复、complete/reopen、全部 criteria 判定、上下文渲染、TypeORM round-trip 与本地/RPC UI 路径。全量回归：agent 667 / agent-channels 59 / agent-gateway 197 / agent-ui 360 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1643 passing；八包 build clean。
+
+P84（Provider 注册表，G16）已落地：`AgentProviderRegistry` 提供内置 DeepSeek/OpenAI/Anthropic/Gemini/OpenAI-compatible 目录、自定义 `provider.json`（array/map）解析、模型能力合并与 config 补全；CLI provider URL/key-env 解析统一委托 registry，gateway `model.list/activate` 在无显式 profiles 时提供并激活 catalog 模型，UI 展示能力位。新增 registry、CLI 自定义目录测试。回归：agent 667 / agent-cli 58 / agent-gateway 197 / agent-ui 360 / agent-channels 59 / agent-providers 13 / agent-tools 282 / agent-ssh 8，共 1644 passing；八包 build clean。

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { AgentHooksOptions, resolveAgentWorkspacePath } from '@tsdi/agent';
+import { AgentHooksOptions, AgentProviderRegistry, defaultAgentProviderRegistry, resolveAgentWorkspacePath } from '@tsdi/agent';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 import { SshOptions } from '@tsdi/agent-ssh';
@@ -319,6 +319,15 @@ export function resolveProviderProfile(root: string): AgentCliProviderProfile | 
     };
 }
 
+export function resolveProviderRegistry(root: string): AgentProviderRegistry {
+    const parsed = readJsonObject(path.join(root, 'provider.json'));
+    if (!parsed.providers) return defaultAgentProviderRegistry;
+    const custom = AgentProviderRegistry.parse(parsed);
+    const byId = new Map(defaultAgentProviderRegistry.list().map(item => [item.id, item]));
+    for (const provider of custom) byId.set(provider.id, provider);
+    return new AgentProviderRegistry([...byId.values()]);
+}
+
 export function writeSettingsModelProfile(root: string, profile: Partial<AgentCliProviderProfile>): string {
     const resolvedRoot = path.resolve(root);
     const settingsPath = path.join(resolvedRoot, 'settings.json');
@@ -394,13 +403,14 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
     const settingsModel = readSettingsModel(root);
     const initialModel = resolveInitialModelSelection(settingsModel);
     const providerProfile = root ? resolveProviderProfile(root) : undefined;
+    const providerRegistry = root ? resolveProviderRegistry(root) : defaultAgentProviderRegistry;
     const provider = options.provider || process.env.AGENT_PROVIDER || initialModel.provider || providerProfile?.provider || 'deepseek';
     const model = options.model || process.env.AGENT_MODEL || initialModel.model || providerProfile?.model || 'deepseek-v4-flash';
     const apiKeyEnv = options.apiKeyEnv
         || initialModel.apiKeyEnv
         || settingsModel?.apiKeyEnv
         || providerProfile?.apiKeyEnv
-        || resolveProviderApiKeyEnv(provider);
+        || providerRegistry.get(provider)?.apiKeyEnv;
     const apiKey = options.apiKey
         || process.env.AGENT_API_KEY
         || (apiKeyEnv ? process.env[apiKeyEnv] : undefined)
@@ -409,7 +419,7 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
         || providerProfile?.apiKey
         || undefined;
     const timeoutMs = parseInt(options.timeout as string) || initialModel.timeoutMs || providerProfile?.timeoutMs || 120000;
-    const baseUrl = options.baseUrl || process.env.AGENT_BASE_URL || initialModel.baseUrl || providerProfile?.baseUrl || resolveProviderBaseUrl(provider);
+    const baseUrl = options.baseUrl || process.env.AGENT_BASE_URL || initialModel.baseUrl || providerProfile?.baseUrl || providerRegistry.get(provider)?.baseUrl;
 
     return {
         ...(settingsModel || {}),
@@ -428,32 +438,13 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
 }
 
 export function resolveProviderApiKeyEnv(provider: string): string | undefined {
-    switch (provider.trim().toLowerCase()) {
-        case 'deepseek':
-            return 'DEEPSEEK_API_KEY';
-        case 'openai':
-        case 'openai-compatible':
-            return 'OPENAI_API_KEY';
-        case 'anthropic':
-        case 'claude':
-            return 'ANTHROPIC_API_KEY';
-        default:
-            return undefined;
-    }
+    const normalized = provider.trim().toLowerCase() === 'claude' ? 'anthropic' : provider;
+    return defaultAgentProviderRegistry.get(normalized)?.apiKeyEnv;
 }
 
 export function resolveProviderBaseUrl(provider: string): string | undefined {
-    switch (provider.trim().toLowerCase()) {
-        case 'deepseek':
-            return 'https://api.deepseek.com';
-        case 'openai':
-            return 'https://api.openai.com';
-        case 'anthropic':
-        case 'claude':
-            return 'https://api.anthropic.com';
-        default:
-            return undefined;
-    }
+    const normalized = provider.trim().toLowerCase() === 'claude' ? 'anthropic' : provider;
+    return defaultAgentProviderRegistry.get(normalized)?.baseUrl;
 }
 
 function isAgentHooksObject(value: unknown): value is AgentHooksOptions {

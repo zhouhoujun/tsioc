@@ -5763,6 +5763,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         profile?.baseUrl ? `Base URL: ${profile.baseUrl}` : '',
                         profile?.reasoning != null ? `Reasoning: ${profile.reasoning ? 'on' : 'off'}` : '',
                         profile?.thinkingBudget != null ? `Thinking budget: ${profile.thinkingBudget}` : ''
+                        ,profile?.capabilities ? `Capabilities: ${Object.entries(profile.capabilities).filter(([, enabled]) => enabled === true || enabled === 'full' || enabled === 'partial').map(([name]) => name).join(', ')}` : ''
                     ].filter(Boolean).join('\n')
                 })).filter((item: AgentConsoleSelectOption) => !!item.value)
                 : [];
