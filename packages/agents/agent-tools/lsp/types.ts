@@ -6,6 +6,12 @@ export interface LspServerOptions {
     timeoutMs?: number;
     /** Server root directory; defaults to the workspace root. */
     rootDir?: string;
+    /**
+     * Install commands run automatically (when `autoInstall: true`) if the
+     * server binary is missing. A string is a single command line; an array
+     * is an argv list. Defaults to the built-in mapping for known servers.
+     */
+    install?: string | string[];
 }
 
 export interface LspClientInfo {
@@ -18,6 +24,12 @@ export interface LspClientOptions {
     servers?: Record<string, LspServerOptions>;
     timeoutMs?: number;
     clientInfo?: LspClientInfo;
+    /**
+     * Auto-install a missing LSP server binary on first use. `true` runs the
+     * install commands; `'prompt'` (or unset) reports a clear install hint
+     * instead of running commands.
+     */
+    autoInstall?: boolean | 'prompt';
 }
 
 export interface LspPosition {

@@ -14,7 +14,8 @@ export function resolveLspManager(options?: AgentToolsOptions): LspServerManager
         manager = new LspServerManager({
             servers: lsp.servers,
             timeoutMs: lsp.timeoutMs,
-            clientInfo: { name: 'tsdi-agent', version: '6.0.0' }
+            clientInfo: { name: 'tsdi-agent', version: '6.0.0' },
+            autoInstall: lsp.autoInstall
         });
         lspManagers.set(key, manager);
     }
@@ -37,11 +38,14 @@ function toRelativePath(uri: string, baseDir?: string): string {
     return filePath;
 }
 
-function unavailable(extension: string): any {
+function unavailable(manager: LspServerManager, extension: string): any {
+    const hint = manager.installHintFor(extension);
     return {
         available: false,
         extension,
-        message: `No LSP server configured for '${extension}' files. Add one via agentTools({ lsp: { servers: { '${extension}': { command: '...' } } } }).`
+        message: hint
+            ? `LSP server for '${extension}' files is not installed. ${hint}`
+            : `No LSP server configured for '${extension}' files. Add one via agentTools({ lsp: { servers: { '${extension}': { command: '...' } } } }).`
     };
 }
 
@@ -126,7 +130,7 @@ export class LspDefinitionTool implements AgentTool {
         const uri = toFileUri(parsed.filePath);
         const server = await manager.clientFor(parsed.filePath);
         if (!server) {
-            return unavailable(manager.extensionForPath(parsed.filePath));
+            return unavailable(manager, manager.extensionForPath(parsed.filePath));
         }
         const locations = await server.client.definition(uri, { line: parsed.line, character: parsed.character });
         return {
@@ -174,7 +178,7 @@ export class LspReferencesTool implements AgentTool {
         const uri = toFileUri(parsed.filePath);
         const server = await manager.clientFor(parsed.filePath);
         if (!server) {
-            return unavailable(manager.extensionForPath(parsed.filePath));
+            return unavailable(manager, manager.extensionForPath(parsed.filePath));
         }
         const locations = await server.client.references(uri, { line: parsed.line, character: parsed.character }, parsed.includeDeclaration);
         return {
@@ -219,7 +223,7 @@ export class LspDiagnosticsTool implements AgentTool {
         const uri = toFileUri(filePath);
         const server = await manager.clientFor(filePath);
         if (!server) {
-            return unavailable(manager.extensionForPath(filePath));
+            return unavailable(manager, manager.extensionForPath(filePath));
         }
         const capabilities = await server.client.ensureInitialized();
         let diagnostics = capabilities.diagnosticProvider
@@ -276,7 +280,7 @@ export class LspSymbolsTool implements AgentTool {
         const uri = toFileUri(filePath);
         const server = await manager.clientFor(filePath);
         if (!server) {
-            return unavailable(manager.extensionForPath(filePath));
+            return unavailable(manager, manager.extensionForPath(filePath));
         }
         const result = await server.client.documentSymbols(uri);
         return {

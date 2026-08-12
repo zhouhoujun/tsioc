@@ -2,11 +2,11 @@
 
 ## 功能总纲
 
-主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）。
+主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）、skills 远程市场（git/registry 源安装 + 版本追踪 + 冲突检测）、后台子代理 fire-and-collect（不阻塞当前 turn + 完成事件经 gateway/UI 回传）、LSP server 自动安装（语言→安装命令映射 + 缺失降级提示）。
 
-## 已实现功能（P67–P86 落地明细，2026-08）
+## 已实现功能（P67–P89 落地明细，2026-08）
 
-> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P86 按方向归类的**已实现功能**清单（非计划）。
+> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P89 按方向归类的**已实现功能**清单（非计划）。
 
 ### 编码反馈闭环
 
@@ -14,6 +14,7 @@
 - **P79 · 编辑后验证命令证据**：工具轮编辑文件后，运行时对受影响包探测 package.json `test`/`build`/`typecheck`/`lint` 脚本 → 运行命令（有界超时 + 输出截断）→ 记录为 `evidence.verification == 'verify-command'` 新证据源；`VerificationGate` 新增检查 (d) 消费失败命令为伪造原因，与 lsp / declared-vs-actual 并行；支持 `verification.verifyCommands` 显式注入模板、`autoScripts`（默认 `['typecheck','lint']`，长耗时 test/build 需显式配置）、`timeoutMs`/`maxOutputChars`。锚点：`agent/src/harness/VerifyCommandRunner.ts`、`agent/src/harness/VerificationGate.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`（`runVerificationCommands`/`trackEditedFile`）、`agent/src/options.ts`。
 - **P71 · Git step 快照 + revert/unrevert**：每 step-start 以 `git stash create` + pinned refs 捕获整树（不污染历史），绑定会话消息 id；`revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态；会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC）；与 FileSnapshotStore 并存（git 整树恢复 + File 精确 undo）。锚点：`agent/src/harness/GitStepSnapshotStore.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/api/SessionHandler.ts`；agent-ui review 面板复用会话 diff。
 - **P76 · 模型请求重试/退避分类**：rate-limit / server(5xx) / network / timeout 四类分类 + 指数退避 + jitter，尊重秒数/HTTP-date `Retry-After`（15 秒上限），OpenAI-compatible 与 Anthropic 共享策略。锚点：`agent/src/model/RetryPolicy.ts`。
+- **P89 · LSP server 自动安装**：`LspInstallManager` 提供扩展 → server 命令 → 安装命令内置映射（typescript-language-server / pyright-langserver / gopls / rust-analyzer / vscode-langservers-extracted / markdown-language-server / bash-language-server，npm/go/rustup），`command -v`/`where` 可用性探测 + 有界超时安装；`LspServerOptions.install` 显式覆盖；`LspServerManager.clientFor` spawn 前探测，`autoInstall: true` 自动安装、其余返回安装提示（`installHintFor`），LSP 工具缺失时输出带安装命令的 hint。锚点：`agent-tools/lsp/lsp-install.ts`、`agent-tools/lsp/lsp-manager.ts`、`agent-tools/lsp/lsp.tools.ts`、`agent-tools/src/options.ts`。
 
 ### 上下文工程
 
@@ -27,6 +28,14 @@
 ### 配置迁移
 
 - **P81 · Claude Code / Cursor 配置迁移**：新增 CLI `tsdi-agent import` 与 `import_config` 工具，支持 CLAUDE.md、`.cursor/rules/*.md`、`.cursor/mcp.json` / `.mcp.json` 的预览与显式 `--apply` 两阶段迁移；AGENTS.md 采用 marker 分区幂等更新，MCP servers 合并进 agent settings 并保留无关配置；workspace/symlink 守卫、source 校验及多来源同次应用防覆盖。锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/import-command.ts`。
+
+### skills 生态
+
+- **P87 · skills 远程市场**：`RemoteSkillManager` 安装/更新/列出/移除 git 与 registry 源——git 源 shallow clone + ref 固定 + `pull --ff-only`/fetch+reset 更新 + tag/short-hash 版本解析，registry 源 JSON manifest 拉取 → SKILL.md 物化 + manifest.version 追踪；与已注册技能做 id 冲突检测（`force` 可覆盖，冲突/失败自动回滚）；`provideSkills` 增加 `remoteCacheDir`（默认 `~/.tsdi-agent/skills`）provide 时同步加载为 `source: 'remote'` 技能；`skills_remote` 工具（install/update/list/remove/status）。锚点：`agent-tools/skills/remote-skill-manager.ts`、`agent-tools/skills/remote-skill.tool.ts`、`agent-tools/skills/provider.ts`。
+
+### 后台子代理
+
+- **P88 · 后台子代理 UX**：`spawn_agent background: true` 以 fire-and-collect 模式运行——`BackgroundTaskManager.start()` 立即返回 running 记录（不阻塞当前 turn），异步 runner 完成/失败回写状态与结果并 publish `AgentBackgroundTaskStarted/Completed/FailedEvent`；`get/list/cancel/wait` 收集结果；经 `BACKGROUND_TASK_RUNNER` DI token 注入 runner（避免与 nested-agent-runner 的加载顺序环）；gateway `EventHandler` 转 `background_task_started/completed/failed` SSE，agent-ui `AgentConsoleEventBridge` 绑定事件推送活动通知。锚点：`agent/src/runtime/AgentEvents.ts`、`agent-tools/src/background-task-manager.ts`、`agent-tools/agent/spawn-agent.tool.ts`、`agent-gateway/src/api/EventHandler.ts`、`agent-ui/src/AgentConsoleEventBridge.ts`。
 
 ### 生命周期扩展
 
@@ -59,13 +68,13 @@
 
 ### 结论
 
-第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在三个方向：
+第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环；第三轮 G13–G22 已全部闭环（P81–P89，见上）。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距收窄到多端交付面：
 
 1. **跨会话工作流**：fork/thread/scheduler/goal 已齐，后续重点是更强的无人值守推进策略与完成证据。
-2. **配置与生态扩展**：CLAUDE.md / Cursor 导入（P81）与 provider 目录（P84）已闭环，仍缺 skills 远程分发（G19）。
+2. **配置与生态扩展**：CLAUDE.md / Cursor 导入（P81）、provider 目录（P84）、skills 远程市场（P87）、LSP 自动安装（P89）均已闭环。
 3. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
 
-全部为增量可做、无需推翻现有架构。
+全部为增量可做、无需推翻现有架构；功能差距已清零。
 
 ### 本项目优势（相对 codex/opencode，保持并强化）
 
@@ -87,34 +96,18 @@
 | G14 | ~~无配置迁移（/import）~~（✅ 2026-08 P81） | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 的 preview/apply 幂等迁移 | 中：从 Claude Code/Cursor 迁移门槛高 |
 | G15 | ~~无 Goal 系统（跨会话持久目标）~~（✅ 2026-08 P83） | codex `/goal`（0.128+）持久化多日工作流 | GoalStore 持久化目标与 session 关联，runtime 注入 active goal 并按明确 criteria 完成判定 | 中：长期任务无法无人值守持续推进 |
 | G16 | ~~无 provider 注册表~~（✅ 2026-08 P84） | opencode models.dev（75+ providers / 1000+ 模型）目录 | 内置/自定义 provider registry 提供 baseUrl、key env、model catalog 与 capabilities，CLI/gateway 共用 | 中：接入新模型/网关成本高 |
-| G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
+| G17 | ~~无 eval 基准 runner~~（✅ 2026-08 P85） | 生态 SWE-bench 式任务级评估 | `EvalRunner` 单/批量任务 + profile 选择 + 验证命令评分 + 报告存储，gateway `POST /api/eval/run` / `GET /api/eval` | 中：模型/提示改动无量化回归手段 |
 | G18 | ~~无会话分享~~（✅ 2026-08 P86） | opencode `/share` 只读分享会话 | owner 创建不可变脱敏快照，高熵 token 只读访问并支持撤销 | 低中：协作/交付场景缺失 |
-| G19 | **skills 无远程分发** | codex plugin marketplace；opencode skills 目录共享 | `LocalSkillRegistry` 为本地注册表；无 git/registry URL 拉取、版本、更新、冲突检测 | 低中：生态扩展受限 |
-| G20 | **后台子代理 UX** | opencode background subagents（v1.14.51+）用户继续打字时子代理持续工作 | `parallel_spawn`/`nested-agent-runner` 为同步等待；无 fire-and-collect + 完成事件回传 + UI 通知 | 低中：并行体验差距 |
+| G19 | ~~skills 无远程分发~~（✅ 2026-08 P87） | codex plugin marketplace；opencode skills 目录共享 | `RemoteSkillManager` 安装 git/registry 源（版本追踪 + 冲突检测 + 更新/移除），`skills_remote` 工具 + provider 缓存目录加载 | 低中：生态扩展受限 |
+| G20 | ~~后台子代理 UX~~（✅ 2026-08 P88） | opencode background subagents（v1.14.51+）用户继续打字时子代理持续工作 | `spawn_agent background: true` fire-and-collect（不阻塞 turn），`BackgroundTaskManager` 追踪状态/结果，`AgentBackgroundTask*Event` 经 gateway SSE + agent-ui 通知回传 | 低中：并行体验差距 |
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
-| G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
+| G22 | ~~LSP 无自动安装/版本管理~~（✅ 2026-08 P89） | opencode 30+ auto-install LSP configs | `LspInstallManager` 语言→安装命令映射（npm/brew/go/rustup），`autoInstall` 开启时自动安装、否则返回安装提示；工具结果带 hint | 低：新环境上手成本 |
 
 ## 打磨计划（P87+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P87 · skills 远程市场（G19）—— 低优先
-
-- `LocalSkillRegistry` 扩展远程源（git URL / registry URL）：拉取、版本、更新、冲突检测（对齐 codex plugin marketplace / Claude Code 插件生态）。
-- 锚点：`agent-tools/skills/local-skill-loader.ts`、`agent-tools/skills/registry/`。
-- 测试：`agent-tools/test/skills.spec.ts`（git 源拉取 + 版本解析）。
-
-### P88 · 后台子代理 UX（G20）—— 低优先
-
-- `spawn_agent` 支持后台模式：fire-and-collect（不阻塞当前 turn），完成事件经 gateway 事件流 / agent-ui 通知回传（对齐 opencode background subagents）。
-- 锚点：`agent-tools/src/nested-agent-runner.ts`、`agent-gateway/src/api/EventHandler.ts`、`agent-ui`（后台任务通知）。
-- 测试：`agent-tools/test/*.spec.ts`（后台完成事件 + 结果收集）。
-
-### P89 · LSP server 自动安装（G22）—— 低优先
-
-- lsp-manager 增加语言 → server 安装命令映射（npm/brew 等），首次使用时自动安装/缺失提示（对齐 opencode 30+ auto-install LSP）。
-- 锚点：`agent-tools/lsp/lsp-manager.ts`、`agent-tools/lsp/types.ts`。
-- 测试：`agent-tools/test/lsp.spec.ts`（安装映射 + 缺失降级）。
+>
+> P87–P89（G19/G20/G22）已全部落地，见「已实现功能」与「已完成（历史）」；打磨计划已清空。
 
 ## 剩余（远期，未排期）
 
@@ -166,3 +159,9 @@ P84（Provider 注册表，G16）已落地：`AgentProviderRegistry` 提供内�
 P85（Eval 基准 runner，G17）已落地：新增 `EvalTask` / `EvalRun` 契约与注入式 `EvalRunner`，支持单任务、批量运行、profile 选择、验证命令结果评分、运行异常降级和报告存储；`InMemoryEvalReportStore` 提供默认落库 seam，gateway 新增 `POST /api/eval/run` 与 `GET /api/eval` 暴露运行及报告列表。测试覆盖成功/失败批量、验证失败评分、异常记录与持久化。
 
 P86（会话分享，G18）已落地：gateway 新增 owner-only `POST /api/sessions/:id/share` 创建不可变分享快照、无需主鉴权的 `GET /api/share/:token` 只读访问及 owner-only `DELETE` 撤销；快照递归裁剪 workspace 绝对路径、密钥字段/Bearer/sk-* 值与媒体 URL，访问 token 使用 192-bit 随机值且不进入公开响应。新增测试覆盖脱敏、owner 边界、公开读取、token 唯一性与撤销。最终全量回归：agent 672 / agent-channels 59 / agent-cli 58 / agent-gateway 201 / agent-providers 13 / agent-ssh 8 / agent-tools 282 / agent-ui 360，共 1653 passing；八包 build clean。
+
+P87（skills 远程市场，G19）已落地：新增 `RemoteSkillManager`（`agent-tools/skills/remote-skill-manager.ts`）支持 git 源（shallow clone、ref 固定、`pull --ff-only`/fetch+reset 更新、tag 或 short-hash 版本解析）与 registry 源（JSON manifest 拉取 → SKILL.md 物化、manifest.version 追踪），安装/更新/列出/移除 + 与已注册技能的 id 冲突检测（可 `force` 覆盖，冲突或失败自动回滚）；`provideSkills` 新增 `remoteCacheDir`（默认 `~/.tsdi-agent/skills`），provide 时将缓存目录同步加载为 `source: 'remote'` 技能并注册 manager；新增 `skills_remote` 工具（install/update/list/remove/status，`AgentToolsOptions.skillsRemoteCacheDir` 覆盖默认缓存目录）；新增 `agent-tools/test/skills.spec.ts`（git 源拉取 + 版本解析 + 冲突检测 + registry 物化 + 移除）。回归：agent-tools 299 passing，八包 build clean。
+
+P88（后台子代理 UX，G20）已落地：`agent` 新增 `AgentBackgroundTaskStartedEvent` / `AgentBackgroundTaskCompletedEvent` / `AgentBackgroundTaskFailedEvent`；`agent-tools` 新增 `BackgroundTaskManager`（`src/background-task-manager.ts`，fire-and-collect：`start()` 立即返回 running 记录、异步 runner 完成/失败回写状态并 publish 生命周期事件、`get/list/cancel/wait` 收集结果；经 `BACKGROUND_TASK_RUNNER` DI token 注入 runner 避免与 `nested-agent-runner.ts` 的加载顺序环）；`spawn_agent` 新增 `background: true`（`SpawnAgentInput`/schema/结果带 `taskId/background/status`，`DelegatingSpawnAgentAdapter` 分支到后台执行）；gateway `EventHandler` 将三事件转 `background_task_started/completed/failed` SSE；agent-ui `AgentConsoleEventBridge` 绑定三事件推送活动通知（goal/summary 截断）；新增 `agent-tools/test/background-task.spec.ts`（fire-and-collect、失败传播、按 session 列表、取消、wait 超时）。回归：agent 672 / agent-gateway 201 / agent-ui 360 / agent-tools 299 passing，四包 tsc clean。
+
+P89（LSP server 自动安装，G22）已落地：`agent-tools/lsp` 新增 `lsp-install.ts`（`LspInstallManager`：扩展→server 命令→安装命令内置映射 typescript-language-server/pyright-langserver/gopls/rust-analyzer/vscode-langservers-extracted/markdown/bash-language-server，`command -v`/`where` 可用性探测、安装命令有界超时运行；`LspServerOptions.install` 显式覆盖内置映射）；`LspServerManager.clientFor` 在 spawn 前探测 server 二进制，缺失时按 `autoInstall`（true 自动安装 / 其余记录安装提示）处理，`installHintFor()` 暴露缺失原因；`AgentToolsLspOptions.autoInstall`（默认 `'prompt'`）；LSP 工具结果在 server 缺失时返回带安装命令的 hint 而非仅「未配置」；新增 8 例测试（映射解析、可用直通、缺失 hint、autoInstall 执行 + 复检、显式 install 覆盖、安装失败报错、manager 集成）。回归：agent-tools 299 passing，八包 build clean；最终全量回归：agent 672 / agent-channels 59 / agent-cli 58 / agent-gateway 201 / agent-providers 13 / agent-ssh 8 / agent-tools 299 / agent-ui 360，共 1670 passing；八包 `tsc --noEmit` clean。

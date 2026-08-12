@@ -30,6 +30,12 @@ export interface SpawnAgentInput {
     concurrency?: number;
     /** P42: sensitive values injected into the sub-agent prompt, never persisted. */
     secrets?: Record<string, string>;
+    /**
+     * P88: run the sub-agent in the background (fire-and-collect). The tool
+     * returns immediately with a task id; completion is reported through
+     * gateway events instead of blocking the current turn.
+     */
+    background?: boolean;
 }
 
 export interface SpawnAgentResult {
@@ -48,6 +54,10 @@ export interface SpawnAgentResult {
     risks?: string[];
     artifacts?: string[];
     report?: import('../src/nested-agent-runner').DelegatedAgentReport;
+    /** P88: background task handle when the sub-agent runs in the background. */
+    taskId?: string;
+    background?: boolean;
+    status?: string;
 }
 
 @Injectable()
@@ -86,6 +96,10 @@ export class SpawnAgentTool implements AgentTool {
                 type: 'object',
                 additionalProperties: { type: 'string' },
                 description: 'Sensitive key/value pairs injected into the sub-agent prompt. Never persisted to delegation metadata or logs.'
+            },
+            background: {
+                type: 'boolean',
+                description: 'Run the sub-agent in the background (fire-and-collect). Returns immediately with a task id; completion is reported through gateway events.'
             }
         },
         required: ['goal']
@@ -109,7 +123,8 @@ export class SpawnAgentTool implements AgentTool {
             sessionId: _context?.sessionId,
             profile: typeof input?.profile === 'string' && input.profile.trim() ? input.profile.trim() : undefined,
             reasoning: typeof input?.reasoning === 'boolean' ? input.reasoning : undefined,
-            secrets: this.requireSecrets(input?.secrets)
+            secrets: this.requireSecrets(input?.secrets),
+            background: input?.background === true
         });
         return {
             goal,
@@ -127,7 +142,10 @@ export class SpawnAgentTool implements AgentTool {
             nextSteps: result.nextSteps ?? result.report?.nextSteps,
             risks: result.risks ?? result.report?.risks,
             artifacts: result.artifacts ?? result.report?.artifacts,
-            report: result.report
+            report: result.report,
+            taskId: result.taskId,
+            background: result.background,
+            status: result.status
         };
     }
 

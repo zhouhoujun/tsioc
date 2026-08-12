@@ -6,6 +6,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { LspClient } from '../lsp/lsp-client';
+import { LspInstallManager } from '../lsp/lsp-install';
 import { LspServerManager } from '../lsp/lsp-manager';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 import {
@@ -240,6 +241,96 @@ export class LspServerManagerTest {
         } finally {
             await fs.rm(path.dirname(script), { recursive: true, force: true });
         }
+    }
+
+    @Test('records an install hint when the server binary is missing')
+    async installHintWhenServerMissing() {
+        const manager = new LspServerManager(
+            { servers: { '.ts': { command: 'typescript-language-server', args: ['--stdio'] } } },
+            new LspInstallManager(async () => false, async () => { })
+        );
+        const found = await manager.clientFor('/a/b.ts');
+        expect(found).toEqual(null);
+        expect(manager.installHintFor('.ts')).toContain('npm install -g');
+        await manager.dispose();
+    }
+
+    @Test('auto-installs the server binary when enabled and spawns the client')
+    async autoInstallsWhenEnabled() {
+        let available = false;
+        const installed: string[][] = [];
+        const manager = new LspServerManager(
+            { servers: { '.ts': { command: 'typescript-language-server', args: ['--stdio'] } }, autoInstall: true },
+            new LspInstallManager(async () => available, async commands => { installed.push(commands); available = true; })
+        );
+        const found = await manager.clientFor('/a/b.ts');
+        expect(found).toBeTruthy();
+        expect(installed.length).toEqual(1);
+        expect(installed[0]).toEqual(['npm', 'install', '-g', 'typescript-language-server']);
+        expect(manager.installHintFor('.ts')).toBeUndefined();
+        await manager.dispose();
+    }
+
+    @Test('uses an explicit server install command when auto-installing')
+    async explicitInstallCommandUsed() {
+        let available = false;
+        const installed: string[][] = [];
+        const manager = new LspServerManager(
+            { servers: { '.ts': { command: 'custom-server', args: ['--stdio'], install: ['brew', 'install', 'custom-server'] } }, autoInstall: true },
+            new LspInstallManager(async () => available, async commands => { installed.push(commands); available = true; })
+        );
+        const found = await manager.clientFor('/a/b.ts');
+        expect(found).toBeTruthy();
+        expect(installed).toEqual([['brew', 'install', 'custom-server']]);
+        await manager.dispose();
+    }
+}
+
+@Suite('LspInstallManager')
+export class LspInstallManagerTest {
+    @Test('resolves default install specs by extension and command')
+    resolvesDefaultInstallSpecs() {
+        const manager = new LspInstallManager();
+        expect(manager.specForExtension('.ts')?.command).toEqual('typescript-language-server');
+        expect(manager.specForExtension('py')?.command).toEqual('pyright-langserver');
+        expect(manager.specForExtension('.unknown')).toBeUndefined();
+        expect(manager.specForCommand('gopls')?.extension).toEqual('.go');
+    }
+
+    @Test('ensureAvailable returns available when the binary is present')
+    async availableWhenBinaryPresent() {
+        const manager = new LspInstallManager(async () => true, async () => { throw new Error('should not install'); });
+        const outcome = await manager.ensureAvailable({ command: 'typescript-language-server' }, '.ts');
+        expect(outcome.available).toEqual(true);
+        expect(outcome.installed).toBeUndefined();
+    }
+
+    @Test('returns an install hint when the binary is missing and autoInstall is off')
+    async hintWhenMissingWithoutAutoInstall() {
+        const manager = new LspInstallManager(async () => false, async () => { throw new Error('should not install'); });
+        const outcome = await manager.ensureAvailable({ command: 'typescript-language-server' }, '.ts');
+        expect(outcome.available).toEqual(false);
+        expect(outcome.hint).toContain('npm install -g typescript-language-server');
+    }
+
+    @Test('runs install commands when autoInstall is true and re-checks availability')
+    async autoInstallsWhenEnabled() {
+        let available = false;
+        const installed: string[][] = [];
+        const manager = new LspInstallManager(async () => available, async commands => { installed.push(commands); available = true; });
+        const outcome = await manager.ensureAvailable({ command: 'typescript-language-server' }, '.ts', true);
+        expect(installed.length).toEqual(1);
+        expect(installed[0]).toEqual(['npm', 'install', '-g', 'typescript-language-server']);
+        expect(outcome.available).toEqual(true);
+        expect(outcome.installed).toEqual(true);
+    }
+
+    @Test('reports the install error when auto-installation fails')
+    async installFailureReportsError() {
+        const manager = new LspInstallManager(async () => false, async () => { throw new Error('permission denied'); });
+        const outcome = await manager.ensureAvailable({ command: 'typescript-language-server' }, '.ts', true);
+        expect(outcome.available).toEqual(false);
+        expect(outcome.error).toContain('permission denied');
     }
 }
 

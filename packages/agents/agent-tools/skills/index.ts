@@ -5,6 +5,8 @@ export * from './LocalSkillRegistry';
 export * from './SkillSessionStore';
 export * from './read-skill.tool';
 export * from './list-skill.tool';
+export * from './remote-skill-manager';
+export * from './remote-skill.tool';
 export * from './SkillsCatalogSection';export * from './ActiveSkillsSection';
 export * from './SkillTurnInterceptor';
 export * from './provider';

@@ -19,3 +19,25 @@ export interface AgentSkillDefinition {
     tools?: AgentSkillToolRef[];
     metadata?: AgentSkillMetadata;
 }
+
+export type RemoteSkillSourceType = 'git' | 'registry';
+
+export interface RemoteSkillSource {
+    id: string;
+    type: RemoteSkillSourceType;
+    url: string;
+    /** Git branch/tag to pin (git sources). Defaults to the default branch. */
+    ref?: string;
+    /** Expected version from the registry manifest (registry sources). */
+    version?: string;
+}
+
+export interface InstalledRemoteSkill {
+    id: string;
+    type: RemoteSkillSourceType;
+    url: string;
+    ref?: string;
+    version?: string;
+    installedAt: number;
+    skillIds: string[];
+}

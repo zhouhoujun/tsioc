@@ -3,11 +3,14 @@ import { ApplicationContext, ApplicationEventMulticaster } from '@tsdi/core';
 import {
     AGENT_CONSOLE_APP_RPC,
     AgentRuntime,
-    AgentCompensationEvent,
-    AgentContextPreparedEvent,
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
     AgentApprovalRequestedEvent,
+    AgentBackgroundTaskCompletedEvent,
+    AgentBackgroundTaskFailedEvent,
+    AgentBackgroundTaskStartedEvent,
+    AgentCompensationEvent,
+    AgentContextPreparedEvent,
     AgentConsoleAppRpc,
     AgentErrorEvent,
     AgentModelCompletedEvent,
@@ -249,6 +252,23 @@ export class AgentConsoleEventBridge {
                 this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
         });
 
+        bind(AgentBackgroundTaskStartedEvent, (event: AgentBackgroundTaskStartedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.pushActivity('tool', `Background task ${event.taskId} started: ${this.truncateNotification(event.goal)}`);
+        });
+
+        bind(AgentBackgroundTaskCompletedEvent, (event: AgentBackgroundTaskCompletedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            const detail = event.summary ? `: ${this.truncateNotification(event.summary)}` : '';
+            this.state.pushActivity('tool', `Background task ${event.taskId} completed${detail}`);
+        });
+
+        bind(AgentBackgroundTaskFailedEvent, (event: AgentBackgroundTaskFailedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.setLastError(event.error.message);
+            this.state.pushActivity('error', `Background task ${event.taskId} failed: ${event.error.message}`);
+        });
+
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
                 this.state.setStatus('error');
@@ -419,6 +439,11 @@ export class AgentConsoleEventBridge {
 
     protected pickString(value: unknown): string {
         return typeof value === 'string' && value.trim() ? value.trim() : '';
+    }
+
+    protected truncateNotification(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > 120 ? `${text.slice(0, 120)}...` : text;
     }
 
     protected resolveToolEventKey(toolName: string, toolCallId?: string): string {

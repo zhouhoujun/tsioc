@@ -266,3 +266,21 @@ export class AgentApprovalFailedEvent extends ApplicationEvent {
         super(source);
     }
 }
+
+export class AgentBackgroundTaskStartedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly taskId: string, readonly goal: string) {
+        super(source);
+    }
+}
+
+export class AgentBackgroundTaskCompletedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly taskId: string, readonly summary?: string) {
+        super(source);
+    }
+}
+
+export class AgentBackgroundTaskFailedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly taskId: string, readonly error: Error) {
+        super(source);
+    }
+}

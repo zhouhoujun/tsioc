@@ -352,6 +352,12 @@ export interface AgentToolsLspOptions {
     servers?: Record<string, import('../lsp/types').LspServerOptions>;
     timeoutMs?: number;
     /**
+     * Auto-install a missing LSP server binary on first use. `true` runs the
+     * resolved install commands; `'prompt'` (default) reports an install hint
+     * from the LSP tool result instead of running commands.
+     */
+    autoInstall?: boolean | 'prompt';
+    /**
      * Whether write/edit tools attach diagnostics after a successful write.
      * 'auto' (default) enables the feedback only when at least one LSP server
      * is configured; true forces it; false disables it.
@@ -382,6 +388,8 @@ export interface AgentToolsOptions {
     roots?: string[];
     /** A7: best-effort source formatter run by write tools on matching extensions. */
     format?: AgentFormatterOptions;
+    /** Local cache directory for remote skills (defaults to ~/.tsdi-agent/skills). */
+    skillsRemoteCacheDir?: string;
     mcp?: AgentMcpOptions;
     lsp?: AgentToolsLspOptions;
     registration?: AgentToolsRegistrationOptions;

@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -204,6 +204,33 @@ export class EventHandler {
         this.publish('turn_diagnostics', {
             sessionId: event.sessionId,
             diagnostics: event.diagnostics
+        });
+    }
+
+    @OnEvent(AgentBackgroundTaskStartedEvent)
+    onBackgroundTaskStarted(event: AgentBackgroundTaskStartedEvent): void {
+        this.publish('background_task_started', {
+            sessionId: event.sessionId,
+            taskId: event.taskId,
+            goal: event.goal
+        });
+    }
+
+    @OnEvent(AgentBackgroundTaskCompletedEvent)
+    onBackgroundTaskCompleted(event: AgentBackgroundTaskCompletedEvent): void {
+        this.publish('background_task_completed', {
+            sessionId: event.sessionId,
+            taskId: event.taskId,
+            summary: event.summary
+        });
+    }
+
+    @OnEvent(AgentBackgroundTaskFailedEvent)
+    onBackgroundTaskFailed(event: AgentBackgroundTaskFailedEvent): void {
+        this.publish('background_task_failed', {
+            sessionId: event.sessionId,
+            taskId: event.taskId,
+            error: event.error.message
         });
     }
 

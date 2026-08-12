@@ -10,6 +10,8 @@ import { SkillsCatalogSection } from './SkillsCatalogSection';import { ActiveSki
 import { SkillTurnInterceptor } from './SkillTurnInterceptor';
 import { getBuiltinSkills } from './builtin-skills';
 import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
+import { RemoteSkillManager } from './remote-skill-manager';
+import { RemoteSkillTool } from './remote-skill.tool';
 import { resolveAgentRootSettings } from '../src/settings';
 
 export interface AgentSkillsOptions {
@@ -17,6 +19,8 @@ export interface AgentSkillsOptions {
     skills?: AgentSkillDefinition[];
     roots?: string[];
     defaults?: boolean;
+    /** Local cache directory for remote skills (defaults to ~/.tsdi-agent/skills). */
+    remoteCacheDir?: string;
 }
 
 export function withAgentSkills(...skills: AgentSkillDefinition[]): Provider[] {
@@ -37,9 +41,11 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
     }
     options.roots?.forEach(root => resolvedRoots.add(root));
     const loaded = resolvedRoots.size ? loadAgentSkillsFromRootsSync(Array.from(resolvedRoots.values()), { source: 'workspace' }) : [];
+    const remoteCacheDir = options.remoteCacheDir || new RemoteSkillManager().defaultCacheDir();
+    const remoteLoaded = remoteCacheDir ? loadAgentSkillsFromRootsSync([remoteCacheDir], { source: 'remote' }) : [];
     const skills = mergeSkills(
         mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded),
-        options.skills ?? []
+        mergeSkills(remoteLoaded, options.skills ?? [])
     );
     return [
         ...withAgentSkills(...skills),
@@ -47,6 +53,8 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         SkillSessionStore,
         ReadSkillTool,
         ListSkillTool,
+        RemoteSkillManager,
+        RemoteSkillTool,
         SkillsCatalogSection,
         ActiveSkillsSection,
         SkillTurnInterceptor,
@@ -54,6 +62,7 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         { provide: AGENT_PROMPT_SECTIONS, useExisting: ActiveSkillsSection, multi: true },
         { provide: AGENT_TOOLS, useExisting: ReadSkillTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: ListSkillTool, multi: true },
+        { provide: AGENT_TOOLS, useExisting: RemoteSkillTool, multi: true },
         { provide: AGENT_TURN_INTERCEPTORS, useExisting: SkillTurnInterceptor, multi: true }
     ];
 }

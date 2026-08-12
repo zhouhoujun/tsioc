@@ -3,6 +3,7 @@ import { UuidGenerator } from '@tsdi/core';
 import { SpawnAgentAdapter, SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { LlmTaskAdapter, LlmTaskRequest, LlmTaskResult } from '../llm/llm-task.tool';
 import { WeatherAdapter, WeatherForecastResult, WeatherLookup, WeatherResult } from '../utility/weather.tool';
+import { BackgroundTaskManager } from './background-task-manager';
 
 export interface NestedAgentRunRequest {
     prompt: string;
@@ -207,12 +208,16 @@ function normalizeLabel(label: string): keyof DelegatedAgentReport | undefined {
 export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     constructor(
         private uuid: UuidGenerator,
-        @Optional() private runner?: NestedAgentRunner | null
+        @Optional() private runner?: NestedAgentRunner | null,
+        @Optional() private background?: BackgroundTaskManager | null
     ) {
         super();
     }
 
     override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+        if (input.background) {
+            return this.spawnInBackground(input);
+        }
         const sessionId = `spawn-${this.uuid.generate()}`;
         const result = await this.requireRunner().run({
             prompt: buildSubAgentPrompt(input),
@@ -226,6 +231,32 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             secrets: input.secrets
         });
         return this.toSpawnAgentResult(result, sessionId);
+    }
+
+    private spawnInBackground(input: SpawnAgentInput): SpawnAgentResult {
+        if (!this.background) {
+            throw new Error('Background task manager is not configured for spawn_agent background mode.');
+        }
+        const sessionId = `spawn-${this.uuid.generate()}`;
+        const task = this.background.start({
+            prompt: buildSubAgentPrompt(input),
+            sessionId,
+            toolsets: input.toolsets,
+            maxTurns: input.maxTurns,
+            parentSessionId: input.sessionId,
+            workerClass: 'spawn_agent',
+            profile: input.profile,
+            reasoning: input.reasoning,
+            secrets: input.secrets
+        }, input.sessionId ?? 'system');
+        return {
+            output: `Background task '${task.id}' started. Use the task id to poll status or collect results when it completes.`,
+            sessionId: task.id,
+            taskId: task.id,
+            background: true,
+            status: task.status,
+            summary: task.goal
+        };
     }
 
     override async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
