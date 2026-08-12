@@ -53,6 +53,13 @@ export class GatewayBootstrap {
         ];
 
         this.gateway.addRoutes(allRoutes);
+        this.gateway.addRoute({
+            method: 'GET', path: '/openapi.json', auth: false,
+            handler: async (_req, res) => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(this.gateway.openApiDocument()));
+            }
+        });
 
         // Start the HTTP server
         await this.gateway.start(this.config);

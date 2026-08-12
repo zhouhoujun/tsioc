@@ -8,6 +8,7 @@ import { GatewayRoute } from '../contracts/GatewayRoute';
 import { RouteMatcher } from './RouteMatcher';
 import { AuthMiddleware, getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { RateLimiter } from '../auth/RateLimiter';
+import { buildOpenApiDocument } from './OpenApiDocument';
 
 /**
  * Main HTTP gateway server.
@@ -36,6 +37,11 @@ export class GatewayServer {
     /** Register a single route */
     addRoute(route: GatewayRoute): void {
         this.matcher.add(route);
+    }
+
+    /** Return the OpenAPI document for the currently registered routes. */
+    openApiDocument(): ReturnType<typeof buildOpenApiDocument> {
+        return buildOpenApiDocument(this.matcher.getRoutes());
     }
 
     /** Start the HTTP server — equivalent to zeroclaw's run_gateway() */
