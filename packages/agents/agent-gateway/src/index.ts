@@ -34,6 +34,8 @@ export * from './api/EventHandler';
 export * from './api/AppRpcHandler';
 export * from './api/ReviewHandler';
 export * from './api/EvalHandler';
+export * from './api/ShareHandler';
+export * from './share/SessionShareStore';
 
 export * from './ws/ChatWebSocket';
 

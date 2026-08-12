@@ -83,21 +83,15 @@
 | G15 | ~~无 Goal 系统（跨会话持久目标）~~（✅ 2026-08 P83） | codex `/goal`（0.128+）持久化多日工作流 | GoalStore 持久化目标与 session 关联，runtime 注入 active goal 并按明确 criteria 完成判定 | 中：长期任务无法无人值守持续推进 |
 | G16 | ~~无 provider 注册表~~（✅ 2026-08 P84） | opencode models.dev（75+ providers / 1000+ 模型）目录 | 内置/自定义 provider registry 提供 baseUrl、key env、model catalog 与 capabilities，CLI/gateway 共用 | 中：接入新模型/网关成本高 |
 | G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
-| G18 | **无会话分享** | opencode `/share` 只读分享会话 | gateway 有 owner 鉴权 + pairing，但无只读分享链接/脱敏快照导出 | 低中：协作/交付场景缺失 |
+| G18 | ~~无会话分享~~（✅ 2026-08 P86） | opencode `/share` 只读分享会话 | owner 创建不可变脱敏快照，高熵 token 只读访问并支持撤销 | 低中：协作/交付场景缺失 |
 | G19 | **skills 无远程分发** | codex plugin marketplace；opencode skills 目录共享 | `LocalSkillRegistry` 为本地注册表；无 git/registry URL 拉取、版本、更新、冲突检测 | 低中：生态扩展受限 |
 | G20 | **后台子代理 UX** | opencode background subagents（v1.14.51+）用户继续打字时子代理持续工作 | `parallel_spawn`/`nested-agent-runner` 为同步等待；无 fire-and-collect + 完成事件回传 + UI 通知 | 低中：并行体验差距 |
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
 | G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P86+）
+## 打磨计划（P87+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P86 · 会话分享（G18）—— 低优先
-
-- 生成只读分享链接/快照：transcript 脱敏（密钥/路径裁剪）+ 只读 token；gateway 增加 share 端点（对齐 opencode `/share`）。
-- 锚点：`agent-gateway/src/api/ShareHandler.ts`、`agent/src/memory/SessionStore.ts`（快照导出 seam）。
-- 测试：`agent-gateway/test/gateway-server.spec.ts`（脱敏 + token 鉴权）。
 
 ### P87 · skills 远程市场（G19）—— 低优先
 
@@ -165,3 +159,5 @@ P83（Goal 系统，G15）已落地：GoalStore 提供内存与 TypeORM 持久�
 P84（Provider 注册表，G16）已落地：`AgentProviderRegistry` 提供内置 DeepSeek/OpenAI/Anthropic/Gemini/OpenAI-compatible 目录、自定义 `provider.json`（array/map）解析、模型能力合并与 config 补全；CLI provider URL/key-env 解析统一委托 registry，gateway `model.list/activate` 在无显式 profiles 时提供并激活 catalog 模型，UI 展示能力位。新增 registry、CLI 自定义目录测试。回归：agent 667 / agent-cli 58 / agent-gateway 197 / agent-ui 360 / agent-channels 59 / agent-providers 13 / agent-tools 282 / agent-ssh 8，共 1644 passing；八包 build clean。
 
 P85（Eval 基准 runner，G17）已落地：新增 `EvalTask` / `EvalRun` 契约与注入式 `EvalRunner`，支持单任务、批量运行、profile 选择、验证命令结果评分、运行异常降级和报告存储；`InMemoryEvalReportStore` 提供默认落库 seam，gateway 新增 `POST /api/eval/run` 与 `GET /api/eval` 暴露运行及报告列表。测试覆盖成功/失败批量、验证失败评分、异常记录与持久化。
+
+P86（会话分享，G18）已落地：gateway 新增 owner-only `POST /api/sessions/:id/share` 创建不可变分享快照、无需主鉴权的 `GET /api/share/:token` 只读访问及 owner-only `DELETE` 撤销；快照递归裁剪 workspace 绝对路径、密钥字段/Bearer/sk-* 值与媒体 URL，访问 token 使用 192-bit 随机值且不进入公开响应。新增测试覆盖脱敏、owner 边界、公开读取、token 唯一性与撤销。

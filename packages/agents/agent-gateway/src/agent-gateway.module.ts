@@ -17,6 +17,8 @@ import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
 import { ReviewHandler } from './api/ReviewHandler';
 import { EvalHandler } from './api/EvalHandler';
+import { ShareHandler } from './api/ShareHandler';
+import { SessionShareStore } from './share/SessionShareStore';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from './api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from './api/SummaryQualityHandler';
@@ -53,6 +55,8 @@ import { createAgentGatewayProviders } from './provider';
         AuditHandler,
         ReviewHandler,
         EvalHandler,
+        SessionShareStore,
+        ShareHandler,
         CompactionHistoryHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,
