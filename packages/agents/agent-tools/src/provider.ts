@@ -49,7 +49,7 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
-import { ProjectIntelTool } from '../project/project-intel.tool';
+import { ProjectIntelTool, ImportConfigTool } from '../project';
 import { CodingTaskStore, CodingTaskTool, ToolRegistryWorkspaceActionRunner, WorkspaceActionRunner } from '../coding';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
@@ -160,6 +160,7 @@ const toolItems = {
     'memory.delete': MemoryDeleteTool,
     project_intel: ProjectIntelTool,
     coding_task: CodingTaskTool,
+    import_config: ImportConfigTool,
     image_info: ImageInfoTool,
     pdf_read: PdfReadTool,
     tool_search: ToolSearchTool,
@@ -219,7 +220,7 @@ const toolGroups = {
     process: ['process.start', 'process.poll', 'process.kill'],
     scheduling: ['schedule'],
     memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
-    project: ['project_intel', 'coding_task'],
+    project: ['project_intel', 'coding_task', 'import_config'],
     media: ['image_info', 'pdf_read', 'vision_analyze', 'image_generate'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
@@ -262,7 +263,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     process: 'Background process lifecycle tools.',
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
-    project: 'Project summarization, coding task orchestration, and handoff intelligence tools.',
+    project: 'Project summarization, coding task orchestration, handoff intelligence, and configuration migration tools.',
     media: 'Image and document inspection tools.',
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
@@ -572,6 +573,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        ImportConfigTool,
         CodingTaskStore,
         ToolRegistryWorkspaceActionRunner,
         { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },

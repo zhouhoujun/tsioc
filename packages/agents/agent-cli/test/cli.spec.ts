@@ -36,6 +36,7 @@ import {
     resolveProviderProfile,
     normalizeCliArgv,
     runAgentJsonStream,
+    runAgentImport,
     runAgentDoctor,
     runAgentPrompt,
     runAgentRpcApplication,
@@ -415,8 +416,98 @@ export class AgentCliTest {
         expect(commandNames.includes('update')).toBe(true);
         expect(commandNames.includes('rpc-stdio')).toBe(true);
         expect(commandNames.includes('tools')).toBe(true);
+        expect(commandNames.includes('import')).toBe(true);
         expect(toolsCommand?.commands.map(cmd => cmd.name())).toEqual(['list']);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('import is registered as a top-level command')
+    importRegisteredAsTopLevelCommand() {
+        const cli = createAgentCli();
+        const importCommand = cli.commands.find(cmd => cmd.name() === 'import');
+        expect(importCommand).toBeTruthy();
+        expect(importCommand?.description).toBeTruthy();
+    }
+
+    @Test('normalizeCliArgv reorders leading options before import command')
+    normalizeCliArgvReordersLeadingOptionsBeforeImport() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--apply',
+            'import',
+            '--sources',
+            'claude-md,cursor-rules'
+        ]);
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'import',
+            '--apply',
+            '--sources',
+            'claude-md,cursor-rules'
+        ]);
+    }
+
+    @Test('import command rejects unknown sources')
+    async importCommandRejectsUnknownSources() {
+        let error: Error | undefined;
+        try {
+            await runAgentImport({ sources: 'claude-md,unknown' });
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('Unknown import source');
+    }
+
+    @Test('import command applies claude-md guidance into AGENTS.md')
+    async importCommandAppliesClaudeMdIntoAgentsMd() {
+        const root = await this.createRoot();
+        await fs.promises.writeFile(
+            path.join(root, 'CLAUDE.md'),
+            '# Claude Code\n\nAlways use functional components.\n',
+            'utf8'
+        );
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        const result = await runAgentImport({ workspace: root, apply: true }, { stdout: output });
+
+        expect(result.mode).toBe('apply');
+        expect(result.summary.applied).toBeGreaterThanOrEqual(1);
+        const agentsMd = await fs.promises.readFile(path.join(root, 'AGENTS.md'), 'utf8');
+        expect(agentsMd).toContain('## Imported from CLAUDE.md');
+        expect(agentsMd).toContain('Always use functional components.');
+        expect(agentsMd).toContain('<!-- imported-from:claude.md -->');
+        expect(agentsMd).toContain('<!-- /imported-from:claude.md -->');
+        expect(agentsMd.split('## Imported from CLAUDE.md').length).toBe(2);
+        expect(buffer).toContain('Migration applied');
+    }
+
+    @Test('import command re-apply is idempotent')
+    async importCommandReapplyIsIdempotent() {
+        const root = await this.createRoot();
+        await fs.promises.writeFile(
+            path.join(root, 'CLAUDE.md'),
+            '# Claude Code\n\nAlways use functional components.\n',
+            'utf8'
+        );
+        const output = new PassThrough();
+        output.on('data', () => { });
+
+        const first = await runAgentImport({ workspace: root, apply: true }, { stdout: output });
+        const agentsMd = await fs.promises.readFile(path.join(root, 'AGENTS.md'), 'utf8');
+        const second = await runAgentImport({ workspace: root, apply: true }, { stdout: output });
+        const agentsMdAfter = await fs.promises.readFile(path.join(root, 'AGENTS.md'), 'utf8');
+
+        expect(first.summary.applied).toBeGreaterThanOrEqual(1);
+        expect(second.summary.noChange).toBeGreaterThanOrEqual(1);
+        expect(agentsMdAfter).toBe(agentsMd);
+        expect(agentsMdAfter.split('## Imported from CLAUDE.md').length).toBe(2);
+        expect(agentsMdAfter.split('<!-- imported-from:claude.md -->').length).toBe(2);
     }
 
     @Test('completion script includes nested commands and options')

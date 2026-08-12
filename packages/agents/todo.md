@@ -11,6 +11,7 @@
 ### 编码反馈闭环
 
 - **P67 · 编辑 → LSP 诊断反馈**：`write_file` / `edit_file` / `apply_patch` 执行成功后触发 `textDocument/didChange` → 拉取缓存 diagnostics → 追加为工具结果 `lspDiagnostics`（有界截断、不阻塞写入）；注入 `VerificationGate` 为 `evidence.verification == 'lsp'` 新证据源（severity 1 过滤），与 declared-vs-actual 并行；支持 `lsp.diagnosticsOnEdit: boolean | 'auto'` 开关、无 LSP 配置静默降级。锚点：`agent-tools/lsp/lsp-client.ts`、`agent-tools/lsp/lsp-manager.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`（`extractLspDiagnostics`）、`agent/src/harness/VerificationGate.ts`。
+- **P79 · 编辑后验证命令证据**：工具轮编辑文件后，运行时对受影响包探测 package.json `test`/`build`/`typecheck`/`lint` 脚本 → 运行命令（有界超时 + 输出截断）→ 记录为 `evidence.verification == 'verify-command'` 新证据源；`VerificationGate` 新增检查 (d) 消费失败命令为伪造原因，与 lsp / declared-vs-actual 并行；支持 `verification.verifyCommands` 显式注入模板、`autoScripts`（默认 `['typecheck','lint']`，长耗时 test/build 需显式配置）、`timeoutMs`/`maxOutputChars`。锚点：`agent/src/harness/VerifyCommandRunner.ts`、`agent/src/harness/VerificationGate.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`（`runVerificationCommands`/`trackEditedFile`）、`agent/src/options.ts`。
 - **P71 · Git step 快照 + revert/unrevert**：每 step-start 以 `git stash create` + pinned refs 捕获整树（不污染历史），绑定会话消息 id；`revert(messageId)` / `unrevert()` 恢复工作树 + 会话双态；会话 diff 计算（`GET /api/sessions/:id/git-snapshots*` + `session.git_snapshot.*` RPC）；与 FileSnapshotStore 并存（git 整树恢复 + File 精确 undo）。锚点：`agent/src/harness/GitStepSnapshotStore.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/api/SessionHandler.ts`；agent-ui review 面板复用会话 diff。
 - **P76 · 模型请求重试/退避分类**：rate-limit / server(5xx) / network / timeout 四类分类 + 指数退避 + jitter，尊重秒数/HTTP-date `Retry-After`（15 秒上限），OpenAI-compatible 与 Anthropic 共享策略。锚点：`agent/src/model/RetryPolicy.ts`。
 
@@ -22,6 +23,10 @@
 - **P73 · 语义记忆检索**：`MemoryEmbedder`（DI token，无配置回退关键词）+ cosine 排序 + `SemanticMemoryRanker`（topK/minScore）；`MemorySearchService` 编排 keyword/semantic/hybrid 三模式（hybrid = semantic 前置 + keyword 独有去重附加）；`memory.search` 支持 `mode`/`minScore`。锚点：`agent/src/memory/AgentMemoryRetriever.ts`、`agent-tools/memory/*`。
 - **P74 · 自动标题/摘要**：首条用户消息异步生成 title/focusSummary，LLM + deterministic 回退，接入 session/project 展示。锚点：`agent/src/memory/LLMAgentSummaryAgent.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`。
 - **P78 · 项目记忆闭环**：`buildAgentsRuleDraft(report)` 将 WeaknessMiner 高频失败渲染为带人工审核标记的 AGENTS.md 规则草案；`harness.audit` 经 `includeDraft: true` 返回，默认不写入项目文件。
+
+### 配置迁移
+
+- **P81 · Claude Code / Cursor 配置迁移**：新增 CLI `tsdi-agent import` 与 `import_config` 工具，支持 CLAUDE.md、`.cursor/rules/*.md`、`.cursor/mcp.json` / `.mcp.json` 的预览与显式 `--apply` 两阶段迁移；AGENTS.md 采用 marker 分区幂等更新，MCP servers 合并进 agent settings 并保留无关配置；workspace/symlink 守卫、source 校验及多来源同次应用防覆盖。锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/import-command.ts`。
 
 ### 会话与工作树
 
@@ -37,13 +42,11 @@
 
 ### 结论
 
-第一轮差距 G1–G10 已全部闭环（P67–P78，见上）。第二轮对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在五个方向：
+第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在三个方向：
 
-1. **验证闭环的最后一公里**：LSP 诊断已闭环（P67），但 build/test 命令结果尚未作为验证证据源接入（G11）。
-2. **独立评审流**：review archetype / review 面板存在，但缺「不改工作树的 git diff 内联评审命令」（G12）。
-3. **跨会话工作流**：fork/thread/scheduler 已有，缺「目标驱动、多日持续推进、完成判定」的 goal 模型（G15）。
-4. **配置与生态迁移**：无 CLAUDE.md / .cursor 导入（G14）、无 provider 目录（G16）、无 skills 远程分发（G19）。
-5. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
+1. **跨会话工作流**：fork/thread/scheduler 已有，缺「目标驱动、多日持续推进、完成判定」的 goal 模型（G15）。
+2. **配置与生态扩展**：CLAUDE.md / Cursor 导入已闭环（P81），仍缺 provider 目录（G16）与 skills 远程分发（G19）。
+3. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
 
 全部为增量可做、无需推翻现有架构。
 
@@ -57,14 +60,14 @@
 6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP stdio + Streamable HTTP + OAuth + server、skills 本地注册表、hooks 双形态（命令 + 进程内函数）、gateway 多协议 + OpenAPI —— 工具广度超过 opencode 内置集。
 7. **跨平台响应式 UI 架构**：TUI/浏览器共用响应式渲染层（数据变化驱动、无定时器刷新、时间派生动画），跨平台约束已沉淀至根 AGENTS.md。
 
-### 新差距（按优先级排序，P79 起逐项消化）
+### 新差距（按优先级排序，P82 起逐项消化）
 
 | # | 差距 | 对照对象 | 现状证据 | 影响 |
 |---|---|---|---|---|
-| G11 | **build/test 结果未接入验证闭环** | opencode 编辑后 LSP+测试结果喂回；codex 内置验证习惯 | `VerificationGate` 证据源仅工具执行结果 + LSP 诊断（`entry.lspDiagnostics`，severity 1 过滤）；`execute_code`/`coding_task` 存在但未作为编辑后置验证证据；`RepairExploration` 仅消费 declared-vs-actual | 高：编码反馈闭环的最后一块，模型改错后无「跑测试/编译」自感知 |
+| G11 | ~~build/test 结果未接入验证闭环~~（✅ 2026-08 P79） | opencode 编辑后 LSP+测试结果喂回；codex 内置验证习惯 | `VerifyCommandRunner` 编辑后运行受影响包 typecheck/lint 等脚本 → `verify-command` 证据 → gate 检查 (d) 伪造 | 高：编码反馈闭环的最后一块，模型改错后无「跑测试/编译」自感知 |
 | G12 | ~~无 /review 内联评审命令~~（✅ 2026-08 P80） | codex `/review`（0.144+）：不改工作树评审当前 diff，结构化 findings | review archetype 为手动只读会话；agent-ui review 面板（`reviewTaskChoices`）评审的是子代理任务产物，非 git diff inline 评审；无 findings 落库与 commit 绑定 | 高：独立评审流缺失，交付前自查能力弱 |
 | G13 | **无 pre/post-compaction hooks** | codex hooks GA（0.130+）pre/post-compaction | `AgentLifecycleHookStage` 仅 beforeTurn/afterTurn/beforeTool/afterTool/onApproval 五阶段；`AgentContextManager` 压缩前后无钩子 | 中：压缩时可观测/定制不足（审计、外部同步、通知） |
-| G14 | **无配置迁移（/import）** | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | 仅消费 AGENTS.md 指令链；无 CLAUDE.md / `.cursor/rules` / `.cursor/mcp.json` 解析 | 中：从 Claude Code/Cursor 迁移门槛高 |
+| G14 | ~~无配置迁移（/import）~~（✅ 2026-08 P81） | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 的 preview/apply 幂等迁移 | 中：从 Claude Code/Cursor 迁移门槛高 |
 | G15 | **无 Goal 系统（跨会话持久目标）** | codex `/goal`（0.128+）持久化多日工作流 | scheduler 为时间触发定时任务（`IntervalAgentScheduler`）；无目标驱动、跨会话推进、完成判定的 goal 模型 | 中：长期任务无法无人值守持续推进 |
 | G16 | **无 provider 注册表** | opencode models.dev（75+ providers / 1000+ 模型）目录 | profiles 为手写 baseUrl/apiKeyEnv；无 provider 目录自动发现、模型清单、能力推导 | 中：接入新模型/网关成本高 |
 | G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
@@ -74,22 +77,9 @@
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
 | G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P79+）
+## 打磨计划（P82+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P79 · build/test 验证反馈闭环（G11）—— 高优先
-
-- 编辑工具（write/edit/apply_patch，复用 P67 后置钩子路径）执行后，`VerificationGate` 发起可选「验证动作」：探测包内脚本（package.json `test`/`build`/`typecheck`/`lint`）→ 运行命令 → 捕获 exit code + stdout/stderr（有界截断）→ 作为 `evidence.verification == 'verify-command'` 新证据源，与 lsp / declared-vs-actual 并行。
-- 失败时生成修复提示（复用 `RepairExploration` 提示管线）；支持 `verification.verifyCommands?: { test?: string; build?: string; typecheck?: string }` 显式注入命令模板；默认仅对已知脚本自动发现，无脚本静默降级；默认不跑长耗时测试（仅 `--affected`/单文件或显式配置），超时与防误触。
-- 锚点：`agent/src/harness/VerificationGate.ts`（新证据源 + verify 编排）、`agent/src/harness/RepairExploration.ts`、`agent/src/harness/ToolExecutionCoordinator.ts`（编辑后置钩子）、`agent/src/options.ts`。
-- 测试：`agent/test/verification-gate.spec.ts`（verify-command 证据合并 + 修复提示 + 降级）。
-
-### P81 · 配置迁移 /import（G14）—— 中优先
-
-- 新增 `import` 命令（CLI + 工具）：解析 CLAUDE.md（→ 合并进 AGENTS.md 链）、`.cursor/rules/*.md`（→ 项目规则目录）、`.cursor/mcp.json` / Claude Code MCP 配置（→ 本项目 MCP 配置格式）；迁移预览 + 应用两段式，写入前确认。
-- 锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/`（`tsdi-agent import`）、`agent/src/project/agents-doc.ts`（合并写入 seam）。
-- 测试：`agent-tools/test/tools.spec.ts`、`agent-cli/test/*.spec.ts`（CLAUDE.md/.cursor 样例端到端）。
 
 ### P82 · pre/post-compaction hooks（G13）—— 低中优先
 
@@ -175,4 +165,8 @@ P77（会话 fork，G2 延伸）已落地：`SessionStore.fork` 支持完整或�
 
 P78（项目记忆闭环，验证失败回写 AGENTS.md）已落地：新增 `buildAgentsRuleDraft(report)`，将 WeaknessMiner 的高频失败建议渲染为带人工审核标记的 AGENTS.md 规则片段；`harness.audit` 通过 `includeDraft: true` 返回草案，默认不写入或覆盖项目文件。新增草案生成测试。
 
-P80（/review 内联评审命令，G12）已落地：`review` 工具组新增 `review_diff`（`git diff HEAD` 或指定 base/range/paths，只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控，输出结构化 findings + diff + stats，read-only 工具不注册写方法）；`ReviewFindingsStore` 将 findings 落审计（`toolName 'review_diff'`、`id=run.id`、`toolCallId 'review:<id>'`、`inputSummary 'review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`、深拷贝、无 AuditSink 抛错）；agent-gateway 新增 `review.diff/list/get/save` RPC + `ReviewHandler` REST（`GET /api/reviews` 带 sessionId 必填/owner 403/commit 过滤 + `GET /api/reviews/:id`）并接入 `GatewayBootstrap` 路由；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）走 git-diff 评审流并 `review.save` 落库。回归：agent 660 / agent-gateway 197 / agent-ui 358 / agent-tools 274 passing（agent-tools 仍为既有 apply-patch 临时目录 flaky，P73 基线即存在，隔离跑 3/3 通过），四包 `tsc --noEmit` clean；新增测试：agent-tools review diff 只读/路径/base/沙箱 4 例、agent ReviewFindingsStore 5 例、gateway review RPC 2 例 + REST 3 例、agent-ui 5 例。
+P79（build/test 验证反馈闭环，G11）已随 d1a5bec5a 落地：新增 `VerifyCommandRunner`（包内 package.json 脚本探测 + 命令运行 + 有界超时/输出截断 + exit code 捕获）；运行时 `runVerificationCommands` 在工具轮编辑后对受影响包执行验证（`verificationWriteTools` 判定写入工具，`trackEditedFile` 收集文件路径）；`EvidenceLedger` 新增 `verification` 标记字段，`VerificationGate` 新增检查 (d) 消费 `verify-command` 证据（非零退出/超时/spawn 错误 → falsified + 修复提示）；`AgentOptions.verification`（enabled/verifyCommands/autoScripts/timeoutMs/maxOutputChars，默认 autoScripts `['typecheck','lint']`、长耗时 test/build 需显式配置）。回归：agent 660 passing，`tsc --noEmit` clean；新增测试覆盖 verify-command 证据合并、失败伪造、成功通过、无脚本降级。
+
+P80（/review 内联评审命令，G12）已落地：`review` 工具组新增 `review_diff`（`git diff HEAD` 或指定 base/range/paths，只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控，输出结构化 findings + diff + stats，read-only 工具不注册写方法）；`ReviewFindingsStore` 将 findings 落审计（`toolName 'review_diff'`、`id=run.id`、`toolCallId 'review:<id>'`、`inputSummary 'review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`、深拷贝、无 AuditSink 抛错）；agent-gateway 新增 `review.diff/list/get/save` RPC + `ReviewHandler` REST（`GET /api/reviews` 带 sessionId 必填/owner 403/commit 过滤 + `GET /api/reviews/:id`）并接入 `GatewayBootstrap` 路由；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）走 git-diff 评审流并 `review.save` 落库。回归：agent 660 / agent-gateway 197 / agent-ui 358 / agent-tools 275 passing，四包 `tsc --noEmit` clean；新增测试：agent-tools review diff 只读/路径/base/沙箱 4 例、agent ReviewFindingsStore 5 例、gateway review RPC 2 例 + REST 3 例、agent-ui 5 例。注：同期修复 agent-tools apply-patch 多文件快照回归（`b9697ea45` 在 `fileSnapshotStore` 与 `appArgs` 间插入 `gitStepSnapshotStore` 导致 `fileAdapter` 参数位移、测试未同步 → ENOENT，非 flake；e462ddfa5 补齐 `undefined` 槽位后 275 passing）。
+
+P81（配置迁移 `/import`，G14）已落地：新增 `import_config` 工具与 `tsdi-agent import` CLI，支持 CLAUDE.md、Cursor rules、Cursor/Claude MCP JSON 的 preview/apply 两阶段迁移；marker 分区确保 AGENTS.md 幂等更新，同次多来源应用基于最新目标内容合并避免覆盖；MCP server 按 id 合并并保留 settings 无关字段；无效 source 明确报错，workspace 与 symlink 受统一文件策略保护。全量回归：agent 660 / agent-channels 59 / agent-gateway 197 / agent-ui 358 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1634 passing；八包 build clean。同期收紧 `VerifyCommandRunner` 真实进程测试，仅断言跨 npm 版本稳定的 exit code / failure contract，输出截断由独立单测覆盖。

@@ -292,6 +292,7 @@ export type AgentToolItem =
     | 'memory.delete'
     | 'project_intel'
     | 'coding_task'
+    | 'import_config'
     | 'tool_search'
     | 'tool_inspect'
     | 'http_fetch'

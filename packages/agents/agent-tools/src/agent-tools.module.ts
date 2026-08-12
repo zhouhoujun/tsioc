@@ -66,6 +66,7 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { ImportConfigTool } from '../project/import-config.tool';
 import { CodingTaskStore, CodingTaskTool, ToolRegistryWorkspaceActionRunner, WorkspaceActionRunner } from '../coding';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
@@ -179,6 +180,7 @@ function provideCodingTaskToolFactory() {
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        ImportConfigTool,
         CodingTaskStore,
         ToolRegistryWorkspaceActionRunner,
         { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },
@@ -320,6 +322,7 @@ function provideCodingTaskToolFactory() {
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        ImportConfigTool,
         CodingTaskTool,
         ImageInfoTool,
         PdfReadTool,

@@ -4,6 +4,7 @@ import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStd
 import { runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
+import { runAgentImport } from './import-command';
 import { runAgentHarnessAudit, runAgentHarnessProfileCurrent, runAgentHarnessProfileDiff, runAgentHarnessProfileList } from './harness-command';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
 import { runAgentUpdate } from './update';
@@ -14,7 +15,7 @@ import { SessionStore } from '@tsdi/agent';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -30,7 +31,8 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--api-key',
     '--api-key-env',
     '--target',
-    '--timeout'
+    '--timeout',
+    '--sources'
 ]);
 
 function collectValues(value: string, previous: string[]): string[] {
@@ -242,6 +244,18 @@ function createAgentCli(): Command {
             if (report.issues.some(issue => issue.severity === 'error')) {
                 process.exitCode = 1;
             }
+        });
+
+    program
+        .command('import')
+        .description('Migrate Claude Code / Cursor project configuration: CLAUDE.md into AGENTS.md, .cursor/rules/*.md into an AGENTS.md rules section, and .cursor/mcp.json / .mcp.json MCP servers into the agent settings.')
+        .option('--workspace <dir>', 'Project directory containing CLAUDE.md / .cursor. Defaults to the current directory.')
+        .option('--sources <items>', 'Comma-separated sources to migrate: claude-md, cursor-rules, cursor-mcp (default: all).')
+        .option('--root <dir>', 'Agent config root holding settings.json for MCP migration. Defaults to ~/.tsdi-agent.')
+        .option('--apply', 'Write the changes. Without it, only a preview is shown.')
+        .option('--json', 'Output JSON.')
+        .action(async (options: any) => {
+            await runAgentImport(options);
         });
 
     const harness = program

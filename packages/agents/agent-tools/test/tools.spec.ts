@@ -22,6 +22,7 @@ import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
 import { ReviewDiffTool } from '../review/review-diff.tool';
+import { ImportConfigTool, mergeMcpServers, toAgentMcpServer } from '../project/import-config.tool';
 import { WeatherTool } from '../utility/weather.tool';
 import { SessionSearchTool } from '../sessions/session-search.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
@@ -1269,7 +1270,7 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
-        expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel', 'coding_task']);
+        expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel', 'coding_task', 'import_config']);
         expect(resolveAgentToolNames()).toContain('read_file');
         expect(resolveAgentToolNames()).toContain('list_dir');
         expect(resolveAgentToolNames()).toContain('stat');
@@ -1347,7 +1348,7 @@ export class AgentToolsPackageTest {
         expect(planning?.tools).toEqual(['todo', 'ask_user', 'escalate']);
         expect(planning?.defaultEnabled).toEqual(true);
         expect(planning?.enabled).toEqual(true);
-        expect(project?.tools).toEqual(['project_intel', 'coding_task']);
+        expect(project?.tools).toEqual(['project_intel', 'coding_task', 'import_config']);
         expect(project?.defaultEnabled).toEqual(true);
         expect(project?.enabled).toEqual(true);
         expect(terminal?.defaultEnabled).toEqual(false);
@@ -3921,6 +3922,151 @@ export class AgentToolsPackageTest {
             outside = err as Error;
         }
         expect(outside?.message).toContain('outside');
+    }
+
+    @Test('import config previews a CLAUDE.md merge into AGENTS.md')
+    async importConfigPreviewsClaudeMdMerge() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        await fs.writeFile(path.join(workspace, 'CLAUDE.md'), '# Claude Code\n\nSome guidance.\n');
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const result = await tool.invoke({ workspace }, createSessionContext());
+        expect(result.mode).toEqual('preview');
+        expect(result.actions.length).toEqual(3);
+        const merge = result.actions.find(action => action.kind === 'merge-agents-md')!;
+        expect(merge.status).toEqual('detected');
+        expect(merge.target).toEqual(path.join(workspace, 'AGENTS.md'));
+        expect(merge.after).toContain('## Imported from CLAUDE.md');
+        expect(merge.after).toContain('<!-- imported-from:claude.md -->');
+        expect(merge.after).toContain('Some guidance.');
+        expect(result.summary.detected).toEqual(1);
+        let agentsMdMissing = false;
+        try {
+            await fs.readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
+        } catch {
+            agentsMdMissing = true;
+        }
+        expect(agentsMdMissing).toEqual(true);
+    }
+
+    @Test('import config applies a CLAUDE.md merge and is idempotent on re-apply')
+    async importConfigAppliesClaudeMdMergeIdempotently() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        await fs.writeFile(path.join(workspace, 'CLAUDE.md'), '# Claude Code\n\nSome guidance.\n');
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const applied = await tool.invoke({ workspace, mode: 'apply' }, createSessionContext());
+        const merge = applied.actions.find(action => action.kind === 'merge-agents-md')!;
+        expect(merge.status).toEqual('applied');
+        const agentsMd = await fs.readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
+        expect(agentsMd).toContain('## Imported from CLAUDE.md');
+        expect(agentsMd).toContain('<!-- imported-from:claude.md -->');
+        const again = await tool.invoke({ workspace, mode: 'apply' }, createSessionContext());
+        const mergeAgain = again.actions.find(action => action.kind === 'merge-agents-md')!;
+        expect(mergeAgain.status).toEqual('no-change');
+    }
+
+    @Test('import config preserves both CLAUDE.md and cursor rules when applying all sources')
+    async importConfigAppliesAllMarkdownSourcesWithoutOverwrite() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        await fs.writeFile(path.join(workspace, 'CLAUDE.md'), 'Claude guidance.\n');
+        const rulesDir = path.join(workspace, '.cursor', 'rules');
+        await fs.mkdir(rulesDir, { recursive: true });
+        await fs.writeFile(path.join(rulesDir, 'backend.md'), 'Cursor guidance.\n');
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+
+        const applied = await tool.invoke({ workspace, mode: 'apply' }, createSessionContext());
+
+        expect(applied.summary.applied).toEqual(2);
+        const agentsMd = await fs.readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
+        expect(agentsMd).toContain('Claude guidance.');
+        expect(agentsMd).toContain('Cursor guidance.');
+        expect(agentsMd.split('<!-- imported-from:claude.md -->').length).toEqual(2);
+        expect(agentsMd.split('<!-- imported-from:cursor-rules -->').length).toEqual(2);
+    }
+
+    @Test('import config merges .cursor/rules/*.md as an AGENTS.md rules section')
+    async importConfigMergesCursorRules() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        const rulesDir = path.join(workspace, '.cursor', 'rules');
+        await fs.mkdir(rulesDir, { recursive: true });
+        await fs.writeFile(path.join(rulesDir, 'backend.md'), '---\ndescription: backend rules\n---\nAlways use async/await.\n');
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const applied = await tool.invoke({ workspace, sources: ['cursor-rules'], mode: 'apply' }, createSessionContext());
+        const merge = applied.actions.find(action => action.kind === 'merge-cursor-rules')!;
+        expect(merge.status).toEqual('applied');
+        const agentsMd = await fs.readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
+        expect(agentsMd).toContain('## Rules (imported from .cursor/rules)');
+        expect(agentsMd).toContain('### backend');
+        expect(agentsMd).toContain('```yaml');
+        expect(agentsMd).toContain('Always use async/await.');
+        expect(applied.summary.applied).toEqual(1);
+    }
+
+    @Test('import config converts .cursor/mcp.json into agent settings servers')
+    async importConfigConvertsCursorMcp() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        const agentRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-root-'));
+        await fs.mkdir(path.join(workspace, '.cursor'), { recursive: true });
+        await fs.writeFile(path.join(workspace, '.cursor', 'mcp.json'), JSON.stringify({
+            mcpServers: {
+                demo: { command: 'npx', args: ['-y', 'demo-server'], env: { TOKEN: 'abc' } },
+                remote: { url: 'https://example.com/mcp', headers: { Authorization: 'Bearer x' } }
+            }
+        }));
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const result = await tool.invoke({ workspace, sources: ['cursor-mcp'], agentRoot }, createSessionContext());
+        const merge = result.actions.find(action => action.kind === 'merge-mcp')!;
+        expect(merge.status).toEqual('detected');
+        expect(merge.changed).toEqual(2);
+        const applied = await tool.invoke({ workspace, sources: ['cursor-mcp'], mode: 'apply', agentRoot }, createSessionContext());
+        expect(applied.actions.find(action => action.kind === 'merge-mcp')!.status).toEqual('applied');
+        const settings = JSON.parse(await fs.readFile(path.join(agentRoot, 'settings.json'), 'utf8'));
+        const ids = settings.mcp.servers.map((server: any) => server.id);
+        expect(ids).toContain('demo');
+        expect(ids).toContain('remote');
+        const demo = settings.mcp.servers.find((server: any) => server.id === 'demo');
+        expect(demo.command).toEqual('npx');
+        expect(demo.env).toEqual({ TOKEN: 'abc' });
+    }
+
+    @Test('import config filters sources and guards the workspace root')
+    async importConfigFiltersSourcesAndGuardsWorkspace() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        await fs.mkdir(path.join(workspace, '.cursor', 'rules'), { recursive: true });
+        await fs.writeFile(path.join(workspace, '.cursor', 'rules', 'x.md'), 'Rule X.\n');
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const filtered = await tool.invoke({ workspace, sources: ['claude-md'] }, createSessionContext());
+        expect(filtered.actions.length).toEqual(1);
+        expect(filtered.actions[0].kind).toEqual('merge-agents-md');
+        let outside: Error | undefined;
+        try {
+            await tool.invoke({ workspace: '../outside' }, createSessionContext());
+        } catch (err) {
+            outside = err as Error;
+        }
+        expect(outside?.message).toContain('outside');
+        let invalidSource: Error | undefined;
+        try {
+            await tool.invoke({ workspace, sources: ['unknown'] }, createSessionContext());
+        } catch (err) {
+            invalidSource = err as Error;
+        }
+        expect(invalidSource?.message).toContain('Unknown import source');
+    }
+
+    @Test('import config helpers merge settings and preserve unrelated keys')
+    async importConfigHelperFunctions() {
+        const merged = mergeMcpServers(
+            { session: 'default', mcp: { servers: [{ id: 'old', command: 'old-cmd' }] } },
+            [{ id: 'old', command: 'new-cmd' }, { id: 'new', url: 'https://x' }]
+        );
+        expect(merged.changed).toEqual(2);
+        expect(merged.settings.session).toEqual('default');
+        expect(merged.settings.mcp.servers.length).toEqual(2);
+        expect(merged.settings.mcp.servers.find((server: any) => server.id === 'old').command).toEqual('new-cmd');
+        const urlOnly = toAgentMcpServer('srv', { url: 'https://x' });
+        expect(urlOnly.url).toEqual('https://x');
+        const envAlias = toAgentMcpServer('srv2', { command: 'cmd', environment: { A: '1' } });
+        expect(envAlias.env).toEqual({ A: '1' });
     }
 
     @Test('weather tool requires adapter and returns structured data')

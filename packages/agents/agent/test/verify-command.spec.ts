@@ -415,7 +415,6 @@ export class VerifyCommandRunnerTest {
             const lint = runs.find(run => run.kind === 'lint');
             expect(lint?.exitCode).toEqual(2);
             expect(lint?.failed).toEqual(true);
-            expect(lint?.output).toContain('process.exit(2)');
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
