@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -1716,7 +1716,8 @@ export class AppRpcServer {
             : undefined;
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context);
-            return { report: await this.weaknessMiner.mine({ sessionIds: [sessionId], topN: this.parseTopN(params?.topN), failureRateThreshold: this.parseThreshold(params?.failureRateThreshold), minFailures: this.parseMinFailures(params?.minFailures) }) };
+            const report = await this.weaknessMiner.mine({ sessionIds: [sessionId], topN: this.parseTopN(params?.topN), failureRateThreshold: this.parseThreshold(params?.failureRateThreshold), minFailures: this.parseMinFailures(params?.minFailures) });
+            return { report, ...(params?.includeDraft ? { agentsRuleDraft: buildAgentsRuleDraft(report) } : {}) };
         }
         const all = await this.turnDiagnostics?.list() ?? [];
         const sessionIds = [...new Set(all.map(record => record.sessionId))];
@@ -1729,7 +1730,7 @@ export class AppRpcServer {
             failureRateThreshold: this.parseThreshold(params?.failureRateThreshold),
             minFailures: this.parseMinFailures(params?.minFailures)
         });
-        return { report };
+        return { report, ...(params?.includeDraft ? { agentsRuleDraft: buildAgentsRuleDraft(report) } : {}) };
     }
 
     private parseTopN(raw: any): number | undefined {

@@ -154,4 +154,4 @@ P76（模型请求重试/退避分类，G10）已落地：OpenAI-compatible 与 
 
 P77（会话 fork，G2 延伸）已落地：`SessionStore.fork` 支持完整或按 `messageId` 截断 transcript，生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway 暴露 `session.fork` RPC，带 owner 校验和显式/自动 session id。新增存储层测试。
 
-P78（验证失败回写 AGENTS.md）未开始。
+P78（项目记忆闭环，验证失败回写 AGENTS.md）已落地：新增 `buildAgentsRuleDraft(report)`，将 WeaknessMiner 的高频失败建议渲染为带人工审核标记的 AGENTS.md 规则片段；`harness.audit` 通过 `includeDraft: true` 返回草案，默认不写入或覆盖项目文件。新增草案生成测试。

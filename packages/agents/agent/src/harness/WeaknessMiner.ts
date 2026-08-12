@@ -79,6 +79,21 @@ export interface HarnessAuditReport {
     empty: boolean;
 }
 
+/** Render human-reviewable project rules; callers must explicitly persist them. */
+export function buildAgentsRuleDraft(report: HarnessAuditReport): string {
+    const lines = ['## Learned Harness Rules', '', '<!-- Generated from verification evidence. Review before merging into AGENTS.md. -->', ''];
+    if (!report.suggestions.length && !report.errorClusters.length) {
+        lines.push('- No recurring failure patterns were detected.');
+        return `${lines.join('\n')}\n`;
+    }
+    for (const suggestion of report.suggestions) lines.push(`- ${suggestion.message}`);
+    for (const cluster of report.errorClusters.filter(cluster => cluster.suggestedPolicy)) {
+        lines.push('- Recurring error ' + cluster.signature + ' (' + cluster.count + ' occurrences): ' + cluster.suggestedPolicy + '.');
+    }
+    lines.push('', 'Review each rule against current project conventions before adding it to AGENTS.md.');
+    return `${lines.join('\n')}\n`;
+}
+
 const DEFAULT_TOP_N = 8;
 const DEFAULT_FAILURE_RATE_THRESHOLD = 50;
 const DEFAULT_MIN_FAILURES = 2;
