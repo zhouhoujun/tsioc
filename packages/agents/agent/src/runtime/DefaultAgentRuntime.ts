@@ -46,6 +46,7 @@ import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildE
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
+import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal';
 import {
     AgentArchetype,
     DEFAULT_ARCHETYPE,
@@ -146,7 +147,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected appArgs?: ApplicationArguments | null,
         @Optional() protected fileAdapter?: FileAdapter | null,
         @Optional() protected hookExecutor?: AgentHookCommandExecutor | null,
-        @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent | null
+        @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent | null,
+        @Optional() protected goalStore?: GoalStore | null
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -289,6 +291,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
             this.bindGitStepSnapshot(input.sessionId, result.message.id);
             await this.sessions.append(input.sessionId, result.message);
+            await this.evaluateSessionGoal(input.sessionId, result.message.content);
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             void this.refreshSessionSummary(input.sessionId).catch(() => undefined);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
@@ -336,6 +339,32 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     synthesizeExperiences(options?: SynthesisOptions): SynthesisReport {
         return this.contextManager.synthesizeExperiences(options);
+    }
+
+    override async createGoal(input: CreateGoalInput, sessionId?: string): Promise<Goal> {
+        if (!this.goalStore) throw new Error('Goal store unavailable.');
+        const goal = await this.goalStore.create(input);
+        if (sessionId) await this.goalStore.linkSession(sessionId, goal.id);
+        return goal;
+    }
+
+    override async listGoals(status?: GoalStatus): Promise<Goal[]> { return this.goalStore?.list(status) ?? []; }
+    override async getGoal(goalId: string): Promise<Goal | undefined> { return this.goalStore?.get(goalId); }
+    override async getSessionGoal(sessionId: string): Promise<Goal | undefined> { return this.goalStore?.getSessionGoal(sessionId); }
+    override async linkSessionGoal(sessionId: string, goalId?: string): Promise<void> {
+        if (!this.goalStore) throw new Error('Goal store unavailable.');
+        await this.goalStore.linkSession(sessionId, goalId);
+    }
+    override async updateGoal(goalId: string, patch: Partial<Pick<Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<Goal> {
+        if (!this.goalStore) throw new Error('Goal store unavailable.');
+        return this.goalStore.update(goalId, patch);
+    }
+
+    private async evaluateSessionGoal(sessionId: string, assistantText: string): Promise<void> {
+        const goal = await this.goalStore?.getSessionGoal(sessionId);
+        if (goal && evaluateGoalCompletion(goal, assistantText)) {
+            await this.goalStore!.update(goal.id, { status: 'completed' });
+        }
     }
 
     async *runStreamingTurn(
@@ -1042,6 +1071,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turnContext.diagnostics.followUpContextRewritten = true;
         }
         messages = rewrittenMessages;
+        const goal = await this.goalStore?.getSessionGoal(sessionId);
+        if (goal?.status === 'active') {
+            messages = [{ id: `goal-${goal.id}`, role: 'system', content: buildGoalContext(goal), createdAt: goal.updatedAt }, ...messages];
+        }
         const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId);
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);

@@ -69,6 +69,7 @@ import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphSto
 import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
 import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/AgentHooks';
+import { DefaultGoalStore, GoalStore, InMemoryGoalStore, TypeOrmGoalStore } from './goal';
 import { createAgentProviders } from './provider';
 
 @Module({
@@ -85,6 +86,10 @@ import { createAgentProviders } from './provider';
             asDefault: true
         },
         AgentContextManager,
+        InMemoryGoalStore,
+        TypeOrmGoalStore,
+        DefaultGoalStore,
+        { provide: GoalStore, useExisting: DefaultGoalStore },
         ToolLoopDetector,
         ToolSchemaValidator,
         RateLimitManager,
@@ -140,6 +145,8 @@ import { createAgentProviders } from './provider';
         MemorySearchTool,
         ExperienceSynthesizeTool,
         InMemorySessionStore,
+        DefaultGoalStore,
+        InMemoryGoalStore,
         DefaultSessionStore,
         { provide: SessionStore, useExisting: DefaultSessionStore },
         InMemoryMemoryStore,

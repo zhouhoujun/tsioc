@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { AgentMessagePart } from '../runtime/AgentMessage';
 
 @Entity()
@@ -323,6 +323,36 @@ export class AgentCompactionHistoryEntity {
 
     @Column({ type: 'bigint' })
     createdAt!: number;
+}
+
+@Entity()
+export class AgentGoalEntity {
+    @PrimaryColumn()
+    id!: string;
+
+    @Column()
+    title!: string;
+
+    @Column({ type: 'text' })
+    objective!: string;
+
+    @Column({ type: 'simple-json' })
+    successCriteria!: string[];
+
+    @Column({ type: 'varchar' })
+    status!: string;
+
+    @Column({ type: 'simple-json' })
+    sessionIds!: string[];
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
+
+    @Column({ type: 'bigint' })
+    updatedAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    completedAt!: number | null;
 }
 
 @Entity()

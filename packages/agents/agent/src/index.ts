@@ -43,6 +43,7 @@ export * from './tools/ToolApprovalManager';
 export * from './tools/BuiltinTools';
 
 export * from './context/AgentContextManager';
+export * from './goal';
 export * from './harness/ToolSchemaValidator';
 export * from './harness/RateLimitManager';
 export * from './harness/OutputGuard';

@@ -32,6 +32,10 @@
 
 - **P82 · pre/post-compaction hooks**：`AgentLifecycleHookStage`、shell hooks 与 function hooks 新增 `beforeCompaction` / `afterCompaction`；`AgentContextManager` 仅在真实触发压缩时按序调用，after 载荷包含 summary、质量分、压缩报告与丢弃消息统计；runtime 桥接复用既有 hook 审计/转录管线，无 hook 时零额外执行。锚点：`agent/src/hooks/AgentHooks.ts`、`agent/src/context/AgentContextManager.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`。
 
+### 跨会话目标
+
+- **P83 · Goal 系统**：新增 InMemory/TypeORM/Default GoalStore，Goal 含 objective、successCriteria、status 与时间戳；多个 session 可关联同一 goal，active goal 自动注入模型上下文，assistant 输出明确覆盖全部 criteria 时确定性完成，无 criteria 时只允许人工完成；gateway `goal.*` RPC 与 agent-ui `/goal` 命令支持创建、查看、列举、关联、完成和重开。锚点：`agent/src/goal/`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
+
 ### 会话与工作树
 
 - **P77 · 会话 fork**：`SessionStore.fork(sessionId, messageId?)` 完整或截断 transcript 生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway `session.fork` RPC（owner 校验 + 显式/自动 id）。
@@ -48,7 +52,7 @@
 
 第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在三个方向：
 
-1. **跨会话工作流**：fork/thread/scheduler 已有，缺「目标驱动、多日持续推进、完成判定」的 goal 模型（G15）。
+1. **跨会话工作流**：fork/thread/scheduler/goal 已齐，后续重点是更强的无人值守推进策略与完成证据。
 2. **配置与生态扩展**：CLAUDE.md / Cursor 导入已闭环（P81），仍缺 provider 目录（G16）与 skills 远程分发（G19）。
 3. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
 
@@ -72,7 +76,7 @@
 | G12 | ~~无 /review 内联评审命令~~（✅ 2026-08 P80） | codex `/review`（0.144+）：不改工作树评审当前 diff，结构化 findings | review archetype 为手动只读会话；agent-ui review 面板（`reviewTaskChoices`）评审的是子代理任务产物，非 git diff inline 评审；无 findings 落库与 commit 绑定 | 高：独立评审流缺失，交付前自查能力弱 |
 | G13 | ~~无 pre/post-compaction hooks~~（✅ 2026-08 P82） | codex hooks GA（0.130+）pre/post-compaction | lifecycle hooks 已扩展 before/afterCompaction，after 透出 summary、质量分、report 与 drop 统计 | 中：压缩时可观测/定制不足（审计、外部同步、通知） |
 | G14 | ~~无配置迁移（/import）~~（✅ 2026-08 P81） | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 的 preview/apply 幂等迁移 | 中：从 Claude Code/Cursor 迁移门槛高 |
-| G15 | **无 Goal 系统（跨会话持久目标）** | codex `/goal`（0.128+）持久化多日工作流 | scheduler 为时间触发定时任务（`IntervalAgentScheduler`）；无目标驱动、跨会话推进、完成判定的 goal 模型 | 中：长期任务无法无人值守持续推进 |
+| G15 | ~~无 Goal 系统（跨会话持久目标）~~（✅ 2026-08 P83） | codex `/goal`（0.128+）持久化多日工作流 | GoalStore 持久化目标与 session 关联，runtime 注入 active goal 并按明确 criteria 完成判定 | 中：长期任务无法无人值守持续推进 |
 | G16 | **无 provider 注册表** | opencode models.dev（75+ providers / 1000+ 模型）目录 | profiles 为手写 baseUrl/apiKeyEnv；无 provider 目录自动发现、模型清单、能力推导 | 中：接入新模型/网关成本高 |
 | G17 | **无 eval 基准 runner** | 生态 SWE-bench 式任务级评估 | harness-profile 观测内部质量（falsify-rate 等）；无任务级（repo+issue → agent → patch+test 评分）批量回归 | 中：模型/提示改动无量化回归手段 |
 | G18 | **无会话分享** | opencode `/share` 只读分享会话 | gateway 有 owner 鉴权 + pairing，但无只读分享链接/脱敏快照导出 | 低中：协作/交付场景缺失 |
@@ -81,16 +85,9 @@
 | G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；桌面/IDE/Web/移动客户端未落地 | 中：远期工程 |
 | G22 | **LSP 无自动安装/版本管理** | opencode 30+ auto-install LSP configs | lsp-manager 按需 spawn（注释明确「spawned on first use」），无语言 → 安装命令映射、无版本管理 | 低：新环境上手成本 |
 
-## 打磨计划（P83+）
+## 打磨计划（P84+）
 
 > 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
-
-### P83 · Goal 系统（G15）—— 中优先
-
-- 新增 `Goal` 模型（title / objective / successCriteria / status / createdAt / updatedAt / completedAt），会话可关联 goal；跨会话持续推进：turn 结束做完成判定（successCriteria 匹配），未完成自动生成「继续目标」上下文供下一会话（对齐 codex `/goal` 多日工作流）。
-- 与 scheduler 分工：scheduler 时间触发任务；goal 目标驱动 + 人工/agent 双驱动推进。
-- 锚点：`agent/src/goal/GoalStore.ts`（InMemory/TypeOrm）、`agent/src/runtime/DefaultAgentRuntime.ts`（goal 上下文注入 + 完成判定）、`agent-gateway/src/api/GoalHandler.ts`、`agent-ui`（`/goal` 命令 + 状态面板）。
-- 测试：`agent/test/goal.spec.ts`（创建/推进/完成/跨会话恢复）。
 
 ### P84 · Provider 注册表（G16）—— 中优先
 
@@ -170,3 +167,5 @@ P80（/review 内联评审命令，G12）已落地：`review` 工具组新增 `r
 P81（配置迁移 `/import`，G14）已落地：新增 `import_config` 工具与 `tsdi-agent import` CLI，支持 CLAUDE.md、Cursor rules、Cursor/Claude MCP JSON 的 preview/apply 两阶段迁移；marker 分区确保 AGENTS.md 幂等更新，同次多来源应用基于最新目标内容合并避免覆盖；MCP server 按 id 合并并保留 settings 无关字段；无效 source 明确报错，workspace 与 symlink 受统一文件策略保护。全量回归：agent 660 / agent-channels 59 / agent-gateway 197 / agent-ui 358 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1634 passing；八包 build clean。同期收紧 `VerifyCommandRunner` 真实进程测试，仅断言跨 npm 版本稳定的 exit code / failure contract，输出截断由独立单测覆盖。
 
 P82（pre/post-compaction hooks，G13）已落地：生命周期阶段扩展 `beforeCompaction` / `afterCompaction`，shell/function 双形态均可配置；context manager 在真实压缩前后按序触发，after 载荷包含 summary、`scoreSummaryQuality` 总分、完整 report 与 dropped message count；runtime 复用现有 hook manager 和 transcript 持久化，未触发压缩或未配置 hook 时静默跳过。新增 context compaction 测试覆盖顺序、载荷与未触发降级。全量回归：agent 662 / agent-channels 59 / agent-gateway 197 / agent-ui 358 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1636 passing；八包 build clean。
+
+P83（Goal 系统，G15）已落地：GoalStore 提供内存与 TypeORM 持久化及自动后端选择，支持跨 session 关联、状态转换和 completedAt；runtime 在每次模型请求中注入 active goal 上下文，turn 完成后仅当 assistant 文本覆盖全部显式 successCriteria 时自动完成，无 criteria 目标保留人工判定；gateway 增加 `goal.create/get/list/link/complete/reopen` RPC，agent-ui 增加 `/goal` 全命令面。测试覆盖 create/link、跨会话恢复、complete/reopen、全部 criteria 判定、上下文渲染、TypeORM round-trip 与本地/RPC UI 路径。全量回归：agent 667 / agent-channels 59 / agent-gateway 197 / agent-ui 360 / agent-providers 13 / agent-tools 282 / agent-cli 57 / agent-ssh 8，共 1643 passing；八包 build clean。

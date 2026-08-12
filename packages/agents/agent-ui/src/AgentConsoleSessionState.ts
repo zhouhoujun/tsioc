@@ -466,7 +466,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots'];
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;

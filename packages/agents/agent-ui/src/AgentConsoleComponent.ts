@@ -3783,6 +3783,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset vim key bindings' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
+                    { label: '/goal', value: '/goal', description: 'create, show, link, complete, or reopen a persistent goal' },
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
                     { label: '/export', value: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]' },
@@ -3886,6 +3887,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             case '/status':
                 await this.runStatusCommand();
+                return true;
+            case '/goal':
+                await this.runGoalCommand(parsed.args);
                 return true;
             case '/undo':
                 if (this.isTurnInProgress()) {
@@ -6158,6 +6162,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const model = this.state.modelProfile || this.state.model || 'default';
         this.notify(`session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode}`);
+    }
+
+    protected async runGoalCommand(args: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        const [command = 'show', ...rest] = String(args || '').trim().split(/\s+/);
+        try {
+            if (command === 'create') {
+                const parts = rest.join(' ').split('|').map(item => item.trim());
+                if (parts.length < 2 || !parts[0] || !parts[1]) { this.notify('Usage: /goal create <title> | <objective> | criterion 1; criterion 2'); return; }
+                const input = { title: parts[0], objective: parts[1], successCriteria: (parts[2] || '').split(';').map(item => item.trim()).filter(Boolean) };
+                const goal = this.appRpc ? await this.appRpc.request('goal.create', { sessionId, ...input }) : await this.runtime.createGoal(input, sessionId);
+                this.notify(`Goal ${goal.id} created: ${goal.title}`); return;
+            }
+            if (command === 'list') {
+                const goals = this.appRpc ? await this.appRpc.request('goal.list', {}) : await this.runtime.listGoals();
+                this.notify(goals.length ? goals.map((goal: any) => `${goal.id} [${goal.status}] ${goal.title}`).join('\n') : 'No goals.'); return;
+            }
+            if (command === 'link') {
+                const goalId = rest[0]; if (!goalId) { this.notify('Usage: /goal link <goalId>'); return; }
+                if (this.appRpc) await this.appRpc.request('goal.link', { sessionId, goalId }); else await this.runtime.linkSessionGoal(sessionId, goalId);
+                this.notify(`Goal ${goalId} linked.`); return;
+            }
+            if (command === 'complete' || command === 'reopen') {
+                const goal = this.appRpc ? await this.appRpc.request(`goal.${command}`, { sessionId, goalId: rest[0] }) : await (async () => {
+                    const linked = rest[0] ? await this.runtime.getGoal(rest[0]) : await this.runtime.getSessionGoal(sessionId);
+                    if (!linked) throw new Error('No goal linked to this session.');
+                    return this.runtime.updateGoal(linked.id, { status: command === 'complete' ? 'completed' : 'active' });
+                })();
+                this.notify(`Goal ${goal.id} is ${goal.status}.`); return;
+            }
+            const goal = this.appRpc ? await this.appRpc.request('goal.get', { sessionId, goalId: command === 'show' ? rest[0] : command }) : await (command === 'show' ? (rest[0] ? this.runtime.getGoal(rest[0]) : this.runtime.getSessionGoal(sessionId)) : this.runtime.getGoal(command));
+            this.notify(goal ? `${goal.id} [${goal.status}] ${goal.title}\n${goal.objective}\n${goal.successCriteria.map((item: string) => `- ${item}`).join('\n')}` : 'No goal linked to this session.');
+        } catch (error) { this.notify(`Goal command failed: ${error instanceof Error ? error.message : String(error)}`); }
     }
 
     protected async setSessionSandboxMode(

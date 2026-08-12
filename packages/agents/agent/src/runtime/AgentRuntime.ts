@@ -23,6 +23,12 @@ export interface FileUndoRedoResult {
 
 @Abstract()
 export abstract class AgentRuntime {
+    async createGoal(_input: import('../goal').CreateGoalInput, _sessionId?: string): Promise<import('../goal').Goal> { throw new Error('Goal store unavailable.'); }
+    async listGoals(_status?: import('../goal').GoalStatus): Promise<import('../goal').Goal[]> { return []; }
+    async getGoal(_goalId: string): Promise<import('../goal').Goal | undefined> { return undefined; }
+    async getSessionGoal(_sessionId: string): Promise<import('../goal').Goal | undefined> { return undefined; }
+    async linkSessionGoal(_sessionId: string, _goalId?: string): Promise<void> { throw new Error('Goal store unavailable.'); }
+    async updateGoal(_goalId: string, _patch: Partial<Pick<import('../goal').Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<import('../goal').Goal> { throw new Error('Goal store unavailable.'); }
     abstract runTurn(
         sessionId: string,
         input: string,

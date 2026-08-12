@@ -222,7 +222,13 @@ export class AppRpcServer {
                         'review.diff',
                         'review.list',
                         'review.get',
-                        'review.save'
+                        'review.save',
+                        'goal.create',
+                        'goal.get',
+                        'goal.list',
+                        'goal.link',
+                        'goal.complete',
+                        'goal.reopen'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -288,6 +294,12 @@ export class AppRpcServer {
                 return this.revertGitStepSnapshot(params, context);
             case 'session.git_snapshot.unrevert':
                 return this.unrevertGitStepSnapshot(params, context);
+            case 'goal.create': return this.createGoal(params, context);
+            case 'goal.get': return this.getGoal(params, context);
+            case 'goal.list': return this.runtime.listGoals(params?.status);
+            case 'goal.link': return this.linkGoal(params, context);
+            case 'goal.complete': return this.updateGoalStatus(params, context, 'completed');
+            case 'goal.reopen': return this.updateGoalStatus(params, context, 'active');
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -409,6 +421,38 @@ export class AppRpcServer {
             updatedAt: state.updatedAt,
             workspace: state.workspace
         };
+    }
+
+    private async createGoal(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        return this.runtime.createGoal({
+            title: this.requireString(params?.title, 'goal title'),
+            objective: this.requireString(params?.objective, 'goal objective'),
+            successCriteria: Array.isArray(params?.successCriteria) ? params.successCriteria.map(String) : []
+        }, sessionId);
+    }
+
+    private async getGoal(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return params?.goalId ? this.runtime.getGoal(String(params.goalId)) : this.runtime.getSessionGoal(sessionId);
+    }
+
+    private async linkGoal(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        await this.runtime.linkSessionGoal(sessionId, params?.goalId ? String(params.goalId) : undefined);
+        return { linked: true, sessionId, goalId: params?.goalId };
+    }
+
+    private async updateGoalStatus(params: any, context: AppRpcRequestContext, status: 'active' | 'completed'): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const linked = await this.runtime.getSessionGoal(sessionId);
+        const goalId = String(params?.goalId || linked?.id || '').trim();
+        if (!goalId) throw new Error('No goal linked to this session.');
+        return this.runtime.updateGoal(goalId, { status });
     }
 
     private async forkSession(params: any, context: AppRpcRequestContext): Promise<any> {

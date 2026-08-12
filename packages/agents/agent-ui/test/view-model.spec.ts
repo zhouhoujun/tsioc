@@ -8459,6 +8459,30 @@ export class AgentConsoleComponentTest {
         expect(state.notice).toContain('sandbox workspace');
     }
 
+    @Test('goal command creates and shows a local persistent goal')
+    async goalCommandCreatesAndShowsLocalGoal() {
+        const runtime = new RuntimeStub() as any;
+        const goals = new Map<string, any>();
+        runtime.createGoal = async (input: any) => { const goal = { id: 'g1', status: 'active', ...input }; goals.set('g1', goal); return goal; };
+        runtime.getSessionGoal = async () => goals.get('g1');
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'goal-session';
+        await (component as any).handleCommand('/goal create Release | Ship version 1 | tests pass; build clean');
+        expect(state.notice).toContain('Goal g1 created');
+        await (component as any).handleCommand('/goal show');
+        expect(state.notice).toContain('tests pass');
+    }
+
+    @Test('goal command routes creation through app rpc')
+    async goalCommandRoutesThroughRpc() {
+        const appRpc = new AppRpcStub();
+        (appRpc as any).request = async function(method: string, params: any) { this.calls.push({ method, params }); return { id: 'g2', title: params.title, status: 'active' }; };
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'goal-rpc';
+        await (component as any).handleCommand('/goal create Release | Ship it | tests pass');
+        expect(appRpc.calls.find(call => call.method === 'goal.create')?.params.sessionId).toEqual('goal-rpc');
+    }
+
     @Test('input panel prompt shows a plan-mode badge when enabled')
     async inputPromptShowsPlanBadge() {
         const state = new AgentConsoleSessionState();
