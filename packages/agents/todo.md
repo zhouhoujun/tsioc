@@ -4,9 +4,9 @@
 
 主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）。
 
-## 已实现功能（P67–P80 落地明细，2026-08）
+## 已实现功能（P67–P86 落地明细，2026-08）
 
-> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P80 按方向归类的**已实现功能**清单（非计划）。
+> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P86 按方向归类的**已实现功能**清单（非计划）。
 
 ### 编码反馈闭环
 
@@ -40,6 +40,11 @@
 
 - **P84 · Provider 注册表**：新增内置 provider/model 目录与可解析的 `provider.json` 自定义目录，统一提供 baseUrl、apiKeyEnv、模型清单及 chat/vision/tool-calling/prompt-cache/reasoning 能力位；CLI 配置与 gateway `/model` 消费目录，显式配置优先，未知 provider 保持降级。
 
+### 评估与分享
+
+- **P85 · Eval 基准 runner**：新增 `EvalTask` / `EvalRun` 契约与注入式 `EvalRunner`，支持单任务、批量、profile 选择、验证命令评分、异常降级与报告存储；gateway 暴露 `POST /api/eval/run` 和 `GET /api/eval`。锚点：`agent/src/eval/`、`agent-gateway/src/api/EvalHandler.ts`。
+- **P86 · 会话分享**：owner 创建不可变脱敏快照，以 192-bit 高熵 token 提供公开只读访问并支持撤销；递归裁剪 workspace 绝对路径、密钥字段、Bearer / `sk-*` 值与媒体 URL。锚点：`agent-gateway/src/api/SessionShareHandler.ts`。
+
 ### 会话与工作树
 
 - **P77 · 会话 fork**：`SessionStore.fork(sessionId, messageId?)` 完整或截断 transcript 生成 branch session，继承项目/workspace/thread 血缘并写入 `sessionRole: branch`；gateway `session.fork` RPC（owner 校验 + 显式/自动 id）。
@@ -57,7 +62,7 @@
 第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距集中在三个方向：
 
 1. **跨会话工作流**：fork/thread/scheduler/goal 已齐，后续重点是更强的无人值守推进策略与完成证据。
-2. **配置与生态扩展**：CLAUDE.md / Cursor 导入已闭环（P81），仍缺 provider 目录（G16）与 skills 远程分发（G19）。
+2. **配置与生态扩展**：CLAUDE.md / Cursor 导入（P81）与 provider 目录（P84）已闭环，仍缺 skills 远程分发（G19）。
 3. **多端交付面**：TUI/CLI/gateway 已齐，桌面/IDE/Web/移动未落地（G21，远期）。
 
 全部为增量可做、无需推翻现有架构。
@@ -160,4 +165,4 @@ P84（Provider 注册表，G16）已落地：`AgentProviderRegistry` 提供内�
 
 P85（Eval 基准 runner，G17）已落地：新增 `EvalTask` / `EvalRun` 契约与注入式 `EvalRunner`，支持单任务、批量运行、profile 选择、验证命令结果评分、运行异常降级和报告存储；`InMemoryEvalReportStore` 提供默认落库 seam，gateway 新增 `POST /api/eval/run` 与 `GET /api/eval` 暴露运行及报告列表。测试覆盖成功/失败批量、验证失败评分、异常记录与持久化。
 
-P86（会话分享，G18）已落地：gateway 新增 owner-only `POST /api/sessions/:id/share` 创建不可变分享快照、无需主鉴权的 `GET /api/share/:token` 只读访问及 owner-only `DELETE` 撤销；快照递归裁剪 workspace 绝对路径、密钥字段/Bearer/sk-* 值与媒体 URL，访问 token 使用 192-bit 随机值且不进入公开响应。新增测试覆盖脱敏、owner 边界、公开读取、token 唯一性与撤销。
+P86（会话分享，G18）已落地：gateway 新增 owner-only `POST /api/sessions/:id/share` 创建不可变分享快照、无需主鉴权的 `GET /api/share/:token` 只读访问及 owner-only `DELETE` 撤销；快照递归裁剪 workspace 绝对路径、密钥字段/Bearer/sk-* 值与媒体 URL，访问 token 使用 192-bit 随机值且不进入公开响应。新增测试覆盖脱敏、owner 边界、公开读取、token 唯一性与撤销。最终全量回归：agent 672 / agent-channels 59 / agent-cli 58 / agent-gateway 201 / agent-providers 13 / agent-ssh 8 / agent-tools 282 / agent-ui 360，共 1653 passing；八包 build clean。
