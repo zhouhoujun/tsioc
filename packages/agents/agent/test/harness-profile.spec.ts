@@ -23,7 +23,11 @@ export class HarnessProfileTest {
             name: 'demo',
             version: HARNESS_PROFILE_VERSION,
             requireApproval: ['shell.exec', { category: 'network', mode: 'auto-deny' }],
-            sandbox: { mode: 'network-block', networkAllowlist: ['registry.npmjs.org'] },
+            sandbox: {
+                mode: 'network-block',
+                networkAllowlist: ['registry.npmjs.org'],
+                proxy: { https: 'http://proxy.local:8080', noProxy: ['localhost'], required: true }
+            },
             maxRepairRounds: 2,
             maxLoopRecoveries: 3,
             verificationWriteTools: ['write_file', 'edit_file'],

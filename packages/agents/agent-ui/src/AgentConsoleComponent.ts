@@ -16,7 +16,7 @@ import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
@@ -6116,8 +6116,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async runPermissionsCommand(args: string): Promise<void> {
         const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        if (!tokens.length) {
-            await this.runStatusCommand();
+        if (!tokens.length || tokens[0].toLowerCase() === 'status') {
+            await this.showSandboxCapabilities();
             return;
         }
         const area = tokens[0].toLowerCase();
@@ -6146,6 +6146,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         } catch (error) {
             this.notify(`Failed to set sandbox mode: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    protected async showSandboxCapabilities(): Promise<void> {
+        const platform = (globalThis as { process?: { platform?: string } }).process?.platform;
+        const probe = await detectSandboxExecTool(platform);
+        const proxy = this.options?.sandbox?.proxy;
+        const capabilities = describeSandboxCapabilities(platform, probe, !!(proxy?.http || proxy?.https));
+        const mode = await this.getSessionSandboxMode(this.state.sessionId).catch(() => 'default');
+        const lines = [`sandbox ${mode} · ${platform || 'unknown'} · ${probe.tool || 'process fallback'}`];
+        for (const item of capabilities) {
+            lines.push(`${item.capability} ${item.supported ? 'supported' : 'degraded'} · ${item.enforcement}`);
+        }
+        if (proxy?.required) {
+            lines.push(`proxy required · ${proxy.http || proxy.https ? 'configured' : 'missing'}`);
+        }
+        this.notify(lines.join('\n'));
     }
 
     protected async runStatusCommand(): Promise<void> {

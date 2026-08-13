@@ -94,7 +94,11 @@ export function snapshotHarnessProfile(options: Partial<AgentOptions> | undefine
         if (options.sandbox) {
             profile.sandbox = {
                 ...(options.sandbox.mode !== undefined ? { mode: options.sandbox.mode } : {}),
-                ...(options.sandbox.networkAllowlist ? { networkAllowlist: options.sandbox.networkAllowlist.slice() } : {})
+                ...(options.sandbox.networkAllowlist ? { networkAllowlist: options.sandbox.networkAllowlist.slice() } : {}),
+                ...(options.sandbox.proxy ? { proxy: {
+                    ...options.sandbox.proxy,
+                    ...(options.sandbox.proxy.noProxy ? { noProxy: options.sandbox.proxy.noProxy.slice() } : {})
+                } } : {})
             };
         }
         if (options.maxRepairRounds !== undefined) {
@@ -131,6 +135,12 @@ export function applyHarnessProfile(profile: HarnessProfile): Partial<AgentOptio
         }
         if (profile.sandbox.networkAllowlist !== undefined) {
             sandbox.networkAllowlist = profile.sandbox.networkAllowlist.slice();
+        }
+        if (profile.sandbox.proxy !== undefined) {
+            sandbox.proxy = {
+                ...profile.sandbox.proxy,
+                ...(profile.sandbox.proxy.noProxy ? { noProxy: profile.sandbox.proxy.noProxy.slice() } : {})
+            };
         }
         overlay.sandbox = sandbox;
     }

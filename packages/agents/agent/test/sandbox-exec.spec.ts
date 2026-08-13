@@ -3,6 +3,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     buildSandboxExecCommand,
+    describeSandboxCapabilities,
     describeSandboxExecDegradation,
     detectSandboxExecTool,
     resolvePlatformShellCommand,
@@ -50,12 +51,38 @@ export class SandboxExecWrapperTest {
         expect(probe.tool).toEqual('sandbox-exec');
     }
 
-    @Test('degrades gracefully on Windows with WSL2 hint')
+    @Test('degrades gracefully on Windows with capability detail')
     async degradesOnWindows() {
         const probe = await detectSandboxExecTool('win32', fakeProbe([]));
         expect(probe.tool).toEqual(null);
-        expect(probe.reason).toContain('WSL2');
-        expect(describeSandboxExecDegradation('win32')).toContain('WSL2');
+        expect(probe.reason).toContain('filesystem-write=process');
+        expect(describeSandboxExecDegradation('win32')).toContain('read-denied=unsupported');
+    }
+
+    @Test('detects native Windows sandbox before WSL fallback')
+    async detectsNativeWindowsSandbox() {
+        const probe = await detectSandboxExecTool('win32', fakeProbe(['windows-native', 'wsl-bwrap']), {
+            os: 'win32', shellFamily: 'cmd'
+        });
+        expect(probe.tool).toEqual('windows-native');
+    }
+
+    @Test('detects WSL bwrap when native Windows sandbox is unavailable')
+    async detectsWslBwrap() {
+        const probe = await detectSandboxExecTool('win32', fakeProbe(['wsl-bwrap']), {
+            os: 'win32', shellFamily: 'cmd'
+        });
+        expect(probe.tool).toEqual('wsl-bwrap');
+    }
+
+    @Test('reports per-capability Windows degradation and proxy enforcement')
+    reportsWindowsCapabilityMatrix() {
+        const capabilities = describeSandboxCapabilities('win32', { tool: null }, true);
+        expect(capabilities.map(item => [item.capability, item.supported, item.enforcement])).toEqual([
+            ['filesystem-write', false, 'process'],
+            ['network', true, 'proxy'],
+            ['read-denied', false, 'none']
+        ]);
     }
 
     @Test('off mode returns the command unchanged')
@@ -126,6 +153,22 @@ export class SandboxExecWrapperTest {
         expect(profile).toContain('(deny network*)');
     }
 
+    @Test('WSL bwrap wraps the Linux sandbox command')
+    wslBwrapWrapsLinuxSandboxCommand() {
+        const wrapped = buildSandboxExecCommand('wsl-bwrap', 'network-block', 'curl', ['x'], { workspace: '/workspace' });
+        expect(wrapped?.command).toEqual('wsl.exe');
+        expect(wrapped?.args.slice(0, 4)).toEqual(['--exec', 'bwrap', '--unshare-all', '--unshare-net']);
+    }
+
+    @Test('native Windows sandbox delegates to the restricted-token host helper')
+    nativeWindowsSandboxUsesHostHelper() {
+        const wrapped = buildSandboxExecCommand('windows-native', 'workspace', 'npm.cmd', ['test'], { workspace: 'C:\\repo' });
+        expect(wrapped).toEqual({
+            command: 'tsdi-agent-sandbox.exe',
+            args: ['--mode', 'workspace', '--workspace', 'C:\\repo', '--', 'npm.cmd', 'test']
+        });
+    }
+
     @Test('shell command strings resolve to cmd.exe on Windows')
     shellCommandStringsResolveToCmdOnWindows() {
         expect(resolvePlatformShellCommand('dir && echo done', [], 'win32')).toEqual({
@@ -145,6 +188,18 @@ export class SandboxExecWrapperTest {
 
 @Suite('OsSandboxExecutor')
 export class OsSandboxExecutorTest {
+    @Test('required proxy rejects outbound execution when unconfigured')
+    async requiredProxyFailsClosed() {
+        const executor = new OsSandboxExecutor({
+            sandbox: { mode: 'off', proxy: { required: true } }
+        }, { os: 'linux', shellFamily: 'posix' }, async () => false);
+        const result = await executor.execute('echo', ['blocked'], {
+            policy: createSandboxPolicy({ enabled: true, networkAccess: 'outbound' })
+        });
+        expect(result.exitCode).toEqual(1);
+        expect(result.error).toEqual('sandbox_proxy_required');
+    }
+
     @Test('mode off executes the command directly')
     async modeOffExecutesDirectly() {
         const executor = new OsSandboxExecutor({ sandbox: { mode: 'off' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);

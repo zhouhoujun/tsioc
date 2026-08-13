@@ -94,6 +94,14 @@ export interface AgentSandboxOptions {
      * network destination allowlist).
      */
     networkAllowlist?: string[];
+    /** Proxy enforcement for sandboxed child processes. */
+    proxy?: {
+        http?: string;
+        https?: string;
+        noProxy?: string[];
+        /** Refuse outbound-enabled execution when no proxy URL is configured. */
+        required?: boolean;
+    };
 }
 
 /**

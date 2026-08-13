@@ -96,11 +96,10 @@
 
 ### 结论
 
-G1–G12 全部闭环（P67–P80）；G13–G22 全部闭环（P81–P89）；G21 三端逐步落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展）。对照 **2026-08 最新** codex（openai/codex，Rust app-server，v0.144–0.147：Agent Plugins 便携插件 + 市场目录、`--approve-for-me` 自动评审、thread sections 手动排序 + 分页 thread 历史、MCP 2026-07-28 协议、Windows 原生沙箱 + 网络代理强制、secrets/bearer 重放脱敏、项目信任门 + 托管认证限制、rollout token 预算、索引化 web search、scheduled time reminders、cloud-managed profiles）与 opencode（anomalyco/opencode，v1.18.x：桌面 app tabs + locale、session 时间线/JSON 导出、review panel 文件 tab 对齐、MCP 断线重连、retry 风暴封顶 + jitter、自适应 thinking 控制、单 device-code 登录流）逐项比对后，**功能覆盖差距已实质清零**，剩余为三类：
+G1–G12 全部闭环（P67–P80）；G13–G23 全部闭环（P81–P105）；G21 三端逐步落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展）。对照 **2026-08 最新** codex（openai/codex，Rust app-server，v0.144–0.147：Agent Plugins 便携插件 + 市场目录、`--approve-for-me` 自动评审、thread sections 手动排序 + 分页 thread 历史、MCP 2026-07-28 协议、Windows 原生沙箱 + 网络代理强制、secrets/bearer 重放脱敏、项目信任门 + 托管认证限制、rollout token 预算、索引化 web search、scheduled time reminders、cloud-managed profiles）与 opencode（anomalyco/opencode，v1.18.x：桌面 app tabs + locale、session 时间线/JSON 导出、review panel 文件 tab 对齐、MCP 断线重连、retry 风暴封顶 + jitter、自适应 thinking 控制、单 device-code 登录流）逐项比对后，剩余为生态、协议、长会话 UX 与编排增量：
 
-1. **平台级安全/隔离**（G23）：Windows 原生沙箱 + 网络代理强制（PAC/WPAD）——codex 在 exec-server 层落地，我们 Windows 仅进程级隔离降级。
-2. **长会话 UX 工程**（G24）：thread sections 手动排序、分页 thread 历史 + memories。
-3. **生态与协议升级余量**（G27/G29/G33）：Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）、每-turn 多代理委派模式、MCP 断线重连 + OAuth 回调端口。
+1. **长会话 UX 工程**（G24）：thread sections 手动排序、分页 thread 历史 + memories。
+2. **生态与协议升级余量**（G27/G29/G33）：Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）、每-turn 多代理委派模式、MCP 断线重连 + OAuth 回调端口。
 
 全部为增量可做、无需推翻现有架构。G23/G24/G25/G26/G28/G30/G31/G32 已完成闭环（P94–P104 批次见「已实现功能」）。
 
@@ -130,7 +129,7 @@ G1–G12 全部闭环（P67–P80）；G13–G22 全部闭环（P81–P89）；G
 | G20 | ~~后台子代理 UX~~（✅ P88） | opencode background subagents | `spawn_agent background: true` fire-and-collect + 事件回传 | 低中：已闭环 |
 | G21 | ~~多端交付面~~（✅ P90–P93 部分） | opencode Tauri desktop + IDE；codex macOS app + Chrome 扩展 | 远程传输 + Web console + 浏览器安全边界 + **VS Code 扩展（P93）**；桌面壳/移动 remote 余量见「剩余」 | 中：IDE 已闭环 |
 | G22 | ~~LSP 无自动安装~~（✅ P89） | opencode 30+ auto-install LSP | `LspInstallManager` 语言→安装命令映射 + autoInstall + hint | 低：已闭环 |
-| G23 | **Windows 原生沙箱 + 网络代理强制（PAC/WPAD）** | codex v0.131+：exec-server 原生 Windows 沙箱、elevated Windows sandbox for network proxies、deny-read 对等、代理状态跨进程传递 | `sandbox-exec.ts` Windows 仅进程级隔离降级（`DEFAULT_SANDBOX_EXEC_DEGRADATION`）；无系统代理（PAC/WPAD）强制；网络放行仅命令子串 allowlist | 高：Windows 用户安全面、代理强制缺失 |
+| G23 | ~~Windows 原生沙箱宿主 + 网络代理强制~~（✅ P105） | codex v0.131+：exec-server 原生 Windows 沙箱、elevated Windows sandbox for network proxies、deny-read 对等、代理状态跨进程传递 | `windows-native` helper 协议（restricted token / Job Object / firewall 宿主）优先，`wsl-bwrap` 回退；filesystem/network/read-denied 分能力矩阵；proxy required fail-closed + 子进程代理环境注入 | 高：已闭环（原生能力由宿主 helper 提供） |
 | G24 | **Thread sections + 分页 thread 历史** | codex 0.142.5+：分页 thread 历史（高效 resume/search/persisted names/sub-agent 支持/memories）；0.147 thread sections 手动排序持久化 | 有 thread 状态（`session.list_threads`/`threadStatus`），无 sections 手动排序、无分页增量浏览长转录 | 中：长会话 UX |
 | G25 | ~~Rollout token 预算~~（✅ P98） | codex 0.142：跨 agent thread 用量追踪 + remaining-budget 提醒 + 耗尽 abort turn | `TokenBudgetTracker` per-session/per-thread 预算 + reminder/exceeded 事件 + runtime abort + gateway `usage.stats.budgets` | 中：已闭环 |
 | G26 | ~~secrets/bearer 重放脱敏~~（✅ P99） | codex 0.146/0.147：从 displayed commands 与 replayed conversation history 完整 redact secrets + bearer tokens | `RedactionFilter`（共享 P86 正则集）对 compaction replay 注入消息先脱敏再入上下文 | 中：已闭环 |
@@ -148,9 +147,8 @@ G1–G12 全部闭环（P67–P80）；G13–G22 全部闭环（P81–P89）；G
 >
 > P94–P104 批次（G23/G24/G25/G26/G28/G30/G31/G32）已落地：P98（token 预算）/ P99（重放脱敏）/ P101（索引化 web search）/ P102（项目信任门）/ P103（reasoning effort）/ P95（MCP 2026-07-28），见「已实现功能」。
 >
-> 剩余排序：先安全面（G23）→ 再生态/协议（G27/G33）→ 后 UX/编排（G24/G29）。
+> 剩余排序：先生态/协议（G27/G33）→ 后 UX/编排（G24/G29）。
 
-- **P105 · Windows 原生沙箱 + 网络代理强制（G23）**：新增 Windows `Job Object` + 受限 token + 防火墙策略（AppContainer/`Windows Sandbox` 探测或 `wsl` 透传 bwrap）与 exec-server 层代理强制（PAC/WPAD 解析 → `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` 注入子进程 + deny 非代理直连）；`describeSandboxExecDegradation` 升级为按能力细分（filesystem-write / network / read-denied）；沙箱运行时（`SandboxRuntimeContext`）扩展 `windows` 分支；agent-ui `/permissions` 展示当前平台能力矩阵。锚点：`agent/src/harness/sandbox-exec.ts`、`agent/src/harness/SandboxExecutor.ts`、`agent-tools/src/sandbox-policy.ts`。
 - **P106 · Agent Plugins 便携插件 + 市场目录（G27）**：在 P87 `RemoteSkillManager` 之上扩展插件 manifest（`plugin.json`：name/description/skills/connectors/mcpServers/version/hooks）与市场目录分层（local/personal/workspace/remote + npm marketplace 源），安装时 skills + MCP servers + hooks 一并注册；插件版本追踪/冲突检测复用 P87 语义；AGENTS.md 支持插件级作用域（目录级自动激活）；plugin analytics（安装/激活/调用计数入 audit）。锚点：`agent-tools/skills/remote-skill-manager.ts`、`agent-tools/skills/provider.ts`、`agent/src/hooks/AgentHooks.ts`、`agent-tools/mcp/provider.ts`。
 - **P107 · Thread sections + 分页历史（G24）**：`SessionStore` 扩展 section 模型（`session.section.*` RPC：create/move/rename/delete + 手动排序持久化）；`session.messages` 支持分页增量浏览（cursor + limit，长转录不整包拉取）；thread 列表展示 sections 分组；sub-agent 消息归属 section（复用 `originThreadId`）；`AgentConsoleSessionState` 增量追加渲染。锚点：`agent/src/memory/SessionStore.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleSessionState.ts`。
 - **P108 · 每-turn 多代理委派模式（G29）**：`AgentTurnInput`/`AgentOptions` 新增 `delegationMode: 'disabled' | 'explicit' | 'proactive'`（thread/turn 级覆盖）；proactive 模式在系统提示注入委派指导（何时 spawn_agent/parallel_spawn），runtime 对 `coding_task` 产物做委派质量 gate（完成率 → 是否继续委派）；`session.delegation_mode.set/get` RPC + agent-ui `/delegation` 命令。锚点：`agent/src/runtime/AgentTurnInput.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent-tools/agent/parallel-spawn.tool.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
@@ -240,3 +238,5 @@ P95（MCP 2026-07-28 协议升级，G28）已落地：默认 `protocolVersion` �
 ### 本轮收尾验证（2026-08-13）
 
 已完成 P94–P104 批次收尾检查：九包全量测试全部通过（agent 698 / agent-channels 59 / agent-cli 58 / agent-gateway 213 / agent-providers 13 / agent-ssh 8 / agent-tools 307 / agent-ui 391 / agent-vscode 6，共 1753 passing）；九包 package build 全部通过；`agent-vscode` 构建联动 `agent-ui build:web` 成功，产出 `web/dist/agent-console.js` 3.1MB 及 VS Code `media/agent-console.js`。本次验证未发现源码回归，P105+ 仍作为下一阶段计划。
+
+P105（Windows sandbox 宿主边界 + 网络代理强制，G23）已落地：`sandbox-exec` 新增 `windows-native` 与 `wsl-bwrap` 两级探测，检测到 `tsdi-agent-sandbox.exe` 时所有 Windows sandbox 命令经 `--mode/--workspace` helper 协议进入 restricted-token / Job Object / firewall 宿主，未安装 helper 时探测 WSL2 bwrap；新增 filesystem-write / network / read-denied 三项能力矩阵和按能力降级原因，避免把进程级 fallback 误报为原生隔离；`sandbox.proxy` 支持 HTTP/HTTPS/NO_PROXY 注入与 `required` fail-closed，并完整进入 harness profile snapshot/apply；agent-ui `/permissions [status]` 展示平台、实际工具和能力矩阵。回归：agent 704 passing、agent-ui 391 passing；agent / agent-ui / agent-tools / agent-gateway build clean。

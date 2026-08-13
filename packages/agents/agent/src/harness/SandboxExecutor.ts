@@ -488,7 +488,7 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
         if (!this.detectionPromise) {
             const runtime = this.resolveRuntimeContext();
             const probe = this.probe ?? ((name: string) => probeSandboxExecTool(name, runtime));
-            this.detectionPromise = detectSandboxExecTool(runtime?.os, probe);
+            this.detectionPromise = detectSandboxExecTool(runtime?.os, probe, runtime);
         }
         return this.detectionPromise;
     }
@@ -517,6 +517,23 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
         }
     ): Promise<SandboxExecutionResult> {
         const resolved = resolvePlatformShellCommand(command, args, this.resolveRuntimeContext());
+        const proxy = this.agentOptions?.sandbox?.proxy;
+        const proxyUrl = proxy?.https || proxy?.http;
+        if (proxy?.required && options.policy.networkAccess !== 'none' && !proxyUrl) {
+            return {
+                exitCode: 1,
+                stdout: '',
+                stderr: 'Sandbox proxy enforcement rejected execution: no HTTP/HTTPS proxy is configured.',
+                wallTimeMs: 0,
+                error: 'sandbox_proxy_required'
+            };
+        }
+        const proxyEnv = proxyUrl ? {
+            ...(proxy?.http ? { HTTP_PROXY: proxy.http, http_proxy: proxy.http } : {}),
+            ...(proxy?.https ? { HTTPS_PROXY: proxy.https, https_proxy: proxy.https } : {}),
+            ...(proxy?.noProxy?.length ? { NO_PROXY: proxy.noProxy.join(','), no_proxy: proxy.noProxy.join(',') } : {})
+        } : {};
+        const executionOptions = { ...options, env: { ...options.env, ...proxyEnv } };
         const mode = options.policy.osSandbox ?? this.configuredMode;
         // A3: with a network allowlist configured, commands that reference an
         // allowlisted destination drop the network block (still workspace-
@@ -535,11 +552,11 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
                     workspace: options.policy.workingDirectory
                 });
                 if (wrapped) {
-                    return super.execute(wrapped.command, wrapped.args, options);
+                    return super.execute(wrapped.command, wrapped.args, executionOptions);
                 }
             }
         }
-        return super.execute(resolved.command, resolved.args, options);
+        return super.execute(resolved.command, resolved.args, executionOptions);
     }
 }
 

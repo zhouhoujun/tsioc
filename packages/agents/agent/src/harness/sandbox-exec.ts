@@ -11,7 +11,16 @@ export type SandboxMode = 'off' | 'workspace' | 'network-block';
  * - Linux: bubblewrap (`bwrap`) preferred, `unshare` as fallback
  * - macOS: `sandbox-exec`
  */
-export type SandboxExecTool = 'bwrap' | 'unshare' | 'sandbox-exec';
+export type SandboxExecTool = 'bwrap' | 'unshare' | 'sandbox-exec' | 'windows-native' | 'wsl-bwrap';
+
+export type SandboxCapability = 'filesystem-write' | 'network' | 'read-denied';
+
+export interface SandboxCapabilityStatus {
+    capability: SandboxCapability;
+    supported: boolean;
+    enforcement: 'native' | 'sandbox-tool' | 'proxy' | 'process' | 'none';
+    reason?: string;
+}
 
 export interface SandboxExecProbe {
     tool: SandboxExecTool | null;
@@ -93,7 +102,8 @@ export function resolvePlatformShellCommand(
 
 const SANDBOX_EXEC_CANDIDATES: Array<{ platform: string; tools: SandboxExecTool[] }> = [
     { platform: 'linux', tools: ['bwrap', 'unshare'] },
-    { platform: 'darwin', tools: ['sandbox-exec'] }
+    { platform: 'darwin', tools: ['sandbox-exec'] },
+    { platform: 'win32', tools: ['windows-native', 'wsl-bwrap'] }
 ];
 
 export const DEFAULT_SANDBOX_EXEC_DEGRADATION = 'OS sandbox is not available on this platform (Windows/WSL2 falls back to process-level isolation).';
@@ -110,8 +120,10 @@ export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntim
         }
         loadSandboxSpawnModule().then(({ spawn }) => {
             try {
-                const check = shellFamily === 'cmd'
-                    ? { command: 'cmd.exe', args: ['/d', '/s', '/c', `where ${name}`] }
+                const check = shellFamily === 'cmd' && name === 'wsl-bwrap'
+                    ? { command: 'wsl.exe', args: ['--exec', 'sh', '-lc', 'command -v bwrap'] }
+                    : shellFamily === 'cmd'
+                    ? { command: 'cmd.exe', args: ['/d', '/s', '/c', `where ${name === 'windows-native' ? 'tsdi-agent-sandbox.exe' : name}`] }
                     : { command: 'sh', args: ['-lc', `command -v ${name}`] };
                 const child = spawn(check.command, check.args, {
                     stdio: ['ignore', 'pipe', 'ignore']
@@ -137,7 +149,8 @@ export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntim
  */
 export async function detectSandboxExecTool(
     platform?: string,
-    probe: SandboxExecToolProbe = probeSandboxExecTool
+    probe: SandboxExecToolProbe = probeSandboxExecTool,
+    _runtime?: SandboxRuntimeContext
 ): Promise<SandboxExecProbe> {
     const candidate = SANDBOX_EXEC_CANDIDATES.find(entry => entry.platform === platform);
     if (!candidate) {
@@ -148,6 +161,9 @@ export async function detectSandboxExecTool(
             return { tool };
         }
     }
+    if (platform === 'win32') {
+        return { tool: null, reason: describeSandboxExecDegradation(platform) };
+    }
     return { tool: null, reason: `No OS sandbox tool available on ${platform} (need ${candidate.tools.join(' or ')}).` };
 }
 
@@ -156,7 +172,7 @@ export async function detectSandboxExecTool(
  */
 export function describeSandboxExecDegradation(platform?: string): string {
     if (platform === 'win32') {
-        return 'OS sandbox is not supported on Windows; running under WSL2 can enable bwrap/unshare. Falling back to process-level isolation.';
+        return 'Windows sandbox capabilities degraded: filesystem-write=process, network=proxy-only, read-denied=unsupported. Configure a native restricted-token/Job Object host or WSL2 bwrap.';
     }
     if (platform === 'linux') {
         return 'OS sandbox requires bwrap or unshare on PATH. Falling back to process-level isolation.';
@@ -165,6 +181,24 @@ export function describeSandboxExecDegradation(platform?: string): string {
         return 'OS sandbox requires sandbox-exec on PATH. Falling back to process-level isolation.';
     }
     return DEFAULT_SANDBOX_EXEC_DEGRADATION;
+}
+
+export function describeSandboxCapabilities(
+    platform: string | undefined,
+    probe: SandboxExecProbe,
+    proxyConfigured = false
+): SandboxCapabilityStatus[] {
+    const tool = probe.tool;
+    const native = tool === 'windows-native';
+    const sandboxTool = tool === 'bwrap' || tool === 'sandbox-exec' || tool === 'wsl-bwrap';
+    const filesystem = native || sandboxTool;
+    const network = filesystem || tool === 'unshare' || proxyConfigured;
+    const readDenied = native || tool === 'bwrap' || tool === 'wsl-bwrap';
+    return [
+        { capability: 'filesystem-write', supported: filesystem, enforcement: native ? 'native' : sandboxTool ? 'sandbox-tool' : 'process', ...(!filesystem ? { reason: describeSandboxExecDegradation(platform) } : {}) },
+        { capability: 'network', supported: network, enforcement: native ? 'native' : filesystem || tool === 'unshare' ? 'sandbox-tool' : proxyConfigured ? 'proxy' : 'none', ...(!network ? { reason: describeSandboxExecDegradation(platform) } : {}) },
+        { capability: 'read-denied', supported: readDenied, enforcement: native ? 'native' : readDenied ? 'sandbox-tool' : 'none', ...(!readDenied ? { reason: describeSandboxExecDegradation(platform) } : {}) }
+    ];
 }
 
 /**
@@ -215,6 +249,17 @@ export function buildSandboxExecCommand(
             }
             const profile = buildMacSandboxProfile(mode, workspace);
             return { command: 'sandbox-exec', args: ['-p', profile, command, ...args] };
+        }
+        case 'wsl-bwrap': {
+            const wrapped = buildSandboxExecCommand('bwrap', mode, command, args, options);
+            return wrapped ? { command: 'wsl.exe', args: ['--exec', wrapped.command, ...wrapped.args] } : null;
+        }
+        case 'windows-native': {
+            const nativeArgs = ['--mode', mode];
+            if (workspace) {
+                nativeArgs.push('--workspace', workspace);
+            }
+            return { command: 'tsdi-agent-sandbox.exe', args: [...nativeArgs, '--', command, ...args] };
         }
         default:
             return null;
