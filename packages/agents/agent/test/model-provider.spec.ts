@@ -1639,6 +1639,73 @@ export class ModelProviderTest {
         expect(call?.body.temperature).toBeUndefined();
     }
 
+    @Test('honors request reasoningEffort override on openai-compatible requests')
+    async openAiReasoningEffortPassthrough() {
+        let call: { body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            call = { body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { content: 'low effort answer' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                    };
+                }
+            };
+        };
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+        await adapter.complete({
+            sessionId: 's-effort-low',
+            summary: '',
+            memory: [],
+            reasoning: true,
+            reasoningEffort: 'low',
+            messages: [{ id: '1', role: 'user', content: 'quick pass', createdAt: 1 }],
+            tools: []
+        });
+        expect(call?.body.reasoning_effort).toEqual('low');
+    }
+
+    @Test('derives anthropic thinking budget from reasoningEffort tier')
+    async anthropicReasoningEffortBudget() {
+        let call: { body: any } | undefined;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            call = { body: JSON.parse(init.body) };
+            return {
+                ok: true,
+                async json() {
+                    return { id: 'm1', type: 'message', role: 'assistant', content: [{ type: 'text', text: 'done' }], stop_reason: 'end_turn', usage: { input_tokens: 3, output_tokens: 2 } };
+                }
+            };
+        };
+        const adapter = new AnthropicModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-sonnet-4.5',
+            baseUrl: 'https://api.anthropic.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+        await adapter.complete({
+            sessionId: 's-effort-high',
+            summary: '',
+            memory: [],
+            reasoning: true,
+            reasoningEffort: 'high',
+            messages: [{ id: '1', role: 'user', content: 'deep reasoning', createdAt: 1 }],
+            tools: []
+        });
+        expect(call?.body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+    }
+
     @Test('echoes reasoning_content back and sends real tool_calls with input on follow-up requests')
     async echoesReasoningContentAndToolCalls() {
         let call: { url: string; body: any } | undefined;

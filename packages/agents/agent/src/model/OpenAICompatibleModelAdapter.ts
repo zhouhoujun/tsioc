@@ -462,6 +462,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         toolNameMap: Map<string, string> = new Map()
     ): OpenAIChatCompletionRequest {
         const reasoning = request.reasoning === true;
+        const reasoningEffort = request.reasoningEffort ?? (reasoning ? this.options.reasoningEffort ?? 'high' : undefined);
         const messages = this.mapRequestMessages(request, toolNameMap);
         const tools = request.tools.length ? request.tools.map(tool => this.mapTool(tool, toolNameMap)) : undefined;
         if (this.provider === 'openai') {
@@ -475,7 +476,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: reasoning ? undefined : (request.temperature ?? this.options.temperature),
             max_tokens: this.options.maxTokens,
-            ...(reasoning ? { reasoning_effort: 'high' as const } : {})
+            ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'low' | 'medium' | 'high' } : {})
         };
     }
 

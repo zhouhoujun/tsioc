@@ -3,6 +3,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import * as parse5 from 'parse5';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { domainAllowed, resolveIndexedEnabled } from './domain-policy';
 
 @Injectable()
 export class WebExtractTool implements AgentTool {
@@ -28,6 +29,10 @@ export class WebExtractTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         if (!input || typeof input.url !== 'string' || !input.url.trim()) {
             throw new Error('Invalid web_extract input: url must be a non-empty string.');
+        }
+        const allowedDomains = this.options?.web?.allowedDomains;
+        if (resolveIndexedEnabled(this.options?.web?.indexed, allowedDomains) && !domainAllowed(input.url, allowedDomains)) {
+            throw new Error(`web_extract rejected: ${input.url} is outside the server-approved domain allowlist.`);
         }
         const fetcher = this.options?.web?.fetch ?? globalThis.fetch;
         if (!fetcher) {

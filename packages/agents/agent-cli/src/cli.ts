@@ -408,6 +408,17 @@ function createAgentCli(): Command {
             await runAgentRpcStdio(options);
         });
 
+    program
+        .command('trust [dir]')
+        .description('Mark a workspace as trusted (defaults to the configured workspace or current directory). Untrusted workspaces run read-only.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .option('--workspace <dir>', 'Workspace directory to trust (overrides [dir]).')
+        .option('--untrust', 'Remove the workspace from the trusted list instead.')
+        .action(async (dir: string | undefined, options: any) => {
+            const { runAgentTrustCommand } = await import('./trust-command');
+            await runAgentTrustCommand(dir, options);
+        });
+
     return program;
 }
 

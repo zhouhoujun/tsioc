@@ -39,9 +39,45 @@ export interface McpToolCallResult {
     [key: string]: any;
 }
 
+export interface McpResourceDescriptor {
+    uri: string;
+    name?: string;
+    description?: string;
+    mimeType?: string;
+    size?: number;
+}
+
+export interface McpResourceTemplateDescriptor {
+    uriTemplate: string;
+    name?: string;
+    description?: string;
+    mimeType?: string;
+}
+
+export interface McpPromptDescriptor {
+    name: string;
+    description?: string;
+    arguments?: Array<{ name: string; description?: string; required?: boolean }>;
+}
+
 export interface McpClient {
     listTools(): Promise<McpToolDescriptor[]>;
     callTool(name: string, args?: Record<string, any>): Promise<McpToolCallResult>;
+    /**
+     * G28: paginated `resources/list` for MCP 2026-07-28 servers. Returns an
+     * empty array when the server does not advertise resource support.
+     */
+    listResources?(): Promise<McpResourceDescriptor[]>;
+    /**
+     * G28: paginated `prompts/list` for MCP 2026-07-28 servers. Returns an
+     * empty array when the server does not advertise prompt support.
+     */
+    listPrompts?(): Promise<McpPromptDescriptor[]>;
+    /**
+     * G28: the protocol version negotiated with the server (from the
+     * `initialize` result). `undefined` until initialization completes.
+     */
+    negotiatedVersion?(): string | undefined;
     close?(): Promise<void> | void;
 }
 
@@ -140,7 +176,7 @@ export interface McpAgentTool extends AgentTool {
 
 export const defaultAgentMcpOptions: ResolvedAgentMcpOptions = {
     servers: [],
-    protocolVersion: '2025-06-18',
+    protocolVersion: '2026-07-28',
     clientInfo: {
         name: 'tsdi-agent-tools-mcp',
         version: '6.0.31'
@@ -148,6 +184,24 @@ export const defaultAgentMcpOptions: ResolvedAgentMcpOptions = {
     providerId: '@tsdi/agent-tools/mcp',
     credentialsPath: ''
 };
+
+export const SUPPORTED_MCP_PROTOCOL_VERSIONS = ['2026-07-28', '2025-06-18', '2025-03-26'] as const;
+
+export type SupportedMcpProtocolVersion = typeof SUPPORTED_MCP_PROTOCOL_VERSIONS[number];
+
+/**
+ * G28: pick the highest supported protocol version we can offer. The client
+ * always offers the newest version and honors the server's `initialize`
+ * result (which may downgrade to an older supported revision).
+ */
+export function resolveNegotiatedProtocolVersion(serverVersion: string | undefined): string {
+    if (!serverVersion) {
+        return defaultAgentMcpOptions.protocolVersion;
+    }
+    return SUPPORTED_MCP_PROTOCOL_VERSIONS.includes(serverVersion as any)
+        ? serverVersion
+        : defaultAgentMcpOptions.protocolVersion;
+}
 
 export function mergeAgentMcpOptions(options?: AgentMcpOptions): ResolvedAgentMcpOptions {
     const credentialsPath = options?.credentialsPath?.trim()

@@ -144,6 +144,31 @@ export interface AgentVerificationOptions {
     maxOutputChars?: number;
 }
 
+/**
+ * P98: rollout token budget (G25). Tracks cumulative token consumption across
+ * agent threads/sessions and enforces a per-scope cap: when remaining budget
+ * crosses the reminder thresholds the runtime publishes
+ * `AgentTokenBudgetReminderEvent`; when the budget is exhausted it aborts the
+ * current turn and publishes `AgentTokenBudgetExceededEvent`.
+ */
+export interface AgentTokenBudgetOptions {
+    /** Per-session cumulative token cap (undefined = unlimited). */
+    perSession?: number;
+    /** Per-thread cumulative token cap (undefined = unlimited). */
+    perThread?: number;
+    /**
+     * Reminder thresholds as fractions of the budget remaining that publish
+     * reminder events (default [0.2, 0.1] → 20% / 10%).
+     */
+    reminders?: number[];
+    /**
+     * When true the budget is enforced with per-scope tracked usage that does
+     * NOT depend on persisted usage records (in-memory accumulator). Default
+     * false (derive from persisted session messages).
+     */
+    trackInMemory?: boolean;
+}
+
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
@@ -177,7 +202,11 @@ export interface AgentOptions {
     projectDocFallbackFilenames?: string[];
     /** P72: per-file byte cap for project docs (default 32KiB). */
     projectDocMaxBytes?: number;
+    /** G31: directory holding `trusted-projects.json` (default `~/.tsdi-agent`). */
+    trustedProjectsRoot?: string;
     hooks?: AgentHooksOptions;
+    /** P98: rollout token budget enforcement (G25). */
+    tokenBudget?: AgentTokenBudgetOptions;
 }
 
 export const defaultAgentOptions: AgentOptions = {
@@ -236,6 +265,7 @@ export const defaultAgentOptions: AgentOptions = {
     defaultArchetype: DEFAULT_ARCHETYPE,
     projectDocFallbackFilenames: ['AGENTS.md'],
     projectDocMaxBytes: 32768,
+    trustedProjectsRoot: '',
     verification: {
         enabled: true,
         autoScripts: ['typecheck', 'lint'],

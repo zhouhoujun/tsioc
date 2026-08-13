@@ -58,6 +58,9 @@ export interface AgentDoctorReport {
     mcpServers: AgentDoctorMcpServerEntry[];
     toolPreset: string;
     channelPreset: string;
+    /** G31: whether the workspace directory is trusted (recorded in `~/.tsdi-agent/trusted-projects.json`). */
+    workspaceTrusted: boolean;
+    workspaceTrustStore?: string;
     issues: AgentDoctorIssue[];
 }
 
@@ -81,6 +84,28 @@ function resolveProviderProfilePath(root: string): string {
 
 function resolveHooksPath(root: string): string {
     return path.join(root, 'hooks.json');
+}
+
+function resolveWorkspaceTrust(workspace: string, root: string): { trusted: boolean; storePath?: string } {
+    if (!workspace?.trim()) {
+        return { trusted: false };
+    }
+    const trustStorePath = path.join(root, 'trusted-projects.json');
+    try {
+        if (!fs.existsSync(trustStorePath)) {
+            return { trusted: false, storePath: trustStorePath };
+        }
+        const records = JSON.parse(fs.readFileSync(trustStorePath, 'utf-8'));
+        if (!Array.isArray(records)) {
+            return { trusted: false, storePath: trustStorePath };
+        }
+        const normalized = path.resolve(workspace);
+        const trusted = records.some((record: any) =>
+            !!record && typeof record.path === 'string' && path.resolve(record.path) === normalized);
+        return { trusted, storePath: trustStorePath };
+    } catch {
+        return { trusted: false, storePath: trustStorePath };
+    }
 }
 
 function classifyMcpTransport(server: Record<string, any>): AgentDoctorMcpServerEntry['transport'] {
@@ -144,6 +169,14 @@ function inferIssues(report: AgentDoctorReport): AgentDoctorIssue[] {
             hint: 'Create the workspace or pass `--workspace <dir>`.'
         });
     }
+    if (workspace?.exists && !report.workspaceTrusted) {
+        issues.push({
+            severity: 'warn',
+            code: 'workspace_untrusted',
+            message: `Workspace has not been trusted: ${workspace.path}.`,
+            hint: 'Run `tsdi-agent trust <dir>` to allow agent modifications, or keep read-only mode.'
+        });
+    }
     if (toolsRoot && !toolsRoot.exists) {
         issues.push({
             severity: 'warn',
@@ -201,6 +234,7 @@ export function createAgentDoctorReport(options: AgentCliOptions): AgentDoctorRe
         path: skillRoot,
         exists: fs.existsSync(skillRoot)
     }));
+    const trust = resolveWorkspaceTrust(resolved.workspace, resolved.root);
     const mcpServers = (resolved.tools.mcp?.servers || []).map(server => ({
         id: String(server.id || '').trim(),
         title: server.title ? String(server.title) : undefined,
@@ -230,6 +264,8 @@ export function createAgentDoctorReport(options: AgentCliOptions): AgentDoctorRe
         mcpServers,
         toolPreset: String(resolved.tools.registration?.preset || 'default'),
         channelPreset: String(resolved.channels.registration?.preset || 'default'),
+        workspaceTrusted: trust.trusted,
+        workspaceTrustStore: trust.storePath,
         issues: []
     };
     report.issues = inferIssues(report);
@@ -263,6 +299,7 @@ export function formatAgentDoctorReport(report: AgentDoctorReport): string {
         lines.push(`- ${entry.label}: ${entry.path}  [${formatStatus(entry.exists)}]`);
     });
     lines.push('');
+    lines.push(`Workspace trust: ${report.workspaceTrusted ? 'trusted' : 'untrusted'}${report.workspaceTrustStore ? `  |  store ${report.workspaceTrustStore}` : ''}`);
     lines.push(`Hooks: ${report.hooksConfigured ? 'configured' : 'not configured'}`);
     lines.push(`Skill roots: ${report.skillRoots.length}`);
     report.skillRoots.forEach(entry => {

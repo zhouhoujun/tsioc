@@ -37,6 +37,13 @@ export interface ModelRequest {
      */
     reasoning?: boolean;
     /**
+     * G32: explicit reasoning effort level for this model call. When set with
+     * `reasoning`, OpenAI-compatible adapters map it directly to
+     * `reasoning_effort`; Anthropic adapters derive the thinking budget tier.
+     * When undefined the adapter falls back to 'high' (previous behavior).
+     */
+    reasoningEffort?: 'low' | 'medium' | 'high';
+    /**
      * P74: per-request temperature override. When set, adapters use this value
      * instead of their option-level temperature (which is ignored entirely
      * while `reasoning` is enabled). Used by the summary agent to force

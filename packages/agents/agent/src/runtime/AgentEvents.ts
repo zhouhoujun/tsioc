@@ -284,3 +284,24 @@ export class AgentBackgroundTaskFailedEvent extends ApplicationEvent {
         super(source);
     }
 }
+
+export interface AgentTokenBudgetState {
+    scope: 'session' | 'thread';
+    scopeId: string;
+    budget: number;
+    used: number;
+    remaining: number;
+    exhausted: boolean;
+}
+
+export class AgentTokenBudgetReminderEvent extends ApplicationEvent {
+    constructor(source: Object, readonly state: AgentTokenBudgetState, readonly fractionRemaining: number) {
+        super(source);
+    }
+}
+
+export class AgentTokenBudgetExceededEvent extends ApplicationEvent {
+    constructor(source: Object, readonly state: AgentTokenBudgetState) {
+        super(source);
+    }
+}

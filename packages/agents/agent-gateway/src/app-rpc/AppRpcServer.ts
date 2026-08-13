@@ -223,6 +223,8 @@ export class AppRpcServer {
                         'review.list',
                         'review.get',
                         'review.save',
+                        'project.trust_status',
+                        'project.trust',
                         'goal.create',
                         'goal.get',
                         'goal.list',
@@ -402,6 +404,10 @@ export class AppRpcServer {
                 return this.getReviewRun(params, context);
             case 'review.save':
                 return this.saveReviewRun(params, context);
+            case 'project.trust_status':
+                return this.getProjectTrustStatus(params, context);
+            case 'project.trust':
+                return this.setProjectTrust(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -1532,8 +1538,17 @@ export class AppRpcServer {
                 ? await this.owners.listOwned(allSessionIds, context.principalId)
                 : allSessionIds;
         }
+        const budgets: Record<string, any> = {};
+        for (const scopedId of sessionIds) {
+            try {
+                budgets[scopedId] = await this.runtime.getTokenBudgetState(scopedId);
+            } catch {
+                budgets[scopedId] = [];
+            }
+        }
         return {
-            usage: await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics)
+            usage: await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics),
+            budgets
         };
     }
 
@@ -2321,6 +2336,64 @@ export class AppRpcServer {
             return requested;
         }
         return this.resolveWorkspace();
+    }
+
+    private getProjectTrustStatus(params: any, _context: AppRpcRequestContext): any {
+        const workspace = typeof params?.workspace === 'string' && params.workspace.trim()
+            ? params.workspace.trim()
+            : this.resolveWorkspace();
+        const store = this.resolveTrustedProjectStore();
+        if (!store) {
+            return { workspace, trusted: false, storePath: undefined };
+        }
+        const status = store.isTrusted(workspace);
+        return { workspace, trusted: status.trusted, storePath: status.storePath };
+    }
+
+    private setProjectTrust(params: any, _context: AppRpcRequestContext): any {
+        const workspace = typeof params?.workspace === 'string' && params.workspace.trim()
+            ? params.workspace.trim()
+            : this.resolveWorkspace();
+        const store = this.resolveTrustedProjectStore();
+        if (!store) {
+            throw new AppRpcError(-32000, 'Trusted project store is unavailable (no agent root configured).');
+        }
+        if (params?.untrust === true) {
+            const removed = store.untrust(workspace);
+            return { workspace, trusted: !removed, storePath: store.storePathFor(workspace) };
+        }
+        store.trust(workspace);
+        return { workspace, trusted: true, storePath: store.storePathFor(workspace) };
+    }
+
+    private resolveTrustedProjectStore(): import('@tsdi/agent').TrustedProjectStore | null {
+        const root = (this.options as any).trustedProjectsRoot as string | undefined;
+        if (!root) {
+            return null;
+        }
+        const nodePath = require('path') as typeof import('path');
+        const nodeFs = require('fs') as typeof import('fs');
+        const fileAdapter = {
+            isAbsolute: (p: string) => nodePath.isAbsolute(p),
+            normalize: (p: string) => nodePath.normalize(p),
+            join: (...p: string[]) => nodePath.join(...p),
+            resolve: (...p: string[]) => nodePath.resolve(...p),
+            extname: (p: string) => nodePath.extname(p),
+            existsSync: (p: string) => nodeFs.existsSync(p),
+            read: (p: string, o?: any) => nodeFs.createReadStream(p, o),
+            find: async () => null,
+            readText: async (p: string, e?: any) => (await nodeFs.promises.readFile(p, e)).toString(),
+            readTextSync: (p: string, e?: any) => nodeFs.readFileSync(p, e).toString(),
+            readJSON: async (p: string) => JSON.parse(nodeFs.readFileSync(p, 'utf-8')),
+            readJSONSync: (p: string) => JSON.parse(nodeFs.readFileSync(p, 'utf-8')),
+            writeText: async (p: string, c: string) => { nodeFs.writeFileSync(p, c); },
+            mkdir: async (p: string, o?: { recursive?: boolean }) => { nodeFs.mkdirSync(p, o); },
+            remove: async (p: string, o?: { recursive?: boolean; force?: boolean }) => { nodeFs.rmSync(p, o); },
+            stat: async () => null,
+            list: async () => []
+        };
+        const TrustedProjectStore = require('@tsdi/agent').TrustedProjectStore as new (options: any) => import('@tsdi/agent').TrustedProjectStore;
+        return new TrustedProjectStore({ fileAdapter, root });
     }
 
     private async saveReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {

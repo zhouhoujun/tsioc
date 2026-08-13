@@ -7,6 +7,7 @@ export * from './orm.module';
 export * from './AgentWorkspacePath';
 export * from './project/agents-doc';
 export * from './project/init-agents-doc';
+export * from './project/trusted-projects';
 
 export * from './model/ModelAdapter';
 export * from './model/RetryPolicy';
@@ -82,6 +83,8 @@ export * from './harness/FileSnapshotStore';
 export * from './harness/GitStepSnapshotStore';
 export * from './harness/VerifyCommandRunner';
 export * from './harness/ReviewFindingsStore';
+export * from './harness/TokenBudgetTracker';
+export * from './harness/RedactionFilter';
 export * from './harness/ToolSandboxPolicy';
 export * from './hooks/AgentHooks';
 export * from './prompt/SystemPromptBuilder';

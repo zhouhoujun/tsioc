@@ -3315,6 +3315,62 @@ export class AppRpcServerTest {
         expect(await owners.getOwner('rpc-init')).toEqual('user-1');
     }
 
+    @Test('reports untrusted workspace and trusts through project.trust RPC')
+    async projectTrustRoundTrip() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { resolveSessionWorkspace: async () => '/tmp/workspace' } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const events = new EventHandler(runtime);
+        const trustRoot = `${require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'tsioc-trust-rpc-'))}`;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {
+            ui: {
+                title: 'Console',
+                console: { workspace: '/tmp/workspace' }
+            },
+            trustedProjectsRoot: trustRoot,
+            model: {
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                defaultProfile: 'flash'
+            },
+            bootstrapTurn: { sessionId: 'rpc-init' }
+        } as any);
+        try {
+            const before = await rpc.handle({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'project.trust_status',
+                params: { workspace: '/tmp/workspace' }
+            }, { principalId: 'user-1' });
+            expect((before as any).result.trusted).toBe(false);
+            const trust = await rpc.handle({
+                jsonrpc: '2.0',
+                id: 2,
+                method: 'project.trust',
+                params: { workspace: '/tmp/workspace' }
+            }, { principalId: 'user-1' });
+            expect((trust as any).result.trusted).toBe(true);
+            const after = await rpc.handle({
+                jsonrpc: '2.0',
+                id: 3,
+                method: 'project.trust_status',
+                params: { workspace: '/tmp/workspace' }
+            }, { principalId: 'user-1' });
+            expect((after as any).result.trusted).toBe(true);
+            const untrust = await rpc.handle({
+                jsonrpc: '2.0',
+                id: 4,
+                method: 'project.trust',
+                params: { workspace: '/tmp/workspace', untrust: true }
+            }, { principalId: 'user-1' });
+            expect((untrust as any).result.trusted).toBe(false);
+        } finally {
+            require('fs').rmSync(trustRoot, { recursive: true, force: true });
+        }
+    }
+
     @Test('creates fresh session through shared app state instead of reusing workspace sessions')
     async createsFreshSessionThroughSharedAppState() {
         const store = new InMemorySessionStore();

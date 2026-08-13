@@ -5,7 +5,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { AgentMcpServerOptions, LocalMcpClientRegistry, McpOAuthClient, McpOAuthCredentialStore, McpOAuthInteraction, StreamableHttpMcpClient, mergeAgentMcpOptions } from '../mcp';
+import { AgentMcpServerOptions, LocalMcpClientRegistry, McpOAuthClient, McpOAuthCredentialStore, McpOAuthInteraction, StreamableHttpMcpClient, mergeAgentMcpOptions, resolveNegotiatedProtocolVersion } from '../mcp';
 
 interface CapturedRequest {
     method?: string;
@@ -71,8 +71,8 @@ function defaultMcpHandler(req: CapturedRequest, res: http.ServerResponse): void
             jsonrpc: '2.0',
             id: req.id,
             result: {
-                protocolVersion: '2025-06-18',
-                capabilities: { tools: {} },
+                protocolVersion: '2026-07-28',
+                capabilities: { tools: {}, resources: {}, prompts: {} },
                 serverInfo: { name: 'mock', version: '1.0.0' }
             }
         }, 200, { 'mcp-session-id': 'sess-1' });
@@ -92,6 +92,31 @@ function defaultMcpHandler(req: CapturedRequest, res: http.ServerResponse): void
                         type: 'object',
                         properties: { value: { type: 'string' } }
                     }
+                }]
+            }
+        });
+    } else if (req.method === 'resources/list') {
+        respondJson(res, {
+            jsonrpc: '2.0',
+            id: req.id,
+            result: {
+                resources: [{
+                    uri: 'file:///tmp/note.txt',
+                    name: 'note',
+                    mimeType: 'text/plain'
+                }],
+                nextCursor: req.params?.cursor ? undefined : 'page-2'
+            }
+        });
+    } else if (req.method === 'prompts/list') {
+        respondJson(res, {
+            jsonrpc: '2.0',
+            id: req.id,
+            result: {
+                prompts: [{
+                    name: 'summarize',
+                    description: 'Summarize content.',
+                    arguments: [{ name: 'content', required: true }]
                 }]
             }
         });
@@ -168,6 +193,37 @@ export class AgentMcpStreamableHttpTest {
             harness.server.close();
             fs.rmSync(tmp, { recursive: true, force: true });
         }
+    }
+
+    @Test('StreamableHttpMcpClient negotiates 2026-07-28 and lists resources/prompts with pagination')
+    async streamableHttpClientNegotiatesAndListsResources() {
+        const tmp = createTmpDir();
+        const harness = await startMcpServer(defaultMcpHandler);
+        try {
+            const client = new StreamableHttpMcpClient(
+                { id: 'remote', url: `http://127.0.0.1:${harness.port}/mcp` },
+                mergeAgentMcpOptions({ credentialsPath: `${tmp}/creds.json` })
+            );
+            const resources = await client.listResources();
+            expect(resources.length).toEqual(2);
+            expect(resources.map(r => r.uri)).toEqual(['file:///tmp/note.txt', 'file:///tmp/note.txt']);
+            const prompts = await client.listPrompts();
+            expect(prompts.map(p => p.name)).toEqual(['summarize']);
+            expect(client.negotiatedVersion()).toEqual('2026-07-28');
+            const initialize = harness.requests[0];
+            expect(initialize.params.protocolVersion).toEqual('2026-07-28');
+        } finally {
+            harness.server.close();
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('negotiated protocol version falls back to supported revision when server downgrades')
+    async negotiatedVersionFallsBack() {
+        expect(resolveNegotiatedProtocolVersion('2026-07-28')).toEqual('2026-07-28');
+        expect(resolveNegotiatedProtocolVersion('2025-06-18')).toEqual('2025-06-18');
+        expect(resolveNegotiatedProtocolVersion('1999-01-01')).toEqual('2026-07-28');
+        expect(resolveNegotiatedProtocolVersion(undefined)).toEqual('2026-07-28');
     }
 
     @Test('StreamableHttpMcpClient parses text/event-stream responses')

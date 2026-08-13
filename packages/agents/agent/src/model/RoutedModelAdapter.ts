@@ -273,6 +273,7 @@ export class RoutedModelAdapter extends ModelAdapter {
             headers: source.headers ? { ...source.headers } : undefined,
             thinkingBudget: source.thinkingBudget,
             reasoning: source.reasoning,
+            reasoningEffort: source.reasoningEffort,
             promptCache: source.promptCache
         };
         for (const key of Object.keys(picked) as Array<keyof AgentModelConfig>) {

@@ -4,6 +4,7 @@ import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
+import { RedactionFilter } from '../harness/RedactionFilter';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -173,6 +174,7 @@ export class AgentContextManager {
     private cumulativeTokenSavings = 0;
     private originalMessageStore = new Map<string, StashedContext>();
     private compactionHookRunner?: CompactionHookRunner;
+    private redactionFilter = new RedactionFilter();
 
     // Adaptive budget tracking
     private adaptiveEnabled = false;
@@ -590,7 +592,7 @@ export class AgentContextManager {
                 return prepared;
             }
             return {
-                messages: [...prepared.messages, this.buildUserMessageReplay(lastUserMessage)],
+                messages: [...prepared.messages, this.redactionFilter.redactMessage(this.buildUserMessageReplay(lastUserMessage))],
                 report: { ...report, replayed: true, replayKind: 'last-user-message' }
             };
         }

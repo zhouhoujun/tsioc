@@ -1,4 +1,4 @@
-import { AgentMcpServerOptions, McpClient, McpJsonRpcRequest, McpJsonRpcResponse, McpOAuthToken, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions } from './types';
+import { AgentMcpServerOptions, McpClient, McpJsonRpcRequest, McpJsonRpcResponse, McpOAuthToken, McpPromptDescriptor, McpResourceDescriptor, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, resolveNegotiatedProtocolVersion } from './types';
 import { McpOAuthClient } from './mcp-oauth';
 
 const JSON_RPC_VERSION = '2.0';
@@ -10,7 +10,7 @@ interface PendingRequest {
 }
 
 /**
- * MCP client over the Streamable HTTP transport (MCP spec 2025-06-18).
+ * MCP client over the Streamable HTTP transport (MCP spec 2026-07-28).
  *
  * Uses POST JSON-RPC with `Accept: application/json, text/event-stream` and
  * honors `Mcp-Session-Id` server sessions. When the server requires OAuth and
@@ -22,6 +22,7 @@ export class StreamableHttpMcpClient implements McpClient {
     private sessionId?: string;
     private initialized?: Promise<void>;
     private closed = false;
+    private negotiatedVersionValue?: string;
     private readonly pending = new Map<number, PendingRequest>();
     private readonly fetchImpl: typeof fetch;
     private oauthAttempted = false;
@@ -42,6 +43,10 @@ export class StreamableHttpMcpClient implements McpClient {
         return !!this.sessionId;
     }
 
+    negotiatedVersion(): string | undefined {
+        return this.negotiatedVersionValue;
+    }
+
     async listTools(): Promise<McpToolDescriptor[]> {
         await this.ensureInitialized();
         const tools: McpToolDescriptor[] = [];
@@ -54,6 +59,32 @@ export class StreamableHttpMcpClient implements McpClient {
         return tools;
     }
 
+    async listResources(): Promise<McpResourceDescriptor[]> {
+        await this.ensureInitialized();
+        const resources: McpResourceDescriptor[] = [];
+        let cursor: string | undefined;
+        do {
+            const result = await this.request<{ resources?: McpResourceDescriptor[]; nextCursor?: string }>('resources/list', cursor ? { cursor } : undefined)
+                .catch(() => ({ resources: [] as McpResourceDescriptor[] }));
+            resources.push(...(result?.resources ?? []));
+            cursor = (result as { nextCursor?: string } | undefined)?.nextCursor;
+        } while (cursor);
+        return resources;
+    }
+
+    async listPrompts(): Promise<McpPromptDescriptor[]> {
+        await this.ensureInitialized();
+        const prompts: McpPromptDescriptor[] = [];
+        let cursor: string | undefined;
+        do {
+            const result = await this.request<{ prompts?: McpPromptDescriptor[]; nextCursor?: string }>('prompts/list', cursor ? { cursor } : undefined)
+                .catch(() => ({ prompts: [] as McpPromptDescriptor[] }));
+            prompts.push(...(result?.prompts ?? []));
+            cursor = (result as { nextCursor?: string } | undefined)?.nextCursor;
+        } while (cursor);
+        return prompts;
+    }
+
     async callTool(name: string, args?: Record<string, any>): Promise<McpToolCallResult> {
         await this.ensureInitialized();
         const result = await this.request<McpToolCallResult>('tools/call', args == null ? { name } : { name, arguments: args });
@@ -63,6 +94,7 @@ export class StreamableHttpMcpClient implements McpClient {
     async close(): Promise<void> {
         this.closed = true;
         this.initialized = undefined;
+        this.negotiatedVersionValue = undefined;
         const error = new Error(`MCP server '${this.server.id}' closed.`);
         this.pending.forEach(entry => {
             if (entry.timer) {
@@ -86,6 +118,7 @@ export class StreamableHttpMcpClient implements McpClient {
             if (response.error) {
                 throw new Error(response.error.message || `MCP initialize failed for server '${this.server.id}'.`);
             }
+            this.negotiatedVersionValue = resolveNegotiatedProtocolVersion(response.result?.protocolVersion);
             await this.notify('notifications/initialized');
         })().catch(err => {
             this.initialized = undefined;

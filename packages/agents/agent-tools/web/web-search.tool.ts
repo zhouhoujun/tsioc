@@ -2,6 +2,7 @@ import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { domainAllowed, resolveIndexedEnabled } from './domain-policy';
 
 @Injectable()
 export class WebSearchTool implements AgentTool {
@@ -33,9 +34,18 @@ export class WebSearchTool implements AgentTool {
         if (!search) {
             throw new Error('web_search requires a configured search adapter.');
         }
+        const results = await search.search(input.query, typeof input.limit === 'number' ? input.limit : undefined);
+        const allowedDomains = this.options?.web?.allowedDomains;
+        if (resolveIndexedEnabled(this.options?.web?.indexed, allowedDomains)) {
+            return {
+                query: input.query,
+                indexed: true,
+                results: results.filter(result => domainAllowed(result?.url, allowedDomains))
+            };
+        }
         return {
             query: input.query,
-            results: await search.search(input.query, typeof input.limit === 'number' ? input.limit : undefined)
+            results
         };
     }
 }

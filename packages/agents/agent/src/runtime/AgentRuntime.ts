@@ -333,4 +333,16 @@ export abstract class AgentRuntime {
     async refreshSessionSummary(_sessionId: string): Promise<string | undefined> {
         return undefined;
     }
+
+    /**
+     * P98: return the current token budget state for a session (per-session and
+     * per-thread scopes when configured). Returns an empty array when the
+     * runtime does not track token budgets.
+     * Override this in concrete runtimes backed by a TokenBudgetTracker.
+     */
+    async getTokenBudgetState(
+        _sessionId: string
+    ): Promise<import('../harness/TokenBudgetTracker').TokenBudgetScopeState[]> {
+        return [];
+    }
 }

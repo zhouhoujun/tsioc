@@ -95,6 +95,15 @@ export interface AgentToolsWebOptions {
     fetch?: typeof fetch;
     timeoutMs?: number;
     maxContentChars?: number;
+    /**
+     * G30: indexed web-search mode. When true, `web_search` only returns
+     * results whose URL is inside `allowedDomains`, and `web_extract` refuses
+     * URLs outside the allowlist (search and extract share the same
+     * server-approved destination set).
+     */
+    indexed?: boolean;
+    /** G30: server-approved domains (hostname or URL prefix, substring match) used by indexed mode. */
+    allowedDomains?: string[];
 }
 
 export interface AgentToolsBrowserOptions {

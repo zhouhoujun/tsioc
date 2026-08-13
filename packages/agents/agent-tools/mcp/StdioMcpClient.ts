@@ -1,5 +1,5 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { AgentMcpServerOptions, McpClient, McpJsonRpcRequest, McpJsonRpcResponse, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions } from './types';
+import { AgentMcpServerOptions, McpClient, McpJsonRpcRequest, McpJsonRpcResponse, McpPromptDescriptor, McpResourceDescriptor, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, resolveNegotiatedProtocolVersion } from './types';
 
 export class StdioMcpClient implements McpClient {
     private process?: ChildProcessWithoutNullStreams;
@@ -9,11 +9,16 @@ export class StdioMcpClient implements McpClient {
     private buffer = Buffer.alloc(0);
     private pending = new Map<number, { resolve: (value: any) => void; reject: (reason?: any) => void; timer?: NodeJS.Timeout; }>();
     private initialized?: Promise<void>;
+    private negotiatedVersionValue?: string;
 
     constructor(
         private server: AgentMcpServerOptions,
         private options: ResolvedAgentMcpOptions
     ) {
+    }
+
+    negotiatedVersion(): string | undefined {
+        return this.negotiatedVersionValue;
     }
 
     async listTools(): Promise<McpToolDescriptor[]> {
@@ -28,6 +33,32 @@ export class StdioMcpClient implements McpClient {
         return tools;
     }
 
+    async listResources(): Promise<McpResourceDescriptor[]> {
+        await this.ensureInitialized();
+        const resources: McpResourceDescriptor[] = [];
+        let cursor: string | undefined;
+        do {
+            const result = await this.request<{ resources?: McpResourceDescriptor[]; nextCursor?: string }>('resources/list', cursor ? { cursor } : undefined)
+                .catch(() => ({ resources: [] as McpResourceDescriptor[] }));
+            resources.push(...(result?.resources ?? []));
+            cursor = (result as { nextCursor?: string } | undefined)?.nextCursor;
+        } while (cursor);
+        return resources;
+    }
+
+    async listPrompts(): Promise<McpPromptDescriptor[]> {
+        await this.ensureInitialized();
+        const prompts: McpPromptDescriptor[] = [];
+        let cursor: string | undefined;
+        do {
+            const result = await this.request<{ prompts?: McpPromptDescriptor[]; nextCursor?: string }>('prompts/list', cursor ? { cursor } : undefined)
+                .catch(() => ({ prompts: [] as McpPromptDescriptor[] }));
+            prompts.push(...(result?.prompts ?? []));
+            cursor = (result as { nextCursor?: string } | undefined)?.nextCursor;
+        } while (cursor);
+        return prompts;
+    }
+
     async callTool(name: string, args?: Record<string, any>): Promise<McpToolCallResult> {
         await this.ensureInitialized();
         const result = await this.request<McpToolCallResult>('tools/call', args == null ? { name } : { name, arguments: args });
@@ -37,6 +68,7 @@ export class StdioMcpClient implements McpClient {
     async close(): Promise<void> {
         this.closed = true;
         this.initialized = undefined;
+        this.negotiatedVersionValue = undefined;
         const error = new Error(`MCP server '${this.server.id}' closed.`);
         this.pending.forEach(entry => {
             if (entry.timer) {
@@ -59,11 +91,12 @@ export class StdioMcpClient implements McpClient {
         }
         this.initialized = (async () => {
             this.ensureStarted();
-            await this.request('initialize', {
+            const result = await this.request<{ protocolVersion?: string; capabilities?: Record<string, any> }>('initialize', {
                 protocolVersion: this.options.protocolVersion,
                 capabilities: {},
                 clientInfo: this.options.clientInfo
             });
+            this.negotiatedVersionValue = resolveNegotiatedProtocolVersion(result?.protocolVersion);
             this.notify('notifications/initialized');
         })().catch(err => {
             this.initialized = undefined;
