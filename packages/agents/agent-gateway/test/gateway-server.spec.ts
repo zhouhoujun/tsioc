@@ -5383,7 +5383,117 @@ export class AppRpcServerTest {
         expect((response as any).error.message).toEqual('Forbidden');
     }
 
-    @Test('undo_file and redo_file route to runtime through json-rpc')
+    @Test('delegation mode rpc toggles runtime state through json-rpc')
+    async delegationModeRpcTogglesRuntimeState() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const delegationModes = new Map<string, string>();
+        const runtime = {
+            setPlanMode() {},
+            isPlanMode() {
+                return false;
+            },
+            setSessionDelegationMode(sessionId: string, mode?: string | null) {
+                if (!mode) {
+                    delegationModes.delete(sessionId);
+                } else {
+                    delegationModes.set(sessionId, mode);
+                }
+            },
+            getSessionDelegationMode(sessionId: string) {
+                return delegationModes.get(sessionId) ?? 'explicit';
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.create',
+            params: { sessionId: 'dl-s1' }
+        }, { principalId: 'user-1' });
+
+        const setProactive = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.delegation_mode.set',
+            params: { sessionId: 'dl-s1', mode: 'proactive' }
+        }, { principalId: 'user-1' });
+        expect((setProactive as any).result).toEqual({ sessionId: 'dl-s1', mode: 'proactive' });
+
+        const getProactive = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'session.delegation_mode.get',
+            params: { sessionId: 'dl-s1' }
+        }, { principalId: 'user-1' });
+        expect((getProactive as any).result).toEqual({ sessionId: 'dl-s1', mode: 'proactive' });
+
+        const setDefault = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'session.delegation_mode.set',
+            params: { sessionId: 'dl-s1', mode: 'default' }
+        }, { principalId: 'user-1' });
+        expect((setDefault as any).result).toEqual({ sessionId: 'dl-s1', mode: 'explicit' });
+
+        const getDefault = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'session.delegation_mode.get',
+            params: { sessionId: 'dl-s1' }
+        }, { principalId: 'user-1' });
+        expect((getDefault as any).result).toEqual({ sessionId: 'dl-s1', mode: 'explicit' });
+    }
+
+    @Test('delegation mode rpc rejects invalid modes and foreign sessions')
+    async delegationModeRpcRejectsInvalidAndForeign() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('dl-s2', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            setPlanMode() {},
+            isPlanMode() {
+                return false;
+            },
+            setSessionDelegationMode() {},
+            getSessionDelegationMode() {
+                return 'explicit';
+            },
+            async getMessages() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events);
+
+        const invalid = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.delegation_mode.set',
+            params: { sessionId: 'dl-s2', mode: 'aggressive' }
+        }, { principalId: 'user-1' });
+        expect((invalid as any).error.code).toEqual(-32602);
+        expect(String((invalid as any).error.message)).toContain('delegation_mode');
+
+        const foreign = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'session.delegation_mode.get',
+            params: { sessionId: 'dl-s2' }
+        }, { principalId: 'user-2' });
+        expect((foreign as any).error.code).toEqual(-32003);
+        expect((foreign as any).error.message).toEqual('Forbidden');
+    }
+
     async undoRedoFileRouteThroughJsonRpc() {
         const store = new InMemorySessionStore();
         const memory = new InMemoryMemoryStore();

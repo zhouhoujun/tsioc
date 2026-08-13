@@ -26,6 +26,7 @@ export * from './runtime/AgentMessage';
 export * from './runtime/AgentState';
 export * from './runtime/AgentContext';
 export * from './runtime/AgentEvents';
+export * from './runtime/DelegationMode';
 export * from './runtime/AgentTurnInput';
 export * from './runtime/AgentTurnResult';
 export * from './runtime/AgentTurnCancelledError';

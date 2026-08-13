@@ -16,7 +16,7 @@ import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
@@ -1447,7 +1447,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             sessionRole: item.sessionRole,
             rootRequest: item.rootRequest,
             focusSummary: item.focusSummary,
-            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id
+            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id,
+            sections: Array.isArray(item.sections) ? item.sections : undefined
         })));
         this.refreshProjectContext();
         this.refreshProjects();
@@ -1462,6 +1463,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             count: number;
             representativeLastActive: number;
             representativeId: string;
+            sections?: AgentSessionSectionInfo[];
         }>();
         for (const s of this.state.sessions) {
             const key = this.resolveSessionThreadKey(s);
@@ -1469,6 +1471,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const sessionLastActive = s.updatedAt || 0;
             const sessionId = String(s.id || '');
             const sessionLabel = s.projectLabel || s.focusSummary || s.rootRequest || s.workspace || s.primaryThreadId || key;
+            const sections = Array.isArray(s.sections) && s.sections.length > 0 ? s.sections : undefined;
             const existing = seen.get(key);
             if (existing) {
                 existing.count += 1;
@@ -1481,6 +1484,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     existing.label = sessionLabel;
                     existing.representativeLastActive = sessionLastActive;
                     existing.representativeId = sessionId;
+                    existing.sections = sections;
                 }
             } else {
                 seen.set(key, {
@@ -1489,7 +1493,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     lastActive: sessionLastActive,
                     count: 1,
                     representativeLastActive: sessionLastActive,
-                    representativeId: sessionId
+                    representativeId: sessionId,
+                    sections
                 });
             }
         }
@@ -1497,8 +1502,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             key: p.key,
             label: p.label,
             sessionCount: p.count,
-            lastActive: p.lastActive || undefined
+            lastActive: p.lastActive || undefined,
+            sections: p.sections
         })));
+    }
+
+    protected async refreshCurrentSections(): Promise<void> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            this.state.setSections([]);
+            return;
+        }
+        const sections = await this.sessionService.listSections(sessionId);
+        this.state.setSections(sections);
     }
 
     protected refreshProjects(): void {
@@ -1926,8 +1942,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         const projectSessions = this.resolveProjectSessionsFor(target.id);
         const projectSessionIds = this.resolveProjectSessionIdsFor(target.id);
-        const [messages] = await Promise.all([
-            this.loadSessionMessages(target.id),
+        const [page] = await Promise.all([
+            this.loadSessionPage(target.id),
             this.refreshTools(target.id),
             this.refreshPendingApprovals(target.id),
             this.refreshTodoPlan(target.id, projectSessions),
@@ -1937,7 +1953,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
         }
-        this.state.setMessages(messages);
+        this.state.setMessages(page.messages);
+        this.state.setSections(page.sections);
     }
 
     protected async selectApprovalRequest(
@@ -3796,6 +3813,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/unpin', value: '/unpin', description: 'unpin the current session' },
                     { label: '/snapshot', value: '/snapshot', description: 'snapshot current session: /snapshot [label]' },
                     { label: '/snapshots', value: '/snapshots', description: 'list / restore / delete session snapshots' },
+                    { label: '/sections', value: '/sections', description: 'session sections: /sections [<label> to create]' },
                     { label: '/git-snapshots', value: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert' },
                     { label: '/messages', value: '/messages', description: 'messages' },
                     { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
@@ -3820,6 +3838,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/delegation', value: '/delegation', description: 'delegation edges [sessionId]' },
                     { label: '/delegation tree', value: '/delegation tree', description: 'delegation tree [sessionId] [status] [depth]' },
                     { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
+                    { label: '/delegation mode', value: '/delegation mode', description: 'delegation mode [disabled|explicit|proactive|default]' },
                     { label: '/harness audit', value: '/harness audit', description: 'failure-pattern audit [sessionId]' },
                     { label: '/harness profile', value: '/harness profile', description: 'governance profile list/current/diff' },
                     { label: '/voice', value: '/voice', description: 'voice session status/start/stop/cancel' },
@@ -4177,6 +4196,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     if (arg === 'lineage' || arg.startsWith('lineage ')) {
                         return this.openDelegationLineage(arg.slice(7).trim() || undefined);
                     }
+                    if (arg === 'mode' || arg.startsWith('mode ')) {
+                        await this.runDelegationModeCommand(arg.slice(4).trim());
+                        return true;
+                    }
                     return this.openDelegationList(arg || undefined);
                 }
             case '/harness':
@@ -4532,7 +4555,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     const thread = await this.select(
                         'Threads',
                         this.state.threads.map(t => ({
-                            label: `${t.label} (${t.sessionCount})`,
+                            label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${t.sections.length} sections]` : ''}`,
                             value: t.key,
                             detail: t.lastActive ? `last active ${new Date(t.lastActive).toLocaleDateString()}` : undefined
                         })),
@@ -4561,6 +4584,114 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     await this.openSession(sessionId);
                 }
                 return true;
+            case '/sections': {
+                const sectionSessionId = this.state.sessionId;
+                if (!this.sessionService || !sectionSessionId) {
+                    this.notify('No session service or current session.');
+                    return true;
+                }
+                this.state.closeReview();
+                this.state.closeGitSnapshotDetail();
+                const labelArg = String(parsed.args || '').trim();
+                if (labelArg) {
+                    await this.sessionService.createSection(sectionSessionId, labelArg);
+                    await this.refreshCurrentSections();
+                    this.notify(`Section "${labelArg}" created.`);
+                    return true;
+                }
+                await this.refreshCurrentSections();
+                if (!this.state.sections.length) {
+                    this.notify('No sections. Create one with /sections <label>.');
+                    return true;
+                }
+                const section = await this.select(
+                    'Sections',
+                    this.state.sections.map(item => {
+                        const count = this.state.messages.filter(message => message.sectionId === item.id).length;
+                        return {
+                            label: `${item.label}${count ? ` (${count} messages)` : ''}`,
+                            value: item.id,
+                            detail: `created ${new Date(item.createdAt).toLocaleString()}`
+                        };
+                    }),
+                    0,
+                    this.state.consoleOptions.selectHint
+                );
+                if (!section) {
+                    return true;
+                }
+                const action = await this.select(
+                    'Section actions',
+                    [
+                        { label: 'Rename', value: 'rename', description: 'rename this section (choose a new label below)' },
+                        { label: 'Delete', value: 'delete', description: 'delete this section and detach its messages' },
+                        { label: 'Move to start', value: 'start', description: 'move this section to the top' },
+                        { label: 'Move to end', value: 'end', description: 'move this section to the bottom' },
+                        { label: 'Create before', value: 'before', description: 'create a new section before this one' },
+                        { label: 'Create after', value: 'after', description: 'create a new section after this one' }
+                    ],
+                    0,
+                    this.state.consoleOptions.selectHint
+                );
+                if (!action) {
+                    return true;
+                }
+                if (action === 'delete') {
+                    await this.sessionService.deleteSection(sectionSessionId, section);
+                    await this.refreshCurrentSections();
+                    this.notify('Section deleted.');
+                } else if (action === 'start' || action === 'end') {
+                    const index = this.state.sections.findIndex(item => item.id === section);
+                    if (action === 'start' && index <= 0) {
+                        this.notify(index < 0 ? 'Section not found.' : 'Section already at start.');
+                        return true;
+                    }
+                    if (action === 'end' && (index < 0 || index === this.state.sections.length - 1)) {
+                        this.notify(index < 0 ? 'Section not found.' : 'Section already at end.');
+                        return true;
+                    }
+                    await this.sessionService.moveSection(
+                        sectionSessionId,
+                        section,
+                        undefined,
+                        { beforeId: action === 'start' ? this.state.sections[0].id : undefined }
+                    );
+                    await this.refreshCurrentSections();
+                    this.notify(action === 'start' ? 'Section moved to start.' : 'Section moved to end.');
+                } else if (action === 'before' || action === 'after') {
+                    const targetIndex = this.state.sections.findIndex(item => item.id === section);
+                    const beforeId = action === 'before'
+                        ? section
+                        : this.state.sections[targetIndex + 1]?.id;
+                    const label = await this.select('New section label', [
+                        { label: 'Continue from previous section', value: '' },
+                        { label: 'Next step', value: 'Next step' },
+                        { label: 'Implementation', value: 'Implementation' },
+                        { label: 'Analysis', value: 'Analysis' }
+                    ], 0, this.state.consoleOptions.selectHint);
+                    if (label === undefined) {
+                        return true;
+                    }
+                    const created = await this.sessionService.createSection(sectionSessionId, label || 'Section', undefined, { beforeId });
+                    await this.refreshCurrentSections();
+                    this.notify(`Section "${created.label}" created.`);
+                } else if (action === 'rename') {
+                    const label = await this.select('Rename section to', [
+                        { label: 'Next step', value: 'Next step' },
+                        { label: 'Implementation', value: 'Implementation' },
+                        { label: 'Analysis', value: 'Analysis' },
+                        { label: 'Refactor', value: 'Refactor' },
+                        { label: 'Review', value: 'Review' }
+                    ], 0, this.state.consoleOptions.selectHint);
+                    if (!label) {
+                        return true;
+                    }
+                    await this.sessionService.renameSection(sectionSessionId, section, label);
+                    await this.refreshCurrentSections();
+                    this.notify(`Section renamed to "${label}".`);
+                }
+                return true;
+            }
             case '/messages':
                 this.state.closeReview();
                 this.state.closeGitSnapshotDetail();
@@ -5246,6 +5377,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.normalizeLoadedMessages(messages);
     }
 
+    protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[] }> {
+        if (this.sessionService) {
+            const page = await this.sessionService.loadMessagesPage(sessionId);
+            return {
+                messages: this.normalizeLoadedMessages(page.messages),
+                sections: Array.isArray(page.sections) ? page.sections : []
+            };
+        }
+        const messages = await this.runtime.getMessages(sessionId);
+        return { messages: this.normalizeLoadedMessages(messages), sections: [] };
+    }
+
     protected async searchSessionContent(
         query: string,
         sessions: AgentConsoleSessionItem[]
@@ -5863,6 +6006,40 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
+    protected async runDelegationModeCommand(args: string): Promise<void> {
+        const sessionId = this.state.sessionId;
+        const mode = String(args || '').trim().toLowerCase();
+        const modes = ['disabled', 'explicit', 'proactive'];
+        try {
+            if (!mode || mode === 'default') {
+                if (mode === 'default') {
+                    if (this.appRpc) {
+                        await this.appRpc.request('session.delegation_mode.set', { sessionId, mode: 'default' });
+                    } else {
+                        this.runtime.setSessionDelegationMode(sessionId, null);
+                    }
+                    this.notify('Delegation mode reset to the configured default.');
+                    return;
+                }
+                const current = await this.getSessionDelegationMode(sessionId);
+                this.notify(`Delegation mode: ${current}. Valid modes: ${modes.join(' | ')}.`);
+                return;
+            }
+            if (!modes.includes(mode)) {
+                this.notify(`Invalid delegation mode "${mode}". Valid modes: ${modes.join(' | ')}.`);
+                return;
+            }
+            if (this.appRpc) {
+                await this.appRpc.request('session.delegation_mode.set', { sessionId, mode });
+            } else {
+                this.runtime.setSessionDelegationMode(sessionId, mode as import('@tsdi/agent').AgentDelegationMode);
+            }
+            this.notify(`Session ${sessionId} delegation mode set to "${mode}".`);
+        } catch (error) {
+            this.notify(`Failed to set delegation mode: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     protected async runVimCommand(args: string): Promise<void> {
         const raw = String(args || '').trim().toLowerCase();
         let enabled: boolean;
@@ -6168,6 +6345,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const sessionId = this.state.sessionId;
         let planMode = this.state.planMode;
         let sandboxMode = await this.getSessionSandboxMode(sessionId).catch(() => 'default');
+        let delegationMode = await this.getSessionDelegationMode(sessionId).catch(() => 'explicit');
         let archetype = (this.runtime as any).getSessionArchetype?.(sessionId) ?? 'build';
         if (this.appRpc) {
             const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
@@ -6178,7 +6356,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
         }
         const model = this.state.modelProfile || this.state.model || 'default';
-        this.notify(`session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode}`);
+        this.notify(`session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
     }
 
     protected async runGoalCommand(args: string): Promise<void> {
@@ -6231,6 +6409,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return String(result?.mode || 'default');
         }
         return this.runtime.getSessionSandboxMode(sessionId) ?? 'default';
+    }
+
+    protected async getSessionDelegationMode(sessionId: string): Promise<string> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.delegation_mode.get', { sessionId }).catch(() => null);
+            return String(result?.mode || 'explicit');
+        }
+        return this.runtime.getSessionDelegationMode(sessionId) ?? 'explicit';
     }
 
     protected async runUndoCommand(): Promise<void> {

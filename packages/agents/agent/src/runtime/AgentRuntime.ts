@@ -312,6 +312,30 @@ export abstract class AgentRuntime {
     }
 
     /**
+     * G29: set the per-session delegation mode override ('disabled' |
+     * 'explicit' | 'proactive'), or pass null/undefined to restore the
+     * configured default from AgentOptions.delegationMode.
+     * Override this in concrete runtimes that support session-scoped
+     * delegation modes.
+     */
+    setSessionDelegationMode(
+        _sessionId: string,
+        _mode?: import('./DelegationMode').AgentDelegationMode | null
+    ): void {
+        // no-op by default
+    }
+
+    /**
+     * G29: the resolved delegation mode for a session (session override or
+     * option-level default).
+     * Override this in concrete runtimes that support session-scoped
+     * delegation modes.
+     */
+    getSessionDelegationMode(_sessionId: string): import('./DelegationMode').AgentDelegationMode {
+        return 'explicit';
+    }
+
+    /**
      * P74: ensure the session has an automatically generated title, generating
      * one from the conversation transcript when the session has no title yet
      * and automatic titles are enabled. Returns the session title (existing or

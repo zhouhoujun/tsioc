@@ -1,7 +1,17 @@
-import { AgentMcpServerOptions, McpClient, McpJsonRpcRequest, McpJsonRpcResponse, McpOAuthToken, McpPromptDescriptor, McpResourceDescriptor, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, resolveNegotiatedProtocolVersion } from './types';
+import { AgentMcpServerOptions, McpClient, McpConnectionStatus, McpJsonRpcRequest, McpJsonRpcResponse, McpOAuthToken, McpPromptDescriptor, McpResourceDescriptor, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, resolveNegotiatedProtocolVersion } from './types';
 import { McpOAuthClient } from './mcp-oauth';
 
 const JSON_RPC_VERSION = '2.0';
+
+export class McpTransportError extends Error {
+    readonly status?: number;
+
+    constructor(message: string, status?: number) {
+        super(message);
+        this.name = 'McpTransportError';
+        this.status = status;
+    }
+}
 
 interface PendingRequest {
     resolve: (value: any) => void;
@@ -26,6 +36,9 @@ export class StreamableHttpMcpClient implements McpClient {
     private readonly pending = new Map<number, PendingRequest>();
     private readonly fetchImpl: typeof fetch;
     private oauthAttempted = false;
+    private reconnectCount = 0;
+    private reconnecting?: Promise<void>;
+    private reconnectInProgress = false;
 
     constructor(
         private server: AgentMcpServerOptions,
@@ -45,6 +58,13 @@ export class StreamableHttpMcpClient implements McpClient {
 
     negotiatedVersion(): string | undefined {
         return this.negotiatedVersionValue;
+    }
+
+    getConnectionStatus(): McpConnectionStatus {
+        return {
+            connected: !this.closed,
+            reconnectCount: this.reconnectCount
+        };
     }
 
     async listTools(): Promise<McpToolDescriptor[]> {
@@ -154,30 +174,78 @@ export class StreamableHttpMcpClient implements McpClient {
             ...(params !== undefined ? { params } : {})
         };
         const timeoutMs = this.server.timeoutMs ?? 30000;
-        return this.sendWithAuthRetry(message, timeoutMs);
+        return this.sendWithReconnect(message, timeoutMs);
+    }
+
+    private async sendWithReconnect(message: McpJsonRpcRequest, timeoutMs: number): Promise<any> {
+        if (!this.reconnectEnabled() || this.reconnectInProgress) {
+            return this.sendWithAuthRetry(message, timeoutMs);
+        }
+        let attempt = 0;
+        while (true) {
+            try {
+                return await this.sendWithAuthRetry(message, timeoutMs);
+            } catch (err) {
+                if (!(err instanceof McpTransportError)) {
+                    throw err;
+                }
+                attempt++;
+                if (attempt >= this.maxAttempts()) {
+                    throw err;
+                }
+                try {
+                    await this.reconnect();
+                } catch (reconnectErr) {
+                    throw err;
+                }
+            }
+        }
+    }
+
+    private async reconnect(): Promise<void> {
+        if (this.reconnecting) {
+            return this.reconnecting;
+        }
+        this.reconnecting = this.doReconnect();
+        try {
+            await this.reconnecting;
+        } finally {
+            this.reconnecting = undefined;
+        }
+    }
+
+    private async doReconnect(): Promise<void> {
+        this.sessionId = undefined;
+        this.initialized = undefined;
+        this.negotiatedVersionValue = undefined;
+        this.reconnectInProgress = true;
+        this.reconnectCount++;
+        try {
+            await this.ensureInitialized();
+        } finally {
+            this.reconnectInProgress = false;
+        }
+    }
+
+    private reconnectEnabled(): boolean {
+        return this.server.autoReconnect !== false;
+    }
+
+    private maxAttempts(): number {
+        return this.server.reconnectMaxAttempts ?? 5;
     }
 
     private async sendWithAuthRetry(message: McpJsonRpcRequest, timeoutMs: number): Promise<any> {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-            const response = await this.fetchImpl(this.requireEndpoint(), {
-                method: 'POST',
-                headers: this.buildHeaders(),
-                body: JSON.stringify(message),
-                signal: controller.signal
-            });
+            const response = await this.performFetch(message, controller);
             if (response.status === 401 && this.oauth && !this.oauthAttempted) {
                 this.oauthAttempted = true;
                 try {
                     const token = await this.oauth.getAccessToken(this.server);
                     this.setOAuthToken(token);
-                    const retry = await this.fetchImpl(this.requireEndpoint(), {
-                        method: 'POST',
-                        headers: this.buildHeaders(),
-                        body: JSON.stringify(message),
-                        signal: controller.signal
-                    });
+                    const retry = await this.performFetch(message, controller);
                     return this.consumeResponse(retry, message);
                 } finally {
                     this.oauthAttempted = false;
@@ -189,6 +257,25 @@ export class StreamableHttpMcpClient implements McpClient {
         }
     }
 
+    private async performFetch(message: McpJsonRpcRequest, controller: AbortController): Promise<Response> {
+        try {
+            return await this.fetchImpl(this.requireEndpoint(), {
+                method: 'POST',
+                headers: this.buildHeaders(),
+                body: JSON.stringify(message),
+                signal: controller.signal
+            });
+        } catch (err) {
+            if (err instanceof McpTransportError) {
+                throw err;
+            }
+            if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+                throw err;
+            }
+            throw new McpTransportError(`MCP HTTP request to '${this.server.id}' failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+
     private oauthToken?: McpOAuthToken;
 
     private setOAuthToken(token: McpOAuthToken): void {
@@ -197,7 +284,7 @@ export class StreamableHttpMcpClient implements McpClient {
 
     private async consumeResponse(response: Response, message: McpJsonRpcRequest): Promise<any> {
         if (!response.ok) {
-            throw new Error(`MCP HTTP request to '${this.server.id}' failed (${response.status} ${response.statusText}).`);
+            throw new McpTransportError(`MCP HTTP request to '${this.server.id}' failed (${response.status} ${response.statusText}).`, response.status);
         }
         const sessionId = response.headers.get('mcp-session-id');
         if (sessionId) {

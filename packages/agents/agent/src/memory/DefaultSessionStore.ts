@@ -4,7 +4,7 @@ import { SessionStore } from './SessionStore';
 import { InMemorySessionStore } from './InMemorySessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex } from './SessionStore';
 import { lazyTypeOrmAdapters, resolveTypeormAdapter } from '../lazy-typeorm';
 
 @Injectable()
@@ -40,6 +40,30 @@ export class DefaultSessionStore extends SessionStore {
 
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
         return this.resolveStore().append(sessionId, message);
+    }
+
+    async appendRaw(sessionId: string, message: AgentMessage): Promise<AgentState> {
+        return this.resolveStore().appendRaw(sessionId, message);
+    }
+
+    async listSections(sessionId: string): Promise<AgentSessionSection[]> {
+        return this.resolveStore().listSections(sessionId);
+    }
+
+    async addSection(sessionId: string, label: string, beforeId?: string, sectionId?: string): Promise<AgentSessionSection> {
+        return this.resolveStore().addSection(sessionId, label, beforeId, sectionId);
+    }
+
+    async renameSection(sessionId: string, sectionId: string, label: string): Promise<void> {
+        await this.resolveStore().renameSection(sessionId, sectionId, label);
+    }
+
+    async moveSection(sessionId: string, sectionId: string, beforeId?: string): Promise<void> {
+        await this.resolveStore().moveSection(sessionId, sectionId, beforeId);
+    }
+
+    async deleteSection(sessionId: string, sectionId: string): Promise<void> {
+        await this.resolveStore().deleteSection(sessionId, sectionId);
     }
 
     async setSummary(sessionId: string, summary: string): Promise<void> {

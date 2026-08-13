@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { AgentMessagePart } from '../runtime/AgentMessage';
+import { AgentSessionSection } from './SessionStore';
 
 @Entity()
 export class AgentSessionEntity {
@@ -8,6 +9,9 @@ export class AgentSessionEntity {
 
     @Column({ unique: true })
     sessionId!: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    sections!: AgentSessionSection[] | null;
 
     @Column({ type: 'text', nullable: true })
     summary!: string | null;
@@ -107,6 +111,9 @@ export class AgentMessageEntity {
 
     @Column({ nullable: true })
     toolCallId!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    sectionId!: string | null;
 
     @Column({ type: 'simple-json', nullable: true })
     metadata!: Record<string, any> | null;

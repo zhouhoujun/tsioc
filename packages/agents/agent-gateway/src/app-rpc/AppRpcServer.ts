@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -158,10 +158,17 @@ export class AppRpcServer {
                         'session.archetype.get',
                         'session.sandbox_mode.set',
                         'session.sandbox_mode.get',
+                        'session.delegation_mode.set',
+                        'session.delegation_mode.get',
                         'session.undo_file',
                         'session.redo_file',
                         'session.set_title',
                         'session.set_pinned',
+                        'session.section.list',
+                        'session.section.create',
+                        'session.section.rename',
+                        'session.section.move',
+                        'session.section.delete',
                         'session.snapshot.create',
                         'session.snapshot.list',
                         'session.snapshot.restore',
@@ -251,7 +258,7 @@ export class AppRpcServer {
             case 'session.list_threads':
                 return this.listSessionThreads(context);
             case 'session.messages':
-                return this.getSessionMessages(this.requireSessionId(params), context);
+                return this.getSessionMessages(params, context);
             case 'session.search':
                 return this.searchSessions(params, context);
             case 'session.delete':
@@ -270,6 +277,10 @@ export class AppRpcServer {
                 return this.setSessionSandboxMode(params, context);
             case 'session.sandbox_mode.get':
                 return this.getSessionSandboxMode(params, context);
+            case 'session.delegation_mode.set':
+                return this.setSessionDelegationMode(params, context);
+            case 'session.delegation_mode.get':
+                return this.getSessionDelegationMode(params, context);
             case 'session.undo_file':
                 return this.undoFile(params, context);
             case 'session.redo_file':
@@ -278,6 +289,16 @@ export class AppRpcServer {
                 return this.setSessionTitle(params, context);
             case 'session.set_pinned':
                 return this.setSessionPinned(params, context);
+            case 'session.section.list':
+                return this.listSessionSections(params, context);
+            case 'session.section.create':
+                return this.createSessionSection(params, context);
+            case 'session.section.rename':
+                return this.renameSessionSection(params, context);
+            case 'session.section.move':
+                return this.moveSessionSection(params, context);
+            case 'session.section.delete':
+                return this.deleteSessionSection(params, context);
             case 'session.snapshot.create':
                 return this.createSessionSnapshot(params, context);
             case 'session.snapshot.list':
@@ -551,9 +572,95 @@ export class AppRpcServer {
         return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId));
     }
 
-    private async getSessionMessages(sessionId: string, context: AppRpcRequestContext): Promise<any> {
+    private async getSessionMessages(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        return this.runtime.getMessages(sessionId);
+        const state = await this.sessions.get(sessionId);
+        const messages = Array.isArray(state.messages) ? state.messages : [];
+        const requestedLimit = typeof params?.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : undefined;
+        const limit = Math.min(Math.max(requestedLimit ?? 50, 1), 500);
+        const cursor = typeof params?.cursor === 'string' && params.cursor.trim()
+            ? params.cursor.trim()
+            : '';
+        const before = !!params?.before;
+
+        let page: typeof messages;
+        let hasMore = false;
+        if (!cursor) {
+            page = messages.slice(Math.max(messages.length - limit, 0));
+            hasMore = messages.length > page.length;
+        } else if (before) {
+            const cursorIndex = messages.findIndex(message => message.id === cursor);
+            if (cursorIndex < 0) {
+                throw new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`);
+            }
+            page = messages.slice(Math.max(cursorIndex - limit, 0), cursorIndex);
+            hasMore = cursorIndex > limit;
+        } else {
+            const cursorIndex = messages.findIndex(message => message.id === cursor);
+            if (cursorIndex < 0) {
+                throw new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`);
+            }
+            page = messages.slice(cursorIndex + 1, cursorIndex + 1 + limit);
+            hasMore = cursorIndex + 1 + limit < messages.length;
+        }
+
+        const sections = Array.isArray(state.sections)
+            ? state.sections.map(section => ({ ...section }))
+            : [];
+        return {
+            sessionId,
+            messages: page,
+            sections,
+            nextCursor: page.length ? page[page.length - 1].id : (cursor || undefined),
+            hasMore
+        };
+    }
+
+    private async listSessionSections(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.sessions.listSections(sessionId);
+    }
+
+    private async createSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        this.sessionHandler.track(sessionId);
+        const label = this.requireString(params?.label, 'section label');
+        const beforeId = typeof params?.beforeId === 'string' && params.beforeId.trim()
+            ? params.beforeId.trim()
+            : undefined;
+        const section = await this.sessions.addSection(sessionId, label, beforeId);
+        return { sessionId, section };
+    }
+
+    private async renameSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const sectionId = this.requireString(params?.sectionId, 'sectionId');
+        const label = this.requireString(params?.label, 'section label');
+        await this.sessions.renameSection(sessionId, sectionId, label);
+        return { updated: true, sessionId, sectionId, label };
+    }
+
+    private async moveSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const sectionId = this.requireString(params?.sectionId, 'sectionId');
+        const beforeId = typeof params?.beforeId === 'string' && params.beforeId.trim()
+            ? params.beforeId.trim()
+            : undefined;
+        await this.sessions.moveSection(sessionId, sectionId, beforeId);
+        return { updated: true, sessionId, sectionId, beforeId };
+    }
+
+    private async deleteSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const sectionId = this.requireString(params?.sectionId, 'sectionId');
+        await this.sessions.deleteSection(sessionId, sectionId);
+        return { deleted: true, sessionId, sectionId };
     }
 
     private async searchSessions(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -762,6 +869,20 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, mode: this.runtime.getSessionSandboxMode(sessionId) ?? 'default' };
+    }
+
+    private async setSessionDelegationMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const mode = this.normalizeDelegationModeValue(params?.mode);
+        this.runtime.setSessionDelegationMode(sessionId, mode);
+        return { sessionId, mode: mode ?? this.runtime.getSessionDelegationMode(sessionId) };
+    }
+
+    private async getSessionDelegationMode(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return { sessionId, mode: this.runtime.getSessionDelegationMode(sessionId) };
     }
 
     private async undoFile(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -2464,6 +2585,17 @@ export class AppRpcServer {
             return value;
         }
         throw new AppRpcError(-32602, 'Invalid session.sandbox_mode mode');
+    }
+
+    private normalizeDelegationModeValue(value: unknown): import('@tsdi/agent').AgentDelegationMode | undefined {
+        if (value == null || value === '' || value === 'default' || value === 'explicit') {
+            return undefined;
+        }
+        const mode = normalizeDelegationMode(value);
+        if (mode) {
+            return mode;
+        }
+        throw new AppRpcError(-32602, 'Invalid session.delegation_mode mode');
     }
 
     private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {

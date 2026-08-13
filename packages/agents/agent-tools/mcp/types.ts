@@ -60,6 +60,11 @@ export interface McpPromptDescriptor {
     arguments?: Array<{ name: string; description?: string; required?: boolean }>;
 }
 
+export interface McpConnectionStatus {
+    connected: boolean;
+    reconnectCount: number;
+}
+
 export interface McpClient {
     listTools(): Promise<McpToolDescriptor[]>;
     callTool(name: string, args?: Record<string, any>): Promise<McpToolCallResult>;
@@ -78,6 +83,11 @@ export interface McpClient {
      * `initialize` result). `undefined` until initialization completes.
      */
     negotiatedVersion?(): string | undefined;
+    /**
+     * G33: current connection health and the number of automatic reconnects
+     * performed. `undefined` when the transport does not track reconnect state.
+     */
+    getConnectionStatus?(): McpConnectionStatus;
     close?(): Promise<void> | void;
 }
 
@@ -127,6 +137,14 @@ export interface AgentMcpServerOptions {
     client?: McpClient;
     tools?: McpToolDescriptor[];
     allowedTools?: string[];
+    /** G33: automatic reconnection on transport failure (default true). */
+    autoReconnect?: boolean;
+    /** G33: maximum reconnect attempts before failing (default 5). */
+    reconnectMaxAttempts?: number;
+    /** G33: base exponential-backoff delay in ms (default 250). */
+    reconnectBackoffBaseMs?: number;
+    /** G33: maximum backoff delay in ms (default 5000). */
+    reconnectBackoffMaxMs?: number;
 }
 
 export interface AgentMcpOptions {
@@ -136,6 +154,8 @@ export interface AgentMcpOptions {
     providerId?: string;
     /** Path to the OAuth credential store; defaults to `<agent-root>/mcp-credentials.json`. */
     credentialsPath?: string;
+    /** G33: fixed port for the OAuth loopback callback listener (default 0 = ephemeral). */
+    oauthCallbackPort?: number;
 }
 
 export interface ResolvedAgentMcpOptions extends AgentMcpOptions {

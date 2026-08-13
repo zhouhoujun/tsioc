@@ -86,10 +86,11 @@ export class ProjectContextSection extends PromptSection {
             exists: this.fileAdapter ? target => this.fileAdapter!.existsSync(target) : undefined,
             stopAt: this.projectRoot
         });
-        if (!chain.entries.length) {
+        const pluginDocs = (options.pluginAgentsDocs ?? []).filter(item => item && item.path);
+        if (!chain.entries.length && !pluginDocs.length) {
             return '';
         }
-        const files = chain.entries.map(entry => entry.file);
+        const files = [...chain.entries.map(entry => entry.file), ...pluginDocs.map(item => item.path)];
         const filesKey = files.join('\u0000');
         const mtimes: number[] = [];
         for (const file of files) {
@@ -119,6 +120,14 @@ export class ProjectContextSection extends PromptSection {
             }
             const label = basenameAgentPath(entry.dir) || entry.file;
             parts.push(`## Project Context (${label}${entry.override ? ' · override' : ''})\n\n${content}`);
+        });
+        pluginDocs.forEach((doc, index) => {
+            const content = contents![chain.entries.length + index].trim();
+            if (!content) {
+                return;
+            }
+            const label = doc.label || basenameAgentPath(doc.path) || doc.path;
+            parts.push(`## Project Context (plugin: ${label})\n\n${content}`);
         });
         return parts.join('\n\n');
     }

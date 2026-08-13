@@ -3,6 +3,7 @@ import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
 import { AgentArchetype, DEFAULT_ARCHETYPE } from './archetype/AgentArchetype';
+import { AgentDelegationMode, DEFAULT_DELEGATION_MODE } from './runtime/DelegationMode';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -210,11 +211,15 @@ export interface AgentOptions {
     projectDocFallbackFilenames?: string[];
     /** P72: per-file byte cap for project docs (default 32KiB). */
     projectDocMaxBytes?: number;
+    /** P106: extra project docs contributed by installed agent plugins (e.g. plugin-scoped AGENTS.md). */
+    pluginAgentsDocs?: Array<{ path: string; label?: string }>;
     /** G31: directory holding `trusted-projects.json` (default `~/.tsdi-agent`). */
     trustedProjectsRoot?: string;
     hooks?: AgentHooksOptions;
     /** P98: rollout token budget enforcement (G25). */
     tokenBudget?: AgentTokenBudgetOptions;
+    /** G29: per-session delegation mode (default 'explicit'). Per-turn overrides via AgentTurnInput.agent.delegationMode. */
+    delegationMode?: AgentDelegationMode;
 }
 
 export const defaultAgentOptions: AgentOptions = {
@@ -271,6 +276,7 @@ export const defaultAgentOptions: AgentOptions = {
         output: ''
     },
     defaultArchetype: DEFAULT_ARCHETYPE,
+    delegationMode: DEFAULT_DELEGATION_MODE,
     projectDocFallbackFilenames: ['AGENTS.md'],
     projectDocMaxBytes: 32768,
     trustedProjectsRoot: '',

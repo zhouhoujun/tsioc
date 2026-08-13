@@ -1,9 +1,10 @@
 import { AgentMessage } from './AgentMessage';
-import { AgentSessionRole, AgentThreadStatus } from '../memory/SessionStore';
+import { AgentSessionRole, AgentSessionSection, AgentThreadStatus } from '../memory/SessionStore';
 
 export interface AgentState {
     sessionId: string;
     messages: AgentMessage[];
+    sections?: AgentSessionSection[];
     summary?: string;
     title?: string;
     pinned?: boolean;

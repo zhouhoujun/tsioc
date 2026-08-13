@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { tmpdir } from 'os';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { FileAdapter, FileDirectoryEntry, IReadable, IStats } from '@tsdi/common';
 import { findAgentsDoc, findFileUpward, findProjectRoot, readAgentsDoc, readAgentsDocChain, truncateDocContent } from '../src/project/agents-doc';
 import { ProjectContextSection } from '../src/prompt/sections/ProjectContextSection';
@@ -286,6 +286,26 @@ export class AgentsDocSpec {
         expect(rendered).toContain('# Override');
         expect(rendered).not.toContain('# Main');
         expect(rendered).not.toContain('body');
+    }
+
+    @Test('ProjectContextSection appends plugin-scoped AGENTS docs after the chain')
+    async testProjectContextSectionPluginDocs(): Promise<void> {
+        const dir = join(this.tempRoot, 'section-plugin');
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, 'AGENTS.md'), '# Root rules\n\nRoot content.\n');
+        const pluginDoc = join(this.tempRoot, 'plugin-cache', 'demo', 'AGENTS.md');
+        mkdirSync(dirname(pluginDoc), { recursive: true });
+        writeFileSync(pluginDoc, '# Plugin rules\n\nPlugin content.\n');
+
+        const section = new ProjectContextSection(this.fileAdapter, null, {
+            pluginAgentsDocs: [{ path: pluginDoc, label: 'demo' }]
+        } as any);
+        section.setProjectRoot(dir);
+        const rendered = await section.render(this.makeContext());
+        expect(rendered).toContain('## Project Context (plugin: demo)');
+        expect(rendered).toContain('# Plugin rules');
+        expect(rendered.indexOf('# Root rules')).toBeGreaterThanOrEqual(0);
+        expect(rendered.indexOf('# Plugin rules')).toBeGreaterThan(rendered.indexOf('# Root rules'));
     }
 
     @Test('analyzeProjectStructure reads package.json metadata and source languages')

@@ -5,7 +5,7 @@ import {
     processConsoleTextInputChunk,
     shouldSkipConsoleHistoryEntry
 } from '@tsdi/components/console';
-import { AgentMessage, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeInput,
@@ -58,6 +58,7 @@ export interface AgentConsoleSessionItem {
     focusSummary?: string;
     projectLabel?: string;
     projectSessionCount?: number;
+    sections?: AgentSessionSectionInfo[];
 }
 
 export interface AgentConsoleProjectItem {
@@ -72,6 +73,7 @@ export interface AgentConsoleThreadItem {
     label: string;
     sessionCount: number;
     lastActive?: number;
+    sections?: AgentSessionSectionInfo[];
 }
 
 export interface AgentConsoleContextPreparationSnapshot extends ContextPreparationReport {
@@ -346,6 +348,7 @@ export class AgentConsoleSessionState {
     inputFocused = true;
     title = '';
     messages: AgentMessage[] = [];
+    sections: AgentSessionSection[] = [];
     messagesFocused = false;
     selectedMessageId = '';
     messageDetailOpen = false;
@@ -466,7 +469,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots'];
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -861,6 +864,32 @@ export class AgentConsoleSessionState {
 
     appendMessage(message: AgentMessage): void {
         this.setMessages([...this.messages, message]);
+    }
+
+    setSections(sections: AgentSessionSection[]): void {
+        this.sections = Array.isArray(sections) ? sections : [];
+    }
+
+    mergeMessagesPage(page: {
+        messages: AgentMessage[];
+        sections?: AgentSessionSection[];
+        hasMore?: boolean;
+        mode?: 'append' | 'prepend';
+    }): void {
+        const incoming = Array.isArray(page.messages) ? page.messages : [];
+        if (Array.isArray(page.sections)) {
+            this.sections = page.sections;
+        }
+        if (!incoming.length) {
+            return;
+        }
+        const mode = page.mode === 'prepend' ? 'prepend' : 'append';
+        const existingIds = new Set(this.messages.map(message => message.id));
+        const fresh = incoming.filter(message => !existingIds.has(message.id));
+        if (!fresh.length) {
+            return;
+        }
+        this.setMessages(mode === 'prepend' ? [...fresh, ...this.messages] : [...this.messages, ...fresh]);
     }
 
     beginTurnEventScope(scope?: string): string {

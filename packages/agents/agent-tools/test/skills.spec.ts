@@ -6,6 +6,7 @@ import { execFile } from 'child_process';
 import { Suite, Test } from '@tsdi/unit';
 import { RemoteSkillManager, RemoteSkillProcessRunner } from '../skills/remote-skill-manager';
 import { AgentSkillDefinition } from '../skills/types';
+import { AgentPluginManager } from '../skills/plugin-manager';
 
 async function runGit(dir: string, args: string[]): Promise<string> {
     return new Promise<string>((resolve, reject) => {
@@ -17,6 +18,69 @@ async function runGit(dir: string, args: string[]): Promise<string> {
             resolve(String(stdout || '').trim());
         });
     });
+}
+
+@Suite('AgentPluginManager')
+export class AgentPluginManagerTest {
+    @Test('discovers layered plugins with local precedence and aggregates contributions')
+    async layeredDiscoveryAndContributions() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugins-'));
+        try {
+            const remote = path.join(root, 'remote');
+            const local = path.join(root, 'local');
+            await this.writePlugin(remote, 'demo', '1.0.0', 'Remote body');
+            await this.writePlugin(local, 'demo', '2.0.0', 'Local body', {
+                mcpServers: [{ id: 'demo-mcp', command: 'demo' }],
+                connectors: [{ id: 'demo-connector', type: 'http' }],
+                hooks: { beforeTurn: { command: 'echo', args: ['plugin'] } },
+                agentsDoc: 'AGENTS.md'
+            });
+            await fs.writeFile(path.join(local, 'demo', 'AGENTS.md'), '# Plugin instructions');
+            const manager = new AgentPluginManager(fakeRunner({}));
+            const plugins = manager.discover({ remote, local });
+            expect(plugins.length).toEqual(1);
+            expect(plugins[0].manifest.version).toEqual('2.0.0');
+            const contributions = manager.contributions(plugins);
+            expect(contributions.skills.map(skill => skill.id)).toContain('demo-skill');
+            expect(contributions.mcpServers.map(server => server.id)).toEqual(['demo-mcp']);
+            expect(contributions.connectors[0].plugin).toEqual('demo');
+            expect((contributions.hooks.beforeTurn as any[]).length).toEqual(1);
+            expect(contributions.agentsDocs[0].path).toEqual(path.join(local, 'demo', 'AGENTS.md'));
+        } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+
+    @Test('installs registry plugins and persists analytics')
+    async registryInstallAndAnalytics() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugin-install-'));
+        try {
+            const manager = new AgentPluginManager(fakeRunner({ name: 'Demo', version: '1.2.3', mcpServers: [{ id: 'm', command: 'm' }] }));
+            const plugin = await manager.install({ id: 'demo', type: 'registry', url: 'https://example.test/plugin.json' }, root);
+            expect(plugin.manifest.version).toEqual('1.2.3');
+            manager.activate(plugin);
+            manager.recordCall(plugin);
+            const loaded = manager.discover({ remote: root })[0];
+            expect(loaded.analytics).toEqual({ installs: 1, activations: 1, calls: 1 });
+        } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+
+    @Test('rolls back an invalid plugin manifest')
+    async invalidManifestRollsBack() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugin-invalid-'));
+        try {
+            const manager = new AgentPluginManager(fakeRunner({ name: 'Missing version' }));
+            let error: Error | undefined;
+            try { await manager.install({ id: 'bad', type: 'registry', url: 'https://example.test/plugin.json' }, root); } catch (err) { error = err as Error; }
+            expect(error?.message).toContain('valid plugin.json');
+            expect(await fs.stat(path.join(root, 'bad')).then(() => true).catch(() => false)).toEqual(false);
+        } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+
+    private async writePlugin(root: string, id: string, version: string, body: string, extra: Record<string, any> = {}) {
+        const plugin = path.join(root, id);
+        await fs.mkdir(path.join(plugin, 'skills', 'demo-skill'), { recursive: true });
+        await fs.writeFile(path.join(plugin, 'plugin.json'), JSON.stringify({ name: id, version, skills: ['skills'], ...extra }));
+        await fs.writeFile(path.join(plugin, 'skills', 'demo-skill', 'SKILL.md'), `---\nname: demo-skill\ndescription: Plugin skill.\n---\n${body}`);
+    }
 }
 
 async function createGitSkillRepo(root: string, skillName: string, content: string): Promise<string> {

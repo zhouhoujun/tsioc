@@ -22,6 +22,7 @@ export interface AgentMessage {
     parts?: AgentMessagePart[];
     name?: string;
     toolCallId?: string;
+    sectionId?: string;
     createdAt: number;
     metadata?: Record<string, any>;
 }

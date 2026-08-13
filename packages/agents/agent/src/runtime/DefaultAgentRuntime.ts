@@ -45,6 +45,7 @@ import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS } from '../harness/Verif
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudgetTracker';
+import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
@@ -63,6 +64,8 @@ interface ToolInvocationResult {
     metadata: Record<string, any>;
     receipt: AgentToolExecutionReceipt;
     error?: Error;
+    /** G29: raw (pre-stringification) tool output for the delegation quality gate (coding_task only). */
+    structuredOutput?: any;
 }
 
 interface TurnExecutionContext {
@@ -74,6 +77,8 @@ interface TurnExecutionContext {
     recovery?: TurnRecoveryState;
     agent?: AgentTurnAgentConfig;
     toolSteps?: number;
+    /** G29: transient delegation quality note injected into the next model request (proactive mode). */
+    delegationQualityNote?: string;
 }
 
 interface TurnRecoveryState {
@@ -1162,8 +1167,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
             });
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
+                const delegationHint = buildDelegationModeHint(this.resolveDelegationMode(sessionId, turnContext));
                 messages = [
-                    this.createMessage('system', systemPrompt + modeHint),
+                    this.createMessage('system', systemPrompt + modeHint + delegationHint),
+                    ...messages
+                ];
+            }
+            const qualityNote = turnContext?.delegationQualityNote;
+            if (qualityNote) {
+                turnContext!.delegationQualityNote = undefined;
+                messages = [
+                    this.createMessage('system', qualityNote),
                     ...messages
                 ];
             }
@@ -1822,6 +1836,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionPlanModes = new Set<string>();
     protected sessionArchetypes = new Map<string, string>();
     protected sessionSandboxModes = new Map<string, import('../harness/sandbox-exec').SandboxMode>();
+    protected sessionDelegationModes = new Map<string, AgentDelegationMode>();
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
@@ -1914,6 +1929,37 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     getSessionSandboxMode(sessionId: string): import('../harness/sandbox-exec').SandboxMode | undefined {
         return this.sessionSandboxModes.get(sessionId);
+    }
+
+    override setSessionDelegationMode(sessionId: string, mode?: AgentDelegationMode | null): void {
+        if (mode == null) {
+            this.sessionDelegationModes.delete(sessionId);
+            return;
+        }
+        const normalized = normalizeDelegationMode(mode);
+        if (!normalized) {
+            return;
+        }
+        this.sessionDelegationModes.set(sessionId, normalized);
+    }
+
+    override getSessionDelegationMode(sessionId: string): AgentDelegationMode {
+        return this.sessionDelegationModes.get(sessionId) ?? this.options.delegationMode ?? DEFAULT_DELEGATION_MODE;
+    }
+
+    /**
+     * G29: resolve the effective delegation mode for a round, in precedence
+     * order: per-turn agent config -> session override -> option default.
+     */
+    protected resolveDelegationMode(
+        sessionId: string,
+        turnContext?: TurnExecutionContext
+    ): AgentDelegationMode {
+        const perTurn = turnContext?.agent?.delegationMode;
+        if (perTurn) {
+            return normalizeDelegationMode(perTurn) ?? DEFAULT_DELEGATION_MODE;
+        }
+        return this.getSessionDelegationMode(sessionId);
     }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
@@ -2185,6 +2231,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             for (const result of results) {
                 if (result.status === 'fulfilled') {
                     this.recordToolEvidence(turnContext, result.value.receipt, result.value.error);
+                    this.maybeApplyDelegationQualityGate(sessionId, result.value, turnContext);
                     await this.finalizeToolInvocation(sessionId, result.value);
                 } else {
                     const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
@@ -2218,10 +2265,34 @@ export class DefaultAgentRuntime extends AgentRuntime {
     ): Promise<Error | undefined> {
         const result = await this.performToolInvocation(sessionId, toolCall, loopDetector, executionMode, callableTools, turnContext);
         this.recordToolEvidence(turnContext, result.receipt, result.error);
+        this.maybeApplyDelegationQualityGate(sessionId, result, turnContext);
         if (persistMessage) {
             await this.finalizeToolInvocation(sessionId, result);
         }
         return result.error;
+    }
+
+    /**
+     * G29: in proactive delegation mode, a coding_task that ended with a
+     * failed action or incomplete delivery sets a transient quality note that
+     * the next model request injects as a system message (delegate the
+     * remaining work to sub-agents). The note is consumed exactly once.
+     */
+    private maybeApplyDelegationQualityGate(
+        sessionId: string,
+        result: ToolInvocationResult,
+        turnContext: TurnExecutionContext
+    ): void {
+        if (this.resolveDelegationMode(sessionId, turnContext) !== 'proactive') {
+            return;
+        }
+        if (result.toolCall.name !== 'coding_task') {
+            return;
+        }
+        const note = buildDelegationQualityNote(result.error, result.structuredOutput);
+        if (note && turnContext && !turnContext.delegationQualityNote) {
+            turnContext.delegationQualityNote = note;
+        }
     }
 
     private recordToolEvidence(turnContext: TurnExecutionContext, receipt: AgentToolExecutionReceipt, error?: Error): void {
@@ -2466,7 +2537,8 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     receipt: outcome.receipt,
                     attempts: outcome.attempts
                 },
-                receipt: outcome.receipt
+                receipt: outcome.receipt,
+                structuredOutput: toolCall.name === 'coding_task' ? outcome.redactedOutput : undefined
             };
         }
 
@@ -2496,7 +2568,8 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     inputSummary,
                     receipt: completedReceipt
                 },
-                receipt: completedReceipt
+                receipt: completedReceipt,
+                structuredOutput: toolCall.name === 'coding_task' ? output : undefined
             };
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));

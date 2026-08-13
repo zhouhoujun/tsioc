@@ -16,6 +16,13 @@ export interface SessionInfo {
     rootRequest?: string;
     focusSummary?: string;
     threadStatus?: string;
+    sections?: AgentSessionSectionInfo[];
+}
+
+export interface AgentSessionSectionInfo {
+    id: string;
+    label: string;
+    messageCount: number;
 }
 
 export interface SessionProjectGroup {
@@ -43,6 +50,7 @@ export interface SessionThreadGroup {
     stage?: string;
     originThreadId?: string;
     currentSessionId?: string;
+    sections?: AgentSessionSectionInfo[];
     sessionCount: number;
     createdAt?: number;
     updatedAt?: number;

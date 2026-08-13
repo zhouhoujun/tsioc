@@ -55,6 +55,7 @@ export class McpOAuthClient {
     private readonly interaction: McpOAuthInteraction;
     private readonly timeoutMs: number;
     private readonly store: McpOAuthCredentialStore;
+    private readonly oauthCallbackPort?: number;
 
     constructor(
         options: ResolvedAgentMcpOptions,
@@ -64,6 +65,7 @@ export class McpOAuthClient {
         this.interaction = clientOptions.interaction ?? new ConsoleMcpOAuthInteraction();
         this.timeoutMs = clientOptions.timeoutMs ?? DEFAULT_TIMEOUT_MS;
         this.store = new McpOAuthCredentialStore(options.credentialsPath);
+        this.oauthCallbackPort = options.oauthCallbackPort;
     }
 
     getStore(): McpOAuthCredentialStore {
@@ -264,7 +266,7 @@ export class McpOAuthClient {
         const codeVerifier = generateCodeVerifier();
         const codeChallenge = generateCodeChallenge(codeVerifier);
         const state = base64UrlEncode(crypto.randomBytes(16));
-        const listener = await startLoopbackListener();
+        const listener = await startLoopbackListener(this.oauthCallbackPort);
         const redirectUri = `http://127.0.0.1:${listener.port}/callback`;
         const authUrl = `${authorizationEndpoint}?${toQuery({
             response_type: 'code',
@@ -330,12 +332,14 @@ interface LoopbackListener {
     close(): Promise<void>;
 }
 
-async function startLoopbackListener(): Promise<LoopbackListener> {
+async function startLoopbackListener(port = 0): Promise<LoopbackListener> {
     const http = await import('http');
     const server = http.createServer();
     const pending: Array<{ state: string; resolve: (code?: string) => void; }> = [];
     server.on('request', (request, response) => {
-        const url = new URL(request.url ?? '/', `http://127.0.0.1:${server.address()?.toString() ?? ''}`);
+        const address = server.address();
+        const boundPort = typeof address === 'object' && address ? address.port : 0;
+        const url = new URL(request.url ?? '/', `http://127.0.0.1:${boundPort}`);
         const code = url.searchParams.get('code') ?? undefined;
         const state = url.searchParams.get('state') ?? '';
         const callback = pending.shift();
@@ -349,11 +353,11 @@ async function startLoopbackListener(): Promise<LoopbackListener> {
             callback?.resolve(undefined);
         }
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>(resolve => server.listen(port, '127.0.0.1', resolve));
     const address = server.address();
-    const port = typeof address === 'object' && address ? address.port : 0;
+    const boundPort = typeof address === 'object' && address ? address.port : 0;
     return {
-        port,
+        port: boundPort,
         waitForCode(state: string, timeoutMs: number): Promise<string | undefined> {
             return new Promise(resolve => {
                 const timer = setTimeout(() => {

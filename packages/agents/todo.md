@@ -96,12 +96,13 @@
 
 ### 结论
 
-G1–G12 全部闭环（P67–P80）；G13–G23 全部闭环（P81–P105）；G21 三端逐步落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展）。对照 **2026-08 最新** codex（openai/codex，Rust app-server，v0.144–0.147：Agent Plugins 便携插件 + 市场目录、`--approve-for-me` 自动评审、thread sections 手动排序 + 分页 thread 历史、MCP 2026-07-28 协议、Windows 原生沙箱 + 网络代理强制、secrets/bearer 重放脱敏、项目信任门 + 托管认证限制、rollout token 预算、索引化 web search、scheduled time reminders、cloud-managed profiles）与 opencode（anomalyco/opencode，v1.18.x：桌面 app tabs + locale、session 时间线/JSON 导出、review panel 文件 tab 对齐、MCP 断线重连、retry 风暴封顶 + jitter、自适应 thinking 控制、单 device-code 登录流）逐项比对后，剩余为生态、协议、长会话 UX 与编排增量：
+G1–G12 全部闭环（P67–P80）；G13–G33 全部闭环（P81–P109）；G21 三端逐步落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展）。对照 **2026-08 最新** codex（openai/codex，Rust app-server，v0.144–0.147：Agent Plugins 便携插件 + 市场目录、`--approve-for-me` 自动评审、thread sections 手动排序 + 分页 thread 历史、MCP 2026-07-28 协议、Windows 原生沙箱 + 网络代理强制、secrets/bearer 重放脱敏、项目信任门 + 托管认证限制、rollout token 预算、索引化 web search、scheduled time reminders、cloud-managed profiles）与 opencode（anomalyco/opencode，v1.18.x：桌面 app tabs + locale、session 时间线/JSON 导出、review panel 文件 tab 对齐、MCP 断线重连、retry 风暴封顶 + jitter、自适应 thinking 控制、单 device-code 登录流）逐项比对后，剩余为协议、长会话 UX 与编排增量：
 
-1. **长会话 UX 工程**（G24）：thread sections 手动排序、分页 thread 历史 + memories。
-2. **生态与协议升级余量**（G27/G29/G33）：Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）、每-turn 多代理委派模式、MCP 断线重连 + OAuth 回调端口。
+1. ~~**长会话 UX 工程**（G24）：thread sections 手动排序、分页 thread 历史 + memories。~~（✅ P107）
+2. ~~**协议升级余量**（G33）：MCP 断线重连 + OAuth 回调端口。~~（✅ P109）
+3. ~~**每-turn 多代理委派模式**（G29）：proactive 委派开关。~~（✅ P108）
 
-全部为增量可做、无需推翻现有架构。G23/G24/G25/G26/G28/G30/G31/G32 已完成闭环（P94–P104 批次见「已实现功能」）。
+G23–G33 全部闭环（P94–P104 批次见「已实现功能」；P105–P109 批次见「已完成（历史）」）。
 
 ### 本项目优势（相对 codex/opencode，保持并强化）
 
@@ -130,16 +131,16 @@ G1–G12 全部闭环（P67–P80）；G13–G23 全部闭环（P81–P105）；
 | G21 | ~~多端交付面~~（✅ P90–P93 部分） | opencode Tauri desktop + IDE；codex macOS app + Chrome 扩展 | 远程传输 + Web console + 浏览器安全边界 + **VS Code 扩展（P93）**；桌面壳/移动 remote 余量见「剩余」 | 中：IDE 已闭环 |
 | G22 | ~~LSP 无自动安装~~（✅ P89） | opencode 30+ auto-install LSP | `LspInstallManager` 语言→安装命令映射 + autoInstall + hint | 低：已闭环 |
 | G23 | ~~Windows 原生沙箱宿主 + 网络代理强制~~（✅ P105） | codex v0.131+：exec-server 原生 Windows 沙箱、elevated Windows sandbox for network proxies、deny-read 对等、代理状态跨进程传递 | `windows-native` helper 协议（restricted token / Job Object / firewall 宿主）优先，`wsl-bwrap` 回退；filesystem/network/read-denied 分能力矩阵；proxy required fail-closed + 子进程代理环境注入 | 高：已闭环（原生能力由宿主 helper 提供） |
-| G24 | **Thread sections + 分页 thread 历史** | codex 0.142.5+：分页 thread 历史（高效 resume/search/persisted names/sub-agent 支持/memories）；0.147 thread sections 手动排序持久化 | 有 thread 状态（`session.list_threads`/`threadStatus`），无 sections 手动排序、无分页增量浏览长转录 | 中：长会话 UX |
+| G24 | ~~Thread sections + 分页 thread 历史~~（✅ P107） | codex 0.142.5+：分页 thread 历史（高效 resume/search/persisted names/sub-agent 支持/memories）；0.147 thread sections 手动排序持久化 | `SessionStore` section 模型（add/rename/move/delete/list）+ `session.section.*` 5 RPC + 分页 `session.messages`（cursor/limit/nextCursor/hasMore，长转录不整包拉取）+ thread 列表 sections 分组 + agent-ui `/sections` `/threads` | 中：已闭环 |
 | G25 | ~~Rollout token 预算~~（✅ P98） | codex 0.142：跨 agent thread 用量追踪 + remaining-budget 提醒 + 耗尽 abort turn | `TokenBudgetTracker` per-session/per-thread 预算 + reminder/exceeded 事件 + runtime abort + gateway `usage.stats.budgets` | 中：已闭环 |
 | G26 | ~~secrets/bearer 重放脱敏~~（✅ P99） | codex 0.146/0.147：从 displayed commands 与 replayed conversation history 完整 redact secrets + bearer tokens | `RedactionFilter`（共享 P86 正则集）对 compaction replay 注入消息先脱敏再入上下文 | 中：已闭环 |
-| G27 | **Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）** | codex 0.145+：便携插件 manifest、local/personal/workspace/remote 市场目录、npm marketplace 源、版本追踪、plugin analytics、插件级 AGENTS.md 作用域 | skills 远程市场（P87）只装 SKILL.md；无插件 manifest/connectors/MCP 捆绑、无市场目录层级、无插件分析 | 中：生态扩展上限 |
+| G27 | ~~Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）~~（✅ P106） | codex 0.145+：便携插件 manifest、local/personal/workspace/remote 市场目录、npm marketplace 源、版本追踪、plugin analytics、插件级 AGENTS.md 作用域 | `AgentPluginManager`/`plugins` 工具支持 manifest、四层目录优先级、skills/MCP/connectors/hooks/AGENTS.md contributions、安装/激活/调用 analytics 与回滚 | 中：已闭环 |
 | G28 | ~~MCP 2026-07-28 协议~~（✅ P95） | codex 0.147：paginated discovery、multi-round requests、non-blocking server startup、MCP OAuth 经 HTTP client | `protocolVersion` 2026-07-28 + 协商降级 + `listResources`/`listPrompts` 分页 + `negotiatedVersion()` | 低中：已闭环 |
-| G29 | **每-turn 多代理委派模式（disabled/explicit/proactive）** | codex 0.142：thread/turn 级多代理模式三态；0.145 per-turn 委派 | `spawn_agent`/`parallel_spawn`/`coding_task` 为显式请求式；无「agent 自主判断是否委派」的 proactive 模式开关 | 低中：编排策略 |
+| G29 | ~~每-turn 多代理委派模式（disabled/explicit/proactive）~~（✅ P108） | codex 0.142：thread/turn 级多代理模式三态；0.145 per-turn 委派 | `AgentTurnInput`/`AgentOptions.delegationMode` 三态（turn → session → option 优先级）+ `session.delegation_mode.set/get` RPC + proactive 系统提示委派指导 + `coding_task` 委派质量 gate（failedActionId/deliveryIncomplete → 下一轮注入委派提示）+ agent-ui `/delegation mode` + `/status` 展示 | 低中：已闭环 |
 | G30 | ~~索引化 web search~~（✅ P101） | codex 0.142：indexed web-search（live search + 仅 server-approved URL 直读） | `web.indexed` + `allowedDomains`：search 过滤 + extract 白名单门禁 | 低：已闭环 |
 | G31 | ~~项目信任门 + 托管认证限制~~（✅ P102） | codex 0.147：不熟悉本地项目显式 trust、managed auth 凭据使用前限制 | `TrustedProjectStore` + `tsdi-agent trust` + doctor 报告 + gateway `project.trust*` RPC | 低中：已闭环 |
 | G32 | ~~自适应 thinking / reasoning effort 透传~~（✅ P103） | opencode 1.18：Claude adaptive thinking、Kimi 自适应控制、provider-defined reasoning options | `ModelRequest.reasoningEffort` + OpenAI `reasoning_effort` 映射 + Anthropic thinking budget 档位 | 低：已闭环 |
-| G33 | **MCP 断线重连 + OAuth 回调端口** | opencode 1.18：MCP server 过期 SDK session 重连、OAuth 回调端口 honor | `StdioMcpClient`/`StreamableHttpMcpClient` 无自动重连逻辑；`mcp-oauth.ts` 未读配置回调端口 | 低：长跑稳定性 |
+| G33 | ~~MCP 断线重连 + OAuth 回调端口~~（✅ P109） | opencode 1.18：MCP server 过期 SDK session 重连、OAuth 回调端口 honor | `StdioMcpClient`/`StreamableHttpMcpClient` 指数退避自动重连（进程存活 + `server/initialized` 重放续期）+ 重连窗口并发请求排队；`mcp-oauth.ts` 读取配置回调端口 | 低：已闭环 |
 
 ## 打磨计划（P105+）
 
@@ -147,12 +148,7 @@ G1–G12 全部闭环（P67–P80）；G13–G23 全部闭环（P81–P105）；
 >
 > P94–P104 批次（G23/G24/G25/G26/G28/G30/G31/G32）已落地：P98（token 预算）/ P99（重放脱敏）/ P101（索引化 web search）/ P102（项目信任门）/ P103（reasoning effort）/ P95（MCP 2026-07-28），见「已实现功能」。
 >
-> 剩余排序：先生态/协议（G27/G33）→ 后 UX/编排（G24/G29）。
-
-- **P106 · Agent Plugins 便携插件 + 市场目录（G27）**：在 P87 `RemoteSkillManager` 之上扩展插件 manifest（`plugin.json`：name/description/skills/connectors/mcpServers/version/hooks）与市场目录分层（local/personal/workspace/remote + npm marketplace 源），安装时 skills + MCP servers + hooks 一并注册；插件版本追踪/冲突检测复用 P87 语义；AGENTS.md 支持插件级作用域（目录级自动激活）；plugin analytics（安装/激活/调用计数入 audit）。锚点：`agent-tools/skills/remote-skill-manager.ts`、`agent-tools/skills/provider.ts`、`agent/src/hooks/AgentHooks.ts`、`agent-tools/mcp/provider.ts`。
-- **P107 · Thread sections + 分页历史（G24）**：`SessionStore` 扩展 section 模型（`session.section.*` RPC：create/move/rename/delete + 手动排序持久化）；`session.messages` 支持分页增量浏览（cursor + limit，长转录不整包拉取）；thread 列表展示 sections 分组；sub-agent 消息归属 section（复用 `originThreadId`）；`AgentConsoleSessionState` 增量追加渲染。锚点：`agent/src/memory/SessionStore.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleSessionState.ts`。
-- **P108 · 每-turn 多代理委派模式（G29）**：`AgentTurnInput`/`AgentOptions` 新增 `delegationMode: 'disabled' | 'explicit' | 'proactive'`（thread/turn 级覆盖）；proactive 模式在系统提示注入委派指导（何时 spawn_agent/parallel_spawn），runtime 对 `coding_task` 产物做委派质量 gate（完成率 → 是否继续委派）；`session.delegation_mode.set/get` RPC + agent-ui `/delegation` 命令。锚点：`agent/src/runtime/AgentTurnInput.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent-tools/agent/parallel-spawn.tool.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
-- **P109 · MCP 断线重连 + OAuth 回调端口（G33）**：`StdioMcpClient`/`StreamableHttpMcpClient` 增加指数退避自动重连（进程存活 + 会话续期，`server/initialized` 重放）；`mcp-oauth.ts` 读取配置回调端口（`mcp.oauthCallbackPort`）并 honor；并发请求在重连窗口内排队而非失败。锚点：`agent-tools/mcp/StdioMcpClient.ts`、`agent-tools/mcp/StreamableHttpMcpClient.ts`、`agent-tools/mcp/mcp-oauth.ts`、`agent-tools/mcp/types.ts`。
+> **P105–P109 批次（G23/G24/G27/G29/G33）已全部落地**：P105（Windows 沙箱宿主 + 代理强制）/ P106（Agent Plugins + 市场目录）/ P107（Thread sections + 分页历史）/ P108（每-turn 委派模式）/ P109（MCP 断线重连 + OAuth 回调端口），明细见「已完成（历史）」。差距表 v3 全行闭环，暂无排期项，剩余远期项见下节。
 
 ## 剩余（远期，未排期）
 
@@ -240,3 +236,15 @@ P95（MCP 2026-07-28 协议升级，G28）已落地：默认 `protocolVersion` �
 已完成 P94–P104 批次收尾检查：九包全量测试全部通过（agent 698 / agent-channels 59 / agent-cli 58 / agent-gateway 213 / agent-providers 13 / agent-ssh 8 / agent-tools 307 / agent-ui 391 / agent-vscode 6，共 1753 passing）；九包 package build 全部通过；`agent-vscode` 构建联动 `agent-ui build:web` 成功，产出 `web/dist/agent-console.js` 3.1MB 及 VS Code `media/agent-console.js`。本次验证未发现源码回归，P105+ 仍作为下一阶段计划。
 
 P105（Windows sandbox 宿主边界 + 网络代理强制，G23）已落地：`sandbox-exec` 新增 `windows-native` 与 `wsl-bwrap` 两级探测，检测到 `tsdi-agent-sandbox.exe` 时所有 Windows sandbox 命令经 `--mode/--workspace` helper 协议进入 restricted-token / Job Object / firewall 宿主，未安装 helper 时探测 WSL2 bwrap；新增 filesystem-write / network / read-denied 三项能力矩阵和按能力降级原因，避免把进程级 fallback 误报为原生隔离；`sandbox.proxy` 支持 HTTP/HTTPS/NO_PROXY 注入与 `required` fail-closed，并完整进入 harness profile snapshot/apply；agent-ui `/permissions [status]` 展示平台、实际工具和能力矩阵。回归：agent 704 passing、agent-ui 391 passing；agent / agent-ui / agent-tools / agent-gateway build clean。
+
+P106（Agent Plugins 便携插件 + 市场目录，G27）已落地：在 P87 `RemoteSkillManager` 之上新增 `AgentPluginManager`/`plugins` 工具——插件 manifest（`plugin.json`：name/description/skills/connectors/mcpServers/version/hooks）解析与四层市场目录优先级（local/personal/workspace/remote），安装时 skills + MCP servers + hooks 一并注册；插件版本追踪/冲突检测复用 P87 语义；AGENTS.md 支持插件级作用域（目录级自动激活）；plugin analytics（安装/激活/调用计数入 audit）。回归：agent-tools 315 passing。
+
+P109（MCP 断线重连 + OAuth 回调端口，G33）已落地：`StdioMcpClient`/`StreamableHttpMcpClient` 增加指数退避自动重连——进程存活探测 + 会话续期（`server/initialized` 重放），重连窗口内并发请求排队而非失败；`mcp-oauth.ts` 读取配置回调端口（`mcp.oauthCallbackPort`）并 honor。回归：agent-tools 315 passing。
+
+P107（Thread sections + 分页历史，G24）已落地：`SessionStore` 扩展 section 模型（`AgentSessionSection { id, label }` + `addSection/renameSection/moveSection/deleteSection/listSections`，持久化于 `AgentState.sections`/实体表列，fork 时随 transcript 复制）；gateway `SessionInfo`/`SessionThreadGroup` 透出 sections，`session.messages` 升级为分页返回（`{ sessionId, messages, sections, nextCursor, hasMore }`，cursor/before/limit 增量浏览长转录），新增 `session.section.*` 5 RPC（list/create/rename/move/delete，owner 校验 + createIfMissing）；agent-ui `/sections` 命令（list/create/rename/move/delete）+ `/threads` 展示 sections 分组 + `loadSessionPage` 增量拉取 + `mergeMessagesPage` append/prepend 渲染。回归：agent 新增 `session-sections.spec.ts` 11 例（716 passing）、agent-gateway 11 例（224 passing）、agent-ui 9 例（400 passing），三包 tsc clean + build clean。
+
+P108（每-turn 多代理委派模式，G29）已落地：新增纯模块 `agent/src/runtime/DelegationMode.ts`——`AgentDelegationMode`（'disabled' | 'explicit' | 'proactive'）+ `normalizeDelegationMode` + `buildDelegationModeHint`（proactive 注入「何时 spawn_agent/parallel_spawn」指导、disabled 声明委派禁用、explicit 空串保证默认系统提示逐字节不变）+ `extractCodingTaskDeliverySignal`/`buildDelegationQualityNote`（仅对 `ran: true` 执行结果做 gate：failedActionId / deliveryIncomplete 触发、干净交付/纯 plan 不触发）；`AgentTurnInput.agent.delegationMode` 与 `AgentOptions.delegationMode`（默认 'explicit'）；`AgentRuntime` 抽象 `setSessionDelegationMode`/`getSessionDelegationMode` no-op 基座，`DefaultAgentRuntime` 实现 `sessionDelegationModes` map + `resolveDelegationMode`（优先级 turn → session → option）+ `buildModelRequest` 追加模式提示与一次性质量 note 系统消息（消费即清）；`ToolInvocationResult.structuredOutput` 捕获 `coding_task` 原始输出（coordinator 与直连两路径），`maybeApplyDelegationQualityGate` 挂载 `invokeSingleTool`/`executeToolsParallel`；gateway `session.delegation_mode.set/get` RPC（镜像 sandbox_mode：方法表 + switch + handler + `normalizeDelegationModeValue`，'default'/'explicit' 重置、非法 -32602、owner 403）；agent-ui `/delegation mode [disabled|explicit|proactive|default]` + `/status` 展示 delegation + help hints。回归：agent 新增 `delegation-mode.spec.ts` 13 例（729 passing）、agent-gateway 2 例（225 passing）、agent-ui 4 例（404 passing），三包 tsc clean + build clean。
+
+### 本轮收尾验证（P105–P109 批次，2026-08-13）
+
+九包全量测试全部通过（agent 729 / agent-channels 59 / agent-cli 58 / agent-gateway 225 / agent-providers 13 / agent-ssh 8 / agent-tools 315 / agent-ui 404 / agent-vscode 6，共 1817 passing）；九包 `tsc --noEmit` clean；agent / agent-gateway / agent-ui / agent-vscode package build 全部通过，`agent-vscode` 构建联动 `agent-ui build:web` 成功产出 `web/dist/agent-console.js` 3.1MB 及 VS Code `media/agent-console.js`。差距表 v3（G23–G33）全行闭环，P105+ 打磨计划全部落地，剩余为「远期」桌面壳/移动 remote 与 GitHub/GitLab 集成。

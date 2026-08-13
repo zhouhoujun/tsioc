@@ -3,7 +3,7 @@ import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
-import { SessionInfo, SessionProjectGroup, SessionThreadGroup } from '../contracts/SessionInfo';
+import { SessionInfo, SessionProjectGroup, SessionThreadGroup, AgentSessionSectionInfo } from '../contracts/SessionInfo';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
@@ -418,7 +418,8 @@ export class SessionHandler {
                 sessionRole: state.sessionRole ?? undefined,
                 rootRequest: state.rootRequest ?? undefined,
                 focusSummary: state.focusSummary ?? undefined,
-                threadStatus: state.threadStatus ?? undefined
+                threadStatus: state.threadStatus ?? undefined,
+                sections: this.deriveSectionInfos(state)
             });
         }
         return infos.sort((left, right) => {
@@ -542,6 +543,7 @@ export class SessionHandler {
                         : role === 'branch' ? 'discovery' : undefined,
                     originThreadId: String(representative?.originThreadId || '').trim() || undefined,
                     currentSessionId: representative?.id,
+                    sections: representative?.sections,
                     sessionCount: sessions.length,
                     createdAt: Math.min(...sessions.map(session => session.createdAt ?? 0), 0) || undefined,
                     updatedAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0) || undefined,
@@ -556,6 +558,25 @@ export class SessionHandler {
                 }
                 return left.threadId.localeCompare(right.threadId);
             });
+    }
+
+    private deriveSectionInfos(state: { sections?: Array<{ id: string; label: string }>; messages?: Array<{ sectionId?: string }> }): AgentSessionSectionInfo[] | undefined {
+        const sections = Array.isArray(state.sections) ? state.sections.filter(section => section && String(section.id || '').trim()) : [];
+        if (!sections.length) {
+            return undefined;
+        }
+        const counts = new Map<string, number>();
+        for (const message of state.messages ?? []) {
+            const sectionId = String(message.sectionId || '').trim();
+            if (sectionId) {
+                counts.set(sectionId, (counts.get(sectionId) ?? 0) + 1);
+            }
+        }
+        return sections.map(section => ({
+            id: section.id,
+            label: section.label,
+            messageCount: counts.get(section.id) ?? 0
+        }));
     }
 
     private resolveThreadId(state: { sessionId?: string; id?: string; primaryThreadId?: string | null }): string {

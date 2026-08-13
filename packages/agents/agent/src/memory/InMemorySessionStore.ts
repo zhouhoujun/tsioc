@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSnapshotInfo, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
@@ -27,6 +27,7 @@ export class InMemorySessionStore extends SessionStore {
         return {
             sessionId: state.sessionId,
             messages: state.messages.slice(),
+            sections: Array.isArray(state.sections) ? state.sections.map(section => ({ ...section })) : undefined,
             summary: state.summary,
             title: state.title,
             pinned: state.pinned,
@@ -122,13 +123,97 @@ export class InMemorySessionStore extends SessionStore {
         return deriveThreadIndexes(Array.from(this.sessions.values()));
     }
 
-    async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
+    async appendRaw(sessionId: string, message: AgentMessage): Promise<AgentState> {
         const state = await this.get(sessionId);
         state.messages.push(message);
         state.updatedAt = Date.now();
         state.createdAt ??= state.updatedAt;
         this.sessions.set(sessionId, state);
         return this.get(sessionId);
+    }
+
+    async listSections(sessionId: string): Promise<AgentSessionSection[]> {
+        const state = await this.get(sessionId);
+        return Array.isArray(state.sections) ? state.sections.map(section => ({ ...section })) : [];
+    }
+
+    async addSection(sessionId: string, label: string, beforeId?: string, sectionId?: string): Promise<AgentSessionSection> {
+        const normalizedLabel = String(label || '').trim();
+        if (!normalizedLabel) {
+            throw new Error('section label required');
+        }
+        const state = await this.get(sessionId);
+        const sections = Array.isArray(state.sections) ? state.sections : [];
+        const id = String(sectionId || '').trim() || `section-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        if (sections.some(section => section.id === id)) {
+            throw new Error(`section '${id}' already exists`);
+        }
+        const section: AgentSessionSection = { id, label: normalizedLabel, createdAt: Date.now() };
+        const insertAt = String(beforeId || '').trim()
+            ? sections.findIndex(existing => existing.id === beforeId)
+            : -1;
+        if (insertAt >= 0) {
+            sections.splice(insertAt, 0, section);
+        } else {
+            sections.push(section);
+        }
+        state.sections = sections;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+        return { ...section };
+    }
+
+    async renameSection(sessionId: string, sectionId: string, label: string): Promise<void> {
+        const normalizedLabel = String(label || '').trim();
+        if (!normalizedLabel) {
+            throw new Error('section label required');
+        }
+        const state = await this.get(sessionId);
+        const section = (Array.isArray(state.sections) ? state.sections : []).find(existing => existing.id === sectionId);
+        if (!section) {
+            throw new Error(`section '${sectionId}' not found`);
+        }
+        section.label = normalizedLabel;
+        section.updatedAt = Date.now();
+        state.updatedAt = Date.now();
+        this.sessions.set(sessionId, state);
+    }
+
+    async moveSection(sessionId: string, sectionId: string, beforeId?: string): Promise<void> {
+        const state = await this.get(sessionId);
+        const sections = Array.isArray(state.sections) ? state.sections : [];
+        const index = sections.findIndex(existing => existing.id === sectionId);
+        if (index < 0) {
+            throw new Error(`section '${sectionId}' not found`);
+        }
+        const [section] = sections.splice(index, 1);
+        const target = String(beforeId || '').trim()
+            ? sections.findIndex(existing => existing.id === beforeId)
+            : -1;
+        if (target >= 0) {
+            sections.splice(target, 0, section);
+        } else {
+            sections.push(section);
+        }
+        state.sections = sections;
+        state.updatedAt = Date.now();
+        this.sessions.set(sessionId, state);
+    }
+
+    async deleteSection(sessionId: string, sectionId: string): Promise<void> {
+        const state = await this.get(sessionId);
+        if (!Array.isArray(state.sections) || !state.sections.some(section => section.id === sectionId)) {
+            return;
+        }
+        state.sections = state.sections.filter(section => section.id !== sectionId);
+        for (const message of state.messages) {
+            if (message.sectionId === sectionId) {
+                message.sectionId = undefined;
+            }
+        }
+        state.updatedAt = Date.now();
+        this.sessions.set(sessionId, state);
     }
 
     async setSummary(sessionId: string, summary: string): Promise<void> {

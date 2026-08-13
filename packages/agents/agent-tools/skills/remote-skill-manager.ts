@@ -21,7 +21,7 @@ export interface RemoteSkillProcessRunner {
     fetchText(url: string, timeoutMs?: number): Promise<string>;
 }
 
-class NodeRemoteSkillProcessRunner implements RemoteSkillProcessRunner {
+export class NodeRemoteSkillProcessRunner implements RemoteSkillProcessRunner {
     run(command: string, args: string[], options?: { cwd?: string; timeoutMs?: number; }): Promise<RemoteSkillProcessResult> {
         return new Promise<RemoteSkillProcessResult>(resolve => {
             execFile(command, args, {

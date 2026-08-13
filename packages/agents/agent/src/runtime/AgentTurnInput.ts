@@ -1,5 +1,7 @@
 import { AgentTurnMessageInput } from './AgentMessage';
 
+export { AgentDelegationMode } from './DelegationMode';
+
 /** Per-tool permission for a single turn (A5 per-agent permission matrix). */
 export type AgentToolPermission = 'allow' | 'ask' | 'deny';
 
@@ -21,6 +23,14 @@ export interface AgentTurnAgentConfig {
      * keeps the adapter's option-level default.
      */
     reasoning?: boolean;
+    /**
+     * G29: per-turn delegation mode override. 'disabled' blocks delegation
+     * tools, 'explicit' keeps the default (delegate only when explicitly
+     * requested), 'proactive' injects delegation guidance into the system
+     * prompt and enables the coding_task delivery quality gate. Undefined
+     * keeps the session/option-level default.
+     */
+    delegationMode?: import('./DelegationMode').AgentDelegationMode;
 }
 
 export interface AgentTurnInput {

@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
 export type AgentSessionExportFormat = 'json' | 'jsonl';
 
@@ -39,6 +39,7 @@ export interface AgentConsoleSessionChoice {
     rootRequest?: string;
     focusSummary?: string;
     threadStatus?: string;
+    sections?: AgentSessionSectionInfo[];
 }
 
 export interface AgentConsoleSessionProjectGroup {
@@ -67,6 +68,7 @@ export interface AgentConsoleSessionThreadGroup {
     currentSessionId?: string;
     sessionCount: number;
     lastActiveAt: number;
+    sections?: AgentSessionSectionInfo[];
     sessions: AgentConsoleSessionChoice[];
 }
 
@@ -118,7 +120,8 @@ export class AgentConsoleSessionService {
                     sessionRole: item?.sessionRole,
                     rootRequest: item?.rootRequest,
                     focusSummary: item?.focusSummary,
-                    threadStatus: item?.threadStatus
+                    threadStatus: item?.threadStatus,
+                    sections: Array.isArray(item?.sections) ? item.sections : undefined
                 })).filter(item => !!item.id)
                 : [];
             return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
@@ -162,7 +165,8 @@ export class AgentConsoleSessionService {
                             sessionRole: item?.sessionRole,
                             rootRequest: item?.rootRequest,
                             focusSummary: item?.focusSummary,
-                            threadStatus: item?.threadStatus
+                            threadStatus: item?.threadStatus,
+                            sections: Array.isArray(item?.sections) ? item.sections : undefined
                         })).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
@@ -199,6 +203,7 @@ export class AgentConsoleSessionService {
                     currentSessionId: String(thread?.currentSessionId || '').trim() || undefined,
                     sessionCount: Number(thread?.sessionCount || 0),
                     lastActiveAt: Number(thread?.lastActiveAt || 0),
+                    sections: Array.isArray(thread?.sections) ? thread.sections : undefined,
                     sessions: Array.isArray(thread?.sessions)
                         ? this.sortSessionChoices(thread.sessions.map((item: any) => ({
                             id: String(item?.id || ''),
@@ -215,7 +220,8 @@ export class AgentConsoleSessionService {
                             sessionRole: item?.sessionRole,
                             rootRequest: item?.rootRequest,
                             focusSummary: item?.focusSummary,
-                            threadStatus: item?.threadStatus
+                            threadStatus: item?.threadStatus,
+                            sections: Array.isArray(item?.sections) ? item.sections : undefined
                         })).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
@@ -235,19 +241,102 @@ export class AgentConsoleSessionService {
         return [];
     }
 
-    async loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]> {
+    async loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<{ messages: AgentMessage[]; sections?: AgentSessionSection[]; nextCursor?: string; hasMore?: boolean; }> {
         if (this.appRpc) {
-            const messages = await this.appRpc.request('session.messages', { sessionId }, context);
-            return Array.isArray(messages) ? messages : [];
+            const params: Record<string, any> = { sessionId };
+            if (options?.cursor) {
+                params.cursor = options.cursor;
+            }
+            if (options?.before) {
+                params.before = true;
+            }
+            if (options?.limit != null) {
+                params.limit = options.limit;
+            }
+            const page = await this.appRpc.request('session.messages', params, context);
+            if (page && typeof page === 'object' && Array.isArray(page.messages)) {
+                return {
+                    messages: page.messages,
+                    sections: Array.isArray(page.sections) ? page.sections : undefined,
+                    nextCursor: page.nextCursor,
+                    hasMore: !!page.hasMore
+                };
+            }
+            return { messages: Array.isArray(page) ? page : [] };
         }
         if (this.runtime) {
-            return this.runtime.getMessages(sessionId);
+            const messages = await this.runtime.getMessages(sessionId);
+            const state = typeof (this.runtime as any).getSessionState === 'function'
+                ? await (this.runtime as any).getSessionState(sessionId)
+                : undefined;
+            return {
+                messages,
+                sections: Array.isArray(state?.sections) ? state.sections : undefined
+            };
         }
         if (this.sessionStore) {
             const state = await this.sessionStore.get(sessionId);
-            return Array.isArray(state.messages) ? state.messages : [];
+            return {
+                messages: Array.isArray(state.messages) ? state.messages : [],
+                sections: Array.isArray((state as any).sections) ? (state as any).sections : undefined
+            };
+        }
+        return { messages: [] };
+    }
+
+    async loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]> {
+        const page = await this.loadMessagesPage(sessionId, context);
+        return page.messages;
+    }
+
+    async listSections(sessionId: string, context?: any): Promise<AgentSessionSection[]> {
+        if (this.appRpc) {
+            const sections = await this.appRpc.request('session.section.list', { sessionId }, context);
+            return Array.isArray(sections) ? sections : [];
+        }
+        if (this.sessionStore) {
+            return this.sessionStore.listSections(sessionId);
         }
         return [];
+    }
+
+    async createSection(sessionId: string, label: string, context?: any, options?: { beforeId?: string; }): Promise<AgentSessionSection> {
+        if (this.appRpc) {
+            return await this.appRpc.request('session.section.create', {
+                sessionId,
+                label,
+                ...(options?.beforeId ? { beforeId: options.beforeId } : {})
+            }, context);
+        }
+        return this.sessionStore!.addSection(sessionId, label, options?.beforeId);
+    }
+
+    async renameSection(sessionId: string, sectionId: string, label: string, context?: any): Promise<void> {
+        if (this.appRpc) {
+            await this.appRpc.request('session.section.rename', { sessionId, sectionId, label }, context);
+            return;
+        }
+        await this.sessionStore?.renameSection(sessionId, sectionId, label);
+    }
+
+    async moveSection(sessionId: string, sectionId: string, context?: any, options?: { beforeId?: string; }): Promise<void> {
+        if (this.appRpc) {
+            await this.appRpc.request('session.section.move', {
+                sessionId,
+                sectionId,
+                ...(options?.beforeId ? { beforeId: options.beforeId } : {})
+            }, context);
+            return;
+        }
+        await this.sessionStore?.moveSection(sessionId, sectionId, options?.beforeId);
+    }
+
+    async deleteSection(sessionId: string, sectionId: string, context?: any): Promise<void> {
+        if (this.appRpc) {
+            await this.appRpc.request('session.section.delete', { sessionId, sectionId }, context);
+            return;
+        }
+        await this.sessionStore?.deleteSection(sessionId, sectionId);
     }
 
     async searchSessions(query: string, context?: any): Promise<SessionSearchMatch[]> {
@@ -759,6 +848,7 @@ export class AgentConsoleSessionService {
         rootRequest?: string;
         focusSummary?: string;
         threadStatus?: string;
+        sections?: AgentSessionSection[];
     }): AgentConsoleSessionChoice {
         return {
             id: sessionId,
@@ -776,7 +866,10 @@ export class AgentConsoleSessionService {
             sessionRole: state?.sessionRole,
             rootRequest: state?.rootRequest,
             focusSummary: state?.focusSummary,
-            threadStatus: state?.threadStatus
+            threadStatus: state?.threadStatus,
+            sections: Array.isArray(state?.sections)
+                ? deriveSectionInfos(state.sections, state?.messages)
+                : undefined
         };
     }
 
@@ -1148,6 +1241,7 @@ export class AgentConsoleSessionService {
             currentSessionId?: string;
             sessionIds: string[];
             lastActiveAt?: number;
+            sections?: AgentSessionSectionInfo[];
         }>,
         sessions: AgentConsoleSessionChoice[]
     ): AgentConsoleSessionThreadGroup[] {
@@ -1163,6 +1257,9 @@ export class AgentConsoleSessionService {
                 const title = String(thread.title || representative?.focusSummary || representative?.rootRequest || '').trim() || undefined;
                 const rootRequest = String(thread.rootRequest || representative?.rootRequest || '').trim() || undefined;
                 const sessionRole = String(representative?.sessionRole || '').trim() || undefined;
+                const threadSections = Array.isArray(thread.sections) && thread.sections.length > 0
+                    ? thread.sections
+                    : representative?.sections;
                 return {
                     threadId: String(thread.threadId || '').trim(),
                     projectId,
@@ -1173,6 +1270,7 @@ export class AgentConsoleSessionService {
                     stage: String(thread.stage || '').trim() || undefined,
                     originThreadId: String(thread.originThreadId || representative?.originThreadId || '').trim() || undefined,
                     currentSessionId: String(thread.currentSessionId || representative?.id || '').trim() || undefined,
+                    sections: threadSections,
                     sessions: this.sortSessionChoices(groupedSessions),
                     sessionCount: groupedSessions.length,
                     lastActiveAt: Number(thread.lastActiveAt || Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0))

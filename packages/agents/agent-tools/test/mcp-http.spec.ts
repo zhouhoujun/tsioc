@@ -65,6 +65,10 @@ function createTmpDir(): string {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'tsioc-mcp-'));
 }
 
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function defaultMcpHandler(req: CapturedRequest, res: http.ServerResponse): void {
     if (req.method === 'initialize') {
         respondJson(res, {
@@ -562,6 +566,163 @@ export class AgentMcpStreamableHttpTest {
                 auth: { type: 'bearer', bearerToken: 'static' }
             });
             expect(ok).toEqual(false);
+        } finally {
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('StreamableHttpMcpClient reconnects and retries after a transient transport failure')
+    async streamableHttpClientReconnectsAndRetriesAfterTransientTransportFailure() {
+        const tmp = createTmpDir();
+        let initializeCalls = 0;
+        let toolsListCalls = 0;
+        const harness = await startMcpServer((req, res) => {
+            if (req.method === 'initialize') {
+                initializeCalls++;
+                respondJson(res, {
+                    jsonrpc: '2.0',
+                    id: req.id,
+                    result: {
+                        protocolVersion: '2026-07-28',
+                        capabilities: { tools: {} },
+                        serverInfo: { name: 'mock', version: '1.0.0' }
+                    }
+                }, 200, { 'mcp-session-id': `sess-${initializeCalls}` });
+                return;
+            }
+            if (req.method === 'notifications/initialized') {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end('{}');
+                return;
+            }
+            if (req.method === 'tools/list') {
+                toolsListCalls++;
+                if (toolsListCalls === 1) {
+                    res.writeHead(503, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ jsonrpc: '2.0', id: req.id, error: { code: -32000, message: 'temporary overload' } }));
+                    return;
+                }
+                respondJson(res, { jsonrpc: '2.0', id: req.id, result: { tools: [{ name: 'echo', description: 'Echo' }] } });
+                return;
+            }
+            defaultMcpHandler(req, res);
+        });
+        try {
+            const client = new StreamableHttpMcpClient(
+                { id: 'retry', url: `http://127.0.0.1:${harness.port}/mcp`, reconnectMaxAttempts: 3 },
+                mergeAgentMcpOptions({ credentialsPath: `${tmp}/creds.json` })
+            );
+            const tools = await client.listTools();
+            expect(tools.map(tool => tool.name)).toEqual(['echo']);
+            expect(toolsListCalls).toEqual(2);
+            expect(initializeCalls).toEqual(2);
+            expect(client.getConnectionStatus()?.reconnectCount).toEqual(1);
+        } finally {
+            harness.server.close();
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('StreamableHttpMcpClient surfaces transport failures directly when autoReconnect is disabled')
+    async streamableHttpClientSurfacesTransportFailuresWhenAutoReconnectDisabled() {
+        const tmp = createTmpDir();
+        let initializeCalls = 0;
+        const harness = await startMcpServer((req, res) => {
+            if (req.method === 'initialize') {
+                initializeCalls++;
+                defaultMcpHandler(req, res);
+                return;
+            }
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ jsonrpc: '2.0', id: req.id, error: { code: -32603, message: 'boom' } }));
+        });
+        try {
+            const client = new StreamableHttpMcpClient(
+                { id: 'no-retry', url: `http://127.0.0.1:${harness.port}/mcp`, autoReconnect: false },
+                mergeAgentMcpOptions({ credentialsPath: `${tmp}/creds.json` })
+            );
+            let error: Error | undefined;
+            try {
+                await client.listTools();
+            } catch (err) {
+                error = err as Error;
+            }
+            expect(error?.message).toContain('500');
+            expect(initializeCalls).toEqual(1);
+            expect(client.getConnectionStatus()?.reconnectCount).toEqual(0);
+        } finally {
+            harness.server.close();
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('McpOAuthClient honors oauthCallbackPort for the PKCE loopback listener')
+    async oauthClientHonorsOauthCallbackPort() {
+        const tmp = createTmpDir();
+        const fixedPort = 18943;
+        try {
+            const interaction = new RecordingInteraction();
+            const oauth = new McpOAuthClient(
+                mergeAgentMcpOptions({ credentialsPath: `${tmp}/creds.json`, oauthCallbackPort: fixedPort }),
+                {
+                    interaction,
+                    fetchImpl: (async (input: any) => {
+                        const url = String(input);
+                        if (url.startsWith('https://example.com/token')) {
+                            return {
+                                ok: true,
+                                status: 200,
+                                json: async () => ({
+                                    access_token: 'pkce-access',
+                                    refresh_token: 'pkce-refresh',
+                                    token_type: 'Bearer',
+                                    expires_in: 3600
+                                })
+                            };
+                        }
+                        throw new Error(`unexpected fetch: ${url}`);
+                    }) as any
+                }
+            );
+            const server: AgentMcpServerOptions = {
+                id: 'pkce',
+                url: 'https://example.com/mcp',
+                auth: {
+                    type: 'oauth',
+                    clientId: 'client-1',
+                    authorizationEndpoint: 'https://example.com/authorize',
+                    tokenEndpoint: 'https://example.com/token'
+                }
+            };
+            const completed = await Promise.race([
+                oauth.authorizeAndStore(server).then(() => true).catch(() => false),
+                (async () => {
+                    let authUrl = '';
+                    for (let i = 0; i < 50 && !authUrl; i++) {
+                        authUrl = interaction.openCalls[0] ?? '';
+                        if (!authUrl) {
+                            await sleep(10);
+                        }
+                    }
+                    if (!authUrl) {
+                        return false;
+                    }
+                    const parsed = new URL(authUrl);
+                    const state = parsed.searchParams.get('state');
+                    await new Promise<void>((resolve, reject) => {
+                        const req = http.get(`http://127.0.0.1:${fixedPort}/callback?code=test-code&state=${state}`, res => {
+                            res.resume();
+                            resolve();
+                        });
+                        req.on('error', reject);
+                    });
+                    return true;
+                })()
+            ]);
+            expect(completed).toEqual(true);
+            const parsedAuthUrl = new URL(interaction.openCalls[0]);
+            expect(parsedAuthUrl.searchParams.get('redirect_uri')).toEqual(`http://127.0.0.1:${fixedPort}/callback`);
+            expect(oauth.getStore().get(server.id)?.token.accessToken).toEqual('pkce-access');
         } finally {
             fs.rmSync(tmp, { recursive: true, force: true });
         }

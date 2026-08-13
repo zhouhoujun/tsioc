@@ -13,6 +13,8 @@ import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
 import { RemoteSkillManager } from './remote-skill-manager';
 import { RemoteSkillTool } from './remote-skill.tool';
 import { resolveAgentRootSettings } from '../src/settings';
+import { AgentPluginManager, provideAgentPluginContributions } from './plugin-manager';
+import { AgentPluginTool } from './plugin.tool';
 
 export interface AgentSkillsOptions {
     root?: string;
@@ -21,6 +23,7 @@ export interface AgentSkillsOptions {
     defaults?: boolean;
     /** Local cache directory for remote skills (defaults to ~/.tsdi-agent/skills). */
     remoteCacheDir?: string;
+    pluginRoots?: Partial<Record<'local' | 'personal' | 'workspace' | 'remote', string>>;
 }
 
 export function withAgentSkills(...skills: AgentSkillDefinition[]): Provider[] {
@@ -43,8 +46,12 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
     const loaded = resolvedRoots.size ? loadAgentSkillsFromRootsSync(Array.from(resolvedRoots.values()), { source: 'workspace' }) : [];
     const remoteCacheDir = options.remoteCacheDir || new RemoteSkillManager().defaultCacheDir();
     const remoteLoaded = remoteCacheDir ? loadAgentSkillsFromRootsSync([remoteCacheDir], { source: 'remote' }) : [];
+    const pluginManager = new AgentPluginManager();
+    const pluginRoots = { ...pluginManager.defaultRoots(options.root), ...(options.pluginRoots ?? {}) };
+    const activePlugins = pluginManager.discover(pluginRoots).map(plugin => pluginManager.activate(plugin));
+    const pluginLoaded = pluginManager.contributions(activePlugins).skills;
     const skills = mergeSkills(
-        mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded),
+        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded), pluginLoaded),
         mergeSkills(remoteLoaded, options.skills ?? [])
     );
     return [
@@ -55,6 +62,9 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         ListSkillTool,
         RemoteSkillManager,
         RemoteSkillTool,
+        AgentPluginManager,
+        AgentPluginTool,
+        provideAgentPluginContributions(pluginRoots),
         SkillsCatalogSection,
         ActiveSkillsSection,
         SkillTurnInterceptor,
@@ -63,6 +73,7 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         { provide: AGENT_TOOLS, useExisting: ReadSkillTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: ListSkillTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: RemoteSkillTool, multi: true },
+        { provide: AGENT_TOOLS, useExisting: AgentPluginTool, multi: true },
         { provide: AGENT_TURN_INTERCEPTORS, useExisting: SkillTurnInterceptor, multi: true }
     ];
 }

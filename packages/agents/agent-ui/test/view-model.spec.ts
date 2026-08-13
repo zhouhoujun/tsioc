@@ -186,6 +186,20 @@ class RuntimeStub {
         return this.sandboxModes.get(sessionId);
     }
 
+    delegationModes = new Map<string, 'disabled' | 'explicit' | 'proactive'>();
+
+    setSessionDelegationMode(sessionId: string, mode?: 'disabled' | 'explicit' | 'proactive' | null): void {
+        if (mode == null) {
+            this.delegationModes.delete(sessionId);
+            return;
+        }
+        this.delegationModes.set(sessionId, mode);
+    }
+
+    getSessionDelegationMode(sessionId: string): 'disabled' | 'explicit' | 'proactive' {
+        return this.delegationModes.get(sessionId) ?? 'explicit';
+    }
+
     async undoFileChange(): Promise<any> {
         this.calls.push('undo:file');
         return { filePath: '/ws/a.txt', restored: 'content' };
@@ -385,6 +399,7 @@ class AppRpcStub {
     turnDiagnosticsRecords: any[] = [];
     turnDiagnosticsTrend: any[] = [];
     sandboxModes = new Map<string, string>();
+    delegationModes = new Map<string, string>();
     audioStatesBySession = new Map<string, { bufferedBytes: number; chunks: string[] }>();
     audioStatusOverride: Record<string, any> | null = null;
     gitStepSnapshots: any[] = [];
@@ -394,10 +409,21 @@ class AppRpcStub {
     reviewRunDetail: Record<string, any> | null = null;
     reviewSaved: any[] = [];
     runTurnResults: Array<Record<string, any>> = [];
+    pageResults?: Record<string, any> | null = null;
+    sectionsBySession = new Map<string, any[]>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
         this.calls.push({ method, params, context });
+        if (method === 'session.messages') {
+            if (this.pageResults) {
+                return this.pageResults;
+            }
+            return { messages: [] };
+        }
+        if (method === 'session.section.list') {
+            return this.sectionsBySession.get(String(params?.sessionId || '')) || [];
+        }
         if (method === 'app.state') {
             return this.state;
         }
@@ -504,6 +530,20 @@ class AppRpcStub {
         if (method === 'session.sandbox_mode.get') {
             const sessionId = String(params?.sessionId || 'console');
             return { sessionId, mode: this.sandboxModes.get(sessionId) || 'default' };
+        }
+        if (method === 'session.delegation_mode.set') {
+            const sessionId = String(params?.sessionId || 'console');
+            const mode = String(params?.mode || 'explicit');
+            if (mode === 'default' || mode === 'explicit') {
+                this.delegationModes.delete(sessionId);
+                return { sessionId, mode: 'explicit' };
+            }
+            this.delegationModes.set(sessionId, mode as 'disabled' | 'proactive');
+            return { sessionId, mode };
+        }
+        if (method === 'session.delegation_mode.get') {
+            const sessionId = String(params?.sessionId || 'console');
+            return { sessionId, mode: this.delegationModes.get(sessionId) || 'explicit' };
         }
         if (method === 'todo.get') {
             if (this.todoFailuresBySession.has(params?.sessionId)) {
@@ -839,6 +879,11 @@ class SessionServiceStub extends AgentConsoleSessionService {
     messagesBySession = new Map<string, any[]>();
     ensureSessionHandlers = new Map<string, () => Promise<AgentConsoleSessionChoice>>();
     loadMessagesHandlers = new Map<string, () => Promise<any[]>>();
+    sectionsBySession = new Map<string, any[]>();
+    sectionCreateCount = 0;
+    renameCalls: Array<{ sessionId: string; sectionId: string; label: string }> = [];
+    moveCalls: Array<{ sessionId: string; sectionId: string; beforeId?: string }> = [];
+    deleteCalls: Array<{ sessionId: string; sectionId: string }> = [];
     rpcRef?: AppRpcStub | null;
     protected runtimeRef: RuntimeStub;
 
@@ -1101,6 +1146,79 @@ class SessionServiceStub extends AgentConsoleSessionService {
             return this.messagesBySession.get(sessionId)!;
         }
         return this.runtimeRef.getMessages(sessionId);
+    }
+
+    override async loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<{ messages: any[]; sections?: any[]; nextCursor?: string; hasMore?: boolean; }> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const params: Record<string, any> = { sessionId };
+            if (options?.cursor) {
+                params.cursor = options.cursor;
+            }
+            if (options?.before) {
+                params.before = true;
+            }
+            if (options?.limit != null) {
+                params.limit = options.limit;
+            }
+            const page = await rpc.request('session.messages', params, context);
+            if (page && typeof page === 'object' && Array.isArray(page.messages)) {
+                return { messages: page.messages, sections: page.sections, nextCursor: page.nextCursor, hasMore: !!page.hasMore };
+            }
+            return { messages: Array.isArray(page) ? page : [] };
+        }
+        const messages = await this.loadMessages(sessionId);
+        return { messages, sections: this.sectionsBySession.get(sessionId) };
+    }
+
+    override async createSection(sessionId: string, label: string, context?: any, options?: { beforeId?: string; }): Promise<any> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            return rpc.request('session.section.create', { sessionId, label, ...(options?.beforeId ? { beforeId: options.beforeId } : {}) }, context);
+        }
+        const section = { id: `section-${this.sectionCreateCount++}`, label, createdAt: Date.now() };
+        const list = this.sectionsBySession.get(sessionId) || [];
+        list.push(section);
+        this.sectionsBySession.set(sessionId, list);
+        return section;
+    }
+
+    override async listSections(sessionId: string, context?: any): Promise<any[]> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('session.section.list', { sessionId }, context);
+            return Array.isArray(result) ? result : [];
+        }
+        return this.sectionsBySession.get(sessionId) || [];
+    }
+
+    override async renameSection(sessionId: string, sectionId: string, label: string, context?: any): Promise<void> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            await rpc.request('session.section.rename', { sessionId, sectionId, label }, context);
+            return;
+        }
+        this.renameCalls.push({ sessionId, sectionId, label });
+    }
+
+    override async moveSection(sessionId: string, sectionId: string, context?: any, options?: { beforeId?: string; }): Promise<void> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            await rpc.request('session.section.move', { sessionId, sectionId, ...(options?.beforeId ? { beforeId: options.beforeId } : {}) }, context);
+            return;
+        }
+        this.moveCalls.push({ sessionId, sectionId, beforeId: options?.beforeId });
+    }
+
+    override async deleteSection(sessionId: string, sectionId: string, context?: any): Promise<void> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            await rpc.request('session.section.delete', { sessionId, sectionId }, context);
+            return;
+        }
+        this.deleteCalls.push({ sessionId, sectionId });
+        const list = (this.sectionsBySession.get(sessionId) || []).filter(item => item.id !== sectionId);
+        this.sectionsBySession.set(sessionId, list);
     }
 }
 
@@ -8457,6 +8575,67 @@ export class AgentConsoleComponentTest {
         expect(state.notice).toContain('fast');
         expect(state.notice).toContain('ON (read-only)');
         expect(state.notice).toContain('sandbox workspace');
+        expect(state.notice).toContain('delegation explicit');
+    }
+
+    @Test('delegation mode command shows the current mode with no arguments')
+    async delegationModeCommandShowsCurrentMode() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'dl-1';
+        runtime.setSessionDelegationMode('dl-1', 'proactive');
+
+        await (component as any).handleCommand('/delegation mode');
+
+        expect(state.notice).toContain('Delegation mode: proactive');
+        expect(state.notice).toContain('disabled');
+        expect(state.notice).toContain('explicit');
+        expect(state.notice).toContain('proactive');
+    }
+
+    @Test('delegation mode command sets the mode locally')
+    async delegationModeCommandSetsLocally() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'dl-2';
+
+        await (component as any).handleCommand('/delegation mode disabled');
+        expect(runtime.delegationModes.get('dl-2')).toEqual('disabled');
+        expect(state.notice).toContain('"disabled"');
+
+        await (component as any).handleCommand('/delegation mode default');
+        expect(runtime.delegationModes.has('dl-2')).toEqual(false);
+        expect(state.notice).toContain('configured default');
+    }
+
+    @Test('delegation mode command rejects unknown modes')
+    async delegationModeCommandRejectsUnknown() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        state.sessionId = 'dl-3';
+
+        await (component as any).handleCommand('/delegation mode aggressive');
+
+        expect(state.notice).toContain('Invalid delegation mode');
+        expect(runtime.delegationModes.has('dl-3')).toEqual(false);
+    }
+
+    @Test('delegation mode command routes through app rpc when remote')
+    async delegationModeCommandRoutesThroughRpc() {
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub(), undefined, undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'dl-4';
+
+        await (component as any).handleCommand('/delegation mode proactive');
+        const call = appRpc.calls.find(c => c.method === 'session.delegation_mode.set');
+        expect(call).toBeTruthy();
+        expect((call as any).params).toEqual({ sessionId: 'dl-4', mode: 'proactive' });
+        expect(state.notice).toContain('"proactive"');
+
+        await (component as any).handleCommand('/delegation mode default');
+        const reset = appRpc.calls.find(c => c.method === 'session.delegation_mode.set' && (c as any).params.mode === 'default');
+        expect(reset).toBeTruthy();
+        expect(state.notice).toContain('configured default');
     }
 
     @Test('goal command creates and shows a local persistent goal')
@@ -8972,5 +9151,182 @@ export class AgentConsoleComponentTest {
         );
         expect(submitted).toEqual(false);
         expect(component.input).toEqual('abc');
+    }
+}
+
+@Suite('Agent console session sections (P107)')
+export class AgentConsoleSessionSectionsTest {
+
+    @Test('mergeMessagesPage appends fresh messages and dedupes by id')
+    async mergeMessagesPageAppendsAndDedupes() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'a', role: 'user', content: 'A', createdAt: 1 } as any,
+            { id: 'b', role: 'assistant', content: 'B', createdAt: 2 } as any
+        ]);
+        state.mergeMessagesPage({
+            messages: [
+                { id: 'b', role: 'assistant', content: 'B', createdAt: 2 } as any,
+                { id: 'c', role: 'user', content: 'C', createdAt: 3 } as any
+            ]
+        });
+        expect(state.messages.map(item => item.id)).toEqual(['a', 'b', 'c']);
+    }
+
+    @Test('mergeMessagesPage prepend places older page before existing tail')
+    async mergeMessagesPagePrependsOlderMessages() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'c', role: 'user', content: 'C', createdAt: 3 } as any
+        ]);
+        state.mergeMessagesPage({
+            messages: [
+                { id: 'a', role: 'user', content: 'A', createdAt: 1 } as any,
+                { id: 'b', role: 'assistant', content: 'B', createdAt: 2 } as any
+            ],
+            mode: 'prepend'
+        });
+        expect(state.messages.map(item => item.id)).toEqual(['a', 'b', 'c']);
+    }
+
+    @Test('mergeMessagesPage replaces sections and keeps messages unchanged on empty page')
+    async mergeMessagesPageReplacesSections() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([{ id: 'a', role: 'user', content: 'A', createdAt: 1 } as any]);
+        state.setSections([{ id: 's1', label: 'old', createdAt: 1 }]);
+        state.mergeMessagesPage({
+            messages: [],
+            sections: [{ id: 's2', label: 'new', createdAt: 2 }],
+            hasMore: false
+        });
+        expect(state.sections.map(item => item.id)).toEqual(['s2']);
+        expect(state.messages.length).toEqual(1);
+    }
+
+    @Test('openSession populates sections from the loaded message page')
+    async openSessionPopulatesSectionsFromPage() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [{ id: 'chat-a', current: true, lastActiveAt: 3 }];
+        sessionService.messagesBySession.set('chat-a', [
+            { id: 'msg-1', role: 'assistant', content: 'in section', createdAt: 1, sectionId: 'sec-1' } as any
+        ]);
+        sessionService.sectionsBySession.set('chat-a', [
+            { id: 'sec-1', label: 'Implementation', createdAt: 1 }
+        ]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).openSession('chat-a');
+        expect(component.sessionState.sections.map(item => item.id)).toEqual(['sec-1']);
+        expect(component.sessionState.messages.map(item => item.id)).toEqual(['msg-1']);
+    }
+
+    @Test('sections command creates a section with a label argument')
+    async sectionsCommandCreatesSection() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [{ id: 'chat-a', current: true, lastActiveAt: 3 }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        component.configure({ sessionId: 'chat-a' });
+        const handled = await (component as any).handleCommand('/sections Next step');
+        expect(handled).toEqual(true);
+        expect(sessionService.sectionsBySession.get('chat-a')?.map(item => item.label)).toEqual(['Next step']);
+        expect(component.sessionState.sections.map(item => item.label)).toEqual(['Next step']);
+    }
+
+    @Test('sections command lists sections and supports delete action')
+    async sectionsCommandListsAndDeletes() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [{ id: 'chat-a', current: true, lastActiveAt: 3 }];
+        sessionService.sectionsBySession.set('chat-a', [
+            { id: 'sec-1', label: 'Analysis', createdAt: 1 },
+            { id: 'sec-2', label: 'Implementation', createdAt: 2 }
+        ]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        component.configure({ sessionId: 'chat-a' });
+        await (component as any).refreshCurrentSections();
+        expect(component.sessionState.sections.map(item => item.label)).toEqual(['Analysis', 'Implementation']);
+        await sessionService.deleteSection('chat-a', 'sec-1');
+        const remaining = sessionService.sectionsBySession.get('chat-a')!;
+        expect(remaining.map(item => item.id)).toEqual(['sec-2']);
+        expect(sessionService.deleteCalls[0]).toEqual({ sessionId: 'chat-a', sectionId: 'sec-1' });
+    }
+
+    @Test('sections command move records beforeId and rename records label')
+    async sectionsCommandMoveAndRename() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.sessions = [{ id: 'chat-a', current: true, lastActiveAt: 3 }];
+        sessionService.sectionsBySession.set('chat-a', [
+            { id: 'sec-1', label: 'Analysis', createdAt: 1 },
+            { id: 'sec-2', label: 'Implementation', createdAt: 2 }
+        ]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        component.configure({ sessionId: 'chat-a' });
+        await sessionService.moveSection('chat-a', 'sec-2', undefined, { beforeId: 'sec-1' });
+        expect(sessionService.moveCalls[0]).toEqual({ sessionId: 'chat-a', sectionId: 'sec-2', beforeId: 'sec-1' });
+        await sessionService.renameSection('chat-a', 'sec-1', 'Refactor');
+        expect(sessionService.renameCalls[0]).toEqual({ sessionId: 'chat-a', sectionId: 'sec-1', label: 'Refactor' });
+    }
+
+    @Test('refreshThreads carries representative session sections')
+    async refreshThreadsCarriesRepresentativeSections() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.sessionState.setSessions([
+            {
+                id: 's-a',
+                current: true,
+                workspace: '/ws',
+                primaryThreadId: 'thread-1',
+                updatedAt: 5,
+                sections: [{ id: 'sec-1', label: 'Analysis', messageCount: 2 }]
+            } as any,
+            {
+                id: 's-b',
+                current: false,
+                workspace: '/ws',
+                primaryThreadId: 'thread-1',
+                updatedAt: 3
+            } as any
+        ]);
+        (component as any).refreshThreads();
+        expect(component.sessionState.threads.length).toEqual(1);
+        expect(component.sessionState.threads[0].sessionCount).toEqual(2);
+        expect(component.sessionState.threads[0].sections?.map(item => item.id)).toEqual(['sec-1']);
+    }
+
+    @Test('loadMessages unwraps paginated page results through the rpc path')
+    async loadMessagesUnwrapsPagedResults() {
+        const appRpc = new AppRpcStub();
+        appRpc.pageResults = {
+            sessionId: 'chat-a',
+            messages: [
+                { id: 'msg-1', role: 'assistant', content: 'paged', createdAt: 1, sectionId: 'sec-1' } as any
+            ],
+            sections: [{ id: 'sec-1', label: 'Implementation', createdAt: 1 }],
+            nextCursor: 'cursor-2',
+            hasMore: true
+        };
+        const service = new AgentConsoleSessionService(appRpc as any);
+
+        const messages = await service.loadMessages('chat-a');
+        expect(messages.map(item => item.id)).toEqual(['msg-1']);
+
+        const page = await service.loadMessagesPage('chat-a');
+        expect(page.messages.map(item => item.id)).toEqual(['msg-1']);
+        expect(page.sections?.map(item => item.id)).toEqual(['sec-1']);
+        expect(page.nextCursor).toEqual('cursor-2');
+        expect(page.hasMore).toEqual(true);
+
+        const beforePage = await service.loadMessagesPage('chat-a', undefined, { cursor: 'cursor-2', before: true, limit: 20 });
+        const call = appRpc.calls.find(item => item.method === 'session.messages' && item.params?.cursor);
+        expect(call?.params).toEqual({ sessionId: 'chat-a', cursor: 'cursor-2', before: true, limit: 20 });
+        expect(beforePage.messages.map(item => item.id)).toEqual(['msg-1']);
     }
 }
