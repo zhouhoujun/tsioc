@@ -275,7 +275,9 @@ function renderAgentConsolePlainTextLines(
 }
 
 export function resolveMessageTemplateKind(message?: AgentMessage | null): AgentConsoleMessageTemplateKind {
-    if (message?.metadata?.error) {
+    // Shell messages stay in the 'tool' template even on failure; their
+    // failed/error state is carried by the status, not by the template.
+    if (message?.metadata?.error && message?.metadata?.type !== 'shell') {
         return 'error';
     }
     switch (String(message?.role || '').toLowerCase()) {
@@ -404,6 +406,9 @@ function resolveMessageDisplayContent(message: AgentMessage, templateKind: Agent
     const attachmentSummary = imageParts.length
         ? imageParts.map(part => part.name ? `[Image: ${part.name}]` : '[Image attached]').join('\n')
         : '';
+    if (message?.metadata?.type === 'shell') {
+        return [content, attachmentSummary].filter(Boolean).join(content && attachmentSummary ? '\n' : '');
+    }
     if (templateKind !== 'tool') {
         return [content, attachmentSummary].filter(Boolean).join(content && attachmentSummary ? '\n' : '');
     }

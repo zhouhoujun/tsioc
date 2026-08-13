@@ -66,6 +66,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected static readonly SEARCH_CONCURRENCY = 6;
     protected multilineMode = false;
     protected draftLines: string[] = [];
+    protected shellMultilineMode = false;
+    protected shellDraftLines: string[] = [];
     protected destroyed = false;
     protected closing = false;
     protected sshShell: SshShellSession | null = null;
@@ -3830,6 +3832,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/usage', value: '/usage', description: 'token + turn usage [sessionId]' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
+                    { label: '/compact', value: '/compact', description: 'force compaction now [reason]' },
                     { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
                     { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
                     { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
@@ -4160,6 +4163,30 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     }
                 }
                 return this.openCompactionHistory(parsed.args);
+            case '/compact': {
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                const reason = parsed.args?.trim() || undefined;
+                const result = await this.sessionService?.compactSession(this.state.sessionId, reason) ?? { compacted: false };
+                if (result.error) {
+                    this.notify(`Compaction failed: ${result.error}`);
+                    return true;
+                }
+                if (!result.compacted) {
+                    this.notify('Nothing to compact: history already within budget.');
+                    return true;
+                }
+                const summary = typeof result.summary === 'string' && result.summary.trim()
+                    ? ` · ${result.summary.trim()}`
+                    : '';
+                const before = typeof result.beforeMessageCount === 'number' ? result.beforeMessageCount : 0;
+                const after = typeof result.afterMessageCount === 'number' ? result.afterMessageCount : 0;
+                const ratio = typeof result.compressionRatio === 'number' ? `${result.compressionRatio}%` : 'n/a';
+                this.notify(`Compacted ${before} -> ${after} messages (${ratio} tokens saved).${summary}`);
+                return true;
+            }
             case '/diagnostics':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -4758,6 +4785,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
                 this.draftLines = [];
                 this.multilineMode = false;
+                this.shellDraftLines = [];
+                this.shellMultilineMode = false;
                 return true;
             case '/send':
                 if (!this.draftLines.length) { return true; }
@@ -4850,6 +4879,27 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
+        if (this.shellMultilineMode && !value.startsWith('!') && !value.startsWith('/')) {
+            this.state.pushInputHistory(value);
+            const persistHistory = this.persistInputHistory();
+            this.state.setInput('');
+            this.shellDraftLines.push(value);
+            await persistHistory;
+            this.notify(`Shell draft +${this.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
+            return;
+        }
+        if (value.startsWith('!')) {
+            this.state.pushInputHistory(value);
+            const persistHistory = this.persistInputHistory();
+            this.state.setInput('');
+            if (await this.handleShellBang(value)) {
+                await persistHistory;
+                return;
+            }
+            await persistHistory;
+            this.state.setInput(value, value.length);
+            return;
+        }
         if (value.startsWith('/')) {
             this.state.pushInputHistory(value);
             const persistHistory = this.persistInputHistory();
@@ -4917,6 +4967,126 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             void this.refreshTurnArtifacts();
             this.state.clearTurnEventScope(turnScope);
         }
+    }
+
+    /**
+     * `!cmd` runs a shell command; `!!` toggles multiline draft mode; a bare
+     * `!` submits the draft in draft mode, otherwise shows the usage hint.
+     * Returns true when the input was consumed as a shell command.
+     */
+    protected async handleShellBang(value: string): Promise<boolean> {
+        if (value === '!!') {
+            this.shellMultilineMode = !this.shellMultilineMode;
+            if (this.shellMultilineMode) {
+                this.shellDraftLines = [];
+                this.notify('Shell multiline draft mode: type lines, then submit with `!` to run. `!!` exits.');
+            } else {
+                this.notify(this.shellDraftLines.length
+                    ? 'Shell multiline draft discarded.'
+                    : 'Shell multiline draft mode exited.');
+                this.shellDraftLines = [];
+            }
+            return true;
+        }
+        const command = value.slice(1).trim();
+        if (!this.shellMultilineMode) {
+            if (!command) {
+                this.notify('Usage: `!<command>` runs a local shell command. `!!` enters multiline draft mode.');
+                return true;
+            }
+            await this.runShellCommand(command);
+            return true;
+        }
+        if (!command) {
+            const draft = this.shellDraftLines.join('\n');
+            if (!draft) {
+                this.notify('Shell draft is empty. Type lines first, then submit with `!` to run.');
+                return true;
+            }
+            this.shellDraftLines = [];
+            this.shellMultilineMode = false;
+            await this.runShellCommand(draft);
+            return true;
+        }
+        this.shellDraftLines.push(command);
+        this.notify(`Shell draft +${this.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
+        return true;
+    }
+
+    /**
+     * Runs a shell command via the terminal tool as a read-only `type: 'shell'`
+     * message. The message stays in the UI state and never enters model context.
+     */
+    protected async runShellCommand(command: string): Promise<void> {
+        if (this.isTurnInProgress()) {
+            this.notifyBusyState();
+            return;
+        }
+        const messageId = `shell-${Date.now()}`;
+        const shellMessage: AgentMessage = {
+            id: messageId,
+            role: 'tool',
+            name: 'terminal',
+            content: `$ ${command}`,
+            createdAt: Date.now(),
+            metadata: { type: 'shell', status: 'running' }
+        };
+        this.state.appendMessage(shellMessage);
+        try {
+            const result = await this.invokeTerminalTool(command);
+            const stdout = String(result?.stdout ?? '');
+            const stderr = String(result?.stderr ?? '');
+            const exitCode = result?.exitCode;
+            const body = [stdout, stderr].filter(Boolean).join('\n');
+            const exitSuffix = exitCode === 0 || exitCode === undefined
+                ? ''
+                : `\n[exit code: ${exitCode}]`;
+            this.updateShellMessage(messageId, {
+                content: [`$ ${command}`, body, exitSuffix].filter(Boolean).join('\n\n'),
+                metadata: {
+                    type: 'shell',
+                    status: exitCode === 0 || exitCode === undefined ? 'success' : 'failed',
+                    exitCode: exitCode ?? 0,
+                    error: exitCode !== 0 && exitCode !== undefined
+                }
+            });
+        } catch (error: any) {
+            const message = error?.message || String(error || 'Unknown error');
+            this.updateShellMessage(messageId, {
+                content: `$ ${command}\n\n${message}`,
+                metadata: { type: 'shell', status: 'failed', error: true }
+            });
+        }
+    }
+
+    protected updateShellMessage(id: string, patch: Partial<AgentMessage>): void {
+        const messages = this.state.messages.map(item => item.id === id ? { ...item, ...patch } : item);
+        this.state.setMessages(messages);
+    }
+
+    protected async invokeTerminalTool(command: string): Promise<any> {
+        const sessionId = this.state.sessionId;
+        if (this.appRpc) {
+            const result = await this.appRpc.request('tools.invoke', {
+                sessionId,
+                name: 'terminal',
+                input: { command }
+            });
+            return result?.output;
+        }
+        if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') {
+            throw new Error('Terminal tool is not available in this environment.');
+        }
+        if (typeof this.toolRegistry.isToolActive === 'function') {
+            const active = await this.toolRegistry.isToolActive(sessionId, 'terminal');
+            if (!active) {
+                const activated = await this.activateToolForSession('terminal', sessionId);
+                if (!activated) {
+                    throw new Error('Terminal tool is not activated for this session. Approve activation or use /tools.');
+                }
+            }
+        }
+        return this.toolRegistry.invoke('terminal', { command }, sessionId);
     }
 
     protected async runTurnStream(

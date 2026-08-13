@@ -494,6 +494,44 @@ export class AgentContextManager {
         return prepared;
     }
 
+    /**
+     * Force a compaction of the given conversation right now, bypassing the
+     * auto-compaction threshold check. Backs the manual `/compact` command so
+     * the user can proactively slim the session context. Reuses the same
+     * compaction pipeline (prepareHistoryCore) as the automatic overflow path.
+     */
+    async compactNow(messages: AgentMessage[], sessionId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+        const beforeMessageCount = messages.length;
+        const beforeTokens = this.estimateMessages(messages);
+        const compactionTriggered = true;
+        const level: CompactionLevel = this.selectCompactionLevel(beforeTokens);
+
+        if (this.compactionHookRunner) {
+            await this.compactionHookRunner('beforeCompaction', {
+                phase: 'before', sessionId, level, beforeMessageCount, beforeTokens
+            });
+        }
+
+        const prepared = await this.prepareHistoryCore(messages, sessionId, beforeMessageCount, beforeTokens, compactionTriggered, level);
+
+        if (this.compactionHookRunner) {
+            const summary = this.extractCompactionSummary(prepared.messages);
+            await this.compactionHookRunner('afterCompaction', {
+                phase: 'after',
+                sessionId,
+                level,
+                beforeMessageCount,
+                beforeTokens,
+                afterMessageCount: prepared.report.afterMessageCount,
+                afterTokens: prepared.report.afterTokens,
+                droppedMessageCount: Math.max(0, beforeMessageCount - prepared.report.afterMessageCount),
+                ...(summary ? { summary, summaryQuality: scoreSummaryQuality(summary).total } : {}),
+                report: prepared.report
+            });
+        }
+        return prepared;
+    }
+
     private async prepareHistoryCore(messages: AgentMessage[], sessionId: string | undefined, beforeMessageCount: number, beforeTokens: number, compactionTriggered: boolean, level: CompactionLevel): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
 
         // compact tool message outputs across all levels (pre-level check)

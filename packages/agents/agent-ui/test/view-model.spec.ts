@@ -388,6 +388,7 @@ class AppRpcStub {
     approvalRequests: any[] = [];
     approvedApprovals: string[] = [];
     deniedApprovals: string[] = [];
+    compactResult?: Record<string, any>;
     summaryQualityAggregates: any[] = [];
     summaryQualityRecords: any[] = [];
     summaryQualityTrend: any[] = [];
@@ -856,6 +857,26 @@ class AppRpcStub {
                 active: false
             };
         }
+        if (method === 'session.compact') {
+            const sessionId = String(params?.sessionId || 'console');
+            const reason = typeof params?.reason === 'string' ? params.reason : undefined;
+            return this.compactResult ?? {
+                sessionId,
+                compacted: true,
+                reason,
+                strategy: 'compacted',
+                level: 'light',
+                beforeMessageCount: 20,
+                afterMessageCount: 10,
+                beforeTokens: 8000,
+                afterTokens: 4000,
+                compactedMessageCount: 10,
+                compressionRatio: 50,
+                cumulativeTokenSavings: 4000,
+                summaryInserted: true,
+                summary: '[Context Summary — compressed 10 messages]'
+            };
+        }
         if (method === 'audio.cancel') {
             const sessionId = String(params?.sessionId || 'console');
             const cancelled = this.audioStatesBySession.delete(sessionId);
@@ -890,6 +911,15 @@ class SessionServiceStub extends AgentConsoleSessionService {
     constructor(runtimeSource: RuntimeStub) {
         super(undefined, undefined, runtimeSource as any);
         this.runtimeRef = runtimeSource;
+    }
+
+    override async compactSession(sessionId: string, reason?: string, context?: any): Promise<Record<string, any>> {
+        const rpc = this.rpcRef;
+        if (rpc) {
+            const result = await rpc.request('session.compact', { sessionId, reason }, context);
+            return result && typeof result === 'object' ? result : { sessionId, compacted: false };
+        }
+        return { sessionId, compacted: false, error: 'compaction not supported by this runtime' };
     }
 
     override async listApprovals(sessionId?: string): Promise<Array<Record<string, any>>> {
@@ -4008,6 +4038,61 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'compaction_history.trend')).toEqual(true);
         expect(component.notice).toContain('No compaction history trend recorded yet.');
+    }
+
+    @Test('compact command forces compaction through rpc and notifies summary')
+    async compactCommandForcesCompaction() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compact trim the session';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'session.compact');
+        expect(call).toBeTruthy();
+        expect(call!.params?.sessionId).toEqual('console');
+        expect(call!.params?.reason).toEqual('trim the session');
+        expect(component.notice).toContain('Compacted');
+        expect(component.notice).toContain('20');
+        expect(component.notice).toContain('10');
+        expect(component.notice).toContain('50%');
+    }
+
+    @Test('compact command reports nothing to compact when history unchanged')
+    async compactCommandReportsUnchanged() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactResult = { sessionId: 'console', compacted: false, strategy: 'unchanged' };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compact';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'session.compact');
+        expect(call).toBeTruthy();
+        expect(component.notice).toContain('Nothing to compact');
+    }
+
+    @Test('compact command surfaces runtime error through rpc')
+    async compactCommandReportsError() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.compactResult = { sessionId: 'console', compacted: false, error: 'turn-in-progress' };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/compact';
+        await component.submit();
+
+        const call = appRpc.calls.find(call => call.method === 'session.compact');
+        expect(call).toBeTruthy();
+        expect(component.notice).toContain('turn-in-progress');
     }
 
     @Test('diagnostics command shows aggregated turn diagnostics through rpc')

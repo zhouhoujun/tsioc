@@ -178,6 +178,7 @@ export class AppRpcServer {
                         'session.git_snapshot.diff',
                         'session.git_snapshot.revert',
                         'session.git_snapshot.unrevert',
+                        'session.compact',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -317,6 +318,8 @@ export class AppRpcServer {
                 return this.revertGitStepSnapshot(params, context);
             case 'session.git_snapshot.unrevert':
                 return this.unrevertGitStepSnapshot(params, context);
+            case 'session.compact':
+                return this.compactSession(params, context);
             case 'goal.create': return this.createGoal(params, context);
             case 'goal.get': return this.getGoal(params, context);
             case 'goal.list': return this.runtime.listGoals(params?.status);
@@ -947,6 +950,15 @@ export class AppRpcServer {
             turn,
             message: messages[messages.length - 1] ?? null
         };
+    }
+
+    private async compactSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const reason = typeof params?.reason === 'string' && params.reason.trim()
+            ? params.reason.trim()
+            : undefined;
+        return this.runtime.compactNow(sessionId, reason);
     }
 
     private async cancelTurn(params: any, context: AppRpcRequestContext): Promise<any> {

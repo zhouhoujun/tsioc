@@ -1,7 +1,7 @@
 import { FileAdapter } from '@tsdi/common';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
-import { AgentRuntime, CancelTurnResult, FileUndoRedoResult } from './AgentRuntime';
+import { AgentRuntime, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
@@ -538,6 +538,52 @@ export class DefaultAgentRuntime extends AgentRuntime {
         // Undo the side effects the turn already applied, newest first.
         const rollback = await this.rollbackTurnCompensations(sessionId, 'cancelled');
         return { cancelled: true, ...rollback };
+    }
+
+    /**
+     * Force a context compaction for the session right now (backing the manual
+     * `/compact` command). Rejects when a turn is currently running, because a
+     * mid-turn snapshot would race the in-flight turn's message mutations.
+     * Reuses the exact same compaction pipeline + history recording + event
+     * emission as the automatic overflow path.
+     */
+    async compactNow(sessionId: string, reason?: string): Promise<CompactNowResult> {
+        if (this.sessionTurnsRunning.has(sessionId)) {
+            return { sessionId, compacted: false, reason, error: 'turn-in-progress' };
+        }
+        if (!await this.sessions.has(sessionId)) {
+            return { sessionId, compacted: false, reason, error: 'session-not-found' };
+        }
+        const messages = (await this.sessions.get(sessionId)).messages;
+        const prepared = await this.contextManager.compactNow(messages, sessionId);
+        const report = prepared.report;
+        // Same history record + context-prepared event as the overflow path.
+        await this.publishContextPreparedEvent(sessionId, report);
+
+        const summaryMessage = prepared.messages.find(
+            m => m.role === 'system' && typeof m.content === 'string' && m.content.startsWith('[Context Summary')
+        );
+        return {
+            sessionId,
+            compacted: report.strategy !== 'unchanged' || report.toolMessagesCompacted > 0,
+            reason,
+            strategy: report.strategy,
+            level: report.level,
+            summaryInserted: report.summaryInserted,
+            beforeMessageCount: report.beforeMessageCount,
+            afterMessageCount: report.afterMessageCount,
+            beforeTokens: report.beforeTokens,
+            afterTokens: report.afterTokens,
+            compactedMessageCount: report.compactedMessageCount,
+            preservedAnchorCount: report.preservedAnchorCount,
+            recentMessageCount: report.recentMessageCount,
+            toolMessagesCompacted: report.toolMessagesCompacted,
+            prunedMessageCount: report.prunedMessageCount,
+            compressionRatio: report.compressionRatio,
+            cumulativeTokenSavings: report.cumulativeTokenSavings,
+            replayed: report.replayed,
+            summary: summaryMessage ? String(summaryMessage.content) : undefined
+        };
     }
 
     registerChildSession(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {

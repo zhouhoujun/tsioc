@@ -15,6 +15,29 @@ export interface CancelTurnResult {
     toolCallIds: string[];
 }
 
+export interface CompactNowResult {
+    sessionId: string;
+    compacted: boolean;
+    reason?: string;
+    strategy?: string;
+    level?: string;
+    summaryInserted?: boolean;
+    beforeMessageCount?: number;
+    afterMessageCount?: number;
+    beforeTokens?: number;
+    afterTokens?: number;
+    compactedMessageCount?: number;
+    preservedAnchorCount?: number;
+    recentMessageCount?: number;
+    toolMessagesCompacted?: number;
+    prunedMessageCount?: number;
+    compressionRatio?: number;
+    cumulativeTokenSavings?: number;
+    replayed?: boolean;
+    summary?: string;
+    error?: string;
+}
+
 export interface FileUndoRedoResult {
     filePath: string;
     restored: 'content' | 'deleted' | 'none';
@@ -74,6 +97,21 @@ export abstract class AgentRuntime {
     async cancelTurn(_sessionId: string): Promise<CancelTurnResult> {
         // no-op by default
         return { cancelled: false, compensated: 0, toolCallIds: [] };
+    }
+
+    /**
+     * Force a context compaction for the given session right now, bypassing
+     * the auto-compaction threshold. Backs the manual `/compact` command so
+     * users can proactively slim a growing session context. Runs the same
+     * compaction pipeline as the automatic overflow path and records the
+     * outcome as a CompactionHistoryRecord + publishes the context-prepared
+     * event. Returns the compaction report (or an error reason when the
+     * session is mid-turn / compaction is unsupported).
+     * Override this in concrete runtimes that support manual compaction.
+     */
+    async compactNow(_sessionId: string, _reason?: string): Promise<CompactNowResult> {
+        // no-op by default
+        return { sessionId: _sessionId, compacted: false, error: 'unsupported' };
     }
 
     /**

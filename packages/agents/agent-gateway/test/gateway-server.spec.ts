@@ -6555,6 +6555,76 @@ export class StdioAppRpcServerTest {
         expect((idleSecond as any).result.toolCallIds).toEqual([]);
         expect((idleSecond as any).error).toBeUndefined();
     }
+
+    @Test('session.compact forwards to runtime compactNow and enforces owner access')
+    async sessionCompactForwardsToRuntime() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await owners.create('s-1', 'user-1');
+        const sessions = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        const events = new EventHandler(owners);
+        let receivedReason: string | undefined;
+        let compactedCalls = 0;
+        const runtime = {
+            searchSessions: async () => [],
+            compactNow: async (sessionId: string, reason?: string) => {
+                compactedCalls += 1;
+                receivedReason = reason;
+                return {
+                    sessionId,
+                    compacted: true,
+                    reason,
+                    strategy: 'compacted',
+                    level: 'light',
+                    beforeMessageCount: 8,
+                    afterMessageCount: 4,
+                    beforeTokens: 208,
+                    afterTokens: 120,
+                    compactedMessageCount: 6,
+                    compressionRatio: 42,
+                    cumulativeTokenSavings: 88,
+                    summaryInserted: true,
+                    summary: '[Context Summary — compressed 6 messages]'
+                };
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime,new RandomUuidGenerator(),store,memory,{ getToolDefinitions: () => [] } as any,owners,sessions,events,{} as any,null,null);
+
+        // owner can compact with a reason
+        const ok = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 40,
+            method: 'session.compact',
+            params: { sessionId: 's-1', reason: '  manual trim  ' }
+        }, { principalId: 'user-1' });
+        expect(compactedCalls).toEqual(1);
+        expect(receivedReason).toEqual('manual trim');
+        expect((ok as any).result.compacted).toEqual(true);
+        expect((ok as any).result.strategy).toEqual('compacted');
+        expect((ok as any).result.compressionRatio).toEqual(42);
+        expect((ok as any).error).toBeUndefined();
+
+        // non-owner is rejected before touching the runtime
+        const foreign = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 41,
+            method: 'session.compact',
+            params: { sessionId: 's-1' }
+        }, { principalId: 'user-2' });
+        expect(compactedCalls).toEqual(1);
+        expect((foreign as any).error.code).toBe(-32003);
+
+        // missing sessionId is a param error
+        const missing = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 42,
+            method: 'session.compact',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((missing as any).error.code).toBe(-32602);
+    }
 }
 
 class RpcEchoTranscriptionAdapter extends StreamingTranscriptionAdapter {

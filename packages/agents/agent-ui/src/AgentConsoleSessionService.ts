@@ -501,6 +501,26 @@ export class AgentConsoleSessionService {
         return false;
     }
 
+    /**
+     * Force a context compaction for the session (backs the `/compact`
+     * command). Prefers the gateway RPC when connected, falls back to the
+     * local runtime's `compactNow` (e.g. in-process / TUI consumers).
+     */
+    async compactSession(sessionId: string, reason?: string, context?: any): Promise<Record<string, any>> {
+        if (!sessionId) {
+            return { sessionId: '', compacted: false, error: 'session-id-required' };
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.compact', { sessionId, reason }, context);
+            return result && typeof result === 'object' ? result : { sessionId, compacted: false };
+        }
+        if (this.runtime && typeof this.runtime.compactNow === 'function') {
+            const result = await this.runtime.compactNow(sessionId, reason);
+            return result ?? { sessionId, compacted: false };
+        }
+        return { sessionId, compacted: false, error: 'compaction not supported by this runtime' };
+    }
+
     async exportSession(
         sessionId: string,
         options?: AgentSessionExportOptions,

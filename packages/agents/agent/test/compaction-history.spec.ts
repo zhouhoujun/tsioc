@@ -402,4 +402,117 @@ export class CompactionHistoryStoreTest {
         const records = await store.list('s2');
         expect(records.length).toEqual(0);
     }
+
+    @Test('runtime compactNow forces compaction even below auto threshold and records history')
+    async runtimeCompactNowForcesCompaction() {
+        const store = new InMemoryCompactionHistoryStore();
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter(
+                'Goal: keep going. Decisions: continue. Files: none. Errors: none. Open state: continue.'
+            ) as any),
+            {
+                ...defaultAgentOptions,
+                session: {
+                    ...defaultAgentOptions.session,
+                    recentMessages: 2,
+                    summaryThreshold: 999
+                },
+                context: {
+                    ...defaultAgentOptions.context,
+                    compactionThreshold: 999,
+                    compactionMinTokens: 150,
+                    compactionRecentMessages: 2
+                }
+            },
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            store as any
+        );
+        const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
+        // Seed a long history without ever hitting the auto threshold (set to
+        // 999 messages above) so only compactNow can produce a compaction.
+        await runtime.runTurn('s1', longGoal);
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '补充数据库表设计');
+
+        const before = (await store.list('s1')).length;
+        expect(before).toEqual(0);
+        const result = await runtime.compactNow('s1', 'manual test');
+        const records = await store.list('s1');
+        expect(result.compacted).toEqual(true);
+        expect(result.sessionId).toEqual('s1');
+        expect(result.reason).toEqual('manual test');
+        expect(result.strategy).toEqual('compacted');
+        // The fake summarizer emits long fixed text, so token metrics are not
+        // meaningful here; assert on the structural compaction outcome instead.
+        expect(result.beforeMessageCount ?? 0).toBeGreaterThan(result.afterMessageCount ?? 0);
+        expect(result.compactedMessageCount ?? 0).toBeGreaterThan(0);
+        expect(result.summaryInserted).toEqual(true);
+        expect(records.length).toEqual(before + 1);
+        expect(records[records.length - 1].compactionTriggered).toEqual(true);
+    }
+
+    @Test('runtime compactNow returns turn-in-progress error while a turn is running')
+    async runtimeCompactNowRejectsRunningTurn() {
+        const store = new InMemoryCompactionHistoryStore();
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            store as any
+        );
+        // Mark the session as mid-turn through the protected turn-tracking set.
+        const exposed = runtime as any;
+        exposed.sessionTurnsRunning.add('busy-session');
+        const result = await runtime.compactNow('busy-session', 'manual');
+        expect(result.compacted).toEqual(false);
+        expect(result.error).toEqual('turn-in-progress');
+    }
+
+    @Test('runtime compactNow reports session-not-found for unknown sessions')
+    async runtimeCompactNowUnknownSession() {
+        const store = new InMemoryCompactionHistoryStore();
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            store as any
+        );
+        const result = await runtime.compactNow('missing-session');
+        expect(result.compacted).toEqual(false);
+        expect(result.error).toEqual('session-not-found');
+    }
 }
