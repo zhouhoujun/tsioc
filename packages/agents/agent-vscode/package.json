@@ -1,0 +1,56 @@
+{
+  "name": "@tsdi/agent-vscode",
+  "displayName": "TSDI Agent",
+  "version": "6.0.31",
+  "description": "VS Code webview host for the TSDI Agent remote console.",
+  "publisher": "tsdi",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Machine Learning", "Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onCommand:tsdiAgent.openConsole"],
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register build.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "tsdiAgent.openConsole",
+        "title": "TSDI Agent: Open Console",
+        "category": "TSDI Agent"
+      },
+      {
+        "command": "tsdiAgent.refreshConsole",
+        "title": "TSDI Agent: Refresh Console",
+        "category": "TSDI Agent"
+      }
+    ],
+    "configuration": {
+      "title": "TSDI Agent",
+      "properties": {
+        "tsdiAgent.gatewayUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:3000",
+          "description": "Base URL of the TSDI Agent gateway."
+        },
+        "tsdiAgent.token": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Bearer token for the gateway. Prefer storing sensitive values in user settings."
+        },
+        "tsdiAgent.sessionId": {
+          "type": "string",
+          "default": "",
+          "description": "Optional session to open. A fresh session is created when empty."
+        }
+      }
+    }
+  },
+  "files": ["dist", "media", "package.json", "README.md"],
+  "devDependencies": {
+    "esbuild": "^0.25.1"
+  }
+}
