@@ -128,7 +128,7 @@ G23–G33 全部闭环（P94–P104 批次见「已实现功能」；P105–P109
 | G18 | ~~无会话分享~~（✅ P86） | opencode `/share` | 不可变脱敏快照 + 高熵 token 只读访问 + 撤销 | 低中：已闭环 |
 | G19 | ~~skills 无远程分发~~（✅ P87） | codex plugin marketplace；opencode skills 共享 | `RemoteSkillManager` git/registry 源 + 版本追踪 + 冲突检测 | 低中：已闭环 |
 | G20 | ~~后台子代理 UX~~（✅ P88） | opencode background subagents | `spawn_agent background: true` fire-and-collect + 事件回传 | 低中：已闭环 |
-| G21 | ~~多端交付面~~（✅ P90–P93 部分） | opencode Tauri desktop + IDE；codex macOS app + Chrome 扩展 | 远程传输 + Web console + 浏览器安全边界 + **VS Code 扩展（P93）**；桌面壳/移动 remote 余量见「剩余」 | 中：IDE 已闭环 |
+| G21 | ~~多端交付面~~（✅ P90–P93 + P110） | opencode Tauri desktop + IDE；codex macOS app + Chrome 扩展 | 远程传输 + Web console + 浏览器安全边界 + VS Code 扩展（P93）+ **Electron 桌面壳（P110）**；移动 remote 余量见「剩余」 | 中：桌面壳已闭环 |
 | G22 | ~~LSP 无自动安装~~（✅ P89） | opencode 30+ auto-install LSP | `LspInstallManager` 语言→安装命令映射 + autoInstall + hint | 低：已闭环 |
 | G23 | ~~Windows 原生沙箱宿主 + 网络代理强制~~（✅ P105） | codex v0.131+：exec-server 原生 Windows 沙箱、elevated Windows sandbox for network proxies、deny-read 对等、代理状态跨进程传递 | `windows-native` helper 协议（restricted token / Job Object / firewall 宿主）优先，`wsl-bwrap` 回退；filesystem/network/read-denied 分能力矩阵；proxy required fail-closed + 子进程代理环境注入 | 高：已闭环（原生能力由宿主 helper 提供） |
 | G24 | ~~Thread sections + 分页 thread 历史~~（✅ P107） | codex 0.142.5+：分页 thread 历史（高效 resume/search/persisted names/sub-agent 支持/memories）；0.147 thread sections 手动排序持久化 | `SessionStore` section 模型（add/rename/move/delete/list）+ `session.section.*` 5 RPC + 分页 `session.messages`（cursor/limit/nextCursor/hasMore，长转录不整包拉取）+ thread 列表 sections 分组 + agent-ui `/sections` `/threads` | 中：已闭环 |
@@ -152,7 +152,7 @@ G23–G33 全部闭环（P94–P104 批次见「已实现功能」；P105–P109
 
 ## 剩余（远期，未排期）
 
-- **桌面壳 / 移动 remote（G21 余量）**：opencode Tauri desktop（tabs + locale）；codex macOS app + Chrome 扩展 + 移动 remote —— 远程传输层（P90）、Web console 宿主（P91）、浏览器安全边界（P92）与 VS Code 扩展（P93）已就绪，剩余为独立桌面壳（Tauri/Electron 打包 + 原生窗口 + 系统托盘）与移动端宿主工程，暂不排期。
+- **移动 remote（G21 余量）**：远程传输层（P90）、Web console 宿主（P91）、浏览器安全边界（P92）、VS Code 扩展（P93）与 Electron 桌面壳（P110）已就绪，剩余为移动端宿主工程（iOS/Android WebView 或 PWA），暂不排期。
 - **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent、Codex Jobs 云端触发）—— 依赖平台 OAuth。
 
 ## 已完成（历史）
@@ -248,3 +248,7 @@ P108（每-turn 多代理委派模式，G29）已落地：新增纯模块 `agent
 ### 本轮收尾验证（P105–P109 批次，2026-08-13）
 
 九包全量测试全部通过（agent 729 / agent-channels 59 / agent-cli 58 / agent-gateway 225 / agent-providers 13 / agent-ssh 8 / agent-tools 315 / agent-ui 404 / agent-vscode 6，共 1817 passing）；九包 `tsc --noEmit` clean；agent / agent-gateway / agent-ui / agent-vscode package build 全部通过，`agent-vscode` 构建联动 `agent-ui build:web` 成功产出 `web/dist/agent-console.js` 3.1MB 及 VS Code `media/agent-console.js`。差距表 v3（G23–G33）全行闭环，P105+ 打磨计划全部落地，剩余为「远期」桌面壳/移动 remote 与 GitHub/GitLab 集成。
+
+### 本轮收尾验证（P110 桌面壳批次，2026-08-13）
+
+P110（Electron 桌面壳，G21 余量）已落地：新增 `@tsdi/agent-desktop` 包——Electron 宿主复用 P91 web bundle（`build.ts` 先跑 agent-ui `build-web.ts` 再 esbuild bundle `src/main.ts`，`electron` external 保持宿主依赖），原生 `BrowserWindow`（`contextIsolation`/`sandbox`/无 `nodeIntegration`）+ 系统托盘（Show/Hide/Refresh/Quit 菜单 + 单击 toggle）+ close-to-tray + 单实例锁；宿主 HTML（`buildDesktopHtml`）带 nonce CSP + JSON 转义 `__TSDI_AGENT_WEB__` 注入（与 P93 webview 同源策略）；配置解析 `resolveDesktopConfig`（CLI argv > env > 默认，`--gateway-url/--token/--session-id/--workspace/--width/--height/--tray/--close-to-tray/--start-hidden/--no-single-instance` + `TSDI_AGENT_*` 环境变量）；`ElectronHost`/`FileSystemLike` 注入式抽象使窗口/托盘/生命周期逻辑可在无 Electron 环境单测（fixture host，`toFileUrl` 语义对齐 `pathToFileURL` 的 Windows 安全 URI）。效果：TUI/Web/IDE/Desktop 四端共用 `AgentConsoleComponent` 渲染层，桌面壳闭环，G21 仅剩移动 remote 远期项。回归：agent-desktop 18 passing（host html 3 例 + config 6 例 + app lifecycle 9 例），`tsc --noEmit` clean，`npm run build` 产出 `dist/main.js` 11KB + `resources/agent-console.js` 3.3MB。锚点：`agent-desktop/src/`（host/desktop-html/config/DesktopApp/main）、`agent-desktop/build.ts`、`agent-desktop/test/`（3 spec）。

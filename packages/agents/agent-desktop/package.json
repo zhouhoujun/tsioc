@@ -1,0 +1,23 @@
+{
+  "name": "@tsdi/agent-desktop",
+  "version": "6.0.31",
+  "description": "Electron desktop shell for the TSDI Agent remote console (native window + system tray).",
+  "main": "./dist/main.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register build.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "start": "electron ."
+  },
+  "peerDependencies": {
+    "electron": ">=28"
+  },
+  "peerDependenciesMeta": {
+    "electron": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.1"
+  }
+}

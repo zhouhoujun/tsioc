@@ -14,6 +14,10 @@ This currently applies to:
 - `@tsdi/agent-channels`
 - `@tsdi/agent-providers`
 - `@tsdi/agent-cli`
+- `@tsdi/agent-ui`
+- `@tsdi/agent-ssh`
+- `@tsdi/agent-vscode`
+- `@tsdi/agent-desktop`
 
 ## `@tsdi/agent-cli` model setup
 
