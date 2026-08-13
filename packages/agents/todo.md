@@ -2,11 +2,11 @@
 
 ## 功能总纲
 
-主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）、skills 远程市场（git/registry 源安装 + 版本追踪 + 冲突检测）、后台子代理 fire-and-collect（不阻塞当前 turn + 完成事件经 gateway/UI 回传）、LSP server 自动安装（语言→安装命令映射 + 缺失降级提示）。
+主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool、skills 系统（本地注册表/目录/turn interceptor/激活提示）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档）、console TUI（~15 面板 / ~30 命令 / vim mode / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）、skills 远程市场（git/registry 源安装 + 版本追踪 + 冲突检测）、后台子代理 fire-and-collect（不阻塞当前 turn + 完成事件经 gateway/UI 回传）、LSP server 自动安装（语言→安装命令映射 + 缺失降级提示）、Web console 宿主（P91）+ VS Code 远程控制台扩展（P93，TUI/Web/IDE 三端共用同一渲染层）。
 
-## 已实现功能（P67–P89 落地明细，2026-08）
+## 已实现功能（P67–P93 落地明细，2026-08）
 
-> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P89 按方向归类的**已实现功能**清单（非计划）。
+> P0–P66 打磨条目历史与回归记录见文末「已完成（历史）」。以下为 P67–P93 按方向归类的**已实现功能**清单（非计划）。
 
 ### 编码反馈闭环
 
@@ -49,6 +49,10 @@
 
 - **P92 · `@tsdi/agent` 浏览器安全 module 边界**：`Default*Store`（DefaultAuditSink/DefaultCompactionHistoryStore/DefaultTurnDiagnosticsStore/DefaultSummaryQualityStore/DefaultDelegationGraphStore/DefaultMemoryStore/DefaultSessionStore/DefaultGoalStore）的 TypeOrm 实现从顶层 import 改为**惰性 require**（新增 `src/lazy-typeorm.ts`：`requireLazy` 用动态路径绕过 esbuild 静态打包、`resolveTypeormAdapter`/`getTypeOrmAdapterToken` 惰性解析 DI token 并校验实例有效性（此前 `app.get(token, null)` 无 provider 时返回哨兵布尔导致误判））；`IntervalAgentScheduler` 的 `AgentScheduledTaskEntity` 同样惰性化；`AgentModule` 移除冗余的 TypeOrm* providers 注册与顶层 import（`Default*` 已惰性覆盖，node 测试经 `AgentOrmModule` 显式注册不受影响）；`DefaultAgentRuntime`/`agent.module.ts` 从 `./goal` index 改深度导入 `./goal/GoalStore`（避免 index 的 `export * from './TypeOrmGoalStore'` 触发）；新增 `src/web-entry.ts` 浏览器安全入口——只 re-export web 需要的符号（tokens/options/AgentModule/runtime/events/tools/memory 类型等 25+），不含 TypeOrm*/orm/entities；`build-web.ts` 的 `@tsdi/agent` 别名指向 web-entry + 临时 tsconfig 单独编译 web-entry（extends 根 + types:['node'] + typeRoots）。**效果**：web bundle 从 8.8MB（含 typeorm/browser 354 输入）降至 3.25MB、typeorm 完全清除，`typeorm-stub.ts` hack 删除，浏览器 boot 验证通过。锚点：`agent/src/lazy-typeorm.ts`、`agent/src/web-entry.ts`、`agent/src/agent.module.ts`、`agent/src/harness/Default*.ts`、`agent/src/memory/Default*.ts`、`agent/src/goal/DefaultGoalStore.ts`、`agent/src/scheduler/IntervalAgentScheduler.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-ui/build-web.ts`。
 
+### IDE 宿主（G21 第三步）
+
+- **P93 · VS Code 远程控制台扩展**：新增 `@tsdi/agent-vscode` 包——VS Code webview 宿主复用 P91 的 web bundle（`media/agent-console.js`，`build.ts` 先跑 agent-ui `build-web.ts` 再 esbuild bundle `extension.ts`，`vscode` external 保持扩展宿主依赖）；`AgentConsolePanel`（`tsdiAgent.openConsole` / `tsdiAgent.refreshConsole` 命令 + 配置变更自动 refresh，webview `retainContextWhenHidden` + `localResourceRoots` + 注入式 `VsCodeHost`/`UriLike`/`WebviewPanelLike` 抽象便于单测）；`webview-html.ts` 生成带 CSP（nonce + `__TSDI_AGENT_WEB__` 注入，JSON 内联转义防 XSS）+ 主题变量（`--vscode-editor-*`）的宿主 HTML；`package.json` contributes 两命令 + `tsdiAgent.gatewayUrl`/`token`/`sessionId` 三配置项；`activate`/`deactivate` 生命周期 + `activateWithHost` 可测入口。**效果**：G21（多端交付面）的 IDE 宿主落地，Web 控制台（P91）+ 远程传输层（P90）被 VS Code 原生复用，TUI/Web/IDE 三端共用同一 `AgentConsoleComponent` 渲染层。锚点：`agent-vscode/src/`（extension/AgentConsolePanel/webview-html/host）、`agent-vscode/build.ts`、`agent-vscode/package.json`、`agent-vscode/test/`（6 passing：panel 复用/重建、activation 注册、URL 归一化、CSP 渲染、注入转义）。
+
 ### 生命周期扩展
 
 - **P82 · pre/post-compaction hooks**：`AgentLifecycleHookStage`、shell hooks 与 function hooks 新增 `beforeCompaction` / `afterCompaction`；`AgentContextManager` 仅在真实触发压缩时按序调用，after 载荷包含 summary、质量分、压缩报告与丢弃消息统计；runtime 桥接复用既有 hook 审计/转录管线，无 hook 时零额外执行。锚点：`agent/src/hooks/AgentHooks.ts`、`agent/src/context/AgentContextManager.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`。
@@ -76,17 +80,17 @@
 - **P80 · /review 内联评审命令**：`review` 工具组（`agent-tools/review/review-diff.tool.ts`）对当前 git diff（`git diff HEAD` 或指定 range/文件集）发起只读评审——不改工作树，输出结构化 findings（correctness / risks / suggested-fixes，含文件 + 行锚点）；`review_diff` 只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控；findings 经 `ReviewFindingsStore` 落审计（toolName `review_diff`、`inputSummary='review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`，无 AuditSink 时抛错）供 review 面板展示，可与 commit 绑定审计。agent-gateway：`review.diff/list/get/save` RPC + `GET /api/reviews` REST（sessionId 必填、owner 403、commit 过滤、`/api/reviews/:id`）；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）→ git diff 评审流 + findings 面板 + review.save 落库。锚点：`agent-tools/review/`、`agent/src/harness/ReviewFindingsStore.ts`、`agent-gateway/src/api/ReviewHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-gateway/src/gateway/GatewayBootstrap.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P75 · Gateway OpenAPI 规范**：从已注册 `GatewayRoute[]` 生成 OpenAPI 3.1 文档（路径参数、认证 scheme、`/rpc` 入口），`GET /openapi.json` 免认证暴露。锚点：`agent-gateway/src/gateway/OpenApiDocument.ts`。
 
-## 差距分析 v2（vs Codex / opencode，2026-08）
+## 差距分析 v3（vs Codex / opencode，2026-08 深挖）
 
 ### 结论
 
-第一轮差距 G1–G10 已全部闭环（P67–P78，见上）；第二轮 G11/G12（验证闭环最后一公里 + 独立评审流）已随 P79/P80 闭环；第三轮 G13–G22 已全部闭环（P81–P89，见上）。继续对照 2026-08 的 codex（openai/codex，Rust app-server，v0.144–0.146：hooks GA 含 pre/post-compaction、`/review` 内联评审、`/import` 配置迁移、`/goal` 持久化多日工作流、permission profiles、plugin marketplace、Chrome 扩展 + 移动 remote）与 opencode（anomalyco/opencode，TypeScript + Effect，v1.14–1.18：Scout agent、background subagents、pinned sessions、Tauri desktop + IDE 扩展、models.dev provider 目录、30+ auto-install LSP、`/share` 会话分享、snapshot warp）源码/文档逐项比对后，剩余差距收窄到多端交付面：
+G1–G12 全部闭环（P67–P80）；G13–G22 全部闭环（P81–P89）；G21 三端逐步落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展）。对照 **2026-08 最新** codex（openai/codex，Rust app-server，v0.144–0.147：Agent Plugins 便携插件 + 市场目录、`--approve-for-me` 自动评审、thread sections 手动排序 + 分页 thread 历史、MCP 2026-07-28 协议、Windows 原生沙箱 + 网络代理强制、secrets/bearer 重放脱敏、项目信任门 + 托管认证限制、rollout token 预算、索引化 web search、scheduled time reminders、cloud-managed profiles）与 opencode（anomalyco/opencode，v1.18.x：桌面 app tabs + locale、session 时间线/JSON 导出、review panel 文件 tab 对齐、MCP 断线重连、retry 风暴封顶 + jitter、自适应 thinking 控制、单 device-code 登录流）逐项比对后，**功能覆盖差距已实质清零**，剩余为三类：
 
-1. **跨会话工作流**：fork/thread/scheduler/goal 已齐，后续重点是更强的无人值守推进策略与完成证据。
-2. **配置与生态扩展**：CLAUDE.md / Cursor 导入（P81）、provider 目录（P84）、skills 远程市场（P87）、LSP 自动安装（P89）均已闭环。
-3. **多端交付面**：TUI/CLI/gateway 已齐，远程传输层已落地（P90：`POST /rpc/stream` NDJSON 流式 RPC + `HttpAgentConsoleAppRpc` + `AgentConsoleRemoteEventBridge`）；桌面/IDE/Web/移动的具体宿主界面未落地（G21 其余部分，远期）。
+1. **平台级安全/隔离**（G23）：Windows 原生沙箱 + 网络代理强制（PAC/WPAD）——codex 在 exec-server 层落地，我们 Windows 仅进程级隔离降级。
+2. **长会话 UX 工程**（G24/G25/G26）：thread sections 手动排序、分页 thread 历史 + memories、rollout token 预算（跨 thread 用量追踪 + 剩余提醒 + 耗尽中止 turn）。
+3. **生态与协议升级**（G27–G33）：Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）、MCP 2026-07-28 协议、索引化 web search、secrets 重放脱敏、每-turn 多代理委派模式、项目信任门、自适应 thinking/reasoning effort 透传。
 
-全部为增量可做、无需推翻现有架构；功能差距已清零。
+全部为增量可做、无需推翻现有架构。
 
 ### 本项目优势（相对 codex/opencode，保持并强化）
 
@@ -95,36 +99,59 @@
 3. **上下文压缩的严谨性**：anchor 保留 + 五字段 summary schema + 质量评分 + 压缩历史观测 + overflow replay/媒体占位（P68）—— 比 opencode 的摘要压缩更可度量、可回归。
 4. **审批流 + 补偿/回滚完备性**：granular 类别 + expiry/FIFO/防御清扫 + 审计落库 + LIFO 补偿 + 文件快照 undo/redo + Git step 快照 revert/unrevert（P71）。
 5. **可观测性覆盖**：turn diagnostics / summary quality / compaction history / delegation / audit 全部持久化并暴露 HTTP + RPC + UI 三层，opencode/codex 均无此厚度。
-6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP stdio + Streamable HTTP + OAuth + server、skills 本地注册表、hooks 双形态（命令 + 进程内函数）、gateway 多协议 + OpenAPI —— 工具广度超过 opencode 内置集。
-7. **跨平台响应式 UI 架构**：TUI/浏览器共用响应式渲染层（数据变化驱动、无定时器刷新、时间派生动画），跨平台约束已沉淀至根 AGENTS.md。
+6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP stdio + Streamable HTTP + OAuth + server、skills 本地注册表 + 远程市场、hooks 双形态（命令 + 进程内函数）、gateway 多协议 + OpenAPI —— 工具广度超过 opencode 内置集。
+7. **跨平台响应式 UI 架构**：TUI/浏览器/VS Code webview 共用响应式渲染层（数据变化驱动、无定时器刷新、时间派生动画），三端共用 `AgentConsoleComponent`，跨平台约束已沉淀至根 AGENTS.md。
 
-### 新差距（按优先级排序，P82 起逐项消化）
+### 差距明细表（v2 已闭环项 + v3 新增项）
 
 | # | 差距 | 对照对象 | 现状证据 | 影响 |
 |---|---|---|---|---|
-| G11 | ~~build/test 结果未接入验证闭环~~（✅ 2026-08 P79） | opencode 编辑后 LSP+测试结果喂回；codex 内置验证习惯 | `VerifyCommandRunner` 编辑后运行受影响包 typecheck/lint 等脚本 → `verify-command` 证据 → gate 检查 (d) 伪造 | 高：编码反馈闭环的最后一块，模型改错后无「跑测试/编译」自感知 |
-| G12 | ~~无 /review 内联评审命令~~（✅ 2026-08 P80） | codex `/review`（0.144+）：不改工作树评审当前 diff，结构化 findings | review archetype 为手动只读会话；agent-ui review 面板（`reviewTaskChoices`）评审的是子代理任务产物，非 git diff inline 评审；无 findings 落库与 commit 绑定 | 高：独立评审流缺失，交付前自查能力弱 |
-| G13 | ~~无 pre/post-compaction hooks~~（✅ 2026-08 P82） | codex hooks GA（0.130+）pre/post-compaction | lifecycle hooks 已扩展 before/afterCompaction，after 透出 summary、质量分、report 与 drop 统计 | 中：压缩时可观测/定制不足（审计、外部同步、通知） |
-| G14 | ~~无配置迁移（/import）~~（✅ 2026-08 P81） | codex `/import` 导入 Cursor/Claude Code settings、MCP、plugins、commands | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 的 preview/apply 幂等迁移 | 中：从 Claude Code/Cursor 迁移门槛高 |
-| G15 | ~~无 Goal 系统（跨会话持久目标）~~（✅ 2026-08 P83） | codex `/goal`（0.128+）持久化多日工作流 | GoalStore 持久化目标与 session 关联，runtime 注入 active goal 并按明确 criteria 完成判定 | 中：长期任务无法无人值守持续推进 |
-| G16 | ~~无 provider 注册表~~（✅ 2026-08 P84） | opencode models.dev（75+ providers / 1000+ 模型）目录 | 内置/自定义 provider registry 提供 baseUrl、key env、model catalog 与 capabilities，CLI/gateway 共用 | 中：接入新模型/网关成本高 |
-| G17 | ~~无 eval 基准 runner~~（✅ 2026-08 P85） | 生态 SWE-bench 式任务级评估 | `EvalRunner` 单/批量任务 + profile 选择 + 验证命令评分 + 报告存储，gateway `POST /api/eval/run` / `GET /api/eval` | 中：模型/提示改动无量化回归手段 |
-| G18 | ~~无会话分享~~（✅ 2026-08 P86） | opencode `/share` 只读分享会话 | owner 创建不可变脱敏快照，高熵 token 只读访问并支持撤销 | 低中：协作/交付场景缺失 |
-| G19 | ~~skills 无远程分发~~（✅ 2026-08 P87） | codex plugin marketplace；opencode skills 目录共享 | `RemoteSkillManager` 安装 git/registry 源（版本追踪 + 冲突检测 + 更新/移除），`skills_remote` 工具 + provider 缓存目录加载 | 低中：生态扩展受限 |
-| G20 | ~~后台子代理 UX~~（✅ 2026-08 P88） | opencode background subagents（v1.14.51+）用户继续打字时子代理持续工作 | `spawn_agent background: true` fire-and-collect（不阻塞 turn），`BackgroundTaskManager` 追踪状态/结果，`AgentBackgroundTask*Event` 经 gateway SSE + agent-ui 通知回传 | 低中：并行体验差距 |
-| G21 | **多端交付面未闭环** | opencode Tauri desktop + IDE 扩展 + web console；codex macOS app + Chrome 扩展 + 移动 remote | TUI/CLI/gateway 已齐；远程传输层（P90）、Web console 宿主（P91）、agent 浏览器安全 module 边界（P92）已落地；桌面壳/IDE 扩展/移动 remote 宿主界面未落地 | 中：远期工程 |
-| G22 | ~~LSP 无自动安装/版本管理~~（✅ 2026-08 P89） | opencode 30+ auto-install LSP configs | `LspInstallManager` 语言→安装命令映射（npm/brew/go/rustup），`autoInstall` 开启时自动安装、否则返回安装提示；工具结果带 hint | 低：新环境上手成本 |
+| G11 | ~~build/test 结果未接入验证闭环~~（✅ P79） | opencode 编辑后 LSP+测试结果喂回；codex 内置验证习惯 | `VerifyCommandRunner` 编辑后运行受影响包 typecheck/lint → `verify-command` 证据 → gate 检查 (d) 伪造 | 高：已闭环 |
+| G12 | ~~无 /review 内联评审命令~~（✅ P80） | codex `/review`：不改工作树评审当前 diff，结构化 findings | `review_diff` 工具 + `ReviewFindingsStore` + review RPC/REST + agent-ui `/review` 全命令面 | 高：已闭环 |
+| G13 | ~~无 pre/post-compaction hooks~~（✅ P82） | codex hooks GA pre/post-compaction | before/afterCompaction 双形态 + after 载荷透出 summary/质量分/report/drop 统计 | 中：已闭环 |
+| G14 | ~~无配置迁移~~（✅ P81） | codex `/import` | `tsdi-agent import` + `import_config` 支持 CLAUDE.md、Cursor rules/MCP 幂等迁移 | 中：已闭环 |
+| G15 | ~~无 Goal 系统~~（✅ P83） | codex `/goal` | GoalStore 持久化 + criteria 完成判定 + gateway/UI 全命令面 | 中：已闭环 |
+| G16 | ~~无 provider 注册表~~（✅ P84） | opencode models.dev | 内置/自定义 provider registry + 能力位 + CLI/gateway 消费 | 中：已闭环 |
+| G17 | ~~无 eval 基准 runner~~（✅ P85） | 生态 SWE-bench 式评估 | `EvalRunner` 单/批量 + 验证命令评分 + gateway 暴露 | 中：已闭环 |
+| G18 | ~~无会话分享~~（✅ P86） | opencode `/share` | 不可变脱敏快照 + 高熵 token 只读访问 + 撤销 | 低中：已闭环 |
+| G19 | ~~skills 无远程分发~~（✅ P87） | codex plugin marketplace；opencode skills 共享 | `RemoteSkillManager` git/registry 源 + 版本追踪 + 冲突检测 | 低中：已闭环 |
+| G20 | ~~后台子代理 UX~~（✅ P88） | opencode background subagents | `spawn_agent background: true` fire-and-collect + 事件回传 | 低中：已闭环 |
+| G21 | ~~多端交付面~~（✅ P90–P93 部分） | opencode Tauri desktop + IDE；codex macOS app + Chrome 扩展 | 远程传输 + Web console + 浏览器安全边界 + **VS Code 扩展（P93）**；桌面壳/移动 remote 余量见「剩余」 | 中：IDE 已闭环 |
+| G22 | ~~LSP 无自动安装~~（✅ P89） | opencode 30+ auto-install LSP | `LspInstallManager` 语言→安装命令映射 + autoInstall + hint | 低：已闭环 |
+| G23 | **Windows 原生沙箱 + 网络代理强制（PAC/WPAD）** | codex v0.131+：exec-server 原生 Windows 沙箱、elevated Windows sandbox for network proxies、deny-read 对等、代理状态跨进程传递 | `sandbox-exec.ts` Windows 仅进程级隔离降级（`DEFAULT_SANDBOX_EXEC_DEGRADATION`）；无系统代理（PAC/WPAD）强制；网络放行仅命令子串 allowlist | 高：Windows 用户安全面、代理强制缺失 |
+| G24 | **Thread sections + 分页 thread 历史** | codex 0.142.5+：分页 thread 历史（高效 resume/search/persisted names/sub-agent 支持/memories）；0.147 thread sections 手动排序持久化 | 有 thread 状态（`session.list_threads`/`threadStatus`），无 sections 手动排序、无分页增量浏览长转录 | 中：长会话 UX |
+| G25 | **Rollout token 预算** | codex 0.142：跨 agent thread 用量追踪 + remaining-budget 提醒 + 耗尽 abort turn | 有 `usage.stats`/`UsageSummary`，无预算上限/提醒/中止机制 | 中：成本失控防护 |
+| G26 | **secrets/bearer 重放脱敏** | codex 0.146/0.147：从 displayed commands 与 replayed conversation history 完整 redact secrets + bearer tokens | `OutputGuard` 覆盖工具输出脱敏；命令展示与 compaction replay 历史未覆盖 | 中：安全 |
+| G27 | **Agent Plugins（manifest + skills/connectors/MCP 捆绑 + 市场目录）** | codex 0.145+：便携插件 manifest、local/personal/workspace/remote 市场目录、npm marketplace 源、版本追踪、plugin analytics、插件级 AGENTS.md 作用域 | skills 远程市场（P87）只装 SKILL.md；无插件 manifest/connectors/MCP 捆绑、无市场目录层级、无插件分析 | 中：生态扩展上限 |
+| G28 | **MCP 2026-07-28 协议** | codex 0.147：paginated discovery、multi-round requests、non-blocking server startup、MCP OAuth 经 HTTP client | `StreamableHttpMcpClient` 标注 spec 2025-06-18；`tools/list` 已有 cursor 分页但无多轮请求/非阻塞启动/资源分页 | 低中：协议时效 |
+| G29 | **每-turn 多代理委派模式（disabled/explicit/proactive）** | codex 0.142：thread/turn 级多代理模式三态；0.145 per-turn 委派 | `spawn_agent`/`parallel_spawn`/`coding_task` 为显式请求式；无「agent 自主判断是否委派」的 proactive 模式开关 | 低中：编排策略 |
+| G30 | **索引化 web search** | codex 0.142：indexed web-search（live search + 仅 server-approved URL 直读） | `web_search`/`web_extract` 适配器已支持，无索引化模式（search 与 extract 分离授权） | 低：检索能力 |
+| G31 | **项目信任门 + 托管认证限制** | codex 0.147：不熟悉本地项目显式 trust、managed auth 凭据使用前限制 | 无首次打开不熟悉项目的信任确认流程；凭据仅在 env 存在时可用 | 低中：安全 UX |
+| G32 | **自适应 thinking / reasoning effort 透传** | opencode 1.18：Claude adaptive thinking、Kimi 自适应控制、provider-defined reasoning options | provider registry 有 reasoning 能力位；`OpenAICompatibleModelAdapter` 未透传 reasoning_effort/thinking 配置项 | 低：模型能力利用 |
+| G33 | **MCP 断线重连 + OAuth 回调端口** | opencode 1.18：MCP server 过期 SDK session 重连、OAuth 回调端口 honor | `StdioMcpClient`/`StreamableHttpMcpClient` 无自动重连逻辑；`mcp-oauth.ts` 未读配置回调端口 | 低：长跑稳定性 |
 
-## 打磨计划（P87+）
+## 打磨计划（P94+）
 
-> 约定：`Pnn-前缀` 对应上表差距编号（G11–G22）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
+> 约定：`Pnn-前缀` 对应上表差距编号（G23–G33）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
 >
-> P87–P89（G19/G20/G22）已全部落地；P90（G21 远程传输层）、P91（G21 Web console 宿主）、P92（agent 浏览器安全 module 边界）已落地，见「已实现功能」；打磨计划已清空。
+> 排序原则：先安全面（G23/G26/G31）→ 再生态/协议（G27/G28/G32）→ 后 UX/编排（G24/G25/G29/G30/G33）。
+
+- **P94 · Windows 原生沙箱 + 网络代理强制（G23）**：新增 Windows `Job Object` + 受限 token + 防火墙策略（AppContainer/`Windows Sandbox` 探测或 `wsl` 透传 bwrap）与 exec-server 层代理强制（PAC/WPAD 解析 → `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` 注入子进程 + deny 非代理直连）；`describeSandboxExecDegradation` 升级为按能力细分（filesystem-write / network / read-denied）；沙箱运行时（`SandboxRuntimeContext`）扩展 `windows` 分支；agent-ui `/permissions` 展示当前平台能力矩阵。锚点：`agent/src/harness/sandbox-exec.ts`、`agent/src/harness/SandboxExecutor.ts`、`agent-tools/src/sandbox-policy.ts`。
+- **P95 · MCP 2026-07-28 协议升级（G28）**：`StreamableHttpMcpClient`/`StdioMcpClient` 升级 negotiated `protocolVersion` 到 2026-07-28，支持 paginated `tools/list`/`resources/list`（cursor 已有，补 resources/prompts 分页）、multi-round requests（`request` 会话内多轮）、non-blocking server startup（`server/initialized` 后工具立即可用 + 启动超时回退）；MCP OAuth 经统一 HTTP client（`mcp-oauth.ts` 复用 gateway 共享 client）；并发请求冲刷。锚点：`agent-tools/mcp/StreamableHttpMcpClient.ts`、`agent-tools/mcp/StdioMcpClient.ts`、`agent-tools/mcp/mcp-oauth.ts`、`agent-tools/mcp/types.ts`。
+- **P96 · Agent Plugins 便携插件 + 市场目录（G27）**：在 P87 `RemoteSkillManager` 之上扩展插件 manifest（`plugin.json`：name/description/skills/connectors/mcpServers/version/hooks）与市场目录分层（local/personal/workspace/remote + npm marketplace 源），安装时 skills + MCP servers + hooks 一并注册；插件版本追踪/冲突检测复用 P87 语义；AGENTS.md 支持插件级作用域（目录级自动激活）；plugin analytics（安装/激活/调用计数入 audit）。锚点：`agent-tools/skills/remote-skill-manager.ts`、`agent-tools/skills/provider.ts`、`agent/src/hooks/AgentHooks.ts`、`agent-tools/mcp/provider.ts`。
+- **P97 · Thread sections + 分页历史（G24）**：`SessionStore` 扩展 section 模型（`session.section.*` RPC：create/move/rename/delete + 手动排序持久化）；`session.messages` 支持分页增量浏览（cursor + limit，长转录不整包拉取）；thread 列表展示 sections 分组；sub-agent 消息归属 section（复用 `originThreadId`）；`AgentConsoleSessionState` 增量追加渲染。锚点：`agent/src/memory/SessionStore.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleSessionState.ts`。
+- **P98 · Rollout token 预算（G25）**：`AgentOptions` 新增 `tokenBudget`（per-thread/per-session/per-project，`trackedUsage` + `budgetExceeded` 判定）；runtime 每 turn 消费后累加并发布 `AgentTokenBudgetReminderEvent`（剩余 20%/10% 提醒）与 `AgentTokenBudgetExceededEvent`（abort 当前 turn）；`usage.stats` 透出预算与剩余；gateway `usage.*` RPC 返回 budget 字段；agent-ui `/usage` 展示预算条。锚点：`agent/src/runtime/UsageSummary.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent/src/options.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- **P99 · secrets/bearer 重放脱敏（G26）**：新增 `RedactionFilter`（复用 `OutputGuard` 模式）：对 displayed commands（tool 输入摘要）与 compaction replay 注入的历史消息做 secrets/bearer/`sk-*` 完整脱敏（与 P86 会话分享脱敏共用正则集）；`CompactionHistoryRecord`/`AgentTurnDiagnostics` 重放路径统一过 filter；config 不落盘敏感值。锚点：`agent/src/harness/OutputGuard.ts`、`agent/src/context/AgentContextManager.ts`、`agent/src/harness/CompactionHistoryStore.ts`、`agent-gateway/src/api/SessionShareHandler.ts`。
+- **P100 · 每-turn 多代理委派模式（G29）**：`AgentTurnInput`/`AgentOptions` 新增 `delegationMode: 'disabled' | 'explicit' | 'proactive'`（thread/turn 级覆盖）；proactive 模式在系统提示注入委派指导（何时 spawn_agent/parallel_spawn），runtime 对 `coding_task` 产物做委派质量 gate（完成率 → 是否继续委派）；`session.delegation_mode.set/get` RPC + agent-ui `/delegation` 命令。锚点：`agent/src/runtime/AgentTurnInput.ts`、`agent/src/prompt/SystemPromptBuilder.ts`、`agent-tools/agent/parallel-spawn.tool.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- **P101 · 索引化 web search（G30）**：`WebSearchAdapter` 扩展 `indexed` 模式——search 结果仅返回 server-approved URL 集合（`web.allowedDomains`），`web_extract` 白名单外 URL 拒绝提取；search 与 extract 分离授权（复用 sandbox 网络 allowlist）；`/permissions` 展示 web 策略。锚点：`agent-tools/web/web-search.tool.ts`、`agent-tools/web/web-extract.tool.ts`、`agent-tools/src/default-adapters.ts`。
+- **P102 · 项目信任门（G31）**：首次打开 workspace（无 `~/.tsdi-agent/trusted-projects.json` 记录）时 CLI/Web 提示信任确认（类似 codex trust prompt），拒绝则只读模式 + 网络阻断；`doctor` 报告未信任项目；gateway owner 首次 session 创建时记录信任状态。锚点：`agent-cli/src/cli.ts`、`agent/src/project/init-agents-doc.ts`、`agent-gateway/src/api/SessionHandler.ts`。
+- **P103 · 自适应 thinking / reasoning effort 透传（G32）**：`ModelRequest`/`OpenAICompatibleModelAdapter` 透传 `reasoning_effort`/`thinking` 配置（provider registry 能力位 `reasoning` 已有）；Anthropic adapter 透传 `thinking: {type: 'enabled', budget_tokens}`；CLI `/model` 展示并切换 reasoning 档位（low/medium/high）；profile 级默认。锚点：`agent/src/model/ModelRequest.ts`、`agent/src/model/OpenAICompatibleModelAdapter.ts`、`agent/src/model/AnthropicModelAdapter.ts`、`agent-cli/src/config.ts`。
+- **P104 · MCP 断线重连 + OAuth 回调端口（G33）**：`StdioMcpClient`/`StreamableHttpMcpClient` 增加指数退避自动重连（进程存活 + 会话续期，`server/initialized` 重放）；`mcp-oauth.ts` 读取配置回调端口（`mcp.oauthCallbackPort`）并 honor；并发请求在重连窗口内排队而非失败。锚点：`agent-tools/mcp/StdioMcpClient.ts`、`agent-tools/mcp/StreamableHttpMcpClient.ts`、`agent-tools/mcp/mcp-oauth.ts`、`agent-tools/mcp/types.ts`。
 
 ## 剩余（远期，未排期）
 
-- **桌面/IDE/移动多面宿主（G21 余量）**：opencode Tauri desktop + IDE 扩展；codex macOS app + Chrome 扩展 + 移动 remote —— 远程传输层（P90）、Web console 宿主（P91）与 agent 浏览器安全 module 边界（P92，`web-entry.ts` + `lazy-typeorm` 惰性化 + bundle 3.25MB）已就绪，剩余为桌面壳、IDE 扩展与移动端宿主工程，暂不排期。
-- **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent）—— 依赖平台 OAuth。
+- **桌面壳 / 移动 remote（G21 余量）**：opencode Tauri desktop（tabs + locale）；codex macOS app + Chrome 扩展 + 移动 remote —— 远程传输层（P90）、Web console 宿主（P91）、浏览器安全边界（P92）与 VS Code 扩展（P93）已就绪，剩余为独立桌面壳（Tauri/Electron 打包 + 原生窗口 + 系统托盘）与移动端宿主工程，暂不排期。
+- **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent、Codex Jobs 云端触发）—— 依赖平台 OAuth。
 
 ## 已完成（历史）
 
@@ -183,3 +210,5 @@ P90（Gateway 远程传输层，G21 第一步）已落地：agent-gateway `AppRp
 P91（Web console 宿主，G21 第二步）已落地：gateway `GatewayServer` 实现 `staticDir` 静态托管（`GET /*` MIME 映射、`/`→`index.html`、目录回退 index、路径穿越 403/404、未配置直通 404）；agent-ui 新增浏览器入口 `web-console.ts`（`mountAgentWebConsole`：读 `window.__TSDI_AGENT_WEB__`/参数（baseUrl/token/sessionId/workspace）→ boot `AgentConsoleComponent` + `HtmlTemplateModule` + `DOCUMENT` + `AGENT_CONSOLE_APP_RPC`(HttpAgentConsoleAppRpc) + `AGENT_OPTIONS` → 挂 `AgentConsoleRemoteEventBridge` SSE 桥 → 组件根节点 append 容器 → 返回 `{ctx, state, dispose}`；`runAgentWebConsole` 便捷入口；`globalThis.TsdiAgentWeb` 挂载）与 `web/index.html` + `build-web.ts` 构建管线（两阶段：tsc 编译保留 `emitDecoratorMetadata` → esbuild bundle，`@tsdi/*` 别名 tsc 输出、node 内置 stub、jsdom/express external；`npm run build:web` → `web/dist/agent-console.js`）。顺带修复两个真实浏览器阻塞缺陷：`core/src/pipes/parses/array.ts` 删除未使用顶层 `import e = require('express')`（core 依赖为空、浏览器 bundle 顶层即崩）；`components/console` `ConsoleTemplateParser` 顶层 `import { JSDOM }` 改注入 `DOCUMENT`（可空）+ 惰性 require jsdom，补 `@tsdi/common` 依赖。回归：agent-gateway 212 / agent-ui 391 / core 130 / components 126 / components/console 72 passing，各包 tsc clean；新增测试：gateway static-serving 6 例、agent-ui web-console 5 例 + jsdom 完整 boot 验证 + gateway 端到端。
 
 P92（`@tsdi/agent` 浏览器安全 module 边界）已落地：8 个 `Default*Store` 的 TypeOrm 实现顶层 import 改惰性 require（新增 `src/lazy-typeorm.ts`：`requireLazy` 动态路径绕过 esbuild 静态打包、`resolveTypeormAdapter` 惰性解析 TypeormAdapter token 并校验实例有效性——`app.get(token, null)` 无 provider 返回哨兵布尔导致误判已修）；`IntervalAgentScheduler` 的 `AgentScheduledTaskEntity` 惰性化；`AgentModule` 移除冗余 TypeOrm* providers/import（`Default*` 惰性覆盖，node 测试经 `AgentOrmModule` 显式注册不受影响）；`DefaultAgentRuntime`/`agent.module.ts` 深度导入 `./goal/GoalStore`（避开 index 的 TypeOrmGoalStore re-export）；新增 `src/web-entry.ts` 浏览器安全入口（只 re-export web 需要的 tokens/runtime/events/tools 等，不含 TypeOrm*/orm/entities）；`build-web.ts` `@tsdi/agent` 别名指向 web-entry + 临时 tsconfig 单独编译 web-entry。效果：web bundle 8.8MB→3.25MB（typeorm/browser 354 输入清零），`typeorm-stub.ts` hack 删除，浏览器 boot 验证通过。最终收尾补齐 `components/console/taskfile.ts`（此前 package build 脚本指向不存在的入口）；全量回归：agents 八包 1712 passing（agent 672 / agent-channels 59 / agent-cli 58 / agent-gateway 212 / agent-providers 13 / agent-ssh 8 / agent-tools 299 / agent-ui 391），跨包 core 130 / components 126 / components-console 72 passing，共 2040 passing；11 个相关包 build clean，`agent-ui build:web` clean（bundle 3.1MB）。
+
+P93（VS Code 远程控制台扩展，G21 IDE 宿主）已落地：新增 `@tsdi/agent-vscode` 包——webview 宿主复用 P91 的 web bundle（`build.ts` 先跑 agent-ui `build-web.ts` 产出 `media/agent-console.js`，再 esbuild bundle `extension.ts`，`vscode` external）；`AgentConsolePanel` 实现 `tsdiAgent.openConsole`/`tsdiAgent.refreshConsole` 命令 + 配置变更自动 refresh，webview 带 `retainContextWhenHidden` + `localResourceRoots` + CSP（nonce + JSON 内联转义）；`VsCodeHost`/`WebviewPanelLike`/`UriLike` 注入式抽象使扩展逻辑可单测（host 接口 + fixture mock）；`webview-html.ts` 生成主题变量（`--vscode-editor-*`）宿主 HTML。效果：TUI/Web/IDE 三端共用 `AgentConsoleComponent` 渲染层。回归：agent-vscode 6 passing（panel 复用/重建、activation 注册、URL 归一化、CSP 渲染、注入转义），`agent-ui build:web` 产出 bundle 3.26MB（`media/agent-console.js`）。
