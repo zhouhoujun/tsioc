@@ -236,3 +236,7 @@ P103（自适应 thinking / reasoning effort 透传，G32）已落地：`ModelRe
 P95（MCP 2026-07-28 协议升级，G28）已落地：默认 `protocolVersion` 升至 `2026-07-28`（`SUPPORTED_MCP_PROTOCOL_VERSIONS` = 2026-07-28/2025-06-18/2025-03-26，`resolveNegotiatedProtocolVersion` 未知版本回退最新）；`McpClient` 新增可选 `listResources`/`listPrompts`（cursor 分页，server 不支持时 `.catch` 降级空数组）与 `negotiatedVersion()`；`StdioMcpClient`/`StreamableHttpMcpClient` 从 initialize result 捕获协商版本（close 时重置）。回归：agent-tools `mcp-http.spec.ts` mock server 升级 2026-07-28 + 新增 resources/prompts 分页协商 1 例 + 版本回退纯函数 1 例。全量 agent-tools 307 passing。
 
 最终全量回归（本轮）：agent 698 / agent-channels 59 / agent-cli 58 / agent-gateway 213 / agent-providers 13 / agent-ssh 8 / agent-tools 307 / agent-ui 391 / agent-vscode 6，共 1753 passing；九包 `tsc --noEmit` clean；`agent-ui build:web` clean（bundle 3.1MB）、`agent-vscode build.ts` clean。
+
+### 本轮收尾验证（2026-08-13）
+
+已完成 P94–P104 批次收尾检查：九包全量测试全部通过（agent 698 / agent-channels 59 / agent-cli 58 / agent-gateway 213 / agent-providers 13 / agent-ssh 8 / agent-tools 307 / agent-ui 391 / agent-vscode 6，共 1753 passing）；九包 package build 全部通过；`agent-vscode` 构建联动 `agent-ui build:web` 成功，产出 `web/dist/agent-console.js` 3.1MB 及 VS Code `media/agent-console.js`。本次验证未发现源码回归，P105+ 仍作为下一阶段计划。
