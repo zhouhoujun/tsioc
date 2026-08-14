@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { McpOAuthCredentialStore } from '@tsdi/agent-tools';
 import {
     AgentCliOptions,
     AgentCliProviderProfile,
@@ -61,6 +62,13 @@ export interface AgentDoctorReport {
     /** G31: whether the workspace directory is trusted (recorded in `~/.tsdi-agent/trusted-projects.json`). */
     workspaceTrusted: boolean;
     workspaceTrustStore?: string;
+    credentialStore: {
+        path: string;
+        backend: string;
+        encrypted: boolean;
+        fallback: boolean;
+        warning?: string;
+    };
     issues: AgentDoctorIssue[];
 }
 
@@ -215,6 +223,14 @@ function inferIssues(report: AgentDoctorReport): AgentDoctorIssue[] {
                 : 'Pass --api-key or configure a provider profile.'
         });
     }
+    if (report.credentialStore.warning) {
+        issues.push({
+            severity: 'warn',
+            code: 'credential_store_fallback',
+            message: report.credentialStore.warning,
+            hint: 'Use the Electron desktop host safeStorage backend when OS-managed credential encryption is required.'
+        });
+    }
     return issues;
 }
 
@@ -235,6 +251,8 @@ export function createAgentDoctorReport(options: AgentCliOptions): AgentDoctorRe
         exists: fs.existsSync(skillRoot)
     }));
     const trust = resolveWorkspaceTrust(resolved.workspace, resolved.root);
+    const credentialStore = new McpOAuthCredentialStore(path.join(resolved.root, 'mcp-credentials.json'));
+    const credentialStatus = credentialStore.getStatus();
     const mcpServers = (resolved.tools.mcp?.servers || []).map(server => ({
         id: String(server.id || '').trim(),
         title: server.title ? String(server.title) : undefined,
@@ -266,6 +284,7 @@ export function createAgentDoctorReport(options: AgentCliOptions): AgentDoctorRe
         channelPreset: String(resolved.channels.registration?.preset || 'default'),
         workspaceTrusted: trust.trusted,
         workspaceTrustStore: trust.storePath,
+        credentialStore: { path: credentialStore.getPath(), ...credentialStatus },
         issues: []
     };
     report.issues = inferIssues(report);
@@ -300,6 +319,7 @@ export function formatAgentDoctorReport(report: AgentDoctorReport): string {
     });
     lines.push('');
     lines.push(`Workspace trust: ${report.workspaceTrusted ? 'trusted' : 'untrusted'}${report.workspaceTrustStore ? `  |  store ${report.workspaceTrustStore}` : ''}`);
+    lines.push(`Credential store: ${report.credentialStore.backend}  |  ${report.credentialStore.encrypted ? 'encrypted' : 'not encrypted'}${report.credentialStore.fallback ? '  |  fallback' : ''}`);
     lines.push(`Hooks: ${report.hooksConfigured ? 'configured' : 'not configured'}`);
     lines.push(`Skill roots: ${report.skillRoots.length}`);
     report.skillRoots.forEach(entry => {

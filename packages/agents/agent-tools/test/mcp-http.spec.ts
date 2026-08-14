@@ -5,7 +5,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { AgentMcpServerOptions, LocalMcpClientRegistry, McpOAuthClient, McpOAuthCredentialStore, McpOAuthInteraction, StreamableHttpMcpClient, mergeAgentMcpOptions, resolveNegotiatedProtocolVersion } from '../mcp';
+import { AgentMcpServerOptions, LocalMcpClientRegistry, McpOAuthClient, McpOAuthCredentialStore, McpOAuthInteraction, SafeStorageCredentialBackend, StreamableHttpMcpClient, mergeAgentMcpOptions, resolveNegotiatedProtocolVersion } from '../mcp';
 
 interface CapturedRequest {
     method?: string;
@@ -408,6 +408,14 @@ export class AgentMcpStreamableHttpTest {
             const reloaded = new McpOAuthCredentialStore(filePath);
             expect(reloaded.get('alpha')?.token.refreshToken).toEqual('rt-1');
             expect(reloaded.list().length).toEqual(1);
+            const persisted = fs.readFileSync(filePath, 'utf8');
+            expect(persisted).not.toContain('at-1');
+            expect(persisted).not.toContain('rt-1');
+            expect(JSON.parse(persisted).version).toEqual(2);
+            if (process.platform !== 'win32') {
+                expect(fs.statSync(filePath).mode & 0o777).toEqual(0o600);
+                expect(fs.statSync(`${filePath}.key`).mode & 0o777).toEqual(0o600);
+            }
 
             expect(reloaded.delete('alpha')).toEqual(true);
             expect(reloaded.delete('alpha')).toEqual(false);
@@ -415,6 +423,36 @@ export class AgentMcpStreamableHttpTest {
         } finally {
             fs.rmSync(tmp, { recursive: true, force: true });
         }
+    }
+
+    @Test('credential store migrates legacy plaintext on the next write')
+    async credentialStoreMigratesLegacyPlaintext() {
+        const tmp = createTmpDir();
+        try {
+            const filePath = `${tmp}/legacy.json`;
+            fs.writeFileSync(filePath, JSON.stringify({ version: 1, credentials: {
+                alpha: { serverId: 'alpha', token: { accessToken: 'legacy' }, updatedAt: 1 }
+            } }));
+            const store = new McpOAuthCredentialStore(filePath);
+            expect(store.get('alpha')?.token.accessToken).toEqual('legacy');
+            store.set('beta', { accessToken: 'new', tokenType: 'Bearer' });
+            const persisted = fs.readFileSync(filePath, 'utf8');
+            expect(persisted).not.toContain('legacy');
+            expect(JSON.parse(persisted).version).toEqual(2);
+            expect(new McpOAuthCredentialStore(filePath).list().length).toEqual(2);
+        } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+    }
+
+    @Test('safeStorage backend encrypts and decrypts through the host adapter')
+    safeStorageBackend() {
+        const backend = new SafeStorageCredentialBackend({
+            isEncryptionAvailable: () => true,
+            encryptString: value => Buffer.from(`sealed:${value}`),
+            decryptString: value => value.toString().replace(/^sealed:/, '')
+        });
+        expect(backend.status.backend).toEqual('electron-safe-storage');
+        expect(backend.status.fallback).toEqual(false);
+        expect(backend.decrypt(backend.encrypt('secret'))).toEqual('secret');
     }
 
     @Test('McpOAuthClient discovers explicit authorization server endpoints without network')

@@ -699,7 +699,11 @@ export class AgentCliTest {
         expect(report.pathEntries.find(entry => entry.label === 'workspace')?.exists).toBe(false);
         expect(report.issues.some(issue => issue.code === 'workspace_missing')).toBe(true);
         expect(report.issues.some(issue => issue.code === 'api_key_missing')).toBe(true);
+        expect(report.credentialStore.encrypted).toBe(true);
+        expect(report.credentialStore.backend).toBe('local-aes-256-gcm');
+        expect(report.issues.some(issue => issue.code === 'credential_store_fallback')).toBe(true);
         expect(formatAgentDoctorReport(report)).toContain('Issues:');
+        expect(formatAgentDoctorReport(report)).toContain('Credential store: local-aes-256-gcm');
     }
 
     @Test('doctor command emits json output')
@@ -1246,9 +1250,10 @@ export class AgentCliTest {
         });
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-        expect(settings.model.apiKey).toBe('test-key');
+        expect(settings.model.apiKey).toBe(undefined);
         expect(settings.model.apiKeyEnv).toBe(undefined);
         expect(settings.model.profiles.flash.apiKeyEnv).toBe(undefined);
+        expect(resolveCliModelConfig({ root }, root).apiKey).toBe('test-key');
     }
 
     @Test('ignores recoverable workspace settings write errors')

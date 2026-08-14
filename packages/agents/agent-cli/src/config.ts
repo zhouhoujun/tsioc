@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { AgentHooksOptions, AgentProviderRegistry, defaultAgentProviderRegistry, resolveAgentWorkspacePath } from '@tsdi/agent';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
-import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
+import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, McpOAuthCredentialStore, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 import { SshOptions } from '@tsdi/agent-ssh';
 
 export interface AgentCliModelRoute {
@@ -202,8 +202,7 @@ function readSettingsModel(root?: string): Partial<AgentCliProviderProfile> | un
     if (!root) {
         return undefined;
     }
-    const resolved = resolveAgentToolDiscovery(root);
-    const model = (resolved.settings as any)?.model;
+    const model = readJsonObject(path.join(path.resolve(root), 'settings.json')).model;
     if (!model || typeof model !== 'object' || Array.isArray(model)) {
         return undefined;
     }
@@ -253,7 +252,44 @@ function readJsonObject(filePath: string): Record<string, any> {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error(`Invalid JSON object at '${filePath}'.`);
     }
-    return parsed;
+    return restoreStoredApiKeys(filePath, parsed);
+}
+
+function cliCredentialId(filePath: string): string {
+    return `cli-config:${path.basename(filePath)}`;
+}
+
+function cliCredentialStore(filePath: string): McpOAuthCredentialStore {
+    return new McpOAuthCredentialStore(path.join(path.dirname(filePath), 'mcp-credentials.json'));
+}
+
+function collectApiKeys(value: unknown, prefix = '', result: Record<string, string> = {}): Record<string, string> {
+    if (Array.isArray(value)) {
+        value.forEach((item, index) => collectApiKeys(item, `${prefix}/${index}`, result));
+    } else if (value && typeof value === 'object') {
+        Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+            const next = `${prefix}/${key}`;
+            if (key === 'apiKey' && typeof entry === 'string' && entry.trim()) result[next] = entry;
+            else collectApiKeys(entry, next, result);
+        });
+    }
+    return result;
+}
+
+function restoreStoredApiKeys(filePath: string, value: Record<string, any>): Record<string, any> {
+    const stored = cliCredentialStore(filePath).get(cliCredentialId(filePath))?.token.accessToken;
+    if (!stored) return value;
+    const keys = JSON.parse(stored) as Record<string, string>;
+    Object.entries(keys).forEach(([pointer, secret]) => {
+        const segments = pointer.split('/').filter(Boolean);
+        let target: any = value;
+        for (let index = 0; index < segments.length - 1; index++) {
+            if (!target?.[segments[index]] || typeof target[segments[index]] !== 'object') return;
+            target = target[segments[index]];
+        }
+        if (target && segments.length) target[segments[segments.length - 1]] = secret;
+    });
+    return value;
 }
 
 function isRecoverableWriteError(error: any): boolean {
@@ -270,7 +306,7 @@ function stripLegacyApiKeyEnv<T>(value: T): T {
     }
     const next: Record<string, any> = {};
     Object.entries(value as Record<string, any>).forEach(([key, entry]) => {
-        if (key === 'apiKeyEnv') {
+        if (key === 'apiKeyEnv' || key === 'apiKey') {
             return;
         }
         next[key] = stripLegacyApiKeyEnv(entry);
@@ -281,6 +317,12 @@ function stripLegacyApiKeyEnv<T>(value: T): T {
 function writeJsonObject(filePath: string, value: Record<string, any>): string {
     try {
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        const apiKeys = collectApiKeys(value);
+        if (Object.keys(apiKeys).length) {
+            cliCredentialStore(filePath).set(cliCredentialId(filePath), {
+                accessToken: JSON.stringify(apiKeys), tokenType: 'Internal'
+            });
+        }
         fs.writeFileSync(filePath, JSON.stringify(stripLegacyApiKeyEnv(value), null, 2) + '\n', 'utf8');
     } catch (error: any) {
         if (!isRecoverableWriteError(error)) {

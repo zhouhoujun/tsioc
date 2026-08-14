@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { AgentMcpServerOptions, McpOAuthAuthorizationServerMetadata, McpOAuthToken, ResolvedAgentMcpOptions } from './types';
-import { McpOAuthCredentialStore } from './mcp-credentials';
+import { CredentialEncryptionBackend, McpOAuthCredentialStore } from './mcp-credentials';
 
 export interface McpOAuthInteraction {
     onDeviceAuthorization(verificationUri: string, userCode?: string, verificationUriComplete?: string): Promise<void>;
@@ -12,6 +12,7 @@ export interface McpOAuthClientOptions {
     interaction?: McpOAuthInteraction;
     /** Milliseconds to wait for a user to complete authorization (device + PKCE). */
     timeoutMs?: number;
+    credentialBackend?: CredentialEncryptionBackend;
 }
 
 export interface McpOAuthTokenResult {
@@ -64,7 +65,7 @@ export class McpOAuthClient {
         this.fetchImpl = clientOptions.fetchImpl ?? globalThis.fetch;
         this.interaction = clientOptions.interaction ?? new ConsoleMcpOAuthInteraction();
         this.timeoutMs = clientOptions.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-        this.store = new McpOAuthCredentialStore(options.credentialsPath);
+        this.store = new McpOAuthCredentialStore(options.credentialsPath, clientOptions.credentialBackend);
         this.oauthCallbackPort = options.oauthCallbackPort;
     }
 
