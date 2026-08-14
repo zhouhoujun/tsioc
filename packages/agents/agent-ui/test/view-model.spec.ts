@@ -3201,7 +3201,7 @@ export class AgentConsoleComponentTest {
             undefined,
             undefined,
             undefined,
-            { ui: { title: 'Console', queueMode: false } }
+            { ui: { title: 'Console', queueMode: false, steerMode: false } }
         );
 
         component.sessionState.setStatus('running');
@@ -8282,6 +8282,28 @@ export class AgentConsoleComponentTest {
         expect(state.selectedMessage?.id).toEqual('u1');
     }
 
+    @Test('session state hides reasoning messages when showThinking is disabled')
+    sessionStateHidesReasoningMessagesWhenThinkingHidden() {
+        const state = new AgentConsoleSessionState();
+        state.upsertUiEventMessage(state.qualifyUiEventKey('reasoning'), 'Reasoning about implementation', {
+            eventType: 'reasoning',
+            label: 'think',
+            status: 'running'
+        });
+        state.upsertUiEventMessage('turn-start', 'Working', {
+            eventType: 'turn_started',
+            label: 'state',
+            status: 'running'
+        });
+
+        expect(state.showThinking).toEqual(true);
+        expect(state.displayMessages.some(message => message.metadata?.uiEventType === 'reasoning')).toEqual(true);
+
+        state.setShowThinking(false);
+        expect(state.displayMessages.some(message => message.metadata?.uiEventType === 'reasoning')).toEqual(false);
+        expect(state.displayMessages.map(message => message.content)).toEqual(['Working']);
+    }
+
     @Test('session state dedupes identical ui event upserts')
     sessionStateDedupesIdenticalUiEventUpserts() {
         const state = new AgentConsoleSessionState();
@@ -9245,6 +9267,8 @@ export class AgentConsoleComponentTest {
         const keymap = new AgentConsoleKeymap();
         expect(keymap.resolve('ctrl+x s')).toEqual('status');
         expect(keymap.resolve('ctrl+p')).toEqual('command-palette');
+        expect(keymap.resolve('ctrl+x t')).toEqual('toggle-thinking');
+        expect(keymap.resolve('ctrl+x shift+t')).toEqual('theme');
         expect(keymap.set('ctrl+g', 'sessions')).toEqual(true);
         expect(keymap.resolve('ctrl+g')).toEqual('sessions');
         expect(keymap.unset('ctrl+x,s')).toEqual(true);
@@ -9325,6 +9349,41 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Theme set to high-contrast.');
     }
 
+    @Test('thinking command toggles reasoning message visibility')
+    async thinkingCommandTogglesReasoningVisibility() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        expect(component.sessionState.showThinking).toEqual(true);
+        await (component as any).handleCommand('/thinking off');
+        expect(component.sessionState.showThinking).toEqual(false);
+        expect(component.notice).toEqual('Hiding reasoning messages.');
+
+        await (component as any).handleCommand('/thinking on');
+        expect(component.sessionState.showThinking).toEqual(true);
+        expect(component.notice).toEqual('Showing reasoning messages.');
+
+        await (component as any).handleCommand('/thinking');
+        expect(component.sessionState.showThinking).toEqual(false);
+        expect(component.notice).toEqual('Hiding reasoning messages.');
+    }
+
+    @Test('terminal leader ctrl+x t toggles thinking and ctrl+x shift+t opens theme selector')
+    async terminalLeaderToggleThinkingAndShiftedTheme() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+        await (component as any).handleTerminalInput({ text: 't', partial: false }, 't');
+        expect(component.sessionState.showThinking).toEqual(false);
+
+        await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+        const pending = (component as any).handleGlobalKeyInput('T');
+        expect(component.selectMenu?.title).toEqual('Theme');
+        await component.sessionState.confirmSelectMenu('dark');
+        await pending;
+    }
+
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')
     async terminalLeaderAndCommandPalette() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
@@ -9377,7 +9436,17 @@ export class AgentConsoleComponentTest {
     @Test('busy enter queues prompts FIFO and drains them when the turn is idle')
     async busyEnterQueuesAndDrainsPrompts() {
         const runtime = new RuntimeStub();
-        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        const { state, component } = createConsoleParts(
+            runtime,
+            new SchedulerStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', steerMode: false } }
+        );
         component.configure({ sessionId: 'queue-session' });
         state.setStatus('running');
 
@@ -9408,7 +9477,7 @@ export class AgentConsoleComponentTest {
             undefined,
             undefined,
             undefined,
-            { ui: { title: 'Console', queueMode: false } }
+            { ui: { title: 'Console', queueMode: false, steerMode: false } }
         );
         state.setStatus('running');
         state.setInput('keep this draft');
@@ -9416,6 +9485,101 @@ export class AgentConsoleComponentTest {
         expect(state.queuedPromptCount).toEqual(0);
         expect(state.input).toEqual('keep this draft');
         expect(state.notice).toContain('Wait for the current turn');
+    }
+
+    @Test('enter during a running turn steers by default: interrupts and resubmits the draft as a new turn')
+    async enterDuringRunningTurnSteersByDefault() {
+        const runtime = new RuntimeStub();
+        const { state, component, sessionService } = createConsoleParts(runtime, new SchedulerStub());
+        component.configure({ sessionId: 'steer-session' });
+        let cancellations = 0;
+        (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };
+        state.setStatus('running');
+        state.setInput('steer the turn');
+
+        await component.submit();
+
+        expect(cancellations).toEqual(1);
+        expect(runtime.calls).toEqual(['steer-session:steer the turn']);
+        expect(state.queuedPromptCount).toEqual(0);
+        expect(state.input).toEqual('');
+        const steerMessage = state.messages.find(message => message.metadata?.kind === 'steer');
+        expect(steerMessage?.content).toEqual('steer the turn');
+    }
+
+    @Test('steer mode disabled falls back to queueing during a running turn')
+    async steerModeDisabledFallsBackToQueue() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(
+            runtime,
+            new SchedulerStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', steerMode: false } }
+        );
+        component.configure({ sessionId: 'queue-session' });
+        state.setStatus('running');
+        state.setInput('queued instead');
+
+        await component.submit();
+
+        expect(runtime.calls).toEqual([]);
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued prompt (1)');
+    }
+
+    @Test('tab during a running turn queues the draft as a prompt')
+    async tabDuringRunningTurnQueuesDraft() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+        state.setInput('draft to queue');
+
+        const outcome = await (state as any).processDecodedInput(
+            { text: '', controlKey: 'tab', partial: false },
+            '\t' as any,
+            { isClosed: false, onExit: () => undefined, hasActiveTextPrompt: false }
+        );
+
+        expect(outcome).toEqual({ handled: true, action: 'queueDraft' });
+        expect(state.queuedPromptCount).toEqual(0);
+        expect(state.input).toEqual('draft to queue');
+
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued prompt (1)');
+    }
+
+    @Test('tab during an idle turn does not queue the draft')
+    async tabDuringIdleTurnDoesNotQueue() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setInput('idle draft');
+
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        expect(state.queuedPromptCount).toEqual(0);
+        expect(state.input).toEqual('idle draft');
+    }
+
+    @Test('browser input panel tab queues the draft while a turn is running')
+    async browserPanelTabQueuesDraft() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        const panel = new AgentConsoleInputPanelComponent(state);
+        state.setStatus('running');
+        state.setInput('browser draft');
+
+        let prevented = false;
+        await panel.onKeydown({ key: 'Tab', ctrlKey: false, metaKey: false, preventDefault() { prevented = true; } } as KeyboardEvent);
+        expect(prevented).toEqual(true);
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
     }
 
     @Test('escape interrupts a running turn before vim handling in tui and browser')

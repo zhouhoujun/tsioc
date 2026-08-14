@@ -457,11 +457,13 @@ export class AgentConsoleSessionState {
     notice = '';
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
+    showThinking = true;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = [];
     submitAction?: () => Promise<void>;
+    queueDraftAction?: () => boolean | Promise<boolean>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
     copyFocusedTextAction?: (text: string, label: string) => void | Promise<void>;
     activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
@@ -474,8 +476,8 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean }) => boolean | Promise<boolean>;
-    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
+    globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => boolean | Promise<boolean>;
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -1198,6 +1200,9 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (String(message.role || '').toLowerCase() === 'tool') {
+            return false;
+        }
+        if (!this.showThinking && message?.metadata?.uiEventType === 'reasoning') {
             return false;
         }
         if (String(message.role || '').toLowerCase() === 'assistant'
@@ -2495,6 +2500,10 @@ export class AgentConsoleSessionState {
 
     setQueuedPromptCount(count: number): void {
         this.queuedPromptCount = Math.max(0, Math.floor(Number(count) || 0));
+    }
+
+    setShowThinking(value: boolean): void {
+        this.showThinking = !!value;
     }
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {
@@ -4258,7 +4267,14 @@ export class AgentConsoleSessionState {
             return { handled: true };
         }
 
-        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'tab' || controlKey === 'escape') {
+        if (controlKey === 'tab') {
+            if ((this.status === 'running' || this.status === 'reasoning') && this.input.trim()) {
+                return { handled: true, action: 'queueDraft' };
+            }
+            return { handled: true };
+        }
+
+        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'escape') {
             return { handled: true };
         }
 

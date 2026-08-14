@@ -94,6 +94,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected commandPaletteQuery = '';
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
+    protected activeTurnRun?: Promise<void> | null = null;
     protected activeThemeName: AgentConsoleThemeName = 'dark';
 
     constructor(
@@ -169,6 +170,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return mode !== false && mode !== 'off';
     }
 
+    protected isSteerModeEnabled(): boolean {
+        const mode = this.options.ui?.steerMode;
+        return mode !== false && mode !== 'off';
+    }
+
     protected enqueuePrompt(input: string): void {
         const sessionId = this.state.sessionId;
         const queue = this.queuedPrompts.get(sessionId) || [];
@@ -178,6 +184,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.clearPendingAttachments();
         this.state.setQueuedPromptCount(queue.length);
         this.notify(`Queued prompt (${queue.length}).`);
+    }
+
+    protected queueDraft(): boolean {
+        if (!this.isTurnInProgress() || !this.state.input.trim()) {
+            return false;
+        }
+        this.enqueuePrompt(this.state.input);
+        return true;
     }
 
     protected async drainQueuedPrompts(sessionId: string): Promise<void> {
@@ -2483,6 +2497,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     async onInit(): Promise<void> {
         this.state.submitAction = this.submitActionHandler;
+        this.state.queueDraftAction = () => this.queueDraft();
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
@@ -4026,6 +4041,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/review', value: '/review', description: 'coding task review' },
                     { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
                     { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
+                    { label: '/thinking', value: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)' },
                     { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
                     { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
                     { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
@@ -4304,6 +4320,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.openWorktreeDiff(parsed.args);
             case '/theme':
                 return this.runThemeCommand(parsed.args);
+            case '/thinking':
+                return this.runThinkingCommand(parsed.args);
             case '/statusline':
                 return this.runStatuslineCommand(parsed.args);
             case '/hooks':
@@ -5188,14 +5206,27 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await persistHistory;
             this.state.setInput(value, value.length);
         }
+        let steer = false;
         if (this.isTurnInProgress()) {
-            if (this.isQueueModeEnabled()) this.enqueuePrompt(value);
-            else this.notifyBusyState();
-            return;
+            if (this.isSteerModeEnabled() && !this.multilineMode) {
+                // P128 steer: awaiting the in-flight stream settles microtask
+                // order so the old submit's finally (status reset) runs first.
+                steer = true;
+                await this.interruptTurn();
+                if (this.activeTurnRun) await this.activeTurnRun.catch(() => undefined);
+            } else if (this.isQueueModeEnabled()) {
+                this.enqueuePrompt(value);
+                return;
+            } else {
+                this.notifyBusyState();
+                return;
+            }
         }
         const turnSessionId = this.state.sessionId;
-        this.state.pushInputHistory(value);
-        await this.persistInputHistory();
+        if (!steer) {
+            this.state.pushInputHistory(value);
+            await this.persistInputHistory();
+        }
         if (this.multilineMode) {
             this.draftLines.push(value);
             return;
@@ -5211,7 +5242,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             role: 'user',
             content: prompt,
             parts: turnMessage?.parts,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            ...(steer ? { metadata: { kind: 'steer' } } : {})
         };
         const assistantMessage: AgentMessage = {
             id: `assistant-${Date.now()}`,
@@ -5230,7 +5262,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
 
         try {
-            await this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
+            const turnRun = this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
+            this.activeTurnRun = turnRun;
+            await turnRun;
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
                 this.state.setStatus('error');
@@ -5238,6 +5272,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.pushActivity('error', message);
                 this.state.appendAssistantErrorMessage(message);
         } finally {
+            this.activeTurnRun = null;
             this.ensureMessageAtTail(assistantMessage.id);
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
@@ -6198,6 +6233,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.applyTheme(requested);
     }
 
+    protected async runThinkingCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().toLowerCase();
+        if (requested === 'on' || requested === 'show') {
+            this.state.setShowThinking(true);
+        } else if (requested === 'off' || requested === 'hide') {
+            this.state.setShowThinking(false);
+        } else {
+            this.state.setShowThinking(!this.state.showThinking);
+        }
+        this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
+        return true;
+    }
+
     protected async applyTheme(value: string): Promise<boolean> {
         if (!isAgentConsoleThemeName(value)) {
             this.notify(`Unknown theme "${value}". Available: ${agentConsoleThemeNames.join(', ')}.`);
@@ -6499,7 +6547,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (raw.length === 1) {
             const code = raw.charCodeAt(0);
             if (code >= 1 && code <= 26) return `ctrl+${String.fromCharCode(96 + code)}`;
-            if (!/[\u0000-\u001f\u007f]/.test(raw)) return raw.toLowerCase();
+            if (!/[\u0000-\u001f\u007f]/.test(raw)) {
+                if (code >= 65 && code <= 90) return `shift+${raw.toLowerCase()}`;
+                return raw.toLowerCase();
+            }
         }
         return '';
     }
@@ -6542,9 +6593,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
-    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean }): Promise<boolean> {
+    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }): Promise<boolean> {
         const ctrlKey = !!(modifiers.ctrlKey || modifiers.metaKey);
-        const normalizedKey = ctrlKey ? `ctrl+${String(key || '').toLowerCase()}` : String(key || '').toLowerCase();
+        const normalizedKey = ctrlKey
+            ? `ctrl+${String(key || '').toLowerCase()}`
+            : modifiers.shiftKey && /^[A-Z]$/.test(String(key || ''))
+                ? `shift+${String(key).toLowerCase()}`
+                : String(key || '').toLowerCase();
         if (this.state.selectMenu?.title?.startsWith('Command palette')) {
             if (normalizedKey === 'ctrl+p') return this.handleGlobalKeySequence(normalizedKey);
             if (!ctrlKey && normalizedKey === 'backspace') {
@@ -6589,7 +6644,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.handleCommand('/theme');
             return;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn'>, string> = {
+        if (action === 'toggle-thinking') {
+            this.state.setShowThinking(!this.state.showThinking);
+            this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
+            return;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -6695,6 +6755,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         ? 'Cancelling current turn...'
                         : 'No running turn to cancel.');
                 }
+                return;
+            case 'queueDraft':
+                this.queueDraft();
                 return;
             case 'textInput':
                 await this.state.processRawChunk(rawChunk, {

@@ -455,7 +455,7 @@ export class AgentConsoleInputPanelComponent {
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
-        if (await this.state?.globalKeyInputAction?.(event.key, { ctrlKey: event.ctrlKey, metaKey: event.metaKey })) {
+        if (await this.state?.globalKeyInputAction?.(event.key, { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) {
             event.preventDefault?.();
             return;
         }
@@ -497,6 +497,14 @@ export class AgentConsoleInputPanelComponent {
                 event.preventDefault?.();
                 return;
             }
+        }
+        if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            const queued = await this.state?.queueDraftAction?.();
+            if (queued) {
+                event.preventDefault?.();
+                return;
+            }
+            return;
         }
         if (this.isEnterKey(event)) {
             const enterAction = resolveConsoleEnterAction({

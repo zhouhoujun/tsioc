@@ -14,11 +14,12 @@ export type AgentConsoleGlobalAction =
     | 'status'
     | 'copy'
     | 'interrupt-turn'
-    | 'command-palette';
+    | 'command-palette'
+    | 'toggle-thinking';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
-    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette'
+    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking'
 ];
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -28,7 +29,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x u': 'undo',
     'ctrl+x r': 'redo',
     'ctrl+x l': 'sessions',
-    'ctrl+x t': 'theme',
+    'ctrl+x t': 'toggle-thinking',
+    'ctrl+x shift+t': 'theme',
     'ctrl+x m': 'model',
     'ctrl+x a': 'archetypes',
     'ctrl+x s': 'status',

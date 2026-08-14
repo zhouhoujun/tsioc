@@ -79,6 +79,13 @@ export interface AgentUIOptions {
     console?: Record<string, any>;
     keymap?: Record<string, string | null>;
     queueMode?: boolean | 'on' | 'off';
+    /**
+     * P128: when true, pressing Enter while a turn is running interrupts the
+     * turn and immediately continues with the new instruction as a steer
+     * message (marked `kind: 'steer'`). When false the running-turn Enter
+     * falls back to queueMode. Default true.
+     */
+    steerMode?: boolean | 'on' | 'off';
     statusline?: string[];
     /**
      * P126: memory injection toggle. When false the runtime skips memory
