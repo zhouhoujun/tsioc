@@ -1,6 +1,14 @@
 import { buildDesktopHtml } from './desktop-html';
 import { DesktopAppOptions } from './config';
 import { BrowserWindowLike, DisposableLike, ElectronHost, FileSystemLike, MenuItemLike, TrayLike } from './host';
+import { normalizeGatewayUrl } from './desktop-html';
+
+export interface DesktopHandoff {
+    gatewayUrl?: string;
+    token?: string;
+    sessionId?: string;
+    workspace?: string;
+}
 
 export interface DesktopPaths {
     /** file:// URI of the bundled web console script (agent-console.js) */
@@ -27,7 +35,10 @@ export class DesktopApp {
 
     async start(): Promise<void> {
         await this.electron.app.whenReady();
-        if (this.options.singleInstance && !this.electron.app.requestSingleInstanceLock()) {
+        if (this.options.singleInstance) {
+            this.electron.app.on('second-instance', (_event, _argv, _cwd, data) => this.applyHandoff(data as DesktopHandoff));
+        }
+        if (this.options.singleInstance && !this.electron.app.requestSingleInstanceLock({ ...this.currentHandoff() })) {
             this.electron.app.quit();
             return;
         }
@@ -40,22 +51,45 @@ export class DesktopApp {
         }
     }
 
+    applyHandoff(handoff?: DesktopHandoff): void {
+        if (!handoff || typeof handoff !== 'object') return;
+        if (handoff.gatewayUrl) this.options.gatewayUrl = normalizeGatewayUrl(String(handoff.gatewayUrl));
+        if (typeof handoff.token === 'string') this.options.token = handoff.token;
+        if (typeof handoff.sessionId === 'string') this.options.sessionId = handoff.sessionId;
+        if (typeof handoff.workspace === 'string') this.options.workspace = handoff.workspace;
+        if (this.window && !this.window.isDestroyed()) {
+            this.writeHostHtml();
+            void this.window.loadFile(this.paths.htmlPath);
+            this.window.show();
+        } else {
+            this.createWindow();
+        }
+    }
+
+    private currentHandoff(): DesktopHandoff {
+        return { gatewayUrl: this.options.gatewayUrl, token: this.options.token, sessionId: this.options.sessionId, workspace: this.options.workspace };
+    }
+
+    private writeHostHtml(): void {
+        const html = buildDesktopHtml({
+            scriptUri: this.paths.scriptUri,
+            baseUrl: this.options.gatewayUrl,
+            token: this.options.token,
+            sessionId: this.options.sessionId || undefined,
+            workspace: this.options.workspace || undefined,
+            nonce: createNonce(),
+            title: this.options.title
+        });
+        this.fs.writeTextFile(this.paths.htmlPath, html);
+    }
+
     createWindow(): BrowserWindowLike | null {
         if (this.window && !this.window.isDestroyed()) {
             this.window.show();
             return this.window;
         }
         try {
-            const html = buildDesktopHtml({
-                scriptUri: this.paths.scriptUri,
-                baseUrl: this.options.gatewayUrl,
-                token: this.options.token,
-                sessionId: this.options.sessionId || undefined,
-                workspace: this.options.workspace || undefined,
-                nonce: createNonce(),
-                title: this.options.title
-            });
-            this.fs.writeTextFile(this.paths.htmlPath, html);
+            this.writeHostHtml();
             const win = new this.electron.BrowserWindow({
                 width: this.options.width,
                 height: this.options.height,

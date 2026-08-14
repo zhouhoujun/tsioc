@@ -16,6 +16,7 @@ import {
     CliAgentUiConfigReader,
     createAgentDoctorReport,
     createAgentCli,
+    createAgentDesktopLaunchPlan,
     createAgentUpdatePlan,
     generateAgentCompletionScript,
     ensureAgentWorkspaceConfig,
@@ -40,6 +41,7 @@ import {
     runAgentJsonStream,
     runAgentImport,
     runAgentDoctor,
+    runAgentDesktop,
     runAgentPrompt,
     runAgentRpcApplication,
     runAgentUpdate,
@@ -429,6 +431,38 @@ export class AgentCliTest {
         const importCommand = cli.commands.find(cmd => cmd.name() === 'import');
         expect(importCommand).toBeTruthy();
         expect(importCommand?.description).toBeTruthy();
+    }
+
+    @Test('desktop command is registered with app alias')
+    desktopCommandRegistered() {
+        const command = createAgentCli().commands.find(item => item.name() === 'desktop');
+        expect(command).toBeTruthy();
+        expect(command?.aliases()).toContain('app');
+    }
+
+    @Test('desktop launch plan hands off session without exposing token in argv')
+    async desktopLaunchPlanAndRunner() {
+        const root = await this.createRoot();
+        const launched: any[] = [];
+        let unref = 0;
+        const launcher = {
+            resolve: (id: string) => id === 'electron/cli.js' ? '/electron/cli.js' : '/desktop/main.js',
+            launch: (command: string, args: string[], options: any) => {
+                launched.push({ command, args, options });
+                return { unref: () => { unref++; } };
+            }
+        };
+        const options = { root, session: 'handoff-session', workspace: root, gatewayUrl: 'https://gateway.example/', token: 'secret-token' };
+        const plan = createAgentDesktopLaunchPlan(options, launcher);
+        expect(plan.gatewayUrl).toBe('https://gateway.example');
+        expect(plan.sessionId).toBe('handoff-session');
+        expect(plan.args).toEqual(['/electron/cli.js', '/desktop/main.js']);
+        expect(plan.args.join(' ')).not.toContain('secret-token');
+        expect(plan.env.TSDI_AGENT_TOKEN).toBe('secret-token');
+        await runAgentDesktop(options, launcher);
+        expect(launched[0].options.detached).toBe(true);
+        expect(launched[0].options.stdio).toBe('ignore');
+        expect(unref).toBe(1);
     }
 
     @Test('normalizeCliArgv reorders leading options before import command')

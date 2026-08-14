@@ -45,6 +45,8 @@ interface Fixture {
     trays: FixtureTray[];
     appQuit: () => void;
     singleInstanceResult: boolean;
+    lockData?: Record<string, unknown>;
+    secondInstance?: (event: unknown, argv: string[], cwd: string, data?: Record<string, unknown>) => void;
 }
 
 function createFixture(overrides: Partial<DesktopAppOptions> = {}): Fixture {
@@ -88,8 +90,11 @@ function createFixture(overrides: Partial<DesktopAppOptions> = {}): Fixture {
                 whenReady: async () => undefined,
                 quit: () => { appQuitCalled = true; },
                 getPath: name => `/data/${name}`,
-                requestSingleInstanceLock: () => fixture.singleInstanceResult,
-                on: () => new Disposable()
+                requestSingleInstanceLock: data => { fixture.lockData = data; return fixture.singleInstanceResult; },
+                on: (event: string, listener: any) => {
+                    if (event === 'second-instance') fixture.secondInstance = listener;
+                    return new Disposable();
+                }
             },
             BrowserWindow: class implements FixtureWindow {
                 loads: string[] = [];
@@ -229,6 +234,24 @@ export class AgentDesktopAppTest {
         await app.start();
         expect(quitCalled).toEqual(true);
         expect(fixture.windows.length).toEqual(0);
+    }
+
+    @Test('single instance handoff reloads and shows the requested session')
+    async secondInstanceHandoff() {
+        const fixture = createFixture();
+        const app = new DesktopApp(fixture.host, fixture.fs, fixture.options, fixture.paths);
+        await app.start();
+        expect(fixture.lockData).toEqual({ gatewayUrl: 'http://127.0.0.1:3000', token: 'tok-1', sessionId: 'sess-1', workspace: '/ws/proj' });
+        fixture.secondInstance?.({}, [], '/tmp', {
+            gatewayUrl: 'https://gateway.example/', token: 'tok-2', sessionId: 'sess-2', workspace: '/ws/next'
+        });
+        const html = fixture.writtenFiles.get('/data/console.html') ?? '';
+        expect(html).toContain('"baseUrl":"https://gateway.example"');
+        expect(html).toContain('"token":"tok-2"');
+        expect(html).toContain('"sessionId":"sess-2"');
+        expect(html).toContain('"workspace":"/ws/next"');
+        expect(fixture.windows[0].loads).toEqual(['/data/console.html', '/data/console.html']);
+        expect(fixture.windows[0].shown).toEqual(1);
     }
 
     @Test('tray disabled skips tray creation')

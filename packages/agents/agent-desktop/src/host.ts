@@ -50,8 +50,9 @@ export interface AppLike {
     whenReady(): Promise<unknown>;
     quit(): void;
     getPath(name: string): string;
-    requestSingleInstanceLock(): boolean;
+    requestSingleInstanceLock(additionalData?: Record<string, unknown>): boolean;
     on(event: 'window-all-closed', listener: () => void): DisposableLike;
+    on(event: 'second-instance', listener: (event: unknown, argv: string[], workingDirectory: string, additionalData?: Record<string, unknown>) => void): DisposableLike;
 }
 
 export interface FileSystemLike {

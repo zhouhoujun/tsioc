@@ -11,11 +11,12 @@ import { runAgentUpdate } from './update';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
+import { runAgentDesktop } from './desktop-command';
 
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'desktop', 'app', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -32,7 +33,11 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--api-key-env',
     '--target',
     '--timeout',
-    '--sources'
+    '--sources',
+    '--gateway-url',
+    '--token',
+    '--desktop-entry',
+    '--electron'
 ]);
 
 function collectValues(value: string, previous: string[]): string[] {
@@ -127,6 +132,19 @@ function createAgentCli(): Command {
         .action(async (options: any) => {
             await runAgentConsole(options);
         });
+
+    program
+        .command('desktop')
+        .alias('app')
+        .description('Open or hand off a session to the Electron desktop console.')
+        .option('--session <id>', 'Session ID to open.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace to open.')
+        .option('--gateway-url <url>', 'Gateway URL used by the desktop console.')
+        .option('--token <token>', 'Gateway bearer token (passed through the child environment).')
+        .option('--desktop-entry <path>', 'Override @tsdi/agent-desktop entry path.')
+        .option('--electron <path>', 'Override Electron executable.')
+        .action(async (options: any) => { await runAgentDesktop(options); });
 
     const project = program
         .command('project')

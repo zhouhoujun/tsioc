@@ -6,5 +6,6 @@ export * from './update';
 export * from './agent-ui-config-reader';
 export * from './NodeAgentHookCommandExecutor';
 export * from './run-console';
+export * from './desktop-command';
 export * from './run-command';
 export * from './cli';
