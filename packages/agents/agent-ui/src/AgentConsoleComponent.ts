@@ -162,6 +162,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected formatUsageSummary(usage: Record<string, any>): string {
+        if (usage?.selectedRange && usage?.selected) {
+            const labels: Record<string, string> = { daily: 'day', weekly: 'week', cumulative: 'all' };
+            return this.formatUsageWindow(labels[usage.selectedRange] ?? usage.selectedRange, usage.selected);
+        }
         return [
             this.formatUsageWindow('day', usage?.daily ?? {}),
             this.formatUsageWindow('week', usage?.weekly ?? {}),
@@ -672,12 +676,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
-    protected async openUsage(sessionId?: string): Promise<boolean> {
+    protected async openUsage(input?: string): Promise<boolean> {
         if (!this.sessionService) {
             this.notify('Usage is unavailable without session access.');
             return true;
         }
-        const usage = await this.sessionService.getUsageStats(sessionId);
+        const args = String(input || '').trim().split(/\s+/).filter(Boolean);
+        const first = args[0];
+        const range = first === 'daily' || first === 'weekly' || first === 'cumulative' ? first : undefined;
+        const sessionId = range ? args[1] : first;
+        const since = range ? args[2] : args[1];
+        const usage = await this.sessionService.getUsageStats(sessionId, { ...(range ? { range } : {}), ...(since ? { since } : {}) });
         const totalTurns = Number(usage?.cumulative?.turns ?? 0);
         const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
         if (!totalTurns && !totalTokens) {
@@ -3829,7 +3838,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
-                    { label: '/usage', value: '/usage', description: 'token + turn usage [sessionId]' },
+                    { label: '/usage', value: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
                     { label: '/compact', value: '/compact', description: 'force compaction now [reason]' },

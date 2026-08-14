@@ -19,6 +19,14 @@ export class UsageHandler {
             const host = req.headers?.host ?? 'localhost';
             const url = new URL(req.url ?? '/api/usage', `http://${host}`);
             const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
+            const rangeValue = url.searchParams.get('range')?.trim();
+            const range = rangeValue === 'daily' || rangeValue === 'weekly' || rangeValue === 'cumulative' ? rangeValue : undefined;
+            const sinceValue = url.searchParams.get('since')?.trim();
+            const since = sinceValue ? (/^\d+$/.test(sinceValue) ? Number(sinceValue) : Date.parse(sinceValue)) : undefined;
+            if ((rangeValue && !range) || (sinceValue && !Number.isFinite(since))) {
+                res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'invalid usage range or since' }));
+                return;
+            }
             const principalId = getRequestPrincipalId(req);
             let sessionIds: string[] = [];
             if (sessionId) {
@@ -34,9 +42,9 @@ export class UsageHandler {
                     ? await this.owners.listOwned(allSessionIds, principalId)
                     : allSessionIds;
             }
-            const usage = await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics);
+            const usage = await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics, { since });
             res.writeHead(200, { 'Content-Type': 'application/json' })
-                .end(JSON.stringify({ usage }));
+                .end(JSON.stringify({ usage, ...(range ? { range, selected: usage[range] } : {}), ...(since ? { since } : {}) }));
         };
 
         return [

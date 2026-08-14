@@ -2933,7 +2933,7 @@ export class TurnDiagnosticsHandlerTest {
         const handler = new UsageHandler(store, owners, diagnostics);
         const route = handler.getRoutes().find(route => route.path === '/api/usage' && route.method === 'GET')!;
         let body = '';
-        const req = { url: '/api/usage' } as any;
+        const req = { url: `/api/usage?range=cumulative&since=${now - (24 * 60 * 60 * 1000)}` } as any;
         setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
         const res = {
             writeHead: () => res,
@@ -2947,11 +2947,13 @@ export class TurnDiagnosticsHandlerTest {
         const data = JSON.parse(body);
         expect(data.usage.daily.turns).toEqual(1);
         expect(data.usage.daily.totalTokens).toEqual(20);
-        expect(data.usage.weekly.turns).toEqual(2);
-        expect(data.usage.weekly.totalTokens).toEqual(50);
-        expect(data.usage.cumulative.turns).toEqual(2);
-        expect(data.usage.cumulative.totalTokens).toEqual(50);
+        expect(data.usage.weekly.turns).toEqual(1);
+        expect(data.usage.weekly.totalTokens).toEqual(20);
+        expect(data.usage.cumulative.turns).toEqual(1);
+        expect(data.usage.cumulative.totalTokens).toEqual(20);
         expect(data.usage.cumulative.sessions).toEqual(1);
+        expect(data.range).toEqual('cumulative');
+        expect(data.selected.turns).toEqual(1);
     }
 }
 
@@ -4722,6 +4724,17 @@ export class AppRpcServerTest {
         expect(usage.weekly.totalTokens).toEqual(45);
         expect(usage.cumulative.turns).toEqual(2);
         expect(usage.cumulative.totalTokens).toEqual(45);
+
+        const ranged = await rpc.handle({
+            jsonrpc: '2.0', id: 3, method: 'usage.stats',
+            params: { range: 'cumulative', since: now - (24 * 60 * 60 * 1000) }
+        }, { principalId: 'user-1' });
+        expect((ranged as any).result.range).toEqual('cumulative');
+        expect((ranged as any).result.selected.turns).toEqual(1);
+        expect((ranged as any).result.selected.totalTokens).toEqual(15);
+
+        const invalid = await rpc.handle({ jsonrpc: '2.0', id: 4, method: 'usage.stats', params: { range: 'month' } }, { principalId: 'user-1' });
+        expect((invalid as any).error.code).toEqual(-32602);
 
         const capsResponse = await rpc.handle({
             jsonrpc: '2.0',

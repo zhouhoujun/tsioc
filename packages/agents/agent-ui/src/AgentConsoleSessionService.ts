@@ -726,10 +726,14 @@ export class AgentConsoleSessionService {
         return this.appRpc.request('harness.profile.diff', { from, to }, context) ?? null;
     }
 
-    async getUsageStats(sessionId?: string, context?: any): Promise<Record<string, any>> {
+    async getUsageStats(sessionId?: string, optionsOrContext: { range?: 'daily' | 'weekly' | 'cumulative'; since?: number | string } | any = {}, context?: any): Promise<Record<string, any>> {
+        const hasUsageOptions = optionsOrContext && typeof optionsOrContext === 'object'
+            && (Object.prototype.hasOwnProperty.call(optionsOrContext, 'range') || Object.prototype.hasOwnProperty.call(optionsOrContext, 'since'));
+        const options = (hasUsageOptions ? optionsOrContext : {}) as { range?: 'daily' | 'weekly' | 'cumulative'; since?: number | string };
+        const requestContext = hasUsageOptions ? context : optionsOrContext;
         if (this.appRpc) {
-            const result = await this.appRpc.request('usage.stats', sessionId ? { sessionId } : {}, context);
-            return result?.usage ?? buildUsageSummary([]);
+            const result = await this.appRpc.request('usage.stats', { ...(sessionId ? { sessionId } : {}), ...options }, requestContext);
+            return { ...(result?.usage ?? buildUsageSummary([])), ...(result?.range ? { selectedRange: result.range, selected: result.selected, since: result.since } : {}) };
         }
         const sessionIds = sessionId
             ? [sessionId]
@@ -743,12 +747,15 @@ export class AgentConsoleSessionService {
                 : undefined;
             const messages = state?.messages
                 ?? (this.runtime && sessionIds.length === 1 ? await this.runtime.getMessages(id) : []);
-            usageRecords.push(...collectMessageUsageRecords(id, messages || []));
+            const since = options.since == null ? undefined : typeof options.since === 'number' ? options.since : Date.parse(options.since);
+            usageRecords.push(...collectMessageUsageRecords(id, messages || []).filter(record => !since || record.createdAt >= since));
         }
+        const since = options.since == null ? undefined : typeof options.since === 'number' ? options.since : Date.parse(options.since);
         const turnRecords = this.turnDiagnostics
-            ? collectTurnUsageRecords((await this.turnDiagnostics.list()).filter(record => !sessionId || record.sessionId === sessionId))
+            ? collectTurnUsageRecords((await this.turnDiagnostics.list()).filter(record => (!sessionId || record.sessionId === sessionId) && (!since || record.createdAt >= since)))
             : undefined;
-        return buildUsageSummary(usageRecords, turnRecords);
+        const usage = buildUsageSummary(usageRecords, turnRecords);
+        return { ...usage, ...(options.range ? { selectedRange: options.range, selected: usage[options.range] } : {}) };
     }
 
     /**

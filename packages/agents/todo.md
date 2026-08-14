@@ -59,6 +59,7 @@
 - **P98 · Rollout token 预算（G25）**：`AgentOptions.tokenBudget`（perSession/perThread/reminders/trackInMemory）+ `TokenBudgetTracker`（记录/评估/重置，token key 归一化 prompt/completion/total 三形态）；runtime 每轮模型完成 `recordTokenUsage` 并 `enforceTokenBudget`——剩余 20%/10% 发布 `AgentTokenBudgetReminderEvent`、耗尽发布 `AgentTokenBudgetExceededEvent` 并中止 turn（非流式返回预算耗尽消息、流式 yield 终止文本）；`AgentRuntime.getTokenBudgetState` 透出 per-session/per-thread 预算状态；gateway `usage.stats` 返回 `budgets`（sessionId → state[]），`app.capabilities` 不含新增方法（走既有 usage 面）。锚点：`agent/src/harness/TokenBudgetTracker.ts`、`agent/src/options.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`、`agent/src/runtime/AgentEvents.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
 - **P99 · secrets/bearer 重放脱敏（G26）**：新增 `RedactionFilter`（与 P86 会话分享共享 SECRET_KEY/SECRET_VALUE 正则集：api-key/token/secret/password/authorization/cookie 字段整值脱敏 + `Bearer <token>` 与 `sk-*` 值内联脱敏）；`redactMessage` 对 compaction replay 注入的最后用户消息（`buildUserMessageReplay`）先脱敏再入上下文——重放路径不再泄露凭据；identity 保持（无变更时返回原对象/原 metadata 引用）。锚点：`agent/src/harness/RedactionFilter.ts`、`agent/src/context/AgentContextManager.ts`（`applyCompactionReplay`）。
 - **P102 · 项目信任门（G31）**：新增 `TrustedProjectStore`（FileAdapter 驱动、`~/.tsdi-agent/trusted-projects.json`，trust/untrust/isTrusted/list + 路径归一化去重 + 损坏文件降级）；CLI `tsdi-agent trust [dir]` / `--untrust` 命令；`doctor` 报告 `workspaceTrusted` + `workspace_untrusted` issue（提示运行 trust 命令）；gateway `project.trust_status` / `project.trust` RPC（`AgentOptions.trustedProjectsRoot` 配置，未配置时返回 unavailable）。锚点：`agent/src/project/trusted-projects.ts`、`agent-cli/src/trust-command.ts`、`agent-cli/src/doctor.ts`、`agent-cli/src/cli.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- **P114 · usage 时间维度聚合视图（G37）**：复用既有 daily/weekly/cumulative token + turn 汇总，gateway RPC `usage.stats` 与 HTTP `/api/usage` 新增 `range`（daily/weekly/cumulative）和 epoch/ISO `since` 校验、筛选及 `selected` 回传，owner scope 与 budgets 保持不变；agent-ui `/usage [range] [sessionId] [since]` 支持单周期展示，默认命令及 dashboard 继续显示三窗口。锚点：`agent-gateway/src/usage/UsageStats.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-gateway/src/api/UsageHandler.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 
 ### 模型与生态协议（G32/G30/G28）
 
@@ -126,12 +127,11 @@
 
 ### 结论
 
-G1–G36 全部闭环（P67–P113，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G37–G40（可观测、交付 UX 两个方向）：
+G1–G37 全部闭环（P67–P114，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G38–G40（交付 UX 与性能）：
 
-1. **usage 日/周/累计聚合视图（G37）**：codex v0.140 `/usage` 提供 daily/weekly/cumulative 账户级视图；本项目 `usage.stats` 为 session 粒度 + budget，缺时间维度聚合。
-2. **CLI→Desktop 会话移交（G38）**：codex v0.138 `/app` 将 CLI 当前 thread 移交 Codex Desktop；本项目桌面壳（P110）独立启动，CLI 与桌面之间无会话移交命令。
-3. **统一 @ 提及菜单（G39）**：codex v0.140 typing `@` 打开 files/plugins/skills 统一菜单；本项目 workspace mentions 仅覆盖文件路径。
-4. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
+1. **CLI→Desktop 会话移交（G38）**：codex v0.138 `/app` 将 CLI 当前 thread 移交 Codex Desktop；本项目桌面壳（P110）独立启动，CLI 与桌面之间无会话移交命令。
+2. **统一 @ 提及菜单（G39）**：codex v0.140 typing `@` 打开 files/plugins/skills 统一菜单；本项目 workspace mentions 仅覆盖文件路径。
+3. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -167,7 +167,7 @@ G1–G36 全部闭环（P67–P113，明细见「已实现功能」与「已完�
 | G34 | ~~Agent Plugins 1.0.0 标准兼容~~ ✅ 已落地（P111） | agentplugins.codes 1.0.0（2026-08-06 发布，跨厂商联盟）；codex v0.147 便携插件 | 标准 manifest、`skills/`、独立 `mcp.json` 三种 transport、reverse-domain 命名空间与 registry 伴随下载均已兼容，旧格式保留 | 已闭环 |
 | G35 | ~~凭据无加密存储~~ ✅ 已落地（P112） | codex v0.140：CLI + MCP OAuth 凭据加密本地存储 | safeStorage 适配 + AES-256-GCM fallback；OAuth 与 CLI API key 均加密落盘，doctor 报告后端状态 | 已闭环 |
 | G36 | ~~/import 迁移范围窄~~ ✅ 已落地（P113） | codex v0.145：settings/MCP/plugins/sessions/commands/memories | Claude/Cursor 用户元数据与 plugins/skills 清单已纳入 preview/apply 脱敏报告；不复制正文/二进制 | 已闭环 |
-| G37 | usage 无时间维度聚合 | codex v0.140 `/usage`：daily/weekly/cumulative | `usage.stats` session 粒度 + budgets，无日/周/累计视图 | 中：可观测 |
+| G37 | ~~usage 无时间维度聚合~~ ✅ 已落地（P114） | codex v0.140 `/usage`：daily/weekly/cumulative | 三窗口聚合 + RPC/HTTP range/since + UI 周期切换，保留 session/owner/budget 作用域 | 已闭环 |
 | G38 | CLI↔Desktop 无会话移交 | codex v0.138 `/app`：CLI thread → Desktop 移交 | P110 桌面壳独立启动，CLI 无移交命令 | 中：交付 UX |
 | G39 | @ 提及仅文件 | codex v0.140：统一 @ 菜单（files/plugins/skills） | workspace mentions 仅路径补全 | 低中：UX |
 | G40 | skill/plugin 顺序发现 | codex v0.146：并发发现 + 高效远程压缩 | 顺序扫描 + 整包压缩 | 低：性能 |
@@ -189,7 +189,6 @@ G1–G36 全部闭环（P67–P113，明细见「已实现功能」与「已完�
 >
 > **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41/G42（P118 手动压缩 / P119 `!` shell 执行）已落地并入「已实现功能」，G43–G50 按 P120+ 排期（交互价值排序：键位 > 会话生命周期 > 视图/定制）。**
 
-- **P114 · usage 日/周/累计聚合视图（G37）**：`UsageStats` 新增时间维度聚合——按日/周/累计汇总 token/次数（复用 turn diagnostics + token budget 记录），gateway `usage.stats` 支持 `range: 'daily'|'weekly'|'cumulative'` + `since` 参数；agent-ui `/usage` 命令扩展周期切换展示。锚点：`agent-gateway/src/usage/UsageStats.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P115 · CLI→Desktop 会话移交（G38）**：CLI 新增 `tsdi-agent desktop` / `/app` 等价命令——将当前 CLI 会话（sessionId/token/workspace）交给已启动或按需启动的 `@tsdi/agent-desktop` 宿主（Electron 单实例锁 + IPC 移交参数），桌面端 `resolveDesktopConfig` 优先消费移交参数，渲染同一会话；无桌面环境时降级提示。锚点：`agent-cli/src/run-console.ts`、`agent-desktop/src/DesktopApp.ts`。
 - **P116 · 统一 @ 提及菜单（G39）**：agent-ui mentions 从纯路径补全扩展为统一菜单——`@file`（workspace 路径）/ `@skill`（已注册技能）/ `@plugin`（已装插件）三类候选分组渲染 + 输入确认插入对应引用文本（`@skill:<id>` / `@plugin:<id>` 格式，turn 上下文解析为激活提示/插件作用域）。锚点：`agent-ui/src/AgentConsoleWorkspaceMentions.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P117 · 并发 skill/plugin 发现（G40）**：`provideSkills` 远程缓存目录与插件市场目录改为并发扫描（有界 Promise 池），`AgentContextManager` 上下文准备阶段对 skill/plugin/agents-doc 并行读取；大上下文压缩时远程目录只压缩摘要而非整包。锚点：`agent-tools/skills/provider.ts`、`agent/src/context/AgentContextManager.ts`。
@@ -323,3 +322,7 @@ P112（G35）已落地：MCP OAuth token 与 CLI provider/settings API key 统�
 ### P113 `/import` 迁移范围扩展（2026-08-14）
 
 P113（G36）已落地：`claude-user` / `cursor-user` / `ecosystem` 三来源覆盖 commands/history、session/recent-chat 索引和 plugins/skills 清单；统一 preview/apply、真实 generatedAt + data 幂等比较、`--home` 覆盖与有界脱敏报告，明确不复制聊天正文和生态二进制。回归：agent-tools 320 / agent-cli 59，共 379 passing；两包 `npm run build` clean。G36 已闭环，下一项为 P114（usage 时间聚合）。
+
+### P114 usage 时间维度聚合视图（2026-08-14）
+
+P114（G37）已落地：在既有 daily/weekly/cumulative 汇总之上补齐 RPC/HTTP `range` + `since` 筛选、参数错误响应、selected window，以及 `/usage [daily|weekly|cumulative] [sessionId] [since]` 单周期展示；无参命令与 dashboard 保持三窗口兼容。回归：agent-gateway 226 / agent-ui 419，共 645 passing；两包 `npm run build` clean。G37 已闭环，下一项为 P115（CLI→Desktop 会话移交）。

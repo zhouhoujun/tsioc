@@ -1040,11 +1040,12 @@ class SessionServiceStub extends AgentConsoleSessionService {
         return null;
     }
 
-    override async getUsageStats(sessionId?: string): Promise<Record<string, any>> {
+    override async getUsageStats(sessionId?: string, options: { range?: 'daily' | 'weekly' | 'cumulative'; since?: number | string } = {}): Promise<Record<string, any>> {
         const rpc = this.rpcRef;
         if (rpc) {
-            const result = await rpc.request('usage.stats', sessionId ? { sessionId } : {});
-            return result?.usage ?? { daily: {}, weekly: {}, cumulative: {} };
+            const result = await rpc.request('usage.stats', { ...(sessionId ? { sessionId } : {}), ...options });
+            const usage = result?.usage ?? { daily: {}, weekly: {}, cumulative: {} };
+            return { ...usage, ...(options.range ? { selectedRange: options.range, selected: usage[options.range] } : {}) };
         }
         return { daily: {}, weekly: {}, cumulative: {} };
     }
@@ -3301,6 +3302,24 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('week 7 turns');
         expect(component.notice).toContain('all 9 turns');
         expect(component.notice).toContain('90 total');
+    }
+
+    @Test('usage command selects a period and forwards since')
+    async usageCommandSelectsPeriodAndSince() {
+        const appRpc = new AppRpcStub();
+        appRpc.usageStats = {
+            daily: { turns: 1, totalTokens: 10 },
+            weekly: { turns: 3, totalTokens: 30 },
+            cumulative: { turns: 5, promptTokens: 20, completionTokens: 20, totalTokens: 40 }
+        };
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.input = '/usage cumulative session-1 2026-08-01';
+        await component.submit();
+        const call = appRpc.calls.find(item => item.method === 'usage.stats' && item.params?.range === 'cumulative');
+        expect(call?.params).toEqual({ sessionId: 'session-1', range: 'cumulative', since: '2026-08-01' });
+        expect(component.notice).toContain('all 5 turns');
+        expect(component.notice).not.toContain('day 1 turns');
     }
 
     @Test('voice command reports gateway availability through rpc')

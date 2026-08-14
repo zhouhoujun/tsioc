@@ -1658,6 +1658,8 @@ export class AppRpcServer {
     }
 
     private async getUsageStats(params: any, context: AppRpcRequestContext): Promise<any> {
+        const range = this.resolveUsageRange(params?.range);
+        const since = this.resolveUsageSince(params?.since);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : undefined;
@@ -1679,10 +1681,26 @@ export class AppRpcServer {
                 budgets[scopedId] = [];
             }
         }
+        const usage = await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics, { since });
         return {
-            usage: await summarizeUsageForSessions(this.sessions, sessionIds, this.turnDiagnostics),
+            usage,
+            ...(range ? { range, selected: usage[range] } : {}),
+            ...(since ? { since } : {}),
             budgets
         };
+    }
+
+    private resolveUsageRange(value: unknown): 'daily' | 'weekly' | 'cumulative' | undefined {
+        if (value == null || value === '') return undefined;
+        if (value === 'daily' || value === 'weekly' || value === 'cumulative') return value;
+        throw new AppRpcError(-32602, "usage.stats range must be 'daily', 'weekly', or 'cumulative'.");
+    }
+
+    private resolveUsageSince(value: unknown): number | undefined {
+        if (value == null || value === '') return undefined;
+        const parsed = typeof value === 'number' ? value : /^\d+$/.test(String(value)) ? Number(value) : Date.parse(String(value));
+        if (!Number.isFinite(parsed) || parsed < 0) throw new AppRpcError(-32602, 'usage.stats since must be an epoch millisecond value or ISO date.');
+        return parsed;
     }
 
     private async listCompactionHistory(params: any, context: AppRpcRequestContext): Promise<any> {
