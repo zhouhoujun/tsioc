@@ -28,6 +28,7 @@
 ### 配置迁移
 
 - **P81 · Claude Code / Cursor 配置迁移**：新增 CLI `tsdi-agent import` 与 `import_config` 工具，支持 CLAUDE.md、`.cursor/rules/*.md`、`.cursor/mcp.json` / `.mcp.json` 的预览与显式 `--apply` 两阶段迁移；AGENTS.md 采用 marker 分区幂等更新，MCP servers 合并进 agent settings 并保留无关配置；workspace/symlink 守卫、source 校验及多来源同次应用防覆盖。锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/import-command.ts`。
+- **P113 · `/import` 迁移范围扩展（G36）**：新增 `claude-user`（`~/.claude.json` commands/history 元数据）、`cursor-user`（`~/.cursor` sessions/recent chats 索引元数据）与 `ecosystem`（Claude/Cursor plugins/skills 安装清单）三来源；统一 preview/apply action 模型，apply 写入 agent root `imports/*.json`，按 source+data 幂等；列表最多 200 项、递归深度/字段数/长文本有界，过滤 content/messages/transcript/prompt/response/token/apiKey/secret，不复制聊天正文或插件/skill 二进制；CLI 增加扩展 `--sources` 与 `--home`。锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/import-command.ts`、`agent-cli/src/cli.ts`。
 
 ### skills 生态
 
@@ -125,13 +126,12 @@
 
 ### 结论
 
-G1–G35 全部闭环（P67–P112，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G36–G40（迁移、可观测、交付 UX 三个方向）：
+G1–G36 全部闭环（P67–P113，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G37–G40（可观测、交付 UX 两个方向）：
 
-1. **/import 迁移范围扩展（G36）**：codex v0.145 `/import` 已覆盖 settings/MCP/plugins/sessions/commands/project-scoped memories；本项目 P81 仅覆盖 CLAUDE.md + Cursor rules + MCP JSON。
-2. **usage 日/周/累计聚合视图（G37）**：codex v0.140 `/usage` 提供 daily/weekly/cumulative 账户级视图；本项目 `usage.stats` 为 session 粒度 + budget，缺时间维度聚合。
-3. **CLI→Desktop 会话移交（G38）**：codex v0.138 `/app` 将 CLI 当前 thread 移交 Codex Desktop；本项目桌面壳（P110）独立启动，CLI 与桌面之间无会话移交命令。
-4. **统一 @ 提及菜单（G39）**：codex v0.140 typing `@` 打开 files/plugins/skills 统一菜单；本项目 workspace mentions 仅覆盖文件路径。
-5. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
+1. **usage 日/周/累计聚合视图（G37）**：codex v0.140 `/usage` 提供 daily/weekly/cumulative 账户级视图；本项目 `usage.stats` 为 session 粒度 + budget，缺时间维度聚合。
+2. **CLI→Desktop 会话移交（G38）**：codex v0.138 `/app` 将 CLI 当前 thread 移交 Codex Desktop；本项目桌面壳（P110）独立启动，CLI 与桌面之间无会话移交命令。
+3. **统一 @ 提及菜单（G39）**：codex v0.140 typing `@` 打开 files/plugins/skills 统一菜单；本项目 workspace mentions 仅覆盖文件路径。
+4. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -166,7 +166,7 @@ G1–G35 全部闭环（P67–P112，明细见「已实现功能」与「已完�
 |---|---|---|---|---|
 | G34 | ~~Agent Plugins 1.0.0 标准兼容~~ ✅ 已落地（P111） | agentplugins.codes 1.0.0（2026-08-06 发布，跨厂商联盟）；codex v0.147 便携插件 | 标准 manifest、`skills/`、独立 `mcp.json` 三种 transport、reverse-domain 命名空间与 registry 伴随下载均已兼容，旧格式保留 | 已闭环 |
 | G35 | ~~凭据无加密存储~~ ✅ 已落地（P112） | codex v0.140：CLI + MCP OAuth 凭据加密本地存储 | safeStorage 适配 + AES-256-GCM fallback；OAuth 与 CLI API key 均加密落盘，doctor 报告后端状态 | 已闭环 |
-| G36 | /import 迁移范围窄 | codex v0.145：settings/MCP/plugins/sessions/commands/memories | P81 仅 CLAUDE.md + Cursor rules + MCP JSON | 中：迁移 UX |
+| G36 | ~~/import 迁移范围窄~~ ✅ 已落地（P113） | codex v0.145：settings/MCP/plugins/sessions/commands/memories | Claude/Cursor 用户元数据与 plugins/skills 清单已纳入 preview/apply 脱敏报告；不复制正文/二进制 | 已闭环 |
 | G37 | usage 无时间维度聚合 | codex v0.140 `/usage`：daily/weekly/cumulative | `usage.stats` session 粒度 + budgets，无日/周/累计视图 | 中：可观测 |
 | G38 | CLI↔Desktop 无会话移交 | codex v0.138 `/app`：CLI thread → Desktop 移交 | P110 桌面壳独立启动，CLI 无移交命令 | 中：交付 UX |
 | G39 | @ 提及仅文件 | codex v0.140：统一 @ 菜单（files/plugins/skills） | workspace mentions 仅路径补全 | 低中：UX |
@@ -189,7 +189,6 @@ G1–G35 全部闭环（P67–P112，明细见「已实现功能」与「已完�
 >
 > **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41/G42（P118 手动压缩 / P119 `!` shell 执行）已落地并入「已实现功能」，G43–G50 按 P120+ 排期（交互价值排序：键位 > 会话生命周期 > 视图/定制）。**
 
-- **P113 · /import 迁移范围扩展（G36）**：`import_config` 在 P81 基础上增加——Claude Code `~/.claude.json`（commands/history 轻量迁移）+ Cursor `~/.cursor`（sessions 索引 + recent chats 元数据）+ 两侧已装插件/skills 清单导入（不搬二进制，落迁移报告）；所有新来源走同一 preview/apply 两阶段 + marker 幂等。锚点：`agent-tools/project/import-config.tool.ts`、`agent-cli/src/import-command.ts`。
 - **P114 · usage 日/周/累计聚合视图（G37）**：`UsageStats` 新增时间维度聚合——按日/周/累计汇总 token/次数（复用 turn diagnostics + token budget 记录），gateway `usage.stats` 支持 `range: 'daily'|'weekly'|'cumulative'` + `since` 参数；agent-ui `/usage` 命令扩展周期切换展示。锚点：`agent-gateway/src/usage/UsageStats.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P115 · CLI→Desktop 会话移交（G38）**：CLI 新增 `tsdi-agent desktop` / `/app` 等价命令——将当前 CLI 会话（sessionId/token/workspace）交给已启动或按需启动的 `@tsdi/agent-desktop` 宿主（Electron 单实例锁 + IPC 移交参数），桌面端 `resolveDesktopConfig` 优先消费移交参数，渲染同一会话；无桌面环境时降级提示。锚点：`agent-cli/src/run-console.ts`、`agent-desktop/src/DesktopApp.ts`。
 - **P116 · 统一 @ 提及菜单（G39）**：agent-ui mentions 从纯路径补全扩展为统一菜单——`@file`（workspace 路径）/ `@skill`（已注册技能）/ `@plugin`（已装插件）三类候选分组渲染 + 输入确认插入对应引用文本（`@skill:<id>` / `@plugin:<id>` 格式，turn 上下文解析为激活提示/插件作用域）。锚点：`agent-ui/src/AgentConsoleWorkspaceMentions.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
@@ -320,3 +319,7 @@ P111（G34）已落地：标准与旧 manifest 双格式读取、标准 `skills/
 ### P112 凭据加密存储（2026-08-14）
 
 P112（G35）已落地：MCP OAuth token 与 CLI provider/settings API key 统一加密落盘，Electron safeStorage 可注入，纯 Node 使用带明确 doctor 警告的 AES-256-GCM 本地密钥 fallback；密钥/密文权限 0600，旧 v1 明文 OAuth store 可读并自动迁移。回归：agent-tools 319 / agent-cli 58，共 377 passing；两包 build 与 CLI `tsc --noEmit` clean。G35 已闭环，下一项为 P113（迁移范围扩展）。
+
+### P113 `/import` 迁移范围扩展（2026-08-14）
+
+P113（G36）已落地：`claude-user` / `cursor-user` / `ecosystem` 三来源覆盖 commands/history、session/recent-chat 索引和 plugins/skills 清单；统一 preview/apply、真实 generatedAt + data 幂等比较、`--home` 覆盖与有界脱敏报告，明确不复制聊天正文和生态二进制。回归：agent-tools 320 / agent-cli 59，共 379 passing；两包 `npm run build` clean。G36 已闭环，下一项为 P114（usage 时间聚合）。

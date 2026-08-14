@@ -3931,7 +3931,7 @@ export class AgentToolsPackageTest {
         const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
         const result = await tool.invoke({ workspace }, createSessionContext());
         expect(result.mode).toEqual('preview');
-        expect(result.actions.length).toEqual(3);
+        expect(result.actions.length).toEqual(6);
         const merge = result.actions.find(action => action.kind === 'merge-agents-md')!;
         expect(merge.status).toEqual('detected');
         expect(merge.target).toEqual(path.join(workspace, 'AGENTS.md'));
@@ -4051,6 +4051,39 @@ export class AgentToolsPackageTest {
             invalidSource = err as Error;
         }
         expect(invalidSource?.message).toContain('Unknown import source');
+    }
+
+    @Test('import config writes bounded user metadata and ecosystem inventory reports idempotently')
+    async importConfigWritesMetadataReports() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-import-'));
+        const agentRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-root-'));
+        const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-home-'));
+        await fs.writeFile(path.join(homeDir, '.claude.json'), JSON.stringify({
+            commands: [{ name: 'review', content: 'secret body', token: 'hidden' }],
+            history: Array.from({ length: 205 }, (_, index) => ({ id: index, project: `p${index}`, messages: ['private'] }))
+        }));
+        await fs.mkdir(path.join(homeDir, '.cursor'), { recursive: true });
+        await fs.writeFile(path.join(homeDir, '.cursor', 'sessions.json'), JSON.stringify({ sessions: [{ id: 's1', title: 'Recent', transcript: 'private' }] }));
+        await fs.mkdir(path.join(homeDir, '.claude', 'plugins', 'plugin-a'), { recursive: true });
+        await fs.mkdir(path.join(homeDir, '.cursor', 'skills', 'skill-b'), { recursive: true });
+        const tool = new ImportConfigTool({ file: { rootDir: workspace } } as any);
+        const sources = ['claude-user', 'cursor-user', 'ecosystem'];
+        const preview = await tool.invoke({ workspace, agentRoot, homeDir, sources }, createSessionContext());
+        expect(preview.summary.detected).toEqual(3);
+        const applied = await tool.invoke({ workspace, agentRoot, homeDir, sources, mode: 'apply' }, createSessionContext());
+        expect(applied.summary.applied).toEqual(3);
+        const claude = JSON.parse(await fs.readFile(path.join(agentRoot, 'imports', 'claude-user.json'), 'utf8'));
+        expect(claude.data.commands[0].content).toEqual(undefined);
+        expect(claude.data.commands[0].token).toEqual(undefined);
+        expect(claude.data.history.length).toEqual(200);
+        const cursor = await fs.readFile(path.join(agentRoot, 'imports', 'cursor-user.json'), 'utf8');
+        expect(cursor).not.toContain('private');
+        const ecosystem = JSON.parse(await fs.readFile(path.join(agentRoot, 'imports', 'ecosystem.json'), 'utf8'));
+        expect(ecosystem.data.installed['claude-plugins']).toEqual(['plugin-a']);
+        expect(ecosystem.data.installed['cursor-skills']).toEqual(['skill-b']);
+        expect(await fs.stat(path.join(agentRoot, 'imports', 'ecosystem.json')).then(() => true)).toEqual(true);
+        const again = await tool.invoke({ workspace, agentRoot, homeDir, sources, mode: 'apply' }, createSessionContext());
+        expect(again.summary.noChange).toEqual(3);
     }
 
     @Test('import config helpers merge settings and preserve unrelated keys')

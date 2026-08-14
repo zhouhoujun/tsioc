@@ -17,9 +17,9 @@ import { AgentMcpServerOptions, toMcpIdentifier } from '../mcp/types';
  * idempotent (marker-based replace, identical content reports `no-change`).
  */
 
-export type ImportConfigSource = 'claude-md' | 'cursor-rules' | 'cursor-mcp';
+export type ImportConfigSource = 'claude-md' | 'cursor-rules' | 'cursor-mcp' | 'claude-user' | 'cursor-user' | 'ecosystem';
 export type ImportConfigMode = 'preview' | 'apply';
-export type ImportConfigKind = 'merge-agents-md' | 'merge-cursor-rules' | 'merge-mcp';
+export type ImportConfigKind = 'merge-agents-md' | 'merge-cursor-rules' | 'merge-mcp' | 'write-migration-report';
 export type ImportConfigStatus = 'not-found' | 'no-change' | 'detected' | 'applied';
 
 export interface ImportConfigAction {
@@ -52,9 +52,16 @@ export interface ImportConfigResult {
     summary: ImportConfigSummary;
 }
 
+export interface ImportMetadataReport {
+    source: ImportConfigSource;
+    generatedAt: string;
+    data: Record<string, unknown>;
+}
+
 const CLAUDE_MD_MARKER = 'claude.md';
 const CURSOR_RULES_MARKER = 'cursor-rules';
 const PREVIEW_EXCERPT_CHARS = 4000;
+const MAX_METADATA_ITEMS = 200;
 
 interface CursorRuleContent {
     title: string;
@@ -226,7 +233,7 @@ function excerpt(value: string | undefined, max = PREVIEW_EXCERPT_CHARS): string
 @Injectable()
 export class ImportConfigTool implements AgentTool {
     name = 'import_config';
-    description = 'Migrate Claude Code / Cursor configuration into project format: CLAUDE.md merges into AGENTS.md, .cursor/rules/*.md become an AGENTS.md rules section, and .cursor/mcp.json / .mcp.json MCP servers merge into the agent settings. Two-phase: preview returns the migration plan without writing; apply writes the changes.';
+    description = 'Migrate Claude Code / Cursor project configuration and user metadata. User commands/history, Cursor session indexes, and installed plugin/skill inventories become bounded reports; binaries and full chat content are never copied. Two-phase: preview plans; apply writes.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -236,7 +243,7 @@ export class ImportConfigTool implements AgentTool {
             },
             sources: {
                 type: 'array',
-                items: { type: 'string', enum: ['claude-md', 'cursor-rules', 'cursor-mcp'] },
+                items: { type: 'string', enum: ['claude-md', 'cursor-rules', 'cursor-mcp', 'claude-user', 'cursor-user', 'ecosystem'] },
                 description: 'Sources to migrate (default: all detected sources).'
             },
             mode: {
@@ -247,7 +254,8 @@ export class ImportConfigTool implements AgentTool {
             agentRoot: {
                 type: 'string',
                 description: 'Agent config root holding settings.json for MCP migration (default: ~/.tsdi-agent).'
-            }
+            },
+            homeDir: { type: 'string', description: 'User home containing .claude.json/.cursor (default: current user home).' }
         }
     };
     toolset = 'project';
@@ -273,8 +281,9 @@ export class ImportConfigTool implements AgentTool {
         const sources = this.resolveSources(input?.sources);
         const workspace = await this.resolveWorkspace(input?.workspace);
         const agentRoot = this.resolveAgentRoot(input?.agentRoot);
+        const homeDir = this.resolveHomeDir(input?.homeDir);
 
-        const actions = await this.buildPlan(workspace, sources, agentRoot);
+        const actions = await this.buildPlan(workspace, sources, agentRoot, homeDir);
         const result: ImportConfigAction[] = [];
         for (const action of actions) {
             if (mode === 'apply' && action.status === 'detected') {
@@ -286,7 +295,7 @@ export class ImportConfigTool implements AgentTool {
         return { mode, actions: result, summary: summarize(result) };
     }
 
-    private async buildPlan(workspace: string, sources: ImportConfigSource[], agentRoot: string): Promise<ImportConfigAction[]> {
+    private async buildPlan(workspace: string, sources: ImportConfigSource[], agentRoot: string, homeDir: string): Promise<ImportConfigAction[]> {
         const projectRoot = await this.resolveProjectRoot(workspace);
         const actions: ImportConfigAction[] = [];
         if (sources.includes('claude-md')) {
@@ -298,6 +307,9 @@ export class ImportConfigTool implements AgentTool {
         if (sources.includes('cursor-mcp')) {
             actions.push(await this.planCursorMcp(workspace, agentRoot));
         }
+        if (sources.includes('claude-user')) actions.push(await this.planClaudeUser(homeDir, agentRoot));
+        if (sources.includes('cursor-user')) actions.push(await this.planCursorUser(homeDir, agentRoot));
+        if (sources.includes('ecosystem')) actions.push(await this.planEcosystem(homeDir, agentRoot));
         return actions;
     }
 
@@ -445,9 +457,90 @@ export class ImportConfigTool implements AgentTool {
         };
     }
 
+    private async planClaudeUser(homeDir: string, agentRoot: string): Promise<ImportConfigAction> {
+        const source = path.join(homeDir, '.claude.json');
+        const parsed = await this.tryReadJson(source);
+        if (!parsed) return this.missingReport('claude-user', source, agentRoot, 'Claude user metadata not found or invalid.');
+        const commands = this.boundedList(parsed.commands ?? parsed.customCommands).map(item => this.metadataOnly(item));
+        const history = this.boundedList(parsed.history ?? parsed.recentProjects ?? parsed.projects).map(item => this.metadataOnly(item));
+        return this.planReport('claude-user', source, agentRoot, { commands, history });
+    }
+
+    private async planCursorUser(homeDir: string, agentRoot: string): Promise<ImportConfigAction> {
+        const cursorRoot = path.join(homeDir, '.cursor');
+        const files: Record<string, unknown> = {};
+        for (const name of ['sessions.json', 'recent-chats.json', 'history.json', 'state.json']) {
+            const parsed = await this.tryReadJson(path.join(cursorRoot, name));
+            if (parsed) files[name] = this.metadataOnly(parsed);
+        }
+        if (!Object.keys(files).length) return this.missingReport('cursor-user', cursorRoot, agentRoot, 'No Cursor session index or recent chat metadata found.');
+        return this.planReport('cursor-user', cursorRoot, agentRoot, { files });
+    }
+
+    private async planEcosystem(homeDir: string, agentRoot: string): Promise<ImportConfigAction> {
+        const roots = [
+            ['claude-plugins', path.join(homeDir, '.claude', 'plugins')],
+            ['claude-skills', path.join(homeDir, '.claude', 'skills')],
+            ['cursor-plugins', path.join(homeDir, '.cursor', 'plugins')],
+            ['cursor-skills', path.join(homeDir, '.cursor', 'skills')]
+        ] as const;
+        const installed: Record<string, string[]> = {};
+        for (const [label, root] of roots) {
+            const entries = await this.tryReadDir(root);
+            if (entries?.length) installed[label] = entries.filter(name => !name.startsWith('.')).sort().slice(0, MAX_METADATA_ITEMS);
+        }
+        if (!Object.keys(installed).length) return this.missingReport('ecosystem', roots.map(item => item[1]).join(' or '), agentRoot, 'No installed Claude/Cursor plugin or skill inventory found.');
+        return this.planReport('ecosystem', homeDir, agentRoot, { installed, note: 'Inventory only; plugin and skill binaries were not copied.' });
+    }
+
+    private async planReport(sourceType: ImportConfigSource, source: string, agentRoot: string, data: Record<string, unknown>): Promise<ImportConfigAction> {
+        const target = path.join(agentRoot, 'imports', `${sourceType}.json`);
+        const report: ImportMetadataReport = { source: sourceType, generatedAt: new Date().toISOString(), data };
+        const next = JSON.stringify(report, null, 2) + '\n';
+        const existing = await this.tryRead(target);
+        let changed = true;
+        if (existing) {
+            try {
+                const previous = JSON.parse(existing) as Partial<ImportMetadataReport>;
+                changed = previous.source !== report.source || JSON.stringify(previous.data) !== JSON.stringify(report.data);
+            } catch {
+                changed = true;
+            }
+        }
+        return {
+            kind: 'write-migration-report', source, target, status: changed ? 'detected' : 'no-change',
+            detail: changed ? `Write bounded ${sourceType} metadata migration report.` : `${sourceType} migration report is unchanged.`,
+            ...(changed ? { after: excerpt(next), payload: report } : {})
+        };
+    }
+
+    private missingReport(sourceType: ImportConfigSource, source: string, agentRoot: string, detail: string): ImportConfigAction {
+        return { kind: 'write-migration-report', source, target: path.join(agentRoot, 'imports', `${sourceType}.json`), status: 'not-found', detail };
+    }
+
+    private boundedList(value: unknown): unknown[] {
+        if (Array.isArray(value)) return value.slice(0, MAX_METADATA_ITEMS);
+        if (value && typeof value === 'object') return Object.entries(value as Record<string, unknown>).slice(0, MAX_METADATA_ITEMS).map(([id, item]) => ({ id, value: item }));
+        return [];
+    }
+
+    private metadataOnly(value: unknown, depth = 0): unknown {
+        if (depth > 3) return '[omitted]';
+        if (Array.isArray(value)) return value.slice(0, MAX_METADATA_ITEMS).map(item => this.metadataOnly(item, depth + 1));
+        if (!value || typeof value !== 'object') return typeof value === 'string' && value.length > 500 ? `${value.slice(0, 500)}...` : value;
+        const blocked = new Set(['content', 'messages', 'transcript', 'prompt', 'response', 'token', 'apikey', 'secret', 'password', 'authorization', 'cookie']);
+        return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+            .filter(([key]) => !blocked.has(key.toLowerCase()))
+            .slice(0, 50)
+            .map(([key, item]) => [key, this.metadataOnly(item, depth + 1)]));
+    }
+
     private async applyAction(action: ImportConfigAction): Promise<ImportConfigAction> {
         try {
-            if (action.kind === 'merge-mcp') {
+            if (action.kind === 'write-migration-report') {
+                await fs.mkdir(path.dirname(action.target), { recursive: true });
+                await fs.writeFile(action.target, JSON.stringify(action.payload, null, 2) + '\n', 'utf8');
+            } else if (action.kind === 'merge-mcp') {
                 const payload = (action.payload ?? {}) as { servers?: AgentMcpServerOptions[] };
                 const servers = payload.servers ?? [];
                 const settings = await this.loadSettings(action.target);
@@ -487,11 +580,11 @@ export class ImportConfigTool implements AgentTool {
     }
 
     private resolveSources(value: unknown): ImportConfigSource[] {
-        const all: ImportConfigSource[] = ['claude-md', 'cursor-rules', 'cursor-mcp'];
+        const all: ImportConfigSource[] = ['claude-md', 'cursor-rules', 'cursor-mcp', 'claude-user', 'cursor-user', 'ecosystem'];
         if (!Array.isArray(value) || !value.length) {
             return all;
         }
-        const selected = value.filter((item): item is ImportConfigSource => item === 'claude-md' || item === 'cursor-rules' || item === 'cursor-mcp');
+        const selected = value.filter((item): item is ImportConfigSource => all.includes(item as ImportConfigSource));
         if (selected.length !== value.length) {
             const invalid = value.filter(item => !all.includes(item as ImportConfigSource));
             throw new Error(`Unknown import source(s): ${invalid.join(', ')}. Expected: ${all.join(', ')}.`);
@@ -524,6 +617,23 @@ export class ImportConfigTool implements AgentTool {
             return resolveAgentRoot(value.trim());
         }
         return resolveAgentRoot();
+    }
+
+    private resolveHomeDir(value: unknown): string {
+        if (typeof value === 'string' && value.trim()) return path.resolve(value.trim());
+        const processRef = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+        return path.resolve(processRef?.env?.HOME || processRef?.env?.USERPROFILE || '.');
+    }
+
+    private async tryReadJson(file: string): Promise<Record<string, any> | undefined> {
+        const raw = await this.tryRead(file);
+        if (!raw?.trim()) return undefined;
+        try {
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : undefined;
+        } catch {
+            return undefined;
+        }
     }
 
     private async loadSettings(settingsPath: string): Promise<Record<string, any>> {

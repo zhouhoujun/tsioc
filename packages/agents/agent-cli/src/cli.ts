@@ -248,9 +248,10 @@ function createAgentCli(): Command {
 
     program
         .command('import')
-        .description('Migrate Claude Code / Cursor project configuration: CLAUDE.md into AGENTS.md, .cursor/rules/*.md into an AGENTS.md rules section, and .cursor/mcp.json / .mcp.json MCP servers into the agent settings.')
+        .description('Migrate Claude Code / Cursor project configuration plus bounded user metadata and plugin/skill inventories.')
         .option('--workspace <dir>', 'Project directory containing CLAUDE.md / .cursor. Defaults to the current directory.')
-        .option('--sources <items>', 'Comma-separated sources to migrate: claude-md, cursor-rules, cursor-mcp (default: all).')
+        .option('--sources <items>', 'Comma-separated sources: claude-md, cursor-rules, cursor-mcp, claude-user, cursor-user, ecosystem (default: all).')
+        .option('--home <dir>', 'User home containing .claude.json and .cursor metadata.')
         .option('--root <dir>', 'Agent config root holding settings.json for MCP migration. Defaults to ~/.tsdi-agent.')
         .option('--apply', 'Write the changes. Without it, only a preview is shown.')
         .option('--json', 'Output JSON.')

@@ -6,6 +6,7 @@ export interface AgentImportCliOptions {
     sources?: string;
     apply?: boolean;
     root?: string;
+    home?: string;
     json?: boolean;
 }
 
@@ -13,7 +14,7 @@ export interface AgentImportIo {
     stdout?: { write(chunk: string): any };
 }
 
-const IMPORT_SOURCE_VALUES: ImportConfigSource[] = ['claude-md', 'cursor-rules', 'cursor-mcp'];
+const IMPORT_SOURCE_VALUES: ImportConfigSource[] = ['claude-md', 'cursor-rules', 'cursor-mcp', 'claude-user', 'cursor-user', 'ecosystem'];
 
 export function parseImportSources(input?: string): ImportConfigSource[] | undefined {
     if (!input) {
@@ -54,7 +55,8 @@ export async function runAgentImport(options: AgentImportCliOptions, io: AgentIm
         workspace,
         mode: options.apply ? 'apply' : 'preview',
         ...(sources ? { sources } : {}),
-        ...(options.root ? { agentRoot: options.root } : {})
+        ...(options.root ? { agentRoot: options.root } : {}),
+        ...(options.home ? { homeDir: options.home } : {})
     }, {} as any);
     stdout.write(options.json
         ? JSON.stringify(result, null, 2) + '\n'

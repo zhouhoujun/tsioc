@@ -36,6 +36,7 @@ import {
     resolveProviderProfile,
     resolveProviderRegistry,
     normalizeCliArgv,
+    parseImportSources,
     runAgentJsonStream,
     runAgentImport,
     runAgentDoctor,
@@ -459,6 +460,11 @@ export class AgentCliTest {
             error = err as Error;
         }
         expect(error?.message).toContain('Unknown import source');
+    }
+
+    @Test('import command accepts user metadata and ecosystem sources')
+    importCommandAcceptsExpandedSources() {
+        expect(parseImportSources('claude-user,cursor-user,ecosystem')).toEqual(['claude-user', 'cursor-user', 'ecosystem']);
     }
 
     @Test('import command applies claude-md guidance into AGENTS.md')
