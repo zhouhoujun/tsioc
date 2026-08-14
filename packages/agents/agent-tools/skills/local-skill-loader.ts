@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import globby = require('globby');
 import { AgentSkillDefinition, AgentSkillToolRef, AgentSkillMetadata } from './types';
+import { boundedMap } from './bounded-map';
 
 const SKILL_FILE_NAME = 'SKILL.md';
 const MAX_SKILL_FILE_BYTES = 100_000;
@@ -11,6 +12,7 @@ const BLOCKED_SKILL_PATTERNS = [
     '/mlops/inference/obliteratus/'
 ];
 const DEFAULT_IGNORED_GLOBS = ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**'];
+const SKILL_DISCOVERY_CONCURRENCY = 8;
 
 interface ParsedFrontmatter {
     name?: string;
@@ -111,7 +113,7 @@ async function loadSkillsFromResolvedRoots(
 ): Promise<AgentSkillDefinition[]> {
     const loaded = new Map<string, AgentSkillDefinition>();
 
-    for (const root of resolvedRoots) {
+    const filesByRoot = await boundedMap(resolvedRoots, SKILL_DISCOVERY_CONCURRENCY, async root => {
         const files = await globby(`**/${SKILL_FILE_NAME}`, {
             cwd: root,
             absolute: true,
@@ -122,15 +124,21 @@ async function loadSkillsFromResolvedRoots(
         if (files.length > MAX_SKILL_FILES) {
             throw new Error(`Skill root '${root}' exceeds the maximum of ${MAX_SKILL_FILES} skill files.`);
         }
-        for (const file of files) {
+        return { root, files };
+    });
+    for (const { root, files } of filesByRoot) {
+        const skills = await boundedMap(files, SKILL_DISCOVERY_CONCURRENCY, async file => {
             if (isBlockedSkillFile(file)) {
-                continue;
+                return { file, skill: undefined };
             }
             const stat = await fs.promises.stat(file);
             if (stat.size > MAX_SKILL_FILE_BYTES) {
                 throw new Error(`Skill '${file}' exceeds the maximum size of ${MAX_SKILL_FILE_BYTES} bytes.`);
             }
-            const skill = parseSkillContent(file, await readFile(file), metadata, root);
+            return { file, skill: parseSkillContent(file, await readFile(file), metadata, root) };
+        });
+        for (const { file, skill } of skills) {
+            if (!skill) continue;
             const existing = loaded.get(skill.id);
             if (existing) {
                 throw new Error(`Duplicate skill id '${skill.id}' from '${file}' and another loaded skill.`);

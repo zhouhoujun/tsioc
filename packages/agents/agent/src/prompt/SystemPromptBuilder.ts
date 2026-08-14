@@ -46,20 +46,15 @@ export class SystemPromptBuilder {
             }
             return (a.priority ?? 100) - (b.priority ?? 100);
         });
-        const parts: string[] = [];
-
-        for (const section of sorted) {
+        const renderedSections = await Promise.all(sorted.map(async section => {
             try {
-                const rendered = await section.render(ctx);
-                if (rendered) {
-                    parts.push(rendered);
-                }
+                return await section.render(ctx);
             } catch {
-                // Skip sections that fail to render
+                return '';
             }
-        }
+        }));
 
-        return parts.join('\n\n');
+        return renderedSections.filter(Boolean).join('\n\n');
     }
 }
 

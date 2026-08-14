@@ -4,7 +4,8 @@ import * as path from 'path';
 import { Injectable, Optional, Provider, token } from '@tsdi/ioc';
 import { AgentHooksOptions, AgentHookDefinition } from '@tsdi/agent';
 import { AgentMcpServerOptions } from '../mcp/types';
-import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
+import { loadAgentSkillsFromRoots, loadAgentSkillsFromRootsSync } from './local-skill-loader';
+import { boundedMap } from './bounded-map';
 import { AgentSkillDefinition, RemoteSkillSource } from './types';
 import { NodeRemoteSkillProcessRunner, RemoteSkillProcessRunner } from './remote-skill-manager';
 
@@ -74,6 +75,7 @@ export function provideAgentPluginContributions(pluginRoots?: Partial<Record<Age
 
 const PLUGIN_FILE = 'plugin.json';
 const PLUGIN_METADATA = '.agent-plugin.json';
+const PLUGIN_DISCOVERY_CONCURRENCY = 8;
 const STAGE_NAMES = ['beforeTurn', 'afterTurn', 'beforeTool', 'afterTool', 'onApproval', 'beforeCompaction', 'afterCompaction'] as const;
 
 @Injectable()
@@ -102,6 +104,28 @@ export class AgentPluginManager {
                 if (plugin) merged.set(plugin.id, plugin);
             }
         }
+        return Array.from(merged.values()).sort((a, b) => a.id.localeCompare(b.id));
+    }
+
+    async discoverAsync(roots: Partial<Record<AgentPluginScope, string>>): Promise<InstalledAgentPlugin[]> {
+        const scopes = ['remote', 'personal', 'workspace', 'local'] as AgentPluginScope[];
+        const discovered = await boundedMap(scopes, PLUGIN_DISCOVERY_CONCURRENCY, async scope => {
+            const root = roots[scope];
+            if (!root) return [];
+            let entries: fs.Dirent[];
+            try {
+                entries = await fs.promises.readdir(root, { withFileTypes: true });
+            } catch {
+                return [];
+            }
+            return (await boundedMap(
+                entries.filter(entry => entry.isDirectory()),
+                PLUGIN_DISCOVERY_CONCURRENCY,
+                async entry => this.readPluginAsync(path.join(root, entry.name), scope)
+            )).filter((plugin): plugin is InstalledAgentPlugin => !!plugin);
+        });
+        const merged = new Map<string, InstalledAgentPlugin>();
+        discovered.forEach(plugins => plugins.forEach(plugin => merged.set(plugin.id, plugin)));
         return Array.from(merged.values()).sort((a, b) => a.id.localeCompare(b.id));
     }
 
@@ -175,6 +199,26 @@ export class AgentPluginManager {
         return { plugins, skills: [...skills.values()], mcpServers: [...mcp.values()], hooks, connectors: [...connectors.values()], agentsDocs };
     }
 
+    async contributionsAsync(plugins: InstalledAgentPlugin[]): Promise<AgentPluginContributions> {
+        const loadedSkills = await boundedMap(plugins, PLUGIN_DISCOVERY_CONCURRENCY, async plugin => {
+            const roots = (plugin.manifest.skills?.length ? plugin.manifest.skills : ['.']).map(item => path.resolve(plugin.root, item));
+            return loadAgentSkillsFromRoots(roots, { source: `plugin:${plugin.id}` });
+        });
+        const mcp = new Map<string, AgentMcpServerOptions>();
+        const connectors = new Map<string, AgentPluginContributions['connectors'][number]>();
+        const hooks: AgentHooksOptions = {};
+        const skills = new Map<string, AgentSkillDefinition>();
+        const agentsDocs: AgentPluginContributions['agentsDocs'] = [];
+        plugins.forEach((plugin, index) => {
+            loadedSkills[index].forEach(skill => skills.set(skill.id, skill));
+            plugin.manifest.mcpServers?.forEach(server => mcp.set(server.id, { ...server }));
+            plugin.manifest.connectors?.forEach(connector => connectors.set(connector.id, { plugin: plugin.id, ...connector }));
+            this.mergeHooks(hooks, plugin.manifest.hooks);
+            if (plugin.manifest.agentsDoc) agentsDocs.push({ plugin: plugin.id, path: path.resolve(plugin.root, plugin.manifest.agentsDoc) });
+        });
+        return { plugins, skills: [...skills.values()], mcpServers: [...mcp.values()], hooks, connectors: [...connectors.values()], agentsDocs };
+    }
+
     private readPlugin(root: string, scope: AgentPluginScope, source?: RemoteSkillSource): InstalledAgentPlugin | undefined {
         const file = path.join(root, PLUGIN_FILE);
         if (!fs.existsSync(file)) return undefined;
@@ -186,6 +230,20 @@ export class AgentPluginManager {
             const metadata = fs.existsSync(metadataFile) ? JSON.parse(fs.readFileSync(metadataFile, 'utf8')) : {};
             return { id: path.basename(root), scope, root, manifest, standard, source: source ?? metadata.source, installedAt: metadata.installedAt ?? Date.now(), analytics: { installs: 0, activations: 0, calls: 0, ...(metadata.analytics ?? {}) } };
         } catch { return undefined; }
+    }
+
+    private async readPluginAsync(root: string, scope: AgentPluginScope, source?: RemoteSkillSource): Promise<InstalledAgentPlugin | undefined> {
+        const file = path.join(root, PLUGIN_FILE);
+        try {
+            const raw = JSON.parse(await fs.promises.readFile(file, 'utf8')) as Record<string, any>;
+            const { manifest, standard } = this.normalizeManifest(root, raw);
+            if (!manifest.name?.trim() || !manifest.version?.trim()) return undefined;
+            const metadataFile = path.join(root, PLUGIN_METADATA);
+            const metadata = await fs.promises.readFile(metadataFile, 'utf8').then(JSON.parse).catch(() => ({}));
+            return { id: path.basename(root), scope, root, manifest, standard, source: source ?? metadata.source, installedAt: metadata.installedAt ?? Date.now(), analytics: { installs: 0, activations: 0, calls: 0, ...(metadata.analytics ?? {}) } };
+        } catch {
+            return undefined;
+        }
     }
 
     private normalizeManifest(root: string, raw: Record<string, any>): { manifest: AgentPluginManifest; standard: AgentPluginStandardInfo } {

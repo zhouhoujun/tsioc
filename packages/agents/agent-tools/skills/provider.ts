@@ -9,11 +9,11 @@ import { ListSkillTool } from './list-skill.tool';
 import { SkillsCatalogSection } from './SkillsCatalogSection';import { ActiveSkillsSection } from './ActiveSkillsSection';
 import { SkillTurnInterceptor } from './SkillTurnInterceptor';
 import { getBuiltinSkills } from './builtin-skills';
-import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
+import { loadAgentSkillsFromRoots, loadAgentSkillsFromRootsSync } from './local-skill-loader';
 import { RemoteSkillManager } from './remote-skill-manager';
 import { RemoteSkillTool } from './remote-skill.tool';
 import { resolveAgentRootSettings } from '../src/settings';
-import { AgentPluginManager, provideAgentPluginContributions } from './plugin-manager';
+import { AGENT_PLUGIN_CONTRIBUTIONS, AgentPluginContributions, AgentPluginManager, provideAgentPluginContributions } from './plugin-manager';
 import { AgentPluginTool } from './plugin.tool';
 
 export interface AgentSkillsOptions {
@@ -54,6 +54,37 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded), pluginLoaded),
         mergeSkills(remoteLoaded, options.skills ?? [])
     );
+    return buildSkillProviders(skills, pluginRoots);
+}
+
+export async function provideSkillsAsync(options: AgentSkillsOptions = {}): Promise<Provider[]> {
+    const resolvedRoots = new Set<string>();
+    if (options.root) {
+        resolveAgentRootSettings(options.root).skillRoots.forEach(root => resolvedRoots.add(root));
+    }
+    options.roots?.forEach(root => resolvedRoots.add(root));
+    const remoteCacheDir = options.remoteCacheDir || new RemoteSkillManager().defaultCacheDir();
+    const pluginManager = new AgentPluginManager();
+    const pluginRoots = { ...pluginManager.defaultRoots(options.root), ...(options.pluginRoots ?? {}) };
+    const [loaded, remoteLoaded, discoveredPlugins] = await Promise.all([
+        loadAgentSkillsFromRoots(Array.from(resolvedRoots.values()), { source: 'workspace' }),
+        remoteCacheDir ? loadAgentSkillsFromRoots([remoteCacheDir], { source: 'remote' }) : Promise.resolve([]),
+        pluginManager.discoverAsync(pluginRoots)
+    ]);
+    const activePlugins = discoveredPlugins.map(plugin => pluginManager.activate(plugin));
+    const contributions = await pluginManager.contributionsAsync(activePlugins);
+    const skills = mergeSkills(
+        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded), contributions.skills),
+        mergeSkills(remoteLoaded, options.skills ?? [])
+    );
+    return buildSkillProviders(skills, pluginRoots, contributions);
+}
+
+function buildSkillProviders(
+    skills: AgentSkillDefinition[],
+    pluginRoots: AgentSkillsOptions['pluginRoots'],
+    contributions?: AgentPluginContributions
+): Provider[] {
     return [
         ...withAgentSkills(...skills),
         LocalSkillRegistry,
@@ -64,7 +95,9 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         RemoteSkillTool,
         AgentPluginManager,
         AgentPluginTool,
-        provideAgentPluginContributions(pluginRoots),
+        contributions
+            ? { provide: AGENT_PLUGIN_CONTRIBUTIONS, useValue: contributions }
+            : provideAgentPluginContributions(pluginRoots),
         SkillsCatalogSection,
         ActiveSkillsSection,
         SkillTurnInterceptor,

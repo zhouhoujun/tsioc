@@ -26,9 +26,13 @@ export class ActiveSkillsSection extends PromptSection {
             return '';
         }
         const lines = ['## Active Skills'];
+        const compacted = context.extra?.contextPreparation?.compactionTriggered === true;
         active.forEach(skill => {
             lines.push(`### ${skill.title}`);
-            lines.push(skill.promptFull);
+            const remote = skill.metadata?.source === 'remote' || skill.metadata?.source?.startsWith('plugin:');
+            lines.push(compacted && remote
+                ? `${skill.summary}\nFull instructions remain available through read_skill('${skill.id}').`
+                : skill.promptFull);
         });
         return lines.join('\n');
     }

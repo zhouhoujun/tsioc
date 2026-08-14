@@ -23,8 +23,41 @@ class StubSection extends PromptSection {
     }
 }
 
+class GatedSection extends PromptSection {
+    constructor(private label: string, private started: string[], private gate: Promise<void>) {
+        super();
+    }
+    name(): string { return this.label; }
+    async render(): Promise<string> {
+        this.started.push(this.label);
+        await this.gate;
+        return `section:${this.label}`;
+    }
+}
+
 @Suite('P69 prompt cache system prompt segmentation')
 export class PromptCacheTest {
+    @Test('renders independent prompt sections concurrently while preserving order')
+    async rendersSectionsConcurrently() {
+        const started: string[] = [];
+        let release!: () => void;
+        const gate = new Promise<void>(resolve => { release = resolve; });
+        const builder = new SystemPromptBuilder([
+            new GatedSection('first', started, gate),
+            new GatedSection('second', started, gate)
+        ]);
+
+        const pending = builder.build({ sessionId: 's1' } as any);
+        await Promise.resolve();
+        await Promise.resolve();
+        const startedBeforeRelease = started.slice();
+        release();
+        const prompt = await pending;
+
+        expect(startedBeforeRelease).toEqual(['first', 'second']);
+        expect(prompt).toEqual('section:first\n\nsection:second');
+    }
+
     @Test('cacheable sections render before non-cacheable ones regardless of priority')
     async cacheableSectionsRenderFirst() {
         const builder = new SystemPromptBuilder([

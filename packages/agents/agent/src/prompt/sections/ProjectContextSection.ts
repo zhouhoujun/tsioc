@@ -92,24 +92,22 @@ export class ProjectContextSection extends PromptSection {
         }
         const files = [...chain.entries.map(entry => entry.file), ...pluginDocs.map(item => item.path)];
         const filesKey = files.join('\u0000');
-        const mtimes: number[] = [];
-        for (const file of files) {
+        const mtimes = await Promise.all(files.map(async file => {
             const stat = this.fileAdapter?.stat ? await this.fileAdapter.stat(file) : null;
-            mtimes.push(Number((stat as any)?.mtimeMs || 0));
-        }
+            return Number((stat as any)?.mtimeMs || 0);
+        }));
         let contents: string[] | null = null;
         if (this.cache && this.cache.files === filesKey && this.cache.mtimes.length === mtimes.length
             && this.cache.mtimes.every((mtime, index) => mtime === mtimes[index])) {
             contents = this.cache.contents;
         }
         if (!contents) {
-            contents = [];
-            for (const file of files) {
+            contents = await Promise.all(files.map(async file => {
                 const raw = this.fileAdapter
                     ? await this.fileAdapter.readText(file).catch(() => '')
                     : readAgentsDoc(file);
-                contents.push(truncateDocContent(raw, maxBytes).content);
-            }
+                return truncateDocContent(raw, maxBytes).content;
+            }));
             this.cache = { files: filesKey, mtimes, contents };
         }
         const parts: string[] = [];

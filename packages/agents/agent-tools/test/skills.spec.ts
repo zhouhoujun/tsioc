@@ -7,6 +7,9 @@ import { Suite, Test } from '@tsdi/unit';
 import { RemoteSkillManager, RemoteSkillProcessRunner } from '../skills/remote-skill-manager';
 import { AgentSkillDefinition } from '../skills/types';
 import { AgentPluginManager } from '../skills/plugin-manager';
+import { ActiveSkillsSection } from '../skills/ActiveSkillsSection';
+import { LocalSkillRegistry } from '../skills/LocalSkillRegistry';
+import { SkillSessionStore } from '../skills/SkillSessionStore';
 
 async function runGit(dir: string, args: string[]): Promise<string> {
     return new Promise<string>((resolve, reject) => {
@@ -38,14 +41,19 @@ export class AgentPluginManagerTest {
             await fs.writeFile(path.join(local, 'demo', 'AGENTS.md'), '# Plugin instructions');
             const manager = new AgentPluginManager(fakeRunner({}));
             const plugins = manager.discover({ remote, local });
+            const asyncPlugins = await manager.discoverAsync({ remote, local });
             expect(plugins.length).toEqual(1);
             expect(plugins[0].manifest.version).toEqual('2.0.0');
+            expect(asyncPlugins.map(plugin => [plugin.id, plugin.manifest.version])).toEqual([['demo', '2.0.0']]);
             const contributions = manager.contributions(plugins);
+            const asyncContributions = await manager.contributionsAsync(asyncPlugins);
             expect(contributions.skills.map(skill => skill.id)).toContain('demo-skill');
             expect(contributions.mcpServers.map(server => server.id)).toEqual(['demo-mcp']);
             expect(contributions.connectors[0].plugin).toEqual('demo');
             expect((contributions.hooks.beforeTurn as any[]).length).toEqual(1);
             expect(contributions.agentsDocs[0].path).toEqual(path.join(local, 'demo', 'AGENTS.md'));
+            expect(asyncContributions.skills.map(skill => skill.id)).toEqual(contributions.skills.map(skill => skill.id));
+            expect(asyncContributions.agentsDocs).toEqual(contributions.agentsDocs);
         } finally { await fs.rm(root, { recursive: true, force: true }); }
     }
 
@@ -132,6 +140,29 @@ export class AgentPluginManagerTest {
         await fs.mkdir(path.join(plugin, 'skills', 'demo-skill'), { recursive: true });
         await fs.writeFile(path.join(plugin, 'plugin.json'), JSON.stringify({ name: id, version, skills: ['skills'], ...extra }));
         await fs.writeFile(path.join(plugin, 'skills', 'demo-skill', 'SKILL.md'), `---\nname: demo-skill\ndescription: Plugin skill.\n---\n${body}`);
+    }
+}
+
+@Suite('ActiveSkillsSection compaction')
+export class ActiveSkillsSectionCompactionTest {
+    @Test('uses summaries for remote skills only during compacted turns')
+    async remoteSummaryDuringCompaction() {
+        const registry = new LocalSkillRegistry([
+            { id: 'remote', title: 'Remote', summary: 'Remote summary.', promptFull: 'REMOTE FULL', metadata: { source: 'remote' } },
+            { id: 'local', title: 'Local', summary: 'Local summary.', promptFull: 'LOCAL FULL', metadata: { source: 'workspace' } }
+        ]);
+        const sessions = new SkillSessionStore();
+        sessions.activate('s1', 'remote');
+        sessions.activate('s1', 'local');
+        const section = new ActiveSkillsSection(registry, sessions);
+
+        const compacted = section.render({ sessionId: 's1', extra: { contextPreparation: { compactionTriggered: true } } } as any);
+        expect(compacted).toContain('Remote summary.');
+        expect(compacted).not.toContain('REMOTE FULL');
+        expect(compacted).toContain('LOCAL FULL');
+
+        const normal = section.render({ sessionId: 's1' } as any);
+        expect(normal).toContain('REMOTE FULL');
     }
 }
 

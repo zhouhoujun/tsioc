@@ -1209,7 +1209,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     activation: t.activation
                 })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
-                dateTime: new Date().toISOString()
+                dateTime: new Date().toISOString(),
+                extra: { contextPreparation: preparedHistory.report }
             });
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));

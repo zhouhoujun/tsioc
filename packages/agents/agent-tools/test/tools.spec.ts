@@ -117,7 +117,7 @@ import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedT
 import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
 import { CodingTaskTool as ExportedCodingTaskTool } from '../coding';
 import { ImageInfoTool, PdfReadTool } from '../media';
-import { provideSkills, LocalSkillRegistry, ListSkillTool, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
+import { provideSkills, provideSkillsAsync, LocalSkillRegistry, ListSkillTool, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
 class FakeScheduler extends AgentScheduler {
@@ -2905,6 +2905,24 @@ export class AgentToolsPackageTest {
         try {
             const registry = ctx.get(LocalSkillRegistry);
             expect(registry.list().map(skill => skill.id)).toEqual(['sketch', 'writing-plans']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('async skill provider discovers roots before application bootstrap')
+    async asyncSkillProviderDiscoversRoots() {
+        const root = await this.createSkillRoot();
+        const missing = path.join(root, 'missing');
+        const providers = await provideSkillsAsync({
+            roots: [root],
+            defaults: false,
+            remoteCacheDir: missing,
+            pluginRoots: { personal: missing, remote: missing }
+        });
+        const ctx = await Application.run(AgentModule, { providers });
+        try {
+            expect(ctx.get(LocalSkillRegistry).list().map(skill => skill.id)).toEqual(['sketch', 'writing-plans']);
         } finally {
             await ctx.close();
         }
