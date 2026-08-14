@@ -2212,6 +2212,9 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context);
         const base = typeof params?.base === 'string' && params.base.trim() ? params.base.trim() : 'HEAD';
         const input: Record<string, any> = { base };
+        if (typeof params?.scope === 'string' && params.scope.trim()) {
+            input.scope = params.scope.trim();
+        }
         const range = typeof params?.range === 'string' && params.range.trim() ? params.range.trim() : undefined;
         if (range) {
             input.range = range;

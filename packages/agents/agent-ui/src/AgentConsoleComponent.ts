@@ -3021,6 +3021,79 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async openWorktreeDiff(args?: string): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Worktree diff is unavailable without app RPC.');
+            return true;
+        }
+        const parsed = this.parseWorktreeDiffArgs(args);
+        if (parsed.error) {
+            this.notify(parsed.error);
+            return true;
+        }
+        const sessionId = this.state.sessionId;
+        let review: Record<string, any> | null = null;
+        try {
+            await this.activateToolForSession('review_diff', sessionId);
+            const result = await this.appRpc.request('review.diff', {
+                sessionId,
+                scope: parsed.scope,
+                ...(parsed.paths.length ? { paths: parsed.paths } : {})
+            });
+            review = result?.review && typeof result.review === 'object' ? result.review : null;
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to gather the worktree diff.');
+            return true;
+        }
+        const files = Array.isArray(review?.files) ? review.files : [];
+        if (!files.length) {
+            this.notify(`No ${this.describeWorktreeDiffScope(parsed.scope)} changes.`);
+            return true;
+        }
+        const label = this.describeWorktreeDiffScope(parsed.scope);
+        const reviewTask = {
+            id: `worktree-diff:${parsed.scope}`,
+            title: `${label} diff`,
+            sourceSessionId: sessionId,
+            status: 'done',
+            metadata: { reviewMode: 'worktree-diff', scope: parsed.scope, paths: parsed.paths }
+        };
+        this.state.setSessionsFocused(false);
+        this.state.setTasksFocused(false);
+        this.state.setJobsFocused(false);
+        this.state.setToolsFocused(false);
+        this.state.setApprovalsFocused(false);
+        this.state.setMessagesFocused(false);
+        this.state.closeMessageDetail();
+        this.state.openReview(reviewTask, { diff: String(review?.diff || '') || null });
+        this.state.setNotice('');
+        this.state.setLastError('');
+        this.notify(`${label} diff: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
+        return true;
+    }
+
+    protected parseWorktreeDiffArgs(args?: string): {
+        scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked';
+        paths: string[];
+        error?: string;
+    } {
+        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const flags = tokens.filter(token => token === '--staged' || token === '--unstaged' || token === '--untracked');
+        if (flags.length > 1) {
+            return { scope: 'working-tree', paths: [], error: 'Use only one of --staged, --unstaged, or --untracked.' };
+        }
+        const unknownFlag = tokens.find(token => token.startsWith('--') && !flags.some(flag => flag === token));
+        if (unknownFlag) {
+            return { scope: 'working-tree', paths: [], error: `Unknown /diff option: ${unknownFlag}` };
+        }
+        const scope = flags[0] ? flags[0].slice(2) as 'staged' | 'unstaged' | 'untracked' : 'working-tree';
+        return { scope, paths: tokens.filter(token => !token.startsWith('--')) };
+    }
+
+    protected describeWorktreeDiffScope(scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked'): string {
+        return scope === 'working-tree' ? 'Working tree' : scope[0].toUpperCase() + scope.slice(1);
+    }
+
     protected async runGitDiffReviewAnalysis(base?: string): Promise<boolean> {
         if (!this.appRpc) {
             this.notify('Review is unavailable without app RPC.');
@@ -3925,6 +3998,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/threadplan', value: '/threadplan', description: 'thread plan todos' },
                     { label: '/threadreview', value: '/threadreview', description: 'thread coding task review' },
                     { label: '/review', value: '/review', description: 'coding task review' },
+                    { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
                     { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
@@ -4181,6 +4255,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 return this.openCodingTaskReviewSelector();
+            case '/diff':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openWorktreeDiff(parsed.args);
             case '/retry':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();

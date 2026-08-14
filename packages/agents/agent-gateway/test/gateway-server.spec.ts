@@ -5741,6 +5741,8 @@ export class AppRpcServerTest {
             async invoke(name: string, input: any, sessionId: string, principalId: string, workdir: string) {
                 expect(name).toEqual('review_diff');
                 expect(input.base).toEqual('HEAD');
+                expect(input.scope).toEqual('staged');
+                expect(input.paths).toEqual(['src/a.ts']);
                 expect(typeof input.workdir).toEqual('string');
                 expect(input.workdir.length).toBeGreaterThan(0);
                 expect(sessionId).toEqual('rev-s1');
@@ -5764,7 +5766,7 @@ export class AppRpcServerTest {
             jsonrpc: '2.0',
             id: 1,
             method: 'review.diff',
-            params: { sessionId: 'rev-s1', base: 'HEAD' }
+            params: { sessionId: 'rev-s1', base: 'HEAD', scope: 'staged', paths: ['src/a.ts'] }
         }, { principalId: 'user-1' });
         expect((diffResponse as any).result.sessionId).toEqual('rev-s1');
         expect((diffResponse as any).result.review.files).toEqual(['src/a.ts']);

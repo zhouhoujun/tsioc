@@ -3904,6 +3904,37 @@ export class AgentToolsPackageTest {
         expect(result.diff).not.toContain('file-b.txt');
     }
 
+    @Test('review diff separates staged, unstaged, and untracked changes')
+    async reviewDiffSeparatesWorktreeScopes() {
+        const repo = await createTempGitRepo();
+        await fs.writeFile(path.join(repo, 'file-b.txt'), 'staged change\n');
+        execFileSync('git', ['add', 'file-b.txt'], { cwd: repo });
+        await fs.writeFile(path.join(repo, 'new-file.txt'), 'untracked change\n');
+        const tool = new ReviewDiffTool({ file: { rootDir: repo } } as any);
+
+        const staged = await tool.invoke({ scope: 'staged' }, createSessionContext());
+        expect(staged.files).toEqual(['file-b.txt']);
+        expect(staged.diff).toContain('file-b.txt');
+        expect(staged.scope).toEqual('staged');
+
+        const unstaged = await tool.invoke({ scope: 'unstaged' }, createSessionContext());
+        expect(unstaged.files).toEqual(['file-a.txt']);
+        expect(unstaged.diff).not.toContain('new-file.txt');
+
+        const untracked = await tool.invoke({ scope: 'untracked' }, createSessionContext());
+        expect(untracked.files).toEqual(['new-file.txt']);
+        expect(untracked.diff).toContain('new-file.txt');
+
+        const worktree = await tool.invoke({}, createSessionContext());
+        expect(worktree.files).toContain('file-a.txt');
+        expect(worktree.files).toContain('file-b.txt');
+        expect(worktree.files).toContain('new-file.txt');
+
+        const truncated = await tool.invoke({ maxDiffChars: 24 }, createSessionContext());
+        expect(truncated.diff.length).toEqual(24);
+        expect(truncated.diffTruncated).toEqual(true);
+    }
+
     @Test('review diff rejects a non-git workdir')
     async reviewDiffRejectsNonGitWorkdir() {
         const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-review-'));

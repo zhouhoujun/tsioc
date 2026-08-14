@@ -3190,7 +3190,17 @@ export class AgentConsoleComponentTest {
     async submitKeepsDraftIntactWhileTurnRunning() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
-        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        const { component } = createConsoleParts(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', queueMode: false } }
+        );
 
         component.sessionState.setStatus('running');
         component.input = 'hello again';
@@ -4506,6 +4516,40 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewTask?.metadata?.reviewMode).toEqual('git-diff');
         expect(component.notice).toContain('1 file changed');
         await pending;
+    }
+
+    @Test('diff command opens the shared review panel with scope and path filters')
+    async worktreeDiffCommandOpensReviewPanel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.reviewDiffResult = {
+            scope: 'staged',
+            files: ['src/a.ts'],
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        await (component as any).handleCommand('/diff --staged src/a.ts');
+
+        const diffCall = appRpc.calls.find(call => call.method === 'review.diff');
+        expect(diffCall?.params).toEqual({ sessionId: 'console', scope: 'staged', paths: ['src/a.ts'] });
+        expect(component.sessionState.reviewOpen).toEqual(true);
+        expect(component.sessionState.reviewTask?.metadata?.reviewMode).toEqual('worktree-diff');
+        expect(component.sessionState.reviewTask?.metadata?.scope).toEqual('staged');
+        expect(component.sessionState.selectedReviewFileSection?.path).toEqual('src/a.ts');
+        expect(component.notice).toContain('Staged diff: 1 file changed');
+    }
+
+    @Test('diff command rejects conflicting worktree scope flags')
+    async worktreeDiffCommandRejectsConflictingFlags() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, new AppRpcStub());
+        await component.onInit();
+
+        await (component as any).handleCommand('/diff --staged --unstaged');
+
+        expect(component.notice).toContain('Use only one');
     }
 
     @Test('review run command runs analysis and saves findings')

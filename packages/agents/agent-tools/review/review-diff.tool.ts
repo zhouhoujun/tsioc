@@ -14,6 +14,7 @@ const MAX_OUTPUT_CHARS = 64000;
 export interface ReviewDiffResult {
     readOnly: boolean;
     base: string;
+    scope: ReviewDiffScope;
     range?: string;
     workdir: string;
     commitSha: string | null;
@@ -25,6 +26,8 @@ export interface ReviewDiffResult {
     exitCode?: number;
     stderr?: string;
 }
+
+export type ReviewDiffScope = 'working-tree' | 'staged' | 'unstaged' | 'untracked';
 
 /**
  * P80: read-only inline review support. Gathers the current git diff
@@ -51,6 +54,11 @@ export class ReviewDiffTool implements AgentTool {
                 type: 'array',
                 items: { type: 'string' },
                 description: 'Restrict the review to these files / directories.'
+            },
+            scope: {
+                type: 'string',
+                enum: ['working-tree', 'staged', 'unstaged', 'untracked'],
+                description: 'Working-tree portion to show (default: working-tree, including untracked files).'
             },
             includeStats: {
                 type: 'boolean',
@@ -87,30 +95,45 @@ export class ReviewDiffTool implements AgentTool {
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
         const base = this.resolveBase(input?.base, input?.range);
+        const scope = this.resolveScope(input?.scope);
         const paths = this.resolvePaths(input?.paths);
         const includeStats = input?.includeStats !== false;
         const maxDiffChars = this.resolveMaxDiffChars(input?.maxDiffChars);
 
-        const files = this.runGit(['diff', '--no-color', '--name-only', base, '--', ...paths], workdir).stdout
-            .split('\n')
-            .map(line => line.trim())
-            .filter(Boolean);
+        const diffArgs = this.buildDiffArgs(scope, base, paths);
+        const trackedFiles = scope === 'untracked'
+            ? []
+            : this.parseLines(this.runGit([...diffArgs.slice(0, 2), '--name-only', ...diffArgs.slice(2)], workdir).stdout);
+        const untrackedFiles = scope === 'working-tree' || scope === 'untracked'
+            ? this.listUntrackedFiles(workdir, paths)
+            : [];
+        const files = Array.from(new Set([...trackedFiles, ...untrackedFiles]));
 
-        const diffResult = this.runGit(['diff', '--no-color', base, '--', ...paths], workdir);
-        const diff = diffResult.stdout;
-        const diffTruncated = diffResult.stdout.length >= maxDiffChars || diff.length > MAX_OUTPUT_CHARS;
+        const trackedDiffResult = scope === 'untracked'
+            ? { stdout: '', stderr: '', exitCode: 0 }
+            : this.runGit(diffArgs, workdir);
+        const untrackedDiffResults = untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--', '/dev/null', path], workdir));
+        const rawDiff = [trackedDiffResult.stdout, ...untrackedDiffResults.map(result => result.stdout)].filter(Boolean).join('');
+        const diffLimit = Math.min(maxDiffChars, MAX_OUTPUT_CHARS);
+        const diff = rawDiff.slice(0, diffLimit);
+        const diffTruncated = rawDiff.length > diff.length;
 
-        const statsResult = includeStats
-            ? this.runGit(['diff', '--no-color', '--stat', base, '--', ...paths], workdir)
+        const trackedStatsResult = includeStats && scope !== 'untracked'
+            ? this.runGit([...diffArgs.slice(0, 2), '--stat', ...diffArgs.slice(2)], workdir)
             : null;
-        const stats = statsResult?.stdout ?? '';
-        const statsTruncated = !!statsResult && statsResult.stdout.length >= MAX_OUTPUT_CHARS;
+        const untrackedStatsResults = includeStats
+            ? untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--stat', '--', '/dev/null', path], workdir))
+            : [];
+        const rawStats = [trackedStatsResult?.stdout, ...untrackedStatsResults.map(result => result.stdout)].filter(Boolean).join('');
+        const stats = rawStats.slice(0, MAX_OUTPUT_CHARS);
+        const statsTruncated = rawStats.length > stats.length;
 
         const commitSha = this.resolveCommitSha(base, workdir);
 
         return {
             readOnly: true,
             base,
+            scope,
             range: typeof input?.range === 'string' && input.range.trim() ? input.range.trim() : undefined,
             workdir,
             commitSha,
@@ -119,9 +142,30 @@ export class ReviewDiffTool implements AgentTool {
             diffTruncated,
             stats,
             statsTruncated,
-            exitCode: diffResult.exitCode,
-            stderr: diffResult.stderr || undefined
+            exitCode: trackedDiffResult.exitCode,
+            stderr: [trackedDiffResult.stderr, ...untrackedDiffResults.map(result => result.stderr)].filter(Boolean).join('\n') || undefined
         };
+    }
+
+    private resolveScope(value: unknown): ReviewDiffScope {
+        const scope = typeof value === 'string' ? value.trim() : '';
+        if (!scope || scope === 'working-tree') return 'working-tree';
+        if (scope === 'staged' || scope === 'unstaged' || scope === 'untracked') return scope;
+        throw new Error(`Unsupported review diff scope '${scope}'.`);
+    }
+
+    private buildDiffArgs(scope: ReviewDiffScope, base: string, paths: string[]): string[] {
+        if (scope === 'staged') return ['diff', '--no-color', '--cached', base, '--', ...paths];
+        if (scope === 'unstaged') return ['diff', '--no-color', '--', ...paths];
+        return ['diff', '--no-color', base, '--', ...paths];
+    }
+
+    private listUntrackedFiles(workdir: string, paths: string[]): string[] {
+        return this.parseLines(this.runGit(['ls-files', '--others', '--exclude-standard', '--', ...paths], workdir).stdout);
+    }
+
+    private parseLines(value: string): string[] {
+        return value.split('\n').map(line => line.trim()).filter(Boolean);
     }
 
     private resolveBase(base: unknown, range: unknown): string {
