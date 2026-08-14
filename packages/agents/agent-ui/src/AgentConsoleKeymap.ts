@@ -13,11 +13,12 @@ export type AgentConsoleGlobalAction =
     | 'archetypes'
     | 'status'
     | 'copy'
+    | 'interrupt-turn'
     | 'command-palette';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
-    'theme', 'model', 'archetypes', 'status', 'copy', 'command-palette'
+    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette'
 ];
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -32,6 +33,7 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x a': 'archetypes',
     'ctrl+x s': 'status',
     'ctrl+x y': 'copy',
+    escape: 'interrupt-turn',
     'ctrl+p': 'command-palette'
 };
 

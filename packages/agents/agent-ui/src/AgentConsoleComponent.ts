@@ -28,6 +28,10 @@ import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessi
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
+interface AgentConsoleQueuedPrompt {
+    input: string;
+    attachments: AgentConsolePendingAttachment[];
+}
 @Component({
     selector: 'agent-console',
     template: `
@@ -85,6 +89,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
     protected commandPaletteQuery = '';
+    protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
+    protected drainingQueuedSessions = new Set<string>();
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -140,6 +146,46 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected isTurnInProgress(): boolean {
         return this.state.status === 'running' || this.state.status === 'reasoning';
+    }
+
+    protected isQueueModeEnabled(): boolean {
+        const mode = this.options.ui?.queueMode;
+        return mode !== false && mode !== 'off';
+    }
+
+    protected enqueuePrompt(input: string): void {
+        const sessionId = this.state.sessionId;
+        const queue = this.queuedPrompts.get(sessionId) || [];
+        queue.push({ input, attachments: this.state.pendingAttachments.slice() });
+        this.queuedPrompts.set(sessionId, queue);
+        this.state.setInput('');
+        this.state.clearPendingAttachments();
+        this.state.setQueuedPromptCount(queue.length);
+        this.notify(`Queued prompt (${queue.length}).`);
+    }
+
+    protected async drainQueuedPrompts(sessionId: string): Promise<void> {
+        if (this.destroyed || this.drainingQueuedSessions.has(sessionId) || this.state.sessionId !== sessionId) return;
+        this.drainingQueuedSessions.add(sessionId);
+        try {
+            const queue = this.queuedPrompts.get(sessionId) || [];
+            while (queue.length && this.state.sessionId === sessionId && !this.isTurnInProgress()) {
+                const next = queue.shift()!;
+                this.state.setQueuedPromptCount(queue.length);
+                this.state.setInput(next.input, next.input.length);
+                this.state.setPendingAttachments(next.attachments);
+                await this.submit();
+            }
+            if (!queue.length) this.queuedPrompts.delete(sessionId);
+        } finally {
+            this.drainingQueuedSessions.delete(sessionId);
+        }
+    }
+
+    protected async interruptTurn(): Promise<void> {
+        if (!this.isTurnInProgress()) return;
+        const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
+        this.notify(cancelled ? 'Cancelling current turn...' : 'No running turn to cancel.');
     }
 
     protected notify(message: string, duration?: number): void {
@@ -1937,6 +1983,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.openReviewRequestId++;
         this.taskViewContextVersion++;
             this.state.configure({ sessionId: target.id });
+            this.state.setQueuedPromptCount((this.queuedPrompts.get(target.id) || []).length);
             this.state.setMessagesFocused(false);
             this.state.setSessionsFocused(false);
             this.state.setProjectsFocused(false);
@@ -2409,6 +2456,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     configure(meta: AgentConsoleSessionMeta): this {
         this.state.configure(meta);
+        this.state.setQueuedPromptCount((this.queuedPrompts.get(this.state.sessionId) || []).length);
         return this;
     }
 
@@ -2817,6 +2865,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             modelProfile: typeof meta.modelProfile === 'string' ? meta.modelProfile : undefined,
             workspace: typeof meta.workspace === 'string' ? meta.workspace : undefined
         });
+        this.state.setQueuedPromptCount((this.queuedPrompts.get(this.state.sessionId) || []).length);
     }
 
     protected async restoreInputHistory(): Promise<void> {
@@ -4965,9 +5014,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setInput(value, value.length);
         }
         if (this.isTurnInProgress()) {
-            this.notifyBusyState();
+            if (this.isQueueModeEnabled()) this.enqueuePrompt(value);
+            else this.notifyBusyState();
             return;
         }
+        const turnSessionId = this.state.sessionId;
         this.state.pushInputHistory(value);
         await this.persistInputHistory();
         if (this.multilineMode) {
@@ -5019,6 +5070,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setTasksCount(this.scheduler.getTasks().length);
             void this.refreshTurnArtifacts();
             this.state.clearTurnEventScope(turnScope);
+            void this.drainQueuedPrompts(turnSessionId);
         }
     }
 
@@ -5945,6 +5997,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected decodeGlobalKey(raw: string): string {
+        if (raw === '\u001b') return 'escape';
         if (raw.length === 1) {
             const code = raw.charCodeAt(0);
             if (code >= 1 && code <= 26) return `ctrl+${String.fromCharCode(96 + code)}`;
@@ -5954,6 +6007,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
+        if (raw === '\u001b' && (this.state.selectMenu || this.state.isAnyFocusActive())) return false;
+        if (raw === '\u001b') {
+            const action = this.globalKeymap!.resolve('escape');
+            if (action === 'interrupt-turn') {
+                if (!this.isTurnInProgress()) return false;
+                await this.interruptTurn();
+                return true;
+            }
+            if (!action) return this.isTurnInProgress();
+            await this.executeGlobalKeyAction(action);
+            return true;
+        }
         const key = this.decodeGlobalKey(raw);
         if (!key) {
             if (raw === '\u001b') this.globalKeyPending = '';
@@ -5994,9 +6059,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             return false;
         }
-        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (this.state.selectMenu || this.state.isAnyFocusActive())) {
             this.globalKeyPending = '';
             return false;
+        }
+        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+            const action = this.globalKeymap!.resolve('escape');
+            if (action === 'interrupt-turn') {
+                if (!this.isTurnInProgress()) return false;
+                await this.interruptTurn();
+                return true;
+            }
+            if (!action) return this.isTurnInProgress();
+            await this.executeGlobalKeyAction(action);
+            return true;
         }
         if (!ctrlKey && key.length !== 1 && !this.globalKeyPending) return false;
         return this.handleGlobalKeySequence(normalizedKey);
@@ -6007,11 +6083,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.openCommandPalette();
             return;
         }
+        if (action === 'interrupt-turn') {
+            await this.interruptTurn();
+            return;
+        }
         if (action === 'theme') {
             this.notify('Theme selection is available through the configured UI theme.');
             return;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme'>, string> = {
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -6040,7 +6120,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async handleCommandPaletteInput(decoded: TerminalInputSequenceResult, raw: string): Promise<boolean> {
         if (!this.state.selectMenu?.title?.startsWith('Command palette')) return false;
-        if (decoded.controlKey === 'backspace' || raw === '\u007f' || raw === '\b') {
+        if ((decoded.controlKey as string | undefined) === 'backspace' || raw === '\u007f' || raw === '\b') {
             this.openCommandPalette(this.commandPaletteQuery.slice(0, -1));
             return true;
         }

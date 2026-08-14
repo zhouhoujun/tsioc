@@ -452,6 +452,7 @@ export class AgentConsoleSessionState {
     lastError = '';
     notice = '';
     pendingAttachments: AgentConsolePendingAttachment[] = [];
+    queuedPromptCount = 0;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
@@ -2478,6 +2479,10 @@ export class AgentConsoleSessionState {
     setMentionCatalog(catalog: AgentConsoleMentionCatalogItem[]): void {
         this.mentionCatalog = catalog.slice();
         this.refreshInputSuggestions();
+    }
+
+    setQueuedPromptCount(count: number): void {
+        this.queuedPromptCount = Math.max(0, Math.floor(Number(count) || 0));
     }
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {

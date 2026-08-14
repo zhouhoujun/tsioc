@@ -78,6 +78,7 @@ export interface AgentUIOptions {
     theme?: Record<string, any>;
     console?: Record<string, any>;
     keymap?: Record<string, string | null>;
+    queueMode?: boolean | 'on' | 'off';
 }
 
 export interface AgentBootstrapTurnOptions {

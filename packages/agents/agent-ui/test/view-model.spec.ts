@@ -9269,6 +9269,80 @@ export class AgentConsoleComponentTest {
         expect((component as any).globalKeymap.resolve('ctrl+g')).toEqual(undefined);
     }
 
+    @Test('busy enter queues prompts FIFO and drains them when the turn is idle')
+    async busyEnterQueuesAndDrainsPrompts() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        component.configure({ sessionId: 'queue-session' });
+        state.setStatus('running');
+
+        state.setInput('first queued');
+        await component.submit();
+        state.setInput('second queued');
+        await component.submit();
+
+        expect(runtime.calls).toEqual([]);
+        expect(state.queuedPromptCount).toEqual(2);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued prompt (2)');
+
+        state.setStatus('idle');
+        await (component as any).drainQueuedPrompts('queue-session');
+        expect(runtime.calls).toEqual(['queue-session:first queued', 'queue-session:second queued']);
+        expect(state.queuedPromptCount).toEqual(0);
+    }
+
+    @Test('queue mode can be disabled without clearing the busy draft')
+    async queueModeCanBeDisabled() {
+        const { state, component } = createConsoleParts(
+            new RuntimeStub(),
+            new SchedulerStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', queueMode: false } }
+        );
+        state.setStatus('running');
+        state.setInput('keep this draft');
+        await component.submit();
+        expect(state.queuedPromptCount).toEqual(0);
+        expect(state.input).toEqual('keep this draft');
+        expect(state.notice).toContain('Wait for the current turn');
+    }
+
+    @Test('escape interrupts a running turn before vim handling in tui and browser')
+    async escapeInterruptsRunningTurnAcrossHosts() {
+        const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        let cancellations = 0;
+        (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };
+        await component.onInit();
+        state.setVimMode(true);
+        state.setStatus('running');
+
+        await (component as any).handleTerminalInput({ text: '\u001b', partial: false }, '\u001b');
+        expect(cancellations).toEqual(1);
+        expect(state.inputMode).toEqual('insert');
+
+        const panel = new AgentConsoleInputPanelComponent(state);
+        await panel.onKeydown({ key: 'Escape', ctrlKey: false, metaKey: false, preventDefault() {} } as KeyboardEvent);
+        expect(cancellations).toEqual(2);
+    }
+
+    @Test('unsetting escape disables the configurable interrupt binding')
+    async unsettingEscapeDisablesInterrupt() {
+        const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        let cancellations = 0;
+        (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };
+        await component.onInit();
+        (component as any).globalKeymap.unset('escape');
+        state.setStatus('running');
+        await (component as any).handleTerminalInput({ text: '\u001b', partial: false }, '\u001b');
+        expect(cancellations).toEqual(0);
+    }
+
     @Test('terminal input intercepts vim normal mode keys before insertion')
     async terminalInputInterceptsVimNormalMode() {
         const runtime = new RuntimeStub();
