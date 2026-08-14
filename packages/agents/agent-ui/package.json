@@ -37,10 +37,14 @@
     "buffer": "^6.0.3"
   },
   "peerDependencies": {
-    "@tsdi/agent-ssh": "6.0.31"
+    "@tsdi/agent-ssh": "6.0.31",
+    "@tsdi/agent-tools": "6.0.31"
   },
   "peerDependenciesMeta": {
     "@tsdi/agent-ssh": {
+      "optional": true
+    },
+    "@tsdi/agent-tools": {
       "optional": true
     }
   },

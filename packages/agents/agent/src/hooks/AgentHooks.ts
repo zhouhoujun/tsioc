@@ -148,6 +148,14 @@ export class AgentHookManager {
         return this.normalizeStageHooks(stage).length > 0 || this.normalizeFunctionStageHooks(stage).length > 0;
     }
 
+    describe(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
+        return this.stages().map(stage => ({
+            stage,
+            commands: this.normalizeStageHooks(stage).map(hook => hook.command),
+            functions: this.normalizeFunctionStageHooks(stage).map(hook => hook.name ?? 'function')
+        }));
+    }
+
     async run(stage: AgentLifecycleHookStage, context: AgentHookContext): Promise<AgentHookRunOutput> {
         const entries: AgentHookTranscriptEntry[] = [];
         const results: AgentHookExecutionResult[] = [];

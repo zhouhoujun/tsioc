@@ -164,6 +164,7 @@ export class AppRpcServer {
                         'session.redo_file',
                         'session.set_title',
                         'session.set_pinned',
+                        'session.set_archived',
                         'session.section.list',
                         'session.section.create',
                         'session.section.rename',
@@ -253,7 +254,7 @@ export class AppRpcServer {
             case 'session.fork':
                 return this.forkSession(params, context);
             case 'session.list':
-                return this.listSessions(context);
+                return this.listSessions(params, context);
             case 'session.list_projects':
                 return this.listSessionProjects(context);
             case 'session.list_threads':
@@ -290,6 +291,8 @@ export class AppRpcServer {
                 return this.setSessionTitle(params, context);
             case 'session.set_pinned':
                 return this.setSessionPinned(params, context);
+            case 'session.set_archived':
+                return this.setSessionArchived(params, context);
             case 'session.section.list':
                 return this.listSessionSections(params, context);
             case 'session.section.create':
@@ -563,8 +566,8 @@ export class AppRpcServer {
         return { workspace, entries };
     }
 
-    private async listSessions(context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.listSessionInfos(context.principalId);
+    private async listSessions(params: any, context: AppRpcRequestContext): Promise<any[]> {
+        return this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true);
     }
 
     private async listSessionProjects(context: AppRpcRequestContext): Promise<any[]> {
@@ -701,6 +704,14 @@ export class AppRpcServer {
         const pinned = !!params?.pinned;
         await this.sessions.setPinned(sessionId, pinned);
         return { updated: true, sessionId, pinned };
+    }
+
+    private async setSessionArchived(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const archived = !!params?.archived;
+        await this.sessions.setArchived(sessionId, archived);
+        return { updated: true, sessionId, archived };
     }
 
     private async createSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {

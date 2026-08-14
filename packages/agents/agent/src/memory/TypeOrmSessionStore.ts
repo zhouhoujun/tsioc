@@ -29,6 +29,7 @@ export class TypeOrmSessionStore extends SessionStore {
             summary: session.summary ?? undefined,
             title: session.title ?? undefined,
             pinned: !!session.pinned,
+            archived: !!session.archived,
             ownerPrincipalId: session.ownerPrincipalId ?? undefined,
             workspace: session.workspace ?? undefined,
             projectId: session.projectId ?? undefined,
@@ -298,6 +299,19 @@ export class TypeOrmSessionStore extends SessionStore {
             session = repo.create({ sessionId, pinned: !!pinned, createdAt: now, updatedAt: now });
         } else {
             session.pinned = !!pinned;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
+    async setArchived(sessionId: string, archived: boolean): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        if (!session) {
+            session = repo.create({ sessionId, archived: !!archived, createdAt: now, updatedAt: now });
+        } else {
+            session.archived = !!archived;
             session.updatedAt = now;
         }
         await repo.save(session);

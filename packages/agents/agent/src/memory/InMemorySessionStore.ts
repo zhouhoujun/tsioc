@@ -31,6 +31,7 @@ export class InMemorySessionStore extends SessionStore {
             summary: state.summary,
             title: state.title,
             pinned: state.pinned,
+            archived: state.archived,
             ownerPrincipalId: state.ownerPrincipalId,
             workspace: state.workspace,
             projectId: state.projectId,
@@ -235,6 +236,14 @@ export class InMemorySessionStore extends SessionStore {
     async setPinned(sessionId: string, pinned: boolean): Promise<void> {
         const state = await this.get(sessionId);
         state.pinned = !!pinned;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setArchived(sessionId: string, archived: boolean): Promise<void> {
+        const state = await this.get(sessionId);
+        state.archived = !!archived;
         state.updatedAt = Date.now();
         state.createdAt ??= state.updatedAt;
         this.sessions.set(sessionId, state);

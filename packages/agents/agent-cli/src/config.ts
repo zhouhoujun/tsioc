@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { AgentHooksOptions, AgentProviderRegistry, defaultAgentProviderRegistry, resolveAgentWorkspacePath } from '@tsdi/agent';
+import { AgentTuiResolvedConfig, mergeAgentTuiConfig } from '@tsdi/agent-ui';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, McpOAuthCredentialStore, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 import { SshOptions } from '@tsdi/agent-ssh';
@@ -80,6 +81,12 @@ export interface AgentCliOptions {
     workspace?: string;
     stream?: boolean;
     outputLastMessage?: boolean;
+    tuiTheme?: string;
+    tuiKeybinds?: Record<string, string | null>;
+    tuiScrollSpeed?: string;
+    tuiMouse?: boolean;
+    tuiAttentionSound?: boolean;
+    tuiLeaderTimeout?: string;
 }
 
 export interface AgentCliResolvedConfig {
@@ -95,6 +102,7 @@ export interface AgentCliResolvedConfig {
     hooks?: AgentHooksOptions;
     harnessProfile?: string;
     ssh?: SshOptions;
+    tui?: AgentTuiResolvedConfig;
 }
 
 export const AGENT_HOOKS_FILE = 'hooks.json';
@@ -430,8 +438,7 @@ export function listSavedModelProfiles(profile?: Partial<AgentCliProviderProfile
         .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'workspace'): string {
-    const resolvedRoot = path.resolve(root);
+export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'workspace'): string {    const resolvedRoot = path.resolve(root);
     const settingsPath = path.join(resolvedRoot, 'settings.json');
     const current = readJsonObject(settingsPath);
     const next = {
@@ -439,6 +446,57 @@ export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'wor
         workspace: current.workspace || workspaceDirName
     };
     return writeJsonObject(settingsPath, next);
+}
+
+export function resolveCliTuiConfigFile(root?: string): Record<string, any> {
+    if (!root) {
+        return {};
+    }
+    try {
+        const filePath = path.join(root, 'tui.json');
+        if (!fs.existsSync(filePath)) {
+            return {};
+        }
+        const parsed = readJsonObject(filePath);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function parseEnvKeybinds(value?: string): Record<string, string | null> | undefined {
+    if (!value) {
+        return undefined;
+    }
+    try {
+        const parsed = JSON.parse(value) as Record<string, unknown>;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? (parsed as Record<string, string | null>)
+            : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+export function resolveCliTuiConfig(options: AgentCliOptions, root?: string): AgentTuiResolvedConfig {
+    const file = resolveCliTuiConfigFile(root);
+    const envKeybinds = parseEnvKeybinds(process.env.TSDI_AGENT_TUI_KEYBINDS);
+    const envLayer: Record<string, any> = {};
+    if (process.env.TSDI_AGENT_TUI_THEME) envLayer.theme = process.env.TSDI_AGENT_TUI_THEME;
+    if (process.env.TSDI_AGENT_TUI_SCROLL_SPEED) envLayer.scrollSpeed = parseInt(process.env.TSDI_AGENT_TUI_SCROLL_SPEED, 10);
+    if (process.env.TSDI_AGENT_TUI_MOUSE) envLayer.mouse = process.env.TSDI_AGENT_TUI_MOUSE === '1' || process.env.TSDI_AGENT_TUI_MOUSE === 'true';
+    if (process.env.TSDI_AGENT_TUI_ATTENTION_SOUND) envLayer.attentionSound = process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === '1' || process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === 'true';
+    if (process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT) envLayer.leaderTimeout = parseInt(process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT, 10);
+    if (envKeybinds) {
+        envLayer.keybinds = envKeybinds;
+    }    const cliLayer: Record<string, any> = {};
+    if (options.tuiTheme) cliLayer.theme = options.tuiTheme;
+    if (options.tuiKeybinds) cliLayer.keybinds = options.tuiKeybinds;
+    if (options.tuiScrollSpeed) cliLayer.scrollSpeed = parseInt(options.tuiScrollSpeed, 10);
+    if (typeof options.tuiMouse === 'boolean') cliLayer.mouse = options.tuiMouse;
+    if (typeof options.tuiAttentionSound === 'boolean') cliLayer.attentionSound = options.tuiAttentionSound;
+    if (options.tuiLeaderTimeout) cliLayer.leaderTimeout = parseInt(options.tuiLeaderTimeout, 10);
+    return mergeAgentTuiConfig(file, envLayer, cliLayer);
 }
 
 export function resolveCliModelConfig(options: AgentCliOptions, root?: string): AgentCliProviderProfile {
@@ -573,6 +631,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         settingsModel,
         hooks,
         harnessProfile: settings.harness?.profile,
+        tui: resolveCliTuiConfig(options, resolved.root),
         ...(settings.ssh ? { ssh: settings.ssh } : {})
     };
 }

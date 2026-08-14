@@ -2,7 +2,7 @@ import { TuiConsoleModule } from '@tsdi/components/console';
 import { AgentHookCommandExecutor, mergeAgentOptions } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
-import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
+import { AgentConsoleComponent, AgentUiConfigService, runAgentUi, agentConsoleThemes, isAgentConsoleThemeName } from '@tsdi/agent-ui';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { provideAgentOrmStorage } from '@tsdi/agent';
@@ -37,6 +37,7 @@ function resolveExplicitChatSessionId(options: AgentCliOptions = {}, agentOption
 function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCliOptions, agentOptions: any = {}): any {
     const resolved = config.resolve(options);
     const modelConfig = resolved.model;
+    const tui = resolved.tui;
     const sessionId = resolveExplicitChatSessionId(options, agentOptions);
     const merged = mergeAgentOptions({
         ...agentOptions,
@@ -66,6 +67,9 @@ function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCl
         },
         ui: {
             ...(agentOptions?.ui || {}),
+            theme: (tui?.theme && isAgentConsoleThemeName(tui.theme) ? agentConsoleThemes[tui.theme] : undefined)
+                ?? agentOptions?.ui?.theme,
+            keymap: tui?.keybinds ?? agentOptions?.ui?.keymap,
             console: {
                 ...(agentOptions?.ui?.console || {}),
                 workspace: agentOptions?.ui?.console?.workspace || resolved.workspace

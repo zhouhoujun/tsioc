@@ -130,11 +130,18 @@
 - **P122 · `/diff` 工作树视图（G45）**：新增 `/diff [--staged|--unstaged|--untracked|paths]`，默认聚合 staged、unstaged 与 untracked；`review_diff` 只读工具新增 scope 与路径过滤，untracked 文件合成 unified patch，gateway 透传同一契约。结果复用 review 面板的文件/hunk 导航、折叠与 side-by-side 渲染；当前无跨 TUI/Web/IDE 共用的宿主文件打开桥，外部编辑器跳转并入 P126 `/ide`，不在组件层调用平台 API。锚点：`agent-tools/review/review-diff.tool.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P123 · `/theme` 主题命令（G46）**：内置 dark/light/solarized/high-contrast 四套完整语义 token 主题；`/theme` 打开带当前项标记的选择器，`/theme <name>` 即时应用，`Ctrl+X T` 复用同一入口。选中名称通过 `FileAdapter` 保存到 workspace `.tsdi-agent/theme.json`，启动时恢复；自定义 `ui.theme` 仍作为未保存 preset 时的初始主题。锚点：`agent-ui/src/AgentConsoleTheme.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/agent-ui.module.ts`。
 
+### TUI 交互专项（G47–G50 批次，2026-08-14）
+
+- **P124 · 会话生命周期命令（G47）**：`/resume`（复用 `/sessions` 数据源做模糊选择器恢复，修复网关挂起超时）、`/archive`（归档标记 + `/sessions` 过滤 + 转录保留本地）、`/fork [messageId]`（映射 P77 `session.fork` RPC，UI 确认新建分支会话）、`/side`（临时 fork，父线程状态保持可见）。网关新增 `session.set_archived` RPC（owner 校验，`-32003` 拒绝跨 owner），`SessionStore.fork()` 归档泄漏 bug 修复（新 fork 显式 `setArchived(false)`）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent/src/session/SessionStore.ts`。
+- **P125 · `/statusline` 可配置状态栏（G48）**：status panel 字段化——`ui.statusline` 配置项序列（model/context/git-branch/tokens/session/workspace/agent），`/statusline [list|set|unset]` 交互配置并持久化；`AgentConsoleStatuslineStore` 经 `FileAdapter` 存 workspace `.tsdi-agent/statusline.json`，`AgentConsoleComponent` 构造追加注入（构造参数位置 22）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsoleStatuslineStore.ts`、`agent-ui/src/AgentConsolePanels.ts`。
+- **P126 · 命令簇补齐（G49）**：`/hooks`（运行时 `getHookSummary()` = `hookManager.describe()` 列出已注册 hook 阶段与函数/命令形态；网关无 RPC 时回退 runtime）、`/memories`（注入开关 `ui.memoryInjection: boolean`，同时门控 relevant memory 与 experience memory）、`/fast`（`/model fast|strong` 快捷切换，复用 `activateModelProfile`）、`/personality`（预设 tone 配置 `AGENT_PERSONALITY_PRESETS` concise/explanatory/professional/friendly/terse，注入 system prompt `## Personality`）、`/debug-config`（配置层诊断输出）、`/experimental`（特性开关 registry，`ui.experimental`）、`/feedback`（诊断打包提示）、`/ide`（经 `AGENT_IDE_BRIDGE` 桥拉取打开文件/选区入 prompt——agent-vscode `AgentConsolePanel` post IDE context，webview 消息类型 `tsdiAgent.ideContext`）、`/ps`（后台任务状态 + stop，复用可选 peer dep `@tsdi/agent-tools` `BackgroundTaskManager`）。命令入口 9 条全部注册进 `/help` 菜单与 `commandHints`。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentIdeBridge.ts`、`agent/src/hooks/`、`agent-vscode/src/AgentConsolePanel.ts`。
+- **P127 · TUI 独立配置层（G50）**：新增 `agent-ui` `tui.json` 配置（theme/keybinds/scroll_speed/mouse/attention sound/leader_timeout，schema 化 `AgentTuiConfig` + `defaultAgentTuiConfig` + `mergeAgentTuiConfig`），`AgentUiConfigReader` 抽象 `resolveTuiConfig`，合并优先级 CLI > env（`TSDI_AGENT_TUI_*`）> tui.json > 默认；agent-cli `resolveCliTuiConfig` 落盘读 root `tui.json` 并把 `resolved.tui` 映射进 `buildConsoleAgentOptions`（theme 名解析为 `agentConsoleThemes` 对象、keybinds → `ui.keymap`）。锚点：`agent-ui/src/AgentTuiConfig.ts`、`agent-ui/src/AgentUiConfigReader.ts`、`agent-cli/src/config.ts`、`agent-cli/src/run-console.ts`。
+
 ## 差距分析 v4（vs Codex / opencode，2026-08-13 深挖）
 
 ### 结论
 
-G1–G46 全部闭环（P67–P123，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口。TUI 专项已完成 G41–G46，后续从 G47/P124 继续。
+G1–G50 全部闭环（P67–P127，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口；TUI 专项 G41–G50 全部完成（P118–P127），TUI 专项计划完结。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -188,15 +195,7 @@ G1–G46 全部闭环（P67–P123，明细见「已实现功能」与「已完�
 > 约定：`Pnn-前缀` 对应差距编号（G34–G40 协议/安全/迁移维度；G41–G50 TUI 专项维度）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
 > P105–P110 批次已全部落地并入「已实现功能」；本批次为 2026-08-13 对照最新 codex v0.147 / opencode v1.18 的新差距，按优先级排期如下：
 >
-> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41–G46（P118 手动压缩 / P119 `!` shell 执行 / P120 全局键位 / P121 Esc+queue / P122 工作树 diff / P123 主题命令）已落地并入「已实现功能」，G47–G50 按 P124+ 排期。**
-
-
-### TUI 专项批次（G41–G50）
-
-- **P124 · 会话生命周期命令（G47）**：`/resume`（复用 `/sessions` 数据源做模糊选择器恢复）、`/archive`（归档标记 + `/sessions` 过滤 + 转录保留本地）、`/fork [messageId]`（映射 P77 `session.fork` RPC，UI 确认新建分支会话）、`/side`（临时 fork，父线程状态保持可见）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent/src/session/SessionStore.ts`。
-- **P125 · `/statusline` 可配置状态栏（G48）**：status panel 字段化——`ui.statusline` 配置项序列（model/context/git-branch/tokens/session/workspace/agent），`/statusline [list|set|unset]` 交互配置并持久化。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsolePanels.ts`。
-- **P126 · 命令簇补齐（G49）**：`/hooks`（列出已注册 hook 阶段与函数/命令形态，复用 agent hooks 事件面）、`/memories`（注入开关 `ui.memoryInjection: boolean`）、`/fast`（`/model fast|strong` 快捷切换，复用 profile 概念）、`/personality`（预设 tone 配置）、`/debug-config`（配置层诊断输出）、`/experimental`（特性开关 registry）、`/feedback`（诊断打包提示）、`/ide`（经 agent-vscode 桥拉取打开文件/选区入 prompt）、`/ps`（后台任务状态 + stop，复用 `BackgroundTaskManager`）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-tools/src/background-task-manager.ts`、`agent/src/hooks/`。
-- **P127 · TUI 独立配置层（G50）**：新增 `agent-ui tui.json` 配置（theme/keybinds/scroll_speed/mouse/attention sound/leader_timeout，schema 化），`AgentUiConfigReader` 合并优先级 CLI > env > tui.json > 默认；桌面壳/Web/IDE 复用同一读取路径。锚点：`agent-ui/src/AgentUiConfigReader.ts`、`agent-ui/src/agent-ui-config.ts`。
+> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41–G50（P118–P127）已全部落地并入「已实现功能」，本计划所有差距已闭环。**
 
 ## 剩余（远期，未排期）
 
@@ -348,3 +347,15 @@ P122（G45）已落地：`review_diff` 支持 working-tree/staged/unstaged/untra
 ### P123 `/theme` 主题命令（2026-08-14）
 
 P123（G46）已落地：新增 dark/light/solarized/high-contrast 四套完整语义主题，`/theme` preset 选择器、`/theme <name>` 即时切换和 `Ctrl+X T` 快捷入口共用同一命令路径；主题名通过 `FileAdapter` 按 workspace 保存至 `.tsdi-agent/theme.json` 并在启动时恢复，原有自定义 `ui.theme` 保持兼容。回归：agent-ui 436 passing，`npm run build` 与 `tsc --noEmit` clean。G46 已闭环，下一项为 P124（会话生命周期命令）。
+
+### P124–P127 TUI 专项收尾（G47–G50，2026-08-14）
+
+P124（G47）会话生命周期命令已落地：`/resume`（复用 `/sessions` 数据源做模糊选择器恢复，修复网关挂起超时）、`/archive`（归档标记 + `/sessions` 过滤 + 转录保留本地）、`/fork [messageId]`（映射 P77 `session.fork` RPC，UI 确认新建分支会话）、`/side`（临时 fork，父线程状态保持可见）。网关新增 `session.set_archived` RPC（owner 校验，`-32003` 拒绝跨 owner），`SessionStore.fork()` 归档泄漏 bug 修复（新 fork 显式 `setArchived(false)`）。回归：agent 735 / agent-gateway 230 / agent-ui 472，共 1437 passing；三包 tsc clean。
+
+P125（G48）`/statusline` 可配置状态栏已落地：status panel 字段化——`ui.statusline` 配置项序列（model/context/git-branch/tokens/session/workspace/agent），`/statusline [list|set|unset]` 交互配置并持久化；`AgentConsoleStatuslineStore` 经 `FileAdapter` 存 workspace `.tsdi-agent/statusline.json`。回归：agent-ui 472 passing。
+
+P126（G49）命令簇补齐已落地：`/hooks`（运行时 `getHookSummary()` = `hookManager.describe()`；网关无 RPC 时回退 runtime）、`/memories`（注入开关 `ui.memoryInjection`，同时门控 relevant memory 与 experience memory）、`/fast`（`/model fast|strong` 快捷切换，复用 `activateModelProfile`）、`/personality`（预设 tone `AGENT_PERSONALITY_PRESETS` concise/explanatory/professional/friendly/terse，注入 system prompt `## Personality`）、`/debug-config`、`/experimental`（`ui.experimental`）、`/feedback`、`/ide`（`AGENT_IDE_BRIDGE` 桥——agent-vscode `AgentConsolePanel` post IDE context，webview 消息类型 `tsdiAgent.ideContext`）、`/ps`（复用可选 peer dep `@tsdi/agent-tools` `BackgroundTaskManager`）。9 条命令全部注册进 `/help` 菜单与 `commandHints`。回归：agent-ui 472 passing（含 `p126-commands.spec.ts` 17 例）；agent-vscode 7 passing，`npm run build` clean（联动 agent-ui build:web）。
+
+P127（G50）TUI 独立配置层已落地：`agent-ui` `tui.json` 配置 schema 化（`AgentTuiConfig`/`defaultAgentTuiConfig`/`mergeAgentTuiConfig`），`AgentUiConfigReader` 抽象 `resolveTuiConfig`，合并优先级 CLI > env（`TSDI_AGENT_TUI_*`）> tui.json > 默认；agent-cli `resolveCliTuiConfig` 落盘读 root `tui.json` 并把 `resolved.tui` 映射进 `buildConsoleAgentOptions`（theme 名解析为 `agentConsoleThemes` 对象、keybinds → `ui.keymap`）。回归：agent-ui 478 / agent-cli 66 passing（新增 `tui-config.spec.ts` 6 例 + cli.spec 5 例），两包 tsc clean。
+
+P124–P127 收尾全量回归：十包 tsc clean（agent / agent-gateway / agent-ui / agent-cli / agent-vscode / agent-tools / agent-channels / agent-providers / agent-ssh / agent-desktop）；全量测试 agent 735 / agent-gateway 230 / agent-ui 478 / agent-cli 66 / agent-vscode 7 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19，共 1938 passing 全部 EXIT=0；构建验证：agent-ui build:web、agent-vscode build（联动 Web bundle 3.2MB）、agent-cli build 全部通过。G47–G50 已闭环，TUI 专项 G41–G50 计划完结。

@@ -1,5 +1,5 @@
 import { buildAgentWebviewHtml, normalizeGatewayUrl } from './webview-html';
-import { ExtensionContextLike, VsCodeHost, WebviewPanelLike } from './host';
+import { ExtensionContextLike, TextEditorLike, VsCodeHost, WebviewPanelLike } from './host';
 
 function createNonce(): string {
     let value = '';
@@ -40,12 +40,38 @@ export class AgentConsolePanel {
                 nonce: createNonce()
             });
             panel.onDidDispose(() => { this.panel = null; });
+            panel.onDidReceiveMessage((message: unknown) => this.handleMessage(panel, message));
+            this.postIdeContext(panel, this.vscode.window.activeTextEditor);
+            this.vscode.window.onDidChangeActiveTextEditor(editor => this.postIdeContext(panel, editor));
             this.panel = panel;
             return panel;
         } catch (error) {
             this.vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
             return null;
         }
+    }
+
+    private handleMessage(panel: WebviewPanelLike, message: unknown): void {
+        if (!message || typeof message !== 'object') {
+            return;
+        }
+        const request = message as { type?: string };
+        if (request.type === 'tsdiAgent.refreshIdeContext') {
+            this.postIdeContext(panel, this.vscode.window.activeTextEditor);
+        }
+    }
+
+    private postIdeContext(panel: WebviewPanelLike, editor: TextEditorLike | null | undefined): void {
+        void panel.webview.postMessage({
+            type: 'tsdiAgent.ideContext',
+            activeFile: editor?.document?.fileName,
+            selection: editor?.selection
+                ? {
+                    startLine: editor.selection.start.line + 1,
+                    endLine: editor.selection.end.line + 1
+                }
+                : undefined
+        });
     }
 
     refresh(): void {

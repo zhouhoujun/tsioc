@@ -79,6 +79,22 @@ export interface AgentUIOptions {
     console?: Record<string, any>;
     keymap?: Record<string, string | null>;
     queueMode?: boolean | 'on' | 'off';
+    statusline?: string[];
+    /**
+     * P126: memory injection toggle. When false the runtime skips memory
+     * retrieval during context preparation (default true).
+     */
+    memoryInjection?: boolean;
+    /**
+     * P126: active personality preset name (see AGENT_PERSONALITY_PRESETS).
+     * The runtime injects the preset tone into the system prompt when set.
+     */
+    personality?: string;
+    /**
+     * P126: experimental feature switches (name -> enabled). Exposed through
+     * the `/experimental` command; hosts read the resolved flags.
+     */
+    experimental?: Record<string, boolean>;
 }
 
 export interface AgentBootstrapTurnOptions {

@@ -3,13 +3,15 @@ import { DOCUMENT } from '@tsdi/common';
 import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_IDE_BRIDGE } from './index';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
     AgentConsoleRemoteEventBridge,
     AgentConsoleSessionState,
     AgentUiModule,
-    HttpAgentConsoleAppRpc
+    HttpAgentConsoleAppRpc,
+    VscodeIdeBridge
 } from './index';
 
 export interface AgentWebConsoleOptions {
@@ -68,6 +70,7 @@ export async function mountAgentWebConsole(
         providers: [
             { provide: DOCUMENT, useValue: doc },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
+            { provide: AGENT_IDE_BRIDGE, useValue: new VscodeIdeBridge(doc.defaultView ?? globalThis) },
             {
                 provide: AGENT_OPTIONS,
                 useValue: {

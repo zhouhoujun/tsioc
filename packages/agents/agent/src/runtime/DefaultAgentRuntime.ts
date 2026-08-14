@@ -48,6 +48,7 @@ import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudge
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
+import { buildPersonalityHint } from '../prompt/personality-presets';
 import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
 import {
     AgentArchetype,
@@ -1193,9 +1194,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
-        const relevantMemory = await this.getRelevantMemory(query, sessionId);
+        const memoryInjectionEnabled = this.options.ui?.memoryInjection !== false;
+        const relevantMemory = memoryInjectionEnabled ? await this.getRelevantMemory(query, sessionId) : [];
         const memory = this.contextManager.trimMemory(
-            this.contextManager.isExperienceMemoryEnabled()
+            memoryInjectionEnabled && this.contextManager.isExperienceMemoryEnabled()
                 ? [...relevantMemory, ...(await this.contextManager.loadExperienceMemory(this.memory))]
                 : relevantMemory
         );
@@ -1215,8 +1217,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
                 const delegationHint = buildDelegationModeHint(this.resolveDelegationMode(sessionId, turnContext));
+                const personalityHint = buildPersonalityHint(this.options.ui?.personality);
                 messages = [
-                    this.createMessage('system', systemPrompt + modeHint + delegationHint),
+                    this.createMessage('system', systemPrompt + modeHint + delegationHint + personalityHint),
                     ...messages
                 ];
             }
@@ -2860,6 +2863,10 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
     override unregisterHookFunction(stage: AgentLifecycleHookStage, name?: string): void {
         this.hookManager?.unregisterFunction(stage, name);
+    }
+
+    override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
+        return this.hookManager ? this.hookManager.describe() : [];
     }
 
     private async appendHookOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {

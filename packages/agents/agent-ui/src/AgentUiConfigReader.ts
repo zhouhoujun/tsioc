@@ -1,3 +1,5 @@
+import { AgentTuiResolvedConfig } from './AgentTuiConfig';
+
 export interface AgentUiSavedModelProfile {
     name: string;
     provider: string;
@@ -45,10 +47,12 @@ export interface AgentUiResolvedConfig {
     settingsModel?: Partial<AgentUiResolvedModelProfile>;
     model: AgentUiResolvedModelProfile;
     harnessProfile?: string;
+    tui?: AgentTuiResolvedConfig;
 }
 
 export abstract class AgentUiConfigReader {
     abstract resolve(options: Record<string, any>): AgentUiResolvedConfig;
+    abstract resolveTuiConfig(options: Record<string, any>): AgentTuiResolvedConfig;
     abstract ensureWorkspaceConfig(root: string, workspaceDirName?: string): string;
     abstract writeModelProfile(root: string, profile: Partial<AgentUiResolvedModelProfile>): string;
     abstract resolveProviderApiKeyEnv(provider: string): string | undefined;

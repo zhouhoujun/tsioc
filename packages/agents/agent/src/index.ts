@@ -94,6 +94,7 @@ export * from './prompt/sections/IdentitySection';
 export * from './prompt/sections/ToolsSection';
 export * from './prompt/sections/DateTimeSection';
 export * from './prompt/sections/MemorySection';
+export * from './prompt/personality-presets';
 export * from './prompt/sections/ProjectContextSection';
 
 export * from './memory/MemoryStore';

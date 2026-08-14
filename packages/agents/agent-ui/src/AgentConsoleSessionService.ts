@@ -30,6 +30,7 @@ export interface AgentConsoleSessionChoice {
     summary?: string;
     title?: string;
     pinned?: boolean;
+    archived?: boolean;
     workspace?: string;
     projectKey?: string;
     projectId?: string;
@@ -100,9 +101,9 @@ export class AgentConsoleSessionService {
         return { id: resolvedId };
     }
 
-    async listSessions(currentSessionId?: string, context?: any): Promise<AgentConsoleSessionChoice[]> {
+    async listSessions(currentSessionId?: string, context?: any, options?: { includeArchived?: boolean }): Promise<AgentConsoleSessionChoice[]> {
         if (this.appRpc) {
-            const sessions = await this.appRpc.request('session.list', undefined, context);
+            const sessions = await this.appRpc.request('session.list', options?.includeArchived ? { includeArchived: true } : undefined, context);
             const items = Array.isArray(sessions)
                 ? sessions.map(item => ({
                     id: String(item?.id || ''),
@@ -112,6 +113,7 @@ export class AgentConsoleSessionService {
                     summary: item?.summary,
                     title: item?.title,
                     pinned: !!item?.pinned,
+                    archived: !!item?.archived,
                     workspace: item?.workspace,
                     projectKey: item?.projectKey,
                     projectId: item?.projectId,
@@ -129,7 +131,7 @@ export class AgentConsoleSessionService {
         if (this.sessionStore) {
             const ids = await this.sessionStore.listSessionIds();
             const sessions = await Promise.all(ids.map(async id => this.toChoice(id, await this.sessionStore!.get(id))));
-            return this.withCurrent(this.sortSessionChoices(sessions), currentSessionId);
+            return this.withCurrent(this.sortSessionChoices(options?.includeArchived ? sessions : sessions.filter(item => !item.archived)), currentSessionId);
         }
         return currentSessionId ? [{ id: currentSessionId, current: true }] : [];
     }
@@ -384,6 +386,25 @@ export class AgentConsoleSessionService {
             return;
         }
         await this.sessionStore?.setPinned(sessionId, pinned);
+    }
+
+    async setSessionArchived(sessionId: string, archived: boolean, context?: any): Promise<void> {
+        if (!sessionId) return;
+        if (this.appRpc) {
+            await this.appRpc.request('session.set_archived', { sessionId, archived }, context);
+            return;
+        }
+        await (this.sessionStore as any)?.setArchived(sessionId, archived);
+    }
+
+    async forkSession(sessionId: string, messageId?: string, forkSessionId?: string, context?: any): Promise<string> {
+        if (!sessionId) return '';
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.fork', { sessionId, ...(messageId ? { messageId } : {}), ...(forkSessionId ? { forkSessionId } : {}) }, context);
+            return String(result?.sessionId || '');
+        }
+        const state = await (this.sessionStore as any)?.fork(sessionId, messageId, forkSessionId);
+        return String(state?.sessionId || '');
     }
 
     async createSessionSnapshot(sessionId: string, label?: string, context?: any): Promise<string> {
@@ -866,6 +887,7 @@ export class AgentConsoleSessionService {
         summary?: string;
         title?: string;
         pinned?: boolean;
+        archived?: boolean;
         workspace?: string;
         projectKey?: string;
         projectId?: string;
@@ -885,6 +907,7 @@ export class AgentConsoleSessionService {
             summary: state?.summary,
             title: state?.title,
             pinned: !!state?.pinned,
+            archived: !!state?.archived,
             workspace: state?.workspace,
             projectKey: state?.projectKey,
             projectId: state?.projectId,

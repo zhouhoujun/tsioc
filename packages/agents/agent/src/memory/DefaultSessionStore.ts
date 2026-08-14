@@ -78,6 +78,10 @@ export class DefaultSessionStore extends SessionStore {
         await this.resolveStore().setPinned(sessionId, pinned);
     }
 
+    async setArchived(sessionId: string, archived: boolean): Promise<void> {
+        await this.resolveStore().setArchived(sessionId, archived);
+    }
+
     async snapshot(sessionId: string, label?: string): Promise<string> {
         return this.resolveStore().snapshot(sessionId, label);
     }

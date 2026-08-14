@@ -395,11 +395,14 @@ export class SessionHandler {
         ];
     }
 
-    async listSessionInfos(principalId?: string): Promise<SessionInfo[]> {
+    async listSessionInfos(principalId?: string, includeArchived = false): Promise<SessionInfo[]> {
         const infos: SessionInfo[] = [];
         const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
         for (const id of await this.owners.listOwned(ids, principalId)) {
             const state = await this.sessions.get(id);
+            if (state.archived && !includeArchived) {
+                continue;
+            }
             const projectKey = this.resolveProjectKey(state);
             infos.push({
                 id,
@@ -410,6 +413,7 @@ export class SessionHandler {
                 summary: state.summary,
                 title: state.title,
                 pinned: !!state.pinned,
+                archived: !!state.archived,
                 workspace: state.workspace,
                 projectKey,
                 projectId: state.projectId ?? undefined,

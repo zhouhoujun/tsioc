@@ -7,6 +7,7 @@ export interface SessionInfo {
     summary?: string;
     title?: string;
     pinned?: boolean;
+    archived?: boolean;
     workspace?: string;
     projectKey?: string;
     projectId?: string;

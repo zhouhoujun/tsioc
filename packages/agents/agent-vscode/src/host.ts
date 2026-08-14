@@ -10,12 +10,19 @@ export interface WebviewLike {
     html: string;
     cspSource: string;
     asWebviewUri(uri: unknown): UriLike;
+    postMessage(message: unknown): PromiseLike<boolean>;
+}
+
+export interface TextEditorLike {
+    document: { fileName: string };
+    selection: { start: { line: number }; end: { line: number } };
 }
 
 export interface WebviewPanelLike extends DisposableLike {
     webview: WebviewLike;
     reveal(column?: unknown): void;
     onDidDispose(listener: () => unknown): DisposableLike;
+    onDidReceiveMessage(listener: (message: unknown) => unknown): DisposableLike;
 }
 
 export interface WorkspaceFolderLike {
@@ -33,8 +40,10 @@ export interface VsCodeHost {
         registerCommand(command: string, handler: () => unknown): DisposableLike;
     };
     window: {
+        activeTextEditor?: TextEditorLike | null;
         createWebviewPanel(viewType: string, title: string, column: unknown, options: unknown): WebviewPanelLike;
         showErrorMessage(message: string): unknown;
+        onDidChangeActiveTextEditor(listener: (editor: TextEditorLike | null) => unknown): DisposableLike;
     };
     workspace: {
         workspaceFolders?: WorkspaceFolderLike[];

@@ -51,6 +51,7 @@ import {
     resolveAgentConsoleThemeStyles,
     styleTextToObject
 } from './AgentConsoleTheme';
+import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
@@ -190,15 +191,47 @@ export class AgentConsoleStatusPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        return String(this.statusSummary || '')
-            .split('\n')
-            .map(line => line.trimEnd())
-            .filter(Boolean)
-            .slice(0, this.state.consoleOptions.statusVisibleLines);
+        const lines: string[] = [];
+        for (const field of this.state.statusline) {
+            const line = this.statuslineFieldLine(field);
+            if (line) {
+                lines.push(line);
+            }
+        }
+        lines.push(
+            ...String(this.statusSummary || '')
+                .split('\n')
+                .map(line => line.trimEnd())
+                .filter(Boolean)
+        );
+        return lines.slice(0, this.state.consoleOptions.statusVisibleLines);
+    }
+
+    protected statuslineFieldLine(field: AgentConsoleStatuslineField): string {
+        switch (field) {
+            case 'model': {
+                const model = this.model || this.state.consoleOptions.noneValueLabel;
+                return this.provider ? `model: ${this.provider}/${model}` : `model: ${model}`;
+            }
+            case 'context':
+                return this.state.contextPreparationSummary ? `context: ${this.state.contextPreparationSummary}` : '';
+            case 'git-branch':
+                return this.state.gitBranch ? `git-branch: ${this.state.gitBranch}` : '';
+            case 'tokens':
+                return `tokens: ${formatCompactNumber(this.state.tokenUsage.totalTokens)}`;
+            case 'session':
+                return `session: ${this.state.sessionId}`;
+            case 'workspace':
+                return `workspace: ${this.workspace || this.state.consoleOptions.noneValueLabel}`;
+            case 'agent':
+                return this.state.title ? `agent: ${this.state.title}` : '';
+            default:
+                return '';
+        }
     }
 
     get shouldShow(): boolean {
-        return !!this.notice || !!this.state.pendingApprovals.length;
+        return !!this.state.statusline.length || !!this.notice || !!this.state.pendingApprovals.length;
     }
 
     statusLineAt(index: number): string {

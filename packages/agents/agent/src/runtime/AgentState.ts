@@ -8,6 +8,7 @@ export interface AgentState {
     summary?: string;
     title?: string;
     pinned?: boolean;
+    archived?: boolean;
     ownerPrincipalId?: string;
     workspace?: string;
     projectId?: string;

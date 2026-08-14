@@ -16,11 +16,14 @@ import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
+import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction } from './AgentConsoleKeymap';
@@ -114,7 +117,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private translator?: TranslatorService,
         @Optional() private globalKeymap?: AgentConsoleKeymap | null,
         @Optional() private keymapStore?: AgentConsoleKeymapStore | null,
-        @Optional() private themeStore?: AgentConsoleThemeStore | null
+        @Optional() private themeStore?: AgentConsoleThemeStore | null,
+        @Optional() private statuslineStore?: AgentConsoleStatuslineStore | null,
+        @Optional() private backgroundTasks?: BackgroundTaskManager | null,
+        @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -124,7 +130,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setModelProfile(this.resolveInitialModelProfile());
         this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
         this.state.setConsoleOptions(this.options.ui?.console);
+        this.state.setStatusline(this.resolveInitialStatusline());
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
+    }
+
+    protected resolveInitialStatusline(): AgentConsoleStatuslineField[] {
+        if (Array.isArray(this.options.ui?.statusline)) {
+            return normalizeAgentConsoleStatusline(this.options.ui.statusline);
+        }
+        return [...defaultAgentConsoleStatusline];
     }
 
     protected resolveInitialModelProfile(): string {
@@ -1507,6 +1521,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             summary: item.summary,
             title: item.title,
             pinned: !!item.pinned,
+            archived: !!item.archived,
             projectKey: item.projectKey,
             projectId: item.projectId,
             primaryThreadId: item.primaryThreadId,
@@ -1982,6 +1997,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (requestId !== this.openSessionRequestId) {
             return;
         }
+        if (target.archived) {
+            await this.sessionService.setSessionArchived(target.id, false);
+            target.archived = false;
+        }
         this.openReviewRequestId++;
         this.taskViewContextVersion++;
             this.state.configure({ sessionId: target.id });
@@ -2123,7 +2142,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showStatusPanel(): boolean {
-        return !!this.state.notice || !!this.state.pendingApprovals.length;
+        return !!this.state.statusline.length || !!this.state.notice || !!this.state.pendingApprovals.length;
     }
 
     get showSessionsPanel(): boolean {
@@ -2485,6 +2504,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.restoreGlobalKeymap();
         this.themeStore = this.themeStore || new AgentConsoleThemeStore(this.resolveFileAdapter());
         await this.restoreTheme();
+        this.statuslineStore = this.statuslineStore || new AgentConsoleStatuslineStore(this.resolveFileAdapter());
+        await this.restoreStatusline();
+        await this.resolveGitBranch();
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
@@ -4004,6 +4026,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/review', value: '/review', description: 'coding task review' },
                     { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
                     { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
+                    { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
+                    { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
+                    { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
+                    { label: '/fast', value: '/fast', description: 'switch to fast/strong model profile: /fast [profile]' },
+                    { label: '/personality', value: '/personality', description: 'personality presets: list / set <name> / unset' },
+                    { label: '/debug-config', value: '/debug-config', description: 'show resolved config (model, profile, ui options, session)' },
+                    { label: '/experimental', value: '/experimental', description: 'experimental features: list / <name> on|off' },
+                    { label: '/feedback', value: '/feedback', description: 'packaging diagnostics for feedback reports' },
+                    { label: '/ide', value: '/ide', description: 'IDE bridge: show attached editor context' },
+                    { label: '/ps', value: '/ps', description: 'background tasks: list / stop <id>' },
+                    { label: '/resume', value: '/resume', description: 'resume an existing or archived session' },
+                    { label: '/archive', value: '/archive', description: 'archive the current session without deleting its transcript' },
+                    { label: '/fork', value: '/fork', description: 'fork the current session [messageId]' },
+                    { label: '/side', value: '/side', description: 'open a temporary side session fork' },
                     { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
@@ -4268,6 +4304,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.openWorktreeDiff(parsed.args);
             case '/theme':
                 return this.runThemeCommand(parsed.args);
+            case '/statusline':
+                return this.runStatuslineCommand(parsed.args);
+            case '/hooks':
+                return this.runHooksCommand();
+            case '/memories':
+                return this.runMemoriesCommand(parsed.args);
+            case '/fast':
+                return this.runFastCommand(parsed.args);
+            case '/personality':
+                return this.runPersonalityCommand(parsed.args);
+            case '/debug-config':
+                return this.runDebugConfigCommand();
+            case '/experimental':
+                return this.runExperimentalCommand(parsed.args);
+            case '/feedback':
+                return this.runFeedbackCommand();
+            case '/ps':
+                return this.runBackgroundTasksCommand(parsed.args);
+            case '/ide':
+                return this.runIdeCommand(parsed.args);
             case '/retry':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -4504,6 +4560,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
+            case '/resume': {
+                if (this.isTurnInProgress()) { this.notifyBusyState(); return true; }
+                const all = await this.sessionService?.listSessions(this.state.sessionId, undefined, { includeArchived: true }) || [];
+                if (!all.length) { this.notify('No sessions available.'); return true; }
+                const selected = await this.select('Resume session', all.map(item => ({
+                    label: `${item.id}${item.archived ? ' (archived)' : ''}`,
+                    value: item.id,
+                    description: item.title || item.summary || `${item.messageCount || 0} messages`
+                })));
+                if (selected) await this.openSession(selected);
+                return true;
+            }
+            case '/archive': {
+                const archivedSessionId = this.state.sessionId;
+                if (!archivedSessionId || !this.sessionService) { this.notify('No current session to archive.'); return true; }
+                await this.sessionService.setSessionArchived(archivedSessionId, true);
+                await this.refreshSessions();
+                this.notify(`Archived session ${archivedSessionId}.`);
+                return true;
+            }
+            case '/fork':
+            case '/side': {
+                if (this.isTurnInProgress()) { this.notifyBusyState(); return true; }
+                const source = this.state.sessionId;
+                if (!source || !this.sessionService) { this.notify('No current session to fork.'); return true; }
+                const messageId = String(parsed.args || '').trim() || undefined;
+                const forked = await this.sessionService.forkSession(source, messageId);
+                if (!forked) { this.notify('Failed to fork the current session.'); return true; }
+                await this.openSession(forked);
+                this.notify(`${resolved.command === '/side' ? 'Opened side session' : 'Forked session'} ${forked}.`);
+                return true;
+            }
             case '/pin':
             case '/unpin': {
                 const pinSessionId = this.state.sessionId;
@@ -6124,6 +6212,285 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         this.notify(`Theme set to ${value}.`);
+        return true;
+    }
+
+    protected async restoreStatusline(): Promise<void> {
+        const persisted = await this.statuslineStore?.load(this.resolveHistoryWorkspace());
+        if (persisted) {
+            this.state.setStatusline(persisted);
+        }
+    }
+
+    protected async runStatuslineCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        if (!parsed || parsed.toLowerCase() === 'list') {
+            const current = this.state.statusline;
+            this.notify(`Statusline: ${current.join(', ')}. Use /statusline set field1,field2 or unset field.`);
+            return true;
+        }
+        const [verb, ...rest] = parsed.split(/\s+/);
+        const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
+        if (verb.toLowerCase() === 'set') {
+            if (!requested.length) {
+                this.notify('Usage: /statusline set model,context,git-branch,tokens,session,workspace,agent');
+                return true;
+            }
+            const invalid = requested.filter(field => !isAgentConsoleStatuslineField(field));
+            if (invalid.length) {
+                this.notify(`Unknown statusline field "${invalid[0]}". Available: ${defaultAgentConsoleStatusline.join(', ')}.`);
+                return true;
+            }
+            return this.applyStatusline(normalizeAgentConsoleStatusline(requested));
+        }
+        if (verb.toLowerCase() === 'unset') {
+            const remaining = this.state.statusline.filter(field => !requested.includes(field));
+            if (remaining.length === this.state.statusline.length) {
+                this.notify(`Field "${requested[0]}" is not in the statusline. Current: ${this.state.statusline.join(', ')}.`);
+                return true;
+            }
+            return this.applyStatusline(normalizeAgentConsoleStatusline(remaining));
+        }
+        this.notify('Usage: /statusline [list|set field1,field2|unset field]');
+        return true;
+    }
+
+    protected async applyStatusline(fields: AgentConsoleStatuslineField[]): Promise<boolean> {
+        this.state.setStatusline(fields);
+        try {
+            await this.statuslineStore?.save(this.resolveHistoryWorkspace(), fields);
+        } catch (error: any) {
+            this.notify(error?.message || 'Updated the statusline, but failed to save it.');
+            return true;
+        }
+        this.notify(fields.length ? `Statusline set to ${fields.join(', ')}.` : 'Statusline cleared.');
+        return true;
+    }
+
+    protected async resolveGitBranch(): Promise<void> {
+        const workspace = this.workspace;
+        if (!workspace) return;
+        const fileAdapter = this.resolveFileAdapter();
+        if (!fileAdapter) return;
+        try {
+            const headPath = fileAdapter.join(workspace, '.git', 'HEAD');
+            if (!fileAdapter.existsSync(headPath)) {
+                this.state.setGitBranch('');
+                return;
+            }
+            const head = fileAdapter.readTextSync(headPath).trim();
+            const match = /^ref:\s*refs\/heads\/(.+)$/.exec(head);
+            this.state.setGitBranch(match ? match[1] : head.slice(0, 7));
+        } catch {
+            this.state.setGitBranch('');
+        }
+    }
+
+    protected async runHooksCommand(): Promise<boolean> {
+        let summary: Array<{ stage: string; commands: string[]; functions: string[] }> = [];
+        if (this.appRpc) {
+            try {
+                const result = await this.appRpc.request('hooks.list', {});
+                if (Array.isArray(result)) {
+                    summary = result;
+                }
+            } catch {
+                summary = [];
+            }
+        }
+        if (!summary.length) {
+            summary = this.runtime.getHookSummary();
+        }
+        const stages = summary.filter(entry => entry.commands.length > 0 || entry.functions.length > 0);
+        if (!stages.length) {
+            this.notify('No hooks registered. Configure hooks in agent options (hooks.beforeTurn, hooks.afterTool, ...).');
+            return true;
+        }
+        const lines = stages.map(entry => {
+            const commands = entry.commands.length ? `cmd: ${entry.commands.join('; ')}` : '';
+            const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
+            return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
+        });
+        this.notify(`Registered hooks:\n${lines.join('\n')}`);
+        return true;
+    }
+
+    protected async runMemoriesCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim().toLowerCase();
+        const current = this.options.ui?.memoryInjection !== false;
+        if (!parsed) {
+            this.notify(`Memory injection ${current ? 'ON' : 'OFF'}. Use /memories on|off to toggle.`);
+            return true;
+        }
+        const enabled = parsed === 'on';
+        if (parsed !== 'on' && parsed !== 'off') {
+            this.notify('Usage: /memories [on|off]');
+            return true;
+        }
+        this.options.ui = { ...(this.options.ui || {}), memoryInjection: enabled };
+        this.notify(enabled ? 'Memory injection enabled.' : 'Memory injection disabled.');
+        return true;
+    }
+
+    protected async runFastCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().toLowerCase();
+        const profiles = (this.options.model?.profiles || {}) as Record<string, unknown>;
+        if (requested && !profiles[requested]) {
+            this.notify(`Unknown model profile "${requested}". Available: ${Object.keys(profiles).join(', ') || 'none'}.`);
+            return true;
+        }
+        const target = requested || (this.state.modelProfile === 'fast' ? 'strong' : 'fast');
+        if (!profiles[target]) {
+            this.notify(`No "${target}" model profile configured. Configure model.profiles.fast / model.profiles.strong.`);
+            return true;
+        }
+        await this.activateModelProfile(target);
+        return true;
+    }
+
+    protected async runPersonalityCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        const parts = parsed.split(/\s+/).filter(Boolean);
+        const verb = parts[0]?.toLowerCase() ?? '';
+        const names = Object.keys(AGENT_PERSONALITY_PRESETS);
+        if (!verb) {
+            const active = this.options.ui?.personality;
+            this.notify(`Personality: ${active || 'none'}. Available: ${names.join(', ')}. Use /personality set <name> or unset.`);
+            return true;
+        }
+        if (verb === 'list') {
+            const lines = names.map(name => `${name === this.options.ui?.personality ? '*' : ' '} ${name}`);
+            this.notify(`Personality presets:\n${lines.join('\n')}`);
+            return true;
+        }
+        if (verb === 'set') {
+            const name = parts[1] ?? '';
+            if (!name || !AGENT_PERSONALITY_PRESETS[name]) {
+                this.notify(`Unknown personality preset "${name}". Available: ${names.join(', ')}.`);
+                return true;
+            }
+            this.options.ui = { ...(this.options.ui || {}), personality: name };
+            this.notify(`Personality set to ${name}.`);
+            return true;
+        }
+        if (verb === 'unset') {
+            this.options.ui = { ...(this.options.ui || {}), personality: undefined };
+            this.notify('Personality cleared.');
+            return true;
+        }
+        this.notify('Usage: /personality [list|set <name>|unset]');
+        return true;
+    }
+
+    protected async runDebugConfigCommand(): Promise<boolean> {
+        const model = this.options.model || {};
+        const ui = this.options.ui || {};
+        const profiles = (model.profiles || {}) as Record<string, unknown>;
+        const activeProfile = String(model.defaultProfile || this.state.modelProfile || 'default');
+        const experimental = (ui.experimental || {}) as Record<string, boolean>;
+        const lines = [
+            `model: ${String(model.provider || '-')} / ${String(model.model || '-')}`,
+            `profile: ${activeProfile}${Object.keys(profiles).length ? ` (available: ${Object.keys(profiles).join(', ')})` : ''}`,
+            `ui.title: ${ui.title || '(default)'}`,
+            `ui.statusline: ${Array.isArray(ui.statusline) ? ui.statusline.join(', ') : '(default)'}`,
+            `ui.memoryInjection: ${ui.memoryInjection !== false ? 'on' : 'off'}`,
+            `ui.personality: ${ui.personality || '(none)'}`,
+            `ui.queueMode: ${ui.queueMode || 'off'}`,
+            `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${enabled ? 'on' : 'off'}`).join(', ') : '(none)'}`,
+            `session: ${this.state.sessionId} · workspace: ${this.workspace || '(none)'}`
+        ];
+        this.notify(`Debug config:\n${lines.join('\n')}`);
+        return true;
+    }
+
+    protected async runExperimentalCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        const parts = parsed.split(/\s+/).filter(Boolean);
+        const experimental = { ...((this.options.ui?.experimental || {}) as Record<string, boolean>) };
+        if (!parts.length) {
+            if (!Object.keys(experimental).length) {
+                this.notify('No experimental features enabled. Use /experimental <name> on|off.');
+                return true;
+            }
+            const lines = Object.entries(experimental).map(([name, enabled]) => `${enabled ? 'on' : 'off'} ${name}`);
+            this.notify(`Experimental features:\n${lines.join('\n')}`);
+            return true;
+        }
+        const [name, state] = parts;
+        if (!name || (state !== 'on' && state !== 'off')) {
+            this.notify('Usage: /experimental [<name> on|off]');
+            return true;
+        }
+        experimental[name] = state === 'on';
+        this.options.ui = { ...(this.options.ui || {}), experimental };
+        this.notify(`Experimental feature "${name}" ${state === 'on' ? 'enabled' : 'disabled'}.`);
+        return true;
+    }
+
+    protected async runFeedbackCommand(): Promise<boolean> {
+        this.notify([
+            'Packaging diagnostics for feedback:',
+            '1. Run /debug-config and include the output.',
+            '2. Include the session transcript (messages panel or /export).',
+            '3. Note the agent version and host (CLI/Web/IDE/Desktop).',
+            '4. If it reproduces, include the exact command or prompt.'
+        ].join('\n'));
+        return true;
+    }
+
+    protected async runBackgroundTasksCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        const parts = parsed.split(/\s+/).filter(Boolean);
+        if (!this.backgroundTasks) {
+            this.notify('Background task manager not available in this environment.');
+            return true;
+        }
+        if (parts.length && parts[0].toLowerCase() === 'stop') {
+            const taskId = parts[1];
+            if (!taskId) {
+                this.notify('Usage: /ps stop <taskId>');
+                return true;
+            }
+            this.notify(this.backgroundTasks.cancel(taskId) ? `Background task ${taskId} cancelled.` : `No running background task ${taskId}.`);
+            return true;
+        }
+        const tasks = this.backgroundTasks.list(this.state.sessionId);
+        if (!tasks.length) {
+            this.notify('No background tasks for this session. Start one with a /jobs or delegated long-running task.');
+            return true;
+        }
+        const lines = tasks.map(task => {
+            const status = String(task.status).toUpperCase();
+            const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
+            return `${status}${meta} ${task.id} - ${task.goal}`;
+        });
+        this.notify(`Background tasks:\n${lines.join('\n')}`);
+        return true;
+    }
+
+    protected async runIdeCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim().toLowerCase();
+        if (!this.ideBridge) {
+            this.notify('No IDE bridge available. Attach an editor host (e.g. VS Code extension) to expose file context.');
+            return true;
+        }
+        if (parsed === 'refresh' || parsed === 'detach') {
+            this.notify(`IDE bridge: ${parsed === 'refresh' ? 'refreshed.' : 'detached.'}`);
+            return true;
+        }
+        try {
+            const context = await this.ideBridge.getContext();
+            if (!context?.activeFile) {
+                this.notify('IDE bridge connected, but no active file selected.');
+                return true;
+            }
+            const selection = context.selection
+                ? ` lines ${context.selection.startLine}-${context.selection.endLine}`
+                : '';
+            this.notify(`IDE context: ${context.activeFile}${selection}${context.platform ? ` (${context.platform})` : ''}`);
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to read IDE context.');
+        }
         return true;
     }
 

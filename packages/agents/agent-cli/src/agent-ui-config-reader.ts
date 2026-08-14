@@ -1,10 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentUiConfigReader, AgentUiResolvedConfig } from '@tsdi/agent-ui';
+import { AgentTuiResolvedConfig, AgentUiConfigReader, AgentUiResolvedConfig } from '@tsdi/agent-ui';
 import {
     AgentCliOptions,
     ensureAgentWorkspaceConfig,
     resolveCliConfig,
     resolveCliModelConfig,
+    resolveCliTuiConfig,
     resolveProviderApiKeyEnv,
     resolveProviderBaseUrl,
     writeSettingsModelProfile
@@ -20,8 +21,15 @@ export class CliAgentUiConfigReader extends AgentUiConfigReader {
             ...resolved,
             providerProfile: resolved.providerProfile,
             settingsModel: resolved.settingsModel,
-            model
+            model,
+            tui: this.resolveTuiConfig(cliOptions)
         };
+    }
+
+    override resolveTuiConfig(options: Record<string, any>): AgentTuiResolvedConfig {
+        const cliOptions = options as AgentCliOptions;
+        const resolved = resolveCliConfig(cliOptions);
+        return resolveCliTuiConfig(cliOptions, resolved.root);
     }
 
     override ensureWorkspaceConfig(root: string, workspaceDirName?: string): string {

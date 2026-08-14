@@ -411,6 +411,33 @@ export class SessionStoreTest {
         expect(state.pinned).toEqual(false);
     }
 
+    @Test('stores and clears the archived flag')
+    async storesAndClearsArchived() {
+        const store = new InMemorySessionStore();
+        await store.append('session', { id: '1', role: 'user', content: 'hi', createdAt: 1 });
+        await store.setArchived('session', true);
+
+        let state = await store.get('session');
+        expect(state.archived).toEqual(true);
+
+        await store.setArchived('session', false);
+        state = await store.get('session');
+        expect(state.archived).toEqual(false);
+    }
+
+    @Test('archived flag survives fork lineage')
+    async archivedFlagSurvivesForkLineage() {
+        const store = new InMemorySessionStore();
+        await store.append('source', { id: 'u1', role: 'user', content: 'one', createdAt: 1 });
+        await store.setArchived('source', true);
+
+        const fork = await store.fork('source', undefined, 'branch-1');
+        expect(fork.archived).toEqual(false);
+
+        const state = await store.get('source');
+        expect(state.archived).toEqual(true);
+    }
+
     @Test('creates and lists snapshots with labels and message counts')
     async createsAndListsSnapshots() {
         const store = new InMemorySessionStore();

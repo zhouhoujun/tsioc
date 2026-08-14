@@ -307,9 +307,92 @@ export class AgentCliTest {
         expect(resolved.hooks).toEqual(hooks);
     }
 
-    @Test('resolves ssh hosts and allowlist from settings')
-    async resolvesSshHostsFromSettings() {
+    @Test('resolves tui.json with defaults when no file or options exist')
+    async resolvesTuiConfigDefaults() {
         const root = await this.createRoot();
+        const resolved = resolveCliConfig({ root });
+        expect(resolved.tui?.theme).toBe('dark');
+        expect(resolved.tui?.scrollSpeed).toBe(1);
+        expect(resolved.tui?.mouse).toBe(false);
+        expect(resolved.tui?.leaderTimeout).toBe(3000);
+    }
+
+    @Test('tui.json file overrides defaults')
+    async resolvesTuiConfigFromFile() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'tui.json'), JSON.stringify({
+            theme: 'light',
+            scrollSpeed: 2,
+            attentionSound: true,
+            keybinds: { send: 'ctrl+enter' }
+        }), 'utf8');
+        const resolved = resolveCliConfig({ root });
+        expect(resolved.tui?.theme).toBe('light');
+        expect(resolved.tui?.scrollSpeed).toBe(2);
+        expect(resolved.tui?.attentionSound).toBe(true);
+        expect(resolved.tui?.keybinds).toEqual({ send: 'ctrl+enter' });
+    }
+
+    @Test('CLI options take priority over tui.json and env')
+    async resolvesTuiConfigPriority() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'tui.json'), JSON.stringify({
+            theme: 'light',
+            scrollSpeed: 2
+        }), 'utf8');
+        const resolved = resolveCliConfig({
+            root,
+            tuiTheme: 'high-contrast',
+            tuiScrollSpeed: '5',
+            tuiMouse: true
+        });
+        expect(resolved.tui?.theme).toBe('high-contrast');
+        expect(resolved.tui?.scrollSpeed).toBe(5);
+        expect(resolved.tui?.mouse).toBe(true);
+    }
+
+    @Test('environment variables override tui.json but not CLI options')
+    async resolvesTuiConfigEnvPriority() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'tui.json'), JSON.stringify({
+            theme: 'light',
+            scrollSpeed: 2
+        }), 'utf8');
+        const previousTheme = process.env.TSDI_AGENT_TUI_THEME;
+        const previousSpeed = process.env.TSDI_AGENT_TUI_SCROLL_SPEED;
+        process.env.TSDI_AGENT_TUI_THEME = 'solarized';
+        process.env.TSDI_AGENT_TUI_SCROLL_SPEED = '4';
+        try {
+            const envResolved = resolveCliConfig({ root });
+            expect(envResolved.tui?.theme).toBe('solarized');
+            expect(envResolved.tui?.scrollSpeed).toBe(4);
+
+            const cliResolved = resolveCliConfig({ root, tuiTheme: 'dark' });
+            expect(cliResolved.tui?.theme).toBe('dark');
+        } finally {
+            if (previousTheme === undefined) {
+                delete process.env.TSDI_AGENT_TUI_THEME;
+            } else {
+                process.env.TSDI_AGENT_TUI_THEME = previousTheme;
+            }
+            if (previousSpeed === undefined) {
+                delete process.env.TSDI_AGENT_TUI_SCROLL_SPEED;
+            } else {
+                process.env.TSDI_AGENT_TUI_SCROLL_SPEED = previousSpeed;
+            }
+        }
+    }
+
+    @Test('malformed tui.json falls back to defaults')
+    async resolvesTuiConfigMalformed() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'tui.json'), 'not-json{{', 'utf8');
+        const resolved = resolveCliConfig({ root });
+        expect(resolved.tui?.theme).toBe('dark');
+    }
+
+    @Test('resolves ssh hosts and allowlist from settings')
+    async resolvesSshHostsFromSettings() {        const root = await this.createRoot();
         fs.writeFileSync(path.join(root, 'settings.json'), JSON.stringify({
             ssh: {
                 hosts: {

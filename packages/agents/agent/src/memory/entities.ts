@@ -22,6 +22,9 @@ export class AgentSessionEntity {
     @Column({ type: 'boolean', default: false })
     pinned!: boolean;
 
+    @Column({ type: 'boolean', default: false })
+    archived!: boolean;
+
     @Column({ type: 'text', nullable: true })
     ownerPrincipalId!: string | null;
 

@@ -350,6 +350,15 @@ export abstract class AgentRuntime {
     }
 
     /**
+     * P126: summarize registered lifecycle hooks (stages with their shell
+     * command and in-process function hook names). Defaults to an empty list;
+     * concrete runtimes that support hooks override this.
+     */
+    getHookSummary(): Array<{ stage: import('../hooks/AgentHooks').AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
+        return [];
+    }
+
+    /**
      * G29: set the per-session delegation mode override ('disabled' |
      * 'explicit' | 'proactive'), or pass null/undefined to restore the
      * configured default from AgentOptions.delegationMode.

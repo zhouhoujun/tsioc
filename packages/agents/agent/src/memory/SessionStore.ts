@@ -220,6 +220,7 @@ export abstract class SessionStore {
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
     abstract setTitle(sessionId: string, title?: string): Promise<void>;
     abstract setPinned(sessionId: string, pinned: boolean): Promise<void>;
+    abstract setArchived(sessionId: string, archived: boolean): Promise<void>;
     abstract snapshot(sessionId: string, label?: string): Promise<string>;
     abstract listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]>;
     abstract restoreSnapshot(sessionId: string, snapshotId: string): Promise<void>;
@@ -278,6 +279,7 @@ export abstract class SessionStore {
         }
         if (source.summary) await this.setSummary(targetId, source.summary);
         await this.setWorkspace(targetId, source.workspace);
+        await this.setArchived(targetId, false);
         await this.setProjectMetadata(targetId, {
             projectId: source.projectId,
             primaryThreadId: source.primaryThreadId || sessionId,

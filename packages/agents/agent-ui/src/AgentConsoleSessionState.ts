@@ -14,6 +14,7 @@ import {
     mergeAgentConsoleTheme,
     resolveAgentConsoleThemeStyles
 } from './AgentConsoleTheme';
+import { AgentConsoleStatuslineField, defaultAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
@@ -49,6 +50,7 @@ export interface AgentConsoleSessionItem {
     summary?: string;
     title?: string;
     pinned?: boolean;
+    archived?: boolean;
     projectKey?: string;
     projectId?: string;
     primaryThreadId?: string;
@@ -297,7 +299,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     vimMode: false,
     emptyValueLabel: '-',
     noneValueLabel: 'none',
-    statusVisibleLines: 6,
+    statusVisibleLines: 8,
     sessionsVisibleItems: 6,
     messagesVisibleItems: 7,
     messageDetailVisibleLines: 6,
@@ -362,6 +364,8 @@ export class AgentConsoleSessionState {
     oneShotModelProfile = '';
     planMode = false;
     workspace = '';
+    statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
+    gitBranch = '';
     projectKey = '';
     projectLabel = '';
     projectSummary = '';
@@ -471,7 +475,7 @@ export class AgentConsoleSessionState {
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean }) => boolean | Promise<boolean>;
-    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -519,6 +523,14 @@ export class AgentConsoleSessionState {
     setWorkspace(workspace: string): void {
         this.workspace = workspace;
         this.refreshInputSuggestions();
+    }
+
+    setStatusline(statusline: AgentConsoleStatuslineField[]): void {
+        this.statusline = [...(statusline || defaultAgentConsoleStatusline)];
+    }
+
+    setGitBranch(gitBranch: string): void {
+        this.gitBranch = String(gitBranch || '').trim();
     }
 
     setProjectContext(context?: {
