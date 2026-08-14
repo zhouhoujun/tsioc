@@ -30,7 +30,9 @@ import {
     AgentConsoleSessionState,
     AgentConsoleSessionChoice,
     AgentConsoleSessionProjectGroup,
-    AgentConsoleWorkspaceMentionsProvider
+    AgentConsoleWorkspaceMentionsProvider,
+    AgentConsoleKeymap,
+    AgentConsoleKeymapStore
 } from '../src';
 
 class TestFileAdapter extends FileAdapter {
@@ -9189,7 +9191,82 @@ export class AgentConsoleComponentTest {
         expect(state.effectiveVimBindings.q).toEqual(undefined);
 
         await (component as any).handleCommand('/keymap set q bogus');
-        expect(state.notice).toContain('Unknown vim action');
+        expect(state.notice).toContain('Unknown keymap action');
+    }
+
+    @Test('global keymap resolves defaults overrides and disabled defaults')
+    async globalKeymapResolvesOverrides() {
+        const keymap = new AgentConsoleKeymap();
+        expect(keymap.resolve('ctrl+x s')).toEqual('status');
+        expect(keymap.resolve('ctrl+p')).toEqual('command-palette');
+        expect(keymap.set('ctrl+g', 'sessions')).toEqual(true);
+        expect(keymap.resolve('ctrl+g')).toEqual('sessions');
+        expect(keymap.unset('ctrl+x,s')).toEqual(true);
+        expect(keymap.resolve('ctrl+x s')).toEqual(undefined);
+        expect(keymap.set('ctrl+g', 'bogus')).toEqual(false);
+        keymap.reset();
+        expect(keymap.resolve('ctrl+x s')).toEqual('status');
+    }
+
+    @Test('global keymap store persists workspace bindings through file adapter')
+    async globalKeymapStorePersistsWorkspaceBindings() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-keymap-'));
+        try {
+            const store = new AgentConsoleKeymapStore(new TestFileAdapter());
+            await store.save(workspace, { 'ctrl+g': 'status', 'ctrl+x s': null });
+            expect(await store.load(workspace)).toEqual({ 'ctrl+g': 'status', 'ctrl+x s': null });
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')
+    async terminalLeaderAndCommandPalette() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        const commands: string[] = [];
+        (component as any).handleCommand = async (command: string) => { commands.push(command); return true; };
+
+        await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+        await (component as any).handleTerminalInput({ text: 's', partial: false }, 's');
+        expect(commands).toEqual(['/status']);
+
+        await (component as any).handleTerminalInput({ text: '\u0010', partial: false }, '\u0010');
+        expect(component.selectMenu?.title).toEqual('Command palette');
+        await (component as any).handleTerminalInput({ text: 's', partial: false }, 's');
+        await (component as any).handleTerminalInput({ text: 't', partial: false }, 't');
+        await (component as any).handleTerminalInput({ text: 's', partial: false }, 's');
+        expect(component.selectMenu?.options.map(option => option.value)).toContain('/status');
+        await (component as any).handleTerminalInput({ text: '\u007f', controlKey: 'backspace', partial: false }, '\u007f');
+        expect(component.selectMenu?.title).toEqual('Command palette: st');
+        await (component as any).handleTerminalInput({ text: 's', partial: false }, 's');
+        await component.sessionState.confirmSelectMenu('/status');
+        expect(commands).toEqual(['/status', '/status']);
+    }
+
+    @Test('input panel routes browser global keys through shared resolver')
+    async inputPanelRoutesBrowserGlobalKeys() {
+        const state = new AgentConsoleSessionState();
+        const panel = new AgentConsoleInputPanelComponent(state);
+        const calls: Array<{ key: string; ctrlKey?: boolean }> = [];
+        state.globalKeyInputAction = async (key, modifiers) => {
+            calls.push({ key, ctrlKey: modifiers.ctrlKey });
+            return key.toLowerCase() === 'p' && !!modifiers.ctrlKey;
+        };
+        let prevented = false;
+        await panel.onKeydown({ key: 'p', ctrlKey: true, metaKey: false, preventDefault() { prevented = true; } } as KeyboardEvent);
+        expect(calls).toEqual([{ key: 'p', ctrlKey: true }]);
+        expect(prevented).toEqual(true);
+    }
+
+    @Test('keymap command manages persisted global bindings alongside vim bindings')
+    async keymapCommandManagesGlobalBindings() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await (component as any).handleCommand('/keymap global set ctrl+g status');
+        expect((component as any).globalKeymap.resolve('ctrl+g')).toEqual('status');
+        expect(state.notice).toContain('ctrl+g -> status');
+        await (component as any).handleCommand('/keymap global unset ctrl+g');
+        expect((component as any).globalKeymap.resolve('ctrl+g')).toEqual(undefined);
     }
 
     @Test('terminal input intercepts vim normal mode keys before insertion')

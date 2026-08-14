@@ -77,6 +77,7 @@ export interface AgentUIOptions {
     title?: string;
     theme?: Record<string, any>;
     console?: Record<string, any>;
+    keymap?: Record<string, string | null>;
 }
 
 export interface AgentBootstrapTurnOptions {

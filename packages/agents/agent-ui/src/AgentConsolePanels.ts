@@ -422,6 +422,10 @@ export class AgentConsoleInputPanelComponent {
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
+        if (await this.state?.globalKeyInputAction?.(event.key, { ctrlKey: event.ctrlKey, metaKey: event.metaKey })) {
+            event.preventDefault?.();
+            return;
+        }
         if (this.state?.selectMenu) {
             if (this.isEnterKey(event)) {
                 event.preventDefault?.();

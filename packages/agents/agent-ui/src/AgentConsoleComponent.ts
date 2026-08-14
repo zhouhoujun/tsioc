@@ -23,6 +23,7 @@ import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsol
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
+import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction } from './AgentConsoleKeymap';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 
@@ -82,6 +83,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
     protected inputHistoryRestoreTimers: Array<ReturnType<typeof setTimeout>> = [];
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
+    protected globalKeyPending = '';
+    protected commandPaletteQuery = '';
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -101,8 +104,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private sshManager?: SshConnectionManager | null,
         @Optional() private audioCapture?: AudioCaptureAdapter | null,
         @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
-        @Optional() private translator?: TranslatorService
+        @Optional() private translator?: TranslatorService,
+        @Optional() private globalKeymap?: AgentConsoleKeymap | null,
+        @Optional() private keymapStore?: AgentConsoleKeymapStore | null
     ) {
+        this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
+        this.globalKeymap.configure(this.options.ui?.keymap);
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
         this.state.setModel(this.options.model?.model ?? '');
@@ -2418,11 +2425,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
+        this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
         this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
         this.restoreReviewAnnotationsCacheFromDisk();
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         this.ensureWorkspaceMentionResolver();
+        this.keymapStore = this.keymapStore || new AgentConsoleKeymapStore(this.resolveFileAdapter());
+        await this.restoreGlobalKeymap();
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
@@ -2457,6 +2467,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
         this.state.resolveApprovalAction = undefined;
+        this.state.globalKeyInputAction = undefined;
         void this.persistInputHistory();
         const shell = this.sshShell;
         this.sshShell = null;
@@ -3841,7 +3852,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
                     { label: '/archetype', value: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]' },
                     { label: '/vim', value: '/vim', description: 'toggle vim-style normal/insert input mode' },
-                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset vim key bindings' },
+                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset global and vim key bindings' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/goal', value: '/goal', description: 'create, show, link, complete, or reopen a persistent goal' },
@@ -5924,6 +5935,123 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.surfaceAccessor?.dispatchMouse?.(mouse);
     }
 
+    protected async restoreGlobalKeymap(): Promise<void> {
+        const persisted = await this.keymapStore?.load(this.state.workspace) || {};
+        this.globalKeymap!.configure({ ...(this.options.ui?.keymap || {}), ...persisted });
+    }
+
+    protected async persistGlobalKeymap(): Promise<void> {
+        await this.keymapStore?.save(this.state.workspace, this.globalKeymap!.customBindings);
+    }
+
+    protected decodeGlobalKey(raw: string): string {
+        if (raw.length === 1) {
+            const code = raw.charCodeAt(0);
+            if (code >= 1 && code <= 26) return `ctrl+${String.fromCharCode(96 + code)}`;
+            if (!/[\u0000-\u001f\u007f]/.test(raw)) return raw.toLowerCase();
+        }
+        return '';
+    }
+
+    protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
+        const key = this.decodeGlobalKey(raw);
+        if (!key) {
+            if (raw === '\u001b') this.globalKeyPending = '';
+            return false;
+        }
+        return this.handleGlobalKeySequence(key);
+    }
+
+    protected async handleGlobalKeySequence(key: string): Promise<boolean> {
+        const sequence = this.globalKeyPending ? `${this.globalKeyPending} ${key}` : key;
+        const action = this.globalKeymap!.resolve(sequence);
+        const isPrefix = Object.keys(this.globalKeymap!.effectiveBindings).some(binding => binding.startsWith(`${sequence} `));
+        if (isPrefix && !action) {
+            this.globalKeyPending = sequence;
+            return true;
+        }
+        if (this.globalKeyPending) {
+            this.globalKeyPending = '';
+            if (!action) return true;
+        }
+        if (!action) return false;
+        await this.executeGlobalKeyAction(action);
+        return true;
+    }
+
+    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean }): Promise<boolean> {
+        const ctrlKey = !!(modifiers.ctrlKey || modifiers.metaKey);
+        const normalizedKey = ctrlKey ? `ctrl+${String(key || '').toLowerCase()}` : String(key || '').toLowerCase();
+        if (this.state.selectMenu?.title?.startsWith('Command palette')) {
+            if (normalizedKey === 'ctrl+p') return this.handleGlobalKeySequence(normalizedKey);
+            if (!ctrlKey && normalizedKey === 'backspace') {
+                this.openCommandPalette(this.commandPaletteQuery.slice(0, -1));
+                return true;
+            }
+            if (!ctrlKey && key.length === 1) {
+                this.openCommandPalette(`${this.commandPaletteQuery}${key}`);
+                return true;
+            }
+            return false;
+        }
+        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+            this.globalKeyPending = '';
+            return false;
+        }
+        if (!ctrlKey && key.length !== 1 && !this.globalKeyPending) return false;
+        return this.handleGlobalKeySequence(normalizedKey);
+    }
+
+    protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<void> {
+        if (action === 'command-palette') {
+            this.openCommandPalette();
+            return;
+        }
+        if (action === 'theme') {
+            this.notify('Theme selection is available through the configured UI theme.');
+            return;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme'>, string> = {
+            'new-session': '/new',
+            compact: '/compact',
+            export: '/export',
+            undo: '/undo',
+            redo: '/redo',
+            sessions: '/sessions',
+            model: '/model',
+            archetypes: '/archetype',
+            status: '/status',
+            copy: '/copy'
+        };
+        await this.handleCommand(commands[action]);
+    }
+
+    protected openCommandPalette(query = ''): void {
+        this.commandPaletteQuery = query;
+        const commands = this.state.commandHints
+            .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
+            .map(command => ({ label: command, value: command, description: 'command' }));
+        this.state.openSelectMenu(query ? `Command palette: ${query}` : 'Command palette', commands, 0, 'type to filter   enter execute');
+        this.state.selectMenuAction = async value => {
+            this.commandPaletteQuery = '';
+            if (value) await this.handleCommand(value);
+        };
+    }
+
+    protected async handleCommandPaletteInput(decoded: TerminalInputSequenceResult, raw: string): Promise<boolean> {
+        if (!this.state.selectMenu?.title?.startsWith('Command palette')) return false;
+        if (decoded.controlKey === 'backspace' || raw === '\u007f' || raw === '\b') {
+            this.openCommandPalette(this.commandPaletteQuery.slice(0, -1));
+            return true;
+        }
+        if (decoded.controlKey || raw === '\u001b' || raw === '\r' || raw === '\n') return false;
+        if (raw && !/[\u0000-\u001f\u007f]/.test(raw)) {
+            this.openCommandPalette(`${this.commandPaletteQuery}${raw}`);
+            return true;
+        }
+        return false;
+    }
+
     async handleTerminalInput(
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
@@ -5945,6 +6073,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.sshShell.write(raw);
             return;
         }
+        const rawChunk = decodeConsoleTextChunk(chunk);
+        if (await this.handleCommandPaletteInput(decoded, rawChunk)) {
+            return;
+        }
+        if (await this.handleGlobalKeyInput(rawChunk)) {
+            return;
+        }
         if (this.state.vimMode && !this.state.isAnyFocusActive() && this.state.inputMode === 'normal') {
             const raw = decodeConsoleTextChunk(chunk);
             if (decoded.controlKey === 'return') {
@@ -5955,7 +6090,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return;
             }
         }
-        const rawChunk = decodeConsoleTextChunk(chunk);
         const submitOnEnter = /[\r\n]/.test(rawChunk);
         const outcome = await this.state.processDecodedInput(decoded, chunk, {
             isClosed: this.destroyed,
@@ -6269,13 +6403,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async runKeymapCommand(args: string): Promise<void> {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const rawTokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+        const scope = ['global', 'vim'].includes((rawTokens[0] || '').toLowerCase())
+            ? rawTokens.shift()!.toLowerCase()
+            : '';
+        const tokens = rawTokens;
         const action = (tokens[0] || 'list').toLowerCase();
         if (action === 'list') {
-            const entries = Object.entries(this.state.effectiveVimBindings)
-                .map(([key, value]) => `${key} -> ${value}`)
-                .join('\n');
-            this.notify(entries || 'No vim bindings.');
+            const globalEntries = Object.entries(this.globalKeymap!.effectiveBindings).map(([key, value]) => `${key} -> ${value}`);
+            const vimEntries = Object.entries(this.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
+            this.notify([...(scope === 'vim' ? [] : globalEntries), ...(scope === 'global' ? [] : vimEntries)].join('\n') || 'No key bindings.');
             return;
         }
         if (action === 'set') {
@@ -6285,15 +6422,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.notify('Usage: /keymap set <key> <action>');
                 return;
             }
-            if (!isConsoleVimAction(target)) {
-                this.notify(`Unknown vim action: ${target}  (available: ${VIM_ACTION_NAMES.join(', ')})`);
+            if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && this.globalKeymap!.set(key, target)) {
+                await this.persistGlobalKeymap();
+                this.notify(`Keymap set: ${key} -> ${target}`);
                 return;
             }
-            if (this.state.setVimBinding(key, target)) {
-                this.notify(`Keymap set: ${key} -> ${target}`);
-            } else {
-                this.notify(`Failed to set keymap for key: ${key}`);
+            if (scope !== 'global' && isConsoleVimAction(target) && this.state.setVimBinding(key, target)) {
+                this.notify(`Vim keymap set: ${key} -> ${target}`);
+                return;
             }
+            this.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')}; vim: ${VIM_ACTION_NAMES.join(', ')})`);
             return;
         }
         if (action === 'unset') {
@@ -6302,19 +6440,28 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.notify('Usage: /keymap unset <key>');
                 return;
             }
-            if (this.state.unsetVimBinding(key)) {
-                this.notify(`Keymap unset: ${key} (default restored if any)`);
-            } else {
-                this.notify(`No custom binding for key: ${key}`);
+            if (scope !== 'vim' && this.globalKeymap!.unset(key)) {
+                await this.persistGlobalKeymap();
+                this.notify(`Global keymap unset: ${key}`);
+                return;
             }
+            if (scope !== 'global' && this.state.unsetVimBinding(key)) {
+                this.notify(`Vim keymap unset: ${key} (default restored if any)`);
+                return;
+            }
+            this.notify(`No binding for key: ${key}`);
             return;
         }
         if (action === 'reset') {
-            this.state.resetVimBindings();
+            if (scope !== 'global') this.state.resetVimBindings();
+            if (scope !== 'vim') {
+                this.globalKeymap!.reset();
+                await this.persistGlobalKeymap();
+            }
             this.notify('Keymap reset to defaults.');
             return;
         }
-        this.notify('Usage: /keymap [list] | [set <key> <action>] | [unset <key>] | [reset]');
+        this.notify('Usage: /keymap [global|vim] [list|set <key> <action>|unset <key>|reset]');
     }
 
     protected async runSshCommand(args: string): Promise<void> {

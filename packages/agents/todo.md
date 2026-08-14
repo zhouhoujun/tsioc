@@ -125,12 +125,13 @@
 
 - **P118 · 手动压缩 `/compact`（G41）**：runtime 新增 `compactNow(reason)` 强制压缩入口——`DefaultAgentRuntime.compactNow` 复用 `AgentContextManager` 压缩流水线（强制阈值越过、同 overflow 路径产出 `CompactionHistoryRecord` 并 publish `session.compacted` 事件），turn 进行中拒绝、session 不存在报错；gateway 新增 `session.compact` RPC（owner 校验，`AppRpcServer.compactSession` 私有方法）；agent-ui `/compact [reason]` 命令（`AgentConsoleSessionService.compactSession`：appRpc `session.compact` → 失败回退 `runtime.compactNow`，同 `/compactions` 记录面，压缩后 notify 摘要）+ commandHints 提示。回归：agent 新增 `compaction-history.spec.ts` compactNow 3 例（732 passing）、agent-gateway 1 例（226 passing）、agent-ui 3 例（418 passing），三包 tsc clean。锚点：`agent/src/runtime/DefaultAgentRuntime.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsoleSessionService.ts`。
 - **P119 · `!` 前缀本地 shell 执行（G42）**：`AgentConsoleComponent` `submit()` 输入解析层识别 `!` 前缀（非 `/` 非 `@`）——`handleShellBang`（`!cmd` 执行 / 裸 `!` 草稿模式提交或用法提示 / `!!` 切换多行草稿累积）；`runShellCommand` 优先走 appRpc `tools.invoke`，失败回退本地工具注册表 `isToolActive/activate + invoke('terminal')`（sandbox/approval 策略），执行状态经 shell 消息（`type:'shell'`、role:'tool'、`metadata.type:'shell'`）渲染到 messages 面板且**不进模型上下文**，失败展示 exit code/错误；渲染器 `resolveMessageDisplayContent` shell 分支绕过 200 字符截断展示完整输出、`resolveMessageTemplateKind` 对 shell 消息保持 tool 模板（`metadata.error` 不误判 error 模板）。回归：agent-ui 新增 `shell-command.spec.ts` 11 例（418 passing），tsc clean。锚点：`agent-ui/src/AgentConsoleComponent.ts`（`handleShellBang`/`runShellCommand`/`submit()`）、`agent-ui/src/AgentConsoleMessageRenderers.ts`、`agent-ui/test/shell-command.spec.ts`。
+- **P120 · 全局键位体系（G43）**：新增跨浏览器/TUI 共用的 `AgentConsoleKeymap`，内置 `Ctrl+X` leader（new/compact/export/undo/redo/sessions/theme/model/archetypes/status/copy）与 `Ctrl+P` fuzzy 命令面板；`/keymap` 同时管理 global/vim bindings，兼容旧 vim 语法，自定义 global bindings 经 `FileAdapter` 持久化到 workspace `.tsdi-agent/keymap.json`，`ui.keymap` 可注入初始覆盖。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsolePanels.ts`。
 
 ## 差距分析 v4（vs Codex / opencode，2026-08-13 深挖）
 
 ### 结论
 
-G1–G40 全部闭环（P67–P117，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口。TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行），后续从 G43/P120 继续。
+G1–G43 全部闭环（P67–P120，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口。TUI 专项已完成 G41–G43，后续从 G44/P121 继续。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -138,14 +139,13 @@ G1–G40 全部闭环（P67–P117，明细见「已实现功能」与「已完�
 
 1. **无手动压缩**：只有自动压缩（overflow/阈值）+ `/compactions` 历史查询；gateway 无 `session.compact` RPC、runtime 无 `compactNow` 入口——codex/opencode 均支持 `/compact`（opencode `Ctrl+X C`）主动释放上下文。
 2. **无 `!` 前缀本地 shell 执行**：codex/opencode 输入行 `!command` 执行本地命令、输出仅展示不进模型；本 TUI 输入层不支持。
-3. **无全局键位体系**：仅 vim 模式键位（`/vim` `/keymap` 只管 vim 绑定）；无 opencode `Ctrl+X` leader 快捷键（new/compact/export/undo/redo/sessions/themes/models/editor/exit/agent-list/status/copy）、无 `Ctrl+P` 命令面板、无 codex `/keymap` 全局 remap + `config.toml` 持久化。
-4. **无 Esc 中断 / 队列模式**：中断 turn 只能 `/cancel`；无 Esc 全局中断（codex 可配置 interrupt-turn 绑定）、无 Enter 排队（当前 turn 完成后再发送）。
-5. **无工作树 diff 视图**：有 `/review`（评审流）与 `/git-snapshots`（会话快照 diff），无 `/diff` 直接查看 staged/unstaged/untracked 工作树 diff。
-6. **无主题切换命令**：主题仅能经配置注入（`options.ui?.theme`）；无 `/theme`（codex 预览+保存）或 `/themes`（opencode `Ctrl+X T`）。
-7. **无会话生命周期命令**：有 `/new` `/sessions` `/pin` `/title` `/delete`，但无 `/resume` 恢复选择器、无 `/archive`（离开活动列表、转录保留本地）、无 `/fork`/`/side` UI 命令（P77 `session.fork` RPC 已存在但无命令面；`/side` 临时 fork 父线程状态保持可见）。
-8. **无可配置状态栏**：status panel 字段固定；无 `/statusline` 配置 footer 项（model/context/git/tokens/session 等）。
-9. **无命令簇**：`/hooks`（hooks 系统已实现但无查看命令）、`/memories`（有记忆检索无注入开关）、`/fast`（有 fast/strong profile 概念无切换命令）、`/personality`、`/debug-config`、`/experimental`、`/feedback`、`/ide`（有 agent-vscode 扩展但无命令把 IDE 打开文件/选区拉入 prompt）、`/mention`（有 `@` 路径补全但无选择器）、`/ps`（有 `/jobs` `/toolruns` 但无后台终端状态/停止语义）。
-10. **无 TUI 独立配置层**：无 opencode `tui.json` 等价物（theme/keybinds/scroll_speed/mouse/attention sound/leader_timeout），TUI 行为散落 `options.ui`。
+3. **无 Esc 中断 / 队列模式**：中断 turn 只能 `/cancel`；无 Esc 全局中断（codex 可配置 interrupt-turn 绑定）、无 Enter 排队（当前 turn 完成后再发送）。
+4. **无工作树 diff 视图**：有 `/review`（评审流）与 `/git-snapshots`（会话快照 diff），无 `/diff` 直接查看 staged/unstaged/untracked 工作树 diff。
+5. **无主题切换命令**：主题仅能经配置注入（`options.ui?.theme`）；无 `/theme`（codex 预览+保存）或 `/themes`（opencode `Ctrl+X T`）。
+6. **无会话生命周期命令**：有 `/new` `/sessions` `/pin` `/title` `/delete`，但无 `/resume` 恢复选择器、无 `/archive`（离开活动列表、转录保留本地）、无 `/fork`/`/side` UI 命令（P77 `session.fork` RPC 已存在但无命令面；`/side` 临时 fork 父线程状态保持可见）。
+7. **无可配置状态栏**：status panel 字段固定；无 `/statusline` 配置 footer 项（model/context/git/tokens/session 等）。
+8. **无命令簇**：`/hooks`（hooks 系统已实现但无查看命令）、`/memories`（有记忆检索无注入开关）、`/fast`（有 fast/strong profile 概念无切换命令）、`/personality`、`/debug-config`、`/experimental`、`/feedback`、`/ide`（有 agent-vscode 扩展但无命令把 IDE 打开文件/选区拉入 prompt）、`/mention`（有 `@` 路径补全但无选择器）、`/ps`（有 `/jobs` `/toolruns` 但无后台终端状态/停止语义）。
+9. **无 TUI 独立配置层**：无 opencode `tui.json` 等价物（theme/keybinds/scroll_speed/mouse/attention sound/leader_timeout），TUI 行为散落 `options.ui`。
 
 > 注：`@` workspace mentions（fuzzy 路径补全 + `@workspace/@model/@tools/@session` 候选）已有，不列为差距；`/undo` `/redo` `/copy` `/export` `/search` `/sections` `/threads` `/usage` 等已覆盖 codex/opencode 对应面。
 
@@ -172,7 +172,7 @@ G1–G40 全部闭环（P67–P117，明细见「已实现功能」与「已完�
 | G40 | ~~skill/plugin 顺序发现~~ ✅ 已落地（P117） | codex v0.146：并发发现 + 高效远程压缩 | 有界并发发现 + prompt/docs 并行准备 + remote skill 摘要压缩 | 已闭环 |
 | G41 | ~~无手动压缩命令~~ ✅ 已落地（P118） | codex `/compact`；opencode `/compact`（Ctrl+X C） | 仅自动压缩 + `/compactions` 历史；gateway 无 `session.compact` RPC、runtime 无 `compactNow` | 高：长会话主动释放上下文 |
 | G42 | ~~无 `!` 前缀本地 shell~~ ✅ 已落地（P119） | codex/opencode 输入 `!cmd` 执行并展示不进模型 | 输入层仅 `/` 命令与 `@` mention，无 `!` 修饰符 | 高：编码效率 |
-| G43 | 无全局键位体系 | opencode `Ctrl+X` leader（new/compact/export/undo/redo/sessions/themes/models/editor/exit/agent/status/copy）+ `Ctrl+P` 面板；codex `/keymap` 全局 remap 持久化 | 仅 vim 键位（`/vim` `/keymap` 管 vim 绑定） | 高：键盘流工作 |
+| G43 | ~~无全局键位体系~~ ✅ 已落地（P120） | opencode `Ctrl+X` leader + `Ctrl+P` 面板；codex `/keymap` 全局 remap 持久化 | 跨浏览器/TUI leader + fuzzy palette + workspace 持久化 | 已闭环 |
 | G44 | 无 Esc 中断 / 队列模式 | codex Esc 中断 turn（可配置绑定）+ Enter 排队 | 中断仅 `/cancel` | 中高：交互 |
 | G45 | 无工作树 diff 视图 | codex `/diff`（staged/unstaged/untracked） | 有 `/review` `/git-snapshots`，无纯 diff 命令 | 中高：交付前检查 |
 | G46 | 无主题切换命令 | codex `/theme` 预览+保存；opencode `/themes` | 主题仅配置注入（`options.ui?.theme`） | 中：定制 |
@@ -186,12 +186,11 @@ G1–G40 全部闭环（P67–P117，明细见「已实现功能」与「已完�
 > 约定：`Pnn-前缀` 对应差距编号（G34–G40 协议/安全/迁移维度；G41–G50 TUI 专项维度）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
 > P105–P110 批次已全部落地并入「已实现功能」；本批次为 2026-08-13 对照最新 codex v0.147 / opencode v1.18 的新差距，按优先级排期如下：
 >
-> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41/G42（P118 手动压缩 / P119 `!` shell 执行）已落地并入「已实现功能」，G43–G50 按 P120+ 排期（交互价值排序：键位 > 会话生命周期 > 视图/定制）。**
+> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41–G43（P118 手动压缩 / P119 `!` shell 执行 / P120 全局键位）已落地并入「已实现功能」，G44–G50 按 P121+ 排期。**
 
 
 ### TUI 专项批次（G41–G50）
 
-- **P120 · 全局键位体系（G43）**：`AgentConsoleKeymap`（新模块，DI 注入 `ui.keymap` 配置 + 默认表）——opencode 式 `Ctrl+X` leader 序列（n 新会话 / c 压缩 / x 导出 / u 撤销 / r 重做 / l 会话列表 / t 主题 / m 模型 / a agent 列表 / s 状态 / y 复制）+ `Ctrl+P` 命令面板（全部 55+ 命令 fuzzy 搜索执行）；`/keymap` 命令从 vim-only 扩展为全局键位 list/set/unset/reset（持久化到配置）。锚点：`agent-ui/src/AgentConsoleKeymap.ts`（新）、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsoleSuggestions.ts`。
 - **P121 · Esc 中断 + Enter 队列（G44）**：终端键绑定层新增 `interruptTurn`（默认 Esc，turn 进行中生效，与 vim normal 模式共存可配置）→ 走既有 cancel/abort 路径；输入行新增 queue 语义——turn 进行中 Enter 提示「排队发送」、turn 完成后自动发送（可配置 `ui.queueMode`）。锚点：`components/console/src/tui.ts`、`components/console/src/input.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P122 · `/diff` 工作树视图（G45）**：agent-ui 新增 `/diff [--staged|--unstaged|--untracked|paths]`——复用 review 的 `git diff` 只读工具面，渲染为侧边 diff 面板（复用 review hunk 折叠/侧栏能力），支持回车跳转打开文件。锚点：`agent-tools/review/review-diff.tool.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsolePanels.ts`。
 - **P123 · `/theme` 主题命令（G46）**：内置 3–5 套主题（默认 dark/light/solarized 等）+ `ui.theme` 持久化；`/theme` 无参预览列表、`/theme <name>` 应用并保存（`setTheme` 已有注入面）。锚点：`agent-ui/src/AgentConsoleTheme.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
@@ -334,3 +333,7 @@ P116（G39）已落地：agent-ui 在既有文件/目录 mention 上加入注册
 ### P117 并发发现与远程压缩效率（2026-08-14）
 
 P117（G40）已落地：skill roots 内文件读取和 plugin roots/contributions 使用 8 路有界并发；新增兼容旧同步 API 的 `provideSkillsAsync` 启动路径，并行准备 workspace、remote cache 与 plugins。system prompt sections、项目与 plugin AGENTS docs 并行读取且确定性输出；发生上下文压缩时 remote/plugin active skills 仅注入摘要，本地 skills 不降级。回归：agent-tools 322 / agent 733，共 1055 passing；两包 `npm run build` 与 `tsc --noEmit` clean。G40 已闭环，协议/安全/迁移批次 P111–P117 全部收口，下一项为 P120（全局键位体系）。
+
+### P120 全局键位体系（2026-08-14）
+
+P120（G43）已落地：新增可配置全局 action/keymap、`Ctrl+X` leader 序列和 `Ctrl+P` fuzzy 命令面板，命令确认后直接执行；TUI raw input 与浏览器 textarea 共用 Component resolver。`/keymap` 扩展 global/vim scope 并兼容旧 vim 语法，自定义 global bindings 通过 `FileAdapter` 持久化。回归：agent-ui 426 / agent 733，共 1159 passing；两包 `npm run build` 与 `tsc --noEmit` clean。G43 已闭环，下一项为 P121（Esc 中断 + Enter 队列）。
