@@ -185,10 +185,10 @@ G1–G50 全部闭环（P67–P127，明细见「已实现功能」与「已完�
 | G44 | ~~无 Esc 中断 / 队列模式~~ ✅ 已落地（P121） | codex Esc 中断 turn（可配置绑定）+ Enter 排队 | configurable interrupt action + session FIFO prompt queue | 已闭环 |
 | G45 | ~~无工作树 diff 视图~~ ✅ 已落地（P122） | codex `/diff`（staged/unstaged/untracked） | 四 scope + paths + review hunk/side-by-side 复用 | 已闭环 |
 | G46 | ~~无主题切换命令~~ ✅ 已落地（P123） | codex `/theme` 预览+保存；opencode `/themes` | 四套 preset + selector + workspace 持久化 | 已闭环 |
-| G47 | 无会话生命周期命令 | codex `/resume` `/archive` `/fork` `/side` | 有 `/new` `/sessions` `/pin` `/title`；`session.fork` RPC 无 UI 命令；无 `/side` `/archive` | 中：会话管理 |
-| G48 | 无可配置状态栏 | codex `/statusline` footer 项配置 | status panel 字段固定 | 低中：定制 |
-| G49 | 缺命令簇 | codex `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/mention` `/ps` | hooks 有实现无命令；记忆无注入开关；fast 无切换；无 ide/ps 语义 | 低中：完备性 |
-| G50 | 无 TUI 独立配置层 | opencode `tui.json`（theme/keybinds/scroll_speed/mouse/attention/leader_timeout） | 行为散落 `options.ui` | 低中：可配置性 |
+| G47 | ~~无会话生命周期命令~~ ✅ 已落地（P124） | codex `/resume` `/archive` `/fork` `/side` | `/resume` 模糊选择器恢复、`/archive` 归档（转录保留本地）、`/fork [messageId]` 分支会话、`/side` 临时 fork 父线程保持可见；gateway `session.set_archived` RPC | 已闭环 |
+| G48 | ~~无可配置状态栏~~ ✅ 已落地（P125） | codex `/statusline` footer 项配置 | status panel 字段化 + `/statusline [list\|set\|unset]` 交互配置并持久化至 workspace `.tsdi-agent/statusline.json` | 已闭环 |
+| G49 | ~~缺命令簇~~ ✅ 已落地（P126） | codex `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/mention` `/ps` | 9 条命令簇补齐（hooks 查看/记忆注入开关/fast 切换/personality/debug-config/experimental/feedback/ide 桥/ps）全部注册进 `/help` | 已闭环 |
+| G50 | ~~无 TUI 独立配置层~~ ✅ 已落地（P127） | opencode `tui.json`（theme/keybinds/scroll_speed/mouse/attention/leader_timeout） | `tui.json` 独立配置层，合并优先级 CLI > env（`TSDI_AGENT_TUI_*`）> tui.json > 默认 | 已闭环 |
 
 ## 打磨计划（P111+）
 
@@ -359,3 +359,17 @@ P126（G49）命令簇补齐已落地：`/hooks`（运行时 `getHookSummary()` 
 P127（G50）TUI 独立配置层已落地：`agent-ui` `tui.json` 配置 schema 化（`AgentTuiConfig`/`defaultAgentTuiConfig`/`mergeAgentTuiConfig`），`AgentUiConfigReader` 抽象 `resolveTuiConfig`，合并优先级 CLI > env（`TSDI_AGENT_TUI_*`）> tui.json > 默认；agent-cli `resolveCliTuiConfig` 落盘读 root `tui.json` 并把 `resolved.tui` 映射进 `buildConsoleAgentOptions`（theme 名解析为 `agentConsoleThemes` 对象、keybinds → `ui.keymap`）。回归：agent-ui 478 / agent-cli 66 passing（新增 `tui-config.spec.ts` 6 例 + cli.spec 5 例），两包 tsc clean。
 
 P124–P127 收尾全量回归：十包 tsc clean（agent / agent-gateway / agent-ui / agent-cli / agent-vscode / agent-tools / agent-channels / agent-providers / agent-ssh / agent-desktop）；全量测试 agent 735 / agent-gateway 230 / agent-ui 478 / agent-cli 66 / agent-vscode 7 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19，共 1938 passing 全部 EXIT=0；构建验证：agent-ui build:web、agent-vscode build（联动 Web bundle 3.2MB）、agent-cli build 全部通过。G47–G50 已闭环，TUI 专项 G41–G50 计划完结。
+
+### 本轮收尾验证（打磨计划完结，2026-08-14）
+
+**计划状态**：打磨计划（P111+）与 TUI 专项（G41–G50，P118–P127）全部闭环，差距表 G34–G50 全行 ✅；「剩余（远期，未排期）」仅移动 remote（G21 余量）与 GitHub/GitLab 应用集成两项，不再排期。
+
+**完成度检查**：P118–P127 关键锚点全部核对在码（`compactNow` / `session.compact` / `handleShellBang` / `session.set_archived` / `AgentConsoleKeymap` / `AgentConsoleTheme` / `AgentConsoleStatusline` / `AgentTuiConfig` + `AgentUiConfigReader` / `resolveCliTuiConfig` / 17 条 TUI 命令注册），未发现计划项缺失。
+
+**测试修复（1 处，测试侧）**：agent-ui `view-model.spec.ts` 两处 workspace mention 用例使用 `waitForSuggestionMenu(state, 20)` 20ms 等待预算——workspace fixture 为真实 fs 临时目录，异步目录遍历在全量套件负载下可超 20ms（隔离跑 304 例全过，全量偶发 1 failed）。已改为默认 3000ms 预算（与其余 8 处调用一致），修复后 agent-ui 478 passing EXIT=0，三连跑稳定。
+
+**全量测试（2026-08-14 复验）**：十包 1938 passing 全部 EXIT=0（agent 735 / agent-gateway 230 / agent-ui 478 / agent-cli 66 / agent-vscode 7 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing。
+
+**构建验证（2026-08-14 复验）**：十包 `npm run build` 全部 EXIT=0；十包 `tsc --noEmit` clean（agent-desktop 首次冷启动较慢，二次验证 0 errors）；agent-ui `build:web` 产出 `web/dist/agent-console.js` 3.38MB；agent-vscode build 联动产出 `media/agent-console.js` 3.38MB；agent-desktop build 产出 `dist/main.js` 12KB + `resources/agent-console.js` 3.38MB。
+
+**结论**：G1–G50 差距全部闭环（P67–P127），打磨计划完结；后续工作仅剩远期未排期项（移动 remote、GitHub/GitLab 集成）。

@@ -8569,7 +8569,7 @@ export class AgentConsoleComponentTest {
             state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
 
             state.setInput('@sr', 3);
-            await waitForSuggestionMenu(state, 20);
+            await waitForSuggestionMenu(state);
             expect(state.selectMenu?.title).toEqual('Suggestions');
             expect(state.selectMenu?.options.find(o => o.value === '@src/')).toBeDefined();
 
@@ -8674,7 +8674,7 @@ export class AgentConsoleComponentTest {
             state.setWorkspace(workspace);
             state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
             state.setInput('check @sr', 'check @sr'.length);
-            await waitForSuggestionMenu(state, 20);
+            await waitForSuggestionMenu(state);
             expect(state.selectMenu?.title).toEqual('Suggestions');
             const wsResult = await state.processRawChunk('\r', { submitOnEnter: true, hasSelectMenu: true });
             expect(wsResult.confirmedSelection).toEqual(true);
