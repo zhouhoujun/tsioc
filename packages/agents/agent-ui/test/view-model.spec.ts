@@ -32,7 +32,9 @@ import {
     AgentConsoleSessionProjectGroup,
     AgentConsoleWorkspaceMentionsProvider,
     AgentConsoleKeymap,
-    AgentConsoleKeymapStore
+    AgentConsoleKeymapStore,
+    AgentConsoleThemeStore,
+    agentConsoleThemes
 } from '../src';
 
 class TestFileAdapter extends FileAdapter {
@@ -9262,6 +9264,65 @@ export class AgentConsoleComponentTest {
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
+    }
+
+    @Test('theme store persists a workspace theme through file adapter')
+    async themeStorePersistsWorkspaceTheme() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-theme-'));
+        try {
+            const store = new AgentConsoleThemeStore(new TestFileAdapter());
+            await store.save(workspace, 'solarized');
+            expect(await store.load(workspace)).toEqual('solarized');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('console restores the persisted workspace theme on init')
+    async consoleRestoresPersistedWorkspaceTheme() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-theme-restore-'));
+        try {
+            const store = new AgentConsoleThemeStore(new TestFileAdapter());
+            await store.save(workspace, 'solarized');
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            (component as any).themeStore = store;
+
+            await component.onInit();
+
+            expect(component.sessionState.theme).toEqual(agentConsoleThemes.solarized);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('theme command applies built-in themes and rejects unknown names')
+    async themeCommandAppliesBuiltInTheme() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).handleCommand('/theme light');
+        expect(component.sessionState.theme).toEqual(agentConsoleThemes.light);
+        expect(component.notice).toEqual('Theme set to light.');
+
+        await (component as any).handleCommand('/theme ultraviolet');
+        expect(component.notice).toContain('Unknown theme');
+        expect(component.sessionState.theme).toEqual(agentConsoleThemes.light);
+    }
+
+    @Test('theme command opens a preset selector and applies its selection')
+    async themeCommandOpensPresetSelector() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/theme');
+        expect(component.selectMenu?.title).toEqual('Theme');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['dark', 'light', 'solarized', 'high-contrast']);
+        await component.sessionState.confirmSelectMenu('high-contrast');
+        await pending;
+
+        expect(component.sessionState.theme).toEqual(agentConsoleThemes['high-contrast']);
+        expect(component.notice).toEqual('Theme set to high-contrast.');
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')

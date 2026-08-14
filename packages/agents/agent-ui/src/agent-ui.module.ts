@@ -16,6 +16,7 @@ import { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleKeymap, AgentConsoleKeymapStore } from './AgentConsoleKeymap';
+import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
@@ -86,7 +87,8 @@ import {
         AgentConsoleInputHistoryStore,
         AgentConsoleWorkspaceMentionsProvider,
         AgentConsoleKeymap,
-        AgentConsoleKeymapStore
+        AgentConsoleKeymapStore,
+        AgentConsoleThemeStore
     ],
     exports: [
         AgentConsoleComponent,
@@ -118,7 +120,8 @@ import {
         AgentConsoleInputHistoryStore,
         AgentConsoleWorkspaceMentionsProvider,
         AgentConsoleKeymap,
-        AgentConsoleKeymapStore
+        AgentConsoleKeymapStore,
+        AgentConsoleThemeStore
     ]
 })
 export class AgentUiModule {

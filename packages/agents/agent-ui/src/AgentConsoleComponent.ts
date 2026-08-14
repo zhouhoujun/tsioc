@@ -20,7 +20,7 @@ import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage,
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction } from './AgentConsoleKeymap';
@@ -91,6 +91,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected commandPaletteQuery = '';
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
+    protected activeThemeName: AgentConsoleThemeName = 'dark';
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -112,7 +113,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
         @Optional() private translator?: TranslatorService,
         @Optional() private globalKeymap?: AgentConsoleKeymap | null,
-        @Optional() private keymapStore?: AgentConsoleKeymapStore | null
+        @Optional() private keymapStore?: AgentConsoleKeymapStore | null,
+        @Optional() private themeStore?: AgentConsoleThemeStore | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -2481,6 +2483,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.ensureWorkspaceMentionResolver();
         this.keymapStore = this.keymapStore || new AgentConsoleKeymapStore(this.resolveFileAdapter());
         await this.restoreGlobalKeymap();
+        this.themeStore = this.themeStore || new AgentConsoleThemeStore(this.resolveFileAdapter());
+        await this.restoreTheme();
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
@@ -3999,6 +4003,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/threadreview', value: '/threadreview', description: 'thread coding task review' },
                     { label: '/review', value: '/review', description: 'coding task review' },
                     { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
+                    { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
                     { label: '/retry', value: '/retry', description: 'retry failed workers' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
@@ -4261,6 +4266,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     return true;
                 }
                 return this.openWorktreeDiff(parsed.args);
+            case '/theme':
+                return this.runThemeCommand(parsed.args);
             case '/retry':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -6076,6 +6083,50 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.keymapStore?.save(this.state.workspace, this.globalKeymap!.customBindings);
     }
 
+    protected async restoreTheme(): Promise<void> {
+        const persisted = await this.themeStore?.load(this.resolveHistoryWorkspace());
+        if (persisted) {
+            this.activeThemeName = persisted;
+            this.state.setTheme(agentConsoleThemes[persisted]);
+        }
+    }
+
+    protected async runThemeCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().toLowerCase();
+        if (!requested) {
+            const selected = await this.select(
+                'Theme',
+                agentConsoleThemeNames.map(name => ({
+                    label: `${name === this.activeThemeName ? '● ' : '  '}${name}`,
+                    value: name,
+                    description: name === this.activeThemeName ? 'active theme' : 'apply and save'
+                })),
+                Math.max(0, agentConsoleThemeNames.indexOf(this.activeThemeName)),
+                'enter apply   esc cancel'
+            );
+            if (!selected) return true;
+            return this.applyTheme(selected);
+        }
+        return this.applyTheme(requested);
+    }
+
+    protected async applyTheme(value: string): Promise<boolean> {
+        if (!isAgentConsoleThemeName(value)) {
+            this.notify(`Unknown theme "${value}". Available: ${agentConsoleThemeNames.join(', ')}.`);
+            return true;
+        }
+        this.activeThemeName = value;
+        this.state.setTheme(agentConsoleThemes[value]);
+        try {
+            await this.themeStore?.save(this.resolveHistoryWorkspace(), value);
+        } catch (error: any) {
+            this.notify(error?.message || `Applied ${value}, but failed to save the theme.`);
+            return true;
+        }
+        this.notify(`Theme set to ${value}.`);
+        return true;
+    }
+
     protected decodeGlobalKey(raw: string): string {
         if (raw === '\u001b') return 'escape';
         if (raw.length === 1) {
@@ -6168,7 +6219,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         if (action === 'theme') {
-            this.notify('Theme selection is available through the configured UI theme.');
+            await this.handleCommand('/theme');
             return;
         }
         const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn'>, string> = {

@@ -1,3 +1,6 @@
+import { FileAdapter } from '@tsdi/common';
+import { Injectable, Optional } from '@tsdi/ioc';
+
 export interface AgentConsoleTheme {
     statusTitle: string;
     statusShell: string;
@@ -102,6 +105,82 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     selectDetailLabel: 'color: #6f7c8a;',
     selectDetailValue: 'color: #c9d1d9; padding: 0 1ch;'
 };
+
+export type AgentConsoleThemeName = 'dark' | 'light' | 'solarized' | 'high-contrast';
+
+function remapTheme(colors: Record<string, string>): AgentConsoleTheme {
+    return Object.keys(defaultAgentConsoleTheme).reduce((theme, key) => {
+        const themeKey = key as keyof AgentConsoleTheme;
+        theme[themeKey] = Object.entries(colors).reduce(
+            (style, [source, target]) => style.replace(new RegExp(source, 'gi'), target),
+            defaultAgentConsoleTheme[themeKey]
+        );
+        return theme;
+    }, {} as AgentConsoleTheme);
+}
+
+export const agentConsoleThemes: Record<AgentConsoleThemeName, AgentConsoleTheme> = {
+    dark: defaultAgentConsoleTheme,
+    light: remapTheme({
+        '#8b949e': '#57606a', '#c9d1d9': '#24292f', '#6e7681': '#6e7781',
+        '#7ee787': '#1a7f37', '#d29922': '#9a6700', '#f85149': '#cf222e',
+        '#ffa198': '#a40e26', '#e3b341': '#9a6700', '#1b2128': '#f6f8fa',
+        '#161b22': '#ffffff', '#30363d': '#d0d7de', '#ffb86b': '#bc4c00',
+        '#2a1f12': '#fff1e5', '#79c0ff': '#0969da', '#13202b': '#ddf4ff',
+        '#8fd0ff': '#0550ae', '#d6dee6': '#24292f', '#5f8fc7': '#0969da',
+        '#6f7c8a': '#57606a'
+    }),
+    solarized: remapTheme({
+        '#8b949e': '#839496', '#c9d1d9': '#93a1a1', '#6e7681': '#657b83',
+        '#7ee787': '#859900', '#d29922': '#b58900', '#f85149': '#dc322f',
+        '#ffa198': '#cb4b16', '#e3b341': '#b58900', '#1b2128': '#073642',
+        '#161b22': '#002b36', '#30363d': '#586e75', '#ffb86b': '#cb4b16',
+        '#2a1f12': '#073642', '#79c0ff': '#268bd2', '#13202b': '#073642',
+        '#8fd0ff': '#2aa198', '#d6dee6': '#93a1a1', '#5f8fc7': '#268bd2',
+        '#6f7c8a': '#657b83'
+    }),
+    'high-contrast': remapTheme({
+        '#8b949e': '#ffffff', '#c9d1d9': '#ffffff', '#6e7681': '#d0d0d0',
+        '#7ee787': '#00ff66', '#d29922': '#ffdd00', '#f85149': '#ff4d4d',
+        '#ffa198': '#ff8080', '#e3b341': '#ffdd00', '#1b2128': '#000000',
+        '#161b22': '#000000', '#30363d': '#ffffff', '#ffb86b': '#ff9900',
+        '#2a1f12': '#331f00', '#79c0ff': '#00ccff', '#13202b': '#002b3d',
+        '#8fd0ff': '#66e0ff', '#d6dee6': '#ffffff', '#5f8fc7': '#00ccff',
+        '#6f7c8a': '#d0d0d0'
+    })
+};
+
+export const agentConsoleThemeNames = Object.keys(agentConsoleThemes) as AgentConsoleThemeName[];
+
+export function isAgentConsoleThemeName(value: string): value is AgentConsoleThemeName {
+    return agentConsoleThemeNames.includes(value as AgentConsoleThemeName);
+}
+
+@Injectable()
+export class AgentConsoleThemeStore {
+    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+
+    async load(workspace: string): Promise<AgentConsoleThemeName | undefined> {
+        if (!workspace || !this.fileAdapter) return undefined;
+        try {
+            const parsed = JSON.parse(await this.fileAdapter.readText(this.path(workspace)));
+            return isAgentConsoleThemeName(parsed?.theme) ? parsed.theme : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    async save(workspace: string, theme: AgentConsoleThemeName): Promise<void> {
+        if (!workspace || !this.fileAdapter) return;
+        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        await this.fileAdapter.mkdir(directory, { recursive: true });
+        await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, theme }, null, 2));
+    }
+
+    private path(workspace: string): string {
+        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'theme.json');
+    }
+}
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {
     return {

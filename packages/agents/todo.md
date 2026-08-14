@@ -128,12 +128,13 @@
 - **P120 · 全局键位体系（G43）**：新增跨浏览器/TUI 共用的 `AgentConsoleKeymap`，内置 `Ctrl+X` leader（new/compact/export/undo/redo/sessions/theme/model/archetypes/status/copy）与 `Ctrl+P` fuzzy 命令面板；`/keymap` 同时管理 global/vim bindings，兼容旧 vim 语法，自定义 global bindings 经 `FileAdapter` 持久化到 workspace `.tsdi-agent/keymap.json`，`ui.keymap` 可注入初始覆盖。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsolePanels.ts`。
 - **P121 · Esc 中断 + Enter 队列（G44）**：global keymap 新增默认 `escape -> interrupt-turn`，运行中优先于 vim insert/normal 并复用 `AgentConsoleSessionService.cancelTurn`，解绑 escape 可禁用；浏览器/TUI 共用 resolver。普通 prompt 在 turn 运行中按 Enter 按 session FIFO 排队（含附件）、清空 composer 并显示队列计数，当前 turn `finally` 后自动逐条发送；`ui.queueMode: false|'off'` 恢复保留草稿的 busy 行为。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsoleSessionState.ts`。
 - **P122 · `/diff` 工作树视图（G45）**：新增 `/diff [--staged|--unstaged|--untracked|paths]`，默认聚合 staged、unstaged 与 untracked；`review_diff` 只读工具新增 scope 与路径过滤，untracked 文件合成 unified patch，gateway 透传同一契约。结果复用 review 面板的文件/hunk 导航、折叠与 side-by-side 渲染；当前无跨 TUI/Web/IDE 共用的宿主文件打开桥，外部编辑器跳转并入 P126 `/ide`，不在组件层调用平台 API。锚点：`agent-tools/review/review-diff.tool.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
+- **P123 · `/theme` 主题命令（G46）**：内置 dark/light/solarized/high-contrast 四套完整语义 token 主题；`/theme` 打开带当前项标记的选择器，`/theme <name>` 即时应用，`Ctrl+X T` 复用同一入口。选中名称通过 `FileAdapter` 保存到 workspace `.tsdi-agent/theme.json`，启动时恢复；自定义 `ui.theme` 仍作为未保存 preset 时的初始主题。锚点：`agent-ui/src/AgentConsoleTheme.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/agent-ui.module.ts`。
 
 ## 差距分析 v4（vs Codex / opencode，2026-08-13 深挖）
 
 ### 结论
 
-G1–G45 全部闭环（P67–P122，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口。TUI 专项已完成 G41–G45，后续从 G46/P123 继续。
+G1–G46 全部闭环（P67–P123，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；协议/安全/迁移批次已收口。TUI 专项已完成 G41–G46，后续从 G47/P124 继续。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -176,7 +177,7 @@ G1–G45 全部闭环（P67–P122，明细见「已实现功能」与「已完�
 | G43 | ~~无全局键位体系~~ ✅ 已落地（P120） | opencode `Ctrl+X` leader + `Ctrl+P` 面板；codex `/keymap` 全局 remap 持久化 | 跨浏览器/TUI leader + fuzzy palette + workspace 持久化 | 已闭环 |
 | G44 | ~~无 Esc 中断 / 队列模式~~ ✅ 已落地（P121） | codex Esc 中断 turn（可配置绑定）+ Enter 排队 | configurable interrupt action + session FIFO prompt queue | 已闭环 |
 | G45 | ~~无工作树 diff 视图~~ ✅ 已落地（P122） | codex `/diff`（staged/unstaged/untracked） | 四 scope + paths + review hunk/side-by-side 复用 | 已闭环 |
-| G46 | 无主题切换命令 | codex `/theme` 预览+保存；opencode `/themes` | 主题仅配置注入（`options.ui?.theme`） | 中：定制 |
+| G46 | ~~无主题切换命令~~ ✅ 已落地（P123） | codex `/theme` 预览+保存；opencode `/themes` | 四套 preset + selector + workspace 持久化 | 已闭环 |
 | G47 | 无会话生命周期命令 | codex `/resume` `/archive` `/fork` `/side` | 有 `/new` `/sessions` `/pin` `/title`；`session.fork` RPC 无 UI 命令；无 `/side` `/archive` | 中：会话管理 |
 | G48 | 无可配置状态栏 | codex `/statusline` footer 项配置 | status panel 字段固定 | 低中：定制 |
 | G49 | 缺命令簇 | codex `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/mention` `/ps` | hooks 有实现无命令；记忆无注入开关；fast 无切换；无 ide/ps 语义 | 低中：完备性 |
@@ -187,12 +188,11 @@ G1–G45 全部闭环（P67–P122，明细见「已实现功能」与「已完�
 > 约定：`Pnn-前缀` 对应差距编号（G34–G40 协议/安全/迁移维度；G41–G50 TUI 专项维度）。每项完成后把内容移到「已实现功能」并更新「已完成（历史）」。
 > P105–P110 批次已全部落地并入「已实现功能」；本批次为 2026-08-13 对照最新 codex v0.147 / opencode v1.18 的新差距，按优先级排期如下：
 >
-> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41–G45（P118 手动压缩 / P119 `!` shell 执行 / P120 全局键位 / P121 Esc+queue / P122 工作树 diff）已落地并入「已实现功能」，G46–G50 按 P123+ 排期。**
+> **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41–G46（P118 手动压缩 / P119 `!` shell 执行 / P120 全局键位 / P121 Esc+queue / P122 工作树 diff / P123 主题命令）已落地并入「已实现功能」，G47–G50 按 P124+ 排期。**
 
 
 ### TUI 专项批次（G41–G50）
 
-- **P123 · `/theme` 主题命令（G46）**：内置 3–5 套主题（默认 dark/light/solarized 等）+ `ui.theme` 持久化；`/theme` 无参预览列表、`/theme <name>` 应用并保存（`setTheme` 已有注入面）。锚点：`agent-ui/src/AgentConsoleTheme.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P124 · 会话生命周期命令（G47）**：`/resume`（复用 `/sessions` 数据源做模糊选择器恢复）、`/archive`（归档标记 + `/sessions` 过滤 + 转录保留本地）、`/fork [messageId]`（映射 P77 `session.fork` RPC，UI 确认新建分支会话）、`/side`（临时 fork，父线程状态保持可见）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent/src/session/SessionStore.ts`。
 - **P125 · `/statusline` 可配置状态栏（G48）**：status panel 字段化——`ui.statusline` 配置项序列（model/context/git-branch/tokens/session/workspace/agent），`/statusline [list|set|unset]` 交互配置并持久化。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentConsolePanels.ts`。
 - **P126 · 命令簇补齐（G49）**：`/hooks`（列出已注册 hook 阶段与函数/命令形态，复用 agent hooks 事件面）、`/memories`（注入开关 `ui.memoryInjection: boolean`）、`/fast`（`/model fast|strong` 快捷切换，复用 profile 概念）、`/personality`（预设 tone 配置）、`/debug-config`（配置层诊断输出）、`/experimental`（特性开关 registry）、`/feedback`（诊断打包提示）、`/ide`（经 agent-vscode 桥拉取打开文件/选区入 prompt）、`/ps`（后台任务状态 + stop，复用 `BackgroundTaskManager`）。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-tools/src/background-task-manager.ts`、`agent/src/hooks/`。
@@ -344,3 +344,7 @@ P121（G44）已落地：Esc 作为可配置 `interrupt-turn` global action，�
 ### P122 `/diff` 工作树视图（2026-08-14）
 
 P122（G45）已落地：`review_diff` 支持 working-tree/staged/unstaged/untracked 四 scope、paths 过滤与 untracked unified patch；gateway `review.diff` 透传 scope，agent-ui `/diff` 解析互斥 flag 并复用 review 面板的文件/hunk 导航、折叠与 side-by-side。当前仓库没有跨宿主文件打开能力，Enter 外部编辑器跳转并入 P126 `/ide`。回归：agent-tools 323 / agent-ui 432 / agent-gateway 226，共 981 passing；三包 `npm run build` 与 `tsc --noEmit` clean。G45 已闭环，下一项为 P123（主题命令）。
+
+### P123 `/theme` 主题命令（2026-08-14）
+
+P123（G46）已落地：新增 dark/light/solarized/high-contrast 四套完整语义主题，`/theme` preset 选择器、`/theme <name>` 即时切换和 `Ctrl+X T` 快捷入口共用同一命令路径；主题名通过 `FileAdapter` 按 workspace 保存至 `.tsdi-agent/theme.json` 并在启动时恢复，原有自定义 `ui.theme` 保持兼容。回归：agent-ui 436 passing，`npm run build` 与 `tsc --noEmit` clean。G46 已闭环，下一项为 P124（会话生命周期命令）。
