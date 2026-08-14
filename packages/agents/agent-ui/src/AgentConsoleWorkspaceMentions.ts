@@ -7,9 +7,17 @@ export interface AgentConsoleWorkspaceSuggestion {
     description?: string;
 }
 
+export interface AgentConsoleMentionCatalogItem {
+    kind: 'skill' | 'plugin';
+    id: string;
+    title?: string;
+    description?: string;
+    scope?: string;
+}
+
 export interface AgentConsoleWorkspaceMentionResolver {
-    resolveSuggestions(workspace: string, activeToken: string, limit?: number): Promise<AgentConsoleWorkspaceSuggestion[]>;
-    resolveContext(workspace: string, mentionName: string): Promise<string[]>;
+    resolveSuggestions(workspace: string, activeToken: string, limit?: number, catalog?: AgentConsoleMentionCatalogItem[]): Promise<AgentConsoleWorkspaceSuggestion[]>;
+    resolveContext(workspace: string, mentionName: string, catalog?: AgentConsoleMentionCatalogItem[]): Promise<string[]>;
 }
 
 const WORKSPACE_SUGGESTION_LIMIT = 12;
@@ -40,11 +48,16 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
     async resolveSuggestions(
         workspace: string,
         activeToken: string,
-        limit = WORKSPACE_SUGGESTION_LIMIT
+        limit = WORKSPACE_SUGGESTION_LIMIT,
+        catalog: AgentConsoleMentionCatalogItem[] = []
     ): Promise<AgentConsoleWorkspaceSuggestion[]> {
+        const catalogSuggestions = this.resolveCatalogSuggestions(activeToken, catalog);
+        if (/^@(skill|plugin):/i.test(activeToken)) {
+            return catalogSuggestions.slice(0, limit);
+        }
         const query = this.normalizeWorkspaceQuery(activeToken);
         if (!workspace || !this.fileAdapter) {
-            return [];
+            return catalogSuggestions.slice(0, limit);
         }
         const lastSlashIndex = query.lastIndexOf('/');
         const basePath = lastSlashIndex >= 0 ? query.slice(0, lastSlashIndex) : '';
@@ -53,14 +66,15 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         const known = new Set(directSuggestions.map(item => item.value));
 
         if (!query) {
-            return directSuggestions.slice(0, limit);
+            return [...catalogSuggestions, ...directSuggestions].slice(0, limit);
         }
 
         if (lastSlashIndex >= 0) {
             if (directSuggestions.length >= limit) {
-                return directSuggestions.slice(0, limit);
+                return [...catalogSuggestions, ...directSuggestions].slice(0, limit);
             }
             return [
+                ...catalogSuggestions,
                 ...directSuggestions,
                 ...(await this.listNestedDirectorySuggestions(
                     workspace,
@@ -73,10 +87,11 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         }
 
         if (directSuggestions.length >= limit) {
-            return directSuggestions.slice(0, limit);
+            return [...catalogSuggestions, ...directSuggestions].slice(0, limit);
         }
 
         return [
+            ...catalogSuggestions,
             ...directSuggestions,
             ...(await this.walkWorkspaceSuggestions(
                 workspace,
@@ -87,7 +102,17 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         ].slice(0, limit);
     }
 
-    async resolveContext(workspace: string, mentionName: string): Promise<string[]> {
+    async resolveContext(workspace: string, mentionName: string, catalog: AgentConsoleMentionCatalogItem[] = []): Promise<string[]> {
+        const catalogMatch = mentionName.match(/^(skill|plugin):(.+)$/i);
+        if (catalogMatch) {
+            const kind = catalogMatch[1].toLowerCase() as 'skill' | 'plugin';
+            const id = catalogMatch[2];
+            const item = catalog.find(candidate => candidate.kind === kind && candidate.id === id);
+            if (!item) return [];
+            return kind === 'skill'
+                ? [`Activate skill '${item.id}'${item.description ? `: ${item.description}` : '.'}`]
+                : [`Plugin scope '${item.id}'${item.scope ? ` (${item.scope})` : ''}${item.description ? `: ${item.description}` : '.'}`];
+        }
         if (!workspace || !this.fileAdapter) {
             return [];
         }
@@ -111,6 +136,18 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
             return [target.relativePath];
         }
         return [];
+    }
+
+    protected resolveCatalogSuggestions(activeToken: string, catalog: AgentConsoleMentionCatalogItem[]): AgentConsoleWorkspaceSuggestion[] {
+        const token = String(activeToken || '').toLowerCase();
+        return catalog
+            .filter(item => `@${item.kind}:${item.id}`.toLowerCase().startsWith(token))
+            .sort((left, right) => left.kind.localeCompare(right.kind) || left.id.localeCompare(right.id))
+            .map(item => ({
+                label: item.title || item.id,
+                value: `@${item.kind}:${item.id}`,
+                description: `${item.kind === 'skill' ? 'Skill' : 'Plugin'}${item.scope ? ` / ${item.scope}` : ''}${item.description ? ` / ${item.description}` : ''}`
+            }));
     }
 
     protected normalizeWorkspaceQuery(tokenOrMention: string): string {

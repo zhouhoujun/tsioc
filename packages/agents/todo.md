@@ -92,6 +92,7 @@
 
 - **P70 · 声明式 agent 原型**：`AgentArchetype`（name/description/mode/permissions 规则集/prompt/model/steps）对齐 opencode `Agent.Info`；内置 `plan`（只读 + 写 plans 目录）、`build`（全量）、`review`（只读 + 验证）三原型；`setPlanMode` 收敛为 plan 原型；工具门控优先级 deny > allow > readOnly（writePaths 命中放行，`prefix*` 通配）；agent-tools `ARCHETYPE_TOOL_GROUPS` + `resolveArchetypeToolGroups`；agent-ui `/archetype` + `/status`；gateway `session.archetype.set/get` RPC。锚点：`agent/src/archetype/AgentArchetype.ts`、`agent-tools/src/options.ts`。
 - **P115 · CLI→Desktop 会话移交（G38）**：新增 `tsdi-agent desktop`（`app` alias）与可测试 launch plan；CLI 解析当前 session/workspace 与 gateway/token，token 只通过子进程环境传递，不暴露在 argv；支持 Electron/desktop entry 覆盖和 detached `unref` 启动。desktop 单实例通过 Electron `requestSingleInstanceLock(additionalData)` 传递 handoff，主实例监听 `second-instance`，更新 gateway/token/session/workspace、重写宿主 HTML、重载窗口并显示；首次启动与已运行实例共用同一配置路径。锚点：`agent-cli/src/desktop-command.ts`、`agent-cli/src/cli.ts`、`agent-desktop/src/DesktopApp.ts`、`agent-desktop/src/host.ts`。
+- **P116 · 统一 @ 提及菜单（G39）**：workspace mention resolver 扩展为 files/skills/plugins 统一候选；组件初始化并行读取 `skill_list` 与 `plugins list`，以分类描述展示并插入 `@skill:<id>` / `@plugin:<id>`；提交前将引用解析为 skill 激活提示与 plugin scope，同时保留文件/目录上下文。锚点：`agent-ui/src/AgentConsoleWorkspaceMentions.ts`、`agent-ui/src/AgentConsoleSessionState.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P80 · /review 内联评审命令**：`review` 工具组（`agent-tools/review/review-diff.tool.ts`）对当前 git diff（`git diff HEAD` 或指定 range/文件集）发起只读评审——不改工作树，输出结构化 findings（correctness / risks / suggested-fixes，含文件 + 行锚点）；`review_diff` 只读约束 + sandbox 策略 + workspace 守卫 + `AgentToolMode.review` 门控；findings 经 `ReviewFindingsStore` 落审计（toolName `review_diff`、`inputSummary='review <base>: <n> files, <m> findings'`、run 存 `metadata.reviewRun`，无 AuditSink 时抛错）供 review 面板展示，可与 commit 绑定审计。agent-gateway：`review.diff/list/get/save` RPC + `GET /api/reviews` REST（sessionId 必填、owner 403、commit 过滤、`/api/reviews/:id`）；agent-ui `/review` 子命令（run/diff/findings/show/approve/reject/approve-all/clear/clear-all/export/risk/summary）→ git diff 评审流 + findings 面板 + review.save 落库。锚点：`agent-tools/review/`、`agent/src/harness/ReviewFindingsStore.ts`、`agent-gateway/src/api/ReviewHandler.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-gateway/src/gateway/GatewayBootstrap.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P75 · Gateway OpenAPI 规范**：从已注册 `GatewayRoute[]` 生成 OpenAPI 3.1 文档（路径参数、认证 scheme、`/rpc` 入口），`GET /openapi.json` 免认证暴露。锚点：`agent-gateway/src/gateway/OpenApiDocument.ts`。
 
@@ -128,10 +129,9 @@
 
 ### 结论
 
-G1–G38 全部闭环（P67–P115，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G39–G40（UX 与性能）：
+G1–G39 全部闭环（P67–P116，明细见「已实现功能」与「已完成（历史）」）；G21 四端落地（P90 远程传输 / P91 Web console / P92 浏览器安全边界 / P93 VS Code 扩展 / P110 Electron 桌面壳）；TUI 专项 G41/G42 已闭环（P118 手动压缩 `/compact` / P119 `!` shell 执行）。对照 **2026-08-13 最新** codex（openai/codex，Rust app-server，v0.147.0 稳定线：Agent Plugins **1.0.0 跨厂商标准**（agentplugins.codes，2026-08-06 发布，Amazon/Anysphere/GitHub/Microsoft/OpenAI/Vercel 联盟 + Google，首发客户端 VS Code/Cursor/GitHub Copilot/ChatGPT & Codex/Kiro）、`--approve-for-me` 自动评审、thread sections + 分页历史、MCP 2026-07-28、Windows 原生沙箱 + 代理强制、重放脱敏、项目信任门、token 预算、索引化 web search、**CLI↔Desktop 会话移交（/app）**、**/usage 日/周/累计视图**、**/import 扩展（settings/MCP/plugins/sessions/commands/memories）**、**统一 @ 提及菜单（files/plugins/skills）**、**加密本地凭据存储（CLI + MCP OAuth）**、并发 skill/plugin 发现 + 高效远程压缩）与 opencode（anomalyco/opencode，v1.18.x：V2 桌面 sidecar、session 时间线、MCP 断线重连、OAuth 回调端口、自适应 thinking、reasoning 字段透传）逐项比对后，剩余差距为 G40（性能）：
 
-1. **统一 @ 提及菜单（G39）**：codex v0.140 typing `@` 打开 files/plugins/skills 统一菜单；本项目 workspace mentions 仅覆盖文件路径。
-2. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
+1. **并发 skill/plugin 发现 + 远程压缩效率（G40）**：codex v0.146 启动与大上下文开销优化（并发发现、高效远程压缩）；本项目为顺序发现，纯性能项。
 
 ### 结论 2：TUI 专项差距（G41–G50，2026-08-13 补充）
 
@@ -169,7 +169,7 @@ G1–G38 全部闭环（P67–P115，明细见「已实现功能」与「已完�
 | G36 | ~~/import 迁移范围窄~~ ✅ 已落地（P113） | codex v0.145：settings/MCP/plugins/sessions/commands/memories | Claude/Cursor 用户元数据与 plugins/skills 清单已纳入 preview/apply 脱敏报告；不复制正文/二进制 | 已闭环 |
 | G37 | ~~usage 无时间维度聚合~~ ✅ 已落地（P114） | codex v0.140 `/usage`：daily/weekly/cumulative | 三窗口聚合 + RPC/HTTP range/since + UI 周期切换，保留 session/owner/budget 作用域 | 已闭环 |
 | G38 | ~~CLI↔Desktop 无会话移交~~ ✅ 已落地（P115） | codex v0.138 `/app`：CLI thread → Desktop 移交 | `desktop`/`app` CLI 命令 + 环境 handoff + Electron second-instance 重载同一会话 | 已闭环 |
-| G39 | @ 提及仅文件 | codex v0.140：统一 @ 菜单（files/plugins/skills） | workspace mentions 仅路径补全 | 低中：UX |
+| G39 | ~~@ 提及仅文件~~ ✅ 已落地（P116） | codex v0.140：统一 @ 菜单（files/plugins/skills） | files/skills/plugins 分类候选 + 激活与作用域上下文 | 已闭环 |
 | G40 | skill/plugin 顺序发现 | codex v0.146：并发发现 + 高效远程压缩 | 顺序扫描 + 整包压缩 | 低：性能 |
 | G41 | ~~无手动压缩命令~~ ✅ 已落地（P118） | codex `/compact`；opencode `/compact`（Ctrl+X C） | 仅自动压缩 + `/compactions` 历史；gateway 无 `session.compact` RPC、runtime 无 `compactNow` | 高：长会话主动释放上下文 |
 | G42 | ~~无 `!` 前缀本地 shell~~ ✅ 已落地（P119） | codex/opencode 输入 `!cmd` 执行并展示不进模型 | 输入层仅 `/` 命令与 `@` mention，无 `!` 修饰符 | 高：编码效率 |
@@ -189,7 +189,6 @@ G1–G38 全部闭环（P67–P115，明细见「已实现功能」与「已完�
 >
 > **P111–P117（G34–G40，协议/安全/迁移）见上表；TUI 专项 G41/G42（P118 手动压缩 / P119 `!` shell 执行）已落地并入「已实现功能」，G43–G50 按 P120+ 排期（交互价值排序：键位 > 会话生命周期 > 视图/定制）。**
 
-- **P116 · 统一 @ 提及菜单（G39）**：agent-ui mentions 从纯路径补全扩展为统一菜单——`@file`（workspace 路径）/ `@skill`（已注册技能）/ `@plugin`（已装插件）三类候选分组渲染 + 输入确认插入对应引用文本（`@skill:<id>` / `@plugin:<id>` 格式，turn 上下文解析为激活提示/插件作用域）。锚点：`agent-ui/src/AgentConsoleWorkspaceMentions.ts`、`agent-ui/src/AgentConsoleComponent.ts`。
 - **P117 · 并发 skill/plugin 发现（G40）**：`provideSkills` 远程缓存目录与插件市场目录改为并发扫描（有界 Promise 池），`AgentContextManager` 上下文准备阶段对 skill/plugin/agents-doc 并行读取；大上下文压缩时远程目录只压缩摘要而非整包。锚点：`agent-tools/skills/provider.ts`、`agent/src/context/AgentContextManager.ts`。
 
 ### TUI 专项批次（G41–G50）
@@ -329,3 +328,7 @@ P114（G37）已落地：在既有 daily/weekly/cumulative 汇总之上补齐 RP
 ### P115 CLI→Desktop 会话移交（2026-08-14）
 
 P115（G38）已落地：CLI `desktop`/`app` 支持当前 session/workspace/gateway/token 的安全 handoff，desktop 单实例接收 additionalData 后重写配置并重载窗口；无已运行实例时按同一配置首次启动。回归：agent-desktop 19 / agent-cli 61，共 80 passing；desktop 与 CLI `npm run build` clean。G38 已闭环，下一项为 P116（统一 @ 提及菜单）。
+
+### P116 统一 @ 提及菜单（2026-08-14）
+
+P116（G39）已落地：agent-ui 在既有文件/目录 mention 上加入注册 skill 与已安装 plugin 分类候选，确认后插入 canonical 引用；turn 提交前解析 skill 激活提示和 plugin scope。无 workspace 时仍可使用 skill/plugin 候选，文件路径行为保持兼容。回归：agent-ui 421 passing，`npm run build` clean。G39 已闭环，下一项为 P117（并发 skill/plugin 发现与远程压缩效率）。

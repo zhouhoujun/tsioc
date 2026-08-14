@@ -24,7 +24,7 @@ import {
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions
 } from './AgentConsoleSuggestions';
-import { AgentConsoleWorkspaceMentionResolver } from './AgentConsoleWorkspaceMentions';
+import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionResolver } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import {
     VIM_DEFAULT_BINDINGS,
@@ -473,6 +473,7 @@ export class AgentConsoleSessionState {
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
+    protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
 
@@ -2473,6 +2474,11 @@ export class AgentConsoleSessionState {
         this.refreshInputSuggestions();
     }
 
+    setMentionCatalog(catalog: AgentConsoleMentionCatalogItem[]): void {
+        this.mentionCatalog = catalog.slice();
+        this.refreshInputSuggestions();
+    }
+
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
         this.themeStyles = resolveAgentConsoleThemeStyles(this.theme);
@@ -2871,11 +2877,11 @@ export class AgentConsoleSessionState {
         };
 
         applySuggestions();
-        if (!active?.token?.startsWith('@') || !this.workspace || !this.workspaceMentionResolver) {
+        if (!active?.token?.startsWith('@') || !this.workspaceMentionResolver) {
             return;
         }
         const requestId = ++this.workspaceSuggestionRequestId;
-        void this.workspaceMentionResolver.resolveSuggestions(this.workspace, active.token).then(options => {
+        void this.workspaceMentionResolver.resolveSuggestions(this.workspace, active.token, undefined, this.mentionCatalog).then(options => {
             if (requestId !== this.workspaceSuggestionRequestId) {
                 return;
             }

@@ -312,6 +312,8 @@ class SchedulerStub {
 
 class ToolRegistryStub {
     activations: Array<{ sessionId: string; name: string }> = [];
+    skills: any[] = [];
+    plugins: any[] = [];
 
     getToolDefinitions(): any[] {
         return [{ name: 'read_file', toolset: 'filesystem', activation: { kind: 'deferred', activated: false } }];
@@ -324,6 +326,12 @@ class ToolRegistryStub {
     async activateTool(sessionId: string, name: string): Promise<boolean> {
         this.activations.push({ sessionId, name });
         return true;
+    }
+
+    async invoke(name: string): Promise<any> {
+        if (name === 'skill_list') return { skills: this.skills };
+        if (name === 'plugins') return { plugins: this.plugins };
+        return undefined;
     }
 }
 
@@ -2586,6 +2594,30 @@ export class AgentConsoleComponentTest {
         }
     }
 
+    @Test('session state groups skill and plugin mentions with canonical insertion values')
+    async sessionStateGroupsSkillAndPluginMentions() {
+        const state = new AgentConsoleSessionState();
+        state.setWorkspaceMentionResolver(new AgentConsoleWorkspaceMentionsProvider());
+        state.setMentionCatalog([
+            { kind: 'skill', id: 'implement', title: 'Implement', description: 'Make code changes' },
+            { kind: 'plugin', id: 'com.example.review', title: 'Review plugin', scope: 'workspace' }
+        ]);
+
+        state.setInput('use @skill:im');
+        await waitForSuggestionMenu(state);
+        expect(state.selectMenu?.options).toContainEqual(expect.objectContaining({
+            value: '@skill:implement',
+            description: 'Skill / Make code changes'
+        }));
+
+        state.setInput('use @plugin:com');
+        await waitForSuggestionMenu(state);
+        expect(state.selectMenu?.options).toContainEqual(expect.objectContaining({
+            value: '@plugin:com.example.review',
+            description: 'Plugin / workspace'
+        }));
+    }
+
     @Test('component resolves workspace mention suggestions from app file adapter fallback')
     async componentResolvesWorkspaceMentionSuggestionsFromAppFileAdapter() {
         const workspace = createWorkspaceFixture();
@@ -2775,6 +2807,24 @@ export class AgentConsoleComponentTest {
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
+    }
+
+    @Test('component loads unified mention catalog and enriches skill and plugin scope')
+    async componentLoadsUnifiedMentionCatalog() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const tools = new ToolRegistryStub();
+        tools.skills = [{ id: 'implement', title: 'Implement', summary: 'Implement the requested change.' }];
+        tools.plugins = [{ id: 'com.example.review', scope: 'workspace', manifest: { name: 'Review', description: 'Review helpers' } }];
+        const component = createConsole(runtime, scheduler, tools, undefined, undefined, new AgentConsoleWorkspaceMentionsProvider());
+        component.configure({ sessionId: 'chat-unified-mentions', workspace: '/tmp/workspace' });
+        await component.onInit();
+
+        component.input = 'use @skill:implement with @plugin:com.example.review';
+        await component.submit();
+
+        expect(runtime.calls[0]).toContain("Activate skill 'implement': Implement the requested change.");
+        expect(runtime.calls[0]).toContain("Plugin scope 'com.example.review' (workspace): Review helpers");
     }
 
     @Test('component routes session commands through session service and internal notice copy flow')

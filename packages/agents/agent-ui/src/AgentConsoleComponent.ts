@@ -22,7 +22,7 @@ import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
-import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
+import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 
@@ -81,6 +81,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected streamMessageText = '';
     protected streamPendingTimer?: ReturnType<typeof setTimeout>;
     protected inputHistoryRestoreTimers: Array<ReturnType<typeof setTimeout>> = [];
+    protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -2430,6 +2431,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
         this.scheduleInputHistoryRestore();
         await this.refreshTools();
+        await this.refreshMentionCatalog();
         await this.refreshScheduledTasks();
         await this.refreshUsageDigest();
         await this.refreshSummaryQualityDigest();
@@ -2740,7 +2742,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     if (tool) {
                         return [`Tool ${tool.name}: toolset=${tool.toolset || 'default'}, active=${tool.active === false ? 'no' : 'yes'}`];
                     }
-                    return await this.workspaceMentionsProvider?.resolveContext(this.state.workspace, name) || [];
+                    return await this.workspaceMentionsProvider?.resolveContext(this.state.workspace, name, this.mentionCatalog) || [];
                 }
             }
         }))).flat();
@@ -2753,6 +2755,37 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             '',
             text
         ].join('\n');
+    }
+
+    protected async refreshMentionCatalog(): Promise<void> {
+        const invoke = async (name: string, input: any): Promise<any> => {
+            if (this.appRpc) {
+                const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input });
+                return result?.output;
+            }
+            if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') return undefined;
+            return this.toolRegistry.invoke(name, input, this.state.sessionId, undefined, this.state.workspace);
+        };
+        const [skillResult, pluginResult] = await Promise.all([
+            invoke('skill_list', {}).catch(() => undefined),
+            invoke('plugins', { action: 'list' }).catch(() => undefined)
+        ]);
+        this.mentionCatalog = [
+            ...(Array.isArray(skillResult?.skills) ? skillResult.skills : []).map((skill: any) => ({
+                kind: 'skill' as const,
+                id: String(skill.id || ''),
+                title: String(skill.title || skill.id || ''),
+                description: String(skill.summary || '')
+            })),
+            ...(Array.isArray(pluginResult?.plugins) ? pluginResult.plugins : []).map((plugin: any) => ({
+                kind: 'plugin' as const,
+                id: String(plugin.id || ''),
+                title: String(plugin.manifest?.name || plugin.id || ''),
+                description: String(plugin.manifest?.description || ''),
+                scope: String(plugin.scope || '')
+            }))
+        ].filter(item => item.id);
+        this.state.setMentionCatalog(this.mentionCatalog);
     }
 
     protected async bootstrapStateFromAppRpc(): Promise<void> {
