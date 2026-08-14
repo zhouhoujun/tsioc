@@ -63,6 +63,36 @@ export class AgentPluginManagerTest {
         } finally { await fs.rm(root, { recursive: true, force: true }); }
     }
 
+    @Test('loads Agent Plugins 1.0 manifest skills mcp transports and client namespaces')
+    async standardManifest() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugin-standard-'));
+        try {
+            const plugin = path.join(root, 'portable');
+            await fs.mkdir(path.join(plugin, 'skills', 'portable-skill'), { recursive: true });
+            await fs.writeFile(path.join(plugin, 'skills', 'portable-skill', 'SKILL.md'), '---\nname: portable-skill\ndescription: Portable.\n---\nBody');
+            await fs.writeFile(path.join(plugin, 'plugin.json'), JSON.stringify({
+                name: 'Portable', version: '1.0.0', manifestVersion: '1.0.0', mcp: 'mcp.json',
+                'com.openai.codex': { scope: 'workspace' }, 'com.example.simple': { enabled: true }
+            }));
+            await fs.writeFile(path.join(plugin, 'mcp.json'), JSON.stringify({ servers: {
+                local: { transport: { type: 'stdio', command: 'demo', args: ['serve'], env: { PORT: 42 } } },
+                remote: { transport: { type: 'streamable-http', url: 'https://example.test/mcp', headers: { Authorization: 'Bearer test' } } },
+                legacy: { type: 'http+sse', url: 'https://example.test/sse' }
+            } }));
+            const manager = new AgentPluginManager(fakeRunner({}));
+            const loaded = manager.discover({ local: root })[0];
+            expect(loaded.standard).toEqual({ format: 'agentplugins', manifestVersion: '1.0.0', clientNamespaces: ['com.example.simple', 'com.openai.codex'], mcpConfig: 'mcp.json' });
+            expect(loaded.manifest.clientExtensions?.['com.openai.codex']).toEqual({ scope: 'workspace' });
+            const contributions = manager.contributions([loaded]);
+            expect(contributions.skills.map(skill => skill.id)).toEqual(['portable-skill']);
+            expect(contributions.mcpServers).toEqual([
+                { id: 'local', command: 'demo', args: ['serve'], env: { PORT: '42' } },
+                { id: 'remote', url: 'https://example.test/mcp', headers: { Authorization: 'Bearer test' } },
+                { id: 'legacy', url: 'https://example.test/sse' }
+            ]);
+        } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+
     @Test('rolls back an invalid plugin manifest')
     async invalidManifestRollsBack() {
         const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugin-invalid-'));
@@ -72,6 +102,28 @@ export class AgentPluginManagerTest {
             try { await manager.install({ id: 'bad', type: 'registry', url: 'https://example.test/plugin.json' }, root); } catch (err) { error = err as Error; }
             expect(error?.message).toContain('valid plugin.json');
             expect(await fs.stat(path.join(root, 'bad')).then(() => true).catch(() => false)).toEqual(false);
+        } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+
+    @Test('installs a standard registry plugin with its relative mcp config')
+    async standardRegistryInstall() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'plugin-standard-install-'));
+        try {
+            const requested: string[] = [];
+            const runner: RemoteSkillProcessRunner = {
+                run: async () => ({ code: 0, stdout: '', stderr: '' }),
+                fetchText: async url => {
+                    requested.push(url);
+                    return url.endsWith('/mcp.json')
+                        ? JSON.stringify({ mcpServers: { demo: { command: 'demo' } } })
+                        : JSON.stringify({ name: 'Portable', version: '1.0.0', manifestVersion: '1.0.0', mcp: './mcp.json' });
+                }
+            };
+            const manager = new AgentPluginManager(runner);
+            const plugin = await manager.install({ id: 'portable', type: 'registry', url: 'https://example.test/plugins/plugin.json' }, root);
+            expect(requested).toEqual(['https://example.test/plugins/plugin.json', 'https://example.test/plugins/mcp.json']);
+            expect(plugin.standard.format).toEqual('agentplugins');
+            expect(plugin.manifest.mcpServers).toEqual([{ id: 'demo', command: 'demo' }]);
         } finally { await fs.rm(root, { recursive: true, force: true }); }
     }
 

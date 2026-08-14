@@ -19,6 +19,22 @@ export interface AgentPluginManifest {
     mcpServers?: AgentMcpServerOptions[];
     hooks?: AgentHooksOptions;
     agentsDoc?: string;
+    /** Agent Plugins specification version, e.g. `1.0.0`. */
+    manifestVersion?: string;
+    /** Reverse-domain client extension namespaces retained for portability. */
+    clientExtensions?: Record<string, Record<string, any>>;
+    author?: string | { name?: string; url?: string };
+    homepage?: string;
+    repository?: string | { type?: string; url?: string };
+    license?: string;
+    keywords?: string[];
+}
+
+export interface AgentPluginStandardInfo {
+    format: 'legacy' | 'agentplugins';
+    manifestVersion?: string;
+    clientNamespaces: string[];
+    mcpConfig?: string;
 }
 
 export interface InstalledAgentPlugin {
@@ -26,6 +42,7 @@ export interface InstalledAgentPlugin {
     scope: AgentPluginScope;
     root: string;
     manifest: AgentPluginManifest;
+    standard: AgentPluginStandardInfo;
     source?: RemoteSkillSource;
     installedAt: number;
     analytics: { installs: number; activations: number; calls: number };
@@ -102,9 +119,15 @@ export class AgentPluginManager {
                 const result = await runner.run('git', args, { timeoutMs: 120_000 });
                 if (result.code !== 0) throw new Error(`Plugin git clone failed: ${result.stderr || result.stdout}`);
             } else {
-                const manifest = JSON.parse(await this.requireRunner().fetchText(source.url, 30_000)) as AgentPluginManifest;
+                const manifest = JSON.parse(await this.requireRunner().fetchText(source.url, 30_000)) as AgentPluginManifest & { mcp?: string };
                 fs.mkdirSync(destination, { recursive: true });
                 fs.writeFileSync(path.join(destination, PLUGIN_FILE), JSON.stringify(manifest, null, 2));
+                if (typeof manifest.mcp === 'string') {
+                    const mcpPath = this.resolvePluginRelativePath(destination, manifest.mcp, 'MCP config');
+                    const mcpUrl = new URL(manifest.mcp, source.url).toString();
+                    fs.mkdirSync(path.dirname(mcpPath), { recursive: true });
+                    fs.writeFileSync(mcpPath, await this.requireRunner().fetchText(mcpUrl, 30_000));
+                }
             }
             const plugin = this.readPlugin(destination, scope, source);
             if (!plugin) throw new Error(`Plugin '${source.id}' does not contain a valid ${PLUGIN_FILE}.`);
@@ -156,12 +179,81 @@ export class AgentPluginManager {
         const file = path.join(root, PLUGIN_FILE);
         if (!fs.existsSync(file)) return undefined;
         try {
-            const manifest = JSON.parse(fs.readFileSync(file, 'utf8')) as AgentPluginManifest;
+            const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, any>;
+            const { manifest, standard } = this.normalizeManifest(root, raw);
             if (!manifest.name?.trim() || !manifest.version?.trim()) return undefined;
             const metadataFile = path.join(root, PLUGIN_METADATA);
             const metadata = fs.existsSync(metadataFile) ? JSON.parse(fs.readFileSync(metadataFile, 'utf8')) : {};
-            return { id: path.basename(root), scope, root, manifest, source: source ?? metadata.source, installedAt: metadata.installedAt ?? Date.now(), analytics: { installs: 0, activations: 0, calls: 0, ...(metadata.analytics ?? {}) } };
+            return { id: path.basename(root), scope, root, manifest, standard, source: source ?? metadata.source, installedAt: metadata.installedAt ?? Date.now(), analytics: { installs: 0, activations: 0, calls: 0, ...(metadata.analytics ?? {}) } };
         } catch { return undefined; }
+    }
+
+    private normalizeManifest(root: string, raw: Record<string, any>): { manifest: AgentPluginManifest; standard: AgentPluginStandardInfo } {
+        const manifest = { ...raw } as AgentPluginManifest;
+        const mcpConfig = typeof raw.mcp === 'string' ? raw.mcp : fs.existsSync(path.join(root, 'mcp.json')) ? 'mcp.json' : undefined;
+        const namespaces = this.clientNamespaces(raw);
+        const isStandard = !!raw.manifestVersion || !!mcpConfig || namespaces.length > 0;
+        if (isStandard) {
+            manifest.skills = Array.isArray(raw.skills) && raw.skills.length ? raw.skills.map(String) : ['skills'];
+            manifest.clientExtensions = Object.fromEntries(namespaces.map(key => [key, raw[key]]));
+            if (mcpConfig) manifest.mcpServers = this.readStandardMcp(root, mcpConfig);
+        }
+        return {
+            manifest,
+            standard: {
+                format: isStandard ? 'agentplugins' : 'legacy',
+                ...(raw.manifestVersion ? { manifestVersion: String(raw.manifestVersion) } : {}),
+                clientNamespaces: namespaces,
+                ...(mcpConfig ? { mcpConfig } : {})
+            }
+        };
+    }
+
+    private clientNamespaces(raw: Record<string, any>): string[] {
+        return Object.keys(raw).filter(key => /^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$/i.test(key) && raw[key] && typeof raw[key] === 'object').sort();
+    }
+
+    private readStandardMcp(root: string, relativeFile: string): AgentMcpServerOptions[] {
+        const file = this.resolvePluginRelativePath(root, relativeFile, 'MCP config');
+        const document = JSON.parse(fs.readFileSync(file, 'utf8')) as any;
+        const source = document.mcpServers ?? document.servers ?? document;
+        const entries: Array<[string, any]> = Array.isArray(source)
+            ? source.map((item: any, index: number) => [String(item?.id ?? item?.name ?? `server-${index + 1}`), item])
+            : Object.entries(source ?? {});
+        return entries.map(([name, value]) => this.normalizeMcpServer(name, value));
+    }
+
+    private normalizeMcpServer(name: string, value: any): AgentMcpServerOptions {
+        if (!value || typeof value !== 'object') throw new Error(`Invalid MCP server '${name}'.`);
+        const transport = value.transport && typeof value.transport === 'object' ? value.transport : value;
+        const type = String(transport.type ?? value.type ?? (transport.command ? 'stdio' : 'streamable-http')).toLowerCase();
+        const server: AgentMcpServerOptions = { id: String(value.id ?? name), ...(value.title ? { title: String(value.title) } : {}) };
+        if (type === 'stdio') {
+            if (!transport.command) throw new Error(`MCP stdio server '${name}' requires command.`);
+            server.command = String(transport.command);
+            if (Array.isArray(transport.args)) server.args = transport.args.map(String);
+            if (transport.cwd) server.cwd = String(transport.cwd);
+            if (transport.env && typeof transport.env === 'object') server.env = this.stringRecord(transport.env);
+        } else if (['streamable-http', 'streamable_http', 'http', 'sse', 'http+sse', 'legacy-sse'].includes(type)) {
+            const url = transport.url ?? transport.endpoint;
+            if (!url) throw new Error(`MCP HTTP server '${name}' requires url.`);
+            server.url = String(url);
+            if (transport.headers && typeof transport.headers === 'object') server.headers = this.stringRecord(transport.headers);
+        } else {
+            throw new Error(`Unsupported MCP transport '${type}' for server '${name}'.`);
+        }
+        return server;
+    }
+
+    private stringRecord(value: Record<string, unknown>): Record<string, string> {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item)]));
+    }
+
+    private resolvePluginRelativePath(root: string, relativeFile: string, label: string): string {
+        const resolvedRoot = path.resolve(root);
+        const file = path.resolve(resolvedRoot, relativeFile);
+        if (file !== resolvedRoot && !file.startsWith(`${resolvedRoot}${path.sep}`)) throw new Error(`Plugin ${label} must stay inside the plugin root.`);
+        return file;
     }
 
     private writeMetadata(plugin: InstalledAgentPlugin): void {

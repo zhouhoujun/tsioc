@@ -13,7 +13,7 @@ export class AgentPluginTool implements AgentTool {
     inputSchema = {
         type: 'object', required: ['action'],
         properties: {
-            action: { type: 'string', enum: ['install', 'list', 'inspect', 'activate', 'remove'] },
+            action: { type: 'string', enum: ['install', 'list', 'info', 'inspect', 'activate', 'remove'] },
             roots: { type: 'object', description: 'Plugin roots keyed by local/personal/workspace/remote.' },
             source: { type: 'object', description: 'Remote source with id/type/url/ref.' },
             id: { type: 'string' }, scope: { type: 'string', enum: ['local', 'personal', 'workspace', 'remote'] },
@@ -28,6 +28,7 @@ export class AgentPluginTool implements AgentTool {
         const plugins = this.manager.discover(roots);
         switch (input?.action) {
             case 'list': return { plugins };
+            case 'info':
             case 'inspect': {
                 const plugin = this.find(plugins, input?.id);
                 return { plugin, contributions: this.manager.contributions([plugin]) };
