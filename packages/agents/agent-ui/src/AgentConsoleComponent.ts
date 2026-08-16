@@ -4134,6 +4134,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
                     { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
+                    { label: '/share', value: '/share', description: 'create a shareable link for this session (gateway)' },
+                    { label: '/unshare', value: '/unshare', description: 'revoke a session share: /unshare [token]' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '/usage', value: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
@@ -4631,6 +4633,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.notify('Nothing to copy.');
                 return true;
             }
+            case '/share':
+                return this.runShareCommand(parsed.args);
+            case '/unshare':
+                return this.runUnshareCommand(parsed.args);
             case '/session': {
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -6983,6 +6989,84 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.persistSettings({ timelineMode: visible });
         } catch (error: any) {
             this.notify(error?.message || 'Failed to save timeline mode.');
+        }
+    }
+
+    protected async runShareCommand(args?: string): Promise<boolean> {
+        const sessionId = this.state.sessionId;
+        if (this.appRpc) {
+            try {
+                const share = await this.appRpc.request('session.share.create', { sessionId });
+                const token = String(share?.token || '').trim();
+                if (!token) {
+                    this.notify('Sharing is not available in this gateway.');
+                    return true;
+                }
+                const url = String(share?.url || `/api/share/${token}`).trim();
+                await this.openSharePanel(token, url);
+                return true;
+            } catch (error: any) {
+                this.notify(`Failed to create a share: ${error?.message || String(error)}`);
+                return true;
+            }
+        }
+        this.notify('Sharing requires a gateway (app RPC). Start the agent through the gateway or web console.');
+        return true;
+    }
+
+    protected async runUnshareCommand(args?: string): Promise<boolean> {
+        const token = String(args || '').trim();
+        if (!this.appRpc) {
+            this.notify('Sharing requires a gateway (app RPC).');
+            return true;
+        }
+        if (!token) {
+            const shares = await this.appRpc.request('session.share.list', { sessionId: this.state.sessionId }).catch(() => []);
+            if (!Array.isArray(shares) || !shares.length) {
+                this.notify('No active shares for this session. Usage: /unshare <token>');
+                return true;
+            }
+            const selected = await this.select('Active shares', shares.map((share: any) => ({
+                label: `${String(share.token || '').slice(0, 12)}…  ${String(share.url || '')}`,
+                value: String(share.token || ''),
+                description: new Date(Number(share.createdAt) || Date.now()).toLocaleString()
+            })), 0, 'enter revoke   esc close');
+            if (!selected) return true;
+            return this.revokeShare(selected);
+        }
+        return this.revokeShare(token);
+    }
+
+    protected async revokeShare(token: string): Promise<boolean> {
+        try {
+            const result = await this.appRpc?.request('session.share.revoke', { token });
+            if (result?.revoked === false) {
+                this.notify(`Share ${String(token).slice(0, 12)}… is no longer active.`);
+                return true;
+            }
+            this.notify(`Share ${String(token).slice(0, 12)}… revoked.`);
+        } catch (error: any) {
+            this.notify(`Failed to revoke the share: ${error?.message || String(error)}`);
+        }
+        return true;
+    }
+
+    protected async openSharePanel(token: string, url: string): Promise<void> {
+        const fullUrl = this.state.consoleOptions?.shareBaseUrl
+            ? `${this.state.consoleOptions.shareBaseUrl.replace(/\/+$/, '')}${url}`
+            : url;
+        const selected = await this.select('Session share', [
+            { label: 'Share created', value: 'info', description: `token ${String(token).slice(0, 8)}… · ${new Date().toLocaleString()}` },
+            { label: fullUrl, value: 'copy', description: 'copy the share link' },
+            { label: `Revoke (${String(token).slice(0, 8)}…)`, value: 'revoke', description: 'permanently disable this share' }
+        ], 1, 'enter select   esc close');
+        if (!selected) return;
+        if (selected === 'copy') {
+            await this.copyFocusedTextActionHandler(fullUrl, 'share link');
+            return;
+        }
+        if (selected === 'revoke') {
+            await this.revokeShare(token);
         }
     }
 

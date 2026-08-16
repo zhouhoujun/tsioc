@@ -47,4 +47,8 @@ export class SessionShareStore {
     }
     get(token: string): SessionShareSnapshot | undefined { return this.snapshots.get(token); }
     revoke(token: string): boolean { return this.snapshots.delete(token); }
+    listBySession(sessionId: string): SessionShareSnapshot[] {
+        const entries = Array.from(this.snapshots.values()).filter(item => item.sessionId === sessionId);
+        return entries.sort((left, right) => right.createdAt - left.createdAt);
+    }
 }

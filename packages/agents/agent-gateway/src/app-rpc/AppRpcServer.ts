@@ -8,6 +8,7 @@ import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
 import { summarizeUsageForSessions } from '../usage/UsageStats';
 import { AudioSessionHandler, AudioSessionState } from '../audio';
+import { SessionShareStore } from '../share/SessionShareStore';
 
 @Injectable()
 export class AppRpcServer {
@@ -32,7 +33,8 @@ export class AppRpcServer {
         @Optional() private delegation?: DelegationGraphStore | null,
         @Optional() private weaknessMiner?: WeaknessMiner | null,
         @Optional() private reviewFindings?: ReviewFindingsStore | null,
-        @Optional() private audio?: AudioSessionHandler | null
+        @Optional() private audio?: AudioSessionHandler | null,
+        @Optional() private shares?: SessionShareStore | null
     ) {
     }
 
@@ -180,6 +182,9 @@ export class AppRpcServer {
                         'session.git_snapshot.revert',
                         'session.git_snapshot.unrevert',
                         'session.compact',
+                        'session.share.create',
+                        'session.share.revoke',
+                        'session.share.list',
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
@@ -323,6 +328,12 @@ export class AppRpcServer {
                 return this.unrevertGitStepSnapshot(params, context);
             case 'session.compact':
                 return this.compactSession(params, context);
+            case 'session.share.create':
+                return this.createSessionShare(params, context);
+            case 'session.share.revoke':
+                return this.revokeSessionShare(params, context);
+            case 'session.share.list':
+                return this.listSessionShares(params, context);
             case 'goal.create': return this.createGoal(params, context);
             case 'goal.get': return this.getGoal(params, context);
             case 'goal.list': return this.runtime.listGoals(params?.status);
@@ -712,6 +723,42 @@ export class AppRpcServer {
         const archived = !!params?.archived;
         await this.sessions.setArchived(sessionId, archived);
         return { updated: true, sessionId, archived };
+    }
+
+    private async createSessionShare(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.shares) {
+            throw new AppRpcError(-32603, 'Session sharing is not available in this gateway.');
+        }
+        const state = await this.sessions.get(sessionId);
+        const snapshot = this.shares.create({
+            sessionId,
+            title: state.title,
+            summary: state.summary,
+            messages: await this.runtime.getMessages(sessionId)
+        }, state.workspace);
+        return { id: snapshot.id, token: snapshot.token, url: `/api/share/${snapshot.token}`, createdAt: snapshot.createdAt };
+    }
+
+    private async revokeSessionShare(params: any, context: AppRpcRequestContext): Promise<any> {
+        const token = String(params?.token || '').trim();
+        if (!token) {
+            throw new AppRpcError(-32602, 'token required');
+        }
+        const snapshot = this.shares?.get(token);
+        if (!snapshot) {
+            return { revoked: false, reason: 'share not found' };
+        }
+        await this.ensureSessionAccess(snapshot.sessionId, context);
+        this.shares?.revoke(token);
+        return { revoked: true, token };
+    }
+
+    private async listSessionShares(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.shares?.listBySession(sessionId) || [];
     }
 
     private async createSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {

@@ -403,6 +403,8 @@ class AppRpcStub {
     approvedApprovals: string[] = [];
     deniedApprovals: string[] = [];
     compactResult?: Record<string, any>;
+    shareResult?: Record<string, any> | null = null;
+    shareTokens: string[] = [];
     summaryQualityAggregates: any[] = [];
     summaryQualityRecords: any[] = [];
     summaryQualityTrend: any[] = [];
@@ -427,7 +429,6 @@ class AppRpcStub {
     pageResults?: Record<string, any> | null = null;
     sectionsBySession = new Map<string, any[]>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
-
     async request(method: string, params?: any, context?: any): Promise<any> {
         this.calls.push({ method, params, context });
         if (method === 'session.messages') {
@@ -890,6 +891,20 @@ class AppRpcStub {
                 summaryInserted: true,
                 summary: '[Context Summary — compressed 10 messages]'
             };
+        }
+        if (method === 'session.share.create') {
+            const token = `tok_share_${this.shareTokens.length + 1}`;
+            this.shareTokens.push(token);
+            return this.shareResult ?? { id: `share-${token}`, token, url: `/api/share/${token}`, createdAt: Date.now() };
+        }
+        if (method === 'session.share.list') {
+            return this.shareTokens.map(token => ({ token, url: `/api/share/${token}`, createdAt: Date.now() }));
+        }
+        if (method === 'session.share.revoke') {
+            const token = String(params?.token || '');
+            const existed = this.shareTokens.includes(token);
+            this.shareTokens = this.shareTokens.filter(item => item !== token);
+            return { revoked: existed, token };
         }
         if (method === 'audio.cancel') {
             const sessionId = String(params?.sessionId || 'console');
@@ -9702,6 +9717,64 @@ export class AgentConsoleComponentTest {
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
+    }
+
+    @Test('share command creates a share through rpc and opens the share panel')
+    async shareCommandCreatesShareViaRpc() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/share');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Session share');
+        expect(component.selectMenu?.options.some(option => option.value === 'copy')).toEqual(true);
+        expect(component.selectMenu?.options.some(option => option.label.includes('/api/share/'))).toEqual(true);
+
+        await component.sessionState.cancelSelectMenu();
+        await pending;
+        expect(appRpc.calls.some(call => call.method === 'session.share.create')).toEqual(true);
+    }
+
+    @Test('share command notifies when the gateway is unavailable')
+    async shareCommandNotifiesWithoutGateway() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).handleCommand('/share');
+        expect(component.notice).toContain('requires a gateway');
+    }
+
+    @Test('unshare command revokes a share by token and lists shares without args')
+    async unshareCommandRevokesShare() {
+        const appRpc = new AppRpcStub();
+        appRpc.shareTokens.push('tok_revoke1');
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        await (component as any).handleCommand('/unshare tok_revoke1');
+        expect(component.notice).toContain('revoked');
+        expect(appRpc.calls.some(call => call.method === 'session.share.revoke' && call.params?.token === 'tok_revoke1')).toEqual(true);
+        expect(appRpc.shareTokens).toEqual([]);
+    }
+
+    @Test('unshare without args lists active shares for selection')
+    async unshareCommandListsShares() {
+        const appRpc = new AppRpcStub();
+        appRpc.shareTokens.push('tok_abc');
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/unshare');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Active shares');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['tok_abc']);
+
+        await component.sessionState.confirmSelectMenu('tok_abc');
+        await pending;
+        expect(component.notice).toContain('revoked');
+        expect(appRpc.calls.some(call => call.method === 'session.share.revoke' && call.params?.token === 'tok_abc')).toEqual(true);
+        expect(appRpc.shareTokens).toEqual([]);
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')

@@ -171,7 +171,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 | ✅ G63 | 消息导航键（page up/down、first/last、last-user） | opencode messages_page_up/page_down/first/last/last_user | 已实现（P135）：pager 上下文 PageUp/PageDown 翻页、Home/End 首/末条、`Shift+G` 跳最后用户消息（跳过 steer），TUI+browser 共用（AgentConsoleKeymap.ts/AgentConsoleComponent.ts） | 中：长会话定位 |
 | ✅ G64 | 草稿 stash（暂存 prompt） | opencode prompt_stash / prompt_stash_pop / prompt_stash_list | 已实现（P132）：`/stash` list/push/pop/rm verb 命令，命名暂存草稿跨会话持久化 `.tsdi-agent/stash.json` | 低 |
 | ✅ G65 | tui.json 增强字段 | opencode tui.json：diff_style（auto/stacked）、cursor（style/blinking）、scroll_speed/scroll_acceleration、attention（notifications/sound_pack/volume/custom sounds） | 已实现（P141）：diffStyle/cursor/scrollAcceleration/attention 扩展，兼容既有字段 | 中：终端适配性 |
-| G66 | 会话分享 TUI 命令（`/share`） | opencode `/share` + unshare（复制 URL） | P86 网关分享仅 REST/RPC + Web 宿主，无 TUI 命令 | 中：协作闭环 |
+| ✅ G66 | 会话分享 TUI 命令（`/share`） | opencode `/share` + unshare（复制 URL） | 已实现（P145）：`/share` 生成脱敏分享链接 + `/unshare [token]` 撤销，分享面板展示 token/url + 复制 + 撤销，gateway `session.share.create/revoke/list` RPC | 中：协作闭环 |
 | G67 | `/skills` `/mcp` `/plugins` 浏览命令 | codex `/skills`（浏览使用）、`/mcp`（列出工具）、`/plugins`（市场浏览）；opencode MCP/插件面板 | 有 `@` mention skills/plugins 与 `/tools`，无独立浏览命令 | 中 |
 | G68 | `/approve` 重试自动评审拒绝 | codex `/approve`：批准一次对近期自动评审拒绝的 retry | `/approve`（AgentConsoleComponent.ts:5005）仅审批队列确认，无 retry 语义 | 低-中 |
 | G69 | plan 模式草稿提示 | codex 从 composer 草稿推断 plan 意图并提示 `/plan` | `/plan` + archetype 已有，无草稿检测提示 | 低 |
@@ -216,7 +216,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 
 ### 批次 D · 命令面闭环（P145–P149）
 
-- **P145 · G66 · `/share` 会话分享命令（中）**：`/share` 生成脱敏分享链接（复用 P86 SessionShareHandler）+ `/unshare` 撤销；分享面板展示 token/过期/撤销，Web 宿主一键复制。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/api/SessionShareHandler.ts`。
+- ~~**P145 · G66 · `/share` 会话分享命令（中）**~~ ✅ 已完成：`/share` 经 appRpc `session.share.create` 生成脱敏分享快照（复用 P86 SessionShareStore.redactSharedValue 递归脱敏密钥/Bearer/sk-* 与 workspace 路径）→ `Session share` 面板（token/url/revoke 三选项，复制走既有 copy handler，`consoleOptions.shareBaseUrl` 可拼完整链接）；`/unshare [token]` 撤销（无参先 `session.share.list` 列出活跃分享供选择）；gateway 增 `session.share.create/revoke/list` 3 个 RPC（注入 SessionShareStore + `listBySession` 按 sessionId 聚合 + owner 校验）。落地：`agent-gateway/src/app-rpc/AppRpcServer.ts`（3 RPC + capabilities）、`agent-gateway/src/share/SessionShareStore.ts`（listBySession）、`agent-ui/src/AgentConsoleComponent.ts`（runShareCommand/runUnshareCommand/revokeShare/openSharePanel + `/share` `/unshare` dispatch + /help）、`AgentConsoleSessionState.ts`（commandHints + consoleOptions.shareBaseUrl）；测试 `agent-gateway/test/share.spec.ts` 新增 3 用例（RPC suite）+ `agent-ui/test/view-model.spec.ts` 新增 4 用例，gateway 233 passing EXIT=0 + agent-ui 627 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean。
 - **P146 · G67 · `/skills` `/mcp` `/plugins` 浏览命令（中）**：`/skills`（浏览/激活/停用本地+远程技能）、`/mcp`（列出 MCP server 与工具，verbose 显示 server 详情，复用 P95 negotiatedVersion）、`/plugins`（浏览已装插件与市场，复用 P111 标准信息）；与 `@` mention 候选共用数据源。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-tools/skills/`、`agent-tools/mcp/`。
 - **P147 · G68 · `/approve` 重试自动评审拒绝（低-中）**：`/approve` 对最近一次 auto-review 拒绝的 action 批准单次 retry（区别于审批队列确认）；联动 verification-gate 判定记录。锚点：`agent-ui/src/AgentConsoleComponent.ts`（/approvals）、`agent/src/harness/VerificationGate.ts`。
 - **P148 · G69 · plan 模式草稿提示（低）**：composer 草稿检测 plan 意图（「plan/方案/设计/先不要改」等启发式 + 长度阈值）→ 状态栏/输入区提示 `/plan`；`ui.planNudges: false` 关闭。锚点：`agent-ui/src/AgentConsoleComponent.ts`。
