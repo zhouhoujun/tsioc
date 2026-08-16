@@ -2095,6 +2095,10 @@ const messageItemsCache = new WeakMap<object, {
     consoleOptions: AgentConsoleSessionState['consoleOptions'];
     visibleItems: number;
     rawMode: boolean;
+    showTimestamps: boolean;
+    showToolOutput: boolean;
+    showUsername: boolean;
+    timelineMode: boolean;
     items: AgentConsoleRenderedMessageItem[];
 }>();
 
@@ -2210,6 +2214,9 @@ export class AgentConsoleMessagesPanelComponent {
 
     get visibleMessages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const messages = this.messages;
+        if (this.state.timelineMode) {
+            return messages;
+        }
         const visibleCount = this.state.consoleOptions.messagesVisibleItems;
         if (this.state.messageDetailOpen) {
             return messages;
@@ -2236,6 +2243,10 @@ export class AgentConsoleMessagesPanelComponent {
         const visibleItems = this.state.consoleOptions.messagesVisibleItems;
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
+        const showTimestamps = this.state.showTimestamps;
+        const showToolOutput = this.state.showToolOutput;
+        const showUsername = this.state.showUsername;
+        const timelineMode = this.state.timelineMode;
         const cached = messageItemsCache.get(this);
 
         if (cached
@@ -2245,7 +2256,11 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.theme === theme
             && cached.consoleOptions === consoleOptions
             && cached.visibleItems === visibleItems
-            && cached.rawMode === rawMode) {
+            && cached.rawMode === rawMode
+            && cached.showTimestamps === showTimestamps
+            && cached.showToolOutput === showToolOutput
+            && cached.showUsername === showUsername
+            && cached.timelineMode === timelineMode) {
             return cached.items;
         }
 
@@ -2256,7 +2271,12 @@ export class AgentConsoleMessagesPanelComponent {
             streaming: this.state.status === 'running' || this.state.status === 'reasoning',
             statusLabels: this.state.consoleOptions.messageStatusLabels,
             statusSymbol: this.state.consoleOptions.messageStatusSymbol,
-            rawMode
+            rawMode,
+            showTimestamps,
+            showToolOutput,
+            showUsername,
+            username: this.state.consoleOptions.username,
+            timelineMode
         });
         messageItemsCache.set(this, {
             messages,
@@ -2266,6 +2286,10 @@ export class AgentConsoleMessagesPanelComponent {
             consoleOptions,
             visibleItems,
             rawMode,
+            showTimestamps,
+            showToolOutput,
+            showUsername,
+            timelineMode,
             items
         });
         return items;

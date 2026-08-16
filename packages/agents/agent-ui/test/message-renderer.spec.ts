@@ -217,4 +217,54 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[1].lines[0].statusStyle?.color).toBeTruthy();
         expect(items[0].lines[0].statusStyle?.color).not.toEqual(items[1].lines[0].statusStyle?.color);
     }
+
+    @Test('renders timestamps in meta when showTimestamps is enabled')
+    renderTimestampsInMeta() {
+        const createdAt = new Date(2026, 0, 15, 9, 5).getTime();
+        const items = renderAgentConsoleMessageItems([
+            { id: 'u1', role: 'user', content: 'hi', createdAt }
+        ] as any, { showTimestamps: true });
+
+        expect(items[0].lines[0].meta).toContain('09:05');
+
+        const without = renderAgentConsoleMessageItems([
+            { id: 'u2', role: 'user', content: 'hi', createdAt }
+        ] as any, { showTimestamps: false });
+        expect(without[0].lines[0].meta).toEqual('');
+    }
+
+    @Test('hides tool output content when showToolOutput is disabled')
+    renderToolOutputHidden() {
+        const message = {
+            id: 't1',
+            role: 'tool',
+            name: 'read_file',
+            content: '{"path":"src/a.ts","truncated":false}',
+            createdAt: 1,
+            metadata: { receipt: { toolName: 'read_file' } }
+        };
+
+        const hidden = renderAgentConsoleMessageItems([message] as any, { showToolOutput: false });
+        expect(hidden[0].lines[0].content).toEqual('');
+
+        const visible = renderAgentConsoleMessageItems([message] as any, { showToolOutput: true });
+        expect(visible[0].lines[0].content).toEqual('src/a.ts');
+    }
+
+    @Test('shows the username label when showUsername is enabled')
+    renderUsernameLabels() {
+        const items = renderAgentConsoleMessageItems([
+            { id: 'u1', role: 'user', content: 'hi', createdAt: 1 },
+            { id: 'a1', role: 'assistant', content: 'ok', createdAt: 2 }
+        ] as any, { showUsername: true, username: 'alice' });
+
+        expect(items[0].lines[0].role).toContain('alice');
+        expect(items[0].lines[0].role).toContain(':');
+        expect(items[1].lines[0].role).toContain('agent');
+
+        const without = renderAgentConsoleMessageItems([
+            { id: 'u2', role: 'user', content: 'hi', createdAt: 1 }
+        ] as any, { showUsername: false, username: 'alice' });
+        expect(without[0].lines[0].role).not.toContain('alice');
+    }
 }

@@ -39,7 +39,8 @@ export type AgentConsoleGlobalAction =
     | 'model-cycle-recent-back'
     | 'model-variant-cycle'
     | 'which-key-toggle'
-    | 'status-health';
+    | 'status-health'
+    | 'timeline-mode';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -47,7 +48,7 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-first', 'message-last', 'message-last-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
-    'which-key-toggle', 'status-health'
+    'which-key-toggle', 'status-health', 'timeline-mode'
 ];
 
 export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -83,7 +84,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'shift+f2': 'model-cycle-recent-back',
     'ctrl+t': 'model-variant-cycle',
     'ctrl+alt+k': 'which-key-toggle',
-    'ctrl+x h': 'status-health'
+    'ctrl+x h': 'status-health',
+    'ctrl+x g': 'timeline-mode'
 };
 export function normalizeAgentConsoleKeySequence(value: string): string {
     return String(value || '').trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');

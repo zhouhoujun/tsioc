@@ -9434,7 +9434,7 @@ export class AgentConsoleComponentTest {
 
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
-            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'title']);
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'timestamps', 'tooloutput', 'username', 'title']);
 
             await component.sessionState.confirmSelectMenu('vim');
             await pending;
@@ -9606,6 +9606,102 @@ export class AgentConsoleComponentTest {
         await waitForCondition(() => component.sessionState.healthPopoverVisible);
         panel.onHoverLeave();
         expect(component.sessionState.healthPopoverVisible).toEqual(false);
+    }
+
+    @Test('display command toggles timestamps and persists the setting')
+    async displayCommandTogglesTimestamps() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-display-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+            expect(component.sessionState.showTimestamps).toEqual(true);
+
+            await (component as any).handleCommand('/display off');
+            expect(component.sessionState.showTimestamps).toEqual(false);
+            expect(component.notice).toContain('Hiding message timestamps');
+            expect((await store.load(workspace)).showTimestamps).toEqual(false);
+
+            await (component as any).handleCommand('/display');
+            expect(component.sessionState.showTimestamps).toEqual(true);
+            expect((await store.load(workspace)).showTimestamps).toEqual(true);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('timeline command toggles timeline mode and ctrl+x g maps to it')
+    async timelineCommandAndKeybind() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-timeline-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+            expect(component.sessionState.timelineMode).toEqual(false);
+
+            await (component as any).handleCommand('/timeline');
+            expect(component.sessionState.timelineMode).toEqual(true);
+            expect((await store.load(workspace)).timelineMode).toEqual(true);
+
+            await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+            await (component as any).handleTerminalInput({ text: 'g', partial: false }, 'g');
+            expect(component.sessionState.timelineMode).toEqual(false);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('settings general tab toggles tool output and username with persistence')
+    async settingsGeneralTabTogglesDisplayOptions() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-display-tabs-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+
+            const pending = (component as any).handleCommand('/settings');
+            await waitForCondition(() => !!component.selectMenu);
+            await component.sessionState.confirmSelectMenu('general');
+            await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
+            expect(component.selectMenu?.options.map(option => option.value)).toContain('tooloutput');
+            expect(component.selectMenu?.options.map(option => option.value)).toContain('username');
+            expect(component.selectMenu?.options.map(option => option.value)).toContain('timestamps');
+
+            await component.sessionState.confirmSelectMenu('tooloutput');
+            await pending;
+
+            expect(component.sessionState.showToolOutput).toEqual(false);
+            expect((await store.load(workspace)).showToolOutput).toEqual(false);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('restores persisted display toggles on init')
+    async consoleRestoresPersistedDisplayToggles() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-display-restore-'));
+        try {
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            await store.save(workspace, { showTimestamps: false, showToolOutput: false, showUsername: true, timelineMode: true });
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            (component as any).settingsStore = store;
+
+            await component.onInit();
+
+            expect(component.sessionState.showTimestamps).toEqual(false);
+            expect(component.sessionState.showToolOutput).toEqual(false);
+            expect(component.sessionState.showUsername).toEqual(true);
+            expect(component.sessionState.timelineMode).toEqual(true);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')

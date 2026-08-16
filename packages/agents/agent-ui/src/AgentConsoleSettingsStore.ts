@@ -5,6 +5,10 @@ export interface AgentConsoleSettingsData {
     language?: string;
     vimMode?: boolean;
     showThinking?: boolean;
+    showTimestamps?: boolean;
+    showToolOutput?: boolean;
+    showUsername?: boolean;
+    timelineMode?: boolean;
 }
 
 @Injectable()
@@ -19,7 +23,11 @@ export class AgentConsoleSettingsStore {
             return {
                 language: typeof parsed?.language === 'string' && parsed.language.trim() ? parsed.language.trim() : undefined,
                 vimMode: typeof parsed?.vimMode === 'boolean' ? parsed.vimMode : undefined,
-                showThinking: typeof parsed?.showThinking === 'boolean' ? parsed.showThinking : undefined
+                showThinking: typeof parsed?.showThinking === 'boolean' ? parsed.showThinking : undefined,
+                showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
+                showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
+                showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
+                timelineMode: typeof parsed?.timelineMode === 'boolean' ? parsed.timelineMode : undefined
             };
         } catch {
             return {};
@@ -34,7 +42,11 @@ export class AgentConsoleSettingsStore {
             version: 1,
             ...(data.language ? { language: data.language } : {}),
             ...(typeof data.vimMode === 'boolean' ? { vimMode: data.vimMode } : {}),
-            ...(typeof data.showThinking === 'boolean' ? { showThinking: data.showThinking } : {})
+            ...(typeof data.showThinking === 'boolean' ? { showThinking: data.showThinking } : {}),
+            ...(typeof data.showTimestamps === 'boolean' ? { showTimestamps: data.showTimestamps } : {}),
+            ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
+            ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
+            ...(typeof data.timelineMode === 'boolean' ? { timelineMode: data.timelineMode } : {})
         }, null, 2));
     }
 

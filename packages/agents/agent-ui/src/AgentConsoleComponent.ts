@@ -4109,6 +4109,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
                     { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
                     { label: '/thinking', value: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)' },
+                    { label: '/display', value: '/display', description: 'toggle message timestamp visibility: /display [on|off]' },
+                    { label: '/timeline', value: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)' },
                     { label: '/raw', value: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]' },
                     { label: '/stash', value: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]' },
                     { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
@@ -4393,6 +4395,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runThemeCommand(parsed.args);
             case '/thinking':
                 return this.runThinkingCommand(parsed.args);
+            case '/display':
+                return this.runDisplayCommand(parsed.args);
+            case '/timeline':
+                await this.toggleTimelineMode();
+                return true;
             case '/raw':
                 return this.runRawModeCommand(parsed.args);
             case '/stash':
@@ -6522,6 +6529,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (typeof persisted.showThinking === 'boolean') {
             this.state.setShowThinking(persisted.showThinking);
         }
+        if (typeof persisted.showTimestamps === 'boolean') {
+            this.state.setShowTimestamps(persisted.showTimestamps);
+        }
+        if (typeof persisted.showToolOutput === 'boolean') {
+            this.state.setShowToolOutput(persisted.showToolOutput);
+        }
+        if (typeof persisted.showUsername === 'boolean') {
+            this.state.setShowUsername(persisted.showUsername);
+        }
+        if (typeof persisted.timelineMode === 'boolean') {
+            this.state.setTimelineMode(persisted.timelineMode);
+        }
     }
 
     protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {
@@ -6796,6 +6815,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             { label: `Vim mode: ${this.state.vimMode ? 'on' : 'off'}`, value: 'vim', description: 'vim-style normal/insert input mode' },
             { label: `Raw mode: ${this.state.rawMode ? 'on' : 'off'}`, value: 'raw', description: 'plain-text scrollback rendering' },
             { label: `Thinking: ${this.state.showThinking ? 'shown' : 'hidden'}`, value: 'thinking', description: 'reasoning message visibility' },
+            { label: `Timestamps: ${this.state.showTimestamps ? 'shown' : 'hidden'}`, value: 'timestamps', description: 'message timestamp visibility' },
+            { label: `Tool output: ${this.state.showToolOutput ? 'shown' : 'hidden'}`, value: 'tooloutput', description: 'tool output visibility in messages' },
+            { label: `Username: ${this.state.showUsername ? 'shown' : 'hidden'}`, value: 'username', description: 'username label visibility' },
             { label: `Window title: ${this.options.ui?.terminalTitle === false ? 'off' : 'on'}`, value: 'title', description: 'terminal/document title sync' }
         ], 0, 'enter apply   esc close');
         if (!option) return true;
@@ -6832,6 +6854,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const enabled = this.options.ui?.terminalTitle !== false;
             this.options.ui = { ...(this.options.ui || {}), terminalTitle: !enabled };
             this.notify(!enabled ? 'Window title sync enabled.' : 'Window title sync disabled.');
+            return true;
+        }
+        if (option === 'timestamps') {
+            return this.runDisplayCommand('');
+        }
+        if (option === 'tooloutput') {
+            this.state.setShowToolOutput(!this.state.showToolOutput);
+            try {
+                await this.persistSettings({ showToolOutput: this.state.showToolOutput });
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to save tool output visibility.');
+                return true;
+            }
+            this.notify(this.state.showToolOutput ? 'Showing tool output in messages.' : 'Hiding tool output in messages.');
+            return true;
+        }
+        if (option === 'username') {
+            this.state.setShowUsername(!this.state.showUsername);
+            try {
+                await this.persistSettings({ showUsername: this.state.showUsername });
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to save username visibility.');
+                return true;
+            }
+            this.notify(this.state.showUsername ? 'Showing the username label.' : 'Hiding the username label.');
             return true;
         }
         return true;
@@ -6906,6 +6953,37 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         return true;
+    }
+
+    protected async runDisplayCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().toLowerCase();
+        const current = this.state.showTimestamps;
+        if (requested === 'on' || requested === 'show') {
+            this.state.setShowTimestamps(true);
+        } else if (requested === 'off' || requested === 'hide') {
+            this.state.setShowTimestamps(false);
+        } else {
+            this.state.setShowTimestamps(!current);
+        }
+        try {
+            await this.persistSettings({ showTimestamps: this.state.showTimestamps });
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to save timestamp visibility.');
+            return true;
+        }
+        this.notify(this.state.showTimestamps ? 'Showing message timestamps.' : 'Hiding message timestamps.');
+        return true;
+    }
+
+    protected async toggleTimelineMode(): Promise<void> {
+        const visible = !this.state.timelineMode;
+        this.state.setTimelineMode(visible);
+        this.notify(visible ? 'Timeline view enabled (compact chronological list).' : 'Timeline view disabled.');
+        try {
+            await this.persistSettings({ timelineMode: visible });
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to save timeline mode.');
+        }
     }
 
     protected async runExperimentalCommand(args?: string): Promise<boolean> {
@@ -7417,7 +7495,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.toggleHealthPopover();
             return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health'>, string> = {
+        if (action === 'timeline-mode') {
+            await this.toggleTimelineMode();
+            return true;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health' | 'timeline-mode'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',

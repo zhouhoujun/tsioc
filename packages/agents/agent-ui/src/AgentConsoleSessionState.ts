@@ -300,6 +300,7 @@ export interface AgentConsoleOptions {
     brandWidth?: number;
     messageStatusLabels?: AgentConsoleMessageStatusLabels;
     messageStatusSymbol?: string;
+    username?: string;
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -348,7 +349,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
         failed: '失败',
         error: '错误'
     },
-    messageStatusSymbol: ''
+    messageStatusSymbol: '',
+    username: 'you'
 };
 
 @Injectable()
@@ -469,6 +471,10 @@ export class AgentConsoleSessionState {
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
     showThinking = true;
+    showTimestamps = true;
+    showToolOutput = true;
+    showUsername = false;
+    timelineMode = false;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
     healthPopoverVisible = false;
@@ -494,7 +500,7 @@ export class AgentConsoleSessionState {
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
-    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/settings', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/display', '/timeline', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/settings', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -2557,6 +2563,22 @@ export class AgentConsoleSessionState {
 
     setShowThinking(value: boolean): void {
         this.showThinking = !!value;
+    }
+
+    setShowTimestamps(value: boolean): void {
+        this.showTimestamps = !!value;
+    }
+
+    setShowToolOutput(value: boolean): void {
+        this.showToolOutput = !!value;
+    }
+
+    setShowUsername(value: boolean): void {
+        this.showUsername = !!value;
+    }
+
+    setTimelineMode(value: boolean): void {
+        this.timelineMode = !!value;
     }
 
     setWhichKeyVisible(value: boolean): void {

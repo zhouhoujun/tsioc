@@ -68,6 +68,11 @@ export interface AgentConsoleMessageRenderContext {
     statusLabels?: AgentConsoleMessageStatusLabels;
     statusSymbol?: string;
     rawMode?: boolean;
+    showTimestamps?: boolean;
+    showToolOutput?: boolean;
+    showUsername?: boolean;
+    username?: string;
+    timelineMode?: boolean;
 }
 
 interface AgentConsoleResolvedMessageRenderer {
@@ -173,22 +178,30 @@ export function renderAgentConsoleMessageItem(
     const rowSelected = !!(selected && context.messagesFocused);
     const itemStyle = renderer.itemStyle(theme, rowSelected);
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
-    const roleLabel = resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
+    const baseRoleLabel = resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
+    const roleLabel = context.showUsername
+        ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
+        : baseRoleLabel;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
-    const displayContent = resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
+    const hideToolOutput = templateKind === 'tool' && context.showToolOutput === false;
+    const displayContent = hideToolOutput
+        ? ''
+        : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
-    const markdownLines = context.rawMode
-        ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
-        : streaming || templateKind === 'user'
-            ? streaming
-                ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
-                : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
-            : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
-    const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel);
+    const markdownLines = hideToolOutput
+        ? []
+        : context.rawMode
+            ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
+            : streaming || templateKind === 'user'
+                ? streaming
+                    ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
+                    : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
+                : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
+    const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps);
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
         : templateKind === 'assistant'
@@ -518,9 +531,14 @@ function resolveAgentConsoleMessageRoleLabel(message: AgentMessage | undefined, 
 function resolveTimelineMeta(
     message: AgentMessage | undefined,
     templateKind: AgentConsoleMessageTemplateKind,
-    statusLabel: string
+    statusLabel: string,
+    showTimestamps = false
 ): string {
     const parts: string[] = [];
+    if (showTimestamps && typeof message?.createdAt === 'number' && Number.isFinite(message.createdAt)) {
+        const date = new Date(message.createdAt);
+        parts.push(`${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`);
+    }
     const uiKind = String(message?.metadata?.uiKind || '').trim();
     if (uiKind === 'event') {
         const label = String(message?.metadata?.label || '').trim();
