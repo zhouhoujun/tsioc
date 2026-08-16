@@ -20,10 +20,14 @@ import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-to
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
+import { AgentEditorBridge, AGENT_EDITOR_BRIDGE } from './AgentEditorBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
+import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
+import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
+import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction } from './AgentConsoleKeymap';
@@ -72,6 +76,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
     protected static readonly SEARCH_SESSION_LIMIT = 100;
     protected static readonly SEARCH_CONCURRENCY = 6;
+    protected static readonly EDIT_ESCAPE_WINDOW_MS = 400;
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected shellMultilineMode = false;
@@ -96,6 +101,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected drainingQueuedSessions = new Set<string>();
     protected activeTurnRun?: Promise<void> | null = null;
     protected activeThemeName: AgentConsoleThemeName = 'dark';
+    protected lastTerminalTitle = '';
+    protected editTargetMessageId = '';
+    protected editDraftBefore = '';
+    protected editAttachmentsBefore: AgentConsolePendingAttachment[] = [];
+    protected lastEditSessionMessageId = '';
+    protected editDismissedAt = 0;
+    protected lastEscapeAt = 0;
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -120,8 +132,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private keymapStore?: AgentConsoleKeymapStore | null,
         @Optional() private themeStore?: AgentConsoleThemeStore | null,
         @Optional() private statuslineStore?: AgentConsoleStatuslineStore | null,
+        @Optional() private titleStore?: AgentConsoleTitleStore | null,
         @Optional() private backgroundTasks?: BackgroundTaskManager | null,
-        @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null
+        @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null,
+        @Optional() @Inject(AGENT_EDITOR_BRIDGE) private editorBridge?: AgentEditorBridge | null,
+        @Optional() private rawModeStore?: AgentConsoleRawModeStore | null,
+        @Optional() private stashStore?: AgentConsoleStashStore | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -132,6 +148,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
         this.state.setConsoleOptions(this.options.ui?.console);
         this.state.setStatusline(this.resolveInitialStatusline());
+        this.state.setTitleFields(this.resolveInitialTitleFields());
+        this.state.setRawMode(this.options.ui?.rawMode === true);
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }
 
@@ -140,6 +158,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return normalizeAgentConsoleStatusline(this.options.ui.statusline);
         }
         return [...defaultAgentConsoleStatusline];
+    }
+
+    protected resolveInitialTitleFields(): AgentConsoleTitleField[] {
+        return [...defaultAgentConsoleTitle];
     }
 
     protected resolveInitialModelProfile(): string {
@@ -1524,6 +1546,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setProjects([]);
             this.state.setThreads([]);
             this.state.setProjectContext();
+            this.updateTerminalTitle();
             return;
         }
         this.state.setSessions(sessions.map(item => ({
@@ -1711,6 +1734,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const projectSessions = this.resolveCurrentProjectSessions();
         if (!projectSessions.length) {
             this.state.setProjectContext();
+            this.updateTerminalTitle();
             return;
         }
         const representative = this.selectProjectRepresentative(projectSessions);
@@ -1731,6 +1755,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             projectSummary: summary,
             projectSessionCount: representative?.projectSessionCount || projectSessions.length
         });
+        this.updateTerminalTitle();
     }
 
     protected resolveProjectSessionsFor(sessionId = this.state.sessionId): Array<{
@@ -1953,6 +1978,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
             if (sessionId === this.state.sessionId) {
                 this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
+                this.updateTerminalTitle();
             }
             return;
         }
@@ -1960,11 +1986,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const requests = await this.sessionService.listApprovals(sessionId);
             if (sessionId === this.state.sessionId) {
                 this.state.setPendingApprovals(requests as AgentConsoleApprovalRequest[]);
+                this.updateTerminalTitle();
             }
             return;
         }
         if (sessionId === this.state.sessionId) {
             this.state.setPendingApprovals([]);
+            this.updateTerminalTitle();
         }
     }
 
@@ -2035,8 +2063,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.closeMessageDetail();
             this.state.clearActivities();
             this.state.setLastError('');
+            this.updateTerminalTitle();
             this.state.setNotice('');
             this.state.setInput('', 0);
+            this.editTargetMessageId = '';
+            this.editDraftBefore = '';
+            this.editAttachmentsBefore = [];
+            this.lastEditSessionMessageId = '';
+            this.editDismissedAt = 0;
+            this.lastEscapeAt = 0;
         await this.refreshSessions(target.id);
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
@@ -2521,6 +2556,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         await this.restoreTheme();
         this.statuslineStore = this.statuslineStore || new AgentConsoleStatuslineStore(this.resolveFileAdapter());
         await this.restoreStatusline();
+        this.titleStore = this.titleStore || new AgentConsoleTitleStore(this.resolveFileAdapter());
+        await this.restoreTitle();
+        this.rawModeStore = this.rawModeStore || new AgentConsoleRawModeStore(this.resolveFileAdapter());
+        await this.restoreRawMode();
+        this.stashStore = this.stashStore || new AgentConsoleStashStore(this.resolveFileAdapter());
+        this.updateTerminalTitle();
         await this.resolveGitBranch();
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
@@ -2907,6 +2948,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             workspace: typeof meta.workspace === 'string' ? meta.workspace : undefined
         });
         this.state.setQueuedPromptCount((this.queuedPrompts.get(this.state.sessionId) || []).length);
+        this.updateTerminalTitle();
     }
 
     protected async restoreInputHistory(): Promise<void> {
@@ -4042,6 +4084,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
                     { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
                     { label: '/thinking', value: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)' },
+                    { label: '/raw', value: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]' },
+                    { label: '/stash', value: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]' },
                     { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
                     { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
                     { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
@@ -4051,6 +4095,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/experimental', value: '/experimental', description: 'experimental features: list / <name> on|off' },
                     { label: '/feedback', value: '/feedback', description: 'packaging diagnostics for feedback reports' },
                     { label: '/ide', value: '/ide', description: 'IDE bridge: show attached editor context' },
+                    { label: '/editor', value: '/editor', description: 'edit the draft in an external editor (Ctrl+G)' },
                     { label: '/ps', value: '/ps', description: 'background tasks: list / stop <id>' },
                     { label: '/resume', value: '/resume', description: 'resume an existing or archived session' },
                     { label: '/archive', value: '/archive', description: 'archive the current session without deleting its transcript' },
@@ -4322,6 +4367,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runThemeCommand(parsed.args);
             case '/thinking':
                 return this.runThinkingCommand(parsed.args);
+            case '/raw':
+                return this.runRawModeCommand(parsed.args);
+            case '/stash':
+                return this.runStashCommand(parsed.args);
             case '/statusline':
                 return this.runStatuslineCommand(parsed.args);
             case '/hooks':
@@ -4342,6 +4391,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runBackgroundTasksCommand(parsed.args);
             case '/ide':
                 return this.runIdeCommand(parsed.args);
+            case '/editor':
+                return this.runEditorCommand(parsed.args);
             case '/retry':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -4372,6 +4423,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeReview();
                 this.state.closeGitSnapshotDetail();
                 this.state.setApprovalsFocused(true);
+                this.updateTerminalTitle();
                 return true;
             }
             case '/usage':
@@ -4624,14 +4676,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             }
             case '/title': {
+                const titleText = String(parsed.args || '').trim();
+                const titleVerb = titleText.split(/\s+/)[0]?.toLowerCase();
+                if (!titleText || titleVerb === 'list' || titleVerb === 'set' || titleVerb === 'unset') {
+                    return this.runTitleCommand(titleText);
+                }
                 const titleSessionId = this.state.sessionId;
                 if (!titleSessionId || !this.sessionService) {
                     this.notify('No current session to title.');
                     return true;
                 }
-                const title = String(parsed.args || '').trim();
+                const title = titleText;
                 await this.sessionService.setSessionTitle(titleSessionId, title || undefined);
                 await this.refreshSessions();
+                this.state.setTitle(title);
+                this.updateTerminalTitle();
                 this.notify(title ? `Session titled "${title}".` : 'Session title cleared.');
                 return true;
             }
@@ -5154,12 +5213,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.clearActivities();
             this.state.pushActivity('turn', this.state.summarize(draft));
             this.state.setMessages([...baseMessages, userMsg, asstMsg]);
+            this.updateTerminalTitle();
         try {
             await this.runTurnStream(prompt, asstMsg, turnMessage, profile);
             this.clearStreamingMessageState();
             this.ensureMessageAtTail(asstMsg.id);
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
+                    this.updateTerminalTitle();
                 }
         } catch (error: any) {
             this.clearStreamingMessageState();
@@ -5167,6 +5228,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setLastError(error.message || 'Unknown');
                 this.state.pushActivity('error', error.message || 'Unknown');
                 this.state.appendAssistantErrorMessage(error.message || 'Unknown');
+                this.updateTerminalTitle();
         } finally {
             this.state.clearTurnEventScope(turnScope);
         }
@@ -5174,7 +5236,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
-        if (this.shellMultilineMode && !value.startsWith('!') && !value.startsWith('/')) {
+        const editTargetId = this.editTargetMessageId;
+        const editConsumed = !!editTargetId;
+        if (editTargetId) {
+            this.editTargetMessageId = '';
+            this.lastEditSessionMessageId = '';
+            this.editDismissedAt = 0;
+        }
+        if (this.shellMultilineMode && !editConsumed && !value.startsWith('!') && !value.startsWith('/')) {
             this.state.pushInputHistory(value);
             const persistHistory = this.persistInputHistory();
             this.state.setInput('');
@@ -5214,12 +5283,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 steer = true;
                 await this.interruptTurn();
                 if (this.activeTurnRun) await this.activeTurnRun.catch(() => undefined);
-            } else if (this.isQueueModeEnabled()) {
-                this.enqueuePrompt(value);
-                return;
-            } else {
-                this.notifyBusyState();
-                return;
+        } else if (this.isQueueModeEnabled()) {
+            this.enqueuePrompt(value);
+            return;
+        } else {
+            this.notifyBusyState();
+            return;
+        }
+    }
+        if (editConsumed && !value.startsWith('/') && !value.startsWith('!') && this.state.sessionId) {
+            const messages = this.state.messages.slice();
+            const editedIndex = messages.findIndex(message => message.id === editTargetId);
+            const hasLaterTurns = editedIndex >= 0 && editedIndex < messages.length - 1;
+            if (hasLaterTurns) {
+                const source = this.state.sessionId;
+                let branchId = '';
+                if (editedIndex > 0) {
+                    branchId = await this.sessionService?.forkSession(source, messages[editedIndex - 1].id) || '';
+                } else {
+                    const fresh = await this.sessionService?.ensureSession();
+                    branchId = fresh?.id || '';
+                }
+                if (branchId && branchId !== source) {
+                    await this.openSession(branchId);
+                    this.notify(`Branched into ${branchId} with your edited prompt (original preserved).`);
+                }
             }
         }
         const turnSessionId = this.state.sessionId;
@@ -5260,6 +5348,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.clearActivities();
             this.state.pushActivity('turn', this.state.summarize(value));
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
+            this.updateTerminalTitle();
 
         try {
             const turnRun = this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
@@ -5271,11 +5360,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setLastError(message);
                 this.state.pushActivity('error', message);
                 this.state.appendAssistantErrorMessage(message);
+                this.updateTerminalTitle();
         } finally {
             this.activeTurnRun = null;
             this.ensureMessageAtTail(assistantMessage.id);
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
+                    this.updateTerminalTitle();
                 }
                 this.state.setTasksCount(this.scheduler.getTasks().length);
             void this.refreshTurnArtifacts();
@@ -5451,6 +5542,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             assistantMessage.content = result.message.content;
                 if (this.state.status === 'running' || this.state.status === 'reasoning') {
                     this.state.setStatus('idle');
+                    this.updateTerminalTitle();
                 }
         }
     }
@@ -5472,6 +5564,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (chunk?.type === 'reasoning' && chunk.content) {
                 this.clearStreamingPendingNotice();
                 this.state.setStatus('reasoning');
+                this.updateTerminalTitle();
                 this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
                 this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('reasoning'), 'Reasoning about implementation', {
                     eventType: 'reasoning',
@@ -6246,6 +6339,96 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async runRawModeCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().toLowerCase();
+        if (requested === 'on' || requested === 'show') {
+            this.state.setRawMode(true);
+        } else if (requested === 'off' || requested === 'hide') {
+            this.state.setRawMode(false);
+        } else {
+            this.state.setRawMode(!this.state.rawMode);
+        }
+        try {
+            await this.rawModeStore?.save(this.resolveHistoryWorkspace(), this.state.rawMode);
+        } catch (error: any) {
+            this.notify(error?.message || 'Failed to save raw mode.');
+            return true;
+        }
+        this.notify(this.state.rawMode ? 'Raw mode enabled (plain text scrollback).' : 'Raw mode disabled (markdown rendering).');
+        return true;
+    }
+
+    protected async runStashCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        if (!parsed || parsed.toLowerCase() === 'list') {
+            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
+            const names = Object.keys(stashes);
+            if (!names.length) {
+                this.notify('No stashed drafts. Use /stash push <name> to save the current draft.');
+                return true;
+            }
+            this.notify(`Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
+            return true;
+        }
+        const [verb, ...rest] = parsed.split(/\s+/);
+        const requested = rest.join(' ').trim();
+        if (verb.toLowerCase() === 'push' || verb.toLowerCase() === 'save') {
+            const draft = String(this.state.input || '').trim();
+            if (!draft) {
+                this.notify('Nothing to stash: the draft is empty.');
+                return true;
+            }
+            const name = requested || 'default';
+            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
+            stashes[name] = draft;
+            try {
+                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to stash the draft.');
+                return true;
+            }
+            this.notify(`Draft stashed as "${name}".`);
+            return true;
+        }
+        if (verb.toLowerCase() === 'pop' || verb.toLowerCase() === 'restore') {
+            const name = requested || 'default';
+            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
+            if (!(name in stashes)) {
+                this.notify(`No stash named "${name}". Available: ${Object.keys(stashes).join(', ') || 'none'}.`);
+                return true;
+            }
+            this.state.updateDraft(stashes[name]);
+            delete stashes[name];
+            try {
+                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
+            } catch (error: any) {
+                this.notify(error?.message || 'Restored the draft, but failed to remove the stash.');
+                return true;
+            }
+            this.notify(`Restored stash "${name}" into the draft.`);
+            return true;
+        }
+        if (verb.toLowerCase() === 'rm' || verb.toLowerCase() === 'drop' || verb.toLowerCase() === 'delete') {
+            const name = requested || 'default';
+            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
+            if (!(name in stashes)) {
+                this.notify(`No stash named "${name}". Available: ${Object.keys(stashes).join(', ') || 'none'}.`);
+                return true;
+            }
+            delete stashes[name];
+            try {
+                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to remove the stash.');
+                return true;
+            }
+            this.notify(`Removed stash "${name}".`);
+            return true;
+        }
+        this.notify('Usage: /stash [list|push <name>|pop <name>|rm <name>]');
+        return true;
+    }
+
     protected async applyTheme(value: string): Promise<boolean> {
         if (!isAgentConsoleThemeName(value)) {
             this.notify(`Unknown theme "${value}". Available: ${agentConsoleThemeNames.join(', ')}.`);
@@ -6267,6 +6450,82 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const persisted = await this.statuslineStore?.load(this.resolveHistoryWorkspace());
         if (persisted) {
             this.state.setStatusline(persisted);
+        }
+    }
+
+    protected async restoreTitle(): Promise<void> {
+        const persisted = await this.titleStore?.load(this.resolveHistoryWorkspace());
+        if (persisted) {
+            this.state.setTitleFields(persisted);
+        }
+    }
+
+    protected async restoreRawMode(): Promise<void> {
+        const persisted = await this.rawModeStore?.load(this.resolveHistoryWorkspace());
+        if (persisted) {
+            this.state.setRawMode(persisted);
+        }
+    }
+
+    protected async runTitleCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        if (!parsed || parsed.toLowerCase() === 'list') {
+            const current = this.state.titleFields;
+            this.notify(`Window title: ${current.join(', ')}. Use /title set field1,field2 or unset field.`);
+            return true;
+        }
+        const [verb, ...rest] = parsed.split(/\s+/);
+        const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
+        if (verb.toLowerCase() === 'set') {
+            if (!requested.length) {
+                this.notify('Usage: /title set project,status,thread,branch,model,context,task');
+                return true;
+            }
+            const invalid = requested.filter(field => !isAgentConsoleTitleField(field));
+            if (invalid.length) {
+                this.notify(`Unknown window title field "${invalid[0]}". Available: ${defaultAgentConsoleTitle.join(', ')}.`);
+                return true;
+            }
+            return this.applyTitleFields(normalizeAgentConsoleTitle(requested));
+        }
+        if (verb.toLowerCase() === 'unset') {
+            const remaining = this.state.titleFields.filter(field => !requested.includes(field));
+            if (remaining.length === this.state.titleFields.length) {
+                this.notify(`Field "${requested[0]}" is not in the window title. Current: ${this.state.titleFields.join(', ')}.`);
+                return true;
+            }
+            return this.applyTitleFields(normalizeAgentConsoleTitle(remaining));
+        }
+        this.notify('Usage: /title [list|set field1,field2|unset field]');
+        return true;
+    }
+
+    protected async applyTitleFields(fields: AgentConsoleTitleField[]): Promise<boolean> {
+        this.state.setTitleFields(fields);
+        this.updateTerminalTitle();
+        try {
+            await this.titleStore?.save(this.resolveHistoryWorkspace(), fields);
+        } catch (error: any) {
+            this.notify(error?.message || 'Updated the window title fields, but failed to save them.');
+            return true;
+        }
+        this.notify(fields.length ? `Window title set to ${fields.join(', ')}.` : 'Window title cleared.');
+        return true;
+    }
+
+    protected updateTerminalTitle(): void {
+        if (this.options.ui?.terminalTitle === false) {
+            return;
+        }
+        const title = this.state.formatTerminalTitle();
+        if (!title || title === this.lastTerminalTitle) {
+            return;
+        }
+        this.lastTerminalTitle = title;
+        this.surfaceAccessor?.writeRawTerminalData?.(`\x1b]0;${title}\x07`);
+        const doc = (globalThis as { document?: { title: string } }).document;
+        if (doc) {
+            doc.title = title;
         }
     }
 
@@ -6324,13 +6583,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const headPath = fileAdapter.join(workspace, '.git', 'HEAD');
             if (!fileAdapter.existsSync(headPath)) {
                 this.state.setGitBranch('');
+                this.updateTerminalTitle();
                 return;
             }
             const head = fileAdapter.readTextSync(headPath).trim();
             const match = /^ref:\s*refs\/heads\/(.+)$/.exec(head);
             this.state.setGitBranch(match ? match[1] : head.slice(0, 7));
+            this.updateTerminalTitle();
         } catch {
             this.state.setGitBranch('');
+            this.updateTerminalTitle();
         }
     }
 
@@ -6542,6 +6804,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
+    protected async runEditorCommand(args?: string): Promise<boolean> {
+        if (this.isTurnInProgress()) {
+            this.notifyBusyState();
+            return true;
+        }
+        const initial = String(args || '').trim() || this.state.input;
+        const result = await this.openExternalEditor(initial);
+        if (!result) {
+            return true;
+        }
+        if (result.cancelled || result.content === undefined) {
+            this.notify('Editor closed without changes.');
+            return true;
+        }
+        this.state.setInput(result.content, result.content.length);
+        this.notify(`Draft updated from editor (${result.content.length} chars).`);
+        return true;
+    }
+
+    protected async openExternalEditor(initial: string): Promise<{ content?: string; cancelled?: boolean } | undefined> {
+        if (!this.editorBridge?.available) {
+            this.notify('No external editor available. Set $EDITOR or $VISUAL (agent-cli host) to enable Ctrl+G / /editor.');
+            return undefined;
+        }
+        try {
+            return await this.editorBridge.open(initial);
+        } catch (error: any) {
+            this.notify(error?.message || 'External editor failed to start.');
+            return undefined;
+        }
+    }
+
     protected decodeGlobalKey(raw: string): string {
         if (raw === '\u001b') return 'escape';
         if (raw.length === 1) {
@@ -6560,7 +6854,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (raw === '\u001b') {
             const action = this.globalKeymap!.resolve('escape');
             if (action === 'interrupt-turn') {
-                if (!this.isTurnInProgress()) return false;
+                if (!this.isTurnInProgress()) return this.handleIdleEscape();
                 await this.interruptTurn();
                 return true;
             }
@@ -6619,7 +6913,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
             const action = this.globalKeymap!.resolve('escape');
             if (action === 'interrupt-turn') {
-                if (!this.isTurnInProgress()) return false;
+                if (!this.isTurnInProgress()) return this.handleIdleEscape();
                 await this.interruptTurn();
                 return true;
             }
@@ -6629,6 +6923,112 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         if (!ctrlKey && key.length !== 1 && !this.globalKeyPending) return false;
         return this.handleGlobalKeySequence(normalizedKey);
+    }
+
+    /**
+     * P130 edit-last-message Esc state machine (G55/G70):
+     * edit-active Esc dismisses (records target for step-back); idle double
+     * Esc within EDIT_ESCAPE_WINDOW_MS re-enters at the previous message, or
+     * at the last editable user message when no dismissal is recent.
+     */
+    protected async handleIdleEscape(): Promise<boolean> {
+        const now = Date.now();
+        const withinWindow = now - this.lastEscapeAt <= AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS;
+        this.lastEscapeAt = now;
+        if (this.editTargetMessageId) {
+            this.dismissEditMode();
+            return true;
+        }
+        if (withinWindow) {
+            this.lastEscapeAt = 0;
+            await this.enterEditMode();
+            return true;
+        }
+        return false;
+    }
+
+    protected getEditableUserMessages(): AgentMessage[] {
+        return this.state.messages.filter(message =>
+            message.role === 'user'
+            && message.metadata?.kind !== 'steer'
+            && !!String(message.content || '').trim()
+        );
+    }
+
+    protected extractEditableMessageText(message: AgentMessage): string {
+        const content = String(message?.content || '');
+        const marker = '[Mention Context]';
+        if (content.startsWith(marker)) {
+            const separator = content.indexOf('\n\n', marker.length);
+            if (separator >= 0) {
+                return content.slice(separator + 2);
+            }
+        }
+        return content;
+    }
+
+    protected getEditableImageParts(message: AgentMessage): Array<{ imageUrl: string; mediaType?: string; name?: string }> {
+        const images: Array<{ imageUrl: string; mediaType?: string; name?: string }> = [];
+        for (const part of message?.parts || []) {
+            if (part?.type === 'image' && part?.imageUrl) {
+                images.push({ imageUrl: part.imageUrl, mediaType: part.mediaType, name: part.name });
+            }
+        }
+        return images;
+    }
+
+    protected async enterEditMode(): Promise<boolean> {
+        const editable = this.getEditableUserMessages();
+        if (!editable.length) {
+            this.notify('No user message to edit.');
+            return true;
+        }
+        const recentDismiss = this.editDismissedAt > 0
+            && (Date.now() - this.editDismissedAt) <= AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS;
+        if (recentDismiss && this.lastEditSessionMessageId) {
+            const index = editable.findIndex(message => message.id === this.lastEditSessionMessageId);
+            if (index > 0) {
+                this.startEditTarget(editable[index - 1]);
+                return true;
+            }
+            this.notify('Already at the first user message.');
+            return true;
+        }
+        this.startEditTarget(editable[editable.length - 1]);
+        return true;
+    }
+
+    protected startEditTarget(target: AgentMessage): void {
+        this.editAttachmentsBefore = this.state.pendingAttachments.slice();
+        this.editDraftBefore = this.state.input;
+        this.editTargetMessageId = target.id;
+        const text = this.extractEditableMessageText(target);
+        this.state.setInput(text, text.length);
+        const imageParts = this.getEditableImageParts(target);
+        if (imageParts.length) {
+            this.state.setPendingAttachments(imageParts.map((part, index) => ({
+                id: `edit-${target.id}-${index}`,
+                kind: 'image',
+                path: part.imageUrl,
+                name: part.name || `image-${index + 1}`,
+                mediaType: part.mediaType,
+                imageUrl: part.imageUrl
+            })));
+        } else {
+            this.state.clearPendingAttachments();
+        }
+        this.notify(`Editing message ${target.id.slice(0, 8)}… Enter to submit, Esc cancels, Esc,Esc for previous.`);
+    }
+
+    protected dismissEditMode(): boolean {
+        if (!this.editTargetMessageId) return true;
+        this.lastEditSessionMessageId = this.editTargetMessageId;
+        this.editDismissedAt = Date.now();
+        this.editTargetMessageId = '';
+        this.state.setInput(this.editDraftBefore, this.editDraftBefore.length);
+        this.state.setPendingAttachments(this.editAttachmentsBefore);
+        this.notify('Edit cancelled — draft restored.');
+        return true;
     }
 
     protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<void> {
@@ -6649,7 +7049,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
             return;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking'>, string> = {
+        if (action === 'open-editor') {
+            await this.runEditorCommand();
+            return;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -7613,6 +8017,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 if (result?.model) {
                     this.state.setModel(String(result.model));
                 }
+            this.updateTerminalTitle();
             this.notify(`Switched model profile to ${name}.`);
             return;
         }
@@ -7631,6 +8036,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (resolved.model) {
                 this.state.setModel(resolved.model);
             }
+        this.updateTerminalTitle();
         this.notify(`Switched model profile to ${name}.`);
     }
 

@@ -2,13 +2,14 @@ import { TuiConsoleModule } from '@tsdi/components/console';
 import { AgentHookCommandExecutor, mergeAgentOptions } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
-import { AgentConsoleComponent, AgentUiConfigService, runAgentUi, agentConsoleThemes, isAgentConsoleThemeName } from '@tsdi/agent-ui';
+import { AgentConsoleComponent, AgentUiConfigService, runAgentUi, agentConsoleThemes, isAgentConsoleThemeName, AGENT_EDITOR_BRIDGE } from '@tsdi/agent-ui';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
+import { NodeAgentEditorBridge } from './NodeAgentEditorBridge';
 import { createAgentSandboxRuntimeProvider, ensureAgentWorkspace, resolveModelAdapter, withAdapterProviders } from './run-command';
 
 export interface AgentCliUiTarget {
@@ -70,6 +71,8 @@ function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCl
             theme: (tui?.theme && isAgentConsoleThemeName(tui.theme) ? agentConsoleThemes[tui.theme] : undefined)
                 ?? agentOptions?.ui?.theme,
             keymap: tui?.keybinds ?? agentOptions?.ui?.keymap,
+            terminalTitle: tui?.terminalTitle ?? agentOptions?.ui?.terminalTitle,
+            rawMode: tui?.rawMode ?? agentOptions?.ui?.rawMode,
             console: {
                 ...(agentOptions?.ui?.console || {}),
                 workspace: agentOptions?.ui?.console?.workspace || resolved.workspace
@@ -104,6 +107,7 @@ export async function runAgentConsole(
             resolveModelAdapter(config, options),
             NodeAgentHookCommandExecutor,
             { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
+            { provide: AGENT_EDITOR_BRIDGE, useClass: NodeAgentEditorBridge },
             { provide: AgentUiConfigService, useValue: config },
             { provide: AGENT_SSH_OPTIONS, useValue: resolved.ssh ?? {} },
             ...(ui.providers || []),

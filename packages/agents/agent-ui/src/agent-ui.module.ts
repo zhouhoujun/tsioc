@@ -16,6 +16,8 @@ import { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleKeymap, AgentConsoleKeymapStore } from './AgentConsoleKeymap';
+import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
+import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import {
     AgentConsoleActivityPanelComponent,
@@ -88,6 +90,8 @@ import {
         AgentConsoleWorkspaceMentionsProvider,
         AgentConsoleKeymap,
         AgentConsoleKeymapStore,
+        AgentConsoleRawModeStore,
+        AgentConsoleStashStore,
         AgentConsoleThemeStore
     ],
     exports: [
@@ -121,6 +125,7 @@ import {
         AgentConsoleWorkspaceMentionsProvider,
         AgentConsoleKeymap,
         AgentConsoleKeymapStore,
+        AgentConsoleStashStore,
         AgentConsoleThemeStore
     ]
 })

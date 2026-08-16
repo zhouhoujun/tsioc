@@ -18,6 +18,7 @@ export class AgentTuiConfigTest {
         expect(resolved.cursor).toEqual({ style: 'block', blinking: true });
         expect(resolved.scrollAcceleration).toEqual(false);
         expect(resolved.attention).toEqual({ notifications: false, soundPack: 'default', volume: 0.5, sounds: {} });
+        expect(resolved.terminalTitle).toEqual(true);
     }
 
     @Test('file layer overrides defaults')
@@ -39,6 +40,7 @@ export class AgentTuiConfigTest {
         expect(resolved.cursor).toEqual({ style: 'underline', blinking: false });
         expect(resolved.scrollAcceleration).toEqual(true);
         expect(resolved.attention).toEqual({ notifications: true, soundPack: 'classic', volume: 0.8, sounds: { message: 'snd/msg.wav' } });
+        expect(resolved.terminalTitle).toEqual(true);
     }
 
     @Test('later layers win (CLI > env > file)')
@@ -100,6 +102,15 @@ export class AgentTuiConfigTest {
         expect(resolved.scrollAcceleration).toEqual(false);
         expect(resolved.cursor).toEqual({ style: 'block', blinking: true });
         expect(resolved.attention).toEqual({ notifications: false, soundPack: 'default', volume: 0.5, sounds: {} });
+        expect(resolved.terminalTitle).toEqual(true);
+    }
+
+    @Test('terminalTitle false is honored and defaults to true otherwise')
+    terminalTitleFlag() {
+        expect(mergeAgentTuiConfig({ terminalTitle: false }).terminalTitle).toEqual(false);
+        expect(mergeAgentTuiConfig({ terminalTitle: false }, {}).terminalTitle).toEqual(false);
+        expect(mergeAgentTuiConfig({}, { terminalTitle: true }).terminalTitle).toEqual(true);
+        expect(normalizeAgentTuiConfig({ terminalTitle: 'no' as any }).terminalTitle).toEqual(true);
     }
 
     @Test('volume is clamped to the 0..1 range')

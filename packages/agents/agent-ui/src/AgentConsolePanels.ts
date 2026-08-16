@@ -2072,6 +2072,7 @@ const messageItemsCache = new WeakMap<object, {
     theme: AgentConsoleTheme;
     consoleOptions: AgentConsoleSessionState['consoleOptions'];
     visibleItems: number;
+    rawMode: boolean;
     items: AgentConsoleRenderedMessageItem[];
 }>();
 
@@ -2212,6 +2213,7 @@ export class AgentConsoleMessagesPanelComponent {
         const messagesFocused = this.state.messagesFocused;
         const visibleItems = this.state.consoleOptions.messagesVisibleItems;
         const consoleOptions = this.state.consoleOptions;
+        const rawMode = this.state.rawMode;
         const cached = messageItemsCache.get(this);
 
         if (cached
@@ -2220,7 +2222,8 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.messagesFocused === messagesFocused
             && cached.theme === theme
             && cached.consoleOptions === consoleOptions
-            && cached.visibleItems === visibleItems) {
+            && cached.visibleItems === visibleItems
+            && cached.rawMode === rawMode) {
             return cached.items;
         }
 
@@ -2230,7 +2233,8 @@ export class AgentConsoleMessagesPanelComponent {
             messagesFocused: this.state.messagesFocused,
             streaming: this.state.status === 'running' || this.state.status === 'reasoning',
             statusLabels: this.state.consoleOptions.messageStatusLabels,
-            statusSymbol: this.state.consoleOptions.messageStatusSymbol
+            statusSymbol: this.state.consoleOptions.messageStatusSymbol,
+            rawMode
         });
         messageItemsCache.set(this, {
             messages,
@@ -2239,6 +2243,7 @@ export class AgentConsoleMessagesPanelComponent {
             theme,
             consoleOptions,
             visibleItems,
+            rawMode,
             items
         });
         return items;
@@ -2291,6 +2296,9 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
+        if (this.state.rawMode) {
+            return this.messageItems;
+        }
         if (this.state.messagesFocused) {
             return this.messageItems.map(item => this.isReasoningMessageItem(item)
                 ? this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES)

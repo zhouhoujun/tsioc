@@ -15,6 +15,7 @@ import {
     resolveAgentConsoleThemeStyles
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField, defaultAgentConsoleStatusline } from './AgentConsoleStatusline';
+import { AgentConsoleTitleField, composeAgentConsoleTerminalTitle, defaultAgentConsoleTitle } from './AgentConsoleTitle';
 import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
@@ -365,6 +366,7 @@ export class AgentConsoleSessionState {
     planMode = false;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
+    titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];
     gitBranch = '';
     projectKey = '';
     projectLabel = '';
@@ -458,6 +460,7 @@ export class AgentConsoleSessionState {
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
     showThinking = true;
+    rawMode = false;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
@@ -477,7 +480,7 @@ export class AgentConsoleSessionState {
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => boolean | Promise<boolean>;
-    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
+    commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -529,6 +532,27 @@ export class AgentConsoleSessionState {
 
     setStatusline(statusline: AgentConsoleStatuslineField[]): void {
         this.statusline = [...(statusline || defaultAgentConsoleStatusline)];
+    }
+
+    setTitleFields(titleFields: AgentConsoleTitleField[]): void {
+        this.titleFields = [...(titleFields || defaultAgentConsoleTitle)];
+    }
+
+    formatTerminalTitle(): string {
+        return composeAgentConsoleTerminalTitle(
+            {
+                projectKey: this.projectKey,
+                projectLabel: this.projectLabel,
+                workspace: this.workspace,
+                status: this.status,
+                pendingApprovalCount: this.pendingApprovals.length,
+                sessionId: this.sessionId,
+                gitBranch: this.gitBranch,
+                model: this.model,
+                title: this.title
+            },
+            this.titleFields
+        );
     }
 
     setGitBranch(gitBranch: string): void {
@@ -2504,6 +2528,10 @@ export class AgentConsoleSessionState {
 
     setShowThinking(value: boolean): void {
         this.showThinking = !!value;
+    }
+
+    setRawMode(value: boolean): void {
+        this.rawMode = !!value;
     }
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {

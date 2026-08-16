@@ -77,6 +77,7 @@ function createConsole(options?: any, extras?: { backgroundTasks?: any; ideBridg
         undefined,
         undefined,
         undefined,
+        undefined,
         extras?.backgroundTasks ?? null,
         extras?.ideBridge ?? null
     );

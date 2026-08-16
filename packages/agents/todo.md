@@ -116,6 +116,10 @@
 - **P128 · G54 · 运行中 steer + Tab 排队双模式（2026-08 落地）**：Enter = 注入指令到运行中 turn（steer，`kind: 'steer'`，复用中断/续答流水线）；Tab = 排队 follow-up（queueDraft，P121 FIFO）；`ui.steerMode` 可关；浏览器/TUI 共用 resolver。验证：agent-ui 483 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleComponent.ts`（submit/queueDraft）、`AgentConsoleSessionState.ts`。
 - **P140 · G62 · thinking/reasoning 显隐切换（2026-08 落地）**：`/thinking` 命令 + `Ctrl+X T` 键位切换 reasoning 块显隐；`isDisplayMessage` 按 `uiEventType === 'reasoning'` 过滤；`showThinking` 默认 true；与 `/theme` 冲突处理——theme 移 `Ctrl+X Shift+T`（TUI 大写→`shift+<lower>` + 浏览器 shiftKey 端到端）。验证：agent-ui 488 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`AgentConsoleSessionState.ts`、`AgentConsoleComponent.ts`、`AgentConsolePanels.ts`、`view-model.spec.ts`。
 - **P141 · G65 · tui.json 增强字段（2026-08 落地）**：`diff_style`（auto/stacked）、`cursor`（style/blinking）、`scroll_acceleration`、`attention` 扩展（notifications/sound_pack/volume/custom sounds，桌面通知仅终端失焦时）；AgentTuiConfig schema + merge + 校验扩展，兼容既有字段。验证：tui-config.spec.ts EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentTuiConfig.ts`、`AgentUiConfigReader.ts`。
+- **P129 · G53 · 外部编辑器撰写长 prompt（2026-08 落地）**：`/editor` 命令（agent-cli 注册 `Ctrl+G`）+ `OPEN_IN_EDITOR` 桥；agent-cli spawn 外部编辑器（$VISUAL/$EDITOR/vim/nano/code 探测，临时文件 → 读回 composer），agent-ui 仅暴露 `AgentEditorBridge` 接口 + 无 host 时 notify，不引用 node API。验证：editor.spec.ts 6 用例 + agent-ui 520 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentEditorBridge.ts`（新增）、`AgentConsoleComponent.ts`（/editor）、`agent-cli/src/run-console.ts`（spawn）。
+- **P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支（2026-08 落地）**：空闲态 Esc,Esc（400ms 窗口）进入编辑最后一条用户消息，编辑中 Esc 取消恢复草稿、Esc,Esc 连续回退上一条（首条边界提示）；steer 用户消息跳过、`[Mention Context]` 前缀剥离、图片 parts 还原为 pendingAttachments；提交编辑时若已产生后续轮次 → `forkSession(source, 上一条 id)` 创建 contextual branch（首条编辑走 `ensureSession()` 开新会话），复用 P77 fork + 编辑态输入 `/cmd` 不触发分支；`EDIT_ESCAPE_WINDOW_MS`。验证：edit-message.spec.ts 12 用例 + agent-ui 520 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleComponent.ts`（handleIdleEscape/enterEditMode/startEditTarget/dismissEditMode/submit fork 块）、`AgentConsoleKeymap.ts`（escape: 'interrupt-turn' 空闲态回落）。
+- **P131 · G52 · `/raw` 原始滚动模式（2026-08 落地）**：`/raw` 命令（on/off/无参 toggle）切换消息区为原始文本渲染——`renderAgentConsoleMessageItem` 在 raw 上下文对全部 templateKind 走 `renderAgentConsolePlainTextLines(content, { compactBlankLines: false })`（保留 `**bold**`、`- item` 等字面量），`resolveMessageDisplayContent` raw 时绕过 summarizeToolDisplayText 输出工具全量内容 + attachmentSummary；`AgentConsolePanels.renderedMessageItems` raw 时跳过截断/折叠；`ui.rawMode` 持久化（AgentTuiConfig normalize/merge + `.tsdi-agent/raw-mode.json`，`AgentConsoleRawModeStore` 仿 KeymapStore）；tui.json 文件层经 resolveCliTuiConfig 自动生效。验证：raw-mode.spec.ts 12 用例 + agent-ui 532 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleRawMode.ts`（新增）、`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`（runRawModeCommand/restoreRawMode）、`AgentConsolePanels.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`。
+- **P132 · G64 · 草稿 stash（2026-08 落地）**：`/stash` 命令（verb 风格，仿 runStatuslineCommand）——`list`（无参默认 list，列出命名 stash 及字符数）、`push <name>`/`save <name>`（存当前草稿 `state.input`，空草稿 notify，缺省名 `default`）、`pop <name>`/`restore <name>`（`state.updateDraft` 恢复草稿并删除条目）、`rm <name>`/`drop <name>`/`delete <name>`（删除条目）；`AgentConsoleStashStore` 跨会话持久化 `.tsdi-agent/stash.json`（`{version:1, stashes}`，load/save 过滤空名/空文本，FileAdapter 可空回退）；help 条目 + commandHints 同步。验证：stash.spec.ts 11 用例 + agent-ui 543 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleStash.ts`（新增）、`AgentConsoleComponent.ts`（runStashCommand/`/stash` dispatch/param #28/onInit）、`AgentConsoleSessionState.ts`（commandHints）、`agent-ui.module.ts`。
 
 ### 回归基线
 
@@ -150,10 +154,10 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 | # | 差距 | 对照对象 | 现状证据 | 影响 |
 |---|---|---|---|---|
 | G51 | 终端窗口/标签标题配置（`/title`） | codex `/title`：project/status/thread/branch/model/task progress 字段 + `action_required_prefix` | 本 TUI `/title` 仅会话标题重命名（AgentConsoleComponent.ts:4608），无终端标题更新 | 中：多会话/多 pane 辨识、审批等待可见性 |
-| G52 | raw scrollback 模式（`/raw`） | codex `/raw` 切换原始滚动区便于终端选择/复制 | 无 | 低-中：长输出复制体验 |
-| G53 | 外部编辑器撰写长 prompt（Ctrl+G / `/editor`） | codex Ctrl+G（$VISUAL/$EDITOR）；opencode `/editor`（ctrl+x e） | 仅 `/ide` IDE 桥（VS Code webview），无终端 $EDITOR 拉起 | 高：长指令/多行编辑效率 |
+| ✅ G52 | raw scrollback 模式（`/raw`） | codex `/raw` 切换原始滚动区便于终端选择/复制 | 已实现（P131）：`/raw` on/off/toggle 切换原始文本渲染（保留 markdown 字面量 + 工具全量输出），`ui.rawMode` 持久化 | 低-中：长输出复制体验 |
+| ✅ G53 | 外部编辑器撰写长 prompt（Ctrl+G / `/editor`） | codex Ctrl+G（$VISUAL/$EDITOR）；opencode `/editor`（ctrl+x e） | 已实现（P129）：`/editor` + `Ctrl+G`，agent-cli spawn $VISUAL/$EDITOR/vim/nano/code，agent-ui `AgentEditorBridge` 桥 | 高：长指令/多行编辑效率 |
 | ✅ G54 | 运行中 steer + Tab 排队双模式 | codex Enter=steer（注入新指令到运行中 turn）、Tab=queue 下一 turn | 已实现（P128）：Enter=steer 注入 + Tab=queueDraft 排队，`ui.steerMode` 可关 | 高：运行中纠正能力（codex 核心交互） |
-| G55 | Esc,Esc 编辑上一条消息 | codex Esc,Esc 回退编辑 previous message（可连续回退） | Esc 仅 interrupt-turn（可解绑），无编辑上条 | 中：快速修正 |
+| ✅ G55 | Esc,Esc 编辑上一条消息 | codex Esc,Esc 回退编辑 previous message（可连续回退） | 已实现（P130）：空闲态 Esc,Esc 进入编辑最后用户消息，Esc,Esc 连续回退 | 中：快速修正 |
 | G56 | 上下文分域键位（global/composer/list/approval/pager） | codex 7 context keymap + 覆盖/解绑；opencode 全量 keybinds + 冲突检测 | `/keymap` 仅 global+vim 双域（AgentConsoleKeymap.ts） | 中：键位体系深度、tmux 冲突规避 |
 | G57 | 模型收藏/最近循环/变体循环 | opencode model_favorite_toggle ctrl+f、model_cycle_recent f2、variant_cycle ctrl+t（reasoning effort 档位循环） | `/model` 选择器存在，无收藏/最近循环/变体循环 | 中：模型切换效率（fast/strong 场景） |
 | G58 | 子代理线程键盘导航 | opencode session_child_first=↓、child_cycle=→/←、parent=↑ | 委派线程仅 `/threads` 命令，无消息视图键盘导航 | 中：多代理结果审查 |
@@ -162,13 +166,13 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 | G61 | 连接/MCP/LSP 健康 StatusPopover | opencode StatusPopover（server/MCP/LSP 实时健康） | `/status` 文本展示，无实时健康 popover | 低-中 |
 | ✅ G62 | thinking/reasoning 显隐切换 | opencode ctrl+x t 显隐 reasoning 块；codex 显式 reasoning 选择 | 已实现（P140）：`/thinking` + `Ctrl+X T` 过滤 reasoning；theme 移 `Ctrl+X Shift+T` | 中：模型可解释性 |
 | G63 | 消息导航键（page up/down、first/last、last-user） | opencode messages_page_up/page_down/first/last/last_user | 无 | 中：长会话定位 |
-| G64 | 草稿 stash（暂存 prompt） | opencode prompt_stash / prompt_stash_pop / prompt_stash_list | 有 InputHistoryStore 上/下历史，无命名 stash | 低 |
+| ✅ G64 | 草稿 stash（暂存 prompt） | opencode prompt_stash / prompt_stash_pop / prompt_stash_list | 已实现（P132）：`/stash` list/push/pop/rm verb 命令，命名暂存草稿跨会话持久化 `.tsdi-agent/stash.json` | 低 |
 | ✅ G65 | tui.json 增强字段 | opencode tui.json：diff_style（auto/stacked）、cursor（style/blinking）、scroll_speed/scroll_acceleration、attention（notifications/sound_pack/volume/custom sounds） | 已实现（P141）：diffStyle/cursor/scrollAcceleration/attention 扩展，兼容既有字段 | 中：终端适配性 |
 | G66 | 会话分享 TUI 命令（`/share`） | opencode `/share` + unshare（复制 URL） | P86 网关分享仅 REST/RPC + Web 宿主，无 TUI 命令 | 中：协作闭环 |
 | G67 | `/skills` `/mcp` `/plugins` 浏览命令 | codex `/skills`（浏览使用）、`/mcp`（列出工具）、`/plugins`（市场浏览）；opencode MCP/插件面板 | 有 `@` mention skills/plugins 与 `/tools`，无独立浏览命令 | 中 |
 | G68 | `/approve` 重试自动评审拒绝 | codex `/approve`：批准一次对近期自动评审拒绝的 retry | `/approve`（AgentConsoleComponent.ts:5005）仅审批队列确认，无 retry 语义 | 低-中 |
 | G69 | plan 模式草稿提示 | codex 从 composer 草稿推断 plan 意图并提示 `/plan` | `/plan` + archetype 已有，无草稿检测提示 | 低 |
-| G70 | 编辑早期消息上下文分支 | codex v0.142.5：编辑 earlier prompt 创建 contextual branch，保留原对话/附件/mention 绑定 | `/fork` + git 快照 + revert 已有，无「编辑即分支」 | 中 |
+| ✅ G70 | 编辑早期消息上下文分支 | codex v0.142.5：编辑 earlier prompt 创建 contextual branch，保留原对话/附件/mention 绑定 | 已实现（P130）：提交编辑时后续轮次存在 → forkSession 建 contextual branch，首条编辑开新会话 | 中 |
 | G71 | 队列化 slash 命令（Tab 排队 `/cmd`） | codex：运行中 Tab 排队 slash 命令，turn 结束后解析执行 | P121 排队普通 prompt，slash 命令未纳入队列 | 低 |
 | G72 | `/apps` connectors 生态命令面 | codex `/apps`（connectors 浏览 + `$app` 插入） | 无 | 中（生态） |
 | G73 | 时间戳/泛化工具输出显隐切换 | opencode session_toggle_timestamps / session_toggle_generic_tool_output | `/toolruns` 面板已有，无显隐开关 | 低 |
@@ -186,10 +190,10 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 
 ### 批次 A · 输入层与消息编辑（P128–P132）
 
-- **P129 · G53 · 外部编辑器撰写长 prompt（高）**：`Ctrl+G`（及 `/editor` 命令）经 `EDITOR`/`VISUAL` 环境拉起外部编辑器，写入临时文件 → 读回 composer；agent-cli 负责 spawn 编辑器（跨平台：vim/nano/code 探测），agent-ui 仅暴露 `OPEN_IN_EDITOR` 桥；无 node API 守卫。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-cli/src/run-console.ts`。
-- **P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支（中）**：运行中/空闲态 Esc,Esc 回退编辑最后一条用户消息（可连续回退）；提交编辑时若已产生后续轮次则经 `SessionStore.fork` 语义创建 contextual branch（保留原对话/附件/mention 绑定），复用 P77 fork + P71 git 快照回滚。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`（session.fork）、`agent/src/session/SessionStore.ts`。
-- **P131 · G52 · `/raw` 原始滚动模式（低-中）**：切换消息区为原始文本渲染（去 markdown 重排），便于终端选中/复制长输出；`ui.rawMode` 持久化。锚点：`agent-ui/src/AgentConsoleMessageRenderers.ts`、`AgentTuiConfig.ts`。
-- **P132 · G64 · 草稿 stash（低）**：`prompt_stash`/`prompt_stash_pop`/`prompt_stash_list` 键位或命令（命名暂存草稿，跨会话持久化到 `.tsdi-agent/stash.json`）。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`AgentConsoleInputHistoryStore.ts`。
+- ~~**P129 · G53 · 外部编辑器撰写长 prompt（高）**~~ ✅ 已完成：`/editor` + `Ctrl+G` 经 $VISUAL/$EDITOR/vim/nano/code 拉起外部编辑器（agent-cli spawn），agent-ui 仅暴露 `AgentEditorBridge` 桥 + `OPEN_IN_EDITOR`，无 node API 守卫。落地：`agent-ui/src/AgentEditorBridge.ts`（新增）、`AgentConsoleComponent.ts`、`agent-cli/src/run-console.ts`；测试 `test/editor.spec.ts`，agent-ui 520 passing EXIT=0。
+- ~~**P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支（中）**~~ ✅ 已完成：空闲态 Esc,Esc（400ms 窗口）进入编辑最后用户消息、可连续回退；提交编辑有后续轮次 → forkSession contextual branch、首条编辑开新会话。落地：`agent-ui/src/AgentConsoleComponent.ts`（handleIdleEscape/startEditTarget/dismissEditMode/submit fork 块）、`AgentConsoleKeymap.ts`；测试 `test/edit-message.spec.ts`（12 用例），agent-ui 520 passing EXIT=0。
+- ~~**P131 · G52 · `/raw` 原始滚动模式（低-中）**~~ ✅ 已完成：`/raw` on/off/toggle 切换消息区为原始文本渲染（保留 markdown 字面量、工具全量输出），`ui.rawMode` 持久化 `.tsdi-agent/raw-mode.json`。落地：`agent-ui/src/AgentConsoleRawMode.ts`（新增）、`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`（runRawModeCommand/restoreRawMode）、`AgentConsolePanels.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`；测试 `test/raw-mode.spec.ts`（12 用例），agent-ui 532 passing EXIT=0。
+- ~~**P132 · G64 · 草稿 stash（低）**~~ ✅ 已完成：`/stash` 命令（list/push/pop/rm verb 风格，缺省名 default）+ `AgentConsoleStashStore` 跨会话持久化 `.tsdi-agent/stash.json`。落地：`agent-ui/src/AgentConsoleStash.ts`（新增）、`AgentConsoleComponent.ts`（runStashCommand/`/stash` dispatch/help/param #28/onInit）、`AgentConsoleSessionState.ts`（commandHints）、`agent-ui.module.ts`；测试 `test/stash.spec.ts`（11 用例），agent-ui 543 passing EXIT=0 + tsc clean。
 
 ### 批次 B · 键位与导航（P133–P138）
 
@@ -202,7 +206,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 
 ### 批次 C · 展示与配置（P139–P144）
 
-- **P139 · G51 · 终端窗口/标签标题 `/title`（中）**：`/title` 配置窗口标题字段（project/status/thread/branch/model/context/task），运行状态更新（含 approval 等待 `action_required` 前缀）；跨浏览器（document.title）/TUI（OSC 转义序列）双实现 + `ui.terminalTitle` 关闭开关。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`agent-ui/src/AgentTuiConfig.ts`。
+- ~~**P139 · G51 · 终端窗口/标签标题 `/title`（中）**~~ ✅ 已完成：`/title` 配置窗口标题字段（project/status/thread/branch/model/context/task，`list/set/unset` 动词，遗留裸文本会话重命名保留），运行状态更新（含 approval 等待 `action_required` 前缀）；跨浏览器（document.title）/TUI（OSC 0 转义序列）双实现 + `ui.terminalTitle`/`tui.terminalTitle` 关闭开关（默认 true）；持久化 `.tsdi-agent/title.json`。落地：`agent-ui/src/AgentConsoleTitle.ts`（新增）、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`；测试 `test/title.spec.ts` + tui-config.spec.ts，agent-ui 502 passing EXIT=0。
 - **P142 · G60 · 统一设置对话框（中）**：`/settings` 命令打开多 tab 设置面板（general：theme/language/fonts/shell；keybinds：录制 + 冲突检测 + 重置；providers：模型/provider 管理）；Web/TUI 共用组件，配置写 `.tsdi-agent/settings.json` + tui.json。锚点：`agent-ui/src/AgentConsoleComponent.ts`、`AgentConsolePanels.ts`。
 - **P143 · G61 · 连接/MCP/LSP 健康 StatusPopover（低-中）**：status 面板 hover/键位弹出实时健康（gateway 连接、MCP server 状态、LSP server 状态），数据源复用 `/status` 与 tools/mcp 状态。锚点：`agent-ui/src/AgentConsolePanels.ts`、`agent-ui/src/AgentConsoleSessionState.ts`。
 - **P144 · G73+G74 · 显示开关簇（低）**：时间戳显隐、泛化工具输出显隐（`/toolruns` 面板联动）、用户名显示开关、会话时间线（`Ctrl+X G` 消息级 timeline 视图）；全部经命令面板/设置持久化。锚点：`agent-ui/src/AgentConsoleMessageRenderers.ts`、`AgentConsolePanels.ts`。

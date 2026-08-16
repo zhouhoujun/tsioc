@@ -15,11 +15,12 @@ export type AgentConsoleGlobalAction =
     | 'copy'
     | 'interrupt-turn'
     | 'command-palette'
-    | 'toggle-thinking';
+    | 'toggle-thinking'
+    | 'open-editor';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
-    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking'
+    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor'
 ];
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -36,7 +37,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x s': 'status',
     'ctrl+x y': 'copy',
     escape: 'interrupt-turn',
-    'ctrl+p': 'command-palette'
+    'ctrl+p': 'command-palette',
+    'ctrl+g': 'open-editor'
 };
 
 export function normalizeAgentConsoleKeySequence(value: string): string {

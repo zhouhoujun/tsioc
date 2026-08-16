@@ -41,6 +41,19 @@ export interface AgentTuiConfig {
     scrollAcceleration?: boolean;
     /** Attention/notification behavior extension. */
     attention?: AgentTuiAttentionConfig;
+    /**
+     * P139: whether the terminal window title is kept in sync with the
+     * console state (default true). Set to false to stop emitting OSC
+     * title sequences / document.title updates entirely.
+     */
+    terminalTitle?: boolean;
+    /**
+     * P131: whether the message area renders raw plain text instead of
+     * markdown-reflowed lines (default false). Enabled it keeps long tool
+     * output un-truncated and unstyled so it can be selected/copied from
+     * the terminal. Toggled at runtime with `/raw`.
+     */
+    rawMode?: boolean;
 }
 
 export interface AgentTuiResolvedConfig {
@@ -54,6 +67,8 @@ export interface AgentTuiResolvedConfig {
     cursor: Required<AgentTuiCursorConfig>;
     scrollAcceleration: boolean;
     attention: Required<AgentTuiAttentionConfig>;
+    terminalTitle: boolean;
+    rawMode: boolean;
 }
 
 export const defaultAgentTuiConfig: AgentTuiResolvedConfig = {
@@ -66,7 +81,9 @@ export const defaultAgentTuiConfig: AgentTuiResolvedConfig = {
     diffStyle: 'auto',
     cursor: { style: 'block', blinking: true },
     scrollAcceleration: false,
-    attention: { notifications: false, soundPack: 'default', volume: 0.5, sounds: {} }
+    attention: { notifications: false, soundPack: 'default', volume: 0.5, sounds: {} },
+    terminalTitle: true,
+    rawMode: false
 };
 
 function isKeybinds(value: unknown): value is Record<string, string | null> {
@@ -127,7 +144,13 @@ export function normalizeAgentTuiConfig(input?: Partial<AgentTuiConfig>): AgentT
             : defaultAgentTuiConfig.attention.volume,
         sounds: isStringRecord(attentionSource.sounds) ? { ...attentionSource.sounds } : defaultAgentTuiConfig.attention.sounds
     };
-    return { theme, keybinds, scrollSpeed, mouse, attentionSound, leaderTimeout, diffStyle, cursor, scrollAcceleration, attention };
+    const terminalTitle = typeof source.terminalTitle === 'boolean'
+        ? source.terminalTitle
+        : defaultAgentTuiConfig.terminalTitle;
+    const rawMode = typeof source.rawMode === 'boolean'
+        ? source.rawMode
+        : defaultAgentTuiConfig.rawMode;
+    return { theme, keybinds, scrollSpeed, mouse, attentionSound, leaderTimeout, diffStyle, cursor, scrollAcceleration, attention, terminalTitle, rawMode };
 }
 
 export function mergeAgentTuiConfig(...layers: Array<Partial<AgentTuiConfig> | undefined>): AgentTuiResolvedConfig {
@@ -165,6 +188,12 @@ export function mergeAgentTuiConfig(...layers: Array<Partial<AgentTuiConfig> | u
         }
         if (isAttentionConfig(layer.attention)) {
             merged.attention = { ...(merged.attention && isAttentionConfig(merged.attention) ? merged.attention : {}), ...layer.attention };
+        }
+        if (typeof layer.terminalTitle === 'boolean') {
+            merged.terminalTitle = layer.terminalTitle;
+        }
+        if (typeof layer.rawMode === 'boolean') {
+            merged.rawMode = layer.rawMode;
         }
     });
     return normalizeAgentTuiConfig(merged);

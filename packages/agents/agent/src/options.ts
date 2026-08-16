@@ -102,6 +102,19 @@ export interface AgentUIOptions {
      * the `/experimental` command; hosts read the resolved flags.
      */
     experimental?: Record<string, boolean>;
+    /**
+     * P139: whether the terminal window title is kept in sync with the
+     * console state (default true). Set to false to disable OSC title
+     * sequences (TUI) and document.title updates (browser).
+     */
+    terminalTitle?: boolean;
+    /**
+     * P131: whether the message area renders raw plain text instead of
+     * markdown-reflowed lines (default false). Keeps long tool output
+     * un-truncated and unstyled so it can be selected/copied from the
+     * terminal. Toggled at runtime with `/raw` (persisted per workspace).
+     */
+    rawMode?: boolean;
 }
 
 export interface AgentBootstrapTurnOptions {

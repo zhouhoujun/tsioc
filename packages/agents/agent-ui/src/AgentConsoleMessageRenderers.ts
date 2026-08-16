@@ -67,6 +67,7 @@ export interface AgentConsoleMessageRenderContext {
     streaming?: boolean;
     statusLabels?: AgentConsoleMessageStatusLabels;
     statusSymbol?: string;
+    rawMode?: boolean;
 }
 
 interface AgentConsoleResolvedMessageRenderer {
@@ -177,14 +178,16 @@ export function renderAgentConsoleMessageItem(
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
-    const displayContent = resolveMessageDisplayContent(message, templateKind);
+    const displayContent = resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
-    const markdownLines = streaming || templateKind === 'user'
-        ? streaming
-            ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
-            : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
-        : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
+    const markdownLines = context.rawMode
+        ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
+        : streaming || templateKind === 'user'
+            ? streaming
+                ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
+                : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
+            : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel);
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
@@ -400,7 +403,11 @@ function resolveMessageRenderer(templateKind: AgentConsoleMessageTemplateKind): 
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }
 
-function resolveMessageDisplayContent(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): string {
+function resolveMessageDisplayContent(
+    message: AgentMessage,
+    templateKind: AgentConsoleMessageTemplateKind,
+    rawMode = false
+): string {
     const content = String(message?.content || '');
     const imageParts = getAgentMessageImageParts(message);
     const attachmentSummary = imageParts.length
@@ -409,7 +416,7 @@ function resolveMessageDisplayContent(message: AgentMessage, templateKind: Agent
     if (message?.metadata?.type === 'shell') {
         return [content, attachmentSummary].filter(Boolean).join(content && attachmentSummary ? '\n' : '');
     }
-    if (templateKind !== 'tool') {
+    if (templateKind !== 'tool' || rawMode) {
         return [content, attachmentSummary].filter(Boolean).join(content && attachmentSummary ? '\n' : '');
     }
     const toolName = String(message?.metadata?.receipt?.toolName || message?.name || '').trim();
