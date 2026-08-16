@@ -33,6 +33,7 @@ import {
     AgentConsoleWorkspaceMentionsProvider,
     AgentConsoleKeymap,
     AgentConsoleKeymapStore,
+    AgentConsoleSettingsStore,
     AgentConsoleThemeStore,
     agentConsoleThemes
 } from '../src';
@@ -9381,6 +9382,157 @@ export class AgentConsoleComponentTest {
         const pending = (component as any).handleGlobalKeyInput('T');
         expect(component.selectMenu?.title).toEqual('Theme');
         await component.sessionState.confirmSelectMenu('dark');
+        await pending;
+    }
+
+    @Test('settings store persists language, vim mode and thinking visibility')
+    async settingsStorePersistsWorkspaceSettings() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-settings-'));
+        try {
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            await store.save(workspace, { language: 'zh-CN', vimMode: true, showThinking: false });
+            expect(await store.load(workspace)).toEqual({ language: 'zh-CN', vimMode: true, showThinking: false });
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('console restores persisted settings on init')
+    async consoleRestoresPersistedWorkspaceSettings() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-settings-restore-'));
+        try {
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            await store.save(workspace, { vimMode: true, showThinking: false });
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            (component as any).settingsStore = store;
+
+            await component.onInit();
+
+            expect(component.sessionState.vimMode).toEqual(true);
+            expect(component.sessionState.showThinking).toEqual(false);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('settings command opens tab selector and general tab applies vim mode with persistence')
+    async settingsCommandOpensTabSelectorAndAppliesGeneralToggle() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-settings-tabs-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+
+            const pending = (component as any).handleCommand('/settings');
+            await waitForCondition(() => !!component.selectMenu);
+            expect(component.selectMenu?.title).toEqual('Settings');
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['general', 'keybinds', 'providers']);
+
+            await component.sessionState.confirmSelectMenu('general');
+            await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'title']);
+
+            await component.sessionState.confirmSelectMenu('vim');
+            await pending;
+
+            expect(component.sessionState.vimMode).toEqual(true);
+            expect(await store.load(workspace)).toEqual({ vimMode: true });
+            expect(component.notice).toContain('Vim mode enabled');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('settings general tab language option switches the translator locale')
+    async settingsLanguageOptionSwitchesLocale() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        const translator = {
+            currentLocale: 'en',
+            setLocale(locale: string) {
+                (this as any).currentLocale = locale;
+            },
+            availableLocales: ['en', 'zh-CN']
+        };
+        (component as any).translator = translator;
+
+        const pending = (component as any).handleCommand('/settings');
+        await waitForCondition(() => !!component.selectMenu);
+        await component.sessionState.confirmSelectMenu('general');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
+        await component.sessionState.confirmSelectMenu('language');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · Language');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['en', 'zh-CN']);
+
+        await component.sessionState.confirmSelectMenu('zh-CN');
+        await pending;
+
+        expect(translator.currentLocale).toEqual('zh-CN');
+        expect(component.notice).toContain('Language set to zh-CN');
+    }
+
+    @Test('settings keybinds tab records a key for an action')
+    async settingsKeybindsTabRecordsKey() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/settings');
+        await waitForCondition(() => !!component.selectMenu);
+        await component.sessionState.confirmSelectMenu('keybinds');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · Keybinds');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['list', 'record', 'reset']);
+
+        await component.sessionState.confirmSelectMenu('record');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · Record key');
+
+        await component.sessionState.confirmSelectMenu('interrupt-turn');
+        await pending;
+
+        expect((component as any).keymapRecording).toEqual({ context: 'global', action: 'interrupt-turn' });
+        expect(component.notice).toContain('Recording key for interrupt-turn');
+    }
+
+    @Test('settings keybinds tab reset restores default bindings')
+    async settingsKeybindsTabResetsBindings() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        (component as any).globalKeymap.set('ctrl+y', 'interrupt-turn', 'global');
+
+        const pending = (component as any).handleCommand('/settings');
+        await waitForCondition(() => !!component.selectMenu);
+        await component.sessionState.confirmSelectMenu('keybinds');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · Keybinds');
+        await component.sessionState.confirmSelectMenu('reset');
+        await pending;
+
+        expect(component.notice).toContain('Keymap reset to defaults');
+        expect((component as any).globalKeymap.resolve('ctrl+y', 'global')).toBeUndefined();
+    }
+
+    @Test('settings providers tab opens the model switcher')
+    async settingsProvidersTabOpensModelSwitcher() {
+        const runtime = new RuntimeStub();
+        const appRpc = new AppRpcStub();
+        appRpc.modelProfiles = [
+            { name: 'fast', provider: 'deepseek', model: 'deepseek-v4-flash', selected: false },
+            { name: 'strong', provider: 'deepseek', model: 'deepseek-v4-pro', selected: true }
+        ];
+        const component = createConsole(runtime, new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/settings');
+        await waitForCondition(() => !!component.selectMenu);
+        await component.sessionState.confirmSelectMenu('providers');
+        await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['model', 'fast', 'status']);
+
+        await component.sessionState.confirmSelectMenu('model');
+        await waitForCondition(() => component.selectMenu?.title === 'Model profiles');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['fast', 'strong']);
+        await component.sessionState.confirmSelectMenu('fast');
         await pending;
     }
 

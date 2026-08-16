@@ -28,6 +28,7 @@ import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, Agen
 import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
+import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -145,7 +146,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(AGENT_EDITOR_BRIDGE) private editorBridge?: AgentEditorBridge | null,
         @Optional() private rawModeStore?: AgentConsoleRawModeStore | null,
         @Optional() private stashStore?: AgentConsoleStashStore | null,
-        @Optional() private modelStore?: AgentConsoleModelStore | null
+        @Optional() private modelStore?: AgentConsoleModelStore | null,
+        @Optional() private settingsStore?: AgentConsoleSettingsStore | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -2576,6 +2578,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.stashStore = this.stashStore || new AgentConsoleStashStore(this.resolveFileAdapter());
         this.modelStore = this.modelStore || new AgentConsoleModelStore(this.resolveFileAdapter());
         await this.restoreModelStore();
+        this.settingsStore = this.settingsStore || new AgentConsoleSettingsStore(this.resolveFileAdapter());
+        await this.restoreSettings();
         this.updateTerminalTitle();
         await this.resolveGitBranch();
         if (!this.inputHistoryStore) {
@@ -4107,6 +4111,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/fast', value: '/fast', description: 'switch to fast/strong model profile: /fast [profile]' },
                     { label: '/personality', value: '/personality', description: 'personality presets: list / set <name> / unset' },
                     { label: '/debug-config', value: '/debug-config', description: 'show resolved config (model, profile, ui options, session)' },
+                    { label: '/settings', value: '/settings', description: 'unified settings dialog: general, keybinds, providers' },
                     { label: '/experimental', value: '/experimental', description: 'experimental features: list / <name> on|off' },
                     { label: '/feedback', value: '/feedback', description: 'packaging diagnostics for feedback reports' },
                     { label: '/ide', value: '/ide', description: 'IDE bridge: show attached editor context' },
@@ -4398,6 +4403,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runPersonalityCommand(parsed.args);
             case '/debug-config':
                 return this.runDebugConfigCommand();
+            case '/settings':
+                return this.runSettingsCommand();
             case '/experimental':
                 return this.runExperimentalCommand(parsed.args);
             case '/feedback':
@@ -6495,6 +6502,28 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
+    protected async restoreSettings(): Promise<void> {
+        const persisted = await this.settingsStore?.load(this.resolveHistoryWorkspace());
+        if (!persisted) {
+            return;
+        }
+        if (persisted.language && this.translator?.availableLocales.includes(persisted.language)) {
+            this.translator.setLocale(persisted.language);
+        }
+        if (typeof persisted.vimMode === 'boolean') {
+            this.state.setVimMode(persisted.vimMode);
+        }
+        if (typeof persisted.showThinking === 'boolean') {
+            this.state.setShowThinking(persisted.showThinking);
+        }
+    }
+
+    protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {
+        const workspace = this.resolveHistoryWorkspace();
+        const current = await this.settingsStore?.load(workspace) || {};
+        await this.settingsStore?.save(workspace, { ...current, ...patch });
+    }
+
     protected async runTitleCommand(args?: string): Promise<boolean> {
         const parsed = String(args || '').trim();
         if (!parsed || parsed.toLowerCase() === 'list') {
@@ -6738,6 +6767,138 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             `session: ${this.state.sessionId} · workspace: ${this.workspace || '(none)'}`
         ];
         this.notify(`Debug config:\n${lines.join('\n')}`);
+        return true;
+    }
+
+    protected async runSettingsCommand(): Promise<boolean> {
+        const tab = await this.select('Settings', [
+            { label: 'General', value: 'general', description: 'theme, language, input toggles' },
+            { label: 'Keybinds', value: 'keybinds', description: 'record, conflict detection, reset' },
+            { label: 'Providers', value: 'providers', description: 'model profiles and provider' }
+        ], 0, 'enter select   esc close');
+        if (!tab) return true;
+        if (tab === 'general') return this.openSettingsGeneralTab();
+        if (tab === 'keybinds') return this.openSettingsKeybindsTab();
+        if (tab === 'providers') return this.openSettingsProvidersTab();
+        return true;
+    }
+
+    protected async openSettingsGeneralTab(): Promise<boolean> {
+        const option = await this.select('Settings · General', [
+            { label: `Theme: ${this.activeThemeName}`, value: 'theme', description: 'apply and save a UI theme' },
+            { label: `Language: ${this.translator?.currentLocale || 'en'}`, value: 'language', description: 'switch UI language' },
+            { label: `Vim mode: ${this.state.vimMode ? 'on' : 'off'}`, value: 'vim', description: 'vim-style normal/insert input mode' },
+            { label: `Raw mode: ${this.state.rawMode ? 'on' : 'off'}`, value: 'raw', description: 'plain-text scrollback rendering' },
+            { label: `Thinking: ${this.state.showThinking ? 'shown' : 'hidden'}`, value: 'thinking', description: 'reasoning message visibility' },
+            { label: `Window title: ${this.options.ui?.terminalTitle === false ? 'off' : 'on'}`, value: 'title', description: 'terminal/document title sync' }
+        ], 0, 'enter apply   esc close');
+        if (!option) return true;
+        if (option === 'theme') {
+            await this.runThemeCommand();
+            return true;
+        }
+        if (option === 'language') {
+            return this.openSettingsLanguage();
+        }
+        if (option === 'vim') {
+            await this.runVimCommand('');
+            try {
+                await this.persistSettings({ vimMode: this.state.vimMode });
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to save vim mode.');
+            }
+            return true;
+        }
+        if (option === 'raw') {
+            return this.runRawModeCommand();
+        }
+        if (option === 'thinking') {
+            this.state.setShowThinking(!this.state.showThinking);
+            this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
+            try {
+                await this.persistSettings({ showThinking: this.state.showThinking });
+            } catch (error: any) {
+                this.notify(error?.message || 'Failed to save thinking visibility.');
+            }
+            return true;
+        }
+        if (option === 'title') {
+            const enabled = this.options.ui?.terminalTitle !== false;
+            this.options.ui = { ...(this.options.ui || {}), terminalTitle: !enabled };
+            this.notify(!enabled ? 'Window title sync enabled.' : 'Window title sync disabled.');
+            return true;
+        }
+        return true;
+    }
+
+    protected async openSettingsLanguage(): Promise<boolean> {
+        const locales = this.translator?.availableLocales?.length
+            ? this.translator.availableLocales
+            : ['en', 'zh-CN'];
+        const current = this.translator?.currentLocale || 'en';
+        const selected = await this.select('Settings · Language', locales.map(locale => ({
+            label: `${locale === current ? '● ' : '  '}${locale}`,
+            value: locale,
+            description: locale === current ? 'current language' : 'switch and save'
+        })), Math.max(0, locales.indexOf(current)), 'enter apply   esc close');
+        if (!selected) return true;
+        this.translator?.setLocale(selected);
+        try {
+            await this.persistSettings({ language: selected });
+        } catch (error: any) {
+            this.notify(error?.message || `Switched to ${selected}, but failed to save the language.`);
+            return true;
+        }
+        this.notify(`Language set to ${selected}.`);
+        return true;
+    }
+
+    protected async openSettingsKeybindsTab(): Promise<boolean> {
+        const action = await this.select('Settings · Keybinds', [
+            { label: 'List bindings', value: 'list', description: 'show effective key bindings' },
+            { label: 'Record a key', value: 'record', description: 'capture a key for an action' },
+            { label: 'Reset to defaults', value: 'reset', description: 'restore default key bindings' }
+        ], 0, 'enter select   esc close');
+        if (!action) return true;
+        if (action === 'list') {
+            await this.runKeymapCommand('list');
+            return true;
+        }
+        if (action === 'reset') {
+            await this.runKeymapCommand('reset');
+            return true;
+        }
+        if (action === 'record') {
+            const target = await this.select('Settings · Record key', AGENT_CONSOLE_GLOBAL_ACTIONS.map(name => ({
+                label: name,
+                value: name,
+                description: 'press a key to bind after selecting'
+            })), 0, 'enter select   esc close');
+            if (!target) return true;
+            await this.runKeymapCommand(`record ${target}`);
+            return true;
+        }
+        return true;
+    }
+
+    protected async openSettingsProvidersTab(): Promise<boolean> {
+        const option = await this.select('Settings · Providers', [
+            { label: 'Model profiles', value: 'model', description: 'switch the active model profile' },
+            { label: 'Fast/strong profile', value: 'fast', description: 'switch between fast and strong profiles' },
+            { label: 'Session status', value: 'status', description: 'show current model / archetype / modes' }
+        ], 0, 'enter select   esc close');
+        if (!option) return true;
+        if (option === 'model') {
+            await this.openModelSwitcher();
+            return true;
+        }
+        if (option === 'fast') {
+            return this.runFastCommand();
+        }
+        if (option === 'status') {
+            await this.runStatusCommand();
+            return true;
+        }
         return true;
     }
 
