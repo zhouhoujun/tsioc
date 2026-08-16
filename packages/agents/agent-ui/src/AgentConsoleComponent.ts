@@ -4140,6 +4140,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/share', value: '/share', description: 'create a shareable link for this session (gateway)' },
                     { label: '/unshare', value: '/unshare', description: 'revoke a session share: /unshare [token]' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
+                    { label: '/approve retry', value: '/approve retry', description: 'retry the most recent auto-review-rejected action once' },
                     { label: '/usage', value: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]' },
                     { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
                     { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
@@ -5132,6 +5133,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case '/approve':
             case '/deny': {
                 const isApprove = resolved.command === '/approve';
+                if (isApprove && String(parsed.args || '').trim().toLowerCase() === 'retry') {
+                    return this.runApproveRetryCommand();
+                }
                 const pend = await this.getPendingApprovals(this.state.sessionId);
                 if (!pend.length) { this.notify('No pending approvals.'); return true; }
                 if (parsed.args) {
@@ -7201,6 +7205,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (selected === 'revoke') {
             await this.revokeShare(token);
         }
+    }
+
+    protected async runApproveRetryCommand(): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Auto-review retry requires a gateway (app RPC).');
+            return true;
+        }
+        const result = await this.appRpc.request('harness.rejected_actions', { sessionId: this.state.sessionId })
+            .catch(() => null);
+        const actions = Array.isArray(result?.actions) ? result.actions : [];
+        if (!actions.length) {
+            this.notify('No auto-review-rejected actions to retry.');
+            return true;
+        }
+        const action = actions[0];
+        const selected = await this.select('Approve retry', actions.map((item: any) => ({
+            label: `${item.toolName}${String(item.inputSummary || '').trim() ? ` · ${item.inputSummary}` : ''}`,
+            value: String(item.evidenceId || `${item.toolName}:${item.createdAt}`),
+            description: String(item.falsificationReason || '')
+        })), 0, 'enter retry once   esc close');
+        if (!selected) return true;
+        try {
+            await this.appRpc.request('harness.retry_rejected_action', {
+                sessionId: this.state.sessionId,
+                evidenceId: selected,
+                toolName: action.toolName
+            });
+            this.notify(`Retried ${action.toolName} once after auto-review rejection.`);
+        } catch (error: any) {
+            this.notify(`Retry failed: ${error?.message || String(error)}`);
+        }
+        return true;
     }
 
     protected async runExperimentalCommand(args?: string): Promise<boolean> {

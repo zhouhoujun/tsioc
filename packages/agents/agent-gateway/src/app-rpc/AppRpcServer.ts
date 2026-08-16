@@ -226,6 +226,8 @@ export class AppRpcServer {
                         'audio.end',
                         'audio.cancel',
                         'harness.audit',
+                        'harness.rejected_actions',
+                        'harness.retry_rejected_action',
                         'harness.profile.list',
                         'harness.profile.current',
                         'harness.profile.diff',
@@ -420,6 +422,10 @@ export class AppRpcServer {
                 return this.cancelAudioSession(params, context);
             case 'harness.audit':
                 return this.runHarnessAudit(params, context);
+            case 'harness.rejected_actions':
+                return this.listRejectedActions(params, context);
+            case 'harness.retry_rejected_action':
+                return this.retryRejectedAction(params, context);
             case 'harness.profile.list':
                 return this.listHarnessProfiles(params, context);
             case 'harness.profile.current':
@@ -2069,6 +2075,63 @@ export class AppRpcServer {
             minFailures: this.parseMinFailures(params?.minFailures)
         });
         return { report, ...(params?.includeDraft ? { agentsRuleDraft: buildAgentsRuleDraft(report) } : {}) };
+    }
+
+    private async listRejectedActions(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.turnDiagnostics) {
+            return { actions: [] };
+        }
+        const records = await this.turnDiagnostics.list(sessionId, { limit: 50 });
+        const actions = records
+            .flatMap(record => (record.evidence?.entries ?? [])
+                .filter(entry => entry.falsified === true)
+                .map(entry => ({
+                    evidenceId: entry.id,
+                    turnId: record.id,
+                    toolName: entry.toolName,
+                    inputSummary: entry.inputSummary ?? '',
+                    falsificationReason: entry.falsificationReason ?? '',
+                    createdAt: entry.createdAt ?? record.createdAt
+                })))
+            .sort((left, right) => right.createdAt - left.createdAt)
+            .slice(0, 10);
+        return { actions };
+    }
+
+    private async retryRejectedAction(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const evidenceId = String(params?.evidenceId || '').trim();
+        const toolName = String(params?.toolName || '').trim();
+        if (!toolName) {
+            throw new AppRpcError(-32602, 'toolName required');
+        }
+        if (!this.turnDiagnostics) {
+            throw new AppRpcError(-32603, 'Turn diagnostics are not available in this gateway.');
+        }
+        let input: any = {};
+        if (evidenceId) {
+            const records = await this.turnDiagnostics.list(sessionId, { limit: 50 });
+            for (const record of records) {
+                const entry = (record.evidence?.entries ?? []).find(item => item.id === evidenceId && item.toolName === toolName);
+                if (entry) {
+                    const summary = String(entry.inputSummary ?? '').trim();
+                    try {
+                        const parsed = summary ? JSON.parse(summary) : undefined;
+                        if (parsed && typeof parsed === 'object') {
+                            input = parsed;
+                        }
+                    } catch {
+                        input = { input: summary };
+                    }
+                    break;
+                }
+            }
+        }
+        const result = await this.tools.invoke(toolName, input, sessionId, context.principalId);
+        return { retried: true, toolName, evidenceId: evidenceId || null, result };
     }
 
     private parseTopN(raw: any): number | undefined {

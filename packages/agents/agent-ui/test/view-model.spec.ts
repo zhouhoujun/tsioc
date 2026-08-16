@@ -418,6 +418,8 @@ class AppRpcStub {
     compactResult?: Record<string, any>;
     shareResult?: Record<string, any> | null = null;
     shareTokens: string[] = [];
+    rejectedActions: any[] = [];
+    retryResult?: Record<string, any> | null = null;
     summaryQualityAggregates: any[] = [];
     summaryQualityRecords: any[] = [];
     summaryQualityTrend: any[] = [];
@@ -918,6 +920,12 @@ class AppRpcStub {
             const existed = this.shareTokens.includes(token);
             this.shareTokens = this.shareTokens.filter(item => item !== token);
             return { revoked: existed, token };
+        }
+        if (method === 'harness.rejected_actions') {
+            return { actions: this.rejectedActions };
+        }
+        if (method === 'harness.retry_rejected_action') {
+            return this.retryResult ?? { retried: true, toolName: params?.toolName };
         }
         if (method === 'audio.cancel') {
             const sessionId = String(params?.sessionId || 'console');
@@ -9870,6 +9878,46 @@ export class AgentConsoleComponentTest {
         await (component as any).handleCommand('/plugins gh-connector');
         expect(component.notice).toContain('Plugin: GitHub Connector');
         expect(component.notice).toContain('Id: gh-connector');
+    }
+
+    @Test('approve retry lists rejected actions and retries the selected one')
+    async approveRetryRetriesRejectedAction() {
+        const appRpc = new AppRpcStub();
+        appRpc.rejectedActions = [
+            { evidenceId: 'e1', toolName: 'write_file', inputSummary: '{"path":"src/a.ts"}', falsificationReason: 'declared write produced no diff', createdAt: 100 }
+        ];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/approve retry');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Approve retry');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['e1']);
+
+        await component.sessionState.confirmSelectMenu('e1');
+        await pending;
+
+        expect(component.notice).toContain('Retried write_file once');
+        expect(appRpc.calls.some(call => call.method === 'harness.retry_rejected_action' && call.params?.evidenceId === 'e1')).toEqual(true);
+    }
+
+    @Test('approve retry notifies when there are no rejected actions')
+    async approveRetryNotifiesWithoutRejections() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        await (component as any).handleCommand('/approve retry');
+        expect(component.notice).toContain('No auto-review-rejected actions');
+    }
+
+    @Test('approve retry without a gateway notifies')
+    async approveRetryNotifiesWithoutGateway() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).handleCommand('/approve retry');
+        expect(component.notice).toContain('requires a gateway');
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')
