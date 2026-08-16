@@ -23,7 +23,7 @@ import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
 import { AgentEditorBridge, AGENT_EDITOR_BRIDGE } from './AgentEditorBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleModelStore } from './AgentConsoleModelStore';
-import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsoleHealthItem, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
@@ -62,6 +62,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-input-panel></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
+        <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
     </div>
     `
 })
@@ -2257,6 +2258,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.state.whichKeyVisible;
     }
 
+    get showHealthPopover(): boolean {
+        return this.state.healthPopoverVisible;
+    }
+
     // ---- generic component bindings ----
 
     get inputShellStyle(): string {
@@ -2548,6 +2553,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     async onInit(): Promise<void> {
         this.state.submitAction = this.submitActionHandler;
         this.state.queueDraftAction = () => this.queueDraft();
+        this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
@@ -7407,7 +7413,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.toggleWhichKeyOverlay();
             return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle'>, string> = {
+        if (action === 'status-health') {
+            await this.toggleHealthPopover();
+            return true;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -7432,6 +7442,58 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             );
         }
         this.state.setWhichKeyVisible(visible);
+    }
+
+    protected async toggleHealthPopover(): Promise<void> {
+        const visible = !this.state.healthPopoverVisible;
+        if (visible) {
+            this.state.setHealthItems(await this.collectHealthItems());
+        }
+        this.state.setHealthPopoverVisible(visible);
+    }
+
+    protected async collectHealthItems(): Promise<AgentConsoleHealthItem[]> {
+        const items: AgentConsoleHealthItem[] = [];
+        if (this.appRpc) {
+            try {
+                await this.appRpc.request('app.state');
+                items.push({ id: 'gateway', label: 'Gateway', status: 'ok', detail: 'connected' });
+            } catch {
+                items.push({ id: 'gateway', label: 'Gateway', status: 'error', detail: 'unreachable' });
+            }
+        } else {
+            items.push({ id: 'gateway', label: 'Gateway', status: 'unknown', detail: 'local runtime (no gateway)' });
+        }
+        const mcpServers = new Map<string, { total: number; active: number }>();
+        const lspTools: string[] = [];
+        for (const tool of this.state.tools) {
+            if (tool.name.startsWith('mcp.')) {
+                const parts = tool.name.split('.');
+                const serverId = parts[1] || 'unknown';
+                const entry = mcpServers.get(serverId) || { total: 0, active: 0 };
+                entry.total += 1;
+                if (tool.active) entry.active += 1;
+                mcpServers.set(serverId, entry);
+            } else if (tool.name.startsWith('lsp_')) {
+                lspTools.push(tool.name);
+            }
+        }
+        if (mcpServers.size) {
+            mcpServers.forEach((stats, serverId) => {
+                items.push({
+                    id: `mcp:${serverId}`,
+                    label: `MCP ${serverId}`,
+                    status: stats.active === 0 ? 'error' : (stats.active === stats.total ? 'ok' : 'warn'),
+                    detail: `${stats.active}/${stats.total} tools active`
+                });
+            });
+        } else {
+            items.push({ id: 'mcp', label: 'MCP', status: 'unknown', detail: 'no MCP servers configured' });
+        }
+        items.push(lspTools.length
+            ? { id: 'lsp', label: 'LSP', status: 'ok', detail: `${lspTools.length} tools available` }
+            : { id: 'lsp', label: 'LSP', status: 'unknown', detail: 'no LSP tools available' });
+        return items;
     }
 
     protected canThreadNavigate(): boolean {

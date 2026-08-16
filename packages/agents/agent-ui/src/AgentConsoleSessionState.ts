@@ -42,6 +42,15 @@ export interface AgentConsoleToolItem {
     activationKind?: string;
 }
 
+export type AgentConsoleHealthStatus = 'ok' | 'warn' | 'error' | 'unknown';
+
+export interface AgentConsoleHealthItem {
+    id: string;
+    label: string;
+    status: AgentConsoleHealthStatus;
+    detail?: string;
+}
+
 export interface AgentConsoleSessionItem {
     id: string;
     current: boolean;
@@ -462,6 +471,8 @@ export class AgentConsoleSessionState {
     showThinking = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
+    healthPopoverVisible = false;
+    healthItems: AgentConsoleHealthItem[] = [];
     rawMode = false;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
@@ -469,6 +480,7 @@ export class AgentConsoleSessionState {
     pendingApprovals: AgentConsoleApprovalRequest[] = [];
     submitAction?: () => Promise<void>;
     queueDraftAction?: () => boolean | Promise<boolean>;
+    toggleHealthPopoverAction?: () => void | Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
     copyFocusedTextAction?: (text: string, label: string) => void | Promise<void>;
     activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
@@ -2556,6 +2568,17 @@ export class AgentConsoleSessionState {
 
     setWhichKeyBindings(bindings: Array<{ key: string; action: string }>): void {
         this.whichKeyBindings = bindings.slice();
+    }
+
+    setHealthPopoverVisible(value: boolean): void {
+        this.healthPopoverVisible = !!value;
+        if (!this.healthPopoverVisible) {
+            this.healthItems = [];
+        }
+    }
+
+    setHealthItems(items: AgentConsoleHealthItem[]): void {
+        this.healthItems = items.slice();
     }
 
     setRawMode(value: boolean): void {

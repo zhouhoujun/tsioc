@@ -25,6 +25,7 @@ import {
     AgentConsoleInputHistoryStore,
     AgentConsoleInputPanelComponent,
     AgentConsoleSelectPanelComponent,
+    AgentConsoleStatusPanelComponent,
     AgentConsoleApprovalRequest,
     AgentConsoleSessionService,
     AgentConsoleSessionState,
@@ -9534,6 +9535,77 @@ export class AgentConsoleComponentTest {
         expect(component.selectMenu?.options.map(option => option.value)).toEqual(['fast', 'strong']);
         await component.sessionState.confirmSelectMenu('fast');
         await pending;
+    }
+
+    @Test('health popover toggle collects gateway, mcp and lsp status')
+    async healthPopoverCollectsGatewayMcpLspStatus() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setTools([
+            { name: 'mcp.files.read', toolset: 'mcp', active: true },
+            { name: 'mcp.files.write', toolset: 'mcp', active: false },
+            { name: 'lsp_diagnostics', toolset: 'lsp', active: true }
+        ]);
+
+        await (component as any).toggleHealthPopover();
+
+        expect(component.sessionState.healthPopoverVisible).toEqual(true);
+        const items = component.sessionState.healthItems;
+        expect(items.find(item => item.id === 'gateway')).toEqual({ id: 'gateway', label: 'Gateway', status: 'ok', detail: 'connected' });
+        expect(items.find(item => item.id === 'mcp:files')).toEqual({ id: 'mcp:files', label: 'MCP files', status: 'warn', detail: '1/2 tools active' });
+        expect(items.find(item => item.id === 'lsp')?.status).toEqual('ok');
+
+        await (component as any).toggleHealthPopover();
+        expect(component.sessionState.healthPopoverVisible).toEqual(false);
+        expect(component.sessionState.healthItems).toEqual([]);
+    }
+
+    @Test('health popover reports local runtime without gateway and no mcp/lsp')
+    async healthPopoverReportsLocalRuntime() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).toggleHealthPopover();
+
+        const items = component.sessionState.healthItems;
+        expect(items.find(item => item.id === 'gateway')).toEqual({ id: 'gateway', label: 'Gateway', status: 'unknown', detail: 'local runtime (no gateway)' });
+        expect(items.find(item => item.id === 'mcp')).toEqual({ id: 'mcp', label: 'MCP', status: 'unknown', detail: 'no MCP servers configured' });
+        expect(items.find(item => item.id === 'lsp')?.status).toEqual('unknown');
+    }
+
+    @Test('health popover keybind ctrl+x h toggles and hover action refreshes')
+    async healthPopoverKeybindAndHover() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.setTools([{ name: 'mcp.git.status', toolset: 'mcp', active: true }]);
+
+        await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+        await (component as any).handleTerminalInput({ text: 'h', partial: false }, 'h');
+        expect(component.sessionState.healthPopoverVisible).toEqual(true);
+        expect(component.sessionState.healthItems.find(item => item.id === 'mcp:git')).toEqual({ id: 'mcp:git', label: 'MCP git', status: 'ok', detail: '1/1 tools active' });
+
+        await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+        await (component as any).handleTerminalInput({ text: 'h', partial: false }, 'h');
+        expect(component.sessionState.healthPopoverVisible).toEqual(false);
+
+        expect(component.sessionState.toggleHealthPopoverAction).toBeTruthy();
+        await component.sessionState.toggleHealthPopoverAction?.();
+        expect(component.sessionState.healthPopoverVisible).toEqual(true);
+    }
+
+    @Test('status panel hover calls the health popover action')
+    async statusPanelHoverTriggersHealthPopover() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        const panel = new AgentConsoleStatusPanelComponent(component.sessionState);
+
+        expect(component.sessionState.healthPopoverVisible).toEqual(false);
+        panel.onHoverEnter();
+        await waitForCondition(() => component.sessionState.healthPopoverVisible);
+        panel.onHoverLeave();
+        expect(component.sessionState.healthPopoverVisible).toEqual(false);
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')

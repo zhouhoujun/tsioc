@@ -19,6 +19,8 @@ import {
 } from '@tsdi/components/console';
 import {
     AgentConsoleActivity,
+    AgentConsoleHealthItem,
+    AgentConsoleHealthStatus,
     AgentConsolePlanTodoItem,
     AgentConsoleApprovalRequest,
     AgentConsoleReviewWorker,
@@ -100,7 +102,7 @@ export class AgentConsoleBrandPanelComponent {
     selector: 'agent-console-status-panel',
     imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <div class="console-panel console-status-panel" v-style="shellStyle">
+    <div class="console-panel console-status-panel" v-style="shellStyle" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
         <label class="status-line" v-style="statusStyle" v-for="line in statusLines">{{line}}</label>
     </div>
     `
@@ -110,6 +112,14 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    onHoverEnter(): void {
+        void this.state?.toggleHealthPopoverAction?.();
+    }
+
+    onHoverLeave(): void {
+        this.state?.setHealthPopoverVisible(false);
+    }
 
     protected get activeTheme(): AgentConsoleTheme {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
@@ -3334,6 +3344,88 @@ export class AgentConsoleWhichKeyPanelComponent {
     }
 
     get actionStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
+    }
+}
+
+@Component({
+    selector: 'agent-console-health-popover',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-health-popover" v-style="shellStyle">
+        <label class="health-title" v-style="titleStyle">Health ({{itemCount}})</label>
+        <label class="health-row" v-style="rowStyle" v-for="item in items">
+            <span v-style="statusStyle(item.status)">{{statusLabel(item.status)}}</span>
+            <span v-style="labelStyle"> {{item.label}}</span>
+            <span v-style="detailStyle"> {{item.detail}}</span>
+        </label>
+        <label class="health-hint" v-style="hintStyle">{{hintText}}</label>
+    </div>
+    `
+})
+export class AgentConsoleHealthPopoverComponent {
+    constructor(
+        private state: AgentConsoleSessionState
+    ) {
+    }
+
+    get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || defaultAgentConsoleTheme;
+    }
+
+    get items(): AgentConsoleHealthItem[] {
+        return this.state.healthItems;
+    }
+
+    get itemCount(): string {
+        return String(this.items.length);
+    }
+
+    get hintText(): string {
+        return 'Ctrl+X H to toggle · hover to refresh';
+    }
+
+    statusLabel(status: AgentConsoleHealthStatus): string {
+        switch (status) {
+            case 'ok': return 'ok';
+            case 'warn': return 'warn';
+            case 'error': return 'error';
+            default: return 'unknown';
+        }
+    }
+
+    statusStyle(status: AgentConsoleHealthStatus) {
+        const style = status === 'ok'
+            ? this.activeTheme.statusIdleValue
+            : status === 'warn'
+                ? this.activeTheme.statusNoticeValue
+                : status === 'error'
+                    ? this.activeTheme.statusErrorValue
+                    : this.activeTheme.statusValue;
+        return styleTextToObject(style);
+    }
+
+    get shellStyle() {
+        return styleTextToObject(this.activeTheme.selectShell);
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
+    }
+
+    get rowStyle() {
+        return styleTextToObject(this.activeTheme.selectOption);
+    }
+
+    get labelStyle() {
+        return styleTextToObject(this.activeTheme.selectOptionActive);
+    }
+
+    get detailStyle() {
         return styleTextToObject(this.activeTheme.selectHint);
     }
 
