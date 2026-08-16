@@ -4113,6 +4113,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/timeline', value: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)' },
                     { label: '/raw', value: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]' },
                     { label: '/stash', value: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]' },
+                    { label: '/skills', value: '/skills', description: 'browse skills: /skills [query | <id>]' },
+                    { label: '/mcp', value: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]' },
+                    { label: '/plugins', value: '/plugins', description: 'browse installed plugins: /plugins [<id>]' },
                     { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
                     { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
                     { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
@@ -4263,6 +4266,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeGitSnapshotDetail();
                 this.state.setToolsFocused(true);
                 return true;
+            case '/skills':
+                return this.runSkillsCommand(parsed.args);
+            case '/mcp':
+                return this.runMcpCommand(parsed.args);
+            case '/plugins':
+                return this.runPluginsCommand(parsed.args);
             case '/ssh':
                 await this.runSshCommand(parsed.args);
                 return true;
@@ -6990,6 +6999,130 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         } catch (error: any) {
             this.notify(error?.message || 'Failed to save timeline mode.');
         }
+    }
+
+    protected async invokeTool(name: string, input: any): Promise<any> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input });
+            return result?.output;
+        }
+        if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') return undefined;
+        return this.toolRegistry.invoke(name, input, this.state.sessionId, undefined, this.state.workspace);
+    }
+
+    protected async runSkillsCommand(args?: string): Promise<boolean> {
+        const query = String(args || '').trim();
+        const result = await this.invokeTool('skill_list', query ? { query } : {}).catch(() => undefined);
+        const skills = Array.isArray(result?.skills) ? result.skills : [];
+        if (!skills.length) {
+            this.notify(query ? `No skills match "${query}".` : 'No skills available.');
+            return true;
+        }
+        if (query) {
+            this.notify(skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
+            return true;
+        }
+        const selected = await this.select('Skills', skills.map((skill: any) => ({
+            label: `${skill.id}${String(skill.category || '').trim() ? ` [${skill.category}]` : ''}`,
+            value: String(skill.id || ''),
+            description: String(skill.summary || ''),
+            detail: [
+                `Title: ${String(skill.title || skill.id || '-')}`,
+                String(skill.summary || '') ? `Summary: ${skill.summary}` : '',
+                Array.isArray(skill.aliases) && skill.aliases.length ? `Aliases: ${skill.aliases.join(', ')}` : '',
+                String(skill.source || '') ? `Source: ${skill.source}` : ''
+            ].filter(Boolean).join('\n')
+        })), 0, 'enter detail   esc close');
+        if (!selected) return true;
+        const detail = await this.invokeTool('read_skill', { id: selected }).catch(() => undefined);
+        this.notify(detail?.skill
+            ? this.formatSkillDetail(detail.skill)
+            : skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
+        return true;
+    }
+
+    protected formatSkillLine(skill: any): string {
+        const parts = [String(skill.id || '')];
+        if (String(skill.category || '').trim()) parts.push(`[${skill.category}]`);
+        if (String(skill.summary || '').trim()) parts.push(String(skill.summary));
+        return parts.join(' ');
+    }
+
+    protected formatSkillDetail(skill: any): string {
+        const lines = [
+            `Skill: ${String(skill.id || '')}`,
+            String(skill.title || '') ? `Title: ${skill.title}` : '',
+            String(skill.summary || '') ? `Summary: ${skill.summary}` : '',
+            Array.isArray(skill.aliases) && skill.aliases.length ? `Aliases: ${skill.aliases.join(', ')}` : '',
+            String(skill.content || '') ? `Content: ${skill.content}` : '',
+            String(skill.source || '') ? `Source: ${skill.source}` : ''
+        ];
+        return lines.filter(Boolean).join('\n');
+    }
+
+    protected async runMcpCommand(args?: string): Promise<boolean> {
+        const verbose = String(args || '').trim().toLowerCase() === 'verbose'
+            || String(args || '').trim().toLowerCase() === '-v';
+        const servers = new Map<string, { tools: string[]; active: number }>();
+        for (const tool of this.state.tools) {
+            if (!tool.name.startsWith('mcp.')) continue;
+            const parts = tool.name.split('.');
+            const serverId = parts[1] || 'unknown';
+            const entry = servers.get(serverId) || { tools: [], active: 0 };
+            entry.tools.push(tool.name);
+            if (tool.active) entry.active += 1;
+            servers.set(serverId, entry);
+        }
+        if (!servers.size) {
+            this.notify('No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).');
+            return true;
+        }
+        const lines = Array.from(servers.entries()).map(([serverId, entry]) => {
+            const summary = `${serverId} · ${entry.active}/${entry.tools.length} tools active`;
+            return verbose
+                ? `${summary}\n${entry.tools.map(name => `  ${name}`).join('\n')}`
+                : summary;
+        });
+        this.notify(lines.join('\n'));
+        return true;
+    }
+
+    protected async runPluginsCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim();
+        const result = await this.invokeTool('plugins', requested
+            ? { action: 'inspect', id: requested }
+            : { action: 'list' }).catch(() => undefined);
+        const plugins = Array.isArray(result?.plugins) ? result.plugins : [];
+        if (!plugins.length) {
+            this.notify(requested ? `No plugin "${requested}" installed.` : 'No plugins installed.');
+            return true;
+        }
+        if (requested) {
+            this.notify(plugins.map((plugin: any) => this.formatPluginDetail(plugin, result?.contributions)).join('\n'));
+            return true;
+        }
+        this.notify(plugins.map((plugin: any) => this.formatPluginLine(plugin)).join('\n'));
+        return true;
+    }
+
+    protected formatPluginLine(plugin: any): string {
+        const name = String(plugin?.manifest?.name || plugin.id || '');
+        const scope = String(plugin?.scope || '').trim();
+        const description = String(plugin?.manifest?.description || '').trim();
+        return `${name}${scope ? ` [${scope}]` : ''}${description ? ` · ${description}` : ''}`;
+    }
+
+    protected formatPluginDetail(plugin: any, contributions?: any): string {
+        const lines = [
+            `Plugin: ${String(plugin?.manifest?.name || plugin.id || '')}`,
+            `Id: ${String(plugin.id || '')}`,
+            String(plugin?.manifest?.description || '') ? `Description: ${plugin.manifest.description}` : '',
+            String(plugin?.scope || '') ? `Scope: ${plugin.scope}` : '',
+            String(plugin?.version || '') ? `Version: ${plugin.version}` : ''
+        ];
+        const skills = Array.isArray(contributions?.skills) ? contributions.skills : [];
+        if (skills.length) lines.push(`Skills: ${skills.map((skill: any) => String(skill.id || '')).join(', ')}`);
+        return lines.filter(Boolean).join('\n');
     }
 
     protected async runShareCommand(args?: string): Promise<boolean> {

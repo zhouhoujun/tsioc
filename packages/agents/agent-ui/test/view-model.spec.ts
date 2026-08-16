@@ -334,8 +334,21 @@ class ToolRegistryStub {
         return true;
     }
 
-    async invoke(name: string): Promise<any> {
-        if (name === 'skill_list') return { skills: this.skills };
+    async invoke(name: string, input?: any): Promise<any> {
+        if (name === 'skill_list') {
+            const query = String(input?.query || '').trim().toLowerCase();
+            const skills = !query
+                ? this.skills
+                : this.skills.filter(skill => {
+                    const fields = [skill.id, skill.title, skill.summary, skill.category, skill.source];
+                    return fields.some(value => typeof value === 'string' && value.toLowerCase().includes(query));
+                });
+            return { skills };
+        }
+        if (name === 'read_skill') {
+            const id = String(input?.id || '');
+            return { skill: this.skills.find(skill => skill.id === id) };
+        }
         if (name === 'plugins') return { plugins: this.plugins };
         return undefined;
     }
@@ -9775,6 +9788,88 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('revoked');
         expect(appRpc.calls.some(call => call.method === 'session.share.revoke' && call.params?.token === 'tok_abc')).toEqual(true);
         expect(appRpc.shareTokens).toEqual([]);
+    }
+
+    @Test('skills command lists skills and opens a detail selector')
+    async skillsCommandListsSkills() {
+        const toolRegistry = new ToolRegistryStub();
+        toolRegistry.skills = [
+            { id: 'patch-handlers', title: 'Patch handlers', summary: 'Apply targeted patches', category: 'engineering', source: 'local' },
+            { id: 'review-checklist', title: 'Review checklist', summary: 'Run review checks', category: 'qa', source: 'remote' }
+        ];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), toolRegistry);
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/skills');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Skills');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['patch-handlers', 'review-checklist']);
+
+        await component.sessionState.confirmSelectMenu('patch-handlers');
+        await pending;
+        expect(component.notice).toContain('Skill: patch-handlers');
+    }
+
+    @Test('skills command filters by query and reports no matches')
+    async skillsCommandFiltersByQuery() {
+        const toolRegistry = new ToolRegistryStub();
+        toolRegistry.skills = [{ id: 'patch-handlers', title: 'Patch handlers', summary: 'Apply patches' }];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), toolRegistry);
+        await component.onInit();
+
+        await (component as any).handleCommand('/skills patch');
+        expect(component.notice).toContain('patch-handlers');
+
+        await (component as any).handleCommand('/skills nomatch');
+        expect(component.notice).toContain('No skills match');
+    }
+
+    @Test('mcp command lists servers with tool counts and verbose shows tools')
+    async mcpCommandListsServers() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        component.sessionState.setTools([
+            { name: 'mcp.files.read', toolset: 'mcp', active: true },
+            { name: 'mcp.files.write', toolset: 'mcp', active: false },
+            { name: 'mcp.git.status', toolset: 'mcp', active: true },
+            { name: 'read_file', toolset: 'filesystem', active: true }
+        ]);
+
+        await (component as any).handleCommand('/mcp');
+        expect(component.notice).toContain('files · 1/2 tools active');
+        expect(component.notice).toContain('git · 1/1 tools active');
+        expect(component.notice).not.toContain('read_file');
+
+        await (component as any).handleCommand('/mcp verbose');
+        expect(component.notice).toContain('mcp.files.read');
+        expect(component.notice).toContain('mcp.git.status');
+    }
+
+    @Test('mcp command reports when no servers are configured')
+    async mcpCommandReportsNone() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+
+        await (component as any).handleCommand('/mcp');
+        expect(component.notice).toContain('No MCP servers configured');
+    }
+
+    @Test('plugins command lists plugins and shows detail for a specific one')
+    async pluginsCommandListsPlugins() {
+        const toolRegistry = new ToolRegistryStub();
+        toolRegistry.plugins = [
+            { id: 'gh-connector', manifest: { name: 'GitHub Connector', description: 'GitHub integration' }, scope: 'workspace' }
+        ];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), toolRegistry);
+        await component.onInit();
+
+        await (component as any).handleCommand('/plugins');
+        expect(component.notice).toContain('GitHub Connector');
+        expect(component.notice).toContain('[workspace]');
+
+        await (component as any).handleCommand('/plugins gh-connector');
+        expect(component.notice).toContain('Plugin: GitHub Connector');
+        expect(component.notice).toContain('Id: gh-connector');
     }
 
     @Test('terminal leader shortcuts execute commands and ctrl-p opens fuzzy palette')
