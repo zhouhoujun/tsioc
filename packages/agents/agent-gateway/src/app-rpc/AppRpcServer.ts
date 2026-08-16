@@ -1493,6 +1493,10 @@ export class AppRpcServer {
             this.sessionHandler.track(sessionId);
         }
         const name = this.requireString(params?.name, 'model.activate name');
+        const reasoningEffort = typeof params?.reasoningEffort === 'string' ? params.reasoningEffort : undefined;
+        if (reasoningEffort !== undefined && reasoningEffort !== 'low' && reasoningEffort !== 'medium' && reasoningEffort !== 'high') {
+            throw new AppRpcError(-32602, `Invalid params: reasoningEffort must be 'low', 'medium' or 'high'`);
+        }
         const profiles = this.options.model?.profiles || {};
         const profile = profiles[name];
         if (!profile) {
@@ -1505,17 +1509,22 @@ export class AppRpcServer {
             }
             this.options.model = {
                 ...(this.options.model || {}), provider: provider.id, model: modelId,
-                baseUrl: provider.baseUrl, apiKeyEnv: provider.apiKeyEnv, defaultProfile: undefined
+                baseUrl: provider.baseUrl, apiKeyEnv: provider.apiKeyEnv, defaultProfile: undefined,
+                ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
             };
-            return { sessionId: sessionId || null, modelProfile: name, provider: provider.id, model: modelId, catalog: true };
+            return { sessionId: sessionId || null, modelProfile: name, provider: provider.id, model: modelId, catalog: true, reasoningEffort: this.options.model.reasoningEffort };
         }
         this.options.model = this.options.model || {};
         this.options.model.defaultProfile = name;
+        if (reasoningEffort !== undefined) {
+            this.options.model.reasoningEffort = reasoningEffort;
+        }
         return {
             sessionId: sessionId || null,
             modelProfile: name,
             provider: profile.provider || this.options.model.provider || '',
-            model: profile.model || this.options.model.model || ''
+            model: profile.model || this.options.model.model || '',
+            reasoningEffort: this.options.model.reasoningEffort
         };
     }
 

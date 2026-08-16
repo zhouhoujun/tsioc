@@ -9582,6 +9582,114 @@ export class AgentConsoleComponentTest {
         expect(state.input).toEqual('');
     }
 
+    @Test('tab during a running turn queues a slash draft as a next-turn command')
+    async tabDuringRunningTurnQueuesSlashCommand() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+        state.setInput('/compact trim');
+
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued command (1)');
+        const entries = (component as any).queuedPrompts.get('console') || [];
+        expect(entries[0].command).toEqual(true);
+    }
+
+    @Test('queued slash command skips pending attachments and plain prompt keeps them')
+    async queuedSlashCommandSkipsAttachments() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+
+        state.setPendingAttachments([{ id: 'a1', kind: 'image', path: '/ws/a.png', name: 'a.png', imageUrl: 'data:image/png;base64,AAA' } as any]);
+        state.setInput('/compact');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+
+        state.setPendingAttachments([{ id: 'a2', kind: 'image', path: '/ws/b.png', name: 'b.png', imageUrl: 'data:image/png;base64,BBB' } as any]);
+        state.setInput('describe the image');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+
+        const entries = (component as any).queuedPrompts.get('console') || [];
+        expect(entries.length).toEqual(2);
+        expect(entries[0].command).toEqual(true);
+        expect(entries[0].attachments).toEqual([]);
+        expect(entries[1].command).toEqual(false);
+        expect(entries[1].attachments.length).toEqual(1);
+    }
+
+    @Test('queued slash command dispatches as a command when the turn ends')
+    async queuedSlashCommandDispatchesAfterTurnEnds() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            appRpc
+        );
+        await component.onInit();
+        state.setStatus('running');
+        state.setInput('/compact trim');
+
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.notice).toContain('Queued command (1)');
+        expect(runtime.calls).toEqual([]);
+
+        state.setStatus('idle');
+        await (component as any).drainQueuedPrompts('console');
+
+        expect(runtime.calls).toEqual([]);
+        expect(appRpc.calls.some(call => call.method === 'session.compact')).toEqual(true);
+        expect(state.queuedPromptCount).toEqual(0);
+    }
+
+    @Test('queued prompts and commands drain in fifo order after the turn')
+    async queuedPromptsAndCommandsDrainInFifoOrder() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const { state, component } = createConsoleParts(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            appRpc
+        );
+        await component.onInit();
+        state.setStatus('running');
+
+        state.setInput('first prompt');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('/compact');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('second prompt');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+
+        expect(state.queuedPromptCount).toEqual(3);
+        expect(state.notice).toContain('Queued prompt (3)');
+        expect(runtime.calls).toEqual([]);
+
+        state.setStatus('idle');
+        await (component as any).drainQueuedPrompts('console');
+
+        const turnCalls = appRpc.calls.filter(call => call.method === 'run.turn_stream');
+        expect(turnCalls.map(call => call.params?.input)).toEqual(['first prompt', 'second prompt']);
+        expect(appRpc.calls.some(call => call.method === 'session.compact')).toEqual(true);
+        expect(state.queuedPromptCount).toEqual(0);
+    }
+
     @Test('escape interrupts a running turn before vim handling in tui and browser')
     async escapeInterruptsRunningTurnAcrossHosts() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());

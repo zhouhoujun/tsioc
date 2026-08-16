@@ -22,6 +22,7 @@ import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
 import { AgentEditorBridge, AGENT_EDITOR_BRIDGE } from './AgentEditorBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
+import { AgentConsoleModelStore } from './AgentConsoleModelStore';
 import { AgentConsoleApprovalRequest, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
@@ -30,7 +31,7 @@ import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
-import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction } from './AgentConsoleKeymap';
+import { AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction, isAgentConsoleKeymapContext, isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 
@@ -38,6 +39,7 @@ const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
     input: string;
     attachments: AgentConsolePendingAttachment[];
+    command?: boolean;
 }
 @Component({
     selector: 'agent-console',
@@ -58,6 +60,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
         <agent-console-input-panel></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
+        <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
     </div>
     `
 })
@@ -96,6 +99,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected inputHistoryRestoreTimers: Array<ReturnType<typeof setTimeout>> = [];
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
+    protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
     protected commandPaletteQuery = '';
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
@@ -108,6 +112,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected lastEditSessionMessageId = '';
     protected editDismissedAt = 0;
     protected lastEscapeAt = 0;
+    protected modelFavorites: string[] = [];
+    protected modelRecents: string[] = [];
+    protected modelReasoningEffort: 'low' | 'medium' | 'high' = 'medium';
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -137,7 +144,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null,
         @Optional() @Inject(AGENT_EDITOR_BRIDGE) private editorBridge?: AgentEditorBridge | null,
         @Optional() private rawModeStore?: AgentConsoleRawModeStore | null,
-        @Optional() private stashStore?: AgentConsoleStashStore | null
+        @Optional() private stashStore?: AgentConsoleStashStore | null,
+        @Optional() private modelStore?: AgentConsoleModelStore | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -200,12 +208,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected enqueuePrompt(input: string): void {
         const sessionId = this.state.sessionId;
         const queue = this.queuedPrompts.get(sessionId) || [];
-        queue.push({ input, attachments: this.state.pendingAttachments.slice() });
+        const command = input.trim().startsWith('/');
+        queue.push({ input, attachments: command ? [] : this.state.pendingAttachments.slice(), command });
         this.queuedPrompts.set(sessionId, queue);
         this.state.setInput('');
         this.state.clearPendingAttachments();
         this.state.setQueuedPromptCount(queue.length);
-        this.notify(`Queued prompt (${queue.length}).`);
+        this.notify(command ? `Queued command (${queue.length}).` : `Queued prompt (${queue.length}).`);
     }
 
     protected queueDraft(): boolean {
@@ -2242,6 +2251,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return !!this.state.selectMenu;
     }
 
+    get showWhichKeyPanel(): boolean {
+        return this.state.whichKeyVisible;
+    }
+
     // ---- generic component bindings ----
 
     get inputShellStyle(): string {
@@ -2561,6 +2574,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.rawModeStore = this.rawModeStore || new AgentConsoleRawModeStore(this.resolveFileAdapter());
         await this.restoreRawMode();
         this.stashStore = this.stashStore || new AgentConsoleStashStore(this.resolveFileAdapter());
+        this.modelStore = this.modelStore || new AgentConsoleModelStore(this.resolveFileAdapter());
+        await this.restoreModelStore();
         this.updateTerminalTitle();
         await this.resolveGitBranch();
         if (!this.inputHistoryStore) {
@@ -4057,7 +4072,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
                     { label: '/archetype', value: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]' },
                     { label: '/vim', value: '/vim', description: 'toggle vim-style normal/insert input mode' },
-                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset global and vim key bindings' },
+                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset key bindings per context (global/composer/list/approval/pager/vim); record <action> captures the next key' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
                     { label: '/goal', value: '/goal', description: 'create, show, link, complete, or reopen a persistent goal' },
@@ -6293,10 +6308,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async restoreGlobalKeymap(): Promise<void> {
         const persisted = await this.keymapStore?.load(this.state.workspace) || {};
         this.globalKeymap!.configure({ ...(this.options.ui?.keymap || {}), ...persisted });
+        const contexts = await this.keymapStore?.loadContexts(this.state.workspace) || {};
+        AGENT_CONSOLE_KEYMAP_CONTEXTS.forEach(context => {
+            if (context !== 'global' && contexts[context]) {
+                this.globalKeymap!.configureContext(context, contexts[context]);
+            }
+        });
     }
 
     protected async persistGlobalKeymap(): Promise<void> {
-        await this.keymapStore?.save(this.state.workspace, this.globalKeymap!.customBindings);
+        const contexts: Partial<Record<AgentConsoleKeymapContext, Record<string, string | null>>> = {};
+        AGENT_CONSOLE_KEYMAP_CONTEXTS.forEach(context => {
+            if (context !== 'global') {
+                const bindings = this.globalKeymap!.customBindingsFor(context);
+                if (Object.keys(bindings).length) contexts[context] = bindings;
+            }
+        });
+        await this.keymapStore?.save(this.state.workspace, this.globalKeymap!.customBindings, contexts);
     }
 
     protected async restoreTheme(): Promise<void> {
@@ -6838,6 +6866,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected decodeGlobalKey(raw: string): string {
         if (raw === '\u001b') return 'escape';
+        const arrows: Record<string, string> = {
+            '\u001b[A': 'up',
+            '\u001b[B': 'down',
+            '\u001b[C': 'right',
+            '\u001b[D': 'left'
+        };
+        const arrow = arrows[raw];
+        if (arrow) return arrow;
+        const navigation: Record<string, string> = {
+            '\u001b[5~': 'pageup',
+            '\u001b[6~': 'pagedown',
+            '\u001b[H': 'home',
+            '\u001b[F': 'end',
+            '\u001b[1~': 'home',
+            '\u001b[4~': 'end',
+            '\u001b[7~': 'home',
+            '\u001b[8~': 'end'
+        };
+        const navKey = navigation[raw];
+        if (navKey) return navKey;
+        const functionKeys: Record<string, string> = {
+            '\u001b[12~': 'f2',
+            '\u001bOQ': 'f2',
+            '\u001b[1;2Q': 'shift+f2',
+            '\u001b[1;12~': 'shift+f2'
+        };
+        const functionKey = functionKeys[raw];
+        if (functionKey) return functionKey;
+        const modifiedKeys: Record<string, string> = {
+            '\u001b\u000b': 'ctrl+alt+k'
+        };
+        const modifiedKey = modifiedKeys[raw];
+        if (modifiedKey) return modifiedKey;
         if (raw.length === 1) {
             const code = raw.charCodeAt(0);
             if (code >= 1 && code <= 26) return `ctrl+${String.fromCharCode(96 + code)}`;
@@ -6850,9 +6911,32 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
+        if (this.keymapRecording) {
+            if (raw === '\u001b') {
+                this.keymapRecording = undefined;
+                this.notify('Keymap recording cancelled.');
+                return true;
+            }
+            const key = this.decodeGlobalKey(raw);
+            if (key) {
+                const { context, action } = this.keymapRecording;
+                this.keymapRecording = undefined;
+                if (this.globalKeymap!.set(key, action, context)) {
+                    await this.persistGlobalKeymap();
+                    this.notify(`Keymap set: ${key} -> ${action} (${context}).`);
+                } else {
+                    this.notify(`Cannot bind ${key}: unknown action ${action}.`);
+                }
+            }
+            return true;
+        }
+        if (raw === '\u001b' && this.state.whichKeyVisible) {
+            this.state.setWhichKeyVisible(false);
+            return true;
+        }
         if (raw === '\u001b' && (this.state.selectMenu || this.state.isAnyFocusActive())) return false;
         if (raw === '\u001b') {
-            const action = this.globalKeymap!.resolve('escape');
+            const action = this.globalKeymap!.resolve('escape', this.resolveKeymapContext());
             if (action === 'interrupt-turn') {
                 if (!this.isTurnInProgress()) return this.handleIdleEscape();
                 await this.interruptTurn();
@@ -6867,13 +6951,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (raw === '\u001b') this.globalKeyPending = '';
             return false;
         }
+        if (this.state.whichKeyVisible && key !== 'ctrl+alt+k') {
+            this.state.setWhichKeyVisible(false);
+        }
         return this.handleGlobalKeySequence(key);
     }
 
     protected async handleGlobalKeySequence(key: string): Promise<boolean> {
         const sequence = this.globalKeyPending ? `${this.globalKeyPending} ${key}` : key;
-        const action = this.globalKeymap!.resolve(sequence);
-        const isPrefix = Object.keys(this.globalKeymap!.effectiveBindings).some(binding => binding.startsWith(`${sequence} `));
+        const context = this.resolveKeymapContext();
+        const action = this.globalKeymap!.resolve(sequence, context);
+        const isPrefix = Object.keys(this.globalKeymap!.effectiveBindings(context)).some(binding => binding.startsWith(`${sequence} `));
         if (isPrefix && !action) {
             this.globalKeyPending = sequence;
             return true;
@@ -6883,17 +6971,61 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!action) return true;
         }
         if (!action) return false;
-        await this.executeGlobalKeyAction(action);
-        return true;
+        if (isAgentConsoleThreadNavigationAction(action) && !this.canThreadNavigate()) return false;
+        if (isAgentConsoleMessageNavigationAction(action) && !this.canMessageNavigate()) return false;
+        return await this.executeGlobalKeyAction(action);
     }
 
-    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }): Promise<boolean> {
+    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
         const ctrlKey = !!(modifiers.ctrlKey || modifiers.metaKey);
+        const altKey = !!modifiers.altKey;
+        const rawKey = String(key || '').toLowerCase();
         const normalizedKey = ctrlKey
-            ? `ctrl+${String(key || '').toLowerCase()}`
-            : modifiers.shiftKey && /^[A-Z]$/.test(String(key || ''))
-                ? `shift+${String(key).toLowerCase()}`
-                : String(key || '').toLowerCase();
+            ? (altKey ? `ctrl+alt+${rawKey}` : `ctrl+${rawKey}`)
+            : /^f\d{1,2}$/.test(rawKey)
+                ? (modifiers.shiftKey ? `shift+${rawKey}` : rawKey)
+                : modifiers.shiftKey && /^[A-Z]$/.test(String(key || ''))
+                    ? `shift+${rawKey}`
+                    : rawKey;
+        const arrowKeys: Record<string, string> = {
+            arrowup: 'up',
+            arrowdown: 'down',
+            arrowleft: 'left',
+            arrowright: 'right'
+        };
+        const navKeys: Record<string, string> = {
+            pageup: 'pageup',
+            pagedown: 'pagedown',
+            home: 'home',
+            end: 'end'
+        };
+        const functionKeys: Record<string, string> = {
+            f1: 'f1', f2: 'f2', f3: 'f3', f4: 'f4',
+            f5: 'f5', f6: 'f6', f7: 'f7', f8: 'f8',
+            f9: 'f9', f10: 'f10', f11: 'f11', f12: 'f12',
+            'shift+f1': 'shift+f1', 'shift+f2': 'shift+f2', 'shift+f3': 'shift+f3', 'shift+f4': 'shift+f4',
+            'shift+f5': 'shift+f5', 'shift+f6': 'shift+f6', 'shift+f7': 'shift+f7', 'shift+f8': 'shift+f8',
+            'shift+f9': 'shift+f9', 'shift+f10': 'shift+f10', 'shift+f11': 'shift+f11', 'shift+f12': 'shift+f12'
+        };
+        const mappedKey = arrowKeys[normalizedKey] || navKeys[normalizedKey] || functionKeys[normalizedKey] || normalizedKey;
+        if (this.keymapRecording) {
+            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+                this.keymapRecording = undefined;
+                this.notify('Keymap recording cancelled.');
+                return true;
+            }
+            if (mappedKey) {
+                const { context, action } = this.keymapRecording;
+                this.keymapRecording = undefined;
+                if (this.globalKeymap!.set(mappedKey, action, context)) {
+                    await this.persistGlobalKeymap();
+                    this.notify(`Keymap set: ${mappedKey} -> ${action} (${context}).`);
+                } else {
+                    this.notify(`Cannot bind ${mappedKey}: unknown action ${action}.`);
+                }
+            }
+            return true;
+        }
         if (this.state.selectMenu?.title?.startsWith('Command palette')) {
             if (normalizedKey === 'ctrl+p') return this.handleGlobalKeySequence(normalizedKey);
             if (!ctrlKey && normalizedKey === 'backspace') {
@@ -6906,12 +7038,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             return false;
         }
+        if (this.state.whichKeyVisible) {
+            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+                this.state.setWhichKeyVisible(false);
+                return true;
+            }
+            if (mappedKey && this.globalKeymap!.resolve(mappedKey, this.resolveKeymapContext()) !== 'which-key-toggle') {
+                this.state.setWhichKeyVisible(false);
+            }
+        }
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (this.state.selectMenu || this.state.isAnyFocusActive())) {
             this.globalKeyPending = '';
             return false;
         }
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
-            const action = this.globalKeymap!.resolve('escape');
+            const action = this.globalKeymap!.resolve('escape', this.resolveKeymapContext());
             if (action === 'interrupt-turn') {
                 if (!this.isTurnInProgress()) return this.handleIdleEscape();
                 await this.interruptTurn();
@@ -6921,8 +7062,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.executeGlobalKeyAction(action);
             return true;
         }
-        if (!ctrlKey && key.length !== 1 && !this.globalKeyPending) return false;
-        return this.handleGlobalKeySequence(normalizedKey);
+        if (!ctrlKey && !arrowKeys[normalizedKey] && !navKeys[normalizedKey] && !functionKeys[normalizedKey] && key.length !== 1 && !this.globalKeyPending) return false;
+        return this.handleGlobalKeySequence(mappedKey);
     }
 
     /**
@@ -7031,29 +7172,81 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
-    protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<void> {
+    protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<boolean> {
         if (action === 'command-palette') {
             this.openCommandPalette();
-            return;
+            return true;
         }
         if (action === 'interrupt-turn') {
             await this.interruptTurn();
-            return;
+            return true;
         }
         if (action === 'theme') {
             await this.handleCommand('/theme');
-            return;
+            return true;
         }
         if (action === 'toggle-thinking') {
             this.state.setShowThinking(!this.state.showThinking);
             this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
-            return;
+            return true;
         }
         if (action === 'open-editor') {
             await this.runEditorCommand();
-            return;
+            return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor'>, string> = {
+        if (action === 'thread-child-first') {
+            return this.navigateThreadChildFirst();
+        }
+        if (action === 'thread-cycle-next') {
+            return this.navigateThreadCycle(1);
+        }
+        if (action === 'thread-cycle-prev') {
+            return this.navigateThreadCycle(-1);
+        }
+        if (action === 'thread-parent') {
+            return this.navigateThreadParent();
+        }
+        if (action === 'message-page-up') {
+            this.state.moveMessageSelectionPage(-1);
+            return true;
+        }
+        if (action === 'message-page-down') {
+            this.state.moveMessageSelectionPage(1);
+            return true;
+        }
+        if (action === 'message-first') {
+            this.state.selectFirstMessage();
+            return true;
+        }
+        if (action === 'message-last') {
+            this.state.selectLastMessage();
+            return true;
+        }
+        if (action === 'message-last-user') {
+            this.state.selectLastUserMessage();
+            return true;
+        }
+        if (action === 'model-favorite-toggle') {
+            await this.toggleModelFavorite();
+            return true;
+        }
+        if (action === 'model-cycle-recent') {
+            await this.cycleRecentModel(1);
+            return true;
+        }
+        if (action === 'model-cycle-recent-back') {
+            await this.cycleRecentModel(-1);
+            return true;
+        }
+        if (action === 'model-variant-cycle') {
+            await this.cycleModelVariant();
+            return true;
+        }
+        if (action === 'which-key-toggle') {
+            this.toggleWhichKeyOverlay();
+            return true;
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -7066,6 +7259,85 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             copy: '/copy'
         };
         await this.handleCommand(commands[action]);
+        return true;
+    }
+
+    protected toggleWhichKeyOverlay(): void {
+        const visible = !this.state.whichKeyVisible;
+        if (visible) {
+            const context = this.resolveKeymapContext();
+            this.state.setWhichKeyBindings(
+                Object.entries(this.globalKeymap!.effectiveBindings(context)).map(([key, action]) => ({ key, action }))
+            );
+        }
+        this.state.setWhichKeyVisible(visible);
+    }
+
+    protected canThreadNavigate(): boolean {
+        return !!this.appRpc
+            && this.state.hasMessageFocus()
+            && !this.state.messageDetailOpen
+            && !this.state.selectMenu;
+    }
+
+    protected canMessageNavigate(): boolean {
+        return this.state.hasMessageFocus()
+            && !this.state.messageDetailOpen
+            && !this.state.selectMenu;
+    }
+
+    protected async navigateThreadChildFirst(): Promise<boolean> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            return false;
+        }
+        const children = await this.sessionService.getDelegationChildren(sessionId, {}, this.state);
+        const first = children?.[0];
+        if (!first?.childSessionId) {
+            return false;
+        }
+        await this.openSession(String(first.childSessionId));
+        return true;
+    }
+
+    protected async navigateThreadCycle(delta: 1 | -1): Promise<boolean> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            return false;
+        }
+        const lineage = await this.sessionService.getDelegationLineage(sessionId, { limit: 1 }, this.state);
+        const parentEdge = lineage?.[0];
+        if (!parentEdge?.parentSessionId) {
+            return false;
+        }
+        const siblings = await this.sessionService.getDelegationChildren(String(parentEdge.parentSessionId), {}, this.state);
+        if (siblings.length < 2) {
+            return false;
+        }
+        const currentIndex = siblings.findIndex(edge => String(edge.childSessionId) === sessionId);
+        if (currentIndex < 0) {
+            return false;
+        }
+        const next = siblings[(currentIndex + delta + siblings.length) % siblings.length];
+        if (!next?.childSessionId || String(next.childSessionId) === sessionId) {
+            return false;
+        }
+        await this.openSession(String(next.childSessionId));
+        return true;
+    }
+
+    protected async navigateThreadParent(): Promise<boolean> {
+        const sessionId = this.state.sessionId;
+        if (!sessionId || !this.sessionService) {
+            return false;
+        }
+        const lineage = await this.sessionService.getDelegationLineage(sessionId, { limit: 1 }, this.state);
+        const parentEdge = lineage?.[0];
+        if (!parentEdge?.parentSessionId) {
+            return false;
+        }
+        await this.openSession(String(parentEdge.parentSessionId));
+        return true;
     }
 
     protected openCommandPalette(query = ''): void {
@@ -7447,32 +7719,48 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             : 'Vim mode disabled.');
     }
 
+    protected resolveKeymapContext(): AgentConsoleKeymapContext {
+        if (this.state.hasApprovalFocus()) return 'approval';
+        if (this.state.hasMessageFocus() || this.state.hasMessageDetailFocus()) return 'pager';
+        if (this.state.hasSessionFocus() || this.state.hasTaskFocus() || this.state.hasScheduledJobFocus()
+            || this.state.hasToolFocus() || this.state.hasBlockingSelectMenu()) return 'list';
+        if (this.state.inputFocused && !this.state.isAnyFocusActive()) return 'composer';
+        return 'global';
+    }
+
     protected async runKeymapCommand(args: string): Promise<void> {
         const rawTokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const scope = ['global', 'vim'].includes((rawTokens[0] || '').toLowerCase())
+        const first = (rawTokens[0] || '').toLowerCase();
+        const isScopeToken = ['global', 'vim', 'composer', 'list', 'approval', 'pager'].includes(first);
+        const scope = isScopeToken && (rawTokens.length > 1 || first !== 'list')
             ? rawTokens.shift()!.toLowerCase()
             : '';
+        const context: AgentConsoleKeymapContext = isAgentConsoleKeymapContext(scope) ? scope : 'global';
         const tokens = rawTokens;
         const action = (tokens[0] || 'list').toLowerCase();
         if (action === 'list') {
-            const globalEntries = Object.entries(this.globalKeymap!.effectiveBindings).map(([key, value]) => `${key} -> ${value}`);
+            const globalEntries = Object.entries(this.globalKeymap!.effectiveBindings(context)).map(([key, value]) => `${key} -> ${value}`);
             const vimEntries = Object.entries(this.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
-            this.notify([...(scope === 'vim' ? [] : globalEntries), ...(scope === 'global' ? [] : vimEntries)].join('\n') || 'No key bindings.');
+            this.notify([...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])].join('\n') || 'No key bindings.');
             return;
         }
         if (action === 'set') {
             const key = tokens[1];
             const target = tokens[2];
             if (!key || !target) {
-                this.notify('Usage: /keymap set <key> <action>');
+                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] set <key> <action>');
                 return;
             }
-            if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && this.globalKeymap!.set(key, target)) {
+            if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && this.globalKeymap!.set(key, target, context)) {
                 await this.persistGlobalKeymap();
-                this.notify(`Keymap set: ${key} -> ${target}`);
+                const conflicts = this.globalKeymap!.conflicts(key, target, context);
+                const conflictText = conflicts.length
+                    ? `  conflicts with ${conflicts.map(({ context: c, action: a }) => `${c}:${a}`).join(', ')}`
+                    : '';
+                this.notify(`Keymap set: ${key} -> ${target}${conflictText}`);
                 return;
             }
-            if (scope !== 'global' && isConsoleVimAction(target) && this.state.setVimBinding(key, target)) {
+            if ((scope === 'vim' || scope === '') && isConsoleVimAction(target) && this.state.setVimBinding(key, target)) {
                 this.notify(`Vim keymap set: ${key} -> ${target}`);
                 return;
             }
@@ -7482,15 +7770,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (action === 'unset') {
             const key = tokens[1];
             if (!key) {
-                this.notify('Usage: /keymap unset <key>');
+                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] unset <key>');
                 return;
             }
-            if (scope !== 'vim' && this.globalKeymap!.unset(key)) {
+            if (scope !== 'vim' && this.globalKeymap!.unset(key, context)) {
                 await this.persistGlobalKeymap();
-                this.notify(`Global keymap unset: ${key}`);
+                this.notify(`${context === 'global' ? 'Global' : context} keymap unset: ${key}`);
                 return;
             }
-            if (scope !== 'global' && this.state.unsetVimBinding(key)) {
+            if ((scope === 'vim' || scope === '') && this.state.unsetVimBinding(key)) {
                 this.notify(`Vim keymap unset: ${key} (default restored if any)`);
                 return;
             }
@@ -7498,15 +7786,29 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         if (action === 'reset') {
-            if (scope !== 'global') this.state.resetVimBindings();
-            if (scope !== 'vim') {
-                this.globalKeymap!.reset();
+            if (scope === '' || scope === 'vim') this.state.resetVimBindings();
+            if (scope === '' || scope === 'global' || isAgentConsoleKeymapContext(scope)) {
+                this.globalKeymap!.reset(scope === '' ? undefined : context);
                 await this.persistGlobalKeymap();
             }
             this.notify('Keymap reset to defaults.');
             return;
         }
-        this.notify('Usage: /keymap [global|vim] [list|set <key> <action>|unset <key>|reset]');
+        if (action === 'record') {
+            const target = tokens[1];
+            if (!target) {
+                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] record <action>');
+                return;
+            }
+            if (scope === 'vim' || !isAgentConsoleGlobalAction(target)) {
+                this.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')})`);
+                return;
+            }
+            this.keymapRecording = { context, action: target };
+            this.notify(`Recording key for ${target} (${context}) — press a key now, Esc to cancel.`);
+            return;
+        }
+        this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] [list|set <key> <action>|unset <key>|reset|record <action>]');
     }
 
     protected async runSshCommand(args: string): Promise<void> {
@@ -8019,6 +8321,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
             this.updateTerminalTitle();
             this.notify(`Switched model profile to ${name}.`);
+            await this.recordRecentModel(String(result?.modelProfile || name));
             return;
         }
         const profiles = this.options.model?.profiles || {};
@@ -8038,6 +8341,90 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
         this.updateTerminalTitle();
         this.notify(`Switched model profile to ${name}.`);
+        await this.recordRecentModel(name);
+    }
+
+    protected async restoreModelStore(): Promise<void> {
+        const data = await this.modelStore?.load(this.resolveHistoryWorkspace());
+        this.modelFavorites = data?.favorites || [];
+        this.modelRecents = data?.recents || [];
+        this.modelReasoningEffort = this.options.model?.reasoningEffort || 'medium';
+    }
+
+    protected async persistModelStore(): Promise<void> {
+        await this.modelStore?.save(this.resolveHistoryWorkspace(), {
+            favorites: this.modelFavorites,
+            recents: this.modelRecents
+        });
+    }
+
+    protected async toggleModelFavorite(): Promise<void> {
+        const name = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
+        if (!name) {
+            this.notify('No active model profile to favorite.');
+            return;
+        }
+        const index = this.modelFavorites.indexOf(name);
+        if (index >= 0) {
+            this.modelFavorites.splice(index, 1);
+            await this.persistModelStore();
+            this.notify(`Removed ${name} from favorites.`);
+        } else {
+            this.modelFavorites.push(name);
+            await this.persistModelStore();
+            this.notify(`Added ${name} to favorites.`);
+        }
+    }
+
+    protected async cycleRecentModel(delta: 1 | -1): Promise<void> {
+        if (!this.modelRecents.length) {
+            this.notify('No recent models yet.');
+            return;
+        }
+        const current = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
+        let index = this.modelRecents.indexOf(current);
+        if (index < 0) {
+            index = delta > 0 ? -1 : 0;
+        }
+        const next = this.modelRecents[(index + delta + this.modelRecents.length) % this.modelRecents.length];
+        await this.activateModelProfile(next);
+    }
+
+    protected async cycleModelVariant(): Promise<void> {
+        const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+        const current = this.modelReasoningEffort;
+        const next = tiers[(tiers.indexOf(current) + 1) % tiers.length];
+        this.modelReasoningEffort = next;
+        if (this.appRpc) {
+            const sessionId = this.state.sessionId;
+            const name = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
+            if (!name) {
+                this.notify('No active model profile to cycle variant for.');
+                return;
+            }
+            const requestId = ++this.activateModelRequestId;
+            const result = await this.appRpc.request('model.activate', { sessionId, name, reasoningEffort: next });
+            if (requestId !== this.activateModelRequestId || sessionId !== this.state.sessionId) {
+                return;
+            }
+            const returned = String(result?.reasoningEffort || '');
+            if (returned === 'low' || returned === 'medium' || returned === 'high') {
+                this.modelReasoningEffort = returned;
+            }
+        } else {
+            this.options.model = this.options.model || {};
+            this.options.model.reasoningEffort = next;
+        }
+        this.notify(`Reasoning effort: ${this.modelReasoningEffort}.`);
+    }
+
+    protected async recordRecentModel(name: string): Promise<void> {
+        const trimmed = String(name || '').trim();
+        if (!trimmed) {
+            return;
+        }
+        this.modelRecents = [trimmed, ...this.modelRecents.filter((item) => item !== trimmed)].slice(0, 10);
+        await this.persistModelStore();
     }
 
     protected async queueNextTurnModelProfile(profileName: string): Promise<void> {

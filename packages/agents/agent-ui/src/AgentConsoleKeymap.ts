@@ -1,6 +1,14 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
 
+export type AgentConsoleKeymapContext = 'global' | 'composer' | 'list' | 'approval' | 'pager';
+
+export const AGENT_CONSOLE_KEYMAP_CONTEXTS: AgentConsoleKeymapContext[] = ['global', 'composer', 'list', 'approval', 'pager'];
+
+export function isAgentConsoleKeymapContext(value: string): value is AgentConsoleKeymapContext {
+    return AGENT_CONSOLE_KEYMAP_CONTEXTS.includes(value as AgentConsoleKeymapContext);
+}
+
 export type AgentConsoleGlobalAction =
     | 'new-session'
     | 'compact'
@@ -16,12 +24,42 @@ export type AgentConsoleGlobalAction =
     | 'interrupt-turn'
     | 'command-palette'
     | 'toggle-thinking'
-    | 'open-editor';
+    | 'open-editor'
+    | 'thread-child-first'
+    | 'thread-cycle-next'
+    | 'thread-cycle-prev'
+    | 'thread-parent'
+    | 'message-page-up'
+    | 'message-page-down'
+    | 'message-first'
+    | 'message-last'
+    | 'message-last-user'
+    | 'model-favorite-toggle'
+    | 'model-cycle-recent'
+    | 'model-cycle-recent-back'
+    | 'model-variant-cycle'
+    | 'which-key-toggle';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
-    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor'
+    'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor',
+    'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
+    'message-page-up', 'message-page-down', 'message-first', 'message-last', 'message-last-user',
+    'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
+    'which-key-toggle'
 ];
+
+export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
+    down: 'thread-child-first',
+    right: 'thread-cycle-next',
+    left: 'thread-cycle-prev',
+    up: 'thread-parent',
+    pageup: 'message-page-up',
+    pagedown: 'message-page-down',
+    home: 'message-first',
+    end: 'message-last',
+    'shift+g': 'message-last-user'
+};
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
     'ctrl+x n': 'new-session',
@@ -38,7 +76,12 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x y': 'copy',
     escape: 'interrupt-turn',
     'ctrl+p': 'command-palette',
-    'ctrl+g': 'open-editor'
+    'ctrl+g': 'open-editor',
+    'ctrl+f': 'model-favorite-toggle',
+    f2: 'model-cycle-recent',
+    'shift+f2': 'model-cycle-recent-back',
+    'ctrl+t': 'model-variant-cycle',
+    'ctrl+alt+k': 'which-key-toggle'
 };
 
 export function normalizeAgentConsoleKeySequence(value: string): string {
@@ -47,6 +90,17 @@ export function normalizeAgentConsoleKeySequence(value: string): string {
 
 export function isAgentConsoleGlobalAction(value: string): value is AgentConsoleGlobalAction {
     return AGENT_CONSOLE_GLOBAL_ACTIONS.includes(value as AgentConsoleGlobalAction);
+}
+
+export function isAgentConsoleThreadNavigationAction(action: string): boolean {
+    return action === 'thread-child-first' || action === 'thread-cycle-next'
+        || action === 'thread-cycle-prev' || action === 'thread-parent';
+}
+
+export function isAgentConsoleMessageNavigationAction(action: string): boolean {
+    return action === 'message-page-up' || action === 'message-page-down'
+        || action === 'message-first' || action === 'message-last'
+        || action === 'message-last-user';
 }
 
 export function fuzzyMatchAgentConsoleCommand(command: string, query: string): boolean {
@@ -64,6 +118,7 @@ export function fuzzyMatchAgentConsoleCommand(command: string, query: string): b
 @Injectable()
 export class AgentConsoleKeymap {
     private overrides: Record<string, AgentConsoleGlobalAction | null> = {};
+    private contextOverrides: Partial<Record<AgentConsoleKeymapContext, Record<string, AgentConsoleGlobalAction | null>>> = {};
 
     configure(overrides?: Record<string, string | null>): void {
         this.overrides = {};
@@ -75,39 +130,94 @@ export class AgentConsoleKeymap {
         });
     }
 
+    configureContext(context: AgentConsoleKeymapContext, overrides?: Record<string, string | null>): void {
+        const map: Record<string, AgentConsoleGlobalAction | null> = {};
+        Object.entries(overrides || {}).forEach(([sequence, action]) => {
+            const normalized = normalizeAgentConsoleKeySequence(sequence);
+            if (normalized && (action === null || isAgentConsoleGlobalAction(action))) {
+                map[normalized] = action;
+            }
+        });
+        this.contextOverrides = { ...this.contextOverrides, [context]: map };
+    }
+
     get customBindings(): Record<string, AgentConsoleGlobalAction | null> {
         return { ...this.overrides };
     }
 
-    get effectiveBindings(): Record<string, AgentConsoleGlobalAction> {
-        const bindings: Record<string, AgentConsoleGlobalAction> = { ...AGENT_CONSOLE_DEFAULT_KEYMAP };
+    customBindingsFor(context: AgentConsoleKeymapContext): Record<string, AgentConsoleGlobalAction | null> {
+        if (context === 'global') return this.customBindings;
+        return { ...(this.contextOverrides[context] || {}) };
+    }
+
+    effectiveBindings(context: AgentConsoleKeymapContext = 'global'): Record<string, AgentConsoleGlobalAction> {
+        const bindings: Record<string, AgentConsoleGlobalAction> = {
+            ...AGENT_CONSOLE_DEFAULT_KEYMAP,
+            ...(context === 'pager' ? AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP : {})
+        };
         Object.entries(this.overrides).forEach(([sequence, action]) => {
             if (action) bindings[sequence] = action;
             else delete bindings[sequence];
         });
+        if (context !== 'global') {
+            Object.entries(this.contextOverrides[context] || {}).forEach(([sequence, action]) => {
+                if (action) bindings[sequence] = action;
+                else delete bindings[sequence];
+            });
+        }
         return bindings;
     }
 
-    set(sequence: string, action: string): boolean {
+    set(sequence: string, action: string, context: AgentConsoleKeymapContext = 'global'): boolean {
         const normalized = normalizeAgentConsoleKeySequence(sequence);
         if (!normalized || !isAgentConsoleGlobalAction(action)) return false;
-        this.overrides = { ...this.overrides, [normalized]: action };
+        if (context === 'global') {
+            this.overrides = { ...this.overrides, [normalized]: action };
+        } else {
+            this.contextOverrides = {
+                ...this.contextOverrides,
+                [context]: { ...(this.contextOverrides[context] || {}), [normalized]: action }
+            };
+        }
         return true;
     }
 
-    unset(sequence: string): boolean {
+    unset(sequence: string, context: AgentConsoleKeymapContext = 'global'): boolean {
         const normalized = normalizeAgentConsoleKeySequence(sequence);
-        if (!normalized || !this.effectiveBindings[normalized]) return false;
-        this.overrides = { ...this.overrides, [normalized]: null };
+        if (!normalized || !this.effectiveBindings(context)[normalized]) return false;
+        if (context === 'global') {
+            this.overrides = { ...this.overrides, [normalized]: null };
+        } else {
+            this.contextOverrides = {
+                ...this.contextOverrides,
+                [context]: { ...(this.contextOverrides[context] || {}), [normalized]: null }
+            };
+        }
         return true;
     }
 
-    reset(): void {
-        this.overrides = {};
+    reset(context?: AgentConsoleKeymapContext): void {
+        if (!context || context === 'global') {
+            this.overrides = {};
+            if (!context) this.contextOverrides = {};
+            return;
+        }
+        this.contextOverrides = { ...this.contextOverrides, [context]: {} };
     }
 
-    resolve(sequence: string): AgentConsoleGlobalAction | undefined {
-        return this.effectiveBindings[normalizeAgentConsoleKeySequence(sequence)];
+    resolve(sequence: string, context: AgentConsoleKeymapContext = 'global'): AgentConsoleGlobalAction | undefined {
+        return this.effectiveBindings(context)[normalizeAgentConsoleKeySequence(sequence)];
+    }
+
+    conflicts(sequence: string, action: AgentConsoleGlobalAction, context: AgentConsoleKeymapContext): Array<{ context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction }> {
+        const normalized = normalizeAgentConsoleKeySequence(sequence);
+        const found: Array<{ context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction }> = [];
+        AGENT_CONSOLE_KEYMAP_CONTEXTS.forEach(other => {
+            if (other === context) return;
+            const existing = this.effectiveBindings(other)[normalized];
+            if (existing && existing !== action) found.push({ context: other, action: existing });
+        });
+        return found;
     }
 }
 
@@ -116,21 +226,42 @@ export class AgentConsoleKeymapStore {
     constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
 
     async load(workspace: string): Promise<Record<string, string | null>> {
-        if (!workspace || !this.fileAdapter) return {};
-        try {
-            const text = await this.fileAdapter.readText(this.path(workspace));
-            const parsed = JSON.parse(text);
-            return parsed?.bindings && typeof parsed.bindings === 'object' ? parsed.bindings : {};
-        } catch {
-            return {};
-        }
+        const parsed = await this.read(workspace);
+        return parsed?.bindings && typeof parsed.bindings === 'object'
+            ? parsed.bindings as Record<string, string | null>
+            : {};
     }
 
-    async save(workspace: string, bindings: Record<string, string | null>): Promise<void> {
+    async loadContexts(workspace: string): Promise<Partial<Record<AgentConsoleKeymapContext, Record<string, string | null>>>> {
+        const parsed = await this.read(workspace);
+        if (!parsed?.contexts || typeof parsed.contexts !== 'object') return {};
+        const result: Partial<Record<AgentConsoleKeymapContext, Record<string, string | null>>> = {};
+        Object.entries(parsed.contexts).forEach(([context, bindings]) => {
+            if (isAgentConsoleKeymapContext(context) && bindings && typeof bindings === 'object') {
+                result[context] = bindings as Record<string, string | null>;
+            }
+        });
+        return result;
+    }
+
+    async save(
+        workspace: string,
+        bindings: Record<string, string | null>,
+        contexts?: Partial<Record<AgentConsoleKeymapContext, Record<string, string | null>>>
+    ): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
         const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
         await this.fileAdapter.mkdir(directory, { recursive: true });
-        await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, bindings }, null, 2));
+        await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 2, bindings, contexts: contexts || {} }, null, 2));
+    }
+
+    private async read(workspace: string): Promise<{ version?: number; bindings?: unknown; contexts?: unknown } | undefined> {
+        if (!workspace || !this.fileAdapter) return undefined;
+        try {
+            return JSON.parse(await this.fileAdapter.readText(this.path(workspace)));
+        } catch {
+            return undefined;
+        }
     }
 
     private path(workspace: string): string {

@@ -32,6 +32,7 @@ import {
     AgentConsoleReviewPanelComponent,
     AgentConsoleErrorMessageItemComponent,
     AgentConsoleSelectPanelComponent,
+    AgentConsoleWhichKeyPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleTasksPanelComponent,
@@ -79,7 +80,8 @@ import {
         AgentConsoleMessageDetailPanelComponent,
         AgentConsoleReviewPanelComponent,
         AgentConsoleActivityPanelComponent,
-        AgentConsoleSelectPanelComponent
+        AgentConsoleSelectPanelComponent,
+        AgentConsoleWhichKeyPanelComponent
     ],
     providers: [
         ...I18N_PROVIDERS,
@@ -118,6 +120,7 @@ import {
         AgentConsoleReviewPanelComponent,
         AgentConsoleActivityPanelComponent,
         AgentConsoleSelectPanelComponent,
+        AgentConsoleWhichKeyPanelComponent,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleEventBridge,

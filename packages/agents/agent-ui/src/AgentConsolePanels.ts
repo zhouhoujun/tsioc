@@ -31,6 +31,7 @@ import {
     AgentConsoleToolItem,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
+import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
 import { ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleMarkdownLine,
@@ -458,6 +459,17 @@ export class AgentConsoleInputPanelComponent {
         if (await this.state?.globalKeyInputAction?.(event.key, { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) {
             event.preventDefault?.();
             return;
+        }
+        if (event.key === 'Tab'
+            && !event.ctrlKey && !event.metaKey && !event.altKey
+            && (this.state?.status === 'running' || this.state?.status === 'reasoning')
+            && this.state?.input.trim()
+            && isAgentConsoleSuggestionMenu(this.state?.selectMenu)) {
+            const queued = await this.state?.queueDraftAction?.();
+            if (queued) {
+                event.preventDefault?.();
+                return;
+            }
         }
         if (this.state?.selectMenu) {
             if (this.isEnterKey(event)) {
@@ -3266,5 +3278,66 @@ export class AgentConsoleSelectPanelComponent {
         if (this.state.handleSelectKey(event.key)) {
             event.preventDefault?.();
         }
+    }
+}
+
+@Component({
+    selector: 'agent-console-which-key-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-which-key-panel" v-style="shellStyle">
+        <label class="which-key-title" v-style="titleStyle">Keymap ({{bindingCount}})</label>
+        <label class="which-key-row" v-style="rowStyle" v-for="binding in bindings">
+            <span v-style="keyStyle">{{binding.key}}</span>
+            <span v-style="actionStyle"> {{binding.action}}</span>
+        </label>
+        <label class="which-key-hint" v-style="hintStyle">{{hintText}}</label>
+    </div>
+    `
+})
+export class AgentConsoleWhichKeyPanelComponent {
+    constructor(
+        private state: AgentConsoleSessionState
+    ) {
+    }
+
+    get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || defaultAgentConsoleTheme;
+    }
+
+    get bindings(): Array<{ key: string; action: string }> {
+        return this.state.whichKeyBindings;
+    }
+
+    get bindingCount(): string {
+        return String(this.bindings.length);
+    }
+
+    get hintText(): string {
+        return 'Esc to close';
+    }
+
+    get shellStyle() {
+        return styleTextToObject(this.activeTheme.selectShell);
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
+    }
+
+    get rowStyle() {
+        return styleTextToObject(this.activeTheme.selectOption);
+    }
+
+    get keyStyle() {
+        return styleTextToObject(this.activeTheme.selectOptionActive);
+    }
+
+    get actionStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
     }
 }

@@ -460,6 +460,8 @@ export class AgentConsoleSessionState {
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
     showThinking = true;
+    whichKeyVisible = false;
+    whichKeyBindings: Array<{ key: string; action: string }> = [];
     rawMode = false;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
@@ -479,7 +481,7 @@ export class AgentConsoleSessionState {
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => boolean | Promise<boolean>;
+    globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
     commandHints = ['/help', '/goal', '/tools', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
 
     protected activeToolSet = new Set<string>();
@@ -1156,6 +1158,21 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+    }
+
+    selectLastUserMessage(): void {
+        const displayMessages = this.displayMessages;
+        for (let index = displayMessages.length - 1; index >= 0; index -= 1) {
+            const message = displayMessages[index];
+            if (String(message.role || '').toLowerCase() === 'user'
+                && message.metadata?.kind !== 'steer'
+                && !!String(message.content || '').trim()) {
+                this.selectedMessageId = message.id;
+                this.messageDetailScroll = 0;
+                this.messageDetailColumnScroll = 0;
+                return;
+            }
+        }
     }
 
     get selectedMessage(): AgentMessage | undefined {
@@ -2528,6 +2545,17 @@ export class AgentConsoleSessionState {
 
     setShowThinking(value: boolean): void {
         this.showThinking = !!value;
+    }
+
+    setWhichKeyVisible(value: boolean): void {
+        this.whichKeyVisible = !!value;
+        if (!this.whichKeyVisible) {
+            this.whichKeyBindings = [];
+        }
+    }
+
+    setWhichKeyBindings(bindings: Array<{ key: string; action: string }>): void {
+        this.whichKeyBindings = bindings.slice();
     }
 
     setRawMode(value: boolean): void {
@@ -4221,6 +4249,13 @@ export class AgentConsoleSessionState {
         if (rawText === '\u0003') {
             options.onExit('Closing session...', true);
             return { handled: true, action: 'exit' };
+        }
+
+        if (controlKey === 'tab'
+            && (this.status === 'running' || this.status === 'reasoning')
+            && this.input.trim()
+            && isAgentConsoleSuggestionMenu(this.selectMenu)) {
+            return { handled: true, action: 'queueDraft' };
         }
 
         if (this.handleMenuInput(controlKey || '', rawText)) {
