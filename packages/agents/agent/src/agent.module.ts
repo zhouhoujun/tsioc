@@ -20,6 +20,7 @@ import { DefaultSessionStore } from './memory/DefaultSessionStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
+import { ProjectMemoryService } from './memory/ProjectMemoryService';
 import { SessionSummarizer } from './memory/SessionSummarizer';
 import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
 import { AgentSummaryAgent } from './memory/AgentSummaryAgent';
@@ -143,6 +144,7 @@ import { createAgentProviders } from './provider';
         { provide: SessionStore, useExisting: DefaultSessionStore },
         InMemoryMemoryStore,
         DefaultMemoryStore,
+        ProjectMemoryService,
         { provide: MemoryStore, useExisting: DefaultMemoryStore, asDefault: true },
         DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
@@ -178,6 +180,7 @@ import { createAgentProviders } from './provider';
         DefaultSessionStore,
         InMemorySessionStore,
         DefaultMemoryStore,
+        ProjectMemoryService,
         InMemoryMemoryStore,
         IntervalAgentScheduler,
         AgentServer,

@@ -101,6 +101,7 @@ export * from './prompt/sections/ProjectContextSection';
 export * from './memory/MemoryStore';
 export * from './memory/MemoryEmbedder';
 export * from './memory/MemorySearchService';
+export * from './memory/ProjectMemoryService';
 export * from './memory/SessionStore';
 export * from './memory/SessionSummarizer';
 export * from './memory/ExperienceDistiller';

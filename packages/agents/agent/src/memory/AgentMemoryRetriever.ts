@@ -2,6 +2,7 @@ import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentMemoryRecord, MemoryStore } from './MemoryStore';
 import { MEMORY_EMBEDDER, MemoryEmbedder, SemanticMemoryRanker } from './MemoryEmbedder';
 import { MemorySearchMode, MemorySearchService } from './MemorySearchService';
+import { isProjectMemoryRecord, ProjectMemoryService } from './ProjectMemoryService';
 
 export interface AgentMemoryRetrievalInput {
     sessionId: string;
@@ -12,6 +13,8 @@ export interface AgentMemoryRetrievalInput {
     limit?: number;
     /** Minimum cosine similarity for semantic/hybrid ranking (0-1). */
     minScore?: number;
+    /** Project/workspace identity used for isolated cross-session memory. */
+    projectId?: string;
 }
 
 @Abstract()
@@ -34,18 +37,24 @@ export class DefaultAgentMemoryRetriever extends AgentMemoryRetriever {
     constructor(
         private store: MemoryStore,
         @Optional() searchService?: MemorySearchService,
-        @Optional() @Inject(MEMORY_EMBEDDER) private embedder?: MemoryEmbedder | null
+        @Optional() @Inject(MEMORY_EMBEDDER) private embedder?: MemoryEmbedder | null,
+        @Optional() private projectMemory?: ProjectMemoryService | null
     ) {
         super();
         this.searchService = searchService ?? new MemorySearchService(store, new SemanticMemoryRanker(), embedder ?? null);
     }
 
     async retrieve(input: AgentMemoryRetrievalInput): Promise<AgentMemoryRecord[]> {
-        return this.searchService.search(input.query, {
+        const records = await this.searchService.search(input.query, {
             sessionId: input.sessionId,
             mode: input.mode,
-            limit: input.limit,
+            limit: input.projectId ? undefined : input.limit,
             minScore: input.minScore
         });
+        const visible = records.filter(record => !isProjectMemoryRecord(record));
+        if (!input.projectId || !this.projectMemory) return input.limit ? visible.slice(0, input.limit) : visible;
+        const project = await this.projectMemory.search(input.projectId, input.query, input);
+        const merged = [...project, ...visible];
+        return input.limit ? merged.slice(0, input.limit) : merged;
     }
 }

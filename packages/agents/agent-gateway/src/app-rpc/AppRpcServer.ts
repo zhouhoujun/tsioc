@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -36,7 +36,8 @@ export class AppRpcServer {
         @Optional() private reviewFindings?: ReviewFindingsStore | null,
         @Optional() private audio?: AudioSessionHandler | null,
         @Optional() private shares?: SessionShareStore | null,
-        @Optional() private cloudTasks?: CloudTaskQueue | null
+        @Optional() private cloudTasks?: CloudTaskQueue | null,
+        @Optional() private projectMemory?: ProjectMemoryService | null
     ) {
     }
 
@@ -206,6 +207,9 @@ export class AppRpcServer {
                         'memory.list',
                         'memory.put',
                         'memory.search',
+                        'project_memory.list',
+                        'project_memory.add',
+                        'project_memory.remove',
                         'events.history',
                         'audit.list',
                         'todo.get',
@@ -385,6 +389,12 @@ export class AppRpcServer {
                 return this.putMemory(params, context);
             case 'memory.search':
                 return this.searchMemory(params, context);
+            case 'project_memory.list':
+                return this.listProjectMemory(params, context);
+            case 'project_memory.add':
+                return this.addProjectMemory(params, context);
+            case 'project_memory.remove':
+                return this.removeProjectMemory(params, context);
             case 'events.history':
                 return this.getEventHistory(this.requireSessionId(params), context);
             case 'audit.list':
@@ -1684,6 +1694,38 @@ export class AppRpcServer {
         const query = this.requireString(params?.query, 'memory.search query');
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.searchMemory(sessionId, query);
+    }
+
+    private async listProjectMemory(params: any, context: AppRpcRequestContext): Promise<any> {
+        const projectId = await this.resolveProjectMemoryId(params, context);
+        return this.projectMemory ? this.projectMemory.list(projectId) : [];
+    }
+
+    private async addProjectMemory(params: any, context: AppRpcRequestContext): Promise<any> {
+        const projectId = await this.resolveProjectMemoryId(params, context);
+        if (!this.projectMemory) throw new AppRpcError(-32601, 'Project memory is unavailable');
+        return this.projectMemory.add({
+            projectId,
+            key: this.requireString(params?.key, 'project_memory.add key'),
+            value: this.requireString(params?.value, 'project_memory.add value'),
+            ttlMs: params?.ttlMs == null ? undefined : Number(params.ttlMs),
+            conflict: params?.conflict
+        });
+    }
+
+    private async removeProjectMemory(params: any, context: AppRpcRequestContext): Promise<any> {
+        const projectId = await this.resolveProjectMemoryId(params, context);
+        if (!this.projectMemory) return { removed: 0 };
+        return { removed: await this.projectMemory.remove(projectId, this.requireString(params?.target, 'project_memory.remove target')) };
+    }
+
+    private async resolveProjectMemoryId(params: any, context: AppRpcRequestContext): Promise<string> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const state = await this.sessions.get(sessionId);
+        const projectId = String(state.projectId || state.workspace || '').trim();
+        if (!projectId) throw new AppRpcError(-32602, 'Project memory requires a session project or workspace');
+        return projectId;
     }
 
     private async getEventHistory(sessionId: string, context: AppRpcRequestContext): Promise<any> {

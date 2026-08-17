@@ -17,7 +17,7 @@ import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
 import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
 import { AgentEditorBridge, AGENT_EDITOR_BRIDGE } from './AgentEditorBridge';
@@ -149,7 +149,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private rawModeStore?: AgentConsoleRawModeStore | null,
         @Optional() private stashStore?: AgentConsoleStashStore | null,
         @Optional() private modelStore?: AgentConsoleModelStore | null,
-        @Optional() private settingsStore?: AgentConsoleSettingsStore | null
+        @Optional() private settingsStore?: AgentConsoleSettingsStore | null,
+        @Optional() private projectMemory?: ProjectMemoryService | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -6739,20 +6740,63 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async runMemoriesCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim().toLowerCase();
+        const raw = String(args || '').trim();
+        const parsed = raw.toLowerCase();
         const current = this.options.ui?.memoryInjection !== false;
         if (!parsed) {
-            this.notify(`Memory injection ${current ? 'ON' : 'OFF'}. Use /memories on|off to toggle.`);
+            this.notify(`Memory injection ${current ? 'ON' : 'OFF'}. Use /memories list|add|remove or on|off.`);
+            return true;
+        }
+        if (parsed === 'list' || parsed === 'injected') {
+            const projectId = this.resolveProjectMemoryId();
+            const records: Array<{ key: string; value: string }> = this.appRpc
+                ? await this.appRpc.request('project_memory.list', { sessionId: this.state.sessionId }).catch(() => [])
+                : (projectId && this.projectMemory ? await this.projectMemory.list(projectId) : []);
+            if (!records.length) {
+                this.notify(projectId ? 'No project memories.' : 'Project memory requires a project or workspace.');
+                return true;
+            }
+            this.notify(`Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
+            return true;
+        }
+        if (parsed.startsWith('add ')) {
+            const projectId = this.resolveProjectMemoryId();
+            const body = raw.slice(4).trim();
+            const separator = body.indexOf('=') >= 0 ? body.indexOf('=') : body.indexOf(' ');
+            if (!projectId || (!this.appRpc && !this.projectMemory) || separator <= 0 || !body.slice(separator + 1).trim()) {
+                this.notify('Usage: /memories add <key>=<value>');
+                return true;
+            }
+            const input = { sessionId: this.state.sessionId, projectId, key: body.slice(0, separator).trim(), value: body.slice(separator + 1).trim(), conflict: 'replace' as const };
+            const record = this.appRpc
+                ? await this.appRpc.request('project_memory.add', input)
+                : await this.projectMemory!.add(input);
+            this.notify(`Project memory saved: ${record.key}`);
+            return true;
+        }
+        if (parsed.startsWith('remove ') || parsed.startsWith('rm ')) {
+            const projectId = this.resolveProjectMemoryId();
+            const target = raw.slice(raw.indexOf(' ') + 1).trim();
+            const result = this.appRpc
+                ? await this.appRpc.request('project_memory.remove', { sessionId: this.state.sessionId, target }).catch(() => ({ removed: 0 }))
+                : { removed: projectId && this.projectMemory ? await this.projectMemory.remove(projectId, target) : 0 };
+            const removed = Number(result?.removed || 0);
+            this.notify(removed ? `Removed ${removed} project memory record${removed === 1 ? '' : 's'}.` : `Project memory not found: ${target || '-'}`);
             return true;
         }
         const enabled = parsed === 'on';
         if (parsed !== 'on' && parsed !== 'off') {
-            this.notify('Usage: /memories [on|off]');
+            this.notify('Usage: /memories [on|off|list|injected|add <key>=<value>|remove <id-or-key>]');
             return true;
         }
         this.options.ui = { ...(this.options.ui || {}), memoryInjection: enabled };
         this.notify(enabled ? 'Memory injection enabled.' : 'Memory injection disabled.');
         return true;
+    }
+
+    protected resolveProjectMemoryId(): string {
+        const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
+        return String(this.state.projectKey || consoleOptions?.workspace || '').trim();
     }
 
     protected async runFastCommand(args?: string): Promise<boolean> {

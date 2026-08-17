@@ -3053,7 +3053,11 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         try {
             const retriever = this.memoryRetriever;
             const records = retriever
-                ? await retriever.retrieve({ sessionId, query: normalized })
+                ? await retriever.retrieve({
+                    sessionId,
+                    query: normalized,
+                    projectId: await this.resolveMemoryProjectId(sessionId)
+                })
                 : await this.memory.search(normalized, sessionId);
             await this.publishMemoryRetrievalEvent(new AgentMemoryRetrievedEvent(this, sessionId, normalized, records));
             return records;
@@ -3062,6 +3066,11 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             await this.publishMemoryRetrievalEvent(new AgentMemoryRetrievalFailedEvent(this, sessionId, normalized, err));
             return [];
         }
+    }
+
+    private async resolveMemoryProjectId(sessionId: string): Promise<string | undefined> {
+        const state = await this.sessions.get(sessionId);
+        return String(state.projectId || state.workspace || '').trim() || undefined;
     }
 
     private async publishMemoryRetrievalEvent(event: AgentMemoryRetrievalStartedEvent | AgentMemoryRetrievedEvent | AgentMemoryRetrievalFailedEvent): Promise<void> {

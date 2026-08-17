@@ -129,6 +129,33 @@ export class P126CommandClusterTest {
         expect(state.notice).toContain('Usage: /memories');
     }
 
+    @Test('/memories manages project records and lists injected memory')
+    async memoriesManagement() {
+        const { state, component } = createConsole({ ui: { title: 'Console', console: { workspace: '/work/alpha' } } });
+        const records: any[] = [];
+        (component as any).appRpc = null;
+        (component as any).projectMemory = {
+            add: async (input: any) => {
+                const record = { id: 'm1', key: input.key, value: input.value };
+                records.push(record);
+                return record;
+            },
+            list: async () => records,
+            remove: async (_project: string, target: string) => {
+                const index = records.findIndex(item => item.id === target || item.key === target);
+                if (index < 0) return 0;
+                records.splice(index, 1);
+                return 1;
+            }
+        };
+        await (component as any).handleCommand('/memories add language=TypeScript');
+        expect(state.notice).toContain('saved: language');
+        await (component as any).handleCommand('/memories list');
+        expect(state.notice).toContain('language: TypeScript');
+        await (component as any).handleCommand('/memories remove language');
+        expect(state.notice).toContain('Removed 1');
+    }
+
     @Test('/fast activates the fast profile and toggles back to strong')
     async fastTogglesProfile() {
         const { state, component } = createConsole({

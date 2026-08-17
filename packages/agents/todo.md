@@ -128,6 +128,7 @@
 - **P150 · G75 · 云任务执行面（2026-08 落地）**：gateway `CloudTaskQueue` 提供有界并发 headless 队列与 queued/running/completed/failed/cancelled 生命周期，复用 `AgentRuntime.runTurn/cancelTurn`；`cloud.task.submit/list/get/cancel/apply` 五个 JSON-RPC 按 principal 隔离，apply 幂等领取最终 turn/message 并记录 appliedAt。CLI `cloud run/list/status/cancel/apply` 通过 gateway HTTP JSON-RPC 调用，支持 URL/token/env/JSON 输出。验证：gateway cloud-task.spec.ts 3 用例、CLI 3 用例；agent-gateway 239 + agent-cli 69，十包 2112 passing EXIT=0，十包 build 全部通过。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、`agent-cli/src/cloud-command.ts`、`cli.ts`。
 - **P151 · G76 · mDNS 服务发现（2026-08 落地）**：gateway `mdns: true` 时通过可注入 DNS-SD 服务广播 `_tsdi-agent._tcp.local`（service type/domain/name 可配），随 GatewayServer 启停；CLI `attach [url]` 支持 `--mdns`、`--mdns-domain`、`--mdns-service-type`、超时与 token，发现后把 HTTP JSON-RPC 注入现有 TUI，显式 URL 优先。实现无外部依赖，包含 DNS 名称压缩、PTR/SRV/TXT/A/AAAA 解析与启动失败回收。验证：mdns-discovery.spec.ts 5 用例、CLI attach 3 用例；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent-gateway/src/discovery/MdnsServiceDiscovery.ts`、`GatewayServer.ts`、`agent-cli/src/run-console.ts`、`cli.ts`。
 - **P152 · G77 · ACP 客户端适配层（2026-08 落地）**：核心 `AcpClient` 以无 Node 依赖的 JSONL `AcpTransport` 对接兼容 ACP 的编辑器/宿主；覆盖 initialize、session/new、session/prompt、session/cancel、mode/model 切换，解析流式 text/tool/status/error update，并通过 requestHandlers 双向承接权限、文件、终端等宿主能力请求；请求错误、未知方法、关闭时 pending 清理均有明确语义，UTF-8 分片用流式 TextDecoder 解码。验证：acp.spec.ts 4 用例，agent 739 passing；十包 2125 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent/src/acp/AcpClient.ts`、`agent/src/index.ts`。
+- **P153 · G78 · 分层持久记忆（2026-08 落地）**：`ProjectMemoryService` 复用持久 MemoryStore，以 `project-memory:<project/workspace>` namespace 隔离跨会话项目记忆；默认检索器排除其他项目记录并将当前项目 keyword/semantic/hybrid 结果优先注入。支持 TTL freshness、replace/keep-newest/append 同键冲突策略、按 id/key 删除；`/memories list|injected|add|remove` 扩展既有 on/off，local 与 gateway `project_memory.*` RPC 共用持久库且远程先校验 session owner。验证：agent project-memory.spec.ts 4 用例、agent-ui `/memories` 1 用例；十包 2130 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent/src/memory/ProjectMemoryService.ts`、`AgentMemoryRetriever.ts`、`DefaultAgentRuntime.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
 
 ### 回归基线
 
@@ -188,7 +189,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 | ✅ G75 | 云任务执行面（daemon/remote-control） | codex cloud / codex apply / codex remote-control daemon；opencode serve+attach + password auth | 已实现（P150）：gateway headless 有界任务队列 + submit/list/get/cancel/apply RPC，principal 隔离；CLI `cloud run/list/status/cancel/apply` | 中-高 |
 | ✅ G76 | mDNS 服务发现 | opencode `--mdns` / `--mdns-domain` | 已实现（P151）：gateway 可配置 DNS-SD 广播，CLI `attach` 支持 mDNS/domain/service type 发现并注入远程 TUI | 低 |
 | ✅ G77 | ACP（Agent Client Protocol）客户端 | opencode `acp`（跨客户端协议） | 已实现（P152）：跨平台 JSONL transport 客户端，覆盖会话生命周期、流式 update 与权限/fs/terminal 等双向宿主 RPC | 中（生态） |
-| G78 | 分层持久记忆（跨会话召回 + 管理 UI） | codex v0.142.5 memories（paginated thread history + persisted names + memories） | 有语义记忆检索（P73）+ `/memories` 注入开关 + 项目记忆闭环（P78），无跨会话持久记忆库与显式管理面 | 中 |
+| ✅ G78 | 分层持久记忆（跨会话召回 + 管理 UI） | codex v0.142.5 memories（paginated thread history + persisted names + memories） | 已实现（P153）：项目 namespace 隔离的跨会话持久记忆，复用 semantic/hybrid 召回，`/memories` 管理面 + freshness/冲突策略 + local/RPC 双路径 | 中 |
 
 > 已对齐不列为差距：`@` mention（files/skills/plugins 统一候选 P116）、`!` shell 前缀（P119）、`/compact` `/diff` `/theme` `/keymap` `/resume` `/archive` `/fork` `/side` `/statusline` `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/ps` `/goal` `/usage` `/review` `/permissions` `/status` `/undo` `/redo` `/copy` `/export` `/search` `/sections` `/threads` `/voice`（实时双向语音）、Enter 队列（P121）、Esc 中断（P121）、tui.json 配置层（P127，字段待补 G65）、leader + 命令面板（P120）。
 
@@ -232,7 +233,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 - ~~**P150 · G75 · 云任务执行面（中-高）**~~ ✅ 已完成：gateway `CloudTaskQueue` 有界并发执行 headless 会话，五个 `cloud.task.*` RPC 完成提交/轮询/取消/结果领取并按 principal 隔离；CLI `cloud run/list/status/cancel/apply` 支持 gateway URL、Bearer token、env 与 JSON 输出。落地：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、gateway modules/index、`agent-cli/src/cloud-command.ts`、`cli.ts`/`index.ts`；测试 gateway 3 + CLI 3 用例，十包 2112 passing/build 全通过。
 - ~~**P151 · G76 · mDNS 服务发现（低）**~~ ✅ 已完成：gateway `mdns` 配置启用 DNS-SD 广播，service type/domain/name 可配并随生命周期清理；CLI `attach [url]` 支持 `--mdns`/`--mdns-domain`/service type/timeout，发现后通过 HTTP JSON-RPC 连接远程 TUI，显式 URL 优先。测试 gateway 5 + CLI 3；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 - ~~**P152 · G77 · ACP 客户端（中）**~~ ✅ 已完成：新增无 Node 依赖的 `AcpClient` + `AcpTransport`，支持 initialize/session new/prompt/cancel/mode/model、流式 session update 和双向宿主 requestHandlers；协议错误、未知方法、关闭清理与 UTF-8 分片均覆盖。测试 agent 新增 4 用例；十包 2125 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
-- **P153 · G78 · 分层持久记忆（中）**：项目级持久记忆库（跨会话写入/召回，复用 P73 semantic 检索 + P78 规则草案管道）、记忆管理面（`/memories list/add/remove`，展示已注入记忆）、记忆 freshness/冲突策略。锚点：`agent/src/memory/`、`agent-ui/src/AgentConsoleComponent.ts`。
+- ~~**P153 · G78 · 分层持久记忆（中）**~~ ✅ 已完成：项目级 namespace 隔离持久记忆跨会话写入/召回，复用 keyword/semantic/hybrid 排序；TTL freshness + replace/keep-newest/append 冲突策略；`/memories list|injected|add|remove` 管理与 local/gateway RPC 双路径。测试 agent 4 + agent-ui 1；十包 2130 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 
 ## 剩余（远期，未排期）
 
@@ -241,4 +242,4 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 
 ## 已完成（历史）
 
-P0–P127 全部打磨条目均已落地并并入「已实现功能」（含 P34/P35 Tier1/Tier2 与 A/B 面、P42–P45 规划项、P62–P66 agent-ui 渲染性能、G1–G50 全差距）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最近一次全量基线：十包 2125 passing EXIT=0（agent 739 / agent-tools 323 / agent-ui 640 / agent-cli 73 / agent-gateway 244 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P152，Web bundle 3.3MB）。自 P128 起为 v5（G51–G78）新一轮打磨。
+P0–P153 全部已排期打磨条目均已落地（含 G1–G78 全差距）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最新全量基线：十包 2130 passing EXIT=0（agent 743 / agent-tools 323 / agent-ui 641 / agent-cli 73 / agent-gateway 244 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P153，Web bundle 3.3MB）。
