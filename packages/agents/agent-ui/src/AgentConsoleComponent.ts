@@ -29,7 +29,7 @@ import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentC
 import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
-import { AgentConsoleAppStatus, extractAgentConsoleAppMentions, resolveAgentConsoleApps } from './AgentConsoleApps';
+import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, extractAgentConsoleAppMentions, resolveAgentConsoleApps } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -7171,14 +7171,39 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return resolveAgentConsoleApps(config && typeof config === 'object' ? config : undefined);
     }
 
+    protected resolveAppAuthorizer(): AgentConsoleAppAuthorizer | undefined {
+        const authorizer = (this.options.ui?.console as any)?.authorizeConnector
+            || (this.options.ui as any)?.authorizeConnector;
+        return typeof authorizer === 'function' ? authorizer : undefined;
+    }
+
     protected async runAppsCommand(args?: string): Promise<boolean> {
         const requested = String(args || '').trim().replace(/^\$/, '').toLowerCase();
         const apps = this.resolveApps();
         if (requested) {
-            const app = apps.find(item => item.id === requested);
+            let app = apps.find(item => item.id === requested);
             if (!app) {
                 this.notify(`Unknown connector "${requested}". Use /apps to browse available connectors.`);
                 return true;
+            }
+            if (!app.authorized) {
+                const authorize = this.resolveAppAuthorizer();
+                if (!authorize) {
+                    this.insertAppMention(app);
+                    return true;
+                }
+                let authorized = false;
+                try {
+                    authorized = await authorize(app);
+                } catch (error) {
+                    this.notify(`${app.name} authorization failed: ${error instanceof Error ? error.message : String(error)}`);
+                    return true;
+                }
+                if (!authorized) {
+                    this.notify(`${app.name} authorization was cancelled.`);
+                    return true;
+                }
+                app = { ...app, authorized: true, statusLabel: 'connected' };
             }
             this.insertAppMention(app);
             return true;

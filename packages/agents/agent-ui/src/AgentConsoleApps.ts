@@ -12,6 +12,9 @@ export interface AgentConsoleAppStatus extends AgentConsoleAppDefinition {
     statusLabel: string;
 }
 
+/** Host-owned authorization hook. The UI never handles provider secrets. */
+export type AgentConsoleAppAuthorizer = (app: AgentConsoleAppDefinition) => Promise<boolean> | boolean;
+
 // Messaging ids mirror the transports exposed by @tsdi/agent-channels.
 export const agentConsoleApps: AgentConsoleAppDefinition[] = [
     { id: 'github', name: 'GitHub', category: 'code', description: 'Repositories, issues, pull requests, and actions' },

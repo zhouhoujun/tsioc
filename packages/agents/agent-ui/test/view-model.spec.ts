@@ -9949,6 +9949,36 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('Unknown connector');
     }
 
+    @Test('apps command delegates connector authorization to the host')
+    async appsCommandAuthorizesThroughHost() {
+        let authorized = '';
+        const component = createConsole(
+            new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(),
+            undefined, undefined, undefined, undefined, undefined,
+            { ui: { title: 'Console', console: { connectors: {} }, authorizeConnector: async (app: any) => { authorized = app.id; return true; } } }
+        );
+        await component.onInit();
+
+        await (component as any).handleCommand('/apps github');
+        expect(authorized).toEqual('github');
+        expect(component.input).toEqual('$github ');
+        expect(component.notice).toContain('connector inserted');
+    }
+
+    @Test('apps command reports cancelled host authorization without inserting')
+    async appsCommandAuthorizationCancelled() {
+        const component = createConsole(
+            new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(),
+            undefined, undefined, undefined, undefined, undefined,
+            { ui: { title: 'Console', console: { connectors: {} }, authorizeConnector: () => false } }
+        );
+        await component.onInit();
+
+        await (component as any).handleCommand('/apps github');
+        expect(component.input).toEqual('');
+        expect(component.notice).toContain('cancelled');
+    }
+
     @Test('app mentions enrich the prompt with connector status and capabilities')
     async appMentionsEnrichPromptContext() {
         const component = createConsole(
