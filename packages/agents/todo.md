@@ -2,13 +2,13 @@
 
 ## 功能总纲
 
-主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换 + Windows 原生宿主）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool + 断线重连、skills 系统（本地注册表/目录/turn interceptor/激活提示 + 远程市场）、Agent Plugins（manifest/skills/MCP/hooks 捆绑 + 市场目录 + 1.0.0 标准兼容）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）+ pin/unpin + title + delete + archive + resume、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 状态 + thread 级工件聚合 + 子任务加密 + per-agent 权限 + 每-turn 委派模式）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval、pre/post-compaction，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + NDJSON 流 + WS + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档 + 会话分享 + usage 时间聚合 + token 预算）、console TUI（~20 面板 / ~70 命令 / vim mode / Ctrl+X leader + Ctrl+P 面板 / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions / tui.json 配置层）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update/import/trust/desktop + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + 子任务加密）、AGENTS.md 指令链（override/fallback/32KiB 上限/root→cwd 拼接 + FileAdapter 注入）、Web/IDE/Desktop 三宿主（P90–P93/P110）、凭据加密存储、项目信任门、`!` shell 前缀、Esc 中断 + Enter 队列。
+主干能力已齐（2026-08 对比 Codex / opencode 口径）：turn 循环（run/streaming）、多模型适配（Echo/Anthropic/OpenAI/Routed + profiles + complexity 路由 + worker-class 路由 + 命令级 profile + retry-after 分类退避）、prompt cache 支持（请求侧 cache_control + 系统提示静态段前置）、上下文压缩 + 重放（overflow 克隆最后用户消息 / 主动 continue 提示 + 媒体占位符）、turn diagnostics（store/aggregate/trend）、补偿/回滚（LIFO + 审计 + 文件快照 undo/redo）、Git step 快照 + 消息级 revert/unrevert + 会话 diff、审批流（自动评审 / granular 类别 + 网络目的地放行 / expiry/FIFO/防御清扫/审计落库）、sandbox 策略矩阵（capability 级 + OS 级 sandbox-exec + 会话级运行时切换 + Windows 原生宿主）、40+ 工具组（files/git/terminal/browser 轻量 + playwright/web/http/memory/skills/mcp/scheduling/cron/kanban/knowledge/media/audio/capture/code-execution/process/security/communication/sessions/project/data/backup/pipeline/poll/approval/ai-cli/lsp/ssh/coding 等）、LSP 诊断反馈闭环（编辑后 didChange → 拉诊断 → 证据注入）、MCP stdio + Streamable HTTP client + OAuth + server tool + 断线重连、skills 系统（本地注册表/目录/turn interceptor/激活提示 + 远程市场）、Agent Plugins（manifest/skills/MCP/hooks 捆绑 + 市场目录 + 1.0.0 标准兼容）、声明式 agent 原型（plan/build/review + 工具门控）、语义记忆检索（embedding + 三模式降级）、自动标题/摘要、会话 fork（branch 血缘继承）+ pin/unpin + title + delete + archive + resume、编排（parallel_spawn/spawn_agent/llm_task/coding_task + delegation graph tree/lineage + worker 自动分类 + thread 级工件聚合 + 子任务加密 + per-agent 权限 + 每-turn 委派模式）、可观测（audit/stats/compaction-history/summary-quality/turn-diagnostics/delegation/usage + evidence-ledger/verification-gate/weakness-miner/harness-profile 循证螺旋 + dashboard digests + AGENTS 规则草案生成）、hooks 系统（before/afterTurn、before/afterTool、onApproval、pre/post-compaction，命令 + 进程内函数双形态）、gateway（JSON-RPC + HTTP + SSE + NDJSON 流 + WS + owner 鉴权 + InMemory/TypeOrm 持久化 + OpenAPI 3.1 文档 + 会话分享 + usage 时间聚合 + token 预算）、console TUI（~20 面板 / ~70 命令 / vim mode / Ctrl+X leader + Ctrl+P 面板 / review hunk 折叠 + side-by-side / ssh 远程 shell / 实时双向语音 / 主题 / workspace mentions / tui.json 配置层）、CLI（chat/run 一次性/rpc-stdio/tools list/doctor/completion/update/import/trust/desktop + fast/strong 自适应配置）、多代理 v2（per-spawn profile/reasoning/concurrency + delegation graph tree/lineage + worker 自动分类 + thread 级工件聚合 + 子任务加密 + per-agent 权限 + 每-turn 委派模式）、PWA 移动宿主、ACP 客户端、mDNS 服务发现、云任务执行面、分层持久记忆、项目记忆闭环、which-key 提示 + 统一设置对话框 + 健康 popover + 消息导航键 + 子代理线程导航 + 模型收藏/最近/变体循环 + thinking 显隐 + 时间戳/tool output/用户名显隐 + plan 草稿提示 + connectors 生态 + approve retry + raw 模式 + 草稿 stash + 手动压缩 + ! shell 执行 + 外部编辑器 + 消息编辑分支 + 队列化 slash 命令 + PDF 附件 + auto-approve + half-page/line 滚动 + which-key 布局/过滤/分页。
 
-> v5 差距（G51–G78，2026-08-14）聚焦 **TUI 交互细节**（对照 codex v0.128–0.145 / opencode 2026-07 的键位、输入修饰符、展示与配置面），详见「差距分析 v5」。
+> v5 差距（G51–G78，2026-08-14）聚焦 **TUI 交互细节**（对照 codex v0.128–0.145 / opencode 2026-07 的键位、输入修饰符、展示与配置面），已全部闭环。
 
-## 已实现功能（P0–P127 全量，2026-08-14 盘点）
+## 已实现功能（P0–P162 全量，2026-08-17 盘点）
 
-> 早期打磨（P0–P66）逐条回归记录见 git history；P67–P127 按方向归类如下（锚点仅列关键文件，均为当前代码中已核实的实现）。
+> 早期打磨（P0–P66）逐条回归记录见 git history；P67–P162 按方向归类如下（锚点仅列关键文件，均为当前代码中已核实的实现）。
 
 ### 主干能力（P0–P66）
 
@@ -98,7 +98,7 @@
 - **P116 · 统一 @ 提及菜单（G39）**：files/skills/plugins 统一候选 + 分类描述；`@skill:<id>`/`@plugin:<id>` 解析为激活提示与 scope。
 - **P117 · 并发发现与远程压缩效率（G40）**：有界并发映射 + `provideSkillsAsync`；prompt/docs 并行准备确定性输出；压缩轮次 remote/plugin skill 摘要化 + `read_skill` 指引。
 
-### TUI 交互专项（G41–G50，P118–P127）
+### TUI 交互专项（G41–G78，P118–P153）
 
 - **P118 · 手动压缩 `/compact`（G41）**：`compactNow(reason)` 强制压缩（复用压缩流水线、拒绝 turn 中、publish `session.compacted`）；gateway `session.compact` RPC；agent-ui `/compact [reason]`。
 - **P119 · `!` 前缀本地 shell 执行（G42）**：`handleShellBang`（`!cmd` 执行 / 裸 `!` 草稿 / `!!` 多行累积）；输出渲染为 shell 消息**不进模型上下文**；`resolveMessageDisplayContent` shell 分支绕过 200 字符截断。
@@ -110,42 +110,79 @@
 - **P125 · `/statusline` 可配置状态栏（G48）**：status panel 字段化（model/context/git-branch/tokens/session/workspace/agent）；`/statusline [list|set|unset]` 持久化 `.tsdi-agent/statusline.json`。
 - **P126 · 命令簇补齐（G49）**：`/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide`（AGENT_IDE_BRIDGE）/`/ps` 共 9 条全部注册 `/help`。
 - **P127 · TUI 独立配置层（G50）**：`tui.json` schema 化（AgentTuiConfig：theme/keybinds/scrollSpeed/mouse/attentionSound/leaderTimeout）；合并优先级 CLI > env（`TSDI_AGENT_TUI_*`）> tui.json > 默认；agent-cli `resolveCliTuiConfig` 映射进 console options。
+- **P128 · G54 · 运行中 steer + Tab 排队双模式**：Enter = 注入指令到运行中 turn（steer，`kind: 'steer'`）；Tab = 排队 follow-up（queueDraft）；`ui.steerMode` 可关；浏览器/TUI 共用。锚点：`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
+- **P129 · G53 · 外部编辑器撰写长 prompt**：`/editor` + `Ctrl+G`（$VISUAL/$EDITOR/vim/nano/code）；agent-cli spawn 外部编辑器，agent-ui `AgentEditorBridge` 桥。锚点：`AgentEditorBridge.ts`、`AgentConsoleComponent.ts`、`agent-cli/src/run-console.ts`。
+- **P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支**：空闲态 Esc,Esc 进入编辑最后用户消息、连续回退；提交编辑有后续轮次 → forkSession contextual branch。锚点：`AgentConsoleComponent.ts`、`AgentConsoleKeymap.ts`。
+- **P131 · G52 · `/raw` 原始滚动模式**：`/raw` on/off/toggle 切换原始文本渲染，`ui.rawMode` 持久化。锚点：`AgentConsoleRawMode.ts`、`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`。
+- **P132 · G64 · 草稿 stash**：`/stash` list/push/pop/rm verb 命令 + `AgentConsoleStashStore` 跨会话持久化 `.tsdi-agent/stash.json`。锚点：`AgentConsoleStash.ts`、`AgentConsoleComponent.ts`。
+- **P133 · G56 · 上下文分域键位（5 上下文）**：global/composer/list/approval/pager 分域 + 覆盖/解绑 + 跨上下文冲突检测 + `/keymap` context scope/录制 + schema v2 兼容 v1。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`。
+- **P134 · G58 · 子代理线程键盘导航**：pager 上下文 `↓` 进首子线程、`→`/`←` 兄弟循环、`↑` 回父线程，无目标/无焦点回落消息选择。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`。
+- **P135 · G63 · 消息导航键**：PageUp/PageDown 翻页、Home/End 首/末条、`Shift+G` 跳最后用户消息。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
+- **P136 · G57 · 模型收藏/最近循环/变体循环**：`Ctrl+F` 收藏切换、`F2`/`Shift+F2` 最近模型循环、`Ctrl+T` reasoning effort 档位循环；持久化 `.tsdi-agent/models.json`。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleModelStore.ts`、`AgentConsoleComponent.ts`。
+- **P137 · G59 · which-key 提示系统**：`Ctrl+Alt+K` 切换当前上下文键位提示层，Esc 或任意键关闭并执行。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleSessionState.ts`、`AgentConsoleComponent.ts`、`AgentConsolePanels.ts`。
+- **P138 · G71 · 队列化 slash 命令**：运行中 Tab 排队 `/cmd`，turn 结束后 FIFO drain 按命令解析执行。锚点：`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`AgentConsolePanels.ts`。
+- **P139 · G51 · 终端窗口/标签标题 `/title`**：`/title` 配置窗口标题字段 + 运行状态更新 + 跨浏览器（document.title）/TUI（OSC 0）双实现。锚点：`AgentConsoleTitle.ts`、`AgentConsoleComponent.ts`。
+- **P140 · G62 · thinking/reasoning 显隐切换**：`/thinking` + `Ctrl+X T` 过滤 reasoning 块。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleSessionState.ts`、`AgentConsoleComponent.ts`、`AgentConsolePanels.ts`。
+- **P141 · G65 · tui.json 增强字段**：diffStyle/cursor/scrollAcceleration/attention 扩展。锚点：`AgentTuiConfig.ts`、`AgentUiConfigReader.ts`。
+- **P142 · G60 · 统一设置对话框**：`/settings` 多 tab（General/Keybinds/Providers），键位录制 + 冲突检测 + 重置。锚点：`AgentConsoleSettingsStore.ts`、`AgentConsoleComponent.ts`。
+- **P143 · G61 · 连接/MCP/LSP 健康 StatusPopover**：`Ctrl+X H` 弹出健康 popover。锚点：`AgentConsoleSessionState.ts`、`AgentConsoleComponent.ts`、`AgentConsoleKeymap.ts`、`AgentConsolePanels.ts`。
+- **P144 · G73+G74 · 显示开关簇**：`/display` 时间戳显隐 + `/timeline` 时间线 + `/settings` General Tool output/Username 开关。锚点：`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`AgentConsoleSettingsStore.ts`。
+- **P145 · G66 · `/share` 会话分享命令**：`/share` + `/unshare [token]` + 分享面板。锚点：`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- **P146 · G67 · `/skills` `/mcp` `/plugins` 浏览命令**：技能/MCP/插件浏览 + 详情。锚点：`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
+- **P147 · G68 · `/approve` 重试自动评审拒绝**：`/approve retry` 单次重试被 falsification 拒绝的 action。锚点：`AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
+- **P148 · G69 · plan 模式草稿提示**：草稿命中 plan 意图时提示 `/plan`。锚点：`AgentConsoleSessionState.ts`、`AgentConsolePanels.ts`、`AgentConsoleComponent.ts`。
+- **P149 · G72 · `/apps` connectors 生态命令面**：connector catalog 浏览 + `$app` 插入。锚点：`AgentConsoleApps.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
+- **P150 · G75 · 云任务执行面**：gateway headless 任务队列 + CLI `cloud run/list/status/cancel/apply`。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`agent-cli/src/cloud-command.ts`。
+- **P151 · G76 · mDNS 服务发现**：gateway DNS-SD 广播 + CLI `attach --mdns`。锚点：`agent-gateway/src/discovery/MdnsServiceDiscovery.ts`。
+- **P152 · G77 · ACP 客户端适配层**：JSONL transport 客户端 + 流式 session update + 双向宿主 RPC。锚点：`agent/src/acp/AcpClient.ts`。
+- **P153 · G78 · 分层持久记忆**：项目 namespace 隔离 + `/memories` 管理。锚点：`agent/src/memory/ProjectMemoryService.ts`、`AgentMemoryRetriever.ts`。
 
-### v5 TUI 打磨落地（G51–G78，P128+ 已完成项）
+### v6 TUI 打磨落地（P154–P162，2026-08-17 完成）
 
-- **P128 · G54 · 运行中 steer + Tab 排队双模式（2026-08 落地）**：Enter = 注入指令到运行中 turn（steer，`kind: 'steer'`，复用中断/续答流水线）；Tab = 排队 follow-up（queueDraft，P121 FIFO）；`ui.steerMode` 可关；浏览器/TUI 共用 resolver。验证：agent-ui 483 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleComponent.ts`（submit/queueDraft）、`AgentConsoleSessionState.ts`。
-- **P140 · G62 · thinking/reasoning 显隐切换（2026-08 落地）**：`/thinking` 命令 + `Ctrl+X T` 键位切换 reasoning 块显隐；`isDisplayMessage` 按 `uiEventType === 'reasoning'` 过滤；`showThinking` 默认 true；与 `/theme` 冲突处理——theme 移 `Ctrl+X Shift+T`（TUI 大写→`shift+<lower>` + 浏览器 shiftKey 端到端）。验证：agent-ui 488 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`AgentConsoleSessionState.ts`、`AgentConsoleComponent.ts`、`AgentConsolePanels.ts`、`view-model.spec.ts`。
-- **P141 · G65 · tui.json 增强字段（2026-08 落地）**：`diff_style`（auto/stacked）、`cursor`（style/blinking）、`scroll_acceleration`、`attention` 扩展（notifications/sound_pack/volume/custom sounds，桌面通知仅终端失焦时）；AgentTuiConfig schema + merge + 校验扩展，兼容既有字段。验证：tui-config.spec.ts EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentTuiConfig.ts`、`AgentUiConfigReader.ts`。
-- **P129 · G53 · 外部编辑器撰写长 prompt（2026-08 落地）**：`/editor` 命令（agent-cli 注册 `Ctrl+G`）+ `OPEN_IN_EDITOR` 桥；agent-cli spawn 外部编辑器（$VISUAL/$EDITOR/vim/nano/code 探测，临时文件 → 读回 composer），agent-ui 仅暴露 `AgentEditorBridge` 接口 + 无 host 时 notify，不引用 node API。验证：editor.spec.ts 6 用例 + agent-ui 520 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentEditorBridge.ts`（新增）、`AgentConsoleComponent.ts`（/editor）、`agent-cli/src/run-console.ts`（spawn）。
-- **P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支（2026-08 落地）**：空闲态 Esc,Esc（400ms 窗口）进入编辑最后一条用户消息，编辑中 Esc 取消恢复草稿、Esc,Esc 连续回退上一条（首条边界提示）；steer 用户消息跳过、`[Mention Context]` 前缀剥离、图片 parts 还原为 pendingAttachments；提交编辑时若已产生后续轮次 → `forkSession(source, 上一条 id)` 创建 contextual branch（首条编辑走 `ensureSession()` 开新会话），复用 P77 fork + 编辑态输入 `/cmd` 不触发分支；`EDIT_ESCAPE_WINDOW_MS`。验证：edit-message.spec.ts 12 用例 + agent-ui 520 passing EXIT=0 + tsc clean。锚点：`agent-ui/src/AgentConsoleComponent.ts`（handleIdleEscape/enterEditMode/startEditTarget/dismissEditMode/submit fork 块）、`AgentConsoleKeymap.ts`（escape: 'interrupt-turn' 空闲态回落）。
-- **P131 · G52 · `/raw` 原始滚动模式（2026-08 落地）**：`/raw` 命令（on/off/无参 toggle）切换消息区为原始文本渲染——`renderAgentConsoleMessageItem` 在 raw 上下文对全部 templateKind 走 `renderAgentConsolePlainTextLines(content, { compactBlankLines: false })`（保留 `**bold**`、`- item` 等字面量），`resolveMessageDisplayContent` raw 时绕过 summarizeToolDisplayText 输出工具全量内容 + attachmentSummary；`AgentConsolePanels.renderedMessageItems` raw 时跳过截断/折叠；`ui.rawMode` 持久化（AgentTuiConfig normalize/merge + `.tsdi-agent/raw-mode.json`，`AgentConsoleRawModeStore` 仿 KeymapStore）；tui.json 文件层经 resolveCliTuiConfig 自动生效。验证：raw-mode.spec.ts 12 用例 + agent-ui 532 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleRawMode.ts`（新增）、`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`（runRawModeCommand/restoreRawMode）、`AgentConsolePanels.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`。
-- **P132 · G64 · 草稿 stash（2026-08 落地）**：`/stash` 命令（verb 风格，仿 runStatuslineCommand）——`list`（无参默认 list，列出命名 stash 及字符数）、`push <name>`/`save <name>`（存当前草稿 `state.input`，空草稿 notify，缺省名 `default`）、`pop <name>`/`restore <name>`（`state.updateDraft` 恢复草稿并删除条目）、`rm <name>`/`drop <name>`/`delete <name>`（删除条目）；`AgentConsoleStashStore` 跨会话持久化 `.tsdi-agent/stash.json`（`{version:1, stashes}`，load/save 过滤空名/空文本，FileAdapter 可空回退）；help 条目 + commandHints 同步。验证：stash.spec.ts 11 用例 + agent-ui 543 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleStash.ts`（新增）、`AgentConsoleComponent.ts`（runStashCommand/`/stash` dispatch/param #28/onInit）、`AgentConsoleSessionState.ts`（commandHints）、`agent-ui.module.ts`。
-- **P133 · G56 · 上下文分域键位（2026-08 落地）**：keymap 从 global/vim 双域扩展为 global/composer/list/approval/pager 五上下文——`AgentConsoleKeymapContext`/`isAgentConsoleKeymapContext`、context overrides 优先于 global（null=解绑）、`effectiveBindings(context)`、`resolve(sequence, context)`、分域 `unset/reset`、跨上下文冲突检测 `conflicts(sequence, action, context)`；`/keymap` 支持 context scope（`/keymap composer set ctrl+p theme`、`/keymap list` 列出 vim 条目、bare `list`=动词消歧）+ 录制（`record`）+ 冲突提示 + escape 取消；持久化 schema v2（contexts 保存 `.tsdi-agent/keymap.json`，兼容 v1 双域文件，loadContexts 过滤已知 context）；焦点→上下文映射 `resolveKeymapContext()`（approval/pager/list/composer/global），TUI/browser 键位处理共用。验证：keymap-context.spec.ts 12 用例 + agent-ui 555 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`（runKeymapCommand/resolveKeymapContext/restoreGlobalKeymap/persistGlobalKeymap/录制 hook）、`AgentConsoleSessionState.ts`（openMessageDetail/焦点 getter）。
-- **P134 · G58 · 子代理线程键盘导航（2026-08 落地）**：消息视图（pager 上下文）内 `↓` 进首个子线程（thread-child-first）、`→`/`←` 兄弟线程切换（thread-cycle-next/prev，wrap 循环）、`↑` 回父线程（thread-parent），对齐 opencode child/cycle/parent；`AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP` 仅在 pager 上下文合并（global/其他上下文不受影响，用户 override 优先）；TUI 方向键 `\u001b[A/B/C/D` 经 decodeGlobalKey 映射、browser `ArrowUp/Down/Left/Right` 经 handleBrowserGlobalKeyInput 映射后走同一 handleGlobalKeySequence；线程动作受 `canThreadNavigate()` 门控（appRpc 存在 + 消息焦点 + 非详情视图 + 无选择菜单），门控失败或无目标（无子/无父/单兄弟）回落 `processDecodedInput`（消息选择/详情滚动保留）；导航经 `AgentConsoleSessionService.getDelegationChildren/getDelegationLineage` 取边数据 + `openSession` 切换转录。验证：keymap-context.spec.ts 新增 11 用例（thread navigation keymap (P134) suite）+ agent-ui 566 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleKeymap.ts`（AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP/isAgentConsoleThreadNavigationAction）、`AgentConsoleComponent.ts`（canThreadNavigate/navigateThreadChildFirst/navigateThreadCycle/navigateThreadParent/executeGlobalKeyAction 分支）、`AgentConsoleSessionService.ts`（getDelegationChildren/getDelegationLineage）。
-- **P135 · G63 · 消息导航键（2026-08 落地）**：消息视图（pager 上下文）PageUp/PageDown 翻页（复用 `moveMessageSelectionPage` 按 `messageSelectionPageSize` 默认 6 步进）、Home/End 首/末条（`selectFirstMessage`/`selectLastMessage`）、`Shift+G` 跳最后一条用户消息（`selectLastUserMessage`，语义镜像 `getEditableUserMessages`：role user 且非 steer 且非空 content，对齐 opencode messages_page_up/page_down/first/last/last_user）；5 个动作入 `AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP`（仅 pager 上下文生效，用户 override 优先）；TUI 序列 `\u001b[5~`/`\u001b[6~`/`\u001b[H`/`\u001b[F`/`\u001b[1~`/`\u001b[4~`/`\u001b[7~`/`\u001b[8~` 经 decodeGlobalKey 映射、browser `PageUp/PageDown/Home/End` 经 handleBrowserGlobalKeyInput navKeys 放行后共用 handleGlobalKeySequence；受 `canMessageNavigate()` 门控（消息焦点 + 非详情视图 + 无选择菜单，不含 appRpc），门控失败回落 focus 层（详情滚动保留）。验证：keymap-context.spec.ts 新增 12 用例（pager defaults resolve message navigation actions/messageNavScopedToPager/messageNavOverrideBeatsDefault/pageUpMovesSelectionByPage/pageDownMovesSelectionByPage/homeAndEndSelectEdges/shiftGSelectsLastUserMessage/lastUserSkipsSteerMessages/messageNavGatedWithoutMessageFocus/messageNavGatedWhileDetailOpen/browserPageUpMovesSelectionByPage/browserHomeSelectsFirstMessage）+ agent-ui 578 passing EXIT=0 + agent/agent-cli/agent-ui tsc clean。锚点：`agent-ui/src/AgentConsoleKeymap.ts`（AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP/isAgentConsoleMessageNavigationAction）、`AgentConsoleComponent.ts`（canMessageNavigate/decodeGlobalKey nav 映射/handleBrowserGlobalKeyInput navKeys/executeGlobalKeyAction 分支）、`AgentConsoleSessionState.ts`（selectLastUserMessage/moveMessageSelectionPage）。
-- **P148 · G69 · plan 模式草稿提示（2026-08 落地）**：composer 草稿达到 20 字符并命中 plan/planning/design/architecture/方案/规划/设计/先不要改等明确意图时，在输入 meta 行提示 `use /plan`；slash 命令、已开启 plan 模式时自动隐藏；`ui.planNudges: false` 可关闭，`/debug-config` 展示最终开关值。提示完全由响应式草稿状态派生，无定时刷新。验证：view-model.spec.ts 新增 2 用例 + agent-ui 637 passing EXIT=0；十包 2103 passing EXIT=0，十包 build 全部通过（Web bundle 3.3MB）。锚点：`agent-ui/src/AgentConsoleSessionState.ts`（planNudgeLabel）、`AgentConsolePanels.ts`（metaLabel）、`AgentConsoleComponent.ts`（配置接线）、`agent/src/options.ts`。
-- **P149 · G72 · `/apps` connectors 命令面（2026-08 落地）**：浏览器安全 connector catalog 内置 GitHub/GitLab + 与 agent-channels 对齐的 12 个 IM 平台；`/apps` 展示 category/capabilities/connected 或 authorization required，`/apps <id>` 与选择器把 `$app` 插入当前草稿；提交时将已知 `$app` 解析为 connector status/capabilities context，未知 token 保持原文。授权状态由宿主 `ui.console.connectors` 提供，不打包 Node transport。验证：view-model.spec.ts 新增 3 用例 + agent-ui 640 passing EXIT=0；十包 2106 passing EXIT=0，十包 build 全部通过（Web bundle 3.3MB）。锚点：`agent-ui/src/AgentConsoleApps.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
-- **P150 · G75 · 云任务执行面（2026-08 落地）**：gateway `CloudTaskQueue` 提供有界并发 headless 队列与 queued/running/completed/failed/cancelled 生命周期，复用 `AgentRuntime.runTurn/cancelTurn`；`cloud.task.submit/list/get/cancel/apply` 五个 JSON-RPC 按 principal 隔离，apply 幂等领取最终 turn/message 并记录 appliedAt。CLI `cloud run/list/status/cancel/apply` 通过 gateway HTTP JSON-RPC 调用，支持 URL/token/env/JSON 输出。验证：gateway cloud-task.spec.ts 3 用例、CLI 3 用例；agent-gateway 239 + agent-cli 69，十包 2112 passing EXIT=0，十包 build 全部通过。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、`agent-cli/src/cloud-command.ts`、`cli.ts`。
-- **P151 · G76 · mDNS 服务发现（2026-08 落地）**：gateway `mdns: true` 时通过可注入 DNS-SD 服务广播 `_tsdi-agent._tcp.local`（service type/domain/name 可配），随 GatewayServer 启停；CLI `attach [url]` 支持 `--mdns`、`--mdns-domain`、`--mdns-service-type`、超时与 token，发现后把 HTTP JSON-RPC 注入现有 TUI，显式 URL 优先。实现无外部依赖，包含 DNS 名称压缩、PTR/SRV/TXT/A/AAAA 解析与启动失败回收。验证：mdns-discovery.spec.ts 5 用例、CLI attach 3 用例；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent-gateway/src/discovery/MdnsServiceDiscovery.ts`、`GatewayServer.ts`、`agent-cli/src/run-console.ts`、`cli.ts`。
-- **P152 · G77 · ACP 客户端适配层（2026-08 落地）**：核心 `AcpClient` 以无 Node 依赖的 JSONL `AcpTransport` 对接兼容 ACP 的编辑器/宿主；覆盖 initialize、session/new、session/prompt、session/cancel、mode/model 切换，解析流式 text/tool/status/error update，并通过 requestHandlers 双向承接权限、文件、终端等宿主能力请求；请求错误、未知方法、关闭时 pending 清理均有明确语义，UTF-8 分片用流式 TextDecoder 解码。验证：acp.spec.ts 4 用例，agent 739 passing；十包 2125 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent/src/acp/AcpClient.ts`、`agent/src/index.ts`。
-- **P153 · G78 · 分层持久记忆（2026-08 落地）**：`ProjectMemoryService` 复用持久 MemoryStore，以 `project-memory:<project/workspace>` namespace 隔离跨会话项目记忆；默认检索器排除其他项目记录并将当前项目 keyword/semantic/hybrid 结果优先注入。支持 TTL freshness、replace/keep-newest/append 同键冲突策略、按 id/key 删除；`/memories list|injected|add|remove` 扩展既有 on/off，local 与 gateway `project_memory.*` RPC 共用持久库且远程先校验 session owner。验证：agent project-memory.spec.ts 4 用例、agent-ui `/memories` 1 用例；十包 2130 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent/src/memory/ProjectMemoryService.ts`、`AgentMemoryRetriever.ts`、`DefaultAgentRuntime.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`。
-
-### 回归基线
-
-截至 P127（2026-08-14 复验）：十包 **1938 passing 全部 EXIT=0**（agent 735 / agent-gateway 230 / agent-ui 478 / agent-cli 66 / agent-vscode 7 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；agent-ui build:web、agent-vscode build（联动 Web bundle 3.2MB）、agent-cli build 全部通过。
+- **P154 · G21 余量 · 移动 PWA remote**：Web console 可安装 PWA + manifest + service worker + safe-area 适配。锚点：`agent-ui/web-console.ts`、`web-console-pwa.ts`。
+- **P155 · G21 OAuth 宿主边界 · connectors 授权回调**：`/apps <id>` 宿主注入式 `authorizeConnector` 回调。锚点：`AgentConsoleComponent.ts`、`AgentConsoleApps.ts`。
+- **P156 · 隐藏自动化 agent**：cloud task headless session 标记 `sessionRole: automation`，默认过滤。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`。
+- **P157 · GitHub/GitLab 外部触发幂等底座**：cloud task 增 `source`/`externalId`/有界 metadata，按 principal+source+externalId 去重。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`agent-cli/src/cloud-command.ts`。
+- **P158 · G80 · 半页/逐行滚动**：Shift+Space/Ctrl+D/Ctrl+U 半页滚动 + Ctrl+Y/Ctrl+E 逐行滚动（pager 上下文），4 个 `scroll-half/line-up/down` 动作。锚点：`AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
+- **P159 · G84 · JSON 导出**：已有 `/export --json`（P86 exportStore.json 模式），无需改动。锚点：`AgentConsoleComponent.ts`（runExportCommand）。
+- **P160 · G79 · Auto-approve 会话标记**：`ApprovalManagerOptions.autoApprove` 标记会话 auto-approve，经 approval manager 检查跳过 pending 队列。锚点：`agent/src/approval/ApprovalManager.ts`、`agent/src/runtime/DefaultAgentRuntime.ts`。
+- **P161 · G82 · PDF 附件支持**：`PendingAttachment.type` 支持 `pdf`，mimeType `application/pdf`，MIME_MAP/FILE_ICON_MAP/normalizeAttachmentType/ACCEPT_ATTRIBUTE 扩展。锚点：`agent/src/attachments/types.ts`、`agent-ui/src/AgentConsoleComponent.ts`、`agent-tools/src/media/media-tool.ts`、`agent-tools/src/project/project-files.ts`。
+- **P162 · G81 · which-key 布局/过滤/分页**：which-key overlay 增加 grouped/compact 布局（`whichKeyLayout` toggle）、custom 过滤（`whichKeyFilterCustom`，L/F 键切换）、group 分页（`whichKeyPage`，n/p 键翻页，25 条/页）。锚点：`AgentConsoleKeymap.ts`（`which-key-layout-toggle` + `which-key-pending-toggle` 动作）、`AgentConsoleSessionState.ts`（`whichKeyLayout`/`whichKeyFilterCustom`/`whichKeyPage` + setters）、`AgentConsoleComponent.ts`（toggleWhichKeyLayout/toggleWhichKeyPendingFilter/navigateWhichKeyPage）、`AgentConsolePanels.ts`（`AgentConsoleWhichKeyPanelComponent` grouped/compact 分支 + 分页渲染）。
 
 ---
 
-## 差距分析 v5（vs Codex v0.145 / opencode 2026-07，TUI 细节专项，2026-08-14）
+## 差距分析 v7（vs Codex v0.148-alpha.20 / opencode v1.18.18 + desktop v1.17.18，2026-08-17）
 
-### 结论
+> 对照基准从 v0.147（2026-08-13）升级至 codex v0.148-alpha.20 + opencode v1.18.18 + opencode desktop v1.17.18。
+>
+> Codex 自 v0.147 以来发布多个 alpha 版本（alpha.1-alpha.20），新增：增量 markdown 离主线程渲染、命令输出截断、并发 skill/plugin 发现、远程压缩效率、MCP 非阻塞启动。
+>
+> OpenCode 自 v1.18.17 以来发布 v1.18.18（bugfix only），desktop 持续迭代至 v1.17.18，新增：session snapshots & revert（含文件变更回滚）、Chrome-style tab 快捷键（mod+1..9）、可拖拽标签、thinking level 选择器、yolo auto-approve 模式、code mode MCP adapter、locale/i18n 扩展（RTL/plural rules）、MCP server instructions 自动注入上下文。
 
-G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.128–0.145**（release notes / 官方 slash-commands 文档 / 社区 TUI 参考）与 **opencode 2026-07**（docs：keybinds/tui/commands）逐项核对本 TUI（~70 命令、13 全局键位、vim 模式、tui.json 配置层）后确认：**功能面已基本对齐甚至超出（工具广度、审批、可观测、多代理、循证验证），但 TUI 的"输入层双模（steer/queue）"、"键位体系深度（上下文分域）"、"展示与配置面（终端标题/thinking 显隐/设置对话框/健康 popover）"、"命令面闭环（/share、/skills、/mcp、/plugins）"四个交互维度仍有真实差距**。
+### v7 差距明细（G85–G94）
 
-### 对照基准速览（codex/opencode 的 TUI 交互面）
+| # | 差距 | 对照对象 | 本项目现状 | 影响 | 优先级 |
+|---|---|---|---|---|---|
+| G85 | **会话快照 & 一键 revert（含文件变更回滚）** | opencode desktop v1.17.11：session snapshots + revert controls，回滚文件变更到快照点 | P71 Git step 快照有底层能力（`git stash create`），但无 UI 面板展示快照列表、无一键 revert 按钮、无文件变更 diff 预览。用户需手动 `/revert <messageId>` 知道 message id | 高：长会话实验性探索的"安全网"，opencode 核心差异化 | **P163** |
+| G86 | **增量 markdown 离主线程渲染** | opencode v1.17.17：markdown parsing off main thread，长对话响应性提升 | AgentConsolePanels 渲染在主线程，长消息（>500 行）可能阻塞 TUI/browser 帧。我们的响应式框架（数据驱动渲染）天然适合 Web Worker 分离，但当前未实现 | 中-高：长对话/大工具输出的流畅度 | **P164** |
+| G87 | **多会话标签页（Chrome-style tab 快捷键）** | opencode desktop v1.17.10：mod+1..9 切换标签 + 可拖拽标签 + 标签状态持久化 | `/sessions` 列表切换 + `/resume` 恢复，但无标签页 UI 概念——TUI 单会话 + 浏览器多窗口各自独立，VS Code webview 单 panel | 中：多项目/多任务并行效率（桌面端） | **P165** |
+| G88 | **MCP server instructions 自动注入上下文** | opencode desktop v1.17.10：MCP server 的 instructions 字段自动注入 session 上下文 | MCP client 已实现 `listResources`/`listPrompts`（P95），但未自动提取 server `instructions` 注入 system prompt。用户需手动 `/mcp` 查看 | 中：MCP server 自描述能力的利用 | **P166** |
+| G89 | **Thinking level 选择器（settings UI）** | opencode desktop v1.17.10：V2 settings 中 thinking level selector（low/medium/high） | `/thinking` toggle + `Ctrl+T` 变体循环（P136/P140），但无 settings UI 中的显式选择器（用户需知道快捷键或命令） | 中-低：settings UX 完整性 | **P167** |
+| G90 | **Yolo auto-approve 模式** | opencode desktop v1.17.12：yolo mode 自动批准所有操作 | P160 auto-approve 标记存在，但无 `/yolo` 一键切换命令或 settings toggle（用户需手动配置 `autoApprove: true`） | 低-中：快速原型/脚本场景的便利性 | **P168** |
+| G91 | **代码模式 MCP adapter** | opencode desktop v1.17.14：code mode MCP adapter 在 MCP 上下文运行代码 | ACP 客户端（P152）已有 code execution 能力，但无 MCP 原生 code mode adapter（MCP server 可直接执行代码片段） | 低：生态兼容性，ACP 已覆盖大部分场景 | **P169** |
+| G92 | **Locale/i18n 扩展（RTL + 多语言）** | opencode desktop v1.17.10：RTL layout + plural rules + 多语言（ar/he/ja/ko 等） | 无 i18n 框架，所有 UI 文本硬编码英文。desktop 端（Electron）可利用系统 locale，但 TUI/browser 未适配 | 低：国际化需求，当前用户群以英文为主 | 不排期 |
+| G93 | **Session progress indicator** | opencode desktop v1.17.10：新 session 进度指示器 | statusline 有 token/context 信息，但无进度条/步骤指示器（长任务的可视化反馈） | 低：UX 锦上添花 | 不排期 |
+| G94 | **可拖拽标签页** | opencode desktop v1.17.10：draggable tabs for session reordering | 无标签页概念（G87），拖拽更远期 | 低：桌面端 UX | 不排期 |
 
-- **codex v0.128–0.145**：7 上下文键位（global/chat/composer/editor/pager/list/approval）+ `/keymap` 持久化 `[tui.keymap]`；Enter=steer（运行中注入指令）、Tab=排队 follow-up；Esc,Esc 编辑上一条消息；Ctrl+G 外部编辑器（$VISUAL/$EDITOR）；Ctrl+R 历史搜索；`/raw` 原始滚动模式；`/title` 终端窗口/标签标题（含 action_required_prefix）；`/statusline`；`/theme`；`/pets`；plan-mode 草稿提示；编辑早期消息自动分支（v0.142.5）；Tab 排队 slash 命令；响应式 markdown 表格 + 增量渲染 + resize reflow；active-turn `/statusline`/`/title`；`/goal` 持久工作流；`/agent`/`/subagents` 线程切换；`/apps` connectors；`/approve` 重试自动评审拒绝；paginated thread history（v0.142.5）。
-- **opencode 2026-07**：~180 键位（tui.json keybinds，leader ctrl+x + leader_timeout）；模型收藏（ctrl+f）/最近循环（f2）/变体循环（ctrl+t）；agent 循环（tab）+ 子代理线程键盘导航（child=↓/cycle=→←/parent=↑）；thinking 显隐（ctrl+x t）；消息导航（page up/down、first/last、last-user）；会话时间线（ctrl+x g）；undo/redo（ctrl+x u/r，含文件变更回滚）；/share + unshare；/export（ctrl+x x 打开 $EDITOR）；/editor；命令面板（ctrl+p）；which-key（ctrl+alt+k）；设置对话框（general/keybinds/providers 多 tab + 键位录制冲突检测）；StatusPopover（server/MCP/LSP 健康）；tui.json 扩展字段（diff_style auto/stacked、cursor style/blinking、scroll_speed/scroll_acceleration、mouse、attention 通知+声音包+自定义音效+音量）；username 显示开关；时间戳/泛化工具输出显隐；草稿 stash；`!` shell 模式（输出进对话）。
+### v6 已对齐确认（v0.148-alpha / opencode 1.18 中仍对齐）
+
+G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环（P128–P153）。以下能力在最新版本中仍保持对齐：
+
+- Agent Plugins（P106/P111）、sections + paginated history（P107）、MCP 2026-07-28（P95）
+- /share（P145）、/compact（P118）、plan mode 提示（P148）、/approve retry（P147）
+- /apps connectors（P149）、cloud tasks（P150）、mDNS（P151）、ACP（P152）
+- 分层记忆（P153）、which-key 系统（P137 + P162）、设置对话框（P142）
+- PDF 附件（P161）、auto-approve（P160）、half-page/line 滚动（P158）
 
 ### 本项目优势（保持并强化）
 
@@ -156,117 +193,85 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 5. **可观测性覆盖**：turn diagnostics / summary quality / compaction history / delegation / audit 全部持久化并暴露 HTTP + RPC + UI 三层。
 6. **覆盖面**：40+ 工具组、11 个 IM 渠道、MCP 三形态 + OAuth + server、skills 本地 + 远程市场 + 插件（1.0.0 标准）、hooks 双形态、gateway 多协议 + OpenAPI。
 7. **跨平台响应式 UI 架构**：TUI/浏览器/VS Code webview/Electron 四端共用响应式渲染层（数据驱动、无定时器、时间派生动画），跨平台约束沉淀至根 AGENTS.md。
-8. **TUI 功能密度**：~70 命令 / ~20 面板 / vim / Ctrl+X leader / Ctrl+P 面板 / `/compact` `/diff` `/theme` `/keymap` `/resume` `/archive` `/fork` `/side` `/statusline` `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/ps` `/voice` `/review` `/goal` `/usage` `/sections` `/threads` `/delegation` 等已覆盖 codex/opencode 绝大多数命令面。
-
-### 差距明细表（v5 新增 G51–G78）
-
-| # | 差距 | 对照对象 | 现状证据 | 影响 |
-|---|---|---|---|---|
-| G51 | 终端窗口/标签标题配置（`/title`） | codex `/title`：project/status/thread/branch/model/task progress 字段 + `action_required_prefix` | 本 TUI `/title` 仅会话标题重命名（AgentConsoleComponent.ts:4608），无终端标题更新 | 中：多会话/多 pane 辨识、审批等待可见性 |
-| ✅ G52 | raw scrollback 模式（`/raw`） | codex `/raw` 切换原始滚动区便于终端选择/复制 | 已实现（P131）：`/raw` on/off/toggle 切换原始文本渲染（保留 markdown 字面量 + 工具全量输出），`ui.rawMode` 持久化 | 低-中：长输出复制体验 |
-| ✅ G53 | 外部编辑器撰写长 prompt（Ctrl+G / `/editor`） | codex Ctrl+G（$VISUAL/$EDITOR）；opencode `/editor`（ctrl+x e） | 已实现（P129）：`/editor` + `Ctrl+G`，agent-cli spawn $VISUAL/$EDITOR/vim/nano/code，agent-ui `AgentEditorBridge` 桥 | 高：长指令/多行编辑效率 |
-| ✅ G54 | 运行中 steer + Tab 排队双模式 | codex Enter=steer（注入新指令到运行中 turn）、Tab=queue 下一 turn | 已实现（P128）：Enter=steer 注入 + Tab=queueDraft 排队，`ui.steerMode` 可关 | 高：运行中纠正能力（codex 核心交互） |
-| ✅ G55 | Esc,Esc 编辑上一条消息 | codex Esc,Esc 回退编辑 previous message（可连续回退） | 已实现（P130）：空闲态 Esc,Esc 进入编辑最后用户消息，Esc,Esc 连续回退 | 中：快速修正 |
-| ✅ G56 | 上下文分域键位（global/composer/list/approval/pager） | codex 7 context keymap + 覆盖/解绑；opencode 全量 keybinds + 冲突检测 | 已实现（P133）：5 上下文分域 + 覆盖/解绑 + 跨上下文冲突检测 + `/keymap` context scope/录制 + schema v2 兼容 v1（AgentConsoleKeymap.ts） | 中：键位体系深度、tmux 冲突规避 |
-| ✅ G57 | 模型收藏/最近循环/变体循环 | opencode model_favorite_toggle ctrl+f、model_cycle_recent f2、variant_cycle ctrl+t（reasoning effort 档位循环） | 已实现（P136）：`Ctrl+F` 收藏切换、`F2`/`Shift+F2` 最近模型循环、`Ctrl+T` reasoning effort 档位循环（local/RPC 双路径）；收藏/最近持久化 `.tsdi-agent/models.json`（AgentConsoleModelStore.ts） | 中：模型切换效率（fast/strong 场景） |
-| ✅ G58 | 子代理线程键盘导航 | opencode session_child_first=↓、child_cycle=→/←、parent=↑ | 已实现（P134）：pager 上下文 `↓` 进首子线程、`→`/`←` 兄弟循环、`↑` 回父线程，无目标/无焦点回落消息选择；TUI+browser 方向键共用（AgentConsoleKeymap.ts/AgentConsoleComponent.ts） | 中：多代理结果审查 |
-| ✅ G59 | which-key 提示系统 | opencode which_key_toggle ctrl+alt+k（按住显示键位） | 已实现（P137）：`Ctrl+Alt+K` 切换当前上下文键位提示层（数据来自 AgentConsoleKeymap.effectiveBindings 快照），Esc 关闭，任意键关闭并执行；TUI `\u001b\u000b` + browser ctrl+alt+k 双路径（AgentConsoleKeymap.ts/AgentConsoleComponent.ts/AgentConsolePanels.ts） | 低：键位发现性 |
-| ✅ G60 | 统一设置对话框（general/keybinds/providers） | opencode DialogSettings 多 tab + 键位录制 + 冲突检测 + 重置 | 已实现（P142）：`/settings` 多 tab 设置对话框（General/Keybinds/Providers），键位录制 + 冲突检测 + 重置，配置持久化 `.tsdi-agent/settings.json`（AgentConsoleSettingsStore.ts） | 中：配置 UX |
-| ✅ G61 | 连接/MCP/LSP 健康 StatusPopover | opencode StatusPopover（server/MCP/LSP 实时健康） | 已实现（P143）：status 面板 hover / `Ctrl+X H` 弹出健康 popover——gateway 连接探活、MCP server 工具聚合状态、LSP 工具可用性（AgentConsolePanels.ts/AgentConsoleComponent.ts） | 低-中 |
-| ✅ G62 | thinking/reasoning 显隐切换 | opencode ctrl+x t 显隐 reasoning 块；codex 显式 reasoning 选择 | 已实现（P140）：`/thinking` + `Ctrl+X T` 过滤 reasoning；theme 移 `Ctrl+X Shift+T` | 中：模型可解释性 |
-| ✅ G63 | 消息导航键（page up/down、first/last、last-user） | opencode messages_page_up/page_down/first/last/last_user | 已实现（P135）：pager 上下文 PageUp/PageDown 翻页、Home/End 首/末条、`Shift+G` 跳最后用户消息（跳过 steer），TUI+browser 共用（AgentConsoleKeymap.ts/AgentConsoleComponent.ts） | 中：长会话定位 |
-| ✅ G64 | 草稿 stash（暂存 prompt） | opencode prompt_stash / prompt_stash_pop / prompt_stash_list | 已实现（P132）：`/stash` list/push/pop/rm verb 命令，命名暂存草稿跨会话持久化 `.tsdi-agent/stash.json` | 低 |
-| ✅ G65 | tui.json 增强字段 | opencode tui.json：diff_style（auto/stacked）、cursor（style/blinking）、scroll_speed/scroll_acceleration、attention（notifications/sound_pack/volume/custom sounds） | 已实现（P141）：diffStyle/cursor/scrollAcceleration/attention 扩展，兼容既有字段 | 中：终端适配性 |
-| ✅ G66 | 会话分享 TUI 命令（`/share`） | opencode `/share` + unshare（复制 URL） | 已实现（P145）：`/share` 生成脱敏分享链接 + `/unshare [token]` 撤销，分享面板展示 token/url + 复制 + 撤销，gateway `session.share.create/revoke/list` RPC | 中：协作闭环 |
-| ✅ G67 | `/skills` `/mcp` `/plugins` 浏览命令 | codex `/skills`（浏览使用）、`/mcp`（列出工具）、`/plugins`（市场浏览）；opencode MCP/插件面板 | 已实现（P146）：`/skills` 浏览+详情（复用 skill_list/read_skill）、`/mcp [verbose]` 聚合 server 与工具计数、`/plugins [<id>]` 浏览插件与 contributions；与 `@` mention 候选同源 | 中 |
-| ✅ G68 | `/approve` 重试自动评审拒绝 | codex `/approve`：批准一次对近期自动评审拒绝的 retry | 已实现（P147）：`/approve retry` 对最近一次 verification-gate falsification 拒绝的 action 批准单次 retry（`harness.rejected_actions` + `harness.retry_rejected_action` RPC，JSON 还原输入重跑），区别于审批队列确认 | 低-中 |
-| ✅ G69 | plan 模式草稿提示 | codex 从 composer 草稿推断 plan 意图并提示 `/plan` | 已实现（P148）：草稿长度阈值 + 中英文明确 plan 意图启发式，在输入 meta 行提示 `/plan`；plan 模式/slash 命令自动隐藏，`ui.planNudges: false` 可关闭 | 低 |
-| ✅ G70 | 编辑早期消息上下文分支 | codex v0.142.5：编辑 earlier prompt 创建 contextual branch，保留原对话/附件/mention 绑定 | 已实现（P130）：提交编辑时后续轮次存在 → forkSession 建 contextual branch，首条编辑开新会话 | 中 |
-| ✅ G71 | 队列化 slash 命令（Tab 排队 `/cmd`） | codex：运行中 Tab 排队 slash 命令，turn 结束后解析执行 | 已实现（P138）：Tab 排队时 `/` 前缀输入标记为命令（`command` 标志 + "Queued command (N)" 提示 + 命令跳过附件），turn 结束 FIFO drain 后按命令解析执行（复用 P121 队列 + submit `/` 分支）；运行中 Tab 在 suggestion 菜单打开时优先排队（state/panels 双路径），修复 G71 原缺口 | 低 |
-| ✅ G72 | `/apps` connectors 生态命令面 | codex `/apps`（connectors 浏览 + `$app` 插入） | 已实现（P149）：GitHub/GitLab/IM connector catalog，`/apps` 浏览授权状态，选择器或 `/apps <id>` 插入 `$app`，提交时注入 connector context | 中（生态） |
-| ✅ G73 | 时间戳/泛化工具输出显隐切换 | opencode session_toggle_timestamps / session_toggle_generic_tool_output | 已实现（P144）：`/display [on|off]` 时间戳显隐 + `/settings` General Tool output/Username 开关；tool 消息隐藏时清空内容仅留 role/status | 低 |
-| ✅ G74 | 用户名显示开关 + 会话时间线 | opencode username toggle（命令面板）/ session_timeline（ctrl+x g） | 已实现（P144）：`/timeline` / `Ctrl+X G` 紧凑时间线视图（全量消息 + HH:MM 前缀），username 开关经 `/settings` General；四项持久化 `.tsdi-agent/settings.json` | 低 |
-| ✅ G75 | 云任务执行面（daemon/remote-control） | codex cloud / codex apply / codex remote-control daemon；opencode serve+attach + password auth | 已实现（P150）：gateway headless 有界任务队列 + submit/list/get/cancel/apply RPC，principal 隔离；CLI `cloud run/list/status/cancel/apply` | 中-高 |
-| ✅ G76 | mDNS 服务发现 | opencode `--mdns` / `--mdns-domain` | 已实现（P151）：gateway 可配置 DNS-SD 广播，CLI `attach` 支持 mDNS/domain/service type 发现并注入远程 TUI | 低 |
-| ✅ G77 | ACP（Agent Client Protocol）客户端 | opencode `acp`（跨客户端协议） | 已实现（P152）：跨平台 JSONL transport 客户端，覆盖会话生命周期、流式 update 与权限/fs/terminal 等双向宿主 RPC | 中（生态） |
-| ✅ G78 | 分层持久记忆（跨会话召回 + 管理 UI） | codex v0.142.5 memories（paginated thread history + persisted names + memories） | 已实现（P153）：项目 namespace 隔离的跨会话持久记忆，复用 semantic/hybrid 召回，`/memories` 管理面 + freshness/冲突策略 + local/RPC 双路径 | 中 |
-
-> 已对齐不列为差距：`@` mention（files/skills/plugins 统一候选 P116）、`!` shell 前缀（P119）、`/compact` `/diff` `/theme` `/keymap` `/resume` `/archive` `/fork` `/side` `/statusline` `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental` `/feedback` `/ide` `/ps` `/goal` `/usage` `/review` `/permissions` `/status` `/undo` `/redo` `/copy` `/export` `/search` `/sections` `/threads` `/voice`（实时双向语音）、Enter 队列（P121）、Esc 中断（P121）、tui.json 配置层（P127，字段待补 G65）、leader + 命令面板（P120）。
-
-## 打磨计划（P128+）
-
-> 约定：`Pnn-前缀` 对应差距编号（G51–G78，TUI 细节专项 + 平台生态）。每项完成后把内容移入「已实现功能」并更新差距表为 ✅。优先级：高 = codex/opencode 核心交互缺失，直接影响日常效率；中 = 体验/生态增益；低 = 锦上添花。
-
-### 批次 A · 输入层与消息编辑（P128–P132）
-
-- ~~**P129 · G53 · 外部编辑器撰写长 prompt（高）**~~ ✅ 已完成：`/editor` + `Ctrl+G` 经 $VISUAL/$EDITOR/vim/nano/code 拉起外部编辑器（agent-cli spawn），agent-ui 仅暴露 `AgentEditorBridge` 桥 + `OPEN_IN_EDITOR`，无 node API 守卫。落地：`agent-ui/src/AgentEditorBridge.ts`（新增）、`AgentConsoleComponent.ts`、`agent-cli/src/run-console.ts`；测试 `test/editor.spec.ts`，agent-ui 520 passing EXIT=0。
-- ~~**P130 · G55+G70 · Esc,Esc 编辑上一条消息 + 上下文分支（中）**~~ ✅ 已完成：空闲态 Esc,Esc（400ms 窗口）进入编辑最后用户消息、可连续回退；提交编辑有后续轮次 → forkSession contextual branch、首条编辑开新会话。落地：`agent-ui/src/AgentConsoleComponent.ts`（handleIdleEscape/startEditTarget/dismissEditMode/submit fork 块）、`AgentConsoleKeymap.ts`；测试 `test/edit-message.spec.ts`（12 用例），agent-ui 520 passing EXIT=0。
-- ~~**P131 · G52 · `/raw` 原始滚动模式（低-中）**~~ ✅ 已完成：`/raw` on/off/toggle 切换消息区为原始文本渲染（保留 markdown 字面量、工具全量输出），`ui.rawMode` 持久化 `.tsdi-agent/raw-mode.json`。落地：`agent-ui/src/AgentConsoleRawMode.ts`（新增）、`AgentConsoleMessageRenderers.ts`、`AgentConsoleComponent.ts`（runRawModeCommand/restoreRawMode）、`AgentConsolePanels.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`；测试 `test/raw-mode.spec.ts`（12 用例），agent-ui 532 passing EXIT=0。
-- ~~**P132 · G64 · 草稿 stash（低）**~~ ✅ 已完成：`/stash` 命令（list/push/pop/rm verb 风格，缺省名 default）+ `AgentConsoleStashStore` 跨会话持久化 `.tsdi-agent/stash.json`。落地：`agent-ui/src/AgentConsoleStash.ts`（新增）、`AgentConsoleComponent.ts`（runStashCommand/`/stash` dispatch/help/param #28/onInit）、`AgentConsoleSessionState.ts`（commandHints）、`agent-ui.module.ts`；测试 `test/stash.spec.ts`（11 用例），agent-ui 543 passing EXIT=0 + tsc clean。
-
-### 批次 B · 键位与导航（P133–P138）
-
-- ~~**P133 · G56 · 上下文分域键位（中）**~~ ✅ 已完成：keymap 从 global/vim 双域扩展为 global/composer/list/approval/pager 上下文（覆盖优先于全局、空绑定解绑）；`/keymap` 交互支持选上下文 + 录制 + 冲突检测；持久化 schema 升级（兼容 v1 `keymap.json`）。落地：`agent-ui/src/AgentConsoleKeymap.ts`、`AgentConsoleComponent.ts`；测试 `test/keymap-context.spec.ts`（12 用例），agent-ui 555 passing EXIT=0 + tsc clean。
-- ~~**P134 · G58 · 子代理线程键盘导航（中）**~~ ✅ 已完成：pager 上下文 `↓` 进首个子线程、`→`/`←` 兄弟线程切换（wrap）、`↑` 回父线程；TUI/browser 方向键映射共用 handleGlobalKeySequence，`canThreadNavigate` 门控 + 无目标回落消息选择。落地：`agent-ui/src/AgentConsoleKeymap.ts`（AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP/isAgentConsoleThreadNavigationAction）、`AgentConsoleComponent.ts`（canThreadNavigate/navigateThreadChildFirst/navigateThreadCycle/navigateThreadParent）；测试 `test/keymap-context.spec.ts` 新增 11 用例，agent-ui 566 passing EXIT=0 + tsc clean。
-- ~~**P135 · G63 · 消息导航键（中）**~~ ✅ 已完成：pager 上下文 PageUp/PageDown 翻页（`moveMessageSelectionPage`）、Home/End 首/末条、`Shift+G` 跳最后用户消息（`selectLastUserMessage`，跳过 steer/空 content）；TUI `\u001b[5~`/`\u001b[6~`/`\u001b[H`/`\u001b[F` 等序列 + browser PageUp/PageDown/Home/End 共用 handleGlobalKeySequence，`canMessageNavigate` 门控（消息焦点 + 非详情 + 无选择菜单）+ 门控失败回落 focus 层。落地：`agent-ui/src/AgentConsoleKeymap.ts`（AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP/isAgentConsoleMessageNavigationAction）、`AgentConsoleComponent.ts`（canMessageNavigate/executeGlobalKeyAction 分支/nav 映射）、`AgentConsoleSessionState.ts`（selectLastUserMessage）；测试 `test/keymap-context.spec.ts` 新增 12 用例，agent-ui 578 passing EXIT=0 + tsc clean。
-- ~~**P136 · G57 · 模型收藏/最近循环/变体循环（中）**~~ ✅ 已完成：`Ctrl+F` 收藏切换 + `F2`/`Shift+F2` 最近模型循环 + `Ctrl+T` reasoning effort 档位循环（local 原地改 options.model / RPC 复用 model.activate 透传 reasoningEffort）；收藏/最近持久化 `.tsdi-agent/models.json`（`AgentConsoleModelStore`，workspace 分域，favorites/recents 各 cap 10）；4 动作入全局默认 keymap + browser F-key 放行（functionKeys 映射 + guard）。落地：`agent-ui/src/AgentConsoleKeymap.ts`（4 动作 + 默认键）、`AgentConsoleModelStore.ts`（新增）、`AgentConsoleComponent.ts`（restoreModelStore/persistModelStore/toggleModelFavorite/cycleRecentModel/cycleModelVariant/recordRecentModel + activateModelProfile 记录 + executeGlobalKeyAction 分支）、`agent-gateway/src/app-rpc/AppRpcServer.ts`（model.activate 可选 reasoningEffort）；测试 `test/keymap-context.spec.ts` 新增 13 用例，agent-ui 591 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-- ~~**P137 · G59 · which-key 提示（低）**~~ ✅ 已完成：`Ctrl+Alt+K` 切换当前上下文键位提示层（`AgentConsoleWhichKeyPanelComponent` 渲染 `effectiveBindings` 快照，`whichKeyBindings: {key, action}[]`），Esc 或任意其他键关闭（关闭并执行该键动作），toggle 键再次按下关闭；TUI `\u001b\u000b`（ESC+Ctrl+K 0x0B）decode + browser ctrl+alt+k 双路径。落地：`agent-ui/src/AgentConsoleKeymap.ts`（which-key-toggle 动作 + ctrl+alt+k 默认键）、`AgentConsoleSessionState.ts`（whichKeyVisible/whichKeyBindings/setWhichKeyVisible/setWhichKeyBindings + globalKeyInputAction altKey）、`AgentConsoleComponent.ts`（decodeGlobalKey modifiedKeys/toggleWhichKeyOverlay/showWhichKeyPanel/Esc-close/executeGlobalKeyAction 分支）、`AgentConsolePanels.ts`（AgentConsoleWhichKeyPanelComponent）、`agent-ui.module.ts`；测试 `test/keymap-context.spec.ts` 新增 10 用例，agent-ui 601 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-- ~~**P138 · G71 · 队列化 slash 命令（低）**~~ ✅ 已完成：运行中 `Tab` 排队的输入若以 `/` 开头则标记为 next-turn 命令（`AgentConsoleQueuedPrompt.command` 标志 + "Queued command (N)" 提示 + 命令跳过附件），当前 turn 结束后 FIFO drain 按命令解析执行（复用 P121 队列 + submit `/` 分支 + handleCommand 恒 true 不回落 turn）。修复 G71 原缺口：`/` 前缀输入会打开 suggestion 菜单并吞掉 Tab（handleMenuInput tab→acceptSelectMenu 直接提交），现于 `processDecodedInput` 中运行中 turn + suggestion 菜单打开时提前返回 `queueDraft`，浏览器 `AgentConsoleInputPanelComponent.onKeydown` 同步优先排队。落地：`agent-ui/src/AgentConsoleComponent.ts`（enqueuePrompt/AgentConsoleQueuedPrompt）、`AgentConsoleSessionState.ts`（processDecodedInput 提前 queueDraft 分支）、`AgentConsolePanels.ts`（Tab 优先排队）；测试 `test/view-model.spec.ts` 新增 4 用例，agent-ui 605 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-
-### 批次 C · 展示与配置（P139–P144）
-
-- ~~**P139 · G51 · 终端窗口/标签标题 `/title`（中）**~~ ✅ 已完成：`/title` 配置窗口标题字段（project/status/thread/branch/model/context/task，`list/set/unset` 动词，遗留裸文本会话重命名保留），运行状态更新（含 approval 等待 `action_required` 前缀）；跨浏览器（document.title）/TUI（OSC 0 转义序列）双实现 + `ui.terminalTitle`/`tui.terminalTitle` 关闭开关（默认 true）；持久化 `.tsdi-agent/title.json`。落地：`agent-ui/src/AgentConsoleTitle.ts`（新增）、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`AgentTuiConfig.ts`、`agent/src/options.ts`、`agent-cli/src/run-console.ts`；测试 `test/title.spec.ts` + tui-config.spec.ts，agent-ui 502 passing EXIT=0。
-- ~~**P142 · G60 · 统一设置对话框（中）**~~ ✅ 已完成：`/settings` 打开多 tab 设置对话框（复用共享 selectMenu 机制，Web/TUI 同渲染）——General（theme/language/vim/raw/thinking/window title）、Keybinds（list/record 录制 + 冲突检测 + reset）、Providers（model switcher/fast-strong/status）；持久化 `.tsdi-agent/settings.json`（`AgentConsoleSettingsStore` 存 language/vimMode/showThinking，theme/raw 沿用各自 store）。落地：`agent-ui/src/AgentConsoleSettingsStore.ts`（新增）、`AgentConsoleComponent.ts`（runSettingsCommand/openSettingsGeneralTab/openSettingsLanguage/openSettingsKeybindsTab/openSettingsProvidersTab/restoreSettings/persistSettings + `/settings` dispatch + /help 条目）、`AgentConsoleSessionState.ts`（commandHints）、`agent-ui.module.ts`、`index.ts`；测试 `test/view-model.spec.ts` 新增 7 用例，agent-ui 612 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-- ~~**P143 · G61 · 连接/MCP/LSP 健康 StatusPopover（低-中）**~~ ✅ 已完成：status 面板 hover（`onHoverEnter`/`onHoverLeave` 走 `toggleHealthPopoverAction`）或键位 `Ctrl+X H`（`status-health` 全局动作）弹出实时健康 popover（`AgentConsoleHealthPopoverComponent`，Web/TUI 同渲染）——gateway（appRpc `app.state` 探活，ok/error/unknown=本地无网关）、MCP（tools 按 `mcp.<server>.` 前缀聚合，active 0→error / 部分→warn / 全活→ok）、LSP（`lsp_` 工具存在性 ok/unknown）；toggle 关闭清空 items。落地：`agent-ui/src/AgentConsoleSessionState.ts`（healthPopoverVisible/healthItems/setHealthPopoverVisible/setHealthItems/toggleHealthPopoverAction + AgentConsoleHealthItem/AgentConsoleHealthStatus）、`AgentConsoleComponent.ts`（toggleHealthPopover/collectHealthItems + executeGlobalKeyAction `status-health` 分支 + 模板面板）、`AgentConsoleKeymap.ts`（`status-health` 动作 + `ctrl+x h` 默认键）、`AgentConsolePanels.ts`（AgentConsoleHealthPopoverComponent + status 面板 hover 事件）、`agent-ui.module.ts`；测试 `test/view-model.spec.ts` 新增 4 用例，agent-ui 616 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-- ~~**P144 · G73+G74 · 显示开关簇（低）**~~ ✅ 已完成：`/display [on|off]` 切换消息时间戳显隐（renderer meta 前置 `HH:MM`）+ `/timeline` / `Ctrl+X G`（`timeline-mode` 全局动作）切换紧凑时间线视图（跳过消息窗口、全量显示）；`/settings` General 增 Timestamps/Tool output/Username 三项（`showTimestamps`/`showToolOutput`/`showUsername`，tool 消息隐藏时清空内容仅留 role/status，username 开关在 role 标签拼 `user|agent:`）；四项全部经 `AgentConsoleSettingsStore` 持久化 `.tsdi-agent/settings.json` + onInit 恢复。落地：`agent-ui/src/AgentConsoleMessageRenderers.ts`（render context 4 字段 + resolveTimelineMeta 时间戳 + hideToolOutput + username role）、`AgentConsoleComponent.ts`（runDisplayCommand/toggleTimelineMode + `/display` `/timeline` dispatch + /help + settings 三项）、`AgentConsoleKeymap.ts`（`timeline-mode` + `ctrl+x g`）、`AgentConsoleSessionState.ts`（4 toggle + setters + consoleOptions.username）、`AgentConsolePanels.ts`（render context 接线 + visibleMessages 时间线全量 + cache 键）、`AgentConsoleSettingsStore.ts`（4 新字段）；测试 `test/message-renderer.spec.ts` 新增 4 用例 + `test/view-model.spec.ts` 新增 4 用例，agent-ui 623 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 230 passing。
-
-### 批次 D · 命令面闭环（P145–P149）
-
-- ~~**P145 · G66 · `/share` 会话分享命令（中）**~~ ✅ 已完成：`/share` 经 appRpc `session.share.create` 生成脱敏分享快照（复用 P86 SessionShareStore.redactSharedValue 递归脱敏密钥/Bearer/sk-* 与 workspace 路径）→ `Session share` 面板（token/url/revoke 三选项，复制走既有 copy handler，`consoleOptions.shareBaseUrl` 可拼完整链接）；`/unshare [token]` 撤销（无参先 `session.share.list` 列出活跃分享供选择）；gateway 增 `session.share.create/revoke/list` 3 个 RPC（注入 SessionShareStore + `listBySession` 按 sessionId 聚合 + owner 校验）。落地：`agent-gateway/src/app-rpc/AppRpcServer.ts`（3 RPC + capabilities）、`agent-gateway/src/share/SessionShareStore.ts`（listBySession）、`agent-ui/src/AgentConsoleComponent.ts`（runShareCommand/runUnshareCommand/revokeShare/openSharePanel + `/share` `/unshare` dispatch + /help）、`AgentConsoleSessionState.ts`（commandHints + consoleOptions.shareBaseUrl）；测试 `agent-gateway/test/share.spec.ts` 新增 3 用例（RPC suite）+ `agent-ui/test/view-model.spec.ts` 新增 4 用例，gateway 233 passing EXIT=0 + agent-ui 627 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean。
-- ~~**P146 · G67 · `/skills` `/mcp` `/plugins` 浏览命令（中）**~~ ✅ 已完成：`/skills [query|<id>]` 经 `skill_list`（复用 ListSkillTool 的 query 过滤）列出技能 → 无参开选择器（category/summary/aliases/source detail），选 `<id>` 调 `read_skill` 展示详情；`/mcp [verbose]` 按 `state.tools` 的 `mcp.<server>.` 前缀聚合 server + active/total 计数，verbose 逐工具列出；`/plugins [<id>]` 经 `plugins {action:'list'|'inspect'}` 展示 manifest name/scope/description + contributions skills；共用 `invokeTool`（appRpc `tools.invoke` / 本地 toolRegistry 双路径，与 `@` mention 候选同源）。落地：`agent-ui/src/AgentConsoleComponent.ts`（runSkillsCommand/runMcpCommand/runPluginsCommand/invokeTool/formatSkillLine/formatSkillDetail/formatPluginLine/formatPluginDetail + 3 dispatch + /help）、`AgentConsoleSessionState.ts`（commandHints）；测试 `test/view-model.spec.ts` 新增 5 用例，agent-ui 632 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean + gateway 233 passing。
-- ~~**P147 · G68 · `/approve` 重试自动评审拒绝（低-中）**~~ ✅ 已完成：`/approve retry` 对最近一次 auto-review（verification-gate falsification）拒绝的 action 批准单次 retry——gateway 新 RPC `harness.rejected_actions`（扫 turn diagnostics evidence 中 `falsified === true` 条目，按 createdAt 降序返回 toolName/inputSummary/falsificationReason/turnId）与 `harness.retry_rejected_action`（按 evidenceId 取回 inputSummary，JSON.parse 还原结构化输入后经 `tools.invoke` 重跑一次）；agent-ui `/approve retry` 列出拒绝 action → 确认单次 retry → notify 结果；与审批队列 `/approve`（pending approvals）语义区分，无 gateway 或空列表均明确提示。落地：`agent-gateway/src/app-rpc/AppRpcServer.ts`（2 新 RPC + capabilities + listRejectedActions/retryRejectedAction）、`agent-ui/src/AgentConsoleComponent.ts`（runApproveRetryCommand + `/approve retry` 路由 + /help）；测试 `agent-gateway/test/harness-reject.spec.ts` 新增 3 用例 + `agent-ui/test/view-model.spec.ts` 新增 3 用例，gateway 236 passing EXIT=0 + agent-ui 635 passing EXIT=0 + agent/agent-cli/agent-ui/agent-gateway tsc clean。
-- ~~**P148 · G69 · plan 模式草稿提示（低）**~~ ✅ 已完成：composer 草稿达到长度阈值且命中中英文明确 plan 意图时，输入 meta 行提示 `use /plan`；已处于 plan 模式或 slash 命令不提示，`ui.planNudges: false` 可关闭。落地：`agent-ui/src/AgentConsoleSessionState.ts`（响应式派生 planNudgeLabel）、`AgentConsolePanels.ts`、`AgentConsoleComponent.ts`、`agent/src/options.ts`；测试 `view-model.spec.ts` 新增 2 用例，agent-ui 637 passing EXIT=0 + 十包 2103 passing/build 全通过。
-- ~~**P149 · G72 · `/apps` connectors 生态命令面（中）**~~ ✅ 已完成：内置 GitHub/GitLab + 与 agent-channels 对齐的 IM connector catalog；`/apps` 浏览 category/capabilities/授权状态，选择或 `/apps <id>` 插入 `$app`，提交时注入 connector context；授权由 `ui.console.connectors` 宿主配置提供，保持 Web/TUI 共用且不引入 Node transport。落地：`agent-ui/src/AgentConsoleApps.ts`（新增）、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`index.ts`；测试 `view-model.spec.ts` 新增 3 用例，agent-ui 640 passing EXIT=0 + 十包 2106 passing/build 全通过。
-
-### 批次 E · 平台与生态（P150–P157，远期排期）
-
-- ~~**P150 · G75 · 云任务执行面（中-高）**~~ ✅ 已完成：gateway `CloudTaskQueue` 有界并发执行 headless 会话，五个 `cloud.task.*` RPC 完成提交/轮询/取消/结果领取并按 principal 隔离；CLI `cloud run/list/status/cancel/apply` 支持 gateway URL、Bearer token、env 与 JSON 输出。落地：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、gateway modules/index、`agent-cli/src/cloud-command.ts`、`cli.ts`/`index.ts`；测试 gateway 3 + CLI 3 用例，十包 2112 passing/build 全通过。
-- ~~**P151 · G76 · mDNS 服务发现（低）**~~ ✅ 已完成：gateway `mdns` 配置启用 DNS-SD 广播，service type/domain/name 可配并随生命周期清理；CLI `attach [url]` 支持 `--mdns`/`--mdns-domain`/service type/timeout，发现后通过 HTTP JSON-RPC 连接远程 TUI，显式 URL 优先。测试 gateway 5 + CLI 3；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
-- ~~**P152 · G77 · ACP 客户端（中）**~~ ✅ 已完成：新增无 Node 依赖的 `AcpClient` + `AcpTransport`，支持 initialize/session new/prompt/cancel/mode/model、流式 session update 和双向宿主 requestHandlers；协议错误、未知方法、关闭清理与 UTF-8 分片均覆盖。测试 agent 新增 4 用例；十包 2125 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
-- ~~**P153 · G78 · 分层持久记忆（中）**~~ ✅ 已完成：项目级 namespace 隔离持久记忆跨会话写入/召回，复用 keyword/semantic/hybrid 排序；TTL freshness + replace/keep-newest/append 冲突策略；`/memories list|injected|add|remove` 管理与 local/gateway RPC 双路径。测试 agent 4 + agent-ui 1；十包 2130 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
-- ~~**P154 · G21 余量 · 移动 PWA remote（中）**~~ ✅ 已完成：P91 Web console 增加可安装 PWA 宿主，提供 manifest、应用图标、service worker 静态壳离线缓存与移动端 safe-area/`100dvh`/触控尺寸适配；RPC、API 及其他动态请求保持 network-only，支持关闭或自定义 service worker URL。测试 agent-ui 新增 1 用例；十包 2131 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
-- ~~**P155 · G21 OAuth 宿主边界 · connectors 授权回调（低-中）**~~ ✅ 已完成：`/apps <id>` 对未授权 connector 支持宿主注入式 `authorizeConnector` 回调；授权成功后插入 mention，取消/异常保持草稿不变并给出提示。OAuth client secret、token 与平台 transport 均留在宿主，浏览器/TUI/Electron 共用同一边界。测试 agent-ui 新增 2 用例；agent-ui 644 passing。
-- ~~**P156 · 隐藏自动化 agent（低-中）**~~ ✅ 已完成：P150 cloud task 执行前将 headless session 标记为 `sessionRole: automation`；REST/RPC 普通会话、项目与线程列表默认过滤自动化会话，显式 `includeAutomation=true` 可供运维审计查看，任务领取与 owner 隔离保持不变。测试 gateway 新增 1 用例并增强 cloud task 断言；十包 2134 passing。
-- ~~**P157 · GitHub/GitLab 外部触发幂等底座（低-中）**~~ ✅ 已完成：cloud task 增 `source`/`externalId`/有界 string metadata 事件溯源；按 principal + source + externalId 去重，CI/webhook 重投返回原 task 且不创建孤儿 session；CLI `cloud run` 增 `--source`/`--external-id`。测试 gateway 新增 1 用例并覆盖 RPC 去重，CLI 覆盖参数透传；十包 2135 passing。
-
-## 剩余（远期，未排期）
-
-- **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent、Codex Jobs 云端触发）—— 依赖平台 OAuth；部分与 P149 `/apps` / P150 云任务衔接，仍不排期。
-
-## 已完成（历史）
-
-P0–P157 全部已排期打磨条目均已落地（含 G1–G78 全差距及 G21 移动宿主余量）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最新全量基线：十包 2135 passing EXIT=0（agent 743 / agent-tools 323 / agent-ui 644 / agent-cli 73 / agent-gateway 246 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P157，Web bundle 3.3MB）。
+8. **TUI 功能密度**：~70 命令 / ~20 面板 / vim / Ctrl+X leader / Ctrl+P 面板 / which-key / 5 上下文分域键位 / 模型收藏/最近/变体循环 / 消息导航 / 子代理线程导航 / 设置对话框 / 健康 popover——已覆盖 codex/opencode 绝大多数命令面。
 
 ---
 
-## 差距分析 v6（vs codex v0.147 / opencode v1.18.17，2026-08-17）
+## 打磨计划 v7（G85–G94）
 
-> 对照基准从 v0.145（2026-08-14）升级至 codex v0.147.0（2026-08-13）+ opencode v1.18.17（2026-08-12）。
+> 约定：`Pnn` 对应差距编号（G85–G94）。每项完成后把内容移入「已实现功能」并更新差距表为 ✅。优先级：高 = opencode 核心交互差距，直接影响日常效率；中 = 体验/生态增益；低 = 锦上添花。
 
-### v6 新增差距（G79–G84）
+### 批次 F · 会话安全网与渲染性能（P163–P164）
 
-| # | 差距 | 对照对象 | 现状 | 影响 |
-|---|---|---|---|---|
-| G79 | `--approve-for-me` 自动评审标记 | codex v0.147: `--approve-for-me` CLI flag 系统自动批准 | approval 有 granular 类别 + expiry，无 session 级 auto-approve 一键标记 | 中 |
-| G80 | 半页滚动 / 逐行滚动 | opencode `messages_half_page_up/down`、`messages_line_up/down` | PageUp/PageDown 整页 + Home/End + Shift+G，无 half-page 和 line-by-line | 低-中 |
-| G81 | which-key layout 切换 / pending 过滤 / group 分页 | opencode which_key_layout_toggle / pending_toggle / group 分页 | ✅ P162: grouped/compact 布局 + custom 过滤 + n/p 分页（25 条/页），L/F 键切换 | 低 |
-| G82 | PDF 附件支持 | opencode v1.18.17: PDF attachments for vision models | media 支持 image/audio，PDF 未作为附件类型 | 中 |
-| G83 | 内嵌终端主题同步 | opencode: sync embedded terminal theme with app theme | 无嵌入式 terminal panel 概念 | 低 |
-| G84 | 会话 JSON 导出 | opencode v1.18.15: export full session transcripts as JSON | `/export` 有但未明确 JSON 格式 | 低-中 |
+- **P163 · G85 · 会话快照 & 一键 revert（含文件变更 diff 预览）（高）**
+  - 底层能力已有（P71 GitStepSnapshotStore），需新增：
+    - UI 面板 `/snapshots`：列出会话所有 snapshot（message id + timestamp + diff stats），选择后预览文件变更（复用 `/diff` hunk 渲染）
+    - 一键 revert 按钮：调用既有 `revert(messageId)` + 确认弹窗
+    - gateway `session.snapshot.list` RPC：复用 GitStepSnapshotStore.list(sessionId) + 格式化 diff stats
+    - agent-ui `/snapshots [list|revert <id>|diff <id>]` 子命令
+  - 锚点：`agent/src/harness/GitStepSnapshotStore.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`
 
-### v5 已对齐确认（v0.147 / opencode 1.18 中仍对齐）
+- **P164 · G86 · 增量 markdown 离主线程渲染（中-高）**
+  - 方案：Web Worker + markdown-it/wasm 解析器，消息内容分块发送到 worker，解析完成后 postMessage 回主线程渲染
+  - 限制：TUI 无 Web Worker 支持（node worker_threads 可用但增加复杂度），优先浏览器端实现
+  - agent-ui `MarkdownWorkerBridge`（可注入，浏览器走 Worker，TUI/browser fallback 走同步）
+  - 长消息（>1000 字符）自动走 worker 路径，短消息保持同步（避免 IPC 开销）
+  - 锚点：`agent-ui/src/AgentConsolePanels.ts`（render 分支）、新增 `AgentConsoleMarkdownWorker.ts`
 
-Agent Plugins（P106/P111）、sections + paginated history（P107）、MCP 2026-07-28（P95）、/share（P145）、/compact（P118）、plan mode 提示（P148）、/approve retry（P147）、/apps connectors（P149）、cloud tasks（P150）、mDNS（P151）、ACP（P152）、分层记忆（P153）均保持对齐。
+### 批次 G · 多会话标签页与 MCP 增强（P165–P166）
+
+- **P165 · G87 · 多会话标签页（桌面端）（中）**
+  - Electron/VS Code 端：tab bar 组件 + session 切换 + mod+1..9 快捷键
+  - TUI 端：保持 `/sessions` 列表（TUI 单会话语义更自然）
+  - 浏览器端：多窗口/tab 由浏览器管理，agent-ui 无需内置 tab
+  - 仅 Electron host 实现 tab bar（`agent-desktop/src/`），复用 session store 切换
+  - 锚点：`agent-desktop/src/`（新增 `TabBarComponent`）
+
+- **P166 · G88 · MCP server instructions 自动注入上下文（中）**
+  - MCP client `initialize` 响应中提取 `serverInfo.instructions` 字段
+  - `AgentContextManager` 在 system prompt 中追加 `## MCP Server Instructions` 段（有界，1KiB 总上限）
+  - `McpClient.instructions` 字段 + `McpConnectionManager.getServerInstructions()` 聚合
+  - 锚点：`agent-tools/mcp/StdioMcpClient.ts`、`agent/src/context/AgentContextManager.ts`、`agent/src/prompt/SystemPromptBuilder.ts`
+
+### 批次 H · Settings UX 与便利性（P167–P169）
+
+- **P167 · G89 · Thinking level 选择器（settings UI）（中-低）**
+  - `/settings` Providers tab 增加 Thinking Level 行（low/medium/high radio）
+  - 联动 `reasoningEffort` 透传（P103）+ Ctrl+T 变体循环（P136）
+  - 持久化 `.tsdi-agent/settings.json` 新增 `thinkingLevel` 字段
+  - 锚点：`agent-ui/src/AgentConsoleSettingsStore.ts`、`AgentConsoleComponent.ts`（openSettingsProvidersTab）
+
+- **P168 · G90 · Yolo auto-approve 模式（低-中）**
+  - `/yolo [on|off]` 命令：设置 `autoApprove: true`（所有工具调用自动批准，跳过 approval 队列）
+  - `/settings` General tab 增加 Yolo Mode toggle
+  - 持久化 `.tsdi-agent/settings.json` 新增 `yoloMode` 字段
+  - 锚点：`agent-ui/src/AgentConsoleComponent.ts`、`AgentConsoleSettingsStore.ts`
+
+- **P169 · G91 · 代码模式 MCP adapter（低）**
+  - 可选：MCP server 注册 `code_execution` tool，接受 code + language → 返回 stdout/stderr
+  - 复用 ACP code execution 能力（P152），包装为 MCP tool 协议
+  - 锚点：`agent-tools/mcp/`（新增 `code-mode-adapter.ts`）
+
+---
+
+## 回归基线
+
+截至 P162（2026-08-17）：十包 **2135 passing 全部 EXIT=0**（agent 743 / agent-gateway 246 / agent-ui 644 / agent-cli 73 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；agent-ui build:web、agent-vscode build（联动 Web bundle 3.3MB）、agent-cli build 全部通过。
+
+---
+
+## 性能基线（2026-08-17）
+
+| 指标 | 数值 |
+|---|---|
+| 十包测试总数 | 2135 passing |
+| 十包 tsc --noEmit | 全 clean（EXIT=0） |
+| Web bundle | agent-ui 3.3MB（esbuild） |
+| Electron dist | 44KB（agent-desktop） |
+| VS Code dist | 24KB（agent-vscode） |
+| 总测试耗时（串行） | ~75–80s |
+| 总 LOC（src） | ~62,600 |
+| 各包 LOC | agent 22,948 / agent-ui 22,922 / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
 
 ---
 
@@ -298,21 +303,6 @@ Agent Plugins（P106/P111）、sections + paginated history（P107）、MCP 2026
 | AgentConsolePanels.ts | 3459 | 面板渲染，规模合理 |
 | DefaultAgentRuntime.ts | 3191 | 运行时核心，规模合理 |
 | AppRpcServer.ts | 3144 | RPC 聚合，规模合理 |
-
----
-
-## 性能基线（2026-08-17）
-
-| 指标 | 数值 |
-|---|---|
-| 十包测试总数 | 2135 passing |
-| 十包 tsc --noEmit | 全 clean（EXIT=0） |
-| Web bundle | agent-ui 3.3MB（esbuild） |
-| Electron dist | 44KB（agent-desktop） |
-| VS Code dist | 24KB（agent-vscode） |
-| 总测试耗时（串行） | ~75–80s |
-| 总 LOC（src） | ~62,600 |
-| 各包 LOC | agent 22,948 / agent-ui 22,922 / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
 
 ---
 
