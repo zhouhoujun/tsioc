@@ -8938,6 +8938,36 @@ export class AgentConsoleComponentTest {
         expect(panel.inputPrompt).toEqual('>');
     }
 
+    @Test('input panel nudges explicit planning drafts toward plan mode')
+    async inputPanelNudgesPlanningDrafts() {
+        const state = new AgentConsoleSessionState();
+        const panel = new AgentConsoleInputPanelComponent(state);
+
+        state.setInput('Please design the architecture before changing any files.');
+        expect(state.planNudgeLabel).toContain('/plan');
+        expect(panel.metaLabel).toContain('/plan');
+
+        state.setInput('Fix the failing unit test in parser.ts now.');
+        expect(state.planNudgeLabel).toEqual('');
+
+        state.setInput('先不要改代码，请给出一个完整的实现方案。');
+        expect(state.planNudgeLabel).toContain('/plan');
+    }
+
+    @Test('plan nudge is hidden in plan mode and when disabled')
+    async planNudgeRespectsModeAndConfiguration() {
+        const state = new AgentConsoleSessionState();
+        state.setInput('Plan the implementation carefully before making edits.');
+        expect(state.planNudgeLabel).toContain('/plan');
+
+        state.setPlanMode(true);
+        expect(state.planNudgeLabel).toEqual('');
+
+        state.setPlanMode(false);
+        state.setPlanNudgesEnabled(false);
+        expect(state.planNudgeLabel).toEqual('');
+    }
+
     @Test('undo command reverts the last file change through the local runtime')
     async undoCommandRevertsFileChange() {
         const runtime = new RuntimeStub();

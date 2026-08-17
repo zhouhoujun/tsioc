@@ -161,6 +161,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setStatusline(this.resolveInitialStatusline());
         this.state.setTitleFields(this.resolveInitialTitleFields());
         this.state.setRawMode(this.options.ui?.rawMode === true);
+        this.state.setPlanNudgesEnabled(this.options.ui?.planNudges !== false);
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }
 
@@ -6807,6 +6808,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             `ui.memoryInjection: ${ui.memoryInjection !== false ? 'on' : 'off'}`,
             `ui.personality: ${ui.personality || '(none)'}`,
             `ui.queueMode: ${ui.queueMode || 'off'}`,
+            `ui.planNudges: ${ui.planNudges !== false ? 'on' : 'off'}`,
             `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${enabled ? 'on' : 'off'}`).join(', ') : '(none)'}`,
             `session: ${this.state.sessionId} · workspace: ${this.workspace || '(none)'}`
         ];

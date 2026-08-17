@@ -477,6 +477,7 @@ export class AgentConsoleSessionState {
     showToolOutput = true;
     showUsername = false;
     timelineMode = false;
+    planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
     healthPopoverVisible = false;
@@ -1348,6 +1349,22 @@ export class AgentConsoleSessionState {
         this.inputCursor = clampConsoleTextCursor(this.input, cursor);
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
+    }
+
+    setPlanNudgesEnabled(enabled: boolean): void {
+        this.planNudgesEnabled = enabled;
+    }
+
+    get planNudgeLabel(): string {
+        if (!this.planNudgesEnabled || this.planMode) {
+            return '';
+        }
+        const draft = String(this.input || '').trim();
+        if (draft.length < 20 || draft.startsWith('/')) {
+            return '';
+        }
+        const explicitPlanIntent = /(?:\bplan(?:ning)?\b|\bdesign\b|\barchitecture\b|方案|规划|设计|先不要改|不要(?:先)?修改|先别改)/i;
+        return explicitPlanIntent.test(draft) ? 'Planning intent detected · use /plan' : '';
     }
 
     pushInputHistory(value: string): void {

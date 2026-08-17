@@ -115,6 +115,12 @@ export interface AgentUIOptions {
      * terminal. Toggled at runtime with `/raw` (persisted per workspace).
      */
     rawMode?: boolean;
+    /**
+     * P148: show a lightweight `/plan` suggestion when a sufficiently long
+     * composer draft explicitly asks for planning or design before edits
+     * (default true).
+     */
+    planNudges?: boolean;
 }
 
 export interface AgentBootstrapTurnOptions {

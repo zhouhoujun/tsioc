@@ -403,7 +403,7 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get metaLabel(): string {
-        return [this.hintLabel, this.tokenUsageLabel].filter(Boolean).join(' · ');
+        return [this.state?.planNudgeLabel, this.hintLabel, this.tokenUsageLabel].filter(Boolean).join(' · ');
     }
 
     async submit(): Promise<void> {
