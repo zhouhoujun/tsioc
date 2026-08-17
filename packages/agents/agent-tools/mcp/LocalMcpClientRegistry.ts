@@ -36,6 +36,18 @@ export class LocalMcpClientRegistry implements OnDestroy {
         return this.options.servers.slice();
     }
 
+    getServerInstructions(): Array<{ serverId: string; instructions: string }> {
+        const results: Array<{ serverId: string; instructions: string }> = [];
+        for (const server of this.options.servers) {
+            const client = this.clients.get(server.id);
+            const instructions = client?.getInstructions?.();
+            if (instructions) {
+                results.push({ serverId: server.id, instructions });
+            }
+        }
+        return results;
+    }
+
     async listServerTools(serverId: string): Promise<McpToolDescriptor[]> {
         const cached = this.toolCache.get(serverId);
         if (cached) {

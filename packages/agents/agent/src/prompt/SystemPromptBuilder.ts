@@ -64,3 +64,4 @@ export { ToolsSection } from './sections/ToolsSection';
 export { DateTimeSection } from './sections/DateTimeSection';
 export { MemorySection } from './sections/MemorySection';
 export { ProjectContextSection } from './sections/ProjectContextSection';
+export { McpServerInstructionsSection } from './sections/McpServerInstructionsSection';

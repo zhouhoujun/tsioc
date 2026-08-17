@@ -11,7 +11,7 @@ import { ToolActivationStore } from './tools/ToolActivationStore';
 import { ToolLoopDetector } from './tools/ToolLoopDetector';
 import { ToolApprovalManager } from './tools/ToolApprovalManager';
 import { AgentContextManager } from './context/AgentContextManager';
-import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, MemorySection, ProjectContextSection } from './prompt/SystemPromptBuilder';
+import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, MemorySection, ProjectContextSection, McpServerInstructionsSection } from './prompt/SystemPromptBuilder';
 import { AGENT_PROMPT_SECTIONS } from './tokens';
 import { EchoTool, ExperienceSynthesizeTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
@@ -130,6 +130,7 @@ import { createAgentProviders } from './provider';
         { provide: AGENT_PROMPT_SECTIONS, useClass: ProjectContextSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: ToolsSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: MemorySection, multi: true },
+        { provide: AGENT_PROMPT_SECTIONS, useClass: McpServerInstructionsSection, multi: true },
         LocalToolRegistry,
         { provide: ToolRegistry, useClass: LocalToolRegistry },
         EchoTool,

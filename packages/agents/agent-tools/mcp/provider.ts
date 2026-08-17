@@ -1,4 +1,4 @@
-import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
+import { AGENT_TOOL_BUNDLES, AGENT_TOOLS, MCP_SERVER_INSTRUCTIONS } from '@tsdi/agent';
 import { Injector, Provider, toProviders } from '@tsdi/ioc';
 import { LocalMcpClientRegistry } from './LocalMcpClientRegistry';
 import { McpServerTool } from './McpServerTool';
@@ -44,6 +44,15 @@ export function provideResolvedMcpToolBundles(): Provider {
     };
 }
 
+export function provideMcpServerInstructions(): Provider {
+    return {
+        provider(injector: Injector) {
+            const registry = injector.get(LocalMcpClientRegistry);
+            return toProviders(MCP_SERVER_INSTRUCTIONS, [registry.getServerInstructions()]);
+        }
+    };
+}
+
 export function provideMcpTools(options: AgentMcpOptions = {}): Provider[] {
     return [
         ...withAgentMcpOptions(options),
@@ -53,6 +62,7 @@ export function provideMcpTools(options: AgentMcpOptions = {}): Provider[] {
         { provide: AGENT_TOOLS, useExisting: McpListToolsTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: McpCallTool, multi: true },
         provideResolvedMcpTools(),
-        provideResolvedMcpToolBundles()
+        provideResolvedMcpToolBundles(),
+        provideMcpServerInstructions()
     ];
 }

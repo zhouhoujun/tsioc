@@ -33,6 +33,7 @@ export class StreamableHttpMcpClient implements McpClient {
     private initialized?: Promise<void>;
     private closed = false;
     private negotiatedVersionValue?: string;
+    private instructionsValue?: string;
     private readonly pending = new Map<number, PendingRequest>();
     private readonly fetchImpl: typeof fetch;
     private oauthAttempted = false;
@@ -65,6 +66,10 @@ export class StreamableHttpMcpClient implements McpClient {
             connected: !this.closed,
             reconnectCount: this.reconnectCount
         };
+    }
+
+    getInstructions(): string | undefined {
+        return this.instructionsValue;
     }
 
     async listTools(): Promise<McpToolDescriptor[]> {
@@ -139,6 +144,7 @@ export class StreamableHttpMcpClient implements McpClient {
                 throw new Error(response.error.message || `MCP initialize failed for server '${this.server.id}'.`);
             }
             this.negotiatedVersionValue = resolveNegotiatedProtocolVersion(response.result?.protocolVersion);
+            this.instructionsValue = (response.result as Record<string, any>)?.serverInfo?.instructions;
             await this.notify('notifications/initialized');
         })().catch(err => {
             this.initialized = undefined;

@@ -12,6 +12,7 @@ export class StdioMcpClient implements McpClient {
     private pendingMessages = new Map<number, { method: string; params?: Record<string, any>; }>();
     private initialized?: Promise<void>;
     private negotiatedVersionValue?: string;
+    private instructionsValue?: string;
     private reconnectAttempts = 0;
     private reconnectCount = 0;
     private reconnecting = false;
@@ -32,6 +33,10 @@ export class StdioMcpClient implements McpClient {
             connected: !this.closed && !this.disconnected && this.started,
             reconnectCount: this.reconnectCount
         };
+    }
+
+    getInstructions(): string | undefined {
+        return this.instructionsValue;
     }
 
     async listTools(): Promise<McpToolDescriptor[]> {
@@ -111,12 +116,13 @@ export class StdioMcpClient implements McpClient {
         }
         this.initialized = (async () => {
             this.ensureStarted();
-            const result = await this.requestInternal<{ protocolVersion?: string; capabilities?: Record<string, any> }>('initialize', {
+            const result = await this.requestInternal<{ protocolVersion?: string; capabilities?: Record<string, any>; serverInfo?: { name?: string; version?: string; instructions?: string } }>('initialize', {
                 protocolVersion: this.options.protocolVersion,
                 capabilities: {},
                 clientInfo: this.options.clientInfo
             });
             this.negotiatedVersionValue = resolveNegotiatedProtocolVersion(result?.protocolVersion);
+            this.instructionsValue = result?.serverInfo?.instructions;
             this.notify('notifications/initialized');
         })().catch(err => {
             this.initialized = undefined;
@@ -278,12 +284,13 @@ export class StdioMcpClient implements McpClient {
         this.reconnectAttempts++;
         try {
             this.ensureStarted();
-            const result = await this.requestInternal<{ protocolVersion?: string; capabilities?: Record<string, any> }>('initialize', {
+            const result = await this.requestInternal<{ protocolVersion?: string; capabilities?: Record<string, any>; serverInfo?: { name?: string; version?: string; instructions?: string } }>('initialize', {
                 protocolVersion: this.options.protocolVersion,
                 capabilities: {},
                 clientInfo: this.options.clientInfo
             });
             this.negotiatedVersionValue = resolveNegotiatedProtocolVersion(result?.protocolVersion);
+            this.instructionsValue = result?.serverInfo?.instructions;
             this.notify('notifications/initialized');
             this.disconnected = false;
             this.reconnectAttempts = 0;

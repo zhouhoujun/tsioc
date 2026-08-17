@@ -68,26 +68,11 @@ export interface McpConnectionStatus {
 export interface McpClient {
     listTools(): Promise<McpToolDescriptor[]>;
     callTool(name: string, args?: Record<string, any>): Promise<McpToolCallResult>;
-    /**
-     * G28: paginated `resources/list` for MCP 2026-07-28 servers. Returns an
-     * empty array when the server does not advertise resource support.
-     */
     listResources?(): Promise<McpResourceDescriptor[]>;
-    /**
-     * G28: paginated `prompts/list` for MCP 2026-07-28 servers. Returns an
-     * empty array when the server does not advertise prompt support.
-     */
     listPrompts?(): Promise<McpPromptDescriptor[]>;
-    /**
-     * G28: the protocol version negotiated with the server (from the
-     * `initialize` result). `undefined` until initialization completes.
-     */
     negotiatedVersion?(): string | undefined;
-    /**
-     * G33: current connection health and the number of automatic reconnects
-     * performed. `undefined` when the transport does not track reconnect state.
-     */
     getConnectionStatus?(): McpConnectionStatus;
+    getInstructions?(): string | undefined;
     close?(): Promise<void> | void;
 }
 
