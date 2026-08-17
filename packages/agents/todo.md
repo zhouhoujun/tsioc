@@ -246,3 +246,89 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 ## 已完成（历史）
 
 P0–P157 全部已排期打磨条目均已落地（含 G1–G78 全差距及 G21 移动宿主余量）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最新全量基线：十包 2135 passing EXIT=0（agent 743 / agent-tools 323 / agent-ui 644 / agent-cli 73 / agent-gateway 246 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P157，Web bundle 3.3MB）。
+
+---
+
+## 差距分析 v6（vs codex v0.147 / opencode v1.18.17，2026-08-17）
+
+> 对照基准从 v0.145（2026-08-14）升级至 codex v0.147.0（2026-08-13）+ opencode v1.18.17（2026-08-12）。
+
+### v6 新增差距（G79–G84）
+
+| # | 差距 | 对照对象 | 现状 | 影响 |
+|---|---|---|---|---|
+| G79 | `--approve-for-me` 自动评审标记 | codex v0.147: `--approve-for-me` CLI flag 系统自动批准 | approval 有 granular 类别 + expiry，无 session 级 auto-approve 一键标记 | 中 |
+| G80 | 半页滚动 / 逐行滚动 | opencode `messages_half_page_up/down`、`messages_line_up/down` | PageUp/PageDown 整页 + Home/End + Shift+G，无 half-page 和 line-by-line | 低-中 |
+| G81 | which-key layout 切换 / pending 过滤 / group 分页 | opencode which_key_layout_toggle / pending_toggle / group 分页 | 基础 toggle + Esc 关闭，无 layout/pending/group 分页 | 低 |
+| G82 | PDF 附件支持 | opencode v1.18.17: PDF attachments for vision models | media 支持 image/audio，PDF 未作为附件类型 | 中 |
+| G83 | 内嵌终端主题同步 | opencode: sync embedded terminal theme with app theme | 无嵌入式 terminal panel 概念 | 低 |
+| G84 | 会话 JSON 导出 | opencode v1.18.15: export full session transcripts as JSON | `/export` 有但未明确 JSON 格式 | 低-中 |
+
+### v5 已对齐确认（v0.147 / opencode 1.18 中仍对齐）
+
+Agent Plugins（P106/P111）、sections + paginated history（P107）、MCP 2026-07-28（P95）、/share（P145）、/compact（P118）、plan mode 提示（P148）、/approve retry（P147）、/apps connectors（P149）、cloud tasks（P150）、mDNS（P151）、ACP（P152）、分层记忆（P153）均保持对齐。
+
+---
+
+## 代码质量审计（2026-08-17）
+
+### 类型抑制（src 文件 `as any`）
+
+| 包 | 主要文件 | 数量 | 性质 |
+|---|---|---|---|
+| agent | TypeOrmSessionStore.ts | 33 | TypeORM 查询构建器泛型擦除（结构性） |
+| agent | TypeOrmDelegationGraphStore.ts + orm.module.ts + lazy-typeorm.ts | 25 | 惰性 require + 动态类型 |
+| agent-ui | AgentConsoleComponent.ts | 10 | 响应式 proxy 类型推断 |
+| agent-ui | HttpAgentConsoleAppRpc.ts | 8 | JSON-RPC 响应类型 |
+| agent-gateway | AppRpcServer.ts | 7 | RPC handler 动态分发 |
+| agent-tools | agent-tools.module.ts | 7 | DI 模块注册 |
+
+**评估**：均为 TypeORM 泛型擦除 / DI 动态注册 / RPC 动态分发的结构性 `as any`，非偷懒抑制。零 `@ts-ignore` / `@ts-expect-error`。test 文件 2537 处 `as any` 属 mock 正常用法。
+
+### TODO/FIXME/HACK
+
+**零实际待办**。唯一 5 处 `TODO` 为 `todo-store.ts` 常量命名（`TODO_MEMORY_ID_PREFIX`），非真正待办标记。
+
+### 大文件（>500 LOC）
+
+| 文件 | LOC | 评估 |
+|---|---|---|
+| AgentConsoleComponent.ts | **9171** | 核心组件，建议按功能域拆分（输入/渲染/命令/键位） |
+| AgentConsoleSessionState.ts | 4426 | 状态管理，规模合理 |
+| AgentConsolePanels.ts | 3459 | 面板渲染，规模合理 |
+| DefaultAgentRuntime.ts | 3191 | 运行时核心，规模合理 |
+| AppRpcServer.ts | 3144 | RPC 聚合，规模合理 |
+
+---
+
+## 性能基线（2026-08-17）
+
+| 指标 | 数值 |
+|---|---|
+| 十包测试总数 | 2135 passing |
+| 十包 tsc --noEmit | 全 clean（EXIT=0） |
+| Web bundle | agent-ui 3.3MB（esbuild） |
+| Electron dist | 44KB（agent-desktop） |
+| VS Code dist | 24KB（agent-vscode） |
+| 总测试耗时（串行） | ~75–80s |
+| 总 LOC（src） | ~62,600 |
+| 各包 LOC | agent 22,948 / agent-ui 22,922 / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
+
+---
+
+## 文档审计（2026-08-17）
+
+| 包 | README | CHANGELOG | 评估 |
+|---|---|---|---|
+| agent | ✅ 10.9KB | ❌ 无 | 需 CHANGELOG |
+| agent-gateway | ✅ 2.5KB | ❌ 无 | 需 CHANGELOG |
+| **agent-ui** | **❌ 无** | ❌ 无 | **最缺：需 README + CHANGELOG** |
+| agent-cli | ✅ 9.1KB | ❌ 无 | 需 CHANGELOG |
+| agent-tools | ✅ 8.7KB | ❌ 无 | 需 CHANGELOG |
+| agent-channels | ✅ 1.6KB | ❌ 无 | 偏薄 + 无 CHANGELOG |
+| agent-providers | ✅ 1.3KB | ❌ 无 | 偏薄 + 无 CHANGELOG |
+| **agent-ssh** | **❌ 无** | ❌ 无 | **需 README + CHANGELOG** |
+| agent-desktop | ✅ 2.3KB | ❌ 无 | 需 CHANGELOG |
+| agent-vscode | ✅ 181B | ❌ 无 | 过于简略 + 无 CHANGELOG |
+
+**共同缺失**：十包全无 CHANGELOG.md；2 包无 README（agent-ui、agent-ssh）；2 包 README 过于简略（agent-vscode 181B、agent-providers 1.3KB）。
