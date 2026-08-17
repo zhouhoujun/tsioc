@@ -228,18 +228,18 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 - ~~**P148 · G69 · plan 模式草稿提示（低）**~~ ✅ 已完成：composer 草稿达到长度阈值且命中中英文明确 plan 意图时，输入 meta 行提示 `use /plan`；已处于 plan 模式或 slash 命令不提示，`ui.planNudges: false` 可关闭。落地：`agent-ui/src/AgentConsoleSessionState.ts`（响应式派生 planNudgeLabel）、`AgentConsolePanels.ts`、`AgentConsoleComponent.ts`、`agent/src/options.ts`；测试 `view-model.spec.ts` 新增 2 用例，agent-ui 637 passing EXIT=0 + 十包 2103 passing/build 全通过。
 - ~~**P149 · G72 · `/apps` connectors 生态命令面（中）**~~ ✅ 已完成：内置 GitHub/GitLab + 与 agent-channels 对齐的 IM connector catalog；`/apps` 浏览 category/capabilities/授权状态，选择或 `/apps <id>` 插入 `$app`，提交时注入 connector context；授权由 `ui.console.connectors` 宿主配置提供，保持 Web/TUI 共用且不引入 Node transport。落地：`agent-ui/src/AgentConsoleApps.ts`（新增）、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`、`index.ts`；测试 `view-model.spec.ts` 新增 3 用例，agent-ui 640 passing EXIT=0 + 十包 2106 passing/build 全通过。
 
-### 批次 E · 平台与生态（P150–P153，远期排期）
+### 批次 E · 平台与生态（P150–P154，远期排期）
 
 - ~~**P150 · G75 · 云任务执行面（中-高）**~~ ✅ 已完成：gateway `CloudTaskQueue` 有界并发执行 headless 会话，五个 `cloud.task.*` RPC 完成提交/轮询/取消/结果领取并按 principal 隔离；CLI `cloud run/list/status/cancel/apply` 支持 gateway URL、Bearer token、env 与 JSON 输出。落地：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、gateway modules/index、`agent-cli/src/cloud-command.ts`、`cli.ts`/`index.ts`；测试 gateway 3 + CLI 3 用例，十包 2112 passing/build 全通过。
 - ~~**P151 · G76 · mDNS 服务发现（低）**~~ ✅ 已完成：gateway `mdns` 配置启用 DNS-SD 广播，service type/domain/name 可配并随生命周期清理；CLI `attach [url]` 支持 `--mdns`/`--mdns-domain`/service type/timeout，发现后通过 HTTP JSON-RPC 连接远程 TUI，显式 URL 优先。测试 gateway 5 + CLI 3；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 - ~~**P152 · G77 · ACP 客户端（中）**~~ ✅ 已完成：新增无 Node 依赖的 `AcpClient` + `AcpTransport`，支持 initialize/session new/prompt/cancel/mode/model、流式 session update 和双向宿主 requestHandlers；协议错误、未知方法、关闭清理与 UTF-8 分片均覆盖。测试 agent 新增 4 用例；十包 2125 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 - ~~**P153 · G78 · 分层持久记忆（中）**~~ ✅ 已完成：项目级 namespace 隔离持久记忆跨会话写入/召回，复用 keyword/semantic/hybrid 排序；TTL freshness + replace/keep-newest/append 冲突策略；`/memories list|injected|add|remove` 管理与 local/gateway RPC 双路径。测试 agent 4 + agent-ui 1；十包 2130 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
+- ~~**P154 · G21 余量 · 移动 PWA remote（中）**~~ ✅ 已完成：P91 Web console 增加可安装 PWA 宿主，提供 manifest、应用图标、service worker 静态壳离线缓存与移动端 safe-area/`100dvh`/触控尺寸适配；RPC、API 及其他动态请求保持 network-only，支持关闭或自定义 service worker URL。测试 agent-ui 新增 1 用例；十包 2131 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 
 ## 剩余（远期，未排期）
 
-- **移动 remote（G21 余量）**：远程传输层（P90）、Web console 宿主（P91）、浏览器安全边界（P92）、VS Code 扩展（P93）、Electron 桌面壳（P110）已就绪，剩余为移动端宿主工程（iOS/Android WebView 或 PWA），暂不排期。
 - **GitHub/GitLab 应用集成**（Codex GitHub Action、GitHub 集成、隐藏自动化 agent、Codex Jobs 云端触发）—— 依赖平台 OAuth；部分与 P149 `/apps` / P150 云任务衔接，仍不排期。
 
 ## 已完成（历史）
 
-P0–P153 全部已排期打磨条目均已落地（含 G1–G78 全差距）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最新全量基线：十包 2130 passing EXIT=0（agent 743 / agent-tools 323 / agent-ui 641 / agent-cli 73 / agent-gateway 244 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P153，Web bundle 3.3MB）。
+P0–P154 全部已排期打磨条目均已落地（含 G1–G78 全差距及 G21 移动宿主余量）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最新全量基线：十包 2131 passing EXIT=0（agent 743 / agent-tools 323 / agent-ui 642 / agent-cli 73 / agent-gateway 244 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P154，Web bundle 3.3MB）。

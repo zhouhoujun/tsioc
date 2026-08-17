@@ -31,6 +31,26 @@ export interface AgentWebConsoleOptions {
     fetchImpl?: typeof fetch;
     /** Timeout for RPC requests in ms */
     timeoutMs?: number;
+    /** Register the mobile PWA service worker. Defaults to true. */
+    pwa?: boolean;
+    /** Service worker URL, relative to the hosting page by default. */
+    serviceWorkerUrl?: string;
+}
+
+export interface AgentWebConsoleServiceWorkerHost {
+    serviceWorker?: {
+        register(scriptURL: string, options?: { scope?: string }): Promise<any>;
+    };
+}
+
+export async function registerAgentWebConsolePwa(
+    options: Pick<AgentWebConsoleOptions, 'pwa' | 'serviceWorkerUrl'> = {},
+    host: AgentWebConsoleServiceWorkerHost = (globalThis as any).navigator ?? {}
+): Promise<any | null> {
+    if (options.pwa === false || !host.serviceWorker?.register) {
+        return null;
+    }
+    return host.serviceWorker.register(options.serviceWorkerUrl || './sw.js', { scope: './' });
 }
 
 function readWindowConfig(): Partial<AgentWebConsoleOptions> {
@@ -111,6 +131,7 @@ export async function mountAgentWebConsole(
     }
 
     const disposeBridge = await bridge.subscribe(state.sessionId);
+    await registerAgentWebConsolePwa(config).catch(() => null);
 
     return {
         ctx,
@@ -129,6 +150,7 @@ export async function runAgentWebConsole(options: AgentWebConsoleOptions = {}): 
 if (typeof globalThis !== 'undefined') {
     (globalThis as any).TsdiAgentWeb = {
         mountAgentWebConsole,
-        runAgentWebConsole
+        runAgentWebConsole,
+        registerAgentWebConsolePwa
     };
 }

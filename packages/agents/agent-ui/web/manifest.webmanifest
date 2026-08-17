@@ -1,0 +1,19 @@
+{
+  "name": "TSDI Agent Console",
+  "short_name": "TSDI Agent",
+  "description": "Remote console for TSDI Agent sessions",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "./icons/agent.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

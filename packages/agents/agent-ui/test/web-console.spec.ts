@@ -14,7 +14,8 @@ import {
     AgentConsoleSessionState,
     AgentUiModule,
     HttpAgentConsoleAppRpc,
-    mountAgentWebConsole
+    mountAgentWebConsole,
+    registerAgentWebConsolePwa
 } from '../src';
 
 @Suite('Agent web console entry')
@@ -79,6 +80,23 @@ export class AgentWebConsoleTest {
         }
         expect(thrown).toBeTruthy();
         expect(thrown.message).toContain('baseUrl');
+    }
+
+    @Test('registers the mobile PWA service worker and supports opt-out')
+    async registersPwa() {
+        const calls: any[] = [];
+        const host = {
+            serviceWorker: {
+                register: async (url: string, options: any) => {
+                    calls.push({ url, options });
+                    return { scope: options.scope };
+                }
+            }
+        };
+        const registration = await registerAgentWebConsolePwa({}, host);
+        expect(calls).toEqual([{ url: './sw.js', options: { scope: './' } }]);
+        expect(registration.scope).toEqual('./');
+        expect(await registerAgentWebConsolePwa({ pwa: false }, host)).toBeNull();
     }
 
     @Test('HttpAgentConsoleAppRpc exposes request and stream over fetch')

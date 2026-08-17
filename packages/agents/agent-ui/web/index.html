@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/agent.svg" type="image/svg+xml">
     <title>TSDI Agent Web Console</title>
     <style>
         html, body {
@@ -15,9 +21,11 @@
         }
         #agent-console {
             height: 100vh;
+            height: 100dvh;
             overflow: auto;
             box-sizing: border-box;
-            padding: 12px;
+            padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+            overscroll-behavior: contain;
         }
         #agent-console .console-panel {
             background: #161b22;
@@ -41,6 +49,22 @@
         #agent-console textarea.agent-input:focus {
             border-color: #58a6ff;
         }
+        @media (max-width: 640px) {
+            #agent-console {
+                padding-top: max(8px, env(safe-area-inset-top));
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+            }
+            #agent-console .console-panel {
+                margin-bottom: 8px;
+                padding: 8px;
+            }
+            #agent-console textarea.agent-input,
+            #agent-console button,
+            #agent-console select {
+                min-height: 44px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -49,7 +73,8 @@
         window.__TSDI_AGENT_WEB__ = {
             baseUrl: (window.__TSDI_AGENT_WEB_BASE_URL__ || window.location.origin || '').replace(/\/+$/, ''),
             token: window.__TSDI_AGENT_WEB_TOKEN__ || '',
-            sessionId: new URLSearchParams(window.location.search).get('session') || undefined
+            sessionId: new URLSearchParams(window.location.search).get('session') || undefined,
+            pwa: true
         };
     </script>
     <script src="./dist/agent-console.js"></script>
