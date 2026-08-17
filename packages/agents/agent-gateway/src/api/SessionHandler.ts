@@ -60,19 +60,22 @@ export class SessionHandler {
 
     getRoutes(): GatewayRoute[] {
         const listSessions: RouteHandler = async (req, res) => {
-            const infos = await this.listSessionInfos(getRequestPrincipalId(req));
+            const includeAutomation = new URL(req.url || '/', 'http://gateway.local').searchParams.get('includeAutomation') === 'true';
+            const infos = await this.listSessionInfos(getRequestPrincipalId(req), false, includeAutomation);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(infos));
         };
 
         const listProjects: RouteHandler = async (req, res) => {
-            const groups = this.groupSessionInfos(await this.listSessionInfos(getRequestPrincipalId(req)));
+            const includeAutomation = new URL(req.url || '/', 'http://gateway.local').searchParams.get('includeAutomation') === 'true';
+            const groups = this.groupSessionInfos(await this.listSessionInfos(getRequestPrincipalId(req), false, includeAutomation));
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(groups));
         };
 
         const listThreads: RouteHandler = async (req, res) => {
-            const groups = this.groupThreadInfos(await this.listSessionInfos(getRequestPrincipalId(req)));
+            const includeAutomation = new URL(req.url || '/', 'http://gateway.local').searchParams.get('includeAutomation') === 'true';
+            const groups = this.groupThreadInfos(await this.listSessionInfos(getRequestPrincipalId(req), false, includeAutomation));
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(groups));
         };
@@ -395,11 +398,14 @@ export class SessionHandler {
         ];
     }
 
-    async listSessionInfos(principalId?: string, includeArchived = false): Promise<SessionInfo[]> {
+    async listSessionInfos(principalId?: string, includeArchived = false, includeAutomation = false): Promise<SessionInfo[]> {
         const infos: SessionInfo[] = [];
         const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
         for (const id of await this.owners.listOwned(ids, principalId)) {
             const state = await this.sessions.get(id);
+            if (!includeAutomation && state.sessionRole === 'automation') {
+                continue;
+            }
             if (state.archived && !includeArchived) {
                 continue;
             }

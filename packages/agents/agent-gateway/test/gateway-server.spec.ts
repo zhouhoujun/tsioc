@@ -290,6 +290,21 @@ export class GatewayServerJwtAuthTest {
 
 @Suite('SessionHandler')
 export class SessionHandlerTest {
+    @Test('hides automation sessions unless explicitly requested')
+    async hidesAutomationSessions() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('interactive', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await store.append('automation', { id: '2', role: 'user', content: 'job', createdAt: 2 });
+        await store.setProjectMetadata('automation', { sessionRole: 'automation' });
+        await owners.create('interactive', 'user-1');
+        await owners.create('automation', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+
+        expect((await handler.listSessionInfos('user-1')).map(info => info.id)).toEqual(['interactive']);
+        expect((await handler.listSessionInfos('user-1', false, true)).map(info => info.id).sort()).toEqual(['automation', 'interactive']);
+    }
+
     @Test('lists tracked sessions with timestamps')
     async listsTrackedSessions() {
         const store = new InMemorySessionStore();

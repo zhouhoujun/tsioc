@@ -274,9 +274,9 @@ export class AppRpcServer {
             case 'session.list':
                 return this.listSessions(params, context);
             case 'session.list_projects':
-                return this.listSessionProjects(context);
+                return this.listSessionProjects(params, context);
             case 'session.list_threads':
-                return this.listSessionThreads(context);
+                return this.listSessionThreads(params, context);
             case 'session.messages':
                 return this.getSessionMessages(params, context);
             case 'session.search':
@@ -611,15 +611,15 @@ export class AppRpcServer {
     }
 
     private async listSessions(params: any, context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true);
+        return this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true, params?.includeAutomation === true);
     }
 
-    private async listSessionProjects(context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.groupSessionInfos(await this.sessionHandler.listSessionInfos(context.principalId));
+    private async listSessionProjects(params: any, context: AppRpcRequestContext): Promise<any[]> {
+        return this.sessionHandler.groupSessionInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true));
     }
 
-    private async listSessionThreads(context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId));
+    private async listSessionThreads(params: any, context: AppRpcRequestContext): Promise<any[]> {
+        return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true));
     }
 
     private async getSessionMessages(params: any, context: AppRpcRequestContext): Promise<any> {

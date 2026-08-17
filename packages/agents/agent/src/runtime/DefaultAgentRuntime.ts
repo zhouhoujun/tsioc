@@ -520,6 +520,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return (await this.sessions.get(sessionId)).messages;
     }
 
+    async markSessionAutomation(sessionId: string): Promise<void> {
+        const state = await this.sessions.get(sessionId);
+        await this.sessions.setProjectMetadata(sessionId, {
+            projectId: state.projectId,
+            primaryThreadId: state.primaryThreadId,
+            originThreadId: state.originThreadId,
+            sessionRole: 'automation',
+            rootRequest: state.rootRequest,
+            focusSummary: state.focusSummary,
+            threadStatus: state.threadStatus
+        });
+    }
+
     async searchSessions(query: string, options?: SessionSearchOptions): Promise<SessionSearchMatch[]> {
         return this.sessions.search(query, options);
     }

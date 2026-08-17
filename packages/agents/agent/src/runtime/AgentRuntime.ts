@@ -83,6 +83,11 @@ export abstract class AgentRuntime {
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
 
+    /** Mark a headless session so interactive session indexes can hide it. */
+    async markSessionAutomation(_sessionId: string): Promise<void> {
+        // Optional for runtimes without persistent session metadata.
+    }
+
     abstract searchSessions(query: string, options?: SessionSearchOptions): Promise<SessionSearchMatch[]>;
 
     /**

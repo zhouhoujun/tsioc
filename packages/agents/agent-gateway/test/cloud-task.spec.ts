@@ -20,7 +20,9 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 export class CloudTaskQueueTest {
     @Test('submit runs a headless turn and apply retrieves the result idempotently')
     async submitAndApply() {
+        let automationSession = '';
         const runtime = {
+            async markSessionAutomation(sessionId: string) { automationSession = sessionId; },
             async runTurn(sessionId: string, prompt: string) { return { sessionId, output: prompt.toUpperCase() }; },
             async getMessages() { return [{ id: 'a1', role: 'assistant', content: 'done' }]; }
         } as any;
@@ -28,6 +30,7 @@ export class CloudTaskQueueTest {
         const submitted = queue.submit({ principalId: 'u1', prompt: 'ship it' });
         expect(submitted.status).toEqual('queued');
         await waitFor(() => queue.get(submitted.id, 'u1')?.status === 'completed');
+        expect(automationSession).toEqual(submitted.sessionId);
 
         const applied = queue.apply(submitted.id, 'u1')!;
         const appliedAgain = queue.apply(submitted.id, 'u1')!;

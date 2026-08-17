@@ -99,6 +99,9 @@ export class CloudTaskQueue {
         task.status = 'running';
         task.startedAt = task.updatedAt = Date.now();
         try {
+            if (typeof (this.runtime as any).markSessionAutomation === 'function') {
+                await (this.runtime as any).markSessionAutomation(task.sessionId);
+            }
             const turn = await this.runtime.runTurn(task.sessionId, task.prompt, task.principalId, undefined, task.profile);
             if (this.isCancelled(task)) return;
             const messages = await this.runtime.getMessages(task.sessionId);
