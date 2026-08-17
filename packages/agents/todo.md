@@ -320,15 +320,13 @@ Agent Plugins（P106/P111）、sections + paginated history（P107）、MCP 2026
 
 | 包 | README | CHANGELOG | 评估 |
 |---|---|---|---|
-| agent | ✅ 10.9KB | ❌ 无 | 需 CHANGELOG |
-| agent-gateway | ✅ 2.5KB | ❌ 无 | 需 CHANGELOG |
-| **agent-ui** | **❌ 无** | ❌ 无 | **最缺：需 README + CHANGELOG** |
-| agent-cli | ✅ 9.1KB | ❌ 无 | 需 CHANGELOG |
-| agent-tools | ✅ 8.7KB | ❌ 无 | 需 CHANGELOG |
-| agent-channels | ✅ 1.6KB | ❌ 无 | 偏薄 + 无 CHANGELOG |
-| agent-providers | ✅ 1.3KB | ❌ 无 | 偏薄 + 无 CHANGELOG |
-| **agent-ssh** | **❌ 无** | ❌ 无 | **需 README + CHANGELOG** |
-| agent-desktop | ✅ 2.3KB | ❌ 无 | 需 CHANGELOG |
-| agent-vscode | ✅ 181B | ❌ 无 | 过于简略 + 无 CHANGELOG |
-
-**共同缺失**：十包全无 CHANGELOG.md；2 包无 README（agent-ui、agent-ssh）；2 包 README 过于简略（agent-vscode 181B、agent-providers 1.3KB）。
+| agent | ✅ 10.9KB | ✅ 新建 | ✅ |
+| agent-gateway | ✅ 2.5KB | ✅ 新建 | ✅ |
+| **agent-ui** | **✅ 新建** | ✅ 新建 | ✅ |
+| agent-cli | ✅ 9.1KB | ✅ 新建 | ✅ |
+| agent-tools | ✅ 8.7KB | ✅ 新建 | ✅ |
+| agent-channels | ✅ 1.6KB | ✅ 新建 | ✅ |
+| agent-providers | ✅ 1.3KB | ✅ 新建 | ✅ |
+| **agent-ssh** | **✅ 新建** | ✅ 新建 | ✅ |
+| agent-desktop | ✅ 2.3KB | ✅ 新建 | ✅ |
+| agent-vscode | ✅ 扩充 | ✅ 新建 | ✅ |

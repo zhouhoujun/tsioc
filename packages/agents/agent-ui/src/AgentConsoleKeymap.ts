@@ -31,6 +31,10 @@ export type AgentConsoleGlobalAction =
     | 'thread-parent'
     | 'message-page-up'
     | 'message-page-down'
+    | 'message-half-page-up'
+    | 'message-half-page-down'
+    | 'message-line-up'
+    | 'message-line-down'
     | 'message-first'
     | 'message-last'
     | 'message-last-user'
@@ -46,7 +50,7 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
     'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor',
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
-    'message-page-up', 'message-page-down', 'message-first', 'message-last', 'message-last-user',
+    'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
     'which-key-toggle', 'status-health', 'timeline-mode'
 ];
@@ -60,7 +64,11 @@ export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlob
     pagedown: 'message-page-down',
     home: 'message-first',
     end: 'message-last',
-    'shift+g': 'message-last-user'
+    'shift+g': 'message-last-user',
+    'ctrl+u': 'message-half-page-up',
+    'ctrl+d': 'message-half-page-down',
+    'ctrl+n': 'message-line-up',
+    'ctrl+b': 'message-line-down'
 };
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -102,6 +110,8 @@ export function isAgentConsoleThreadNavigationAction(action: string): boolean {
 
 export function isAgentConsoleMessageNavigationAction(action: string): boolean {
     return action === 'message-page-up' || action === 'message-page-down'
+        || action === 'message-half-page-up' || action === 'message-half-page-down'
+        || action === 'message-line-up' || action === 'message-line-down'
         || action === 'message-first' || action === 'message-last'
         || action === 'message-last-user';
 }

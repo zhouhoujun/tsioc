@@ -13,7 +13,14 @@ export interface AgentImageMessagePart {
     name?: string;
 }
 
-export type AgentMessagePart = AgentTextMessagePart | AgentImageMessagePart;
+export interface AgentFileMessagePart {
+    type: 'file';
+    dataUrl: string;
+    mediaType: string;
+    name?: string;
+}
+
+export type AgentMessagePart = AgentTextMessagePart | AgentImageMessagePart | AgentFileMessagePart;
 
 export interface AgentMessage {
     id: string;
@@ -58,6 +65,18 @@ export function normalizeAgentMessageParts(parts?: AgentMessagePart[] | null): A
                     detail: part.detail,
                     name: part.name ? String(part.name).trim() || undefined : undefined
                 } satisfies AgentImageMessagePart;
+            }
+            if (part.type === 'file') {
+                const dataUrl = String((part as any).dataUrl || '').trim();
+                if (!dataUrl) {
+                    return null;
+                }
+                return {
+                    type: 'file',
+                    dataUrl,
+                    mediaType: String(part.mediaType || 'application/octet-stream').trim(),
+                    name: part.name ? String(part.name).trim() || undefined : undefined
+                } satisfies AgentFileMessagePart;
             }
             return null;
         })

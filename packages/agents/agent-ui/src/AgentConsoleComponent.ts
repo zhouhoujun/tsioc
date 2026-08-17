@@ -79,6 +79,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         '.bmp': 'image/bmp',
         '.svg': 'image/svg+xml'
     };
+    protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
+        '.pdf': 'application/pdf'
+    };
     protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
     protected static readonly SEARCH_SESSION_LIMIT = 100;
     protected static readonly SEARCH_CONCURRENCY = 6;
@@ -551,12 +554,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             content: prompt,
             parts: [
                 ...(prompt ? [{ type: 'text', text: prompt } as const] : []),
-                ...attachments.map(attachment => ({
-                    type: 'image' as const,
-                    imageUrl: attachment.imageUrl,
-                    mediaType: attachment.mediaType,
-                    name: attachment.name
-                }))
+                ...attachments.map(attachment => attachment.kind === 'file'
+                    ? ({
+                        type: 'file' as const,
+                        dataUrl: attachment.dataUrl || '',
+                        mediaType: attachment.mediaType || 'application/octet-stream',
+                        name: attachment.name
+                    })
+                    : ({
+                        type: 'image' as const,
+                        imageUrl: attachment.imageUrl || '',
+                        mediaType: attachment.mediaType,
+                        name: attachment.name
+                    })
+                )
             ]
         };
     }
@@ -578,33 +589,50 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         try {
-            const attachment = await this.loadPendingImageAttachment(trimmed, fileAdapter);
+            const attachment = await this.loadPendingAttachment(trimmed, fileAdapter);
             this.state.setPendingAttachments([
                 ...this.state.pendingAttachments.filter(item => item.path !== attachment.path),
                 attachment
             ]);
             this.notify(`Attached ${attachment.name}. ${this.describePendingAttachments()}`);
         } catch (error: any) {
-            this.notify(error?.message || String(error || 'Failed to attach image.'));
+            this.notify(error?.message || String(error || 'Failed to attach file.'));
         }
         return true;
     }
 
-    protected async loadPendingImageAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
+    protected async loadPendingAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
         const absolutePath = this.resolveAttachmentTargetPath(targetPath, fileAdapter);
-        const mediaType = this.resolveImageMediaType(absolutePath);
-        if (!mediaType) {
-            throw new Error(`Unsupported image format for '${targetPath}'.`);
+        const imageMediaType = this.resolveImageMediaType(absolutePath);
+        if (imageMediaType) {
+            const bytes = await this.readFileBytes(absolutePath, fileAdapter);
+            return {
+                id: `attachment-${Date.now()}-${Math.random()}`,
+                kind: 'image',
+                path: absolutePath,
+                name: absolutePath.split(/[\\/]/).pop() || absolutePath,
+                mediaType: imageMediaType,
+                imageUrl: `data:${imageMediaType};base64,${this.encodeBase64(bytes)}`
+            };
         }
-        const bytes = await this.readFileBytes(absolutePath, fileAdapter);
-        return {
-            id: `attachment-${Date.now()}-${Math.random()}`,
-            kind: 'image',
-            path: absolutePath,
-            name: absolutePath.split(/[\\/]/).pop() || absolutePath,
-            mediaType,
-            imageUrl: `data:${mediaType};base64,${this.encodeBase64(bytes)}`
-        };
+        const docMediaType = this.resolveDocumentMediaType(absolutePath);
+        if (docMediaType) {
+            const bytes = await this.readFileBytes(absolutePath, fileAdapter);
+            return {
+                id: `attachment-${Date.now()}-${Math.random()}`,
+                kind: 'file',
+                path: absolutePath,
+                name: absolutePath.split(/[\\/]/).pop() || absolutePath,
+                mediaType: docMediaType,
+                dataUrl: `data:${docMediaType};base64,${this.encodeBase64(bytes)}`
+            };
+        }
+        throw new Error(`Unsupported attachment format for '${targetPath}'.`);
+    }
+
+    /** @deprecated Use {@link loadPendingAttachment} instead. */
+    protected async loadPendingImageAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
+        return this.loadPendingAttachment(targetPath, fileAdapter);
     }
 
     protected resolveImageMediaType(filePath: string): string | undefined {
@@ -615,6 +643,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
         }
         return undefined;
+    }
+
+    protected resolveDocumentMediaType(filePath: string): string | undefined {
+        const normalized = String(filePath || '').trim().toLowerCase();
+        for (const ext of Object.keys(AgentConsoleComponent.DOCUMENT_MIME_TYPES)) {
+            if (normalized.endsWith(ext)) {
+                return AgentConsoleComponent.DOCUMENT_MIME_TYPES[ext];
+            }
+        }
+        return undefined;
+    }
+
+    protected resolveAnyMediaType(filePath: string): string | undefined {
+        return this.resolveImageMediaType(filePath) || this.resolveDocumentMediaType(filePath);
     }
 
     protected async readFileBytes(targetPath: string, fileAdapter: FileAdapter): Promise<Uint8Array> {
@@ -7831,6 +7873,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.moveMessageSelectionPage(1);
             return true;
         }
+        if (action === 'message-half-page-up') {
+            this.state.moveMessageSelectionPage(-1, Math.max(1, Math.floor(this.state.consoleOptions.messageSelectionPageSize / 2)));
+            return true;
+        }
+        if (action === 'message-half-page-down') {
+            this.state.moveMessageSelectionPage(1, Math.max(1, Math.floor(this.state.consoleOptions.messageSelectionPageSize / 2)));
+            return true;
+        }
+        if (action === 'message-line-up') {
+            this.state.moveMessageSelectionPage(-1, 1);
+            return true;
+        }
+        if (action === 'message-line-down') {
+            this.state.moveMessageSelectionPage(1, 1);
+            return true;
+        }
         if (action === 'message-first') {
             this.state.selectFirstMessage();
             return true;
@@ -7871,7 +7929,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.toggleTimelineMode();
             return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health' | 'timeline-mode'>, string> = {
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health' | 'timeline-mode'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',

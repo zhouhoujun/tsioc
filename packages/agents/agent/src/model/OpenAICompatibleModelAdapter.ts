@@ -1,5 +1,5 @@
 import { AgentMemoryRecord } from '../memory/MemoryStore';
-import { AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
+import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { retryDelayMs } from './RetryPolicy';
@@ -690,6 +690,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 }
                 continue;
             }
+            if (part.type === 'file') {
+                mapped.push(this.mapFilePart(part));
+                continue;
+            }
             mapped.push(this.mapImagePart(part));
         }
         return mapped;
@@ -701,6 +705,15 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             image_url: {
                 url: part.imageUrl,
                 detail: part.detail
+            }
+        };
+    }
+
+    protected mapFilePart(part: AgentFileMessagePart): OpenAIContentPart {
+        return {
+            type: 'image_url',
+            image_url: {
+                url: part.dataUrl
             }
         };
     }

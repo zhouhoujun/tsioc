@@ -1,4 +1,4 @@
-import { AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
+import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
 import { retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
@@ -8,7 +8,7 @@ import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCacheP
 import type { ApplicationArguments } from '@tsdi/core';
 
 interface AnthropicContentBlock {
-    type: 'text' | 'image' | 'tool_use' | 'tool_result';
+    type: 'text' | 'image' | 'document' | 'tool_use' | 'tool_result';
     text?: string;
     source?: {
         type: 'base64';
@@ -455,6 +455,9 @@ export class AnthropicModelAdapter extends ModelAdapter {
             const text = String(part.text || '');
             return text ? { type: 'text', text } : null;
         }
+        if (part.type === 'file') {
+            return this.mapFilePart(part);
+        }
         return this.mapImagePart(part);
     }
 
@@ -462,6 +465,31 @@ export class AnthropicModelAdapter extends ModelAdapter {
         const parsed = this.parseDataUrl(part.imageUrl, part.mediaType);
         if (!parsed) {
             return null;
+        }
+        return {
+            type: 'image',
+            source: {
+                type: 'base64',
+                media_type: parsed.mediaType,
+                data: parsed.data
+            }
+        };
+    }
+
+    private mapFilePart(part: AgentFileMessagePart): AnthropicContentBlock | null {
+        const parsed = this.parseDataUrl(part.dataUrl, part.mediaType);
+        if (!parsed) {
+            return null;
+        }
+        if (parsed.mediaType === 'application/pdf') {
+            return {
+                type: 'document',
+                source: {
+                    type: 'base64',
+                    media_type: parsed.mediaType,
+                    data: parsed.data
+                }
+            };
         }
         return {
             type: 'image',

@@ -235,11 +235,12 @@ export interface AgentConsoleSessionMeta {
 
 export interface AgentConsolePendingAttachment {
     id: string;
-    kind: 'image';
+    kind: 'image' | 'file';
     path: string;
     name: string;
     mediaType?: string;
-    imageUrl: string;
+    imageUrl?: string;
+    dataUrl?: string;
 }
 
 export interface AgentConsoleSelectOption {

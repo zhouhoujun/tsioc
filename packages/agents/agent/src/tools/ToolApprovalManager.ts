@@ -63,6 +63,8 @@ export interface ApprovalManagerOptions {
     autoDeny?: boolean;
     /** A2: run the injected ApprovalReviewer before surfacing a human approval. */
     autoReview?: boolean;
+    /** G79: automatically approve all requests for this session (e.g. automation / headless mode). */
+    autoApprove?: boolean;
 }
 export const AgentApprovalOptions = token<ApprovalManagerOptions>('AgentApprovalOptions');
 
@@ -207,6 +209,15 @@ export class ToolApprovalManager {
                 .catch(() => {});
             this.recordApprovalAudit(request, ApprovalDecision.DENIED);
             return { decision: ApprovalDecision.DENIED, request };
+        }
+
+        if (this.options?.autoApprove === true) {
+            this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
+                .catch(() => {});
+            this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), true))
+                .catch(() => {});
+            this.recordApprovalAudit(request, ApprovalDecision.APPROVED, 'auto-approved by session flag');
+            return { decision: ApprovalDecision.APPROVED, request };
         }
 
         // A2: an injected reviewer may resolve the request without a human.
