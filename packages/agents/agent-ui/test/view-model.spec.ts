@@ -9910,6 +9910,59 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toContain('Id: gh-connector');
     }
 
+    @Test('apps command browses connectors with authorization status')
+    async appsCommandBrowsesConnectors() {
+        const component = createConsole(
+            new RuntimeStub(),
+            new SchedulerStub(),
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', console: { connectors: { github: true } } } }
+        );
+        await component.onInit();
+
+        const pending = (component as any).handleCommand('/apps');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Apps');
+        expect(component.selectMenu?.options.find(option => option.value === 'github')?.label).toContain('connected');
+        expect(component.selectMenu?.options.find(option => option.value === 'slack')?.label).toContain('authorization required');
+        await component.sessionState.confirmSelectMenu(undefined);
+        await pending;
+    }
+
+    @Test('apps command inserts a connector mention into the current draft')
+    async appsCommandInsertsConnectorMention() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        await component.onInit();
+        component.sessionState.setInput('Summarize open issues');
+
+        await (component as any).handleCommand('/apps github');
+        expect(component.input).toEqual('Summarize open issues $github ');
+        expect(component.notice).toContain('GitHub connector inserted');
+
+        await (component as any).handleCommand('/apps unknown');
+        expect(component.input).toEqual('Summarize open issues $github ');
+        expect(component.notice).toContain('Unknown connector');
+    }
+
+    @Test('app mentions enrich the prompt with connector status and capabilities')
+    async appMentionsEnrichPromptContext() {
+        const component = createConsole(
+            new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(),
+            undefined, undefined, undefined, undefined, undefined,
+            { ui: { title: 'Console', console: { connectors: { gitlab: { authorized: true } } } } }
+        );
+
+        const prompt = await (component as any).enrichPromptWithMentions('Review $gitlab merge requests and $unknown data');
+        expect(prompt).toContain('Connector GitLab: id=gitlab, status=connected');
+        expect(prompt).toContain('Review $gitlab merge requests and $unknown data');
+        expect(prompt).not.toContain('Connector unknown');
+    }
+
     @Test('approve retry lists rejected actions and retries the selected one')
     async approveRetryRetriesRejectedAction() {
         const appRpc = new AppRpcStub();

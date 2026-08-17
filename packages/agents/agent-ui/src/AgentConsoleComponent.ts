@@ -29,6 +29,7 @@ import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentC
 import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
+import { AgentConsoleAppStatus, extractAgentConsoleAppMentions, resolveAgentConsoleApps } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
@@ -2887,9 +2888,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async enrichPromptWithMentions(input: string): Promise<string> {
         const text = String(input || '');
+        const appMentions = extractAgentConsoleAppMentions(text);
         const matches = text.match(/(^|\s)@([^\s@]+)/g) || [];
         const mentions = Array.from(new Set(matches.map(item => item.trim())));
-        if (!mentions.length) {
+        if (!mentions.length && !appMentions.length) {
             return text;
         }
         const toolMap = new Map((this.state.tools || []).map(tool => [tool.name, tool]));
@@ -2913,12 +2915,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 }
             }
         }))).flat();
-        if (!contextLines.length) {
+        const apps = this.resolveApps();
+        const appContextLines = appMentions.map(id => {
+            const app = apps.find(item => item.id === id)!;
+            return `Connector ${app.name}: id=${app.id}, status=${app.statusLabel}, capabilities=${app.description}`;
+        });
+        if (!contextLines.length && !appContextLines.length) {
             return text;
         }
         return [
             '[Mention Context]',
             ...contextLines,
+            ...appContextLines,
             '',
             text
         ].join('\n');
@@ -4117,6 +4125,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/skills', value: '/skills', description: 'browse skills: /skills [query | <id>]' },
                     { label: '/mcp', value: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]' },
                     { label: '/plugins', value: '/plugins', description: 'browse installed plugins: /plugins [<id>]' },
+                    { label: '/apps', value: '/apps', description: 'browse connectors or insert one into the prompt: /apps [<id>]' },
                     { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
                     { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
                     { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
@@ -4274,6 +4283,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runMcpCommand(parsed.args);
             case '/plugins':
                 return this.runPluginsCommand(parsed.args);
+            case '/apps':
+                return this.runAppsCommand(parsed.args);
             case '/ssh':
                 await this.runSshCommand(parsed.args);
                 return true;
@@ -7109,6 +7120,43 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.notify(plugins.map((plugin: any) => this.formatPluginLine(plugin)).join('\n'));
         return true;
+    }
+
+    protected resolveApps(): AgentConsoleAppStatus[] {
+        const config = (this.options.ui?.console as any)?.connectors;
+        return resolveAgentConsoleApps(config && typeof config === 'object' ? config : undefined);
+    }
+
+    protected async runAppsCommand(args?: string): Promise<boolean> {
+        const requested = String(args || '').trim().replace(/^\$/, '').toLowerCase();
+        const apps = this.resolveApps();
+        if (requested) {
+            const app = apps.find(item => item.id === requested);
+            if (!app) {
+                this.notify(`Unknown connector "${requested}". Use /apps to browse available connectors.`);
+                return true;
+            }
+            this.insertAppMention(app);
+            return true;
+        }
+        const selected = await this.select('Apps', apps.map(app => ({
+            label: `${app.name} · ${app.statusLabel}`,
+            value: app.id,
+            description: `${app.category} · ${app.description}`
+        })), 0, 'enter insert   esc close');
+        if (selected) {
+            const app = apps.find(item => item.id === selected);
+            if (app) this.insertAppMention(app);
+        }
+        return true;
+    }
+
+    protected insertAppMention(app: AgentConsoleAppStatus): void {
+        const current = String(this.state.input || '');
+        const spacer = current && !/\s$/.test(current) ? ' ' : '';
+        const next = `${current}${spacer}$${app.id} `;
+        this.state.updateDraft(next, next.length);
+        this.notify(`${app.name} connector inserted · ${app.statusLabel}.`);
     }
 
     protected formatPluginLine(plugin: any): string {

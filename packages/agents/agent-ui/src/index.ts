@@ -31,5 +31,6 @@ export * from './AgentConsoleRawMode';
 export * from './AgentConsoleStash';
 export * from './AgentConsoleModelStore';
 export * from './AgentConsoleSettingsStore';
+export * from './AgentConsoleApps';
 export * from './agent-ui.module';
 export * from './agent-ui.i18n';
