@@ -259,7 +259,7 @@ P0–P157 全部已排期打磨条目均已落地（含 G1–G78 全差距及 G2
 |---|---|---|---|---|
 | G79 | `--approve-for-me` 自动评审标记 | codex v0.147: `--approve-for-me` CLI flag 系统自动批准 | approval 有 granular 类别 + expiry，无 session 级 auto-approve 一键标记 | 中 |
 | G80 | 半页滚动 / 逐行滚动 | opencode `messages_half_page_up/down`、`messages_line_up/down` | PageUp/PageDown 整页 + Home/End + Shift+G，无 half-page 和 line-by-line | 低-中 |
-| G81 | which-key layout 切换 / pending 过滤 / group 分页 | opencode which_key_layout_toggle / pending_toggle / group 分页 | 基础 toggle + Esc 关闭，无 layout/pending/group 分页 | 低 |
+| G81 | which-key layout 切换 / pending 过滤 / group 分页 | opencode which_key_layout_toggle / pending_toggle / group 分页 | ✅ P162: grouped/compact 布局 + custom 过滤 + n/p 分页（25 条/页），L/F 键切换 | 低 |
 | G82 | PDF 附件支持 | opencode v1.18.17: PDF attachments for vision models | media 支持 image/audio，PDF 未作为附件类型 | 中 |
 | G83 | 内嵌终端主题同步 | opencode: sync embedded terminal theme with app theme | 无嵌入式 terminal panel 概念 | 低 |
 | G84 | 会话 JSON 导出 | opencode v1.18.15: export full session transcripts as JSON | `/export` 有但未明确 JSON 格式 | 低-中 |
