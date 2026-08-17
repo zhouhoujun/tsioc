@@ -7,6 +7,7 @@ import {
     renderAgentConsoleMarkdownLines
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
+import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system';
 
@@ -73,6 +74,8 @@ export interface AgentConsoleMessageRenderContext {
     showUsername?: boolean;
     username?: string;
     timelineMode?: boolean;
+    /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
+    markdownBridge?: MarkdownWorkerBridge;
 }
 
 interface AgentConsoleResolvedMessageRenderer {
@@ -198,9 +201,9 @@ export function renderAgentConsoleMessageItem(
             ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
-                    ? renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true })
+                    ? resolveMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
-                : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
+                : resolveMarkdownLines(displayContent, { compactBlankLines: true }, context.markdownBridge);
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps);
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
@@ -257,6 +260,17 @@ export function renderAgentConsoleMessageItem(
         itemStyle,
         lines
     };
+}
+
+function resolveMarkdownLines(
+    content: string,
+    options: import('./AgentConsoleMarkdown').AgentConsoleMarkdownRenderOptions,
+    bridge?: MarkdownWorkerBridge
+): AgentConsoleMarkdownLine[] {
+    if (bridge) {
+        return bridge.render(content, options);
+    }
+    return renderAgentConsoleMarkdownLines(content, options);
 }
 
 function renderAgentConsolePlainTextLines(

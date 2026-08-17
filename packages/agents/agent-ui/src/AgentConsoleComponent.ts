@@ -2609,6 +2609,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.cancelSelectedScheduledTaskAction = this.cancelSelectedScheduledTaskActionHandler;
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
+        this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
         this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
@@ -4859,6 +4860,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             }
             case '/git-snapshots':
+            case '/snapshots':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
                     return true;
@@ -9015,9 +9017,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             `Git step snapshots (${snapshots.length})`,
             snapshots.map((snapshot, index) => {
                 const label = String(snapshot.label || snapshot.messageId || `snapshot-${index + 1}`).trim();
-                const createdAt = snapshot.createdAt ? ` · ${new Date(snapshot.createdAt).toLocaleString()}` : '';
+                const createdAt = snapshot.timestamp ? ` · ${new Date(snapshot.timestamp).toLocaleString()}` : '';
+                const ds = snapshot.diffStats;
+                const diffLabel = ds ? ` · +${ds.totalAdditions}/-${ds.totalDeletions} (${ds.filesChanged} file${ds.filesChanged === 1 ? '' : 's'})` : '';
                 return {
-                    label: `${label}${createdAt}`,
+                    label: `${label}${createdAt}${diffLabel}`,
                     value: String(snapshot.messageId || snapshot.id || index),
                     detail: String(snapshot.id || '')
                 };
@@ -9052,8 +9056,37 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.openGitSnapshotDetail(
             `git snapshot ${ref}`,
             lines,
-            [`ref ${ref}`, fileCount ? `files ${fileCount}` : 'files -'].join(' · ')
+            [`ref ${ref}`, fileCount ? `files ${fileCount}` : 'files -'].join(' · '),
+            ref
         );
+    }
+
+    protected async revertGitSnapshotFromDetail(): Promise<void> {
+        const ref = this.state.gitSnapshotCurrentRef;
+        const sessionId = this.state.sessionId;
+        if (!ref || !sessionId || !this.sessionService) {
+            this.notify('No git snapshot selected for revert.');
+            return;
+        }
+        const confirmed = await this.select(
+            `Revert working tree to snapshot ${ref}?`,
+            [
+                { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
+                { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
+            ],
+            1,
+            this.state.consoleOptions.selectHint
+        );
+        if (confirmed !== 'yes') {
+            return;
+        }
+        const result = await this.sessionService.revertGitStepSnapshot(sessionId, ref);
+        if (result?.reverted === true) {
+            this.notify(`Working tree reverted to snapshot ${ref}. Use /git-snapshots unrevert to restore.`);
+            this.state.closeGitSnapshotDetail();
+        } else {
+            this.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
+        }
     }
 
     protected buildGitSnapshotDiffLines(diff: Record<string, any>): string[] {

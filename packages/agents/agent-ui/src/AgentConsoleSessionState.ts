@@ -410,6 +410,7 @@ export class AgentConsoleSessionState {
     selectedApprovalId = '';
     reviewOpen = false;
     gitSnapshotOpen = false;
+    gitSnapshotCurrentRef = '';
     gitSnapshotDetailLines: string[] = [];
     gitSnapshotDetailScroll = 0;
     gitSnapshotDetailColumnScroll = 0;
@@ -505,6 +506,7 @@ export class AgentConsoleSessionState {
     cancelSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
+    revertGitSnapshotFromDetailAction?: () => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
     commandHints = ['/help', '/goal', '/tools', '/skills', '/mcp', '/plugins', '/apps', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/display', '/timeline', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/settings', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/share', '/unshare', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
@@ -2077,8 +2079,9 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
-    openGitSnapshotDetail(header: string, lines: string[], stats?: string): void {
+    openGitSnapshotDetail(header: string, lines: string[], stats?: string, ref?: string): void {
         this.gitSnapshotOpen = true;
+        this.gitSnapshotCurrentRef = ref || '';
         this.gitSnapshotHeaderLabel = header;
         this.gitSnapshotStatsLabel = stats || '';
         this.gitSnapshotDetailLines = lines.slice();
@@ -2092,6 +2095,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.gitSnapshotOpen = false;
+        this.gitSnapshotCurrentRef = '';
         this.gitSnapshotDetailLines = [];
         this.gitSnapshotDetailScroll = 0;
         this.gitSnapshotDetailColumnScroll = 0;
@@ -3776,6 +3780,9 @@ export class AgentConsoleSessionState {
                     return true;
                 case 'end':
                     this.scrollGitSnapshotDetailToEdge('end');
+                    return true;
+                case 'revert':
+                    this.revertGitSnapshotFromDetailAction?.();
                     return true;
                 default:
                     return false;

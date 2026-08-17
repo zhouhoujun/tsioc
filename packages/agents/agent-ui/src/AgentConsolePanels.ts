@@ -3006,7 +3006,7 @@ export class AgentConsoleGitSnapshotPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        return 'up/down scroll · left/right pan · pg jump · home/end edge · y copy · esc close';
+        return 'up/down scroll · left/right pan · pg jump · home/end edge · r revert · y copy · esc close';
     }
 
     get gitSnapshotStatsLabel(): string {

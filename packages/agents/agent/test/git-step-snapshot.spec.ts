@@ -141,6 +141,24 @@ export class GitStepSnapshotStoreTest {
             await fs.promises.rm(dir, { recursive: true, force: true });
         }
     }
+    @Test('capture populates diffStats with additions/deletions/file count')
+    async capturePopulatesDiffStats() {
+        const dir = await createGitRepo();
+        try {
+            await fs.promises.writeFile(path.join(dir, 'a.txt'), 'longer content\nfor diff stats\n', 'utf8');
+            await fs.promises.writeFile(path.join(dir, 'b.txt'), 'new file\n', 'utf8');
+            git(dir, ['add', 'b.txt']);
+            const store = new GitStepSnapshotStore();
+            const snapshot = store.capture(dir);
+            expect(snapshot).not.toEqual(null);
+            expect(snapshot!.diffStats).toBeTruthy();
+            expect(snapshot!.diffStats!.filesChanged).toEqual(2);
+            expect(snapshot!.diffStats!.totalAdditions).toBeGreaterThan(0);
+            expect(snapshot!.diffStats!.totalDeletions).toBeGreaterThanOrEqual(0);
+        } finally {
+            await fs.promises.rm(dir, { recursive: true, force: true });
+        }
+    }
 }
 
 @Suite('DefaultAgentRuntime git step snapshots')

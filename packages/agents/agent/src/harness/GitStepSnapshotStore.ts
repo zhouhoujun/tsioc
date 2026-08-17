@@ -5,6 +5,12 @@ import { spawnSync } from 'child_process';
  * The snapshot commit is dangling (never touches branch history); the store
  * pins it with `refs/agents/step/<id>` so it survives garbage collection.
  */
+export interface GitStepSnapshotDiffStats {
+    filesChanged: number;
+    totalAdditions: number;
+    totalDeletions: number;
+}
+
 export interface GitStepSnapshot {
     id: string;
     /** session the snapshot was captured for (when captured by the runtime) */
@@ -17,6 +23,8 @@ export interface GitStepSnapshot {
     commit: string;
     label?: string;
     timestamp: number;
+    /** summary diff stats captured at snapshot time (files changed, +/-) */
+    diffStats?: GitStepSnapshotDiffStats;
 }
 
 /** One changed file between a step snapshot and the current working tree. */
@@ -116,7 +124,8 @@ export class GitStepSnapshotStore {
             workspace,
             commit,
             label,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            diffStats: this.captureDiffStats(workspace, commit)
         };
         if (opts?.messageId) {
             this.byMessage.set(opts.messageId, snapshot.id);
@@ -288,6 +297,26 @@ export class GitStepSnapshotStore {
             commit: snapshot.commit,
             restoredFiles: changedFiles
         };
+    }
+
+    private captureDiffStats(workspace: string, commit: string): GitStepSnapshotDiffStats | undefined {
+        const numstat = this.runGit(workspace, ['diff', '--numstat', `${commit}^`, commit]);
+        if (numstat.exitCode !== 0 || !numstat.stdout.trim()) {
+            return undefined;
+        }
+        let filesChanged = 0;
+        let totalAdditions = 0;
+        let totalDeletions = 0;
+        for (const line of numstat.stdout.split('\n')) {
+            const match = /^(\S+)\t(\S+)\t/.exec(line);
+            if (!match) {
+                continue;
+            }
+            filesChanged++;
+            totalAdditions += match[1] === '-' ? 0 : Number(match[1]);
+            totalDeletions += match[2] === '-' ? 0 : Number(match[2]);
+        }
+        return { filesChanged, totalAdditions, totalDeletions };
     }
 
     private filePatch(workspace: string, commit: string, filePath: string): string | undefined {

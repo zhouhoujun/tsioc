@@ -141,11 +141,9 @@ const nodeBuiltinStubPlugin: esbuild.Plugin = {
 
 async function main(): Promise<void> {
     compileWithTsc();
-    const outfile = path.join(PACKAGE_DIR, 'web', 'dist', 'agent-console.js');
-    fs.mkdirSync(path.dirname(outfile), { recursive: true });
-    await esbuild.build({
-        entryPoints: [BUNDLE_ENTRY],
-        outfile,
+    const distDir = path.join(PACKAGE_DIR, 'web', 'dist');
+    fs.mkdirSync(distDir, { recursive: true });
+    const sharedBuildOptions: esbuild.BuildOptions = {
         bundle: true,
         format: 'iife',
         platform: 'browser',
@@ -162,6 +160,26 @@ async function main(): Promise<void> {
             'destroy'
         ],
         logLevel: 'info'
+    };
+
+    const workerEntry = path.join(TSC_OUT, 'agents', 'agent-ui', 'src', 'AgentConsoleMarkdownWorker.js');
+    const workerOutfile = path.join(distDir, 'agent-console-markdown-worker.js');
+    if (fs.existsSync(workerEntry)) {
+        await esbuild.build({
+            ...sharedBuildOptions,
+            entryPoints: [workerEntry],
+            outfile: workerOutfile,
+        });
+        console.log(`markdown worker bundle written to ${workerOutfile}`);
+    } else {
+        console.warn(`markdown worker entry not found at ${workerEntry}, skipping worker bundle`);
+    }
+
+    const outfile = path.join(distDir, 'agent-console.js');
+    await esbuild.build({
+        ...sharedBuildOptions,
+        entryPoints: [BUNDLE_ENTRY],
+        outfile,
     });
     console.log(`web console bundle written to ${outfile}`);
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
