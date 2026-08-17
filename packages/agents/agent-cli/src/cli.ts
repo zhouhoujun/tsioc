@@ -175,6 +175,8 @@ function createAgentCli(): Command {
     cloudOptions(cloud.command('run <prompt>').description('Submit a headless cloud task.'))
         .option('--session <id>', 'Use an existing or explicit session ID.')
         .option('--profile <name>', 'Model profile for this task.')
+        .option('--source <id>', 'External trigger source, such as github or gitlab.')
+        .option('--external-id <id>', 'Idempotency id supplied by the external trigger.')
         .action(async (prompt: string, options: any) => { await runAgentCloudAction('run', prompt, options); });
     cloudOptions(cloud.command('list').description('List cloud tasks owned by the current token.'))
         .action(async (options: any) => { await runAgentCloudAction('list', undefined, options); });

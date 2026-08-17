@@ -1080,19 +1080,64 @@ export class AppRpcServer {
     private async submitCloudTask(params: any, context: AppRpcRequestContext): Promise<any> {
         const prompt = typeof params?.prompt === 'string' ? params.prompt.trim() : '';
         if (!prompt) throw new AppRpcError(-32602, 'cloud.task.submit requires prompt.');
+        const principalId = this.cloudPrincipal(context);
+        const source = this.optionalCloudTaskSource(params?.source) || 'api';
+        const externalId = this.optionalCloudTaskExternalId(params?.externalId);
+        const existing = externalId ? this.requireCloudTasks().findExternal(principalId, source, externalId) : undefined;
+        if (existing) return { task: existing, deduplicated: true };
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : `cloud-${this.uuid.generate()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         const task = this.requireCloudTasks().submit({
-            principalId: this.cloudPrincipal(context),
+            principalId,
             prompt,
             sessionId,
-            profile: this.optionalProfile(params?.profile)
+            profile: this.optionalProfile(params?.profile),
+            source,
+            externalId,
+            metadata: this.optionalCloudTaskMetadata(params?.metadata)
         });
         this.sessionHandler.track(task.sessionId);
         await this.setSessionWorkspace(task.sessionId);
         return { task };
+    }
+
+    private optionalCloudTaskSource(value: any): string | undefined {
+        if (value === undefined || value === null || value === '') return undefined;
+        const source = String(value).trim().toLowerCase();
+        if (!/^[a-z][a-z0-9_-]{0,31}$/.test(source)) {
+            throw new AppRpcError(-32602, 'cloud task source must be a lowercase identifier up to 32 characters.');
+        }
+        return source;
+    }
+
+    private optionalCloudTaskExternalId(value: any): string | undefined {
+        if (value === undefined || value === null || value === '') return undefined;
+        const externalId = String(value).trim();
+        if (!externalId || externalId.length > 256) {
+            throw new AppRpcError(-32602, 'cloud task externalId must be between 1 and 256 characters.');
+        }
+        return externalId;
+    }
+
+    private optionalCloudTaskMetadata(value: any): Record<string, string> | undefined {
+        if (value === undefined || value === null) return undefined;
+        if (typeof value !== 'object' || Array.isArray(value)) {
+            throw new AppRpcError(-32602, 'cloud task metadata must be an object.');
+        }
+        const entries = Object.entries(value);
+        if (entries.length > 20) throw new AppRpcError(-32602, 'cloud task metadata supports at most 20 entries.');
+        const metadata: Record<string, string> = {};
+        for (const [key, entry] of entries) {
+            const normalizedKey = String(key).trim();
+            const normalizedValue = typeof entry === 'string' ? entry.trim() : '';
+            if (!normalizedKey || normalizedKey.length > 64 || !normalizedValue || normalizedValue.length > 512) {
+                throw new AppRpcError(-32602, 'cloud task metadata keys and string values exceed allowed bounds.');
+            }
+            metadata[normalizedKey] = normalizedValue;
+        }
+        return metadata;
     }
 
     private listCloudTasks(context: AppRpcRequestContext): any {

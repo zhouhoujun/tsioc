@@ -595,16 +595,20 @@ export class AgentCliTest {
     @Test('cloud action maps run and apply and formats results')
     async cloudActionMapsLifecycle() {
         const methods: string[] = [];
+        const params: any[] = [];
         const lines: string[] = [];
         const fetcher = async (_input: string, init: any) => {
             const request = JSON.parse(init.body);
             methods.push(request.method);
+            params.push(request.params);
             const task = { id: 't1', status: 'completed', sessionId: 's1', result: { message: { content: 'done' } } };
             return { ok: true, status: 200, json: async () => ({ result: { task } }) };
         };
-        await runAgentCloudAction('run', 'ship', {}, fetcher, line => lines.push(line));
+        await runAgentCloudAction('run', 'ship', { source: 'github', externalId: 'delivery-42' }, fetcher, line => lines.push(line));
         await runAgentCloudAction('apply', 't1', {}, fetcher, line => lines.push(line));
         expect(methods).toEqual(['cloud.task.submit', 'cloud.task.apply']);
+        expect(params[0].source).toEqual('github');
+        expect(params[0].externalId).toEqual('delivery-42');
         expect(lines.some(line => line.includes('t1 · completed'))).toEqual(true);
         expect(lines).toContain('done');
     }

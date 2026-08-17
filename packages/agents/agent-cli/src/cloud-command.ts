@@ -3,6 +3,8 @@ export interface AgentCloudCommandOptions {
     token?: string;
     session?: string;
     profile?: string;
+    source?: string;
+    externalId?: string;
     json?: boolean;
 }
 
@@ -45,7 +47,7 @@ export async function runAgentCloudAction(
                 : action === 'cancel' ? 'cloud.task.cancel'
                     : 'cloud.task.apply';
     const params = action === 'run'
-        ? { prompt: value, sessionId: options.session, profile: options.profile }
+        ? { prompt: value, sessionId: options.session, profile: options.profile, source: options.source, externalId: options.externalId }
         : action === 'list' ? {} : { taskId: value };
     const result = await callAgentCloudRpc(method, params, options, fetcher);
     if (options.json) {

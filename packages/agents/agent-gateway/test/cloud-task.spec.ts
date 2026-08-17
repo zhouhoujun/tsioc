@@ -18,6 +18,30 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 
 @Suite('Gateway cloud task queue (P150)')
 export class CloudTaskQueueTest {
+    @Test('deduplicates external trigger retries by principal source and event id')
+    async deduplicatesExternalTriggers() {
+        let turns = 0;
+        const runtime = {
+            async runTurn() { turns += 1; return { ok: true }; },
+            async getMessages() { return []; }
+        } as any;
+        const queue = new CloudTaskQueue(runtime, new RandomUuidGenerator());
+        const input = {
+            principalId: 'u1', prompt: 'review pull request', source: 'github', externalId: 'delivery-42',
+            metadata: { repository: 'org/repo' }
+        };
+        const first = queue.submit(input);
+        const duplicate = queue.submit({ ...input, prompt: 'changed retry payload' });
+        const otherPrincipal = queue.submit({ ...input, principalId: 'u2' });
+
+        expect(duplicate.id).toEqual(first.id);
+        expect(duplicate.prompt).toEqual('review pull request');
+        expect(duplicate.metadata).toEqual({ repository: 'org/repo' });
+        expect(otherPrincipal.id).not.toEqual(first.id);
+        await waitFor(() => queue.get(first.id, 'u1')?.status === 'completed' && queue.get(otherPrincipal.id, 'u2')?.status === 'completed');
+        expect(turns).toEqual(2);
+    }
+
     @Test('submit runs a headless turn and apply retrieves the result idempotently')
     async submitAndApply() {
         let automationSession = '';
@@ -79,8 +103,11 @@ export class CloudTaskQueueTest {
             return response;
         };
 
-        const submitted = await call('cloud.task.submit', { prompt: 'do work' });
+        const submitted = await call('cloud.task.submit', { prompt: 'do work', source: 'github', externalId: 'delivery-42' });
         const taskId = submitted.result.task.id;
+        const duplicate = await call('cloud.task.submit', { prompt: 'retry payload', source: 'github', externalId: 'delivery-42' });
+        expect(duplicate.result.task.id).toEqual(taskId);
+        expect(duplicate.result.deduplicated).toEqual(true);
         await waitFor(() => queue.get(taskId, 'u1')?.status === 'completed');
         expect((await call('cloud.task.list')).result.tasks.length).toEqual(1);
         expect((await call('cloud.task.get', { taskId })).result.task.status).toEqual('completed');

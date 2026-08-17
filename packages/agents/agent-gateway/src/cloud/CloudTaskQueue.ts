@@ -10,6 +10,9 @@ export interface CloudTaskRecord {
     sessionId: string;
     prompt: string;
     profile?: string;
+    source?: string;
+    externalId?: string;
+    metadata?: Record<string, string>;
     status: CloudTaskStatus;
     createdAt: number;
     updatedAt: number;
@@ -23,13 +26,28 @@ export interface CloudTaskRecord {
 @Injectable()
 export class CloudTaskQueue {
     protected readonly tasks = new Map<string, CloudTaskRecord>();
+    protected readonly externalTasks = new Map<string, string>();
     protected readonly pending: string[] = [];
     protected running = 0;
 
     constructor(private runtime: AgentRuntime, private uuid: UuidGenerator) {
     }
 
-    submit(input: { principalId: string; prompt: string; sessionId?: string; profile?: string }): CloudTaskRecord {
+    submit(input: {
+        principalId: string;
+        prompt: string;
+        sessionId?: string;
+        profile?: string;
+        source?: string;
+        externalId?: string;
+        metadata?: Record<string, string>;
+    }): CloudTaskRecord {
+        const source = String(input.source || 'api').trim().toLowerCase() || 'api';
+        const externalId = String(input.externalId || '').trim();
+        const externalKey = externalId ? `${input.principalId}\u0000${source}\u0000${externalId}` : '';
+        const existingId = externalKey ? this.externalTasks.get(externalKey) : undefined;
+        const existing = existingId ? this.tasks.get(existingId) : undefined;
+        if (existing) return this.snapshot(existing);
         const now = Date.now();
         const id = this.uuid.generate();
         const task: CloudTaskRecord = {
@@ -38,11 +56,15 @@ export class CloudTaskQueue {
             sessionId: input.sessionId || `cloud-${id}`,
             prompt: input.prompt,
             profile: input.profile,
+            source,
+            externalId: externalId || undefined,
+            metadata: input.metadata ? { ...input.metadata } : undefined,
             status: 'queued',
             createdAt: now,
             updatedAt: now
         };
         this.tasks.set(id, task);
+        if (externalKey) this.externalTasks.set(externalKey, id);
         this.pending.push(id);
         void Promise.resolve().then(() => this.drain());
         return this.snapshot(task);
@@ -53,6 +75,12 @@ export class CloudTaskQueue {
             .filter(task => task.principalId === principalId)
             .sort((a, b) => b.createdAt - a.createdAt)
             .map(task => this.snapshot(task));
+    }
+
+    findExternal(principalId: string, source: string, externalId: string): CloudTaskRecord | undefined {
+        const id = this.externalTasks.get(`${principalId}\u0000${source}\u0000${externalId}`);
+        const task = id ? this.tasks.get(id) : undefined;
+        return task ? this.snapshot(task) : undefined;
     }
 
     get(taskId: string, principalId: string): CloudTaskRecord | undefined {
@@ -118,7 +146,11 @@ export class CloudTaskQueue {
     }
 
     protected snapshot(task: CloudTaskRecord): CloudTaskRecord {
-        return { ...task, result: task.result ? { ...task.result } : undefined };
+        return {
+            ...task,
+            metadata: task.metadata ? { ...task.metadata } : undefined,
+            result: task.result ? { ...task.result } : undefined
+        };
     }
 
     protected isCancelled(task: CloudTaskRecord): boolean {
