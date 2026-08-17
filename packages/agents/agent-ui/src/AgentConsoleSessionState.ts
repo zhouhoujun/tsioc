@@ -481,6 +481,9 @@ export class AgentConsoleSessionState {
     planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
+    whichKeyLayout: 'compact' | 'grouped' = 'compact';
+    whichKeyFilterCustom = false;
+    whichKeyPage = 0;
     healthPopoverVisible = false;
     healthItems: AgentConsoleHealthItem[] = [];
     rawMode = false;
@@ -2610,6 +2613,20 @@ export class AgentConsoleSessionState {
 
     setWhichKeyBindings(bindings: Array<{ key: string; action: string }>): void {
         this.whichKeyBindings = bindings.slice();
+    }
+
+    toggleWhichKeyLayout(): void {
+        this.whichKeyLayout = this.whichKeyLayout === 'compact' ? 'grouped' : 'compact';
+        this.whichKeyPage = 0;
+    }
+
+    toggleWhichKeyFilterCustom(): void {
+        this.whichKeyFilterCustom = !this.whichKeyFilterCustom;
+        this.whichKeyPage = 0;
+    }
+
+    setWhichKeyPage(page: number): void {
+        this.whichKeyPage = Math.max(0, page);
     }
 
     setHealthPopoverVisible(value: boolean): void {

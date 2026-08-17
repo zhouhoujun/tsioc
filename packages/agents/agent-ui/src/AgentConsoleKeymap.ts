@@ -43,6 +43,8 @@ export type AgentConsoleGlobalAction =
     | 'model-cycle-recent-back'
     | 'model-variant-cycle'
     | 'which-key-toggle'
+    | 'which-key-layout-toggle'
+    | 'which-key-pending-toggle'
     | 'status-health'
     | 'timeline-mode';
 
@@ -52,7 +54,7 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
-    'which-key-toggle', 'status-health', 'timeline-mode'
+    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode'
 ];
 
 export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {

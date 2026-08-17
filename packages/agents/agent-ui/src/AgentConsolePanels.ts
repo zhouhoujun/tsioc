@@ -3320,16 +3320,37 @@ export class AgentConsoleSelectPanelComponent {
     imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-which-key-panel" v-style="shellStyle">
-        <label class="which-key-title" v-style="titleStyle">Keymap ({{bindingCount}})</label>
-        <label class="which-key-row" v-style="rowStyle" v-for="binding in bindings">
-            <span v-style="keyStyle">{{binding.key}}</span>
-            <span v-style="actionStyle"> {{binding.action}}</span>
-        </label>
+        <label class="which-key-title" v-style="titleStyle">{{titleText}}</label>
+        <template v-if="isGrouped">
+            <template v-for="group in groupedBindings">
+                <label class="which-key-group-header" v-style="groupHeaderStyle">{{group.label}}</label>
+                <label class="which-key-row" v-style="rowStyle" v-for="binding in group.items">
+                    <span v-style="keyStyle">{{binding.key}}</span>
+                    <span v-style="actionStyle"> {{binding.action}}</span>
+                </label>
+            </template>
+        </template>
+        <template v-else>
+            <label class="which-key-row" v-style="rowStyle" v-for="binding in bindings">
+                <span v-style="keyStyle">{{binding.key}}</span>
+                <span v-style="actionStyle"> {{binding.action}}</span>
+            </label>
+        </template>
         <label class="which-key-hint" v-style="hintStyle">{{hintText}}</label>
     </div>
     `
 })
 export class AgentConsoleWhichKeyPanelComponent {
+    private static readonly ACTION_GROUPS: Record<string, string> = {
+        'new-session': 'Session', 'compact': 'Session', 'export': 'Session', 'undo': 'Session', 'redo': 'Session', 'sessions': 'Session', 'fork': 'Session', 'archive': 'Session',
+        'theme': 'Display', 'timeline-mode': 'Display', 'toggle-thinking': 'Display', 'status': 'Display',
+        'model': 'Model', 'archetypes': 'Model', 'model-favorite-toggle': 'Model', 'model-cycle-recent': 'Model', 'model-cycle-recent-back': 'Model', 'model-variant-cycle': 'Model',
+        'thread-child-first': 'Thread', 'thread-cycle-next': 'Thread', 'thread-cycle-prev': 'Thread', 'thread-parent': 'Thread',
+        'message-page-up': 'Navigate', 'message-page-down': 'Navigate', 'message-half-page-up': 'Navigate', 'message-half-page-down': 'Navigate', 'message-line-up': 'Navigate', 'message-line-down': 'Navigate', 'message-first': 'Navigate', 'message-last': 'Navigate', 'message-last-user': 'Navigate',
+        'copy': 'Edit', 'open-editor': 'Edit',
+        'command-palette': 'UI', 'which-key-toggle': 'UI', 'which-key-layout-toggle': 'UI', 'which-key-pending-toggle': 'UI', 'status-health': 'UI', 'interrupt-turn': 'Control'
+    };
+
     constructor(
         private state: AgentConsoleSessionState
     ) {
@@ -3347,8 +3368,42 @@ export class AgentConsoleWhichKeyPanelComponent {
         return String(this.bindings.length);
     }
 
+    get isGrouped(): boolean {
+        return this.state.whichKeyLayout === 'grouped';
+    }
+
+    get groupedBindings(): Array<{ label: string; items: Array<{ key: string; action: string }> }> {
+        const groups = new Map<string, Array<{ key: string; action: string }>>();
+        for (const b of this.bindings) {
+            const label = AgentConsoleWhichKeyPanelComponent.ACTION_GROUPS[b.action] || 'Other';
+            let arr = groups.get(label);
+            if (!arr) { arr = []; groups.set(label, arr); }
+            arr.push(b);
+        }
+        return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+    }
+
+    get titleText(): string {
+        const total = this.bindingCount;
+        const page = this.state.whichKeyPage;
+        const layout = this.state.whichKeyLayout;
+        const filter = this.state.whichKeyFilterCustom ? ' [custom]' : '';
+        const pageStr = page > 0 ? ` p${page + 1}` : '';
+        const layoutIcon = layout === 'grouped' ? ' grouped' : '';
+        return `Keymap (${total})${layoutIcon}${filter}${pageStr}`;
+    }
+
     get hintText(): string {
-        return 'Esc to close';
+        const hints = ['Esc close'];
+        if (this.state.whichKeyPage > 0) hints.push('p prev');
+        hints.push('n next');
+        hints.push('L layout');
+        hints.push('F filter');
+        return hints.join(' · ');
+    }
+
+    get groupHeaderStyle() {
+        return styleTextToObject(this.activeTheme.selectHint);
     }
 
     get shellStyle() {

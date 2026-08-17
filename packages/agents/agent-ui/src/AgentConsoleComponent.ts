@@ -33,7 +33,7 @@ import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, extractAgentConsoleAp
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
-import { AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction, isAgentConsoleKeymapContext, isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
+import { AGENT_CONSOLE_DEFAULT_KEYMAP, AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction, isAgentConsoleKeymapContext, isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 
@@ -7611,6 +7611,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return false;
         }
         if (this.state.whichKeyVisible && key !== 'ctrl+alt+k') {
+            if (key === 'n') {
+                this.state.setWhichKeyPage(this.state.whichKeyPage + 1);
+                this.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'p') {
+                this.state.setWhichKeyPage(this.state.whichKeyPage - 1);
+                this.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'l' || key === 'L') {
+                this.state.toggleWhichKeyLayout();
+                this.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'f' || key === 'F') {
+                this.state.toggleWhichKeyFilterCustom();
+                this.refreshWhichKeyBindings();
+                return true;
+            }
             this.state.setWhichKeyVisible(false);
         }
         return this.handleGlobalKeySequence(key);
@@ -7921,6 +7941,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.toggleWhichKeyOverlay();
             return true;
         }
+        if (action === 'which-key-layout-toggle') {
+            this.state.toggleWhichKeyLayout();
+            if (this.state.whichKeyVisible) {
+                this.refreshWhichKeyBindings();
+            }
+            return true;
+        }
+        if (action === 'which-key-pending-toggle') {
+            this.state.toggleWhichKeyFilterCustom();
+            if (this.state.whichKeyVisible) {
+                this.refreshWhichKeyBindings();
+            }
+            return true;
+        }
         if (action === 'status-health') {
             await this.toggleHealthPopover();
             return true;
@@ -7929,7 +7963,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.toggleTimelineMode();
             return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'status-health' | 'timeline-mode'>, string> = {
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',
@@ -7948,12 +7982,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected toggleWhichKeyOverlay(): void {
         const visible = !this.state.whichKeyVisible;
         if (visible) {
-            const context = this.resolveKeymapContext();
-            this.state.setWhichKeyBindings(
-                Object.entries(this.globalKeymap!.effectiveBindings(context)).map(([key, action]) => ({ key, action }))
-            );
+            this.state.whichKeyPage = 0;
+            this.refreshWhichKeyBindings();
         }
         this.state.setWhichKeyVisible(visible);
+    }
+
+    protected refreshWhichKeyBindings(): void {
+        const context = this.resolveKeymapContext();
+        const allBindings = Object.entries(this.globalKeymap!.effectiveBindings(context));
+        const filtered = this.state.whichKeyFilterCustom
+            ? allBindings.filter(([key]) => !(key in AGENT_CONSOLE_DEFAULT_KEYMAP) || AGENT_CONSOLE_DEFAULT_KEYMAP[key] === undefined)
+            : allBindings;
+        const pageSize = 25;
+        const start = this.state.whichKeyPage * pageSize;
+        const paged = filtered.slice(start, start + pageSize);
+        this.state.setWhichKeyBindings(paged.map(([key, action]) => ({ key, action })));
     }
 
     protected async toggleHealthPopover(): Promise<void> {
