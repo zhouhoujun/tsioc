@@ -35,6 +35,7 @@ import { AudioFrameQuota } from './audio/AudioFrameQuota';
 import { GatewayConfig } from './contracts/GatewayConfig';
 import { createAgentGatewayProviders } from './provider';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
+import { MdnsServiceDiscovery } from './discovery/MdnsServiceDiscovery';
 
 @Module({
     imports: [AgentModule],
@@ -66,6 +67,7 @@ import { CloudTaskQueue } from './cloud/CloudTaskQueue';
         ApprovalHandler,
         StatsHandler,
         CloudTaskQueue,
+        MdnsServiceDiscovery,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,
@@ -96,6 +98,7 @@ import { CloudTaskQueue } from './cloud/CloudTaskQueue';
         ApprovalHandler,
         StatsHandler,
         CloudTaskQueue,
+        MdnsServiceDiscovery,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,

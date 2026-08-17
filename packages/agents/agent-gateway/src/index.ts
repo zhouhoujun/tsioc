@@ -37,6 +37,7 @@ export * from './api/EvalHandler';
 export * from './api/ShareHandler';
 export * from './share/SessionShareStore';
 export * from './cloud/CloudTaskQueue';
+export * from './discovery/MdnsServiceDiscovery';
 
 export * from './ws/ChatWebSocket';
 

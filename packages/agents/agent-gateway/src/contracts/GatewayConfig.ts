@@ -44,6 +44,14 @@ export interface GatewayConfig {
     corsOrigins?: string[];
     /** Audio frame quota control for the WebSocket audio channel */
     audioQuota?: AudioFrameQuotaOptions;
+    /** Advertise this gateway through multicast DNS. */
+    mdns?: boolean;
+    /** DNS-SD service type. Defaults to _tsdi-agent._tcp. */
+    mdnsServiceType?: string;
+    /** mDNS domain. Defaults to local. */
+    mdnsDomain?: string;
+    /** Human-readable DNS-SD instance name. */
+    mdnsName?: string;
 }
 
 export const defaultGatewayConfig: GatewayConfig = {
@@ -55,5 +63,8 @@ export const defaultGatewayConfig: GatewayConfig = {
     rateLimitWindowMs: 60_000,
     cors: true,
     corsOrigins: ['*'],
-    audioQuota: undefined
+    audioQuota: undefined,
+    mdns: false,
+    mdnsServiceType: '_tsdi-agent._tcp',
+    mdnsDomain: 'local'
 };

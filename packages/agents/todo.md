@@ -126,6 +126,7 @@
 - **P148 · G69 · plan 模式草稿提示（2026-08 落地）**：composer 草稿达到 20 字符并命中 plan/planning/design/architecture/方案/规划/设计/先不要改等明确意图时，在输入 meta 行提示 `use /plan`；slash 命令、已开启 plan 模式时自动隐藏；`ui.planNudges: false` 可关闭，`/debug-config` 展示最终开关值。提示完全由响应式草稿状态派生，无定时刷新。验证：view-model.spec.ts 新增 2 用例 + agent-ui 637 passing EXIT=0；十包 2103 passing EXIT=0，十包 build 全部通过（Web bundle 3.3MB）。锚点：`agent-ui/src/AgentConsoleSessionState.ts`（planNudgeLabel）、`AgentConsolePanels.ts`（metaLabel）、`AgentConsoleComponent.ts`（配置接线）、`agent/src/options.ts`。
 - **P149 · G72 · `/apps` connectors 命令面（2026-08 落地）**：浏览器安全 connector catalog 内置 GitHub/GitLab + 与 agent-channels 对齐的 12 个 IM 平台；`/apps` 展示 category/capabilities/connected 或 authorization required，`/apps <id>` 与选择器把 `$app` 插入当前草稿；提交时将已知 `$app` 解析为 connector status/capabilities context，未知 token 保持原文。授权状态由宿主 `ui.console.connectors` 提供，不打包 Node transport。验证：view-model.spec.ts 新增 3 用例 + agent-ui 640 passing EXIT=0；十包 2106 passing EXIT=0，十包 build 全部通过（Web bundle 3.3MB）。锚点：`agent-ui/src/AgentConsoleApps.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSessionState.ts`。
 - **P150 · G75 · 云任务执行面（2026-08 落地）**：gateway `CloudTaskQueue` 提供有界并发 headless 队列与 queued/running/completed/failed/cancelled 生命周期，复用 `AgentRuntime.runTurn/cancelTurn`；`cloud.task.submit/list/get/cancel/apply` 五个 JSON-RPC 按 principal 隔离，apply 幂等领取最终 turn/message 并记录 appliedAt。CLI `cloud run/list/status/cancel/apply` 通过 gateway HTTP JSON-RPC 调用，支持 URL/token/env/JSON 输出。验证：gateway cloud-task.spec.ts 3 用例、CLI 3 用例；agent-gateway 239 + agent-cli 69，十包 2112 passing EXIT=0，十包 build 全部通过。锚点：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、`agent-cli/src/cloud-command.ts`、`cli.ts`。
+- **P151 · G76 · mDNS 服务发现（2026-08 落地）**：gateway `mdns: true` 时通过可注入 DNS-SD 服务广播 `_tsdi-agent._tcp.local`（service type/domain/name 可配），随 GatewayServer 启停；CLI `attach [url]` 支持 `--mdns`、`--mdns-domain`、`--mdns-service-type`、超时与 token，发现后把 HTTP JSON-RPC 注入现有 TUI，显式 URL 优先。实现无外部依赖，包含 DNS 名称压缩、PTR/SRV/TXT/A/AAAA 解析与启动失败回收。验证：mdns-discovery.spec.ts 5 用例、CLI attach 3 用例；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。锚点：`agent-gateway/src/discovery/MdnsServiceDiscovery.ts`、`GatewayServer.ts`、`agent-cli/src/run-console.ts`、`cli.ts`。
 
 ### 回归基线
 
@@ -184,7 +185,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 | ✅ G73 | 时间戳/泛化工具输出显隐切换 | opencode session_toggle_timestamps / session_toggle_generic_tool_output | 已实现（P144）：`/display [on|off]` 时间戳显隐 + `/settings` General Tool output/Username 开关；tool 消息隐藏时清空内容仅留 role/status | 低 |
 | ✅ G74 | 用户名显示开关 + 会话时间线 | opencode username toggle（命令面板）/ session_timeline（ctrl+x g） | 已实现（P144）：`/timeline` / `Ctrl+X G` 紧凑时间线视图（全量消息 + HH:MM 前缀），username 开关经 `/settings` General；四项持久化 `.tsdi-agent/settings.json` | 低 |
 | ✅ G75 | 云任务执行面（daemon/remote-control） | codex cloud / codex apply / codex remote-control daemon；opencode serve+attach + password auth | 已实现（P150）：gateway headless 有界任务队列 + submit/list/get/cancel/apply RPC，principal 隔离；CLI `cloud run/list/status/cancel/apply` | 中-高 |
-| G76 | mDNS 服务发现 | opencode `--mdns` / `--mdns-domain` | 无 | 低 |
+| ✅ G76 | mDNS 服务发现 | opencode `--mdns` / `--mdns-domain` | 已实现（P151）：gateway 可配置 DNS-SD 广播，CLI `attach` 支持 mDNS/domain/service type 发现并注入远程 TUI | 低 |
 | G77 | ACP（Agent Client Protocol）客户端 | opencode `acp`（跨客户端协议） | 无 | 中（生态） |
 | G78 | 分层持久记忆（跨会话召回 + 管理 UI） | codex v0.142.5 memories（paginated thread history + persisted names + memories） | 有语义记忆检索（P73）+ `/memories` 注入开关 + 项目记忆闭环（P78），无跨会话持久记忆库与显式管理面 | 中 |
 
@@ -228,7 +229,7 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 ### 批次 E · 平台与生态（P150–P153，远期排期）
 
 - ~~**P150 · G75 · 云任务执行面（中-高）**~~ ✅ 已完成：gateway `CloudTaskQueue` 有界并发执行 headless 会话，五个 `cloud.task.*` RPC 完成提交/轮询/取消/结果领取并按 principal 隔离；CLI `cloud run/list/status/cancel/apply` 支持 gateway URL、Bearer token、env 与 JSON 输出。落地：`agent-gateway/src/cloud/CloudTaskQueue.ts`、`AppRpcServer.ts`、gateway modules/index、`agent-cli/src/cloud-command.ts`、`cli.ts`/`index.ts`；测试 gateway 3 + CLI 3 用例，十包 2112 passing/build 全通过。
-- **P151 · G76 · mDNS 服务发现（低）**：gateway 启动广播 mDNS（service type 可配），CLI `--mdns`/`--mdns-domain` 发现局域网 gateway 并 `attach`。锚点：`agent-gateway/src/gateway/GatewayServer.ts`、`agent-cli/src/run-console.ts`。
+- ~~**P151 · G76 · mDNS 服务发现（低）**~~ ✅ 已完成：gateway `mdns` 配置启用 DNS-SD 广播，service type/domain/name 可配并随生命周期清理；CLI `attach [url]` 支持 `--mdns`/`--mdns-domain`/service type/timeout，发现后通过 HTTP JSON-RPC 连接远程 TUI，显式 URL 优先。测试 gateway 5 + CLI 3；十包 2121 passing EXIT=0，十包 build 全通过（Web bundle 3.3MB）。
 - **P152 · G77 · ACP 客户端（中）**：实现 ACP（Agent Client Protocol）客户端适配层，作为既有 runtime 的薄协议桥（面向兼容 ACP 的宿主/编辑器）。锚点：`agent/` 新增 adapter。
 - **P153 · G78 · 分层持久记忆（中）**：项目级持久记忆库（跨会话写入/召回，复用 P73 semantic 检索 + P78 规则草案管道）、记忆管理面（`/memories list/add/remove`，展示已注入记忆）、记忆 freshness/冲突策略。锚点：`agent/src/memory/`、`agent-ui/src/AgentConsoleComponent.ts`。
 
@@ -239,4 +240,4 @@ G1–G50 已全部闭环（见「已实现功能」）。v5 对照 **codex v0.12
 
 ## 已完成（历史）
 
-P0–P127 全部打磨条目均已落地并并入「已实现功能」（含 P34/P35 Tier1/Tier2 与 A/B 面、P42–P45 规划项、P62–P66 agent-ui 渲染性能、G1–G50 全差距）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最近一次全量基线：十包 2112 passing EXIT=0 + 十包 build 全通过（2026-08-17，P150）。自 P128 起为 v5（G51–G78）新一轮打磨。
+P0–P127 全部打磨条目均已落地并并入「已实现功能」（含 P34/P35 Tier1/Tier2 与 A/B 面、P42–P45 规划项、P62–P66 agent-ui 渲染性能、G1–G50 全差距）。逐条回归记录（含每次全量测试通过数与锚点验证）见 git history 中各 P 段；最近一次全量基线：十包 2121 passing EXIT=0（agent 735 / agent-tools 323 / agent-ui 640 / agent-cli 73 / agent-gateway 244 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）+ 十包 build 全通过（2026-08-17，P151，Web bundle 3.3MB）。自 P128 起为 v5（G51–G78）新一轮打磨。

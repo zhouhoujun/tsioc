@@ -33,6 +33,8 @@ import {
     resolveAgentUpdateRegistry,
     resolveAgentUpdateStatus,
     resolveProjectDisplayLabel,
+    resolveAgentAttachUrl,
+    runAgentAttach,
     sortProjectSessions,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
@@ -530,6 +532,49 @@ export class AgentCliTest {
         const command = createAgentCli().commands.find(item => item.name() === 'cloud');
         expect(command).toBeTruthy();
         expect(command?.commands.map(item => item.name())).toEqual(['run', 'list', 'status', 'cancel', 'apply']);
+    }
+
+    @Test('attach command registers mDNS discovery options')
+    attachCommandRegistered() {
+        const command = createAgentCli().commands.find(item => item.name() === 'attach');
+        expect(command).toBeTruthy();
+        expect(command?.options.map(item => item.long)).toContain('--mdns');
+        expect(command?.options.map(item => item.long)).toContain('--mdns-domain');
+    }
+
+    @Test('attach resolves an explicit URL without discovery')
+    async attachExplicitUrl() {
+        let discovered = false;
+        const url = await resolveAgentAttachUrl('https://gateway.example/', { mdns: true }, {
+            discover: async () => { discovered = true; return []; }
+        });
+        expect(url).toEqual('https://gateway.example');
+        expect(discovered).toBe(false);
+    }
+
+    @Test('attach discovers a gateway and passes it to the console runner')
+    async attachDiscoveredGateway() {
+        let runnerOptions: any;
+        const url = await runAgentAttach(undefined, { mdns: true, mdnsDomain: 'lan', mdnsTimeout: 25 }, {
+            discover: async options => {
+                expect(options.domain).toEqual('lan');
+                expect(options.timeoutMs).toEqual(25);
+                return [{ url: 'http://192.168.1.8:4317' }];
+            }
+        }, async options => { runnerOptions = options; });
+        expect(url).toEqual('http://192.168.1.8:4317');
+        expect(runnerOptions.gatewayUrl).toEqual(url);
+    }
+
+    @Test('attach reports when discovery finds no gateways')
+    async attachNoGateway() {
+        let error: Error | undefined;
+        try {
+            await resolveAgentAttachUrl(undefined, { mdns: true }, { discover: async () => [] });
+        } catch (value) {
+            error = value as Error;
+        }
+        expect(error?.message).toContain('No agent gateway');
     }
 
     @Test('cloud RPC client sends bearer JSON-RPC requests')

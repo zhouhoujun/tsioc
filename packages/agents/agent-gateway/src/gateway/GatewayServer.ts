@@ -2,7 +2,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Buffer } from 'buffer';
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
 import { GATEWAY_CONFIG } from '../tokens';
 import { GatewayConfig, defaultGatewayConfig } from '../contracts/GatewayConfig';
@@ -11,6 +11,7 @@ import { RouteMatcher } from './RouteMatcher';
 import { AuthMiddleware, getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { RateLimiter } from '../auth/RateLimiter';
 import { buildOpenApiDocument } from './OpenApiDocument';
+import { MdnsServiceDiscovery } from '../discovery/MdnsServiceDiscovery';
 
 /**
  * Main HTTP gateway server.
@@ -27,7 +28,8 @@ export class GatewayServer {
         private auth: AuthMiddleware,
         private rateLimiter: RateLimiter,
         private runtime: AgentRuntime,
-        @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
+        @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig,
+        @Optional() private mdns?: MdnsServiceDiscovery | null
     ) {
     }
 
@@ -51,15 +53,33 @@ export class GatewayServer {
         if (this.isRunning) return;
         if (options) this.config = { ...this.config, ...options };
 
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
             this.server = http.createServer((req, res) => this.handleRequest(req, res));
 
             const port = this.config.port ?? defaultGatewayConfig.port!;
             const host = this.config.host ?? defaultGatewayConfig.host!;
 
-            this.server.listen(port, host, () => {
+            this.server.once('error', reject);
+            this.server.listen(port, host, async () => {
+                this.server?.removeListener('error', reject);
                 this.isRunning = true;
-                resolve();
+                try {
+                    if (this.config.mdns && this.mdns) {
+                        const address = this.address()!;
+                        await this.mdns.advertise({
+                            port: address.port,
+                            host: host === '0.0.0.0' ? undefined : host,
+                            serviceType: this.config.mdnsServiceType,
+                            domain: this.config.mdnsDomain,
+                            name: this.config.mdnsName
+                        });
+                    }
+                    resolve();
+                } catch (error) {
+                    this.server?.close(() => undefined);
+                    this.isRunning = false;
+                    reject(error);
+                }
             });
         });
     }
@@ -79,6 +99,7 @@ export class GatewayServer {
     /** Stop the server */
     async stop(): Promise<void> {
         if (!this.isRunning) return;
+        await this.mdns?.stop();
         return new Promise((resolve) => {
             this.server?.close(() => {
                 this.isRunning = false;

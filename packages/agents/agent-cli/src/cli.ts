@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
-import { runAgentConsole } from './run-console';
+import { runAgentAttach, runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
 import { runAgentImport } from './import-command';
@@ -17,7 +17,7 @@ import { runAgentCloudAction } from './cloud-command';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -37,6 +37,9 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--sources',
     '--gateway-url',
     '--token',
+    '--mdns-domain',
+    '--mdns-service-type',
+    '--mdns-timeout',
     '--desktop-entry',
     '--electron'
 ]);
@@ -146,6 +149,20 @@ function createAgentCli(): Command {
         .option('--desktop-entry <path>', 'Override @tsdi/agent-desktop entry path.')
         .option('--electron <path>', 'Override Electron executable.')
         .action(async (options: any) => { await runAgentDesktop(options); });
+
+    program
+        .command('attach [url]')
+        .description('Attach the TUI to a remote agent gateway.')
+        .option('--mdns', 'Discover an agent gateway through multicast DNS.')
+        .option('--mdns-domain <domain>', 'mDNS domain (default local).')
+        .option('--mdns-service-type <type>', 'DNS-SD service type (default _tsdi-agent._tcp).')
+        .option('--mdns-timeout <ms>', 'Discovery timeout in ms.', '1000')
+        .option('--gateway-url <url>', 'Explicit gateway URL.')
+        .option('--token <token>', 'Gateway bearer token.')
+        .option('--session <id>', 'Session ID for conversation continuity.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--workspace <dir>', 'Workspace directory.')
+        .action(async (url: string | undefined, options: any) => { await runAgentAttach(url, options); });
 
     const cloud = program
         .command('cloud')
