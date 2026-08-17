@@ -12,11 +12,12 @@ import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { SessionStore } from '@tsdi/agent';
 import { runAgentDesktop } from './desktop-command';
+import { runAgentCloudAction } from './cloud-command';
 
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'desktop', 'app', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -145,6 +146,27 @@ function createAgentCli(): Command {
         .option('--desktop-entry <path>', 'Override @tsdi/agent-desktop entry path.')
         .option('--electron <path>', 'Override Electron executable.')
         .action(async (options: any) => { await runAgentDesktop(options); });
+
+    const cloud = program
+        .command('cloud')
+        .description('Submit and manage headless tasks on an agent gateway.');
+    const cloudOptions = (command: Command) => command
+        .option('--gateway-url <url>', 'Agent gateway URL (default TSDI_AGENT_GATEWAY_URL).')
+        .option('--token <token>', 'Gateway bearer token (default TSDI_AGENT_GATEWAY_TOKEN).')
+        .option('--json', 'Print the JSON-RPC result as JSON.');
+
+    cloudOptions(cloud.command('run <prompt>').description('Submit a headless cloud task.'))
+        .option('--session <id>', 'Use an existing or explicit session ID.')
+        .option('--profile <name>', 'Model profile for this task.')
+        .action(async (prompt: string, options: any) => { await runAgentCloudAction('run', prompt, options); });
+    cloudOptions(cloud.command('list').description('List cloud tasks owned by the current token.'))
+        .action(async (options: any) => { await runAgentCloudAction('list', undefined, options); });
+    cloudOptions(cloud.command('status <taskId>').description('Show one cloud task.'))
+        .action(async (taskId: string, options: any) => { await runAgentCloudAction('status', taskId, options); });
+    cloudOptions(cloud.command('cancel <taskId>').description('Cancel a queued or running cloud task.'))
+        .action(async (taskId: string, options: any) => { await runAgentCloudAction('cancel', taskId, options); });
+    cloudOptions(cloud.command('apply <taskId>').description('Retrieve and mark a completed task result as applied.'))
+        .action(async (taskId: string, options: any) => { await runAgentCloudAction('apply', taskId, options); });
 
     const project = program
         .command('project')

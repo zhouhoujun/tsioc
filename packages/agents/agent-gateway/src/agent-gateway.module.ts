@@ -34,6 +34,7 @@ import { AudioSessionHandler } from './audio/AudioSessionHandler';
 import { AudioFrameQuota } from './audio/AudioFrameQuota';
 import { GatewayConfig } from './contracts/GatewayConfig';
 import { createAgentGatewayProviders } from './provider';
+import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 
 @Module({
     imports: [AgentModule],
@@ -64,6 +65,7 @@ import { createAgentGatewayProviders } from './provider';
         DelegationHandler,
         ApprovalHandler,
         StatsHandler,
+        CloudTaskQueue,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,
@@ -93,6 +95,7 @@ import { createAgentGatewayProviders } from './provider';
         DelegationHandler,
         ApprovalHandler,
         StatsHandler,
+        CloudTaskQueue,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer,

@@ -17,6 +17,7 @@ import {
     createAgentDoctorReport,
     createAgentCli,
     createAgentDesktopLaunchPlan,
+    callAgentCloudRpc,
     createAgentUpdatePlan,
     generateAgentCompletionScript,
     ensureAgentWorkspaceConfig,
@@ -42,6 +43,7 @@ import {
     runAgentImport,
     runAgentDoctor,
     runAgentDesktop,
+    runAgentCloudAction,
     runAgentPrompt,
     runAgentRpcApplication,
     runAgentUpdate,
@@ -521,6 +523,45 @@ export class AgentCliTest {
         const command = createAgentCli().commands.find(item => item.name() === 'desktop');
         expect(command).toBeTruthy();
         expect(command?.aliases()).toContain('app');
+    }
+
+    @Test('cloud command registers the task lifecycle subcommands')
+    cloudCommandRegistered() {
+        const command = createAgentCli().commands.find(item => item.name() === 'cloud');
+        expect(command).toBeTruthy();
+        expect(command?.commands.map(item => item.name())).toEqual(['run', 'list', 'status', 'cancel', 'apply']);
+    }
+
+    @Test('cloud RPC client sends bearer JSON-RPC requests')
+    async cloudRpcClientSendsRequest() {
+        const calls: any[] = [];
+        const result = await callAgentCloudRpc('cloud.task.list', {}, {
+            gatewayUrl: 'https://gateway.example/', token: 'secret'
+        }, async (input, init) => {
+            calls.push({ input, init });
+            return { ok: true, status: 200, json: async () => ({ jsonrpc: '2.0', id: 1, result: { tasks: [] } }) };
+        });
+        expect(result.tasks).toEqual([]);
+        expect(calls[0].input).toEqual('https://gateway.example/rpc');
+        expect(calls[0].init.headers.authorization).toEqual('Bearer secret');
+        expect(JSON.parse(calls[0].init.body).method).toEqual('cloud.task.list');
+    }
+
+    @Test('cloud action maps run and apply and formats results')
+    async cloudActionMapsLifecycle() {
+        const methods: string[] = [];
+        const lines: string[] = [];
+        const fetcher = async (_input: string, init: any) => {
+            const request = JSON.parse(init.body);
+            methods.push(request.method);
+            const task = { id: 't1', status: 'completed', sessionId: 's1', result: { message: { content: 'done' } } };
+            return { ok: true, status: 200, json: async () => ({ result: { task } }) };
+        };
+        await runAgentCloudAction('run', 'ship', {}, fetcher, line => lines.push(line));
+        await runAgentCloudAction('apply', 't1', {}, fetcher, line => lines.push(line));
+        expect(methods).toEqual(['cloud.task.submit', 'cloud.task.apply']);
+        expect(lines.some(line => line.includes('t1 · completed'))).toEqual(true);
+        expect(lines).toContain('done');
     }
 
     @Test('desktop launch plan hands off session without exposing token in argv')

@@ -9,6 +9,7 @@ import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRp
 import { summarizeUsageForSessions } from '../usage/UsageStats';
 import { AudioSessionHandler, AudioSessionState } from '../audio';
 import { SessionShareStore } from '../share/SessionShareStore';
+import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 
 @Injectable()
 export class AppRpcServer {
@@ -34,7 +35,8 @@ export class AppRpcServer {
         @Optional() private weaknessMiner?: WeaknessMiner | null,
         @Optional() private reviewFindings?: ReviewFindingsStore | null,
         @Optional() private audio?: AudioSessionHandler | null,
-        @Optional() private shares?: SessionShareStore | null
+        @Optional() private shares?: SessionShareStore | null,
+        @Optional() private cloudTasks?: CloudTaskQueue | null
     ) {
     }
 
@@ -188,6 +190,11 @@ export class AppRpcServer {
                         'run.turn',
                         'run.turn_stream',
                         'run.cancel',
+                        'cloud.task.submit',
+                        'cloud.task.list',
+                        'cloud.task.get',
+                        'cloud.task.cancel',
+                        'cloud.task.apply',
                         'approval.list',
                         'approval.approve',
                         'approval.reject',
@@ -346,6 +353,16 @@ export class AppRpcServer {
                 return this.runTurn(params, context);
             case 'run.cancel':
                 return this.cancelTurn(params, context);
+            case 'cloud.task.submit':
+                return this.submitCloudTask(params, context);
+            case 'cloud.task.list':
+                return this.listCloudTasks(context);
+            case 'cloud.task.get':
+                return this.getCloudTask(params, context);
+            case 'cloud.task.cancel':
+                return this.cancelCloudTask(params, context);
+            case 'cloud.task.apply':
+                return this.applyCloudTask(params, context);
             case 'approval.list':
                 return this.listApprovals(params, context);
             case 'approval.approve':
@@ -1039,6 +1056,65 @@ export class AppRpcServer {
             compensated: result.compensated,
             toolCallIds: result.toolCallIds
         };
+    }
+
+    private requireCloudTasks(): CloudTaskQueue {
+        if (!this.cloudTasks) throw new AppRpcError(-32000, 'Cloud task queue is unavailable.');
+        return this.cloudTasks;
+    }
+
+    private cloudPrincipal(context: AppRpcRequestContext): string {
+        return String(context.principalId || 'anonymous');
+    }
+
+    private async submitCloudTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const prompt = typeof params?.prompt === 'string' ? params.prompt.trim() : '';
+        if (!prompt) throw new AppRpcError(-32602, 'cloud.task.submit requires prompt.');
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : `cloud-${this.uuid.generate()}`;
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        const task = this.requireCloudTasks().submit({
+            principalId: this.cloudPrincipal(context),
+            prompt,
+            sessionId,
+            profile: this.optionalProfile(params?.profile)
+        });
+        this.sessionHandler.track(task.sessionId);
+        await this.setSessionWorkspace(task.sessionId);
+        return { task };
+    }
+
+    private listCloudTasks(context: AppRpcRequestContext): any {
+        return { tasks: this.requireCloudTasks().list(this.cloudPrincipal(context)) };
+    }
+
+    private getCloudTask(params: any, context: AppRpcRequestContext): any {
+        const taskId = String(params?.taskId || '').trim();
+        if (!taskId) throw new AppRpcError(-32602, 'cloud taskId is required.');
+        const task = this.requireCloudTasks().get(taskId, this.cloudPrincipal(context));
+        if (!task) throw new AppRpcError(-32004, `Cloud task "${taskId}" was not found.`);
+        return { task };
+    }
+
+    private async cancelCloudTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const taskId = String(params?.taskId || '').trim();
+        if (!taskId) throw new AppRpcError(-32602, 'cloud taskId is required.');
+        const task = await this.requireCloudTasks().cancel(taskId, this.cloudPrincipal(context));
+        if (!task) throw new AppRpcError(-32004, `Cloud task "${taskId}" was not found.`);
+        return { task };
+    }
+
+    private applyCloudTask(params: any, context: AppRpcRequestContext): any {
+        const taskId = String(params?.taskId || '').trim();
+        if (!taskId) throw new AppRpcError(-32602, 'cloud taskId is required.');
+        const queue = this.requireCloudTasks();
+        const existing = queue.get(taskId, this.cloudPrincipal(context));
+        if (!existing) throw new AppRpcError(-32004, `Cloud task "${taskId}" was not found.`);
+        if (existing.status !== 'completed') {
+            throw new AppRpcError(-32009, `Cloud task "${taskId}" is ${existing.status}, not completed.`);
+        }
+        return { task: queue.apply(taskId, this.cloudPrincipal(context)) };
     }
 
     private async listApprovals(params: any, context: AppRpcRequestContext): Promise<any> {

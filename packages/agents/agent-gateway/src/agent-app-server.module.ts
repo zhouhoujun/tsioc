@@ -9,6 +9,7 @@ import { AppRpcServer } from './app-rpc/AppRpcServer';
 import { AppRpcHandler } from './api/AppRpcHandler';
 import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
 import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
+import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 
 @Module({
     imports: [AgentModule],
@@ -18,6 +19,7 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
         MemoryHandler,
         ToolsHandler,
         EventHandler,
+        CloudTaskQueue,
         AppRpcServer,
         {
             provide: AGENT_CONSOLE_APP_RPC,
@@ -87,6 +89,7 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
         MemoryHandler,
         ToolsHandler,
         EventHandler,
+        CloudTaskQueue,
         AppRpcServer,
         AppRpcHandler,
         StdioAppRpcServer
