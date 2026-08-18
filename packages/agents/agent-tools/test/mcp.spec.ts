@@ -3,7 +3,8 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
 import { AGENT_TOOL_BUNDLES, AgentModule, ToolRegistry } from '@tsdi/agent';
-import { provideMcpTools, McpClient } from '../mcp';
+import { provideMcpTools, McpClient, createMcpCodeModeAdapter } from '../mcp';
+import { CodeExecutionAdapter, CodeExecutionRequest } from '../code-execution';
 
 class FakeMcpClient implements McpClient {
     calls: Array<{ name: string; args?: Record<string, any>; }> = [];
@@ -34,8 +35,36 @@ class FakeMcpClient implements McpClient {
     }
 }
 
+class FakeCodeAdapter extends CodeExecutionAdapter {
+    request?: CodeExecutionRequest;
+    async execute(request: CodeExecutionRequest) {
+        this.request = request;
+        return { stdout: 'ok', stderr: '', exitCode: 0, cwd: request.workspace, workspace: request.workspace };
+    }
+}
+
 @Suite('Agent MCP tools')
 export class AgentMcpToolsTest {
+
+    @Test('code mode adapter exposes sandbox execution as an opt-in MCP tool')
+    async codeModeAdapterExecutesThroughConfiguredSandbox() {
+        const adapter = new FakeCodeAdapter();
+        const tool = createMcpCodeModeAdapter(adapter);
+        expect(tool.name).toEqual('code_execution');
+        expect(tool.inputSchema?.required).toEqual(['language', 'code']);
+        const result = await tool.invoke({ language: 'Python', code: 'print(1)' }, { sessionId: 's1', workspace: '/ws' } as any);
+        expect(adapter.request).toEqual({ language: 'python', code: 'print(1)', timeoutMs: 30000, workspace: '/ws' });
+        expect(result.structuredContent.stdout).toEqual('ok');
+        expect(result.isError).toEqual(false);
+    }
+
+    @Test('code mode adapter rejects malformed execution input before invoking backend')
+    async codeModeAdapterValidatesInput() {
+        const adapter = new FakeCodeAdapter();
+        const tool = createMcpCodeModeAdapter(adapter);
+        await expect(tool.invoke({ language: 'python', code: '' }, {} as any)).rejects.toThrow('code_execution code');
+        expect(adapter.request).toBeUndefined();
+    }
 
     @Test('manifest-backed MCP tools register namespaced tools through IoC')
     async manifestBackedMcpToolsRegisterNamespacedToolsThroughIoC() {

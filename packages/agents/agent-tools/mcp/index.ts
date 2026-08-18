@@ -8,4 +8,5 @@ export * from './LocalMcpClientRegistry';
 export * from './McpServerTool';
 export * from './McpListToolsTool';
 export * from './McpCallTool';
+export * from './code-mode-adapter';
 export * from './provider';
