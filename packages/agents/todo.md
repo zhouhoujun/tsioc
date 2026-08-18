@@ -330,3 +330,154 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 | **agent-ssh** | **✅ 新建** | ✅ 新建 | ✅ |
 | agent-desktop | ✅ 2.3KB | ✅ 新建 | ✅ |
 | agent-vscode | ✅ 扩充 | ✅ 新建 | ✅ |
+
+---
+
+## 跨平台重构计划：agent-ui 剔除 console/node 依赖（P170）
+
+### 目标
+
+`agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库（`Buffer`、`process`、`fs` 等）。console 特定实现统一收归 `@tsdi/agent-ui/console` 子路径，由各平台适配层提供。
+
+### 当前依赖清单
+
+| 文件 | 依赖 | 符号 |
+|---|---|---|
+| `AgentConsoleSessionState.ts` | `@tsdi/components/console` | `ConsoleTextChunk`, `clampConsoleTextCursor`, `processConsoleTextInputChunk`, `shouldSkipConsoleHistoryEntry`, `DEFAULT_TERMINAL_COLUMNS`, `formatTerminalStatusFooter` |
+| `AgentConsoleComponent.ts` | `@tsdi/components/console` | `clampConsoleTextCursor`, `ConsoleTextChunk`, `ConsoleTerminalInputHandler`, `ConsoleTerminalSurfaceAccessor`, `ConsoleTerminalSurfaceLifecycle`, `decodeConsoleTextChunk`, `SelectMenuMouseEvent`, `shouldSkipConsoleHistoryEntry`, `TerminalInputSequenceResult` |
+| `AgentConsoleComponent.ts` | `buffer` | `Buffer.from(value, 'base64')` → Uint8Array |
+| `AgentConsolePanels.ts` | `@tsdi/components/console` | `buildTerminalBrandBlock`, `BrDirective`, `DivDirective`, `formatConsoleIndexedOptionLabel`, `LabelComponent`, `PanelComponent`, `resolveConsoleListWindow`, `SpanDirective`, `TuiSelectComponent`, `TuiTextareaComponent`, `resolveConsoleEnterAction`, `resolveConsoleSelectWindow` |
+| `run-agent-ui.ts` | `@tsdi/components/console` | `ConsoleTerminalInputHandler`, `ConsoleTerminalSurfaceLifecycle`, `ConsoleTerminalApplicationLifecycleService` |
+| `AgentConsoleSessionService.ts` | `buffer` | `Buffer.from(bytes).toString('base64')` |
+| `AgentConsoleExportHandlers.ts` | `buffer` | `Buffer.from(bytes).toString('base64')` |
+
+### 架构设计
+
+```
+@tsdi/agent-ui          ← 主入口（src/index.ts），无 console/node 依赖
+@tsdi/agent-ui/console  ← console 适配层（console/index.ts），桥接 @tsdi/components/console
+```
+
+- `src/` 仅依赖 `@tsdi/ioc`、`@tsdi/core`、`@tsdi/components`（组件声明层）、`@tsdi/agent`
+- `console/` 负责桥接 `@tsdi/components/console` 的 TUI 特定类型和函数
+- `Buffer` 用 `Uint8Array` + 全局守卫 `(globalThis as any).Buffer` 替代
+
+### 实施步骤
+
+#### P170-1 · console/index.ts 补全（~290 行）
+
+创建 `packages/agents/agent-ui/console/index.ts`，re-export 所有 src/ 需要的 console 符号：
+
+```ts
+// 工具函数
+export { clampConsoleTextCursor, processConsoleTextInputChunk, shouldSkipConsoleHistoryEntry } from '@tsdi/components/console';
+export { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
+export { decodeConsoleTextChunk } from '@tsdi/components/console';
+export { resolveConsoleListWindow, resolveConsoleEnterAction, resolveConsoleSelectWindow } from '@tsdi/components/console';
+export { formatConsoleIndexedOptionLabel, buildTerminalBrandBlock } from '@tsdi/components/console';
+// DI tokens
+export { ConsoleTerminalInputHandler, ConsoleTerminalSurfaceAccessor, ConsoleTerminalSurfaceLifecycle, ConsoleTerminalApplicationLifecycleService } from '@tsdi/components/console';
+// 类型
+export type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from '@tsdi/components/console';
+// 组件指令
+export { BrDirective, DivDirective, SpanDirective, LabelComponent, PanelComponent, TuiSelectComponent, TuiTextareaComponent } from '@tsdi/components/console';
+```
+
+同步删除 `src/console.ts`（已废弃）。
+
+#### P170-2 · src/ 文件替换引用（4 文件）
+
+将 `@tsdi/components/console` 替换为 `@tsdi/agent-ui/console`：
+
+| 文件 | 改动 |
+|---|---|
+| `AgentConsoleSessionState.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（2 处） |
+| `AgentConsoleComponent.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
+| `AgentConsolePanels.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
+| `run-agent-ui.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
+
+#### P170-3 · Buffer 抽象（3 文件）
+
+将 `Buffer` 替换为平台无关实现：
+
+```ts
+// 平台无关的 base64 编码
+function encodeBase64(bytes: Uint8Array): string {
+    if (typeof globalThis.Buffer !== 'undefined') {
+        return globalThis.Buffer.from(bytes).toString('base64');
+    }
+    // 浏览器环境
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+// 平台无关的 base64 解码
+function decodeBase64(value: string): Uint8Array {
+    if (typeof globalThis.Buffer !== 'undefined') {
+        return new globalThis.Buffer.from(value, 'base64');
+    }
+    // 浏览器环境
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+```
+
+放在 `console/index.ts` 或单独 `utils.ts`，3 个文件引用替换：
+
+| 文件 | 改动 |
+|---|---|
+| `AgentConsoleComponent.ts` | 删除 `import { Buffer }`，用 `decodeBase64(value)` 替换 `new Uint8Array(Buffer.from(value, 'base64'))` |
+| `AgentConsoleSessionService.ts` | 删除 `import { Buffer }`，用 `encodeBase64(bytes)` 替换 `Buffer.from(bytes).toString('base64')` |
+| `AgentConsoleExportHandlers.ts` | 无 import，但 `Buffer.from(bytes).toString('base64')` 替换为 `encodeBase64(bytes)` |
+
+#### P170-4 · package.json exports 补全
+
+```json
+{
+  "exports": {
+    ".": "./src/index.ts",
+    "./console": "./console/index.ts"
+  }
+}
+```
+
+#### P170-5 · 验证
+
+```bash
+cd packages/agents/agent-ui
+npx tsc --noEmit          # 类型检查
+npm test                  # 653 tests
+npm run build:web         # bundle 构建
+
+# 确认 src/ 无 console/node 直接引用
+grep -r "@tsdi/components/console" src/     # 应为空
+grep -r "from 'buffer'" src/               # 应为空
+grep -r "from 'node:" src/                 # 应为空
+```
+
+#### P170-6 · 更新 AGENTS.md
+
+在「跨平台」约束中明确：
+
+```
+- `agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库
+  （`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；
+  console 相关的类型和函数统一从 `@tsdi/agent-ui/console` 引入，
+  由各平台适配层提供实现。
+```
+
+### 验收标准
+
+- [ ] `grep -r "@tsdi/components/console" src/` 返回空
+- [ ] `grep -r "from 'buffer'" src/` 返回空
+- [ ] `tsc --noEmit` clean
+- [ ] 653 tests passing
+- [ ] `build:web` 通过
+- [ ] AGENTS.md 约束已更新
