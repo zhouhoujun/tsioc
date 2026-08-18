@@ -15,6 +15,7 @@
 
 - 渲染/动画改动必须在 `@tsdi/components`、`@tsdi/components/console` 通用层落地，不得只在 agent-ui 侧 hack。
 - 浏览器端走 `ConsoleRenderer`（DOM），命令行端走 `TuiRenderer` + `TuiTerminalSurface`；两平台共用同一实现。
+- **`agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；console 相关的类型和函数统一从 `@tsdi/agent-ui/console` 引入，由各平台适配层提供实现。
 - `components/console` 与 `agents` 库**不得直接引用 node API**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；需要环境信息时用全局守卫（如 `(globalThis as { process?: ... }).process`）访问。
 
 ### 3. 响应式代理机制（`@tsdi/components/src/reactive.ts` + `impl/effect.ts`）
