@@ -11,15 +11,15 @@ function resolveDefaultLocale(): string {
     return /^zh|_cn/i.test(lang) ? 'zh-CN' : 'en';
 }
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
-import { AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import { AgentConsoleComponent } from './AgentConsoleComponent';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleKeymap, AgentConsoleKeymapStore } from './AgentConsoleKeymap';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
+import { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,

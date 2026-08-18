@@ -1,22 +1,12 @@
 import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { basenameAgentPath } from '@tsdi/agent';
+import { basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
-    buildTerminalBrandBlock,
-    BrDirective,
-    DivDirective,
-    formatConsoleIndexedOptionLabel,
-    LabelComponent,
-    PanelComponent,
-    resolveConsoleListWindow,
-    SpanDirective,
-    TuiSelectComponent,
-    TuiTextareaComponent,
-    resolveConsoleEnterAction,
-    resolveConsoleSelectWindow
-} from '@tsdi/components/console';
+    CONSOLE_UTILS,
+    ConsoleUtils
+} from './console-ports';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -34,7 +24,6 @@ import {
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
 import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
-import { ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -56,8 +45,6 @@ import {
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 
-const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
-const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;

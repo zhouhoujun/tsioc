@@ -2,32 +2,17 @@ import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
 import {
-    clampConsoleTextCursor,
     ConsoleTextChunk,
     ConsoleTerminalInputHandler,
     ConsoleTerminalSurfaceAccessor,
     ConsoleTerminalSurfaceLifecycle,
-    decodeConsoleTextChunk,
     SelectMenuMouseEvent,
-    shouldSkipConsoleHistoryEntry,
     TerminalInputSequenceResult
-} from '@tsdi/components/console';
+} from './console-ports';
 import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
-import {
-    formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
-    formatUsageSummary as fmtUsageSummary,
-    formatCompactionHistoryAggregate as fmtCompactionHistoryAggregate,
-    formatCompactionHistoryRecord as fmtCompactionHistoryRecord,
-    formatCompactionHistoryTrend as fmtCompactionHistoryTrend,
-    formatTurnDiagnosticsAggregate as fmtTurnDiagnosticsAggregate,
-    formatTurnDiagnosticsTrend as fmtTurnDiagnosticsTrend,
-    buildSummaryQualityRecordOption,
-    buildTurnDiagnosticsRecordOption,
-    parseTrendArgs,
-} from './AgentConsoleFormatters';
 import {
     runExportCommand as runExportCommandFn,
     parseExportArgs as parseExportArgsFn,
@@ -48,8 +33,20 @@ import {
     readFileBytes,
     normalizeBinaryChunk,
     concatUint8Arrays,
-    encodeBase64,
+    encodeBase64
 } from './AgentConsoleExportHandlers';
+import {
+    formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
+    formatUsageSummary as fmtUsageSummary,
+    formatCompactionHistoryAggregate as fmtCompactionHistoryAggregate,
+    formatCompactionHistoryRecord as fmtCompactionHistoryRecord,
+    formatCompactionHistoryTrend as fmtCompactionHistoryTrend,
+    formatTurnDiagnosticsAggregate as fmtTurnDiagnosticsAggregate,
+    formatTurnDiagnosticsTrend as fmtTurnDiagnosticsTrend,
+    buildSummaryQualityRecordOption,
+    buildTurnDiagnosticsRecordOption,
+    parseTrendArgs
+} from './AgentConsoleFormatters';
 import {
     openCompactionHistory,
     openCompactionHistoryTrend,
@@ -57,28 +54,77 @@ import {
     openUsage,
     openHarnessAudit,
     openHarnessProfile,
-    openSummaryQualityRecords as openSummaryQualityRecordsFn,
+    openSummaryQualityRecords as openSummaryQualityRecordsFn
 } from './AgentConsoleDiagnosticsHandlers';
-import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import {
+    AgentConsoleApprovalRequest,
+    AgentConsoleHealthItem,
+    AgentConsolePendingAttachment,
+    AgentConsolePlanTodoItem,
+    AgentConsoleSelectOption,
+    AgentConsoleSessionItem,
+    AgentConsoleSessionMeta,
+    AgentConsoleSessionState
+} from './AgentConsoleSessionState';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentIdeBridge, AGENT_IDE_BRIDGE } from './AgentIdeBridge';
 import { AgentEditorBridge, AGENT_EDITOR_BRIDGE } from './AgentEditorBridge';
 import { AgentConsoleInputHistoryStore } from './AgentConsoleInputHistoryStore';
 import { AgentConsoleModelStore } from './AgentConsoleModelStore';
-import { AgentConsoleApprovalRequest, AgentConsoleHealthItem, AgentConsolePendingAttachment, AgentConsolePlanTodoItem, AgentConsoleSelectOption, AgentConsoleSessionItem, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { agentConsoleThemeNames, agentConsoleThemes, AgentConsoleThemeName, AgentConsoleThemeStore, isAgentConsoleThemeName, mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import { AgentConsoleStatuslineField, AgentConsoleStatuslineStore, defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
-import { AgentConsoleTitleField, AgentConsoleTitleStore, defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
+import {
+    agentConsoleThemeNames,
+    agentConsoleThemes,
+    AgentConsoleThemeName,
+    AgentConsoleThemeStore,
+    isAgentConsoleThemeName,
+    mergeAgentConsoleTheme
+} from './AgentConsoleTheme';
+import {
+    AgentConsoleStatuslineField,
+    AgentConsoleStatuslineStore,
+    defaultAgentConsoleStatusline,
+    isAgentConsoleStatuslineField,
+    normalizeAgentConsoleStatusline
+} from './AgentConsoleStatusline';
+import {
+    AgentConsoleTitleField,
+    AgentConsoleTitleStore,
+    defaultAgentConsoleTitle,
+    isAgentConsoleTitleField,
+    normalizeAgentConsoleTitle
+} from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
-import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, extractAgentConsoleAppMentions, resolveAgentConsoleApps } from './AgentConsoleApps';
+import {
+    AgentConsoleAppAuthorizer,
+    AgentConsoleAppStatus,
+    extractAgentConsoleAppMentions,
+    resolveAgentConsoleApps
+} from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
-import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
-import { AGENT_CONSOLE_DEFAULT_KEYMAP, AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS, AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext, AgentConsoleKeymapStore, fuzzyMatchAgentConsoleCommand, isAgentConsoleGlobalAction, isAgentConsoleKeymapContext, isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
-import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
+import {
+    AgentConsoleMentionCatalogItem,
+    AgentConsoleWorkspaceMentionsProvider
+} from './AgentConsoleWorkspaceMentions';
+import {
+    AGENT_CONSOLE_DEFAULT_KEYMAP,
+    AGENT_CONSOLE_GLOBAL_ACTIONS,
+    AGENT_CONSOLE_KEYMAP_CONTEXTS,
+    AgentConsoleGlobalAction,
+    AgentConsoleKeymap,
+    AgentConsoleKeymapContext,
+    AgentConsoleKeymapStore,
+    fuzzyMatchAgentConsoleCommand,
+    isAgentConsoleGlobalAction,
+    isAgentConsoleKeymapContext,
+    isAgentConsoleMessageNavigationAction,
+    isAgentConsoleThreadNavigationAction
+} from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
+import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
@@ -2578,7 +2624,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         try {
             const workspace = this.resolveHistoryWorkspace();
             const entries = (await this.inputHistoryStore.load(workspace))
-                .filter(entry => !shouldSkipConsoleHistoryEntry(entry));
+                .filter(entry => !this.state.shouldSkipHistoryEntry(entry));
             if (workspace === this.resolveHistoryWorkspace()) {
                 this.state.setInputHistoryEntries(entries);
             }
@@ -2593,7 +2639,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         try {
             const workspace = this.resolveHistoryWorkspace();
             const entries = (await this.inputHistoryStore.load(workspace))
-                .filter(entry => !shouldSkipConsoleHistoryEntry(entry));
+                .filter(entry => !this.state.shouldSkipHistoryEntry(entry));
             if (workspace === this.resolveHistoryWorkspace()) {
                 this.state.setInputHistoryEntries(entries);
             }
@@ -4825,7 +4871,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const nextInput = base
                 ? `${base} ${selected} `
                 : `${selected} `;
-            this.state.setInput(nextInput, clampConsoleTextCursor(nextInput, nextInput.length));
+            this.state.setInput(nextInput, this.state.clampCursor(nextInput, nextInput.length));
             this.state.setInputFocused(true);
         }
     }
@@ -7754,7 +7800,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.surfaceAccessor?.notifyNonMouseInput?.();
         if (this.state.isSshShellActive && this.sshShell) {
-            const raw = decodeConsoleTextChunk(chunk);
+            const raw = typeof chunk === 'string' ? chunk : chunk.toString();
             if (raw === SSH_SHELL_DETACH_SEQUENCE) {
                 await this.detachSshShell('detached');
                 return;
@@ -7762,7 +7808,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.sshShell.write(raw);
             return;
         }
-        const rawChunk = decodeConsoleTextChunk(chunk);
+        const rawChunk = typeof chunk === 'string' ? chunk : chunk.toString();
         if (await this.handleCommandPaletteInput(decoded, rawChunk)) {
             return;
         }
@@ -7770,7 +7816,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         if (this.state.vimMode && !this.state.isAnyFocusActive() && this.state.inputMode === 'normal') {
-            const raw = decodeConsoleTextChunk(chunk);
+            const raw = typeof chunk === 'string' ? chunk : chunk.toString();
             if (decoded.controlKey === 'return') {
                 return;
             }

@@ -714,6 +714,8 @@ export class ConsoleTemplateParser implements TemplateParser {
     }
 }
 
+export const CONSOLE_TEMPLATE = token<TemplateCompilerOptions>('CONSOLE_TEMPLATE');
+
 const consoleDefaultOptions = {
     delimiters: ['{{', '}}']
 } as TemplateCompilerOptions;
@@ -729,7 +731,6 @@ export class ConsoleTemplateCompiler extends AbstractTemplateCompiler {
     }
 }
 
-export const CONSOLE_TEMPLATE = token<TemplateCompilerOptions>('CONSOLE_TEMPLATE');
 
 @Module({
     providers: [

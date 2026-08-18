@@ -1,10 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
 import {
     ConsoleTextChunk,
-    clampConsoleTextCursor,
-    processConsoleTextInputChunk,
-    shouldSkipConsoleHistoryEntry
-} from '@tsdi/components/console';
+    ConsoleTextInputChunkOptions,
+    ConsoleTextInputChunkResult,
+    DEFAULT_TERMINAL_COLUMNS
+} from './console-ports';
 import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
 import {
     AgentConsoleTheme,
@@ -14,9 +14,20 @@ import {
     mergeAgentConsoleTheme,
     resolveAgentConsoleThemeStyles
 } from './AgentConsoleTheme';
-import { AgentConsoleStatuslineField, defaultAgentConsoleStatusline } from './AgentConsoleStatusline';
-import { AgentConsoleTitleField, composeAgentConsoleTerminalTitle, defaultAgentConsoleTitle } from './AgentConsoleTitle';
-import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
+import {
+    AgentConsoleStatuslineField,
+    defaultAgentConsoleStatusline
+} from './AgentConsoleStatusline';
+import {
+    AgentConsoleTitleField,
+    composeAgentConsoleTerminalTitle,
+    defaultAgentConsoleTitle
+} from './AgentConsoleTitle';
+import {
+    AgentConsoleMentionCatalogItem,
+    AgentConsoleWorkspaceMentionResolver
+} from './AgentConsoleWorkspaceMentions';
+import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -26,8 +37,6 @@ import {
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions
 } from './AgentConsoleSuggestions';
-import { AgentConsoleMentionCatalogItem, AgentConsoleWorkspaceMentionResolver } from './AgentConsoleWorkspaceMentions';
-import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -1352,7 +1361,7 @@ export class AgentConsoleSessionState {
 
     setInput(value: string, cursor = value.length): void {
         this.input = value;
-        this.inputCursor = clampConsoleTextCursor(this.input, cursor);
+        this.inputCursor = this.clampCursor(this.input, cursor);
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
     }
@@ -1433,7 +1442,7 @@ export class AgentConsoleSessionState {
 
     protected findInputHistoryIndex(startIndex: number, step: number): number {
         for (let index = startIndex; index >= 0 && index < this.inputHistoryEntries.length; index += step) {
-            if (!shouldSkipConsoleHistoryEntry(this.inputHistoryEntries[index])) {
+            if (!this.shouldSkipHistoryEntry(this.inputHistoryEntries[index])) {
                 return index;
             }
         }
@@ -1441,7 +1450,7 @@ export class AgentConsoleSessionState {
     }
 
     setInputCursor(cursor: number): void {
-        this.inputCursor = clampConsoleTextCursor(this.input, cursor);
+        this.inputCursor = this.clampCursor(this.input, cursor);
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
     }
@@ -1469,7 +1478,7 @@ export class AgentConsoleSessionState {
     }
 
     get inputHintLabel(): string {
-        const base = formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+        const base = this.formatStatusFooter(this.model, this.modelProfile, this.workspace);
         const oneShotSummary = this.oneShotModelProfile
             ? `next model ${this.oneShotModelProfile}`
             : '';
@@ -3039,7 +3048,7 @@ export class AgentConsoleSessionState {
                 }
                 const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, value);
                 this.input = next.value;
-                this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+                this.inputCursor = this.clampCursor(this.input, next.cursor);
                 this.refreshInputSuggestions();
                 this.syncDerivedInputFocus();
             };
@@ -4292,9 +4301,9 @@ export class AgentConsoleSessionState {
         chunk: string,
         options: { submitOnEnter?: boolean; ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}
     ): Promise<{ submitted: boolean; confirmedSelection: boolean }> {
-        const next = processConsoleTextInputChunk(this.input, this.inputCursor, chunk, options);
+        const next = this.processInputChunk(this.input, this.inputCursor, chunk, options);
         this.input = this.expandTabs(next.value);
-        this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+        this.inputCursor = this.clampCursor(this.input, next.cursor);
         this.resetInputHistoryNavigation();
         let submitted = next.shouldSubmit;
 
@@ -4437,15 +4446,39 @@ export class AgentConsoleSessionState {
         return { handled: false };
     }
 
+    clampCursor(value: string, cursor: number): number {
+        return Math.max(0, Math.min(cursor, value.length));
+    }
+
+    shouldSkipHistoryEntry(entry: string): boolean {
+        return !entry || /^\s*$/.test(entry);
+    }
+
+    formatStatusFooter(model: string, profile: string, workspace: string): string {
+        const parts = [model, profile, workspace].filter(Boolean);
+        return parts.join(' · ') || 'idle';
+    }
+
+    processInputChunk(
+        value: string,
+        cursor: number,
+        chunk: Buffer,
+        options?: ConsoleTextInputChunkOptions
+    ): ConsoleTextInputChunkResult {
+        const newValue = value.slice(0, cursor) + chunk.toString() + value.slice(cursor);
+        const newCursor = cursor + chunk.length;
+        return { value: newValue, cursor: newCursor, shouldSubmit: false, shouldConfirmSelection: false };
+    }
+
     updateDraft(draft: string, cursor?: number): void {
         this.input = draft;
-        this.inputCursor = clampConsoleTextCursor(draft, cursor ?? draft.length);
+        this.inputCursor = this.clampCursor(draft, cursor ?? draft.length);
     }
 
     applyChunkToDraft(chunk: string, cursor: number): { value: string; cursor: number } {
-        const next = processConsoleTextInputChunk(this.input, cursor, chunk);
+        const next = this.processInputChunk(this.input, cursor, Buffer.from(chunk));
         this.input = next.value;
-        this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+        this.inputCursor = this.clampCursor(this.input, next.cursor);
         return next;
     }
 }

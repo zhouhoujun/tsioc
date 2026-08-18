@@ -1,12 +1,11 @@
 import { Application, ApplicationRunners } from '@tsdi/core';
-import { AGENT_OPTIONS } from '@tsdi/agent';
+import { AnimatedTextLifecycleService } from '@tsdi/components';
+import { AGENT_OPTIONS, AgentUiModule } from '@tsdi/agent';
 import {
     ConsoleTerminalInputHandler,
     ConsoleTerminalSurfaceLifecycle,
     ConsoleTerminalApplicationLifecycleService
 } from '@tsdi/components/console';
-import { AnimatedTextLifecycleService } from '@tsdi/components';
-import { AgentUiModule } from './agent-ui.module';
 
 export interface AgentUiApplicationOptions {
     consoleModule?: any;
@@ -15,7 +14,7 @@ export interface AgentUiApplicationOptions {
     providers?: any[];
 }
 
-export async function runAgentUi(
+export async function runAgentTUI(
     ui: any,
     options: AgentUiApplicationOptions = {}
 ): Promise<any> {
@@ -42,5 +41,3 @@ export async function runAgentUi(
         }
     });
 }
-
-export const runAgentUiApplication = runAgentUi;
