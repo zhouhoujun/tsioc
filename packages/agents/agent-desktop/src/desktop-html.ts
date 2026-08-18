@@ -48,6 +48,69 @@ export function buildDesktopHtml(options: DesktopHtmlOptions): string {
         workspace: options.workspace || undefined
     });
     const title = options.title || 'TSDI Agent';
+    const tabScript = `(function () {
+        const storageKey = 'tsdi-agent-desktop-tabs-v1';
+        const params = new URLSearchParams(globalThis.location.search);
+        const requested = params.get('session');
+        let tabs = [];
+        try { tabs = JSON.parse(globalThis.localStorage.getItem(storageKey) || '[]'); } catch (_) { tabs = []; }
+        tabs = Array.isArray(tabs) ? tabs.filter(item => item && typeof item.id === 'string').slice(0, 9) : [];
+        const configured = globalThis.__TSDI_AGENT_WEB__.sessionId;
+        const active = requested || configured || 'console';
+        globalThis.__TSDI_AGENT_WEB__.sessionId = active;
+        if (!tabs.some(item => item.id === active)) tabs.push({ id: active, title: active });
+        const save = () => globalThis.localStorage.setItem(storageKey, JSON.stringify(tabs.slice(0, 9)));
+        const open = id => {
+            const url = new URL(globalThis.location.href);
+            url.searchParams.set('session', id);
+            globalThis.location.href = url.href;
+        };
+        const render = () => {
+            const bar = document.getElementById('session-tabs');
+            if (!bar) return;
+            bar.textContent = '';
+            tabs.slice(0, 9).forEach((tab, index) => {
+                const button = document.createElement('button');
+                button.className = 'session-tab' + (tab.id === active ? ' active' : '');
+                button.title = 'Session ' + tab.id + ' (' + (index + 1) + ')';
+                button.type = 'button';
+                const label = document.createElement('span');
+                label.textContent = tab.title || tab.id;
+                button.appendChild(label);
+                const close = document.createElement('span');
+                close.className = 'session-tab-close';
+                close.textContent = '\u00d7';
+                close.title = 'Close session tab';
+                close.addEventListener('click', event => {
+                    event.stopPropagation();
+                    tabs = tabs.filter(item => item.id !== tab.id);
+                    save();
+                    if (tab.id === active) open(tabs[Math.max(0, index - 1)]?.id || 'console');
+                    else render();
+                });
+                button.appendChild(close);
+                button.addEventListener('click', () => open(tab.id));
+                bar.appendChild(button);
+            });
+            const add = document.createElement('button');
+            add.className = 'session-tab-add';
+            add.type = 'button';
+            add.title = 'New session tab';
+            add.textContent = '+';
+            add.addEventListener('click', () => open('console-' + Date.now().toString(36)));
+            bar.appendChild(add);
+        };
+        globalThis.addEventListener('keydown', event => {
+            if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+            const index = Number(event.key) - 1;
+            if (index >= 0 && index < tabs.length) {
+                event.preventDefault();
+                open(tabs[index].id);
+            }
+        });
+        save();
+        render();
+    })();`;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,12 +120,23 @@ export function buildDesktopHtml(options: DesktopHtmlOptions): string {
     <title>${title}</title>
     <style>
         html, body { margin: 0; height: 100%; background: #0d1117; color: #c9d1d9; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-        #agent-console { box-sizing: border-box; height: 100vh; overflow: auto; padding: 10px; }
+        body { display: grid; grid-template-rows: 36px minmax(0, 1fr); }
+        #session-tabs { display: flex; align-items: end; gap: 2px; overflow-x: auto; padding: 4px 6px 0; background: #161b22; border-bottom: 1px solid #30363d; }
+        .session-tab, .session-tab-add { height: 31px; border: 0; border-radius: 4px 4px 0 0; background: transparent; color: #8b949e; font: inherit; cursor: pointer; }
+        .session-tab { display: flex; align-items: center; gap: 8px; min-width: 96px; max-width: 220px; padding: 0 8px 0 12px; }
+        .session-tab span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .session-tab:hover, .session-tab.active { background: #0d1117; color: #f0f6fc; }
+        .session-tab.active { box-shadow: inset 0 2px #2f81f7; }
+        .session-tab-close { margin-left: auto; font-size: 16px; line-height: 1; }
+        .session-tab-add { width: 32px; min-width: 32px; font-size: 20px; }
+        #agent-console { box-sizing: border-box; min-height: 0; overflow: auto; padding: 10px; }
     </style>
 </head>
 <body>
+    <nav id="session-tabs" aria-label="Session tabs"></nav>
     <div id="agent-console"></div>
     <script nonce="${options.nonce}">globalThis.__TSDI_AGENT_WEB__ = ${config};</script>
+    <script nonce="${options.nonce}">${tabScript}</script>
     <script nonce="${options.nonce}" src="${options.scriptUri}"></script>
 </body>
 </html>`;

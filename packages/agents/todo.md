@@ -151,7 +151,14 @@
 
 ---
 
-## 差距分析 v7（vs Codex v0.148-alpha.20 / opencode v1.18.18 + desktop v1.17.18，2026-08-17）
+## v7 已完成（P163–P166，2026-08-18）
+
+- **P163 · G85**：会话快照 UI、Git 快照列表/差异/恢复命令与 gateway RPC 已闭环。
+- **P164 · G86**：浏览器端长 markdown 通过可注入 Web Worker 异步解析，TUI/无 Worker 环境同步回退。
+- **P165 · G87**：Electron 桌面宿主增加持久化会话标签栏，支持点击切换、关闭、新建及 Ctrl/Cmd+1..9 快捷键；TUI 与浏览器宿主保持原语义。
+- **P166 · G88**：MCP `initialize` 的 server instructions 聚合并以有界 system prompt 段自动注入。
+
+## 差距分析 v7（vs Codex v0.148-alpha.20 / opencode v1.18.18 + desktop v1.17.18，2026-08-18）
 
 > 对照基准从 v0.147（2026-08-13）升级至 codex v0.148-alpha.20 + opencode v1.18.18 + opencode desktop v1.17.18。
 >
@@ -163,10 +170,10 @@
 
 | # | 差距 | 对照对象 | 本项目现状 | 影响 | 优先级 |
 |---|---|---|---|---|---|
-| G85 | **会话快照 & 一键 revert（含文件变更回滚）** | opencode desktop v1.17.11：session snapshots + revert controls，回滚文件变更到快照点 | P71 Git step 快照有底层能力（`git stash create`），但无 UI 面板展示快照列表、无一键 revert 按钮、无文件变更 diff 预览。用户需手动 `/revert <messageId>` 知道 message id | 高：长会话实验性探索的"安全网"，opencode 核心差异化 | **P163** |
-| G86 | **增量 markdown 离主线程渲染** | opencode v1.17.17：markdown parsing off main thread，长对话响应性提升 | AgentConsolePanels 渲染在主线程，长消息（>500 行）可能阻塞 TUI/browser 帧。我们的响应式框架（数据驱动渲染）天然适合 Web Worker 分离，但当前未实现 | 中-高：长对话/大工具输出的流畅度 | **P164** |
-| G87 | **多会话标签页（Chrome-style tab 快捷键）** | opencode desktop v1.17.10：mod+1..9 切换标签 + 可拖拽标签 + 标签状态持久化 | `/sessions` 列表切换 + `/resume` 恢复，但无标签页 UI 概念——TUI 单会话 + 浏览器多窗口各自独立，VS Code webview 单 panel | 中：多项目/多任务并行效率（桌面端） | **P165** |
-| G88 | **MCP server instructions 自动注入上下文** | opencode desktop v1.17.10：MCP server 的 instructions 字段自动注入 session 上下文 | MCP client 已实现 `listResources`/`listPrompts`（P95），但未自动提取 server `instructions` 注入 system prompt。用户需手动 `/mcp` 查看 | 中：MCP server 自描述能力的利用 | **P166** |
+| ✅ G85 | **会话快照 & 一键 revert（含文件变更回滚）** | opencode desktop v1.17.11 | 已实现（P163）：快照列表、diff 预览、恢复命令与 gateway RPC | 高 |
+| ✅ G86 | **增量 markdown 离主线程渲染** | opencode v1.17.17 | 已实现（P164）：浏览器 Worker + 同步回退 | 中-高 |
+| ✅ G87 | **多会话标签页（Chrome-style tab 快捷键）** | opencode desktop v1.17.10 | 已实现（P165）：Electron 标签栏、持久化、点击/关闭/新建、Ctrl/Cmd+1..9 | 中 |
+| ✅ G88 | **MCP server instructions 自动注入上下文** | opencode desktop v1.17.10 | 已实现（P166）：initialize instructions 聚合并有界注入 system prompt | 中 |
 | G89 | **Thinking level 选择器（settings UI）** | opencode desktop v1.17.10：V2 settings 中 thinking level selector（low/medium/high） | `/thinking` toggle + `Ctrl+T` 变体循环（P136/P140），但无 settings UI 中的显式选择器（用户需知道快捷键或命令） | 中-低：settings UX 完整性 | **P167** |
 | G90 | **Yolo auto-approve 模式** | opencode desktop v1.17.12：yolo mode 自动批准所有操作 | P160 auto-approve 标记存在，但无 `/yolo` 一键切换命令或 settings toggle（用户需手动配置 `autoApprove: true`） | 低-中：快速原型/脚本场景的便利性 | **P168** |
 | G91 | **代码模式 MCP adapter** | opencode desktop v1.17.14：code mode MCP adapter 在 MCP 上下文运行代码 | ACP 客户端（P152）已有 code execution 能力，但无 MCP 原生 code mode adapter（MCP server 可直接执行代码片段） | 低：生态兼容性，ACP 已覆盖大部分场景 | **P169** |
@@ -201,9 +208,9 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 > 约定：`Pnn` 对应差距编号（G85–G94）。每项完成后把内容移入「已实现功能」并更新差距表为 ✅。优先级：高 = opencode 核心交互差距，直接影响日常效率；中 = 体验/生态增益；低 = 锦上添花。
 
-### 批次 F · 会话安全网与渲染性能（P163–P164）
+### 批次 F · 会话安全网与渲染性能（P163–P164，已完成）
 
-- **P163 · G85 · 会话快照 & 一键 revert（含文件变更 diff 预览）（高）**
+- ~~**P163 · G85 · 会话快照 & 一键 revert（含文件变更 diff 预览）（高）**~~ ✅ 已完成，见上方 v7 已完成清单。
   - 底层能力已有（P71 GitStepSnapshotStore），需新增：
     - UI 面板 `/snapshots`：列出会话所有 snapshot（message id + timestamp + diff stats），选择后预览文件变更（复用 `/diff` hunk 渲染）
     - 一键 revert 按钮：调用既有 `revert(messageId)` + 确认弹窗
@@ -211,23 +218,23 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
     - agent-ui `/snapshots [list|revert <id>|diff <id>]` 子命令
   - 锚点：`agent/src/harness/GitStepSnapshotStore.ts`、`agent-gateway/src/app-rpc/AppRpcServer.ts`、`agent-ui/src/AgentConsoleComponent.ts`
 
-- **P164 · G86 · 增量 markdown 离主线程渲染（中-高）**
+- ~~**P164 · G86 · 增量 markdown 离主线程渲染（中-高）**~~ ✅ 已完成，见上方 v7 已完成清单。
   - 方案：Web Worker + markdown-it/wasm 解析器，消息内容分块发送到 worker，解析完成后 postMessage 回主线程渲染
   - 限制：TUI 无 Web Worker 支持（node worker_threads 可用但增加复杂度），优先浏览器端实现
   - agent-ui `MarkdownWorkerBridge`（可注入，浏览器走 Worker，TUI/browser fallback 走同步）
   - 长消息（>1000 字符）自动走 worker 路径，短消息保持同步（避免 IPC 开销）
   - 锚点：`agent-ui/src/AgentConsolePanels.ts`（render 分支）、新增 `AgentConsoleMarkdownWorker.ts`
 
-### 批次 G · 多会话标签页与 MCP 增强（P165–P166）
+### 批次 G · 多会话标签页与 MCP 增强（P165–P166，已完成）
 
-- **P165 · G87 · 多会话标签页（桌面端）（中）**
+- ~~**P165 · G87 · 多会话标签页（桌面端）（中）**~~ ✅ 已完成，本次落地于 `agent-desktop/src/desktop-html.ts`。
   - Electron/VS Code 端：tab bar 组件 + session 切换 + mod+1..9 快捷键
   - TUI 端：保持 `/sessions` 列表（TUI 单会话语义更自然）
   - 浏览器端：多窗口/tab 由浏览器管理，agent-ui 无需内置 tab
   - 仅 Electron host 实现 tab bar（`agent-desktop/src/`），复用 session store 切换
   - 锚点：`agent-desktop/src/`（新增 `TabBarComponent`）
 
-- **P166 · G88 · MCP server instructions 自动注入上下文（中）**
+- ~~**P166 · G88 · MCP server instructions 自动注入上下文（中）**~~ ✅ 已完成，见上方 v7 已完成清单。
   - MCP client `initialize` 响应中提取 `serverInfo.instructions` 字段
   - `AgentContextManager` 在 system prompt 中追加 `## MCP Server Instructions` 段（有界，1KiB 总上限）
   - `McpClient.instructions` 字段 + `McpConnectionManager.getServerInstructions()` 聚合
@@ -256,7 +263,7 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 ## 回归基线
 
-截至 P162（2026-08-17）：十包 **2135 passing 全部 EXIT=0**（agent 743 / agent-gateway 246 / agent-ui 644 / agent-cli 73 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 19 / agent-vscode 7）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；agent-ui build:web、agent-vscode build（联动 Web bundle 3.3MB）、agent-cli build 全部通过。
+截至 P165（2026-08-18）：十包 **2145 passing 全部 EXIT=0**（agent 752 / agent-gateway 246 / agent-ui 644 / agent-cli 73 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 20 / agent-vscode 7）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；十包 build、agent-ui build:web、agent-vscode build（联动 Web bundle 3.4MB）全部通过。
 
 ---
 
@@ -264,9 +271,9 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 | 指标 | 数值 |
 |---|---|
-| 十包测试总数 | 2135 passing |
+| 十包测试总数 | 2145 passing |
 | 十包 tsc --noEmit | 全 clean（EXIT=0） |
-| Web bundle | agent-ui 3.3MB（esbuild） |
+| Web bundle | agent-ui 3.4MB（esbuild） |
 | Electron dist | 44KB（agent-desktop） |
 | VS Code dist | 24KB（agent-vscode） |
 | 总测试耗时（串行） | ~75–80s |

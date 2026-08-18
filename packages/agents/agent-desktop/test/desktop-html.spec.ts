@@ -37,4 +37,18 @@ export class AgentDesktopHtmlTest {
         expect(html).not.toContain('</script><script>alert(1)</script>');
         expect(html).toContain('\\u003c/script\\u003e');
     }
+    @Test('renders persistent desktop session tabs and numeric shortcuts')
+    sessionTabs() {
+        const html = buildDesktopHtml({
+            scriptUri: 'bundle.js',
+            baseUrl: 'https://gateway.example',
+            sessionId: 'session-1',
+            nonce: 'nonce-3'
+        });
+        expect(html).toContain('id="session-tabs"');
+        expect(html).toContain('tsdi-agent-desktop-tabs-v1');
+        expect(html).toContain("params.get('session')");
+        expect(html).toContain('event.ctrlKey || event.metaKey');
+        expect(html).toContain("add.textContent = '+'");
+    }
 }
