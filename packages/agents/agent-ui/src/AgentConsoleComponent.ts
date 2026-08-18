@@ -121,6 +121,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
     protected modelReasoningEffort: 'low' | 'medium' | 'high' = 'medium';
+    protected yoloMode = false;
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -4177,6 +4178,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/personality', value: '/personality', description: 'personality presets: list / set <name> / unset' },
                     { label: '/debug-config', value: '/debug-config', description: 'show resolved config (model, profile, ui options, session)' },
                     { label: '/settings', value: '/settings', description: 'unified settings dialog: general, keybinds, providers' },
+                    { label: '/yolo', value: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]' },
                     { label: '/experimental', value: '/experimental', description: 'experimental features: list / <name> on|off' },
                     { label: '/feedback', value: '/feedback', description: 'packaging diagnostics for feedback reports' },
                     { label: '/ide', value: '/ide', description: 'IDE bridge: show attached editor context' },
@@ -4486,6 +4488,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return this.runDebugConfigCommand();
             case '/settings':
                 return this.runSettingsCommand();
+            case '/yolo':
+                return this.runYoloCommand(parsed.args);
             case '/experimental':
                 return this.runExperimentalCommand(parsed.args);
             case '/feedback':
@@ -6622,6 +6626,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.options.model = this.options.model || {};
             this.options.model.reasoningEffort = persisted.thinkingLevel;
         }
+        if (typeof persisted.yoloMode === 'boolean') {
+            await this.setYoloMode(persisted.yoloMode, false);
+        }
     }
 
     protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {
@@ -6940,6 +6947,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             { label: `Vim mode: ${this.state.vimMode ? 'on' : 'off'}`, value: 'vim', description: 'vim-style normal/insert input mode' },
             { label: `Raw mode: ${this.state.rawMode ? 'on' : 'off'}`, value: 'raw', description: 'plain-text scrollback rendering' },
             { label: `Thinking: ${this.state.showThinking ? 'shown' : 'hidden'}`, value: 'thinking', description: 'reasoning message visibility' },
+            { label: `Yolo mode: ${this.yoloMode ? 'on' : 'off'}`, value: 'yolo', description: 'automatically approve gated tools' },
             { label: `Timestamps: ${this.state.showTimestamps ? 'shown' : 'hidden'}`, value: 'timestamps', description: 'message timestamp visibility' },
             { label: `Tool output: ${this.state.showToolOutput ? 'shown' : 'hidden'}`, value: 'tooloutput', description: 'tool output visibility in messages' },
             { label: `Username: ${this.state.showUsername ? 'shown' : 'hidden'}`, value: 'username', description: 'username label visibility' },
@@ -6975,6 +6983,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             return true;
         }
+        if (option === 'yolo') {
+            await this.setYoloMode(!this.yoloMode);
+            return true;
+        }
         if (option === 'title') {
             const enabled = this.options.ui?.terminalTitle !== false;
             this.options.ui = { ...(this.options.ui || {}), terminalTitle: !enabled };
@@ -7006,6 +7018,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(this.state.showUsername ? 'Showing the username label.' : 'Hiding the username label.');
             return true;
         }
+        return true;
+    }
+
+    protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
+        this.yoloMode = enabled;
+        if (typeof (this.approvalManager as any)?.setAutoApprove === 'function') {
+            (this.approvalManager as any).setAutoApprove(enabled);
+        }
+        this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
+        await this.persistSettings({ yoloMode: enabled });
+        if (notify) this.notify(enabled ? 'Yolo mode enabled: gated tools auto-approve.' : 'Yolo mode disabled.');
+    }
+
+    protected async runYoloCommand(args?: string): Promise<boolean> {
+        const value = String(args || '').trim().toLowerCase();
+        if (value && value !== 'on' && value !== 'off') {
+            this.notify('Usage: /yolo [on|off]');
+            return true;
+        }
+        await this.setYoloMode(value ? value === 'on' : !this.yoloMode);
         return true;
     }
 

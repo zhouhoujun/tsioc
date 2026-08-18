@@ -10,6 +10,7 @@ export interface AgentConsoleSettingsData {
     showUsername?: boolean;
     timelineMode?: boolean;
     thinkingLevel?: 'low' | 'medium' | 'high';
+    yoloMode?: boolean;
 }
 
 @Injectable()
@@ -31,7 +32,8 @@ export class AgentConsoleSettingsStore {
                 timelineMode: typeof parsed?.timelineMode === 'boolean' ? parsed.timelineMode : undefined,
                 thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
                     ? parsed.thinkingLevel
-                    : undefined
+                    : undefined,
+                yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined
             };
         } catch {
             return {};
@@ -51,7 +53,8 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
             ...(typeof data.timelineMode === 'boolean' ? { timelineMode: data.timelineMode } : {}),
-            ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {})
+            ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
+            ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {})
         }, null, 2));
     }
 

@@ -9500,7 +9500,7 @@ export class AgentConsoleComponentTest {
 
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
-            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'timestamps', 'tooloutput', 'username', 'title']);
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'yolo', 'timestamps', 'tooloutput', 'username', 'title']);
 
             await component.sessionState.confirmSelectMenu('vim');
             await pending;
@@ -9627,6 +9627,32 @@ export class AgentConsoleComponentTest {
             expect((component as any).options.model.reasoningEffort).toEqual('high');
             expect(await store.load(workspace)).toEqual({ thinkingLevel: 'high' });
             expect(component.notice).toContain('Reasoning effort: high');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('yolo command toggles auto approval and persists workspace setting')
+    async yoloCommandTogglesAutoApproval() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-yolo-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            const approval = new ApprovalManagerStub();
+            (component as any).approvalManager = approval;
+            await component.onInit();
+
+            await (component as any).handleCommand('/yolo on');
+            expect((component as any).yoloMode).toEqual(true);
+            expect((component as any).options.tools.autoApprove).toEqual(true);
+            expect(await store.load(workspace)).toEqual({ yoloMode: true });
+            expect(component.notice).toContain('Yolo mode enabled');
+
+            await (component as any).handleCommand('/yolo off');
+            expect((component as any).yoloMode).toEqual(false);
+            expect((component as any).options.tools.autoApprove).toEqual(false);
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

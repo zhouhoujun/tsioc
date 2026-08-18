@@ -184,6 +184,14 @@ export class ToolApprovalManager {
         return !!this.strategy;
     }
 
+    setAutoApprove(enabled: boolean): void {
+        if (this.options) this.options.autoApprove = enabled;
+    }
+
+    isAutoApproveEnabled(): boolean {
+        return this.options?.autoApprove === true;
+    }
+
     requiresApproval(toolName: string, input: any): boolean {
         return this.strategy?.requires(toolName, input) ?? false;
     }

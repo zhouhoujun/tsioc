@@ -151,13 +151,14 @@
 
 ---
 
-## v7 已完成（P163–P167，2026-08-18）
+## v7 已完成（P163–P168，2026-08-18）
 
 - **P163 · G85**：会话快照 UI、Git 快照列表/差异/恢复命令与 gateway RPC 已闭环。
 - **P164 · G86**：浏览器端长 markdown 通过可注入 Web Worker 异步解析，TUI/无 Worker 环境同步回退。
 - **P165 · G87**：Electron 桌面宿主增加持久化会话标签栏，支持点击切换、关闭、新建及 Ctrl/Cmd+1..9 快捷键；TUI 与浏览器宿主保持原语义。
 - **P166 · G88**：MCP `initialize` 的 server instructions 聚合并以有界 system prompt 段自动注入。
 - **P167 · G89**：`/settings` Providers 增加 Thinking Level 显式选择器，low/medium/high 与 Ctrl+T、模型请求透传共用状态，并持久化至 workspace settings。
+- **P168 · G90**：新增 `/yolo [on|off]` 与 Settings General 开关，动态切换 approval manager auto-approve 并持久化 workspace 状态。
 
 ## 差距分析 v7（vs Codex v0.148-alpha.20 / opencode v1.18.18 + desktop v1.17.18，2026-08-18）
 
@@ -176,7 +177,7 @@
 | ✅ G87 | **多会话标签页（Chrome-style tab 快捷键）** | opencode desktop v1.17.10 | 已实现（P165）：Electron 标签栏、持久化、点击/关闭/新建、Ctrl/Cmd+1..9 | 中 |
 | ✅ G88 | **MCP server instructions 自动注入上下文** | opencode desktop v1.17.10 | 已实现（P166）：initialize instructions 聚合并有界注入 system prompt | 中 |
 | ✅ G89 | **Thinking level 选择器（settings UI）** | opencode desktop v1.17.10 | 已实现（P167）：Providers 显式选择器 + Ctrl+T 共用状态 + workspace 持久化 | 中-低 |
-| G90 | **Yolo auto-approve 模式** | opencode desktop v1.17.12：yolo mode 自动批准所有操作 | P160 auto-approve 标记存在，但无 `/yolo` 一键切换命令或 settings toggle（用户需手动配置 `autoApprove: true`） | 低-中：快速原型/脚本场景的便利性 | **P168** |
+| ✅ G90 | **Yolo auto-approve 模式** | opencode desktop v1.17.12 | 已实现（P168）：`/yolo on|off`、Settings toggle、动态 manager 开关与持久化 | 低-中 |
 | G91 | **代码模式 MCP adapter** | opencode desktop v1.17.14：code mode MCP adapter 在 MCP 上下文运行代码 | ACP 客户端（P152）已有 code execution 能力，但无 MCP 原生 code mode adapter（MCP server 可直接执行代码片段） | 低：生态兼容性，ACP 已覆盖大部分场景 | **P169** |
 | G92 | **Locale/i18n 扩展（RTL + 多语言）** | opencode desktop v1.17.10：RTL layout + plural rules + 多语言（ar/he/ja/ko 等） | 无 i18n 框架，所有 UI 文本硬编码英文。desktop 端（Electron）可利用系统 locale，但 TUI/browser 未适配 | 低：国际化需求，当前用户群以英文为主 | 不排期 |
 | G93 | **Session progress indicator** | opencode desktop v1.17.10：新 session 进度指示器 | statusline 有 token/context 信息，但无进度条/步骤指示器（长任务的可视化反馈） | 低：UX 锦上添花 | 不排期 |
@@ -249,7 +250,7 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
   - 持久化 `.tsdi-agent/settings.json` 新增 `thinkingLevel` 字段
   - 锚点：`agent-ui/src/AgentConsoleSettingsStore.ts`、`AgentConsoleComponent.ts`（openSettingsProvidersTab）
 
-- **P168 · G90 · Yolo auto-approve 模式（低-中）**
+- ~~**P168 · G90 · Yolo auto-approve 模式（低-中）**~~ ✅ 已完成，落地于 `ToolApprovalManager.ts`、`AgentConsoleComponent.ts`、`AgentConsoleSettingsStore.ts`。
   - `/yolo [on|off]` 命令：设置 `autoApprove: true`（所有工具调用自动批准，跳过 approval 队列）
   - `/settings` General tab 增加 Yolo Mode toggle
   - 持久化 `.tsdi-agent/settings.json` 新增 `yoloMode` 字段
@@ -264,7 +265,7 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 ## 回归基线
 
-截至 P167（2026-08-18）：十包 **2153 passing 全部 EXIT=0**（agent 752 / agent-gateway 246 / agent-ui 652 / agent-cli 73 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 20 / agent-vscode 7）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；十包 build、agent-ui build:web、agent-vscode build（联动 Web bundle 3.4MB）全部通过。
+截至 P168（2026-08-18）：十包 **2154 passing 全部 EXIT=0**（agent 752 / agent-gateway 246 / agent-ui 653 / agent-cli 73 / agent-tools 323 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 20 / agent-vscode 7）；跨包共享渲染层 core 130 / components 126 / components/console 72 passing；十包 `tsc --noEmit` clean；受影响包 build 与 agent-ui build:web 通过。
 
 ---
 
@@ -272,7 +273,7 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 | 指标 | 数值 |
 |---|---|
-| 十包测试总数 | 2153 passing |
+| 十包测试总数 | 2154 passing |
 | 十包 tsc --noEmit | 全 clean（EXIT=0） |
 | Web bundle | agent-ui 3.4MB（esbuild） |
 | Electron dist | 44KB（agent-desktop） |
