@@ -337,7 +337,17 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 ### 目标
 
-`agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库（`Buffer`、`process`、`fs` 等）。console 特定实现统一收归 `@tsdi/agent-ui/console` 子路径，由各平台适配层提供。
+`agent-ui/src/` 不得直接或间接引用 `@tsdi/components/console` 或 node 库。`agent-ui/src/` 定义抽象接口，`@tsdi/agent-ui/console` 用 `@tsdi/components/console` 提供实现，通过 DI 注入。
+
+### 架构
+
+```
+agent-ui/src/                    ← 定义接口，零 console/node 依赖
+  ↓ DI inject
+@tsdi/agent-ui/console           ← 实现接口，桥接 @tsdi/components/console
+  ↓
+@tsdi/components/console         ← TUI 具体实现
+```
 
 ### 当前依赖清单
 
@@ -351,126 +361,139 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 | `AgentConsoleSessionService.ts` | `buffer` | `Buffer.from(bytes).toString('base64')` |
 | `AgentConsoleExportHandlers.ts` | `buffer` | `Buffer.from(bytes).toString('base64')` |
 
-### 架构设计
-
-```
-@tsdi/agent-ui          ← 主入口（src/index.ts），无 console/node 依赖
-@tsdi/agent-ui/console  ← console 适配层（console/index.ts），桥接 @tsdi/components/console
-```
-
-- `src/` 仅依赖 `@tsdi/ioc`、`@tsdi/core`、`@tsdi/components`（组件声明层）、`@tsdi/agent`
-- `console/` 负责桥接 `@tsdi/components/console` 的 TUI 特定类型和函数
-- `Buffer` 用 `Uint8Array` + 全局守卫 `(globalThis as any).Buffer` 替代
-
 ### 实施步骤
 
-#### P170-1 · console/index.ts 补全（~290 行）
+#### P170-1 · 定义抽象接口（agent-ui/src/）
 
-创建 `packages/agents/agent-ui/console/index.ts`，re-export 所有 src/ 需要的 console 符号：
+在 `agent-ui/src/` 新建 `console-ports.ts`，定义 agent-ui 需要的所有 console 能力：
 
 ```ts
-// 工具函数
-export { clampConsoleTextCursor, processConsoleTextInputChunk, shouldSkipConsoleHistoryEntry } from '@tsdi/components/console';
-export { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
-export { decodeConsoleTextChunk } from '@tsdi/components/console';
-export { resolveConsoleListWindow, resolveConsoleEnterAction, resolveConsoleSelectWindow } from '@tsdi/components/console';
-export { formatConsoleIndexedOptionLabel, buildTerminalBrandBlock } from '@tsdi/components/console';
 // DI tokens
-export { ConsoleTerminalInputHandler, ConsoleTerminalSurfaceAccessor, ConsoleTerminalSurfaceLifecycle, ConsoleTerminalApplicationLifecycleService } from '@tsdi/components/console';
-// 类型
-export type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from '@tsdi/components/console';
-// 组件指令
-export { BrDirective, DivDirective, SpanDirective, LabelComponent, PanelComponent, TuiSelectComponent, TuiTextareaComponent } from '@tsdi/components/console';
+export const CONSOLE_UTILS = new InjectionToken<ConsoleUtils>('ConsoleUtils');
+export const CONSOLE_COMPONENTS = new InjectionToken<ConsoleComponents>('ConsoleComponents');
+export const CONSOLE_LIFECYCLE = new InjectionToken<ConsoleLifecycle>('ConsoleLifecycle');
+
+// 接口
+export interface ConsoleUtils {
+  clampConsoleTextCursor(value: number, max: number): number;
+  processConsoleTextInputChunk(...args: any[]): any;
+  shouldSkipConsoleHistoryEntry(entry: any): boolean;
+  decodeConsoleTextChunk(chunk: any): any;
+  formatTerminalStatusFooter(...args: any[]): string;
+  resolveConsoleListWindow(...args: any[]): any;
+  resolveConsoleEnterAction(...args: any[]): any;
+  resolveConsoleSelectWindow(...args: any[]): any;
+  formatConsoleIndexedOptionLabel(...args: any[]): string;
+  buildTerminalBrandBlock(...args: any[]): any;
+  encodeBase64(bytes: Uint8Array): string;
+  decodeBase64(value: string): Uint8Array;
+}
+
+export interface ConsoleComponents {
+  BrDirective: any;
+  DivDirective: any;
+  SpanDirective: any;
+  LabelComponent: any;
+  PanelComponent: any;
+  TuiSelectComponent: any;
+  TuiTextareaComponent: any;
+}
+
+export interface ConsoleLifecycle {
+  ConsoleTerminalInputHandler: any;
+  ConsoleTerminalSurfaceAccessor: any;
+  ConsoleTerminalSurfaceLifecycle: any;
+  ConsoleTerminalApplicationLifecycleService: any;
+}
+
+// 常量（平台无关）
+export const DEFAULT_TERMINAL_COLUMNS = 80;
 ```
 
-同步删除 `src/console.ts`（已废弃）。
+#### P170-2 · console/ 提供实现（@tsdi/agent-ui/console）
 
-#### P170-2 · src/ 文件替换引用（4 文件）
-
-将 `@tsdi/components/console` 替换为 `@tsdi/agent-ui/console`：
-
-| 文件 | 改动 |
-|---|---|
-| `AgentConsoleSessionState.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（2 处） |
-| `AgentConsoleComponent.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
-| `AgentConsolePanels.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
-| `run-agent-ui.ts` | `from '@tsdi/components/console'` → `from '@tsdi/agent-ui/console'`（1 处） |
-
-#### P170-3 · Buffer 抽象（3 文件）
-
-将 `Buffer` 替换为平台无关实现：
+`packages/agents/agent-ui/console/index.ts` 用 `@tsdi/components/console` 实现上述接口：
 
 ```ts
-// 平台无关的 base64 编码
-function encodeBase64(bytes: Uint8Array): string {
-    if (typeof globalThis.Buffer !== 'undefined') {
-        return globalThis.Buffer.from(bytes).toString('base64');
-    }
-    // 浏览器环境
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+import { /* from @tsdi/components/console */ } from '@tsdi/components/console';
+import { CONSOLE_UTILS, CONSOLE_COMPONENTS, CONSOLE_LIFECYCLE } from '../src/console-ports';
+
+@Injectable()
+export class ConsoleUtilsImpl implements ConsoleUtils {
+  clampConsoleTextCursor = clampConsoleTextCursor;
+  // ... 所有方法映射
 }
 
-// 平台无关的 base64 解码
-function decodeBase64(value: string): Uint8Array {
-    if (typeof globalThis.Buffer !== 'undefined') {
-        return new globalThis.Buffer.from(value, 'base64');
-    }
-    // 浏览器环境
-    const binary = atob(value);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-}
+// Module 注册
+@Module({
+  providers: [
+    { provide: CONSOLE_UTILS, useClass: ConsoleUtilsImpl },
+    { provide: CONSOLE_COMPONENTS, useValue: { BrDirective, DivDirective, ... } },
+    { provide: CONSOLE_LIFECYCLE, useValue: { ConsoleTerminalInputHandler, ... } },
+  ]
+})
+export class AgentConsoleModule {}
 ```
 
-放在 `console/index.ts` 或单独 `utils.ts`，3 个文件引用替换：
+#### P170-3 · src/ 文件替换为 DI 注入（4 文件）
+
+将直接 import 替换为 DI 注入：
+
+```ts
+// Before
+import { clampConsoleTextCursor } from '@tsdi/components/console';
+
+// After
+import { CONSOLE_UTILS, ConsoleUtils } from './console-ports';
+
+@Injectable()
+export class AgentConsoleSessionState {
+  @Inject(CONSOLE_UTILS) private consoleUtils!: ConsoleUtils;
+  
+  // 使用
+  const result = this.consoleUtils.clampConsoleTextCursor(value, max);
+}
+```
 
 | 文件 | 改动 |
 |---|---|
-| `AgentConsoleComponent.ts` | 删除 `import { Buffer }`，用 `decodeBase64(value)` 替换 `new Uint8Array(Buffer.from(value, 'base64'))` |
-| `AgentConsoleSessionService.ts` | 删除 `import { Buffer }`，用 `encodeBase64(bytes)` 替换 `Buffer.from(bytes).toString('base64')` |
-| `AgentConsoleExportHandlers.ts` | 无 import，但 `Buffer.from(bytes).toString('base64')` 替换为 `encodeBase64(bytes)` |
+| `AgentConsoleSessionState.ts` | 6 个 console 符号 → DI 注入 `CONSOLE_UTILS` |
+| `AgentConsoleComponent.ts` | 9 个 console 符号 → DI 注入 `CONSOLE_UTILS` + `CONSOLE_LIFECYCLE` |
+| `AgentConsolePanels.ts` | 12 个 console 符号 → DI 注入 `CONSOLE_COMPONENTS` |
+| `run-agent-ui.ts` | 3 个 console 符号 → DI 注入 `CONSOLE_LIFECYCLE` |
 
-#### P170-4 · package.json exports 补全
+#### P170-4 · Buffer 抽象（3 文件）
 
-```json
-{
-  "exports": {
-    ".": "./src/index.ts",
-    "./console": "./console/index.ts"
+`encodeBase64` / `decodeBase64` 放入 `ConsoleUtils` 接口，实现用全局守卫：
+
+```ts
+// 实现
+encodeBase64(bytes: Uint8Array): string {
+  if (typeof globalThis.Buffer !== 'undefined') {
+    return globalThis.Buffer.from(bytes).toString('base64');
   }
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 ```
+
+3 个文件删除 `import { Buffer }`，改用 DI 注入。
 
 #### P170-5 · 验证
 
 ```bash
 cd packages/agents/agent-ui
-npx tsc --noEmit          # 类型检查
-npm test                  # 653 tests
-npm run build:web         # bundle 构建
+npx tsc --noEmit
+npm test
+npm run build:web
 
 # 确认 src/ 无 console/node 直接引用
 grep -r "@tsdi/components/console" src/     # 应为空
 grep -r "from 'buffer'" src/               # 应为空
 grep -r "from 'node:" src/                 # 应为空
-```
-
-#### P170-6 · 更新 AGENTS.md
-
-在「跨平台」约束中明确：
-
-```
-- `agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库
-  （`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；
-  console 相关的类型和函数统一从 `@tsdi/agent-ui/console` 引入，
-  由各平台适配层提供实现。
 ```
 
 ### 验收标准
