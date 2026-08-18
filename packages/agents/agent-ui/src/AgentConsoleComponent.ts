@@ -16,6 +16,49 @@ import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
+import {
+    formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
+    formatUsageSummary as fmtUsageSummary,
+    formatCompactionHistoryAggregate as fmtCompactionHistoryAggregate,
+    formatCompactionHistoryRecord as fmtCompactionHistoryRecord,
+    formatCompactionHistoryTrend as fmtCompactionHistoryTrend,
+    formatTurnDiagnosticsAggregate as fmtTurnDiagnosticsAggregate,
+    formatTurnDiagnosticsTrend as fmtTurnDiagnosticsTrend,
+    buildSummaryQualityRecordOption,
+    buildTurnDiagnosticsRecordOption,
+    parseTrendArgs,
+} from './AgentConsoleFormatters';
+import {
+    runExportCommand as runExportCommandFn,
+    parseExportArgs as parseExportArgsFn,
+    looksLikeExportPath,
+    tryWriteSessionExport as tryWriteSessionExportFn,
+    previewSessionExport as previewSessionExportFn,
+    resolveFileAdapter as resolveFileAdapterFn,
+    resolveExportTargetPath,
+    resolvePathDirectory,
+    resolveAttachmentTargetPath,
+    describePendingAttachments,
+    buildTurnMessageInput,
+    runAttachCommand as runAttachCommandFn,
+    loadPendingAttachment,
+    resolveImageMediaType,
+    resolveDocumentMediaType,
+    resolveAnyMediaType,
+    readFileBytes,
+    normalizeBinaryChunk,
+    concatUint8Arrays,
+    encodeBase64,
+} from './AgentConsoleExportHandlers';
+import {
+    openCompactionHistory,
+    openCompactionHistoryTrend,
+    openTurnDiagnostics as openTurnDiagnosticsFn,
+    openUsage,
+    openHarnessAudit,
+    openHarnessProfile,
+    openSummaryQualityRecords as openSummaryQualityRecordsFn,
+} from './AgentConsoleDiagnosticsHandlers';
 import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
@@ -269,17 +312,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected formatSummaryQualityAggregate(aggregate: Record<string, any>): string {
-        const provider = String(aggregate.provider ?? 'unknown');
-        const count = Number(aggregate.recordCount ?? 0);
-        const avgTotal = Number(aggregate.avgTotal ?? 0).toFixed(1);
-        const fallbackRate = Number(aggregate.fallbackRate ?? 0).toFixed(1);
-        const evidenceCoverage = Number(aggregate.avgEvidenceCoverage ?? 0).toFixed(1);
-        const from = Number(aggregate.timeRange?.from ?? 0);
-        const to = Number(aggregate.timeRange?.to ?? 0);
-        const range = from || to
-            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
-            : '';
-        return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}% · evidence ${evidenceCoverage}%${range}`;
+        return fmtSummaryQualityAggregate(aggregate);
     }
 
     protected formatUsageWindow(label: string, usage: Record<string, any>): string {
@@ -287,30 +320,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected formatUsageSummary(usage: Record<string, any>): string {
-        if (usage?.selectedRange && usage?.selected) {
-            const labels: Record<string, string> = { daily: 'day', weekly: 'week', cumulative: 'all' };
-            return this.formatUsageWindow(labels[usage.selectedRange] ?? usage.selectedRange, usage.selected);
-        }
-        return [
-            this.formatUsageWindow('day', usage?.daily ?? {}),
-            this.formatUsageWindow('week', usage?.weekly ?? {}),
-            this.formatUsageWindow('all', usage?.cumulative ?? {})
-        ].join(' | ');
+        return fmtUsageSummary(usage);
     }
 
     protected formatCompactionHistoryAggregate(aggregate: Record<string, any>): string {
-        const sessionId = String(aggregate.sessionId ?? 'unknown');
-        const count = Number(aggregate.recordCount ?? 0);
-        const compacted = Number(aggregate.compactedCount ?? 0);
-        const tokensSaved = Number(aggregate.totalTokensSaved ?? 0);
-        const avgRatio = Number(aggregate.avgCompressionRatio ?? 0).toFixed(1);
-        const from = Number(aggregate.timeRange?.from ?? 0);
-        const to = Number(aggregate.timeRange?.to ?? 0);
-        const range = from || to
-            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
-            : '';
-        const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-        return `${id} · ${count} ${count === 1 ? 'compaction' : 'compactions'} · ${compacted} triggered · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%${range}`;
+        return fmtCompactionHistoryAggregate(aggregate);
     }
 
     protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
@@ -327,7 +341,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             );
             return true;
         }
-        const options = records.map(record => this.buildSummaryQualityRecordOption(record));
+        const options = records.map(record => buildSummaryQualityRecordOption(record));
         await this.select(
             provider
                 ? `Summary quality records (${provider})`
@@ -340,37 +354,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected buildSummaryQualityRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
-        const id = String(record.id ?? '');
-        const model = record.model ? String(record.model) : 'unknown';
-        const total = Number(record.total ?? 0);
-        const createdAt = Number(record.createdAt ?? 0);
-        return {
-            label: `${record.provider ?? 'unknown'} · ${model} · ${total}`,
-            value: id || `${record.provider ?? 'unknown'}:${total}`,
-            description: [
-                createdAt ? new Date(createdAt).toLocaleDateString() : '',
-                `fields ${Number(record.fieldCompleteness ?? 0)}`,
-                `annotation ${Number(record.annotationQuality ?? 0)}`,
-                `length ${Number(record.lengthBalance ?? 0)}`,
-                `truncation ${Number(record.truncationScore ?? 0)}`,
-                record.evidenceCoverage != null ? `evidence ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-                record.fallbackUsed ? 'fallback' : ''
-            ].filter(Boolean).join(' · ') || 'summary quality record',
-            detail: [
-                `Record: ${id || '-'}`,
-                `Provider: ${record.provider ?? 'unknown'}`,
-                `Model: ${model}`,
-                `Total: ${total}`,
-                `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
-                `Annotation: ${Number(record.annotationQuality ?? 0)}`,
-                `Length: ${Number(record.lengthBalance ?? 0)}`,
-                `Truncation: ${Number(record.truncationScore ?? 0)}`,
-                record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-                `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
-                `Summary length: ${Number(record.summaryLength ?? 0)}`,
-                createdAt ? `Created: ${new Date(createdAt).toLocaleString()}` : ''
-            ].filter(Boolean).join('\n')
-        };
+        return buildSummaryQualityRecordOption(record);
     }
 
     protected async openSummaryQualityTrend(
@@ -396,94 +380,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async runExportCommand(args: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Session export is unavailable without session service.');
-            return true;
-        }
-        const parsed = this.parseExportArgs(args);
-        const sessionId = parsed.sessionId || this.state.sessionId;
-        if (!sessionId) {
-            this.notify('No session selected. Run /export [json|jsonl] [sessionId] [path].');
-            return true;
-        }
-        const result = await this.sessionService.exportSession(sessionId, { format: parsed.format });
-        const targetPath = await this.tryWriteSessionExport(result, parsed.path);
-        if (targetPath) {
-            this.notify(`Exported session '${sessionId}' to ${targetPath}.`);
-            return true;
-        }
-        this.previewSessionExport(result);
-        this.notify(`Export preview ready for session '${sessionId}' (${result.format.toUpperCase()}).`);
-        return true;
+        return runExportCommandFn(this.getExportHandlerContext(), args);
     }
 
     protected parseExportArgs(args: string): { format: AgentSessionExportFormat; sessionId?: string; path?: string } {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        let format: AgentSessionExportFormat = 'json';
-        if (tokens[0] && /^(json|jsonl)$/i.test(tokens[0])) {
-            format = tokens.shift()!.toLowerCase() as AgentSessionExportFormat;
-        }
-        if (!tokens.length) {
-            return { format };
-        }
-        if (tokens.length === 1) {
-            const token = tokens[0];
-            return this.looksLikeExportPath(token)
-                ? { format, path: token }
-                : { format, sessionId: token };
-        }
-        return {
-            format,
-            sessionId: tokens.shift(),
-            path: tokens.join(' ')
-        };
+        return parseExportArgsFn(args);
     }
 
     protected looksLikeExportPath(value: string): boolean {
-        const token = String(value || '').trim();
-        return !!token && (
-            /[\\/]/.test(token)
-            || token.startsWith('.')
-            || token.endsWith('.json')
-            || token.endsWith('.jsonl')
-        );
+        return looksLikeExportPath(value);
     }
 
     protected async tryWriteSessionExport(
         result: AgentSessionExportResult,
         requestedPath?: string
     ): Promise<string | undefined> {
-        const fileAdapter = this.resolveFileAdapter();
-        if (!fileAdapter) {
-            return undefined;
-        }
-        const targetPath = this.resolveExportTargetPath(fileAdapter, result, requestedPath);
-        try {
-            const dirname = this.resolvePathDirectory(targetPath, fileAdapter);
-            if (dirname) {
-                await fileAdapter.mkdir(dirname, { recursive: true });
-            }
-            await fileAdapter.writeText(targetPath, result.content, 'utf-8');
-            return targetPath;
-        } catch {
-            return undefined;
-        }
+        return tryWriteSessionExportFn(this.getExportHandlerContext(), result, requestedPath);
     }
 
     protected previewSessionExport(result: AgentSessionExportResult): void {
-        const messageCount = Number(result.session?.messageCount ?? result.messages.length);
-        const toolCallCount = Number(result.session?.toolCallCount ?? result.toolCalls.length);
-        this.state.openSelectMenu(
-            `Session export (${result.format})`,
-            [{
-                label: result.fileName,
-                value: result.fileName,
-                description: `${messageCount} message${messageCount === 1 ? '' : 's'} · ${toolCallCount} tool call${toolCallCount === 1 ? '' : 's'}`,
-                detail: result.content
-            }],
-            0,
-            'Read-only export preview. Press Esc to close.'
-        );
+        previewSessionExportFn(this.getExportHandlerContext(), result);
     }
 
     protected resolveFileAdapter(): FileAdapter | null {
@@ -495,140 +411,41 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         result: AgentSessionExportResult,
         requestedPath?: string
     ): string {
-        const trimmed = String(requestedPath || '').trim();
-        if (trimmed) {
-            if (fileAdapter.isAbsolute(trimmed)) {
-                return fileAdapter.normalize(trimmed);
-            }
-            const workspace = String(this.workspace || '').trim();
-            return workspace
-                ? fileAdapter.resolve(workspace, trimmed)
-                : fileAdapter.normalize(trimmed);
-        }
-        const workspace = String(this.workspace || '').trim();
-        return workspace
-            ? fileAdapter.join(workspace, '.tsdi-agent', 'exports', result.fileName)
-            : fileAdapter.join('.tsdi-agent', 'exports', result.fileName);
+        return resolveExportTargetPath(fileAdapter, this.workspace, result, requestedPath);
     }
 
     protected resolvePathDirectory(targetPath: string, fileAdapter: FileAdapter): string {
-        const normalized = fileAdapter.normalize(targetPath).replace(/[\\/]+$/, '');
-        const slashIndex = Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\'));
-        if (slashIndex < 0) {
-            return '.';
-        }
-        if (/^[a-zA-Z]:[\\/]/.test(normalized) && slashIndex === 2) {
-            return normalized.slice(0, 3);
-        }
-        if (slashIndex === 0) {
-            return normalized.slice(0, 1);
-        }
-        return normalized.slice(0, slashIndex);
+        return resolvePathDirectory(targetPath, fileAdapter);
     }
 
     protected resolveAttachmentTargetPath(targetPath: string, fileAdapter: FileAdapter): string {
-        const trimmed = String(targetPath || '').trim();
-        if (!trimmed) {
-            throw new Error('Usage: /attach <path>');
-        }
-        if (fileAdapter.isAbsolute(trimmed)) {
-            return fileAdapter.normalize(trimmed);
-        }
-        const workspace = String(this.workspace || '').trim();
-        return workspace
-            ? fileAdapter.resolve(workspace, trimmed)
-            : fileAdapter.normalize(trimmed);
+        return resolveAttachmentTargetPath(targetPath, this.workspace, fileAdapter);
     }
 
     protected describePendingAttachments(attachments: AgentConsolePendingAttachment[] = this.state.pendingAttachments): string {
-        if (!attachments.length) {
-            return 'No pending attachments.';
-        }
-        return `Pending attachments: ${attachments.map(item => item.name).join(', ')}`;
+        return describePendingAttachments(attachments);
     }
 
     protected buildTurnMessageInput(prompt: string, attachments: AgentConsolePendingAttachment[]): AgentTurnMessageInput | undefined {
-        if (!attachments.length) {
-            return undefined;
-        }
-        return {
-            content: prompt,
-            parts: [
-                ...(prompt ? [{ type: 'text', text: prompt } as const] : []),
-                ...attachments.map(attachment => attachment.kind === 'file'
-                    ? ({
-                        type: 'file' as const,
-                        dataUrl: attachment.dataUrl || '',
-                        mediaType: attachment.mediaType || 'application/octet-stream',
-                        name: attachment.name
-                    })
-                    : ({
-                        type: 'image' as const,
-                        imageUrl: attachment.imageUrl || '',
-                        mediaType: attachment.mediaType,
-                        name: attachment.name
-                    })
-                )
-            ]
-        };
+        return buildTurnMessageInput(prompt, attachments);
     }
 
     protected async runAttachCommand(args: string): Promise<boolean> {
-        const trimmed = String(args || '').trim();
-        if (!trimmed) {
-            this.notify(this.describePendingAttachments());
-            return true;
-        }
-        if (/^(clear|reset)$/i.test(trimmed)) {
-            this.state.clearPendingAttachments();
-            this.notify('Cleared pending attachments.');
-            return true;
-        }
-        const fileAdapter = this.resolveFileAdapter();
-        if (!fileAdapter) {
-            this.notify('Attach is unavailable without a file adapter.');
-            return true;
-        }
-        try {
-            const attachment = await this.loadPendingAttachment(trimmed, fileAdapter);
-            this.state.setPendingAttachments([
-                ...this.state.pendingAttachments.filter(item => item.path !== attachment.path),
-                attachment
-            ]);
-            this.notify(`Attached ${attachment.name}. ${this.describePendingAttachments()}`);
-        } catch (error: any) {
-            this.notify(error?.message || String(error || 'Failed to attach file.'));
-        }
-        return true;
+        return runAttachCommandFn(this.getExportHandlerContext(), args);
+    }
+
+    private getExportHandlerContext() {
+        return {
+            state: this.state as any,
+            sessionService: this.sessionService as any,
+            app: this.app as any,
+            workspace: this.workspace,
+            notify: (msg: string) => this.notify(msg),
+        };
     }
 
     protected async loadPendingAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
-        const absolutePath = this.resolveAttachmentTargetPath(targetPath, fileAdapter);
-        const imageMediaType = this.resolveImageMediaType(absolutePath);
-        if (imageMediaType) {
-            const bytes = await this.readFileBytes(absolutePath, fileAdapter);
-            return {
-                id: `attachment-${Date.now()}-${Math.random()}`,
-                kind: 'image',
-                path: absolutePath,
-                name: absolutePath.split(/[\\/]/).pop() || absolutePath,
-                mediaType: imageMediaType,
-                imageUrl: `data:${imageMediaType};base64,${this.encodeBase64(bytes)}`
-            };
-        }
-        const docMediaType = this.resolveDocumentMediaType(absolutePath);
-        if (docMediaType) {
-            const bytes = await this.readFileBytes(absolutePath, fileAdapter);
-            return {
-                id: `attachment-${Date.now()}-${Math.random()}`,
-                kind: 'file',
-                path: absolutePath,
-                name: absolutePath.split(/[\\/]/).pop() || absolutePath,
-                mediaType: docMediaType,
-                dataUrl: `data:${docMediaType};base64,${this.encodeBase64(bytes)}`
-            };
-        }
-        throw new Error(`Unsupported attachment format for '${targetPath}'.`);
+        return loadPendingAttachment(targetPath, this.workspace, fileAdapter);
     }
 
     /** @deprecated Use {@link loadPendingAttachment} instead. */
@@ -637,345 +454,69 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected resolveImageMediaType(filePath: string): string | undefined {
-        const normalized = String(filePath || '').trim().toLowerCase();
-        for (const ext of Object.keys(AgentConsoleComponent.IMAGE_MIME_TYPES)) {
-            if (normalized.endsWith(ext)) {
-                return AgentConsoleComponent.IMAGE_MIME_TYPES[ext];
-            }
-        }
-        return undefined;
+        return resolveImageMediaType(filePath);
     }
 
     protected resolveDocumentMediaType(filePath: string): string | undefined {
-        const normalized = String(filePath || '').trim().toLowerCase();
-        for (const ext of Object.keys(AgentConsoleComponent.DOCUMENT_MIME_TYPES)) {
-            if (normalized.endsWith(ext)) {
-                return AgentConsoleComponent.DOCUMENT_MIME_TYPES[ext];
-            }
-        }
-        return undefined;
+        return resolveDocumentMediaType(filePath);
     }
 
     protected resolveAnyMediaType(filePath: string): string | undefined {
-        return this.resolveImageMediaType(filePath) || this.resolveDocumentMediaType(filePath);
+        return resolveAnyMediaType(filePath);
     }
 
     protected async readFileBytes(targetPath: string, fileAdapter: FileAdapter): Promise<Uint8Array> {
-        const readable = fileAdapter.read(targetPath) as any;
-        if (readable && typeof readable[Symbol.asyncIterator] === 'function') {
-            const chunks: Uint8Array[] = [];
-            let total = 0;
-            for await (const chunk of readable) {
-                const bytes = await this.normalizeBinaryChunk(chunk);
-                if (!bytes.length) {
-                    continue;
-                }
-                chunks.push(bytes);
-                total += bytes.length;
-            }
-            return this.concatUint8Arrays(chunks, total);
-        }
-        return await new Promise<Uint8Array>((resolve, reject) => {
-            const chunks: Uint8Array[] = [];
-            let total = 0;
-            let finished = false;
-            const pending: Array<Promise<void>> = [];
-            const finish = () => {
-                if (finished) {
-                    return;
-                }
-                finished = true;
-                void Promise.all(pending)
-                    .then(() => resolve(this.concatUint8Arrays(chunks, total)))
-                    .catch(reject);
-            };
-            const fail = (error: Error) => {
-                if (finished) {
-                    return;
-                }
-                finished = true;
-                reject(error);
-            };
-            readable?.on?.('data', (chunk: any) => {
-                pending.push(this.normalizeBinaryChunk(chunk)
-                    .then(bytes => {
-                        if (!bytes.length) {
-                            return;
-                        }
-                        chunks.push(bytes);
-                        total += bytes.length;
-                    })
-                    .catch(fail));
-            });
-            readable?.once?.('end', finish);
-            readable?.once?.('close', finish);
-            readable?.once?.('error', fail);
-        });
+        return readFileBytes(targetPath, fileAdapter);
     }
 
     protected async normalizeBinaryChunk(chunk: any): Promise<Uint8Array> {
-        if (!chunk) {
-            return new Uint8Array(0);
-        }
-        if (chunk instanceof Uint8Array) {
-            return chunk;
-        }
-        if (typeof ArrayBuffer !== 'undefined' && chunk instanceof ArrayBuffer) {
-            return new Uint8Array(chunk);
-        }
-        if (typeof chunk?.arrayBuffer === 'function') {
-            return new Uint8Array(await chunk.arrayBuffer());
-        }
-        if (typeof chunk === 'string') {
-            return new TextEncoder().encode(chunk);
-        }
-        if (Array.isArray(chunk)) {
-            return Uint8Array.from(chunk);
-        }
-        return new Uint8Array(0);
+        return normalizeBinaryChunk(chunk);
     }
 
     protected concatUint8Arrays(chunks: Uint8Array[], total: number): Uint8Array {
-        const bytes = new Uint8Array(total);
-        let offset = 0;
-        for (const chunk of chunks) {
-            bytes.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return bytes;
+        return concatUint8Arrays(chunks, total);
     }
 
     protected encodeBase64(bytes: Uint8Array): string {
-        if (typeof Buffer !== 'undefined') {
-            return Buffer.from(bytes).toString('base64');
-        }
-        if (typeof globalThis.btoa === 'function') {
-            let binary = '';
-            const chunkSize = 0x8000;
-            for (let index = 0; index < bytes.length; index += chunkSize) {
-                const slice = bytes.subarray(index, index + chunkSize);
-                binary += String.fromCharCode(...Array.from(slice));
-            }
-            return globalThis.btoa(binary);
-        }
-        throw new Error('Base64 encoding is unavailable in this environment.');
+        return encodeBase64(bytes);
     }
 
-    /**
-     * Opens `/compactions [sessionId]`: lists compaction history records for the
-     * current (or given) session as one digest line per record with strategy,
-     * level, message/token counts, and compression ratio.
-     */
     protected async openCompactionHistory(args: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Compaction history is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = args.trim() || this.state.sessionId;
-        if (!sessionId) {
-            this.notify('No session selected. Run /compactions <sessionId>.');
-            return true;
-        }
-        const records = await this.sessionService.listCompactionHistory(sessionId);
-        if (!records.length) {
-            this.notify(`No compaction history recorded for session '${sessionId}'.`);
-            return true;
-        }
-        this.notify(
-            records
-                .map(record => this.formatCompactionHistoryRecord(record))
-                .join(' | ')
-        );
-        return true;
+        return openCompactionHistory(this.getDiagnosticsHandlerContext(), args);
     }
 
-    /**
-     * Opens `/compactions trend [sessionId] [bucketSize] [maxBuckets]`:
-     * renders one sparkline line per session showing how compaction token
-     * savings and compression evolve over time buckets.
-     */
     protected async openCompactionHistoryTrend(
         sessionId?: string,
         bucketSize?: number,
         maxBuckets?: number
     ): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Compaction history is unavailable without app RPC.');
-            return true;
-        }
-        const trend = await this.sessionService.getCompactionHistoryTrend(sessionId, { bucketSize, maxBuckets });
-        if (!trend.length) {
-            this.notify(
-                sessionId
-                    ? `No compaction history trend recorded for session '${sessionId}'.`
-                    : 'No compaction history trend recorded yet.'
-            );
-            return true;
-        }
-        this.notify(this.formatCompactionHistoryTrend(trend).join(' | '));
-        return true;
+        const args = [sessionId, bucketSize, maxBuckets].filter(v => v != null).join(' ');
+        return openCompactionHistoryTrend(this.getDiagnosticsHandlerContext(), args);
     }
 
-    /**
-     * Opens `/diagnostics [sessionId]`: shows aggregated turn diagnostics
-     * (empty-response rate, repeated-question rate, compaction totals, token
-     * savings) for the given session, or for every session owned by the
-     * principal when no session id is provided.
-     */
     protected async openTurnDiagnostics(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Turn diagnostics are unavailable without app RPC.');
-            return true;
-        }
-        const aggregate = await this.sessionService.getTurnDiagnosticsStats(sessionId);
-        if (!aggregate || !Number(aggregate.totalTurns)) {
-            this.notify(
-                sessionId
-                    ? `No turn diagnostics recorded for session '${sessionId}'.`
-                    : 'No turn diagnostics recorded yet.'
-            );
-            return true;
-        }
-        this.notify(this.formatTurnDiagnosticsAggregate(aggregate, sessionId));
-        return true;
+        return openTurnDiagnosticsFn(this.getDiagnosticsHandlerContext(), sessionId);
     }
 
     protected async openUsage(input?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Usage is unavailable without session access.');
-            return true;
-        }
-        const args = String(input || '').trim().split(/\s+/).filter(Boolean);
-        const first = args[0];
-        const range = first === 'daily' || first === 'weekly' || first === 'cumulative' ? first : undefined;
-        const sessionId = range ? args[1] : first;
-        const since = range ? args[2] : args[1];
-        const usage = await this.sessionService.getUsageStats(sessionId, { ...(range ? { range } : {}), ...(since ? { since } : {}) });
-        const totalTurns = Number(usage?.cumulative?.turns ?? 0);
-        const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
-        if (!totalTurns && !totalTokens) {
-            this.notify(
-                sessionId
-                    ? `No usage recorded for session '${sessionId}'.`
-                    : 'No usage recorded yet.'
-            );
-            return true;
-        }
-        this.notify(this.formatUsageSummary(usage));
-        return true;
+        return openUsage(this.getDiagnosticsHandlerContext(), input);
     }
 
-    /**
-     * Opens `/harness audit [sessionId]`: mines the durable execution trace
-     * (evidence ledgers + audit sink) for failure patterns and renders the
-     * top failing tools, error-signature clusters, falsified distribution, and
-     * candidate harness policy suggestions.
-     */
     protected async openHarnessAudit(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Harness audit is unavailable without app RPC.');
-            return true;
-        }
-        const report = await this.sessionService.runHarnessAudit(sessionId);
-        if (!report || report.empty === true) {
-            this.notify(
-                sessionId
-                    ? `No harness failure data recorded for session '${sessionId}'.`
-                    : 'No harness failure data recorded yet.'
-            );
-            return true;
-        }
-        const lines: string[] = [];
-        const scope = report.scopedSessionIds
-            ? report.scopedSessionIds.map((id: string) => (id.length > 16 ? `${id.slice(0, 14)}…` : id)).join(',')
-            : 'all sessions';
-        lines.push(`harness audit · ${scope} · ${Number(report.totalTurns ?? 0)} turns · ${Number(report.totalToolAttempts ?? 0)} tool attempts · fail-turn ${Number(report.failureTurnRate ?? 0)}%`);
-        for (const stat of report.topFailingTools ?? []) {
-            lines.push(`tool ${stat.toolName} · ${stat.failures}/${stat.attempts} (${Number(stat.failureRate ?? 0)}%) · falsified ${Number(stat.falsifiedCount ?? 0)}`);
-        }
-        for (const cluster of report.errorClusters ?? []) {
-            lines.push(`cluster ${cluster.signature} · x${cluster.count} · tools ${(cluster.toolNames ?? []).join(',')}${cluster.suggestedPolicy ? ` · ${cluster.suggestedPolicy}` : ''}`);
-        }
-        for (const falsified of report.falsifiedDistribution ?? []) {
-            lines.push(`falsified ${falsified.toolName} · ${falsified.falsifiedCount} (${Number(falsified.falsifiedRate ?? 0)}%)`);
-        }
-        for (const suggestion of report.suggestions ?? []) {
-            lines.push(`suggest[${suggestion.kind}]${suggestion.toolName ? ` ${suggestion.toolName}` : ''} · ${suggestion.message}`);
-        }
-        this.notify(lines.join('\n'));
-        return true;
+        return openHarnessAudit(this.getDiagnosticsHandlerContext(), sessionId);
     }
 
-    /**
-     * Opens `/harness profile [list|current|diff <from> <to>]`: renders the
-     * builtin versioned governance profiles, the active reference, and readable
-     * field diffs between profiles (or `current`).
-     */
+    private getDiagnosticsHandlerContext() {
+        return {
+            state: this.state as any,
+            sessionService: this.sessionService as any,
+            notify: (msg: string) => this.notify(msg),
+            select: (title: string, options: any[], footer?: string) => this.select(title, options, 0, footer),
+        };
+    }
+
     protected async openHarnessProfile(sub?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Harness profile is unavailable without app RPC.');
-            return true;
-        }
-        const arg = (sub ?? '').trim();
-        if (arg === 'list' || arg === '' || arg === 'default') {
-            const result = await this.sessionService.listHarnessProfiles();
-            const lines: string[] = [];
-            const active = result.current;
-            lines.push(`harness profiles${active ? ` · active '${active}'` : ' · default'}`);
-            for (const profile of result.profiles ?? []) {
-                const granular = (profile.granularCategories ?? []).length
-                    ? ` · granular ${(profile.granularCategories ?? []).join(',')}`
-                    : '';
-                lines.push(`profile ${profile.name} · v${profile.version}${profile.maxRepairRounds !== undefined ? ` · repair ${profile.maxRepairRounds}` : ''}${profile.maxLoopRecoveries !== undefined ? ` · loop-recover ${profile.maxLoopRecoveries}` : ''}${profile.sandbox?.mode ? ` · sandbox ${profile.sandbox.mode}` : ''}${granular}`);
-            }
-            this.notify(lines.join('\n'));
-            return true;
-        }
-        if (arg === 'current') {
-            const profile = await this.sessionService.currentHarnessProfile();
-            if (!profile) {
-                this.notify('No harness profile resolved.');
-                return true;
-            }
-            const lines: string[] = [];
-            lines.push(`harness profile ${profile.name} · v${profile.version}`);
-            for (const rule of profile.requireApproval ?? []) {
-                const category = typeof rule === 'string' ? rule : `${rule.category}${rule.names?.length ? `:${rule.names.join(',')}` : ''}${rule.mode ? `[${rule.mode}]` : ''}`;
-                lines.push(`approval ${category}`);
-            }
-            if (profile.sandbox) {
-                lines.push(`sandbox ${profile.sandbox.mode}${profile.sandbox.networkAllowlist?.length ? ` · allow ${profile.sandbox.networkAllowlist.join(',')}` : ''}`);
-            }
-            if (profile.maxRepairRounds !== undefined) {
-                lines.push(`maxRepairRounds ${profile.maxRepairRounds}`);
-            }
-            if (profile.maxLoopRecoveries !== undefined) {
-                lines.push(`maxLoopRecoveries ${profile.maxLoopRecoveries}`);
-            }
-            this.notify(lines.join('\n'));
-            return true;
-        }
-        if (arg.startsWith('diff')) {
-            const parts = arg.slice(4).trim().split(/\s+/).filter(Boolean);
-            const from = parts[0] || 'default';
-            const to = parts[1] || 'current';
-            const result = await this.sessionService.diffHarnessProfiles(from, to);
-            if (!result) {
-                this.notify('Harness profile diff is unavailable.');
-                return true;
-            }
-            if (result.error) {
-                this.notify(result.error);
-                return true;
-            }
-            const diffLines = (result.diff ?? []).length
-                ? (result.diff ?? []).map(line => `  ${line}`)
-                : ['  (no differences)'];
-            this.notify(`harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
-            return true;
-        }
-        this.notify('Usage: /harness profile [list|current|diff <from> <to>]');
-        return true;
+        return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
     }
 
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
