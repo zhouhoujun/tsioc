@@ -9457,8 +9457,8 @@ export class AgentConsoleComponentTest {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-settings-'));
         try {
             const store = new AgentConsoleSettingsStore(new TestFileAdapter());
-            await store.save(workspace, { language: 'zh-CN', vimMode: true, showThinking: false });
-            expect(await store.load(workspace)).toEqual({ language: 'zh-CN', vimMode: true, showThinking: false });
+            await store.save(workspace, { language: 'zh-CN', vimMode: true, showThinking: false, thinkingLevel: 'high' });
+            expect(await store.load(workspace)).toEqual({ language: 'zh-CN', vimMode: true, showThinking: false, thinkingLevel: 'high' });
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
@@ -9594,13 +9594,42 @@ export class AgentConsoleComponentTest {
         await waitForCondition(() => !!component.selectMenu);
         await component.sessionState.confirmSelectMenu('providers');
         await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');
-        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['model', 'fast', 'status']);
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['model', 'thinking-level', 'fast', 'status']);
 
         await component.sessionState.confirmSelectMenu('model');
         await waitForCondition(() => component.selectMenu?.title === 'Model profiles');
         expect(component.selectMenu?.options.map(option => option.value)).toEqual(['fast', 'strong']);
         await component.sessionState.confirmSelectMenu('fast');
         await pending;
+    }
+
+    @Test('settings providers tab selects and persists thinking level')
+    async settingsProvidersTabSelectsThinkingLevel() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-thinking-level-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+
+            const pending = (component as any).handleCommand('/settings');
+            await waitForCondition(() => !!component.selectMenu);
+            await component.sessionState.confirmSelectMenu('providers');
+            await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');
+            await component.sessionState.confirmSelectMenu('thinking-level');
+            await waitForCondition(() => component.selectMenu?.title === 'Settings · Thinking Level');
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['low', 'medium', 'high']);
+
+            await component.sessionState.confirmSelectMenu('high');
+            await pending;
+
+            expect((component as any).options.model.reasoningEffort).toEqual('high');
+            expect(await store.load(workspace)).toEqual({ thinkingLevel: 'high' });
+            expect(component.notice).toContain('Reasoning effort: high');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
     }
 
     @Test('health popover toggle collects gateway, mcp and lsp status')

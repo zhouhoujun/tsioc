@@ -6617,6 +6617,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (typeof persisted.timelineMode === 'boolean') {
             this.state.setTimelineMode(persisted.timelineMode);
         }
+        if (persisted.thinkingLevel) {
+            this.modelReasoningEffort = persisted.thinkingLevel;
+            this.options.model = this.options.model || {};
+            this.options.model.reasoningEffort = persisted.thinkingLevel;
+        }
     }
 
     protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {
@@ -7057,6 +7062,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async openSettingsProvidersTab(): Promise<boolean> {
         const option = await this.select('Settings · Providers', [
             { label: 'Model profiles', value: 'model', description: 'switch the active model profile' },
+            { label: `Thinking level: ${this.modelReasoningEffort}`, value: 'thinking-level', description: 'set model reasoning effort' },
             { label: 'Fast/strong profile', value: 'fast', description: 'switch between fast and strong profiles' },
             { label: 'Session status', value: 'status', description: 'show current model / archetype / modes' }
         ], 0, 'enter select   esc close');
@@ -7065,6 +7071,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.openModelSwitcher();
             return true;
         }
+        if (option === 'thinking-level') {
+            return this.openSettingsThinkingLevel();
+        }
         if (option === 'fast') {
             return this.runFastCommand();
         }
@@ -7072,6 +7081,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.runStatusCommand();
             return true;
         }
+        return true;
+    }
+
+    protected async openSettingsThinkingLevel(): Promise<boolean> {
+        const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+        const selected = await this.select('Settings · Thinking Level', tiers.map(tier => ({
+            label: `${tier === this.modelReasoningEffort ? '● ' : '  '}${tier}`,
+            value: tier,
+            description: tier === this.modelReasoningEffort ? 'current level' : 'set reasoning effort'
+        })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), 'enter apply   esc close') as 'low' | 'medium' | 'high' | undefined;
+        if (!selected) return true;
+        await this.setModelReasoningEffort(selected);
         return true;
     }
 
@@ -9206,7 +9227,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
         const current = this.modelReasoningEffort;
         const next = tiers[(tiers.indexOf(current) + 1) % tiers.length];
-        this.modelReasoningEffort = next;
+        await this.setModelReasoningEffort(next);
+    }
+
+    protected async setModelReasoningEffort(next: 'low' | 'medium' | 'high'): Promise<void> {
         if (this.appRpc) {
             const sessionId = this.state.sessionId;
             const name = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
@@ -9221,12 +9245,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             const returned = String(result?.reasoningEffort || '');
             if (returned === 'low' || returned === 'medium' || returned === 'high') {
-                this.modelReasoningEffort = returned;
+                next = returned;
             }
-        } else {
-            this.options.model = this.options.model || {};
-            this.options.model.reasoningEffort = next;
         }
+        this.modelReasoningEffort = next;
+        this.options.model = this.options.model || {};
+        this.options.model.reasoningEffort = next;
+        await this.persistSettings({ thinkingLevel: next });
         this.notify(`Reasoning effort: ${this.modelReasoningEffort}.`);
     }
 

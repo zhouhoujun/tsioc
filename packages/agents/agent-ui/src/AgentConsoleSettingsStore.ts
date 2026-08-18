@@ -9,6 +9,7 @@ export interface AgentConsoleSettingsData {
     showToolOutput?: boolean;
     showUsername?: boolean;
     timelineMode?: boolean;
+    thinkingLevel?: 'low' | 'medium' | 'high';
 }
 
 @Injectable()
@@ -27,7 +28,10 @@ export class AgentConsoleSettingsStore {
                 showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
                 showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
                 showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
-                timelineMode: typeof parsed?.timelineMode === 'boolean' ? parsed.timelineMode : undefined
+                timelineMode: typeof parsed?.timelineMode === 'boolean' ? parsed.timelineMode : undefined,
+                thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
+                    ? parsed.thinkingLevel
+                    : undefined
             };
         } catch {
             return {};
@@ -46,7 +50,8 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showTimestamps === 'boolean' ? { showTimestamps: data.showTimestamps } : {}),
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
-            ...(typeof data.timelineMode === 'boolean' ? { timelineMode: data.timelineMode } : {})
+            ...(typeof data.timelineMode === 'boolean' ? { timelineMode: data.timelineMode } : {}),
+            ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {})
         }, null, 2));
     }
 
