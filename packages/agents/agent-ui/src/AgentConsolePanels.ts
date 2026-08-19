@@ -1,12 +1,8 @@
 import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
-import { Inject, Optional } from '@tsdi/ioc';
+import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
-import {
-    CONSOLE_UTILS,
-    ConsoleUtils
-} from './console-ports';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -44,6 +40,13 @@ import {
     styleTextToObject
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
+import {
+    buildCommonBrandBlock as buildTerminalBrandBlock,
+    formatCommonIndexedOptionLabel as formatConsoleIndexedOptionLabel,
+    resolveCommonEnterAction as resolveConsoleEnterAction,
+    resolveCommonListWindow as resolveConsoleListWindow,
+    resolveCommonSelectWindow as resolveConsoleSelectWindow
+} from '@tsdi/components/common';
 
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
@@ -64,7 +67,6 @@ function resolveSectionFrameStyle(baseStyleText: string | Record<string, string>
 
 @Component({
     selector: 'agent-console-brand-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-brand-panel">
         <label class="brand-line" v-for="line in brandLines">{{line}}</label>
@@ -87,7 +89,6 @@ export class AgentConsoleBrandPanelComponent {
 
 @Component({
     selector: 'agent-console-status-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-status-panel" v-style="shellStyle" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
         <label class="status-line" v-style="statusStyle" v-for="line in statusLines">{{line}}</label>
@@ -267,7 +268,6 @@ export class AgentConsoleStatusPanelComponent {
 
 @Component({
     selector: 'agent-console-input-panel',
-    imports: CONSOLE_FORM_IMPORTS,
     template: `
     <div class="console-panel console-input-panel">
         <div class="input-shell" v-style="shellStyle">
@@ -538,7 +538,6 @@ export class AgentConsoleInputPanelComponent {
 
 @Component({
     selector: 'agent-console-working-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
         <label class="working-line" v-style="workingLineStyle">
@@ -927,7 +926,6 @@ export class AgentConsoleWorkingPanelComponent {
 
 @Component({
     selector: 'agent-console-sessions-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-sessions-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{sessionsSummaryLabel}}</label>
@@ -1066,7 +1064,6 @@ export class AgentConsoleSessionsPanelComponent {
 
 @Component({
     selector: 'agent-console-tasks-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-tasks-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
@@ -1409,7 +1406,6 @@ export class AgentConsoleTasksPanelComponent {
 
 @Component({
     selector: 'agent-console-jobs-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-jobs-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{jobsSummaryLabel}}</label>
@@ -1544,7 +1540,6 @@ export class AgentConsoleJobsPanelComponent {
 
 @Component({
     selector: 'agent-console-approvals-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-approvals-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{approvalsSummaryLabel}}</label>
@@ -1669,7 +1664,6 @@ export class AgentConsoleApprovalsPanelComponent {
 
 @Component({
     selector: 'agent-console-tools-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-tools-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{toolsSummaryLabel}}</label>
@@ -1814,7 +1808,6 @@ export class AgentConsoleToolsPanelComponent {
 
 @Component({
     selector: 'agent-console-tool-runs-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
@@ -1974,7 +1967,6 @@ export class AgentConsoleToolRunsPanelComponent {
 
 @Component({
     selector: 'agent-console-message-tokens',
-    imports: [SpanDirective],
     template: `
     <span class="message-content">
         <span class="message-token" v-style="token.style" v-for="token in tokens">{{token.text}}</span>
@@ -1987,7 +1979,7 @@ export class AgentConsoleMessageTokensComponent {
 
 @Component({
     selector: 'agent-console-message-line',
-    imports: [LabelComponent, SpanDirective, AgentConsoleMessageTokensComponent],
+    imports: [AgentConsoleMessageTokensComponent],
     template: `
     <label class="message-line" v-style="itemStyle">
         <span v-style="statusStyle">{{status}}</span>
@@ -2099,7 +2091,7 @@ abstract class AgentConsoleMessageItemComponentBase {
 
 @Component({
     selector: 'agent-console-user-message-item',
-    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    imports: [AgentConsoleMessageLineComponent],
     template: MESSAGE_ITEM_TEMPLATE
 })
 export class AgentConsoleUserMessageItemComponent extends AgentConsoleMessageItemComponentBase {
@@ -2108,7 +2100,7 @@ export class AgentConsoleUserMessageItemComponent extends AgentConsoleMessageIte
 
 @Component({
     selector: 'agent-console-assistant-message-item',
-    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    imports: [AgentConsoleMessageLineComponent],
     template: MESSAGE_ITEM_TEMPLATE
 })
 export class AgentConsoleAssistantMessageItemComponent extends AgentConsoleMessageItemComponentBase {
@@ -2117,7 +2109,7 @@ export class AgentConsoleAssistantMessageItemComponent extends AgentConsoleMessa
 
 @Component({
     selector: 'agent-console-tool-message-item',
-    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    imports: [AgentConsoleMessageLineComponent],
     template: MESSAGE_ITEM_TEMPLATE
 })
 export class AgentConsoleToolMessageItemComponent extends AgentConsoleMessageItemComponentBase {
@@ -2126,7 +2118,7 @@ export class AgentConsoleToolMessageItemComponent extends AgentConsoleMessageIte
 
 @Component({
     selector: 'agent-console-error-message-item',
-    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    imports: [AgentConsoleMessageLineComponent],
     template: MESSAGE_ITEM_TEMPLATE
 })
 export class AgentConsoleErrorMessageItemComponent extends AgentConsoleMessageItemComponentBase {
@@ -2135,7 +2127,7 @@ export class AgentConsoleErrorMessageItemComponent extends AgentConsoleMessageIt
 
 @Component({
     selector: 'agent-console-system-message-item',
-    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    imports: [AgentConsoleMessageLineComponent],
     template: MESSAGE_ITEM_TEMPLATE
 })
 export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageItemComponentBase {
@@ -2145,7 +2137,6 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 @Component({
     selector: 'agent-console-messages-panel',
     imports: [
-        ...CONSOLE_BASE_IMPORTS
     ],
     template: `
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
@@ -2448,7 +2439,6 @@ export class AgentConsoleMessagesPanelComponent {
 
 @Component({
     selector: 'agent-console-message-detail-panel',
-    imports: [PanelComponent],
     template: `
     <panel
         :expanded="state.messageDetailOpen"
@@ -2676,7 +2666,6 @@ export class AgentConsoleMessageDetailPanelComponent {
 
 @Component({
     selector: 'agent-console-review-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-review-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{reviewSummaryLabel}}</label>
@@ -2900,7 +2889,6 @@ export class AgentConsoleReviewPanelComponent {
 
 @Component({
     selector: 'agent-console-git-snapshot-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-git-snapshot-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{gitSnapshotSummaryLabel}}</label>
@@ -3042,7 +3030,6 @@ export class AgentConsoleGitSnapshotPanelComponent {
 
 @Component({
     selector: 'agent-console-activity-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-activity-panel" v-style="shellStyle">
         <label class="activity-item" v-for="item in activityItems">
@@ -3172,7 +3159,6 @@ export class AgentConsoleActivityPanelComponent {
 
 @Component({
     selector: 'agent-console-select-panel',
-    imports: CONSOLE_FORM_IMPORTS,
     template: `
         <div class="console-panel console-select-panel">
             <div class="select-shell" v-style="shellStyle">
@@ -3304,7 +3290,6 @@ export class AgentConsoleSelectPanelComponent {
 
 @Component({
     selector: 'agent-console-which-key-panel',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-which-key-panel" v-style="shellStyle">
         <label class="which-key-title" v-style="titleStyle">{{titleText}}</label>
@@ -3420,7 +3405,6 @@ export class AgentConsoleWhichKeyPanelComponent {
 
 @Component({
     selector: 'agent-console-health-popover',
-    imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-health-popover" v-style="shellStyle">
         <label class="health-title" v-style="titleStyle">Health ({{itemCount}})</label>

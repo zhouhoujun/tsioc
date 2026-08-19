@@ -5,7 +5,7 @@
  * node libraries. This file defines DI tokens and interfaces that the
  * console/ entry point (@tsdi/agent-ui/console) implements.
  */
-import { InjectionToken } from '@tsdi/ioc';
+import { InjectToken } from '@tsdi/ioc';
 
 // ── Abstract classes (platform provides concrete implementation) ────────────
 
@@ -16,7 +16,20 @@ export abstract class ConsoleTerminalInputHandler {}
 export abstract class ConsoleTerminalSurfaceLifecycle {}
 
 /** Accessor for the terminal surface element. */
-export abstract class ConsoleTerminalSurfaceAccessor {}
+export abstract class ConsoleTerminalSurfaceAccessor {
+    writeTerminalClipboardText?(text: string): void;
+    abstract getLastRenderedLines(): string[];
+    abstract getLastRenderedText(stripAnsi?: (value: string) => string): string;
+    dispatchMouse?(event: SelectMenuMouseEvent): void;
+    writeRawTerminalData?(data: string): void;
+    notifyNonMouseInput?(): void;
+    stopTerminal?(): void;
+    getTerminalSize?(): { columns?: number; cols?: number; rows: number };
+    resetTerminalRenderState?(): void;
+}
+
+/** Application bootstrap hook supplied by the platform adapter. */
+export abstract class ConsoleTerminalApplicationLifecycleService {}
 
 // ── Re-usable value types (platform-independent, defined here) ──────────────
 
@@ -67,7 +80,7 @@ export interface ConsoleUtils {
     processConsoleTextInputChunk(
         value: string,
         cursor: number,
-        chunk: Buffer,
+        chunk: Uint8Array | string,
         options?: ConsoleTextInputChunkOptions
     ): ConsoleTextInputChunkResult;
 
@@ -110,33 +123,9 @@ export interface ConsoleUtils {
     decodeBase64(value: string): Uint8Array;
 }
 
-// ── ConsoleComponents — template directive/component class references ───────
-
-export interface ConsoleComponents {
-    BrDirective: any;
-    DivDirective: any;
-    SpanDirective: any;
-    LabelComponent: any;
-    PanelComponent: any;
-    TuiSelectComponent: any;
-    TuiTextareaComponent: any;
-}
-
-/** Mutable registry populated by the platform entry point. */
-export const consoleComponents: ConsoleComponents = {
-    BrDirective: null,
-    DivDirective: null,
-    SpanDirective: null,
-    LabelComponent: null,
-    PanelComponent: null,
-    TuiSelectComponent: null,
-    TuiTextareaComponent: null
-};
-
 // ── DI tokens ──────────────────────────────────────────────────────────────
 
-export const CONSOLE_UTILS = new InjectionToken<ConsoleUtils>('ConsoleUtils');
-export const CONSOLE_COMPONENTS = new InjectionToken<ConsoleComponents>('ConsoleComponents');
+export const CONSOLE_UTILS = new InjectToken<ConsoleUtils>('ConsoleUtils');
 
 // ── Constants (platform-independent) ───────────────────────────────────────
 

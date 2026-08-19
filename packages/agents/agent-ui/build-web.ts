@@ -18,7 +18,7 @@ import * as esbuild from 'esbuild';
 const ROOT = path.resolve(__dirname, '../../..');
 const PACKAGE_DIR = path.resolve(__dirname);
 const TSC_OUT = path.join('/tmp', `tsdi-agent-web-tsc-${Date.now()}`);
-const BUNDLE_ENTRY = path.join(TSC_OUT, 'agents', 'agent-ui', 'src', 'web-console.js');
+const BUNDLE_ENTRY = path.join(TSC_OUT, 'agents', 'agent-ui', 'web-console', 'web-console.js');
 
 interface ResolveResult {
     path: string;

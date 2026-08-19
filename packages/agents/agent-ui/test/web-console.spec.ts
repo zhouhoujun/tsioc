@@ -13,10 +13,10 @@ import {
     AgentConsoleRemoteEventBridge,
     AgentConsoleSessionState,
     AgentUiModule,
-    HttpAgentConsoleAppRpc,
-    mountAgentWebConsole,
-    registerAgentWebConsolePwa
+    HttpAgentConsoleAppRpc
 } from '../src';
+import { mountAgentWebConsole, registerAgentWebConsolePwa } from '../web-console';
+import * as legacyWebEntry from '../web';
 
 @Suite('Agent web console entry')
 export class AgentWebConsoleTest {
@@ -80,6 +80,12 @@ export class AgentWebConsoleTest {
         }
         expect(thrown).toBeTruthy();
         expect(thrown.message).toContain('baseUrl');
+    }
+
+    @Test('keeps the legacy web entry compatible')
+    legacyWebEntryCompatibility() {
+        expect(legacyWebEntry.mountAgentWebConsole).toBe(mountAgentWebConsole);
+        expect(legacyWebEntry.registerAgentWebConsolePwa).toBe(registerAgentWebConsolePwa);
     }
 
     @Test('registers the mobile PWA service worker and supports opt-out')

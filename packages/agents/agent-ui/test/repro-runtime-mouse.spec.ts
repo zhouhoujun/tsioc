@@ -12,6 +12,7 @@ import {
 } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import { AgentConsoleComponent, AgentUiModule } from '../src';
+import { ConsoleTerminalSurfaceAccessor as AgentConsoleTerminalSurfaceAccessor } from '../src/console-ports';
 
 @Suite('Repro: real runtime mouse pipeline via component handleTerminalInput')
 export class RuntimeMousePipelineReproTest {
@@ -24,6 +25,11 @@ export class RuntimeMousePipelineReproTest {
             module: {
                 imports: [AgentModule, AgentUiModule, TuiConsoleModule, ComponentsModule],
                 providers: [
+                    {
+                        provide: AgentConsoleTerminalSurfaceAccessor,
+                        deps: [ConsoleTerminalSurfaceAccessor],
+                        useFactory: (surface: ConsoleTerminalSurfaceAccessor) => surface
+                    },
                     {
                         provide: ConsoleTerminalInputHandler,
                         deps: [ApplicationRunners],

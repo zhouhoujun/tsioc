@@ -43,6 +43,11 @@ import {
     resolveConsoleVimKey,
     ConsoleInputMode
 } from './AgentConsoleVim';
+import {
+    clampCommonTextCursor,
+    processCommonTextInputChunk,
+    shouldSkipCommonHistoryEntry
+} from '@tsdi/components/common';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -4447,11 +4452,11 @@ export class AgentConsoleSessionState {
     }
 
     clampCursor(value: string, cursor: number): number {
-        return Math.max(0, Math.min(cursor, value.length));
+        return clampCommonTextCursor(value, cursor);
     }
 
     shouldSkipHistoryEntry(entry: string): boolean {
-        return !entry || /^\s*$/.test(entry);
+        return shouldSkipCommonHistoryEntry(entry);
     }
 
     formatStatusFooter(model: string, profile: string, workspace: string): string {
@@ -4462,12 +4467,10 @@ export class AgentConsoleSessionState {
     processInputChunk(
         value: string,
         cursor: number,
-        chunk: Buffer,
+        chunk: Uint8Array | string,
         options?: ConsoleTextInputChunkOptions
     ): ConsoleTextInputChunkResult {
-        const newValue = value.slice(0, cursor) + chunk.toString() + value.slice(cursor);
-        const newCursor = cursor + chunk.length;
-        return { value: newValue, cursor: newCursor, shouldSubmit: false, shouldConfirmSelection: false };
+        return processCommonTextInputChunk(value, cursor, chunk, options);
     }
 
     updateDraft(draft: string, cursor?: number): void {
@@ -4476,7 +4479,7 @@ export class AgentConsoleSessionState {
     }
 
     applyChunkToDraft(chunk: string, cursor: number): { value: string; cursor: number } {
-        const next = this.processInputChunk(this.input, cursor, Buffer.from(chunk));
+        const next = this.processInputChunk(this.input, cursor, chunk);
         this.input = next.value;
         this.inputCursor = this.clampCursor(this.input, next.cursor);
         return next;

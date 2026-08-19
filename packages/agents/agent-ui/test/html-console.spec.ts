@@ -4,7 +4,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { PanelComponent } from '@tsdi/components/console';
+import { PanelComponent } from '@tsdi/components/common';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleActivityPanelComponent,
@@ -22,7 +22,6 @@ import {
 
 @Component({
     selector: 'html-panel-test',
-    imports: [PanelComponent],
     template: `
     <section>
         <panel>

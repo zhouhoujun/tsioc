@@ -7,7 +7,6 @@ export type {
 } from './AgentUiConfigReader';
 export * from './AgentUiConfigReader';
 export * from './agent-ui-config';
-export * from './web-console';
 export * from './HttpAgentConsoleAppRpc';
 export * from './AgentConsoleInputHistoryStore';
 export * from './AgentConsoleMarkdown';
@@ -28,3 +27,10 @@ export * from './AgentConsoleFormatters';
 export * from './AgentConsoleDiagnosticsHandlers';
 export * from './AgentConsoleSshHandlers';
 export * from './console-ports';
+export * from './agent-ui.module';
+export * from './AgentConsoleComponent';
+export * from './AgentConsoleSessionState';
+export * from './AgentConsoleSessionService';
+export * from './AgentConsoleEventBridge';
+export * from './AgentConsoleRemoteEventBridge';
+export * from './AgentConsolePanels';

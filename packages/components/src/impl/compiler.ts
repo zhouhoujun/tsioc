@@ -2,6 +2,8 @@ import { Abstract } from '@tsdi/ioc';
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { createTemplateRef } from './template';
 import { TemplateFactory } from '../refs/template';
+import { RElement, RNode, NodeType } from '../renderer/Node';
+import { validateSchemaElement } from '../template/schema';
 import {
     applyDirectiveToElement, compileAttributeToFactory, compileComponentToFactory,
     compileElementToFactory, compileTemplateToFactory, compileTextToFactory,
@@ -31,6 +33,23 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const nodes = this.parser.parse(template);
+
+        if (options.schemas?.length) {
+            const declaredElements = new Set(
+                [...options.components, ...(options.customElements || [])]
+                    .flatMap(def => String(def.selector || '').split(','))
+                    .map(selector => selector.trim().toLowerCase())
+                    .filter(selector => /^[a-z][\w-]*$/.test(selector))
+            );
+            const validate = (node: RNode): void => {
+                if (node.nodeType === NodeType.Element) {
+                    const name = String((node as RElement).tagName || '').toLowerCase();
+                    if (name && !declaredElements.has(name)) validateSchemaElement(name, options.schemas!);
+                }
+                node.childNodes?.forEach(validate);
+            };
+            nodes.forEach(validate);
+        }
 
         generateNodeBindings<C>(nodes, options.directives, options.components, this.renderer, this.delimiter, undefined, options.customElements);
 

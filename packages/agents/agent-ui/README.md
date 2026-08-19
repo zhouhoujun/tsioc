@@ -67,6 +67,8 @@ npm run test:coverage
 
 ## Web console
 
+Browser applications should import `mountAgentWebConsole` from `@tsdi/agent-ui/web-console`. The existing `@tsdi/agent-ui/web` entry remains API-compatible. Shell and terminal applications use `@tsdi/agent-ui/console`.
+
 `build:web` 生成 `web/dist/agent-console.js`（~3.3MB esbuild bundle）。
 该 bundle 可嵌入任意 web 页面或通过 gateway 静态托管。
 

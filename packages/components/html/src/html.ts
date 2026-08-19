@@ -6,6 +6,7 @@ import {
     TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
 import { transformBlocks } from '../../src/impl/block';
+import { CommonComponentsModule } from '@tsdi/components/common';
 
 @Injectable()
 export class HtmlRenderer implements Renderer {
@@ -345,6 +346,7 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
 }
 
 @Module({
+    imports: [CommonComponentsModule],
     providers: [
         HtmlRenderer,
         HtmlTemplateParser,
@@ -352,7 +354,8 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
         { provide: Renderer, useClass: HtmlRenderer, asDefault: true },
         { provide: TemplateParser, useClass: HtmlTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: HtmlTemplateCompiler, asDefault: true }
-    ]
+    ],
+    exports: [CommonComponentsModule]
 })
 export class HtmlTemplateModule {
     static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<HtmlTemplateModule> {

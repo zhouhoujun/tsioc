@@ -5,6 +5,7 @@ import { TemplateFactory } from '../refs/template';
 import { TemplateParser } from './parser';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
+import { SchemaMetadata } from './schema';
 
 export interface TemplateCompilerOptions {
     delimiters?: [string, string];
@@ -16,6 +17,7 @@ export interface CompilerOptions {
     customElements?: DirectiveDef[];
     directives: DirectiveDef[];
     components: ComponentDef[];
+    schemas?: SchemaMetadata[];
 }
 
 @Abstract()
@@ -28,6 +30,5 @@ export abstract class TemplateCompiler<T = string> {
 
     abstract compile<C>(template: T, options: CompilerOptions): TemplateFactory<C>;
 }
-
 
 

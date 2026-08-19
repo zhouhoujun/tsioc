@@ -410,9 +410,8 @@ export function concatUint8Arrays(chunks: Uint8Array[], total: number): Uint8Arr
 }
 
 export function encodeBase64(bytes: Uint8Array): string {
-    if (typeof Buffer !== 'undefined') {
-        return Buffer.from(bytes).toString('base64');
-    }
+    const runtimeBuffer = (globalThis as { Buffer?: { from(value: Uint8Array): { toString(encoding: string): string } } }).Buffer;
+    if (runtimeBuffer) return runtimeBuffer.from(bytes).toString('base64');
     if (typeof globalThis.btoa === 'function') {
         let binary = '';
         const chunkSize = 0x8000;

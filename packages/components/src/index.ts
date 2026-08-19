@@ -20,6 +20,7 @@ export * from './renderer/Renderer';
 
 
 export * from './template/schema';
+export * from './template/schema-provider';
 export * from './template/parser';
 export * from './template/compiler';
 

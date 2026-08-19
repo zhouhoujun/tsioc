@@ -9,7 +9,6 @@ import {
     SelectMenuMouseEvent,
     TerminalInputSequenceResult
 } from './console-ports';
-import { Buffer } from 'buffer';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
@@ -714,9 +713,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected decodeVoiceAudioChunk(value: string): Uint8Array {
-        if (typeof Buffer !== 'undefined') {
-            return new Uint8Array(Buffer.from(value, 'base64'));
-        }
+        const runtimeBuffer = (globalThis as { Buffer?: { from(value: string, encoding: string): Uint8Array } }).Buffer;
+        if (runtimeBuffer) return new Uint8Array(runtimeBuffer.from(value, 'base64'));
         if (typeof globalThis.atob === 'function') {
             const binary = globalThis.atob(value);
             return Uint8Array.from(binary, char => char.charCodeAt(0));

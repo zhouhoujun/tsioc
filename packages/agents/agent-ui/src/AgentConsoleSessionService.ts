@@ -1,4 +1,3 @@
-import { Buffer } from 'buffer';
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 
@@ -1361,9 +1360,8 @@ export class AgentConsoleSessionService {
     }
 
     protected encodeBase64(bytes: Uint8Array): string {
-        if (typeof Buffer !== 'undefined') {
-            return Buffer.from(bytes).toString('base64');
-        }
+        const runtimeBuffer = (globalThis as { Buffer?: { from(value: Uint8Array): { toString(encoding: string): string } } }).Buffer;
+        if (runtimeBuffer) return runtimeBuffer.from(bytes).toString('base64');
         if (typeof globalThis.btoa === 'function') {
             let binary = '';
             const chunkSize = 0x8000;

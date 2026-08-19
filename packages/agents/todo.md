@@ -333,7 +333,9 @@ G79–G84 已全部闭环（P158–P162）。v5 差距 G51–G78 已全部闭环
 
 ---
 
-## 跨平台重构计划：agent-ui 剔除 console/node 依赖（P170）
+## 跨平台重构：agent-ui 平台组件边界（P170，已完成）
+
+> 下方 P170-1 至 P170-4 是实施前的历史草案，其中 `ConsoleComponents` 可变类注册表和 `any` 接口方案已废弃。最终实现使用 `@tsdi/components/common`、`@Component.schemas` 和有类型的 ports。
 
 ### 目标
 
@@ -498,9 +500,17 @@ grep -r "from 'node:" src/                 # 应为空
 
 ### 验收标准
 
-- [ ] `grep -r "@tsdi/components/console" src/` 返回空
-- [ ] `grep -r "from 'buffer'" src/` 返回空
-- [ ] `tsc --noEmit` clean
-- [ ] 653 tests passing
-- [ ] `build:web` 通过
-- [ ] AGENTS.md 约束已更新
+- [x] `grep -r "@tsdi/components/console" src/` 无实际 import
+- [x] `grep -r "from 'buffer'" src/` 返回空
+- [x] `tsc --noEmit` clean
+- [x] agent-ui 654 tests passing
+- [x] `build:web` 通过
+- [x] 根 AGENTS.md 跨平台约束保持满足
+
+### P170 收尾记录（2026-08-19）
+
+- 新增 `@tsdi/components/common`：承载 renderer-neutral `PanelComponent` 与输入/选择纯函数；基础 `div/span/br/label/input/textarea/select` 由 Components 全局 schema 和 renderer 直接处理，不再声明指令。
+- `@tsdi/components` 支持 `@Component({ schemas: [...] })`，schema 进入 compiler context 并执行元素校验；未修改 `@tsdi/ioc` 元数据。
+- `@tsdi/agent-ui/web-console` 是浏览器 HTML 嵌入入口；`@tsdi/agent-ui/web` 保留等价兼容转发；`@tsdi/agent-ui/console` 专用于 shell/TUI。
+- `src/` 已移除平台包和 `buffer` 实际 import；终端 surface 通过有类型 port 在 console 子路径桥接。
+- 全量结果：components 133、components/common 4、components/console 72、components/html 117、agent-ui 654，全部 EXIT=0；五个 package build 与 `build:web` 通过。

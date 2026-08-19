@@ -295,4 +295,3 @@ export interface RunnableMetadata extends Omit<AnnotationMetadata, 'abstract' | 
      */
     auto?: boolean;
 }
-

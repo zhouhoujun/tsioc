@@ -16,6 +16,8 @@ import { TemplateRef } from '../refs/template';
 import { LOCAL_REFS, RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
 import { ViewChildMetadata } from '../decorators/query';
+import { mergeTemplateSchemas } from '../template/schema';
+import { TEMPLATE_SCHEMAS } from '../template/schema-provider';
 import { DefaultReactiveEffect } from './effect';
 import { DIRECTIVES, CUSTOM_ELEMENTS } from '../decorators/directive';
 import { COMPONENTS } from '../decorators/component';
@@ -93,7 +95,15 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (!def.ƿtempFac) {
             const template = def.template || await fetchTemplate(def.templateUrl!);
             const compiler = this.injector.get(TemplateCompiler);
-            (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components, customElements });
+            (def as any).ƿtempFac = compiler.compile<T>(template, {
+                directives,
+                components,
+                customElements,
+                schemas: mergeTemplateSchemas(
+                    this.injector.get(TEMPLATE_SCHEMAS, null),
+                    def.schemas
+                )
+            });
         }
         this._hostView?.destroy();
         const host = this._elementRef;

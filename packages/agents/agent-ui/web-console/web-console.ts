@@ -1,9 +1,9 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
-import { ComponentsModule } from '@tsdi/components';
+import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, defaultAgentOptions } from '@tsdi/agent';
-import { AGENT_IDE_BRIDGE } from './index';
+import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
@@ -12,7 +12,7 @@ import {
     AgentUiModule,
     HttpAgentConsoleAppRpc,
     VscodeIdeBridge
-} from './index';
+} from '@tsdi/agent-ui';
 
 export interface AgentWebConsoleOptions {
     /** Gateway base URL, e.g. http://localhost:3100 */
@@ -43,9 +43,19 @@ export interface AgentWebConsoleServiceWorkerHost {
     };
 }
 
+interface AgentWebConsoleGlobal {
+    navigator?: AgentWebConsoleServiceWorkerHost;
+    __TSDI_AGENT_WEB__?: Partial<AgentWebConsoleOptions>;
+    TsdiAgentWeb?: {
+        mountAgentWebConsole: typeof mountAgentWebConsole;
+        runAgentWebConsole: typeof runAgentWebConsole;
+        registerAgentWebConsolePwa: typeof registerAgentWebConsolePwa;
+    };
+}
+
 export async function registerAgentWebConsolePwa(
     options: Pick<AgentWebConsoleOptions, 'pwa' | 'serviceWorkerUrl'> = {},
-    host: AgentWebConsoleServiceWorkerHost = (globalThis as any).navigator ?? {}
+    host: AgentWebConsoleServiceWorkerHost = (globalThis as AgentWebConsoleGlobal).navigator ?? {}
 ): Promise<any | null> {
     if (options.pwa === false || !host.serviceWorker?.register) {
         return null;
@@ -54,7 +64,7 @@ export async function registerAgentWebConsolePwa(
 }
 
 function readWindowConfig(): Partial<AgentWebConsoleOptions> {
-    const g = globalThis as { __TSDI_AGENT_WEB__?: Partial<AgentWebConsoleOptions> };
+    const g = globalThis as AgentWebConsoleGlobal;
     return g.__TSDI_AGENT_WEB__ ?? {};
 }
 
@@ -122,8 +132,8 @@ export async function mountAgentWebConsole(
         reconnectDelayMs: 3000
     });
 
-    const rootNodes = ctx.runners.getRef(AgentConsoleComponent) as any;
-    const root = rootNodes?.hostView?.rootNodes?.[0] as HTMLElement | undefined;
+    const rootRef = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent> | undefined;
+    const root = rootRef?.hostView?.rootNodes?.[0] as unknown as HTMLElement | undefined;
     if (root) {
         mount.appendChild(root);
     } else {
@@ -148,7 +158,7 @@ export async function runAgentWebConsole(options: AgentWebConsoleOptions = {}): 
 }
 
 if (typeof globalThis !== 'undefined') {
-    (globalThis as any).TsdiAgentWeb = {
+    (globalThis as AgentWebConsoleGlobal).TsdiAgentWeb = {
         mountAgentWebConsole,
         runAgentWebConsole,
         registerAgentWebConsolePwa

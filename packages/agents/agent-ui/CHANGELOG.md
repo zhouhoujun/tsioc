@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Split browser embedding into `@tsdi/agent-ui/web-console` while preserving `@tsdi/agent-ui/web` compatibility.
+- Keep shell/TUI integration in `@tsdi/agent-ui/console` and remove platform component references from shared UI sources.
+- Consume renderer-neutral primitives and utilities from `@tsdi/components/common`.
+
 All notable changes to this package will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).

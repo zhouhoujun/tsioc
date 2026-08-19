@@ -22,7 +22,6 @@ import {
     windowRenderedBlocksFromBottomWithContext,
     buildOsc52ClipboardSequence,
     getDisplayWidth,
-    PanelComponent,
     sliceByDisplayWidth,
     parseTerminalInputControlKey,
     parseTerminalTextPromptChunk,
@@ -38,6 +37,7 @@ import {
 } from '../src';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { PanelComponent } from '@tsdi/components/common';
 
 @Component({
     selector: 'console-test',
