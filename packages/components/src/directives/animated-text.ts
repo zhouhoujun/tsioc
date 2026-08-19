@@ -68,6 +68,7 @@ export class AnimatedTextLifecycleService {
  * <span animated-text
  *     :text="workingText"
  *     :interval="120"
+ *     :scan-width="3"
  *     :active-style="workingActiveStyle"
  *     :trail-style="workingTrailStyle"
  *     :base-style="workingBaseStyle"></span>
@@ -81,7 +82,7 @@ export class AnimatedTextLifecycleService {
  * workingBaseStyle = { color: '#8b949e' };
  * ```
  *
- * 效果：一个高亮"光头"从文本左侧向右扫过，头部字符用 activeStyle，
+ * 效果：一个可配置宽度的高亮光带从文本左侧向右扫过，光带字符用 activeStyle，
  * 已扫过的字符用 trailStyle（渐隐尾迹），未扫到的用 baseStyle；循环或单次。
  *
  * @export
@@ -95,6 +96,7 @@ export class AnimatedTextDirective {
 
     protected _text = '';
     protected _interval = 120;
+    protected _scanWidth = 1;
     protected _loop = true;
     protected scanOffset = 0;
     protected tickActive = false;
@@ -151,6 +153,15 @@ export class AnimatedTextDirective {
     }
 
     @Attribute()
+    set scanWidth(value: number) {
+        this._scanWidth = Math.max(1, Math.floor(Number(value) || 1));
+    }
+
+    get scanWidth(): number {
+        return this._scanWidth;
+    }
+
+    @Attribute()
     set loop(value: boolean) {
         this._loop = value !== false;
     }
@@ -178,7 +189,7 @@ export class AnimatedTextDirective {
         let pendingSpace = '';
         list.forEach((ch, i) => {
             let style = this.baseStyle || {};
-            if (i === head) {
+            if (i >= head && i < head + this.scanWidth) {
                 style = this.activeStyle || style;
             } else if (i < head) {
                 style = this.trailStyle || style;

@@ -7811,6 +7811,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (this.closing) {
             return;
         }
+        this.syncConsoleMessageDetailViewport();
         if (decoded.mouse) {
             this.dispatchTerminalMouseAt(decoded.mouse);
             return;
@@ -7945,6 +7946,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return translated;
         }
         return formatAgentUiSessionClosingMessage(this.translator?.currentLocale, this.state.sessionId);
+    }
+
+    /** Keep the console detail page proportional to the active terminal. */
+    protected syncConsoleMessageDetailViewport(): void {
+        if (this.state.consoleOptions.messageToggleInteraction !== 'enter') {
+            return;
+        }
+        const rows = this.surfaceAccessor?.getTerminalSize?.().rows;
+        if (!Number.isFinite(rows)) {
+            return;
+        }
+        const visibleLines = Math.max(8, Math.min(40, Math.floor(Number(rows)) - 6));
+        if (this.state.messageDetailVisibleLines !== visibleLines) {
+            this.state.setMessageDetailVisibleLines(visibleLines);
+        }
     }
 
     protected async executeTurn(

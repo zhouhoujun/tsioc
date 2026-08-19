@@ -569,7 +569,7 @@ export class AppRpcServer {
         if (bootstrapSessionId) {
             return bootstrapSessionId;
         }
-        return `chat-${this.uuid.generate()}`;
+        return `chat${this.uuid.generate().replace(/-/g, '')}`;
     }
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {

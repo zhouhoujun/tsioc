@@ -3437,7 +3437,7 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
 
         const sessionId = String((response as any).result.sessionId || '');
-        expect(sessionId.startsWith('chat-')).toEqual(true);
+        expect(sessionId).toMatch(/^chat[0-9a-f]{32}$/i);
         expect(sessionId).not.toEqual('workspace-latest');
         expect((response as any).result.workspace).toEqual('/tmp/workspace');
     }
@@ -3480,7 +3480,7 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
 
         const sessionId = String((response as any).result.sessionId || '');
-        expect(sessionId.startsWith('chat-')).toEqual(true);
+        expect(sessionId).toMatch(/^chat[0-9a-f]{32}$/i);
         expect(sessionId).not.toEqual('default');
         expect(await owners.getOwner(sessionId)).toEqual('user-1');
     }

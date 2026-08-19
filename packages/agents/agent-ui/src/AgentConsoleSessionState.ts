@@ -383,6 +383,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
 @Injectable()
 export class AgentConsoleSessionState {
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
+    messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     sessionId = 'console';
     input = '';
     inputCursor = 0;
@@ -1289,7 +1290,7 @@ export class AgentConsoleSessionState {
             return;
         }
         const lines = this.messageDetailLines;
-        const maxScroll = Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
+        const maxScroll = Math.max(0, lines.length - this.messageDetailVisibleLines);
         this.messageDetailScroll = Math.max(0, Math.min(maxScroll, this.messageDetailScroll + delta));
     }
 
@@ -1297,7 +1298,7 @@ export class AgentConsoleSessionState {
         if (!this.messageDetailOpen || !this.selectedMessage) {
             return;
         }
-        const resolvedPageSize = pageSize ?? this.consoleOptions.messageDetailPageSize;
+        const resolvedPageSize = pageSize ?? Math.max(1, this.messageDetailVisibleLines - 1);
         this.scrollMessageDetail(delta * Math.max(1, resolvedPageSize));
     }
 
@@ -1308,7 +1309,7 @@ export class AgentConsoleSessionState {
         const lines = this.messageDetailLines;
         this.messageDetailScroll = position === 'start'
             ? 0
-            : Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
+            : Math.max(0, lines.length - this.messageDetailVisibleLines);
     }
 
     get messageDetailLines(): string[] {
@@ -2720,10 +2721,17 @@ export class AgentConsoleSessionState {
         this.inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
         this.inputPlaceholder = this.consoleOptions.inputPlaceholder;
         this.vimMode = this.consoleOptions.vimMode;
+        this.messageDetailVisibleLines = this.consoleOptions.messageDetailVisibleLines;
         if (!this.vimMode) {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
         }
+    }
+
+    setMessageDetailVisibleLines(value: number): void {
+        this.messageDetailVisibleLines = Math.max(1, Math.floor(Number(value) || defaultAgentConsoleOptions.messageDetailVisibleLines));
+        const maxScroll = Math.max(0, this.messageDetailLines.length - this.messageDetailVisibleLines);
+        this.messageDetailScroll = Math.min(this.messageDetailScroll, maxScroll);
     }
 
     setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {

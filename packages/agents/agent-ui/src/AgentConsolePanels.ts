@@ -565,6 +565,7 @@ export class AgentConsoleInputPanelComponent {
             <span animated-text
                 render-region="agent-working-animation"
                 :text="animatedLabel"
+                :scan-width="3"
                 :active-style="accentStyle"
                 :trail-style="labelStyle"
                 :base-style="labelStyle">{{animatedLabel}}</span>
@@ -2558,7 +2559,7 @@ export class AgentConsoleMessageDetailPanelComponent {
     get visibleLines(): string[] {
         const lines = this.contentLines;
         const start = Math.max(0, Math.min(lines.length, this.state.messageDetailScroll));
-        return lines.slice(start, start + this.state.consoleOptions.messageDetailVisibleLines);
+        return lines.slice(start, start + this.state.messageDetailVisibleLines);
     }
 
     get detailLines(): string[] {
@@ -2595,7 +2596,7 @@ export class AgentConsoleMessageDetailPanelComponent {
     }
 
     get detailIndexes(): number[] {
-        return Array.from({ length: this.state.consoleOptions.messageDetailVisibleLines }, (_value, index) => index);
+        return Array.from({ length: this.state.messageDetailVisibleLines }, (_value, index) => index);
     }
 
     detailLineNumberAt(index: number): string {
