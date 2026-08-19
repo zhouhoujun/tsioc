@@ -40,6 +40,7 @@ import {
     styleTextToObject
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
+import { agentUiDefaultFollowUpOnlyTermLists } from './agent-ui.i18n';
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
     formatCommonIndexedOptionLabel as formatConsoleIndexedOptionLabel,
@@ -50,7 +51,25 @@ import {
 
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
-const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
+
+function escapeFollowUpTerm(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function resolveFollowUpOnlyMessageRegex(translator?: TranslatorService): RegExp | undefined {
+    const translatedTerms = String(translator?.translate('agent.message.followUpOnlyTerms') || '');
+    const sources = translatedTerms.includes('|')
+        ? [translatedTerms, ...agentUiDefaultFollowUpOnlyTermLists]
+        : agentUiDefaultFollowUpOnlyTermLists;
+    const terms = sources
+        .flatMap(source => source.split('|'))
+        .map(term => term.trim())
+        .filter(Boolean)
+        .map(escapeFollowUpTerm);
+    return terms.length
+        ? new RegExp(`^(?:${terms.join('|')})(?:[\\s.!?~。！？、]*)$`, 'i')
+        : undefined;
+}
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
@@ -2226,7 +2245,7 @@ export class AgentConsoleMessagesPanelComponent {
         const visibleItems = this.state.consoleOptions.messagesVisibleItems;
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
-        const showTimestamps = this.state.showTimestamps;
+        const showTimestamps = this.state.consoleOptions.showMessageTimestamps && this.state.showTimestamps;
         const showToolOutput = this.state.showToolOutput;
         const showUsername = this.state.showUsername;
         const timelineMode = this.state.timelineMode;
@@ -2349,7 +2368,7 @@ export class AgentConsoleMessagesPanelComponent {
                     return item;
                 }
                 const baseLine = item.lines[item.lines.length - 1];
-                const content = this.translator?.translate('agent.message.collapse') || 'Click to collapse';
+                const content = this.messageCollapseLabel();
                 const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
                 return {
                     ...item,
@@ -2390,8 +2409,7 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, previewLines);
         const hiddenCount = item.lines.length - lines.length;
         const baseLine = lines[lines.length - 1];
-        const toggleText = this.translator?.translate('agent.message.expand', { count: hiddenCount })
-            || `… ${hiddenCount} more lines. Click to expand`;
+        const toggleText = this.messageExpandLabel(hiddenCount);
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
@@ -2421,6 +2439,25 @@ export class AgentConsoleMessagesPanelComponent {
         };
     }
 
+    protected messageExpandLabel(hiddenCount: number): string {
+        if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
+            return this.translator?.translate('agent.message.expandEnter', { count: hiddenCount })
+                || this.translator?.translate('agent.message.expand', { count: hiddenCount })
+                || `… ${hiddenCount} more lines. Click to expand`;
+        }
+        return this.translator?.translate('agent.message.expand', { count: hiddenCount })
+            || `… ${hiddenCount} more lines. Click to expand`;
+    }
+
+    protected messageCollapseLabel(): string {
+        if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
+            return this.translator?.translate('agent.message.collapseEnter')
+                || this.translator?.translate('agent.message.collapse')
+                || 'Click to collapse';
+        }
+        return this.translator?.translate('agent.message.collapse') || 'Click to collapse';
+    }
+
     protected resolvePinnedRootMessageIndex(
         messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>
     ): number {
@@ -2444,7 +2481,7 @@ export class AgentConsoleMessagesPanelComponent {
         if (text.startsWith('/')) {
             return false;
         }
-        return !FOLLOW_UP_ONLY_MESSAGE_RE.test(text);
+        return !resolveFollowUpOnlyMessageRegex(this.translator)?.test(text);
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {

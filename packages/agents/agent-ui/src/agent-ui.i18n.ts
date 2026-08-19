@@ -1,5 +1,13 @@
 import { TranslationBundle } from '@tsdi/i18n';
 
+const AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS = 'more|continue|go on|keep going|carry on|next|proceed';
+const AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS = '继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成';
+
+export const agentUiDefaultFollowUpOnlyTermLists = [
+    AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS,
+    AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
+] as const;
+
 export const agentUiEnglish: TranslationBundle = {
     locale: 'en',
     messages: {
@@ -21,7 +29,10 @@ export const agentUiEnglish: TranslationBundle = {
             },
             message: {
                 expand: '… {count} more lines. Click to expand',
-                collapse: 'Click to collapse'
+                collapse: 'Click to collapse',
+                expandEnter: '… {count} more lines. Press Enter to expand',
+                collapseEnter: 'Press Enter to collapse',
+                followUpOnlyTerms: AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS
             },
             tool: {
                 list_dir: 'Inspect directory', glob_search: 'Search files', content_search: 'Search code',
@@ -55,7 +66,10 @@ export const agentUiChinese: TranslationBundle = {
             },
             message: {
                 expand: '… 还有 {count} 行，点击展开',
-                collapse: '点击收起'
+                collapse: '点击收起',
+                expandEnter: '… 还有 {count} 行，按 Enter 展开',
+                collapseEnter: '按 Enter 收起',
+                followUpOnlyTerms: AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
             },
             tool: {
                 list_dir: '检查目录', glob_search: '搜索文件', content_search: '搜索代码',

@@ -522,8 +522,8 @@ grep -r "from 'node:" src/                 # 应为空
 ### 目标与边界
 
 1. `@tsdi/agent-ui/console` 去掉 dashboard 式统计展示，只保留对当前 turn 有直接帮助的最小 Working 状态；`@tsdi/agent-ui/web-console` / `@tsdi/agent-ui/web` 现有功能不受影响。
-2. 用户输入消息开头不显示时间。`showTimestamps` 仍可控制其他普通消息的时间展示；时间线事件节点继续不显示开始时刻，只在完成/失败且有 `durationMs` 时显示耗时。
-3. 时间线中的长内容按统一阈值折叠。浏览器继续用鼠标点击；console 不接管鼠标，通过空 composer 下 `PageUp` 聚焦最近长消息、`↑/↓` 选择、`Enter` 展开/收起、`Esc` 返回 composer。
+2. console 中用户输入和普通回复都不显示墙钟时间；时间线事件继续不显示开始时刻，只在完成/失败且有 `durationMs` 时显示耗时。web 仍由 `showTimestamps` 控制普通消息时间。
+3. 时间线中的长内容按统一阈值折叠。浏览器继续用鼠标点击并显示 Click 文案；console 不接管鼠标，显示 Enter 文案，通过空 composer 下 `PageUp` 聚焦最近长消息、`↑/↓` 选择、`Enter` 展开/收起、`Esc` 返回 composer。Click/Enter 文案和 follow-up 短语词表必须来自 `en` / `zh-CN` locale，不得在 UI 逻辑中写死。
 4. console 不启用 mouse tracking，不解析滚轮；命令窗口保留终端自身的 scrollback 行为。`AgentTuiConfig`、CLI 参数和环境变量中的旧 `mouse` 字段全部删除，防止后续重新启用。
 5. 遵守根 `AGENTS.md`：无定时刷新、无布局脏节点缓存、`agent-ui/src` 不引用 `@tsdi/components/console`，跨平台能力放在 components 通用层。
 

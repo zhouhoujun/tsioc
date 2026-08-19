@@ -466,7 +466,7 @@ export class AgentConsoleThreadNavigationTest {
     messageNavScopedToPager() {
         const keymap = new AgentConsoleKeymap();
         expect(keymap.resolve('pageup', 'global')).toEqual(undefined);
-        expect(keymap.resolve('pageup', 'composer')).toEqual(undefined);
+        expect(keymap.resolve('pageup', 'composer')).toEqual('message-page-up');
         expect(keymap.resolve('home', 'global')).toEqual(undefined);
         expect(keymap.resolve('end', 'list')).toEqual(undefined);
         expect(keymap.effectiveBindings('pager').pageup).toEqual('message-page-up');
@@ -567,16 +567,19 @@ export class AgentConsoleThreadNavigationTest {
         expect(state.selectedMessage?.id).toEqual('m1');
     }
 
-    @Test('message navigation is gated without message focus')
-    async messageNavGatedWithoutMessageFocus() {
+    @Test('PageUp from an empty composer enters transcript navigation')
+    async pageUpEntersTranscriptFromComposer() {
         const { state, component } = createKeymapConsoleParts();
         state.setMessages([
             { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
-            { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any
+            { id: 'm2', role: 'assistant', content: Array.from({ length: 12 }, (_value, index) => `line ${index}`).join('\n'), createdAt: 2 } as any
         ]);
-        expect(await (component as any).handleGlobalKeyInput('\u001b[5~')).toEqual(false);
-        expect(await (component as any).handleGlobalKeyInput('\u001b[H')).toEqual(false);
+        expect(await (component as any).handleGlobalKeyInput('\u001b[5~')).toEqual(true);
+        expect(state.messagesFocused).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m2');
+        expect(state.messageDetailOpen).toEqual(false);
+        expect(await (component as any).handleGlobalKeyInput('\u001b[H')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m1');
     }
 
     @Test('message navigation is gated while message detail is open')

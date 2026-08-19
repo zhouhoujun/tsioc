@@ -111,7 +111,9 @@ export function buildConsoleAgentOptions(
                 ...(agentOptions?.ui?.console || {}),
                 workspace: agentOptions?.ui?.console?.workspace || resolved.workspace,
                 workingPresentation: 'compact',
-                showStatusline: false
+                showStatusline: false,
+                showMessageTimestamps: false,
+                messageToggleInteraction: 'enter'
             }
         }
     });

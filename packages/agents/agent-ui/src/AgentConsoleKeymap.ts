@@ -73,6 +73,11 @@ export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlob
     'ctrl+b': 'message-line-down'
 };
 
+/** Opens transcript navigation from an empty composer. */
+export const AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
+    pageup: 'message-page-up'
+};
+
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
     'ctrl+x n': 'new-session',
     'ctrl+x c': 'compact',
@@ -168,6 +173,7 @@ export class AgentConsoleKeymap {
     effectiveBindings(context: AgentConsoleKeymapContext = 'global'): Record<string, AgentConsoleGlobalAction> {
         const bindings: Record<string, AgentConsoleGlobalAction> = {
             ...AGENT_CONSOLE_DEFAULT_KEYMAP,
+            ...(context === 'composer' ? AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP : {}),
             ...(context === 'pager' ? AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP : {})
         };
         Object.entries(this.overrides).forEach(([sequence, action]) => {

@@ -18,5 +18,7 @@ export class AgentConsolePlatformPolicyTest {
         });
         expect(options.ui.console.workingPresentation).toEqual('compact');
         expect(options.ui.console.showStatusline).toEqual(false);
+        expect(options.ui.console.showMessageTimestamps).toEqual(false);
+        expect(options.ui.console.messageToggleInteraction).toEqual('enter');
     }
 }

@@ -319,6 +319,10 @@ export interface AgentConsoleOptions {
     shareBaseUrl?: string;
     workingPresentation?: 'compact' | 'dashboard';
     showStatusline?: boolean;
+    /** Platform display policy. The console TUI keeps replies compact without wall-clock metadata. */
+    showMessageTimestamps?: boolean;
+    /** Platform-specific wording for expandable messages. */
+    messageToggleInteraction?: 'click' | 'enter';
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -372,6 +376,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     shareBaseUrl: '',
     workingPresentation: 'dashboard',
     showStatusline: true,
+    showMessageTimestamps: true,
+    messageToggleInteraction: 'click',
 };
 
 @Injectable()
