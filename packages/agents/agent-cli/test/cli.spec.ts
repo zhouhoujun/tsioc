@@ -10,7 +10,8 @@ import { TuiConsoleModule } from '@tsdi/components/console';
 import { MemoryStore, SessionStore, AGENT_OPTIONS, AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { provideTools } from '@tsdi/agent-tools';
-import { AgentConsoleComponent, AgentUiConfigService, runAgentUi } from '@tsdi/agent-ui';
+import { AgentConsoleComponent, AgentUiConfigService } from '@tsdi/agent-ui';
+import { runAgentTUI } from '@tsdi/agent-ui/console';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import {
     CliAgentUiConfigReader,
@@ -189,7 +190,7 @@ export class AgentCliTest {
                 }
             });
 
-            ctx = await runAgentUi(AgentConsoleComponent, {
+            ctx = await runAgentTUI(AgentConsoleComponent, {
                 consoleModule: TuiConsoleModule,
                 agentOptions: runtimeAgentOptions,
                 deps: [ServerCommonModule, AgentAppServerModule],

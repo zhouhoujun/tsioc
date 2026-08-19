@@ -6,8 +6,13 @@
  */
 import { mergeAgentOptions, AgentHookCommandExecutor } from '@tsdi/agent';
 import { TuiConsoleModule } from '@tsdi/components/console';
-import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
-import { AgentConsoleThemeName, agentConsoleThemes, isAgentConsoleThemeName } from '../src/AgentConsoleTheme';
+import {
+    AgentConsoleComponent,
+    AgentConsoleThemeName,
+    AgentUiResolvedConfig,
+    agentConsoleThemes,
+    isAgentConsoleThemeName
+} from '@tsdi/agent-ui';
 import { runAgentTUI, AgentUiApplicationOptions } from './run-agent-ui';
 
 /**
@@ -23,42 +28,7 @@ export interface AgentConsoleLaunchTarget {
  * Console UI configuration subset relevant to TUI launch.
  * Mirrors the shape returned by AgentUiConfigService.resolve().
  */
-export interface AgentConsoleResolvedConfig {
-    root: string;
-    settingsPath: string;
-    workspace: string;
-    model: {
-        provider?: string;
-        model?: string;
-        baseUrl?: string;
-        apiKey?: string;
-        apiKeyEnv?: string;
-        timeoutMs?: number;
-        temperature?: number;
-        maxTokens?: number;
-        headers?: Record<string, string>;
-        thinkingBudget?: number;
-        reasoning?: boolean;
-        defaultProfile?: string;
-        profiles?: Record<string, any>;
-        routes?: any[];
-        complexityRouting?: Record<string, string>;
-        complexityThresholds?: Record<string, number>;
-    };
-    hooks?: any;
-    tui?: {
-        theme?: string;
-        keybinds?: any;
-        terminalTitle?: any;
-        rawMode?: boolean;
-        scrollSpeed?: number;
-        attentionSound?: boolean;
-        mouse?: boolean;
-        leaderTimeout?: number;
-    };
-    tools?: any;
-    ssh?: any;
-}
+export type AgentConsoleResolvedConfig = AgentUiResolvedConfig;
 
 /**
  * Options for runAgentConsole.

@@ -9,7 +9,9 @@ import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
 import {
     AgentUiConfigService,
-    HttpAgentConsoleAppRpc,
+    HttpAgentConsoleAppRpc
+} from '@tsdi/agent-ui';
+import {
     runAgentTUI,
     buildConsoleAgentOptions,
     createDefaultConsoleUi,
