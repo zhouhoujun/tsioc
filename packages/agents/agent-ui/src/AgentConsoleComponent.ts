@@ -101,6 +101,7 @@ import {
     resolveAgentConsoleApps
 } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
+import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import {
     AgentConsoleMentionCatalogItem,
@@ -135,19 +136,20 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
-        <agent-console-brand-panel renderRegion="transcript"></agent-console-brand-panel>
-        <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
-        <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
-        <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
-        <agent-console-messages-panel></agent-console-messages-panel>
-        <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
-        <agent-console-jobs-panel v-show="showJobsPanel"></agent-console-jobs-panel>
-        <agent-console-review-panel v-show="showReviewPanel"></agent-console-review-panel>
-        <agent-console-git-snapshot-panel v-show="showGitSnapshotPanel"></agent-console-git-snapshot-panel>
-        <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
-        <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
-        <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
-        <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
+        <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
+        <agent-console-status-panel v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
+        <agent-console-sessions-panel v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
+        <agent-console-approvals-panel v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
+        <agent-console-messages-panel v-show="!showMessageDetailPanel"></agent-console-messages-panel>
+        <agent-console-message-detail-panel renderRegion="transcript" v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
+        <agent-console-tasks-panel v-show="showTasksPanel && !showMessageDetailPanel"></agent-console-tasks-panel>
+        <agent-console-jobs-panel v-show="showJobsPanel && !showMessageDetailPanel"></agent-console-jobs-panel>
+        <agent-console-review-panel v-show="showReviewPanel && !showMessageDetailPanel"></agent-console-review-panel>
+        <agent-console-git-snapshot-panel v-show="showGitSnapshotPanel && !showMessageDetailPanel"></agent-console-git-snapshot-panel>
+        <agent-console-activity-panel v-show="showActivityPanel && !showMessageDetailPanel"></agent-console-activity-panel>
+        <agent-console-tools-panel v-show="showToolsPanel && !showMessageDetailPanel"></agent-console-tools-panel>
+        <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
+        <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
         <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
@@ -1860,7 +1862,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showMessageDetailPanel(): boolean {
-        return false;
+        return this.state.consoleOptions.messageToggleInteraction === 'enter'
+            && this.state.messageDetailOpen
+            && !!this.state.selectedMessage;
     }
 
     get showReviewPanel(): boolean {
@@ -4829,7 +4833,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             case '/quit':
             case '/exit':
-                await this.requestTerminalExit('Closing session...');
+                await this.requestTerminalExit(this.closingSessionMessage());
                 return true;
             case '/multiline':
                 this.multilineMode = !this.multilineMode;
@@ -7841,8 +7845,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const submitOnEnter = /[\r\n]/.test(rawChunk);
         const outcome = await this.state.processDecodedInput(decoded, chunk, {
             isClosed: this.destroyed,
-            onExit: (message: string) => {
-                void this.requestTerminalExit(message);
+            onExit: () => {
+                void this.requestTerminalExit(this.closingSessionMessage());
             },
             hasActiveTextPrompt: false,
             lastRenderedLines: this.getTerminalRenderedLines()
@@ -7931,6 +7935,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (exitMessage && typeof globalThis.console?.log === 'function') {
             globalThis.console.log(exitMessage);
         }
+    }
+
+    protected closingSessionMessage(): string {
+        const translated = this.translator?.translate('agent.session.closing', {
+            sessionId: this.state.sessionId
+        });
+        if (translated && translated !== 'agent.session.closing') {
+            return translated;
+        }
+        return formatAgentUiSessionClosingMessage(this.translator?.currentLocale, this.state.sessionId);
     }
 
     protected async executeTurn(

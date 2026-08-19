@@ -8,6 +8,18 @@ export const agentUiDefaultFollowUpOnlyTermLists = [
     AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
 ] as const;
 
+const AGENT_UI_SESSION_CLOSING_MESSAGES = {
+    en: 'Closing session. Resume with: tsdi-agent chat --session {sessionId}',
+    'zh-CN': '正在关闭会话。继续使用此会话：tsdi-agent chat --session {sessionId}'
+} as const;
+
+export function formatAgentUiSessionClosingMessage(locale: string | undefined, sessionId: string): string {
+    const template = String(locale || '').toLowerCase().startsWith('zh')
+        ? AGENT_UI_SESSION_CLOSING_MESSAGES['zh-CN']
+        : AGENT_UI_SESSION_CLOSING_MESSAGES.en;
+    return template.replace('{sessionId}', sessionId);
+}
+
 export const agentUiEnglish: TranslationBundle = {
     locale: 'en',
     messages: {
@@ -33,6 +45,9 @@ export const agentUiEnglish: TranslationBundle = {
                 expandEnter: '… {count} more lines. Press Enter to expand',
                 collapseEnter: 'Press Enter to collapse',
                 followUpOnlyTerms: AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS
+            },
+            session: {
+                closing: AGENT_UI_SESSION_CLOSING_MESSAGES.en
             },
             tool: {
                 list_dir: 'Inspect directory', glob_search: 'Search files', content_search: 'Search code',
@@ -70,6 +85,9 @@ export const agentUiChinese: TranslationBundle = {
                 expandEnter: '… 还有 {count} 行，按 Enter 展开',
                 collapseEnter: '按 Enter 收起',
                 followUpOnlyTerms: AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
+            },
+            session: {
+                closing: AGENT_UI_SESSION_CLOSING_MESSAGES['zh-CN']
             },
             tool: {
                 list_dir: '检查目录', glob_search: '搜索文件', content_search: '搜索代码',

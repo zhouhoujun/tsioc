@@ -13,6 +13,7 @@ import {
 import { AgentModule } from '@tsdi/agent';
 import { AgentConsoleComponent, AgentUiModule } from '../src';
 import { ConsoleTerminalSurfaceAccessor as AgentConsoleTerminalSurfaceAccessor } from '../src/console-ports';
+import { formatAgentUiSessionClosingMessage } from '../src/agent-ui.i18n';
 
 @Suite('Repro: real runtime mouse pipeline via component handleTerminalInput')
 export class RuntimeMousePipelineReproTest {
@@ -212,5 +213,37 @@ export class RuntimeMousePipelineReproTest {
         expect(instance.sessionState.messagesFocused).toEqual(false);
         expect(instance.sessionState.inputFocused).toEqual(true);
         expect(instance.sessionState.input).toEqual('fours');
+    }
+
+    @Test('console message detail pages long content instead of rendering it as an over-height transcript')
+    async consoleMessageDetailPagesLongContent() {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
+        ref.instance.sessionState.setConsoleOptions({ messageToggleInteraction: 'enter', messageDetailVisibleLines: 6 });
+        ref.instance.sessionState.setMessages([
+            { id: 'long', role: 'assistant', content: Array.from({ length: 217 }, (_value, index) => `detail line ${index + 1}`).join('\n'), createdAt: 1 } as any
+        ]);
+        expect(ref.instance.sessionState.focusLatestLongMessage()).toEqual(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        await this.settle();
+
+        expect(ref.instance.showMessageDetailPanel).toEqual(true);
+        const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
+        const firstScreen = surface.getLastRenderedLines().join('\n');
+        expect(firstScreen).toContain('detail line 1');
+        expect(firstScreen).not.toContain('detail line 7');
+
+        expect(await ref.instance.sessionState.handleFocusKey('pagedown')).toEqual(true);
+        await this.settle();
+        const nextScreen = surface.getLastRenderedLines().join('\n');
+        expect(nextScreen).toContain('detail line 6');
+        expect(nextScreen).not.toContain('detail line 1');
+    }
+
+    @Test('closing session messages provide the locale-specific resume command')
+    closingSessionMessageProvidesResumeCommand() {
+        expect(formatAgentUiSessionClosingMessage('zh-CN', 'chat-123'))
+            .toEqual('正在关闭会话。继续使用此会话：tsdi-agent chat --session chat-123');
+        expect(formatAgentUiSessionClosingMessage('en', 'chat-123'))
+            .toEqual('Closing session. Resume with: tsdi-agent chat --session chat-123');
     }
 }

@@ -2193,6 +2193,12 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
+        // The console detail view replaces the transcript. Avoid rendering its
+        // full selected message in this hidden panel while detail is open.
+        if (this.state.consoleOptions.messageToggleInteraction === 'enter'
+            && this.state.messageDetailOpen) {
+            return [];
+        }
         return this.state.displayMessages;
     }
 
@@ -2492,15 +2498,11 @@ export class AgentConsoleMessagesPanelComponent {
 @Component({
     selector: 'agent-console-message-detail-panel',
     template: `
-    <panel
-        :expanded="state.messageDetailOpen"
-        @expandedChange="onExpandedChange">
-        <panel-header>{{detailSummaryLabel}}</panel-header>
-        <panel-summary>{{detailHintLabel}}</panel-summary>
-        <panel-body>
-            <label v-for="line in detailLines">{{line}}</label>
-        </panel-body>
-    </panel>
+    <div class="console-panel console-message-detail-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{detailSummaryLabel}}</label>
+        <label v-style="hintStyle">{{detailHintLabel}}</label>
+        <label v-style="lineStyle" v-for="line in detailLines">{{line}}</label>
+    </div>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {
@@ -2594,14 +2596,6 @@ export class AgentConsoleMessageDetailPanelComponent {
 
     get detailIndexes(): number[] {
         return Array.from({ length: this.state.consoleOptions.messageDetailVisibleLines }, (_value, index) => index);
-    }
-
-    onExpandedChange(expanded: boolean): void {
-        if (expanded) {
-            this.state.openMessageDetail(false);
-            return;
-        }
-        this.state.closeMessageDetail();
     }
 
     detailLineNumberAt(index: number): string {

@@ -4380,7 +4380,7 @@ export class AgentConsoleSessionState {
         chunk: ConsoleTextChunk,
         options: {
             isClosed: boolean;
-            onExit: (message: string, force?: boolean) => void;
+            onExit: (force?: boolean) => void;
             hasActiveTextPrompt: boolean;
             lastRenderedLines?: string[];
         }
@@ -4397,7 +4397,7 @@ export class AgentConsoleSessionState {
         }
 
         if (rawText === '\u0003') {
-            options.onExit('Closing session...', true);
+            options.onExit(true);
             return { handled: true, action: 'exit' };
         }
 
