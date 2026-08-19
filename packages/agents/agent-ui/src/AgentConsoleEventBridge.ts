@@ -167,7 +167,8 @@ export class AgentConsoleEventBridge {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
                         eventType: 'tool_completed',
                         label: 'tool',
-                        status: 'success'
+                        status: 'success',
+                        durationMs: event.receipt?.durationMs
                     });
                 }
             await this.refreshTools();
@@ -202,7 +203,8 @@ export class AgentConsoleEventBridge {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), `${event.toolName} failed: ${event.error.message}`, {
                         eventType: 'tool_failed',
                         label: 'tool',
-                        status: 'error'
+                        status: 'error',
+                        durationMs: event.receipt?.durationMs
                     });
                 }
         });

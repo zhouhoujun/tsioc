@@ -5987,6 +5987,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
+        if ((mouse.button & 64) !== 0) {
+            const delta = (mouse.button & 1) === 0 ? -3 : 3;
+            if (this.state.messageDetailOpen) {
+                this.state.scrollMessageDetail(delta);
+            } else {
+                this.state.scrollMessageViewport(-delta);
+            }
+            return;
+        }
         this.surfaceAccessor?.dispatchMouse?.(mouse);
     }
 

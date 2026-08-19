@@ -101,6 +101,23 @@ export class RuntimeMousePipelineReproTest {
         const text = decoder.decode('fours');
         await (handler as any).handleTerminalInput(text, 'fours');
         expect(instance.sessionState.input).toEqual('fours');
+
+        instance.sessionState.closeMessageDetail();
+        instance.sessionState.setMessages(Array.from({ length: 12 }, (_value, index) => ({
+            id: `m${index}`,
+            role: 'assistant',
+            content: `message ${index}`,
+            createdAt: index
+        })) as any);
+        const wheelUp = decoder.decode('\x1b[<64;10;5M');
+        await (handler as any).handleTerminalInput(wheelUp, '\x1b[<64;10;5M');
+        expect(instance.sessionState.messageViewportOffset).toEqual(3);
+        expect(instance.sessionState.inputFocused).toEqual(true);
+
+        const wheelDown = decoder.decode('\x1b[<65;10;5M');
+        await (handler as any).handleTerminalInput(wheelDown, '\x1b[<65;10;5M');
+        expect(instance.sessionState.messageViewportOffset).toEqual(0);
+        expect(instance.sessionState.inputFocused).toEqual(true);
     }
 
     @Test('ConsoleTerminalInputController decodes and forwards real SGR stdin chunks')

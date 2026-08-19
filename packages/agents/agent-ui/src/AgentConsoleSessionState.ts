@@ -381,6 +381,7 @@ export class AgentConsoleSessionState {
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
     messagesFocused = false;
+    messageViewportOffset = 0;
     selectedMessageId = '';
     messageDetailOpen = false;
     messageDetailTakesFocus = true;
@@ -1017,6 +1018,7 @@ export class AgentConsoleSessionState {
             label?: string;
             status?: 'running' | 'success' | 'failed' | 'error';
             eventKey?: string;
+            durationMs?: number;
         } = {}
     ): void {
         const text = String(content || '').trim();
@@ -1035,6 +1037,7 @@ export class AgentConsoleSessionState {
             eventType?: string;
             label?: string;
             status?: 'running' | 'success' | 'failed' | 'error';
+            durationMs?: number;
         } = {}
     ): void {
         const text = String(content || '').trim();
@@ -1103,6 +1106,7 @@ export class AgentConsoleSessionState {
             label?: string;
             status?: 'running' | 'success' | 'failed' | 'error';
             eventKey?: string;
+            durationMs?: number;
         } = {}
     ): AgentMessage {
         return {
@@ -1115,6 +1119,7 @@ export class AgentConsoleSessionState {
                 uiEventType: options.eventType || 'state',
                 uiEventLabel: options.label || 'state',
                 uiEventKey: options.eventKey,
+                durationMs: options.durationMs,
                 status: options.status || 'running'
             }
         };
@@ -1131,6 +1136,7 @@ export class AgentConsoleSessionState {
             && leftMetadata.uiEventType === rightMetadata.uiEventType
             && leftMetadata.uiEventLabel === rightMetadata.uiEventLabel
             && leftMetadata.uiEventKey === rightMetadata.uiEventKey
+            && leftMetadata.durationMs === rightMetadata.durationMs
             && leftMetadata.status === rightMetadata.status;
     }
 
@@ -1167,6 +1173,12 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+    }
+
+    scrollMessageViewport(delta: number): void {
+        const visibleCount = Math.max(1, this.consoleOptions.messagesVisibleItems);
+        const maxOffset = Math.max(0, this.displayMessages.length - visibleCount);
+        this.messageViewportOffset = Math.max(0, Math.min(maxOffset, this.messageViewportOffset + delta));
     }
 
     moveMessageSelectionPage(delta: number, pageSize?: number): void {

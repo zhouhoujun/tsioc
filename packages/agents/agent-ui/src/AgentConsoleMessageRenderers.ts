@@ -549,11 +549,16 @@ function resolveTimelineMeta(
     showTimestamps = false
 ): string {
     const parts: string[] = [];
-    if (showTimestamps && typeof message?.createdAt === 'number' && Number.isFinite(message.createdAt)) {
+    const uiKind = String(message?.metadata?.uiKind || '').trim();
+    if (uiKind === 'event') {
+        const durationMs = Number(message?.metadata?.durationMs);
+        if (Number.isFinite(durationMs) && durationMs >= 0) {
+            parts.push(formatTimelineDuration(durationMs));
+        }
+    } else if (showTimestamps && typeof message?.createdAt === 'number' && Number.isFinite(message.createdAt)) {
         const date = new Date(message.createdAt);
         parts.push(`${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`);
     }
-    const uiKind = String(message?.metadata?.uiKind || '').trim();
     if (uiKind === 'event') {
         const label = String(message?.metadata?.label || '').trim();
         if (label) {
@@ -564,6 +569,14 @@ function resolveTimelineMeta(
         parts.push(statusLabel);
     }
     return parts.join(' · ');
+}
+
+function formatTimelineDuration(durationMs: number): string {
+    if (durationMs < 1000) {
+        return `${Math.round(durationMs)}ms`;
+    }
+    const seconds = durationMs / 1000;
+    return `${seconds >= 10 ? Math.round(seconds) : seconds.toFixed(1).replace(/\.0$/, '')}s`;
 }
 
 function resolveTimelineMetaStyle(

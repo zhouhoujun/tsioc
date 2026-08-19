@@ -233,6 +233,29 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(without[0].lines[0].meta).toEqual('');
     }
 
+    @Test('timeline events show completion duration without a start timestamp')
+    renderTimelineCompletionDuration() {
+        const createdAt = new Date(2026, 0, 15, 9, 5).getTime();
+        const running = renderAgentConsoleMessageItems([{
+            id: 'event-running',
+            role: 'assistant',
+            content: 'Reading files',
+            createdAt,
+            metadata: { uiKind: 'event', uiEventType: 'tool_invoked', uiEventLabel: 'tool', status: 'running' }
+        }] as any, { showTimestamps: true });
+        expect(running[0].lines[0].meta).not.toContain('09:05');
+
+        const completed = renderAgentConsoleMessageItems([{
+            id: 'event-completed',
+            role: 'assistant',
+            content: 'Read files',
+            createdAt,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', uiEventLabel: 'tool', status: 'success', durationMs: 1250 }
+        }] as any, { showTimestamps: true });
+        expect(completed[0].lines[0].meta).toContain('1.3s');
+        expect(completed[0].lines[0].meta).not.toContain('09:05');
+    }
+
     @Test('hides tool output content when showToolOutput is disabled')
     renderToolOutputHidden() {
         const message = {

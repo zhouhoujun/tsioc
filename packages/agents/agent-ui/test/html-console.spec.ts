@@ -328,6 +328,31 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 
+    @Test('expanding an older pinned message refreshes and restores the visible window')
+    async expandingPinnedMessageRefreshesVisibleWindow() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: Array.from({ length: 12 }, (_, index) => `request ${index + 1}`).join('\n'), createdAt: 1 },
+            { id: 'a1', role: 'assistant', content: 'middle marker', createdAt: 2 },
+            ...Array.from({ length: 8 }, (_, index) => ({
+                id: `tail-${index}`,
+                role: 'assistant',
+                content: `tail ${index}`,
+                createdAt: index + 3
+            }))
+        ] as any);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
+
+        const toggle = messagesPanel.instance.renderedLines.find(line => line.messageId === 'u1' && line.previewCollapsed);
+        messagesPanel.instance.onMessageLineClick(toggle);
+        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(true);
+
+        const collapse = messagesPanel.instance.renderedLines.find(line => line.messageId === 'u1' && line.toggleContent === 'Click to collapse');
+        messagesPanel.instance.onMessageLineClick(collapse);
+        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
+    }
+
     @After()
     async clean() {
         await this.ctx?.close();
