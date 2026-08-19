@@ -10,13 +10,26 @@ interface BuiltinSkillFrontmatter {
 }
 
 const SKILL_FILE_NAME = 'SKILL.md';
-let cachedBuiltinSkills: AgentSkillDefinition[] | null = null;
+const cachedBuiltinSkills = new Map<string, AgentSkillDefinition[]>();
+
+export function resolveBuiltinSkillLocale(locale?: string): string {
+    const value = String(locale || '').trim().toLowerCase();
+    if (value.startsWith('zh')) {
+        return 'zh-CN';
+    }
+    if (value.startsWith('en')) {
+        return 'en';
+    }
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+    const local = String(env?.LC_ALL || env?.LANG || '').toLowerCase();
+    return local.startsWith('zh') ? 'zh-CN' : 'en';
+}
 
 export function resolveBuiltinSkillsDir(baseDir: string = __dirname): string {
     return path.resolve(baseDir, 'builtin');
 }
 
-export function loadBuiltinSkills(rootDir: string = resolveBuiltinSkillsDir()): AgentSkillDefinition[] {
+export function loadBuiltinSkills(rootDir: string = resolveBuiltinSkillsDir(), locale?: string): AgentSkillDefinition[] {
     if (!fs.existsSync(rootDir)) {
         return [];
     }
@@ -26,18 +39,31 @@ export function loadBuiltinSkills(rootDir: string = resolveBuiltinSkillsDir()): 
         .map(entry => entry.name)
         .sort((a, b) => a.localeCompare(b));
 
-    return entries.map(entry => loadBuiltinSkill(path.join(rootDir, entry, SKILL_FILE_NAME), entry));
+    const resolvedLocale = resolveBuiltinSkillLocale(locale);
+    return entries.map(entry => loadBuiltinSkill(resolveSkillPath(rootDir, entry, resolvedLocale), entry));
 }
 
-export function getBuiltinSkills(rootDir: string = resolveBuiltinSkillsDir()): AgentSkillDefinition[] {
-    if (!cachedBuiltinSkills) {
-        cachedBuiltinSkills = loadBuiltinSkills(rootDir);
+export function getBuiltinSkills(rootDir: string = resolveBuiltinSkillsDir(), locale?: string): AgentSkillDefinition[] {
+    const resolvedLocale = resolveBuiltinSkillLocale(locale);
+    const cacheKey = `${rootDir}:${resolvedLocale}`;
+    if (!cachedBuiltinSkills.has(cacheKey)) {
+        cachedBuiltinSkills.set(cacheKey, loadBuiltinSkills(rootDir, resolvedLocale));
     }
-    return cachedBuiltinSkills.map(cloneSkill);
+    return cachedBuiltinSkills.get(cacheKey)!.map(cloneSkill);
 }
 
 export function resetBuiltinSkillsCache(): void {
-    cachedBuiltinSkills = null;
+    cachedBuiltinSkills.clear();
+}
+
+function resolveSkillPath(rootDir: string, skillId: string, locale: string): string {
+    const directory = path.join(rootDir, skillId);
+    const localized = locale === 'en' ? path.join(directory, 'SKILL.en.md') : path.join(directory, `SKILL.${locale}.md`);
+    if (fs.existsSync(localized)) {
+        return localized;
+    }
+    const english = path.join(directory, 'SKILL.en.md');
+    return fs.existsSync(english) ? english : path.join(directory, SKILL_FILE_NAME);
 }
 
 export async function copyBuiltinSkillAssets(outputRoot: string, sourceRoot: string = resolveBuiltinSkillsDir()): Promise<void> {

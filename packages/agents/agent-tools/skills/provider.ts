@@ -8,7 +8,7 @@ import { ReadSkillTool } from './read-skill.tool';
 import { ListSkillTool } from './list-skill.tool';
 import { SkillsCatalogSection } from './SkillsCatalogSection';import { ActiveSkillsSection } from './ActiveSkillsSection';
 import { SkillTurnInterceptor } from './SkillTurnInterceptor';
-import { getBuiltinSkills } from './builtin-skills';
+import { getBuiltinSkills, resolveBuiltinSkillLocale } from './builtin-skills';
 import { loadAgentSkillsFromRoots, loadAgentSkillsFromRootsSync } from './local-skill-loader';
 import { RemoteSkillManager } from './remote-skill-manager';
 import { RemoteSkillTool } from './remote-skill.tool';
@@ -21,6 +21,8 @@ export interface AgentSkillsOptions {
     skills?: AgentSkillDefinition[];
     roots?: string[];
     defaults?: boolean;
+    /** Locale used for builtin skill prompts. Defaults to zh-CN. */
+    locale?: string;
     /** Local cache directory for remote skills (defaults to ~/.tsdi-agent/skills). */
     remoteCacheDir?: string;
     pluginRoots?: Partial<Record<'local' | 'personal' | 'workspace' | 'remote', string>>;
@@ -51,7 +53,7 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
     const activePlugins = pluginManager.discover(pluginRoots).map(plugin => pluginManager.activate(plugin));
     const pluginLoaded = pluginManager.contributions(activePlugins).skills;
     const skills = mergeSkills(
-        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded), pluginLoaded),
+        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(undefined, resolveBuiltinSkillLocale(options.locale)), loaded), pluginLoaded),
         mergeSkills(remoteLoaded, options.skills ?? [])
     );
     return buildSkillProviders(skills, pluginRoots);
@@ -74,7 +76,7 @@ export async function provideSkillsAsync(options: AgentSkillsOptions = {}): Prom
     const activePlugins = discoveredPlugins.map(plugin => pluginManager.activate(plugin));
     const contributions = await pluginManager.contributionsAsync(activePlugins);
     const skills = mergeSkills(
-        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded), contributions.skills),
+        mergeSkills(mergeSkills(options.defaults === false ? [] : getBuiltinSkills(undefined, resolveBuiltinSkillLocale(options.locale)), loaded), contributions.skills),
         mergeSkills(remoteLoaded, options.skills ?? [])
     );
     return buildSkillProviders(skills, pluginRoots, contributions);

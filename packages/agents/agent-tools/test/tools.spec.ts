@@ -2789,12 +2789,14 @@ export class AgentToolsPackageTest {
     @Test('builtin skill loader imports packaged SKILL files')
     async builtinSkillLoaderImportsPackagedSkillFiles() {
         resetBuiltinSkillsCache();
-        const builtins = loadBuiltinSkills(path.resolve(__dirname, '../skills/builtin'));
+        const builtins = loadBuiltinSkills(path.resolve(__dirname, '../skills/builtin'), 'zh-CN');
         expect(builtins.map(skill => skill.id)).toEqual(['codebase', 'implement', 'plan', 'web-research']);
-        expect(builtins[0].title).toEqual('Codebase Exploration');
-        expect(builtins[0].summary).toEqual('Explore the repository before making changes.');
+        expect(builtins[0].title).toEqual('代码库探索');
+        expect(builtins[0].summary).toEqual('在修改前探索代码仓库。');
         expect(builtins[0].tools?.map(tool => tool.name)).toEqual(['read_file', 'glob_search', 'content_search', 'todo']);
-        expect(builtins[2].promptFull).toContain('Use this skill when the user wants an implementation plan');
+        expect(builtins[2].promptFull).toContain('用户要求实施计划而不是立即执行时使用');
+        expect(loadBuiltinSkills(path.resolve(__dirname, '../skills/builtin'), 'en')[0].title)
+            .toEqual('Codebase Exploration');
         expect(getBuiltinSkills().map(skill => skill.id)).toEqual(['codebase', 'implement', 'plan', 'web-research']);
     }
 
