@@ -572,7 +572,7 @@ Console 专项验证必须独立：
 设计：
 
 1. lifecycle 提供 `shouldEnableTerminalMouseTracking()`；console consumer 固定返回 `false`，web 不经过这条终端路径。
-2. mouse tracking 关闭时，不写入 `?1000h/?1002h/?1006h`，也不给 surface 注入固定终端高度，让输出进入终端原生 scrollback。
+2. mouse tracking 关闭时，不写入 `?1000h/?1002h/?1006h`；surface 仍使用终端实际行高，以保留稳定的增量重绘，不能因取消行高约束而把每次状态变化追加进 scrollback。
 3. 不在 agent-ui 处理 SGR wheel，不维护应用层滚动 offset，不设置 `tui.mouse`。
 4. 不使用 `setInterval`/`setTimeout` 驱动滚动或刷新；界面仍完全由响应式数据变化驱动。
 

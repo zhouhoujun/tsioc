@@ -325,6 +325,12 @@ export class ConsoleTerminalInputController {
     protected started = false;
     protected resumed = false;
     protected dataHandler?: (chunk: ConsoleTextChunk) => void;
+    protected escapeTimer?: ReturnType<typeof setTimeout>;
+    protected inputDispatchTail: Promise<void> = Promise.resolve();
+    protected inputDispatchPending = false;
+
+    /** Bare Escape must wait briefly in case it starts an ANSI control sequence. */
+    protected static readonly ESCAPE_SEQUENCE_WAIT_MS = 25;
 
     constructor(protected options: ConsoleTerminalInputControllerOptions) {
         this.input = options.input
@@ -339,9 +345,17 @@ export class ConsoleTerminalInputController {
         }
         this.started = true;
         this.dataHandler = (chunk: ConsoleTextChunk) => {
-            const result = this.options.onChunk(this.decoder.decode(chunk), chunk);
-            if (result && typeof (result as Promise<void>).catch === 'function') {
-                (result as Promise<void>).catch(() => undefined);
+            this.clearPendingEscapeTimer();
+            const text = decodeConsoleTextChunk(chunk);
+            if (this.decoder.hasPendingEscape() && !/^[\[O]/.test(text)) {
+                this.dispatch(this.decoder.flushPendingEscape(), '\u001b');
+            }
+            this.dispatch(this.decoder.decode(chunk), chunk);
+            if (this.decoder.hasPendingEscape()) {
+                this.escapeTimer = setTimeout(() => {
+                    this.escapeTimer = undefined;
+                    this.dispatch(this.decoder.flushPendingEscape(), '\u001b');
+                }, ConsoleTerminalInputController.ESCAPE_SEQUENCE_WAIT_MS);
             }
         };
         this.input.on('data', this.dataHandler);
@@ -355,6 +369,7 @@ export class ConsoleTerminalInputController {
             return;
         }
         this.started = false;
+        this.clearPendingEscapeTimer();
         if (this.dataHandler) {
             if (this.input.off) {
                 this.input.off('data', this.dataHandler);
@@ -369,6 +384,45 @@ export class ConsoleTerminalInputController {
             this.resumed = false;
         }
         this.decoder.reset();
+    }
+
+    protected dispatch(decoded: TerminalInputSequenceResult | undefined, chunk: ConsoleTextChunk): void {
+        if (!decoded) {
+            return;
+        }
+        if (this.inputDispatchPending) {
+            this.setInputDispatchTail(this.inputDispatchTail.then(() => this.dispatchNow(decoded, chunk)));
+            return;
+        }
+        const result = this.options.onChunk(decoded, chunk);
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+            this.setInputDispatchTail(Promise.resolve(result));
+        }
+    }
+
+    protected async dispatchNow(decoded: TerminalInputSequenceResult, chunk: ConsoleTextChunk): Promise<void> {
+        const result = this.options.onChunk(decoded, chunk);
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+            await Promise.resolve(result).catch(() => undefined);
+        }
+    }
+
+    protected clearPendingEscapeTimer(): void {
+        if (this.escapeTimer) {
+            clearTimeout(this.escapeTimer);
+            this.escapeTimer = undefined;
+        }
+    }
+
+    protected setInputDispatchTail(task: Promise<void>): void {
+        this.inputDispatchPending = true;
+        const tail = task.catch(() => undefined);
+        this.inputDispatchTail = tail;
+        void tail.then(() => {
+            if (this.inputDispatchTail === tail) {
+                this.inputDispatchPending = false;
+            }
+        });
     }
 }
 
@@ -540,9 +594,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             renderer,
             root,
             width: () => resolveTerminalSize(this.output || {}).columns,
-            height: this.mouseTrackingEnabled
-                ? () => resolveTerminalSize(this.output || {}).rows
-                : undefined,
+            height: () => resolveTerminalSize(this.output || {}).rows,
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
@@ -1342,6 +1394,18 @@ export class TerminalInputSequenceDecoder {
 
     hasPendingSequence(): boolean {
         return !!this.pending;
+    }
+
+    hasPendingEscape(): boolean {
+        return this.pending === '\u001b';
+    }
+
+    flushPendingEscape(): TerminalInputSequenceResult | undefined {
+        if (!this.hasPendingEscape()) {
+            return undefined;
+        }
+        this.pending = '';
+        return { text: '\u001b', controlKey: 'escape', partial: false };
     }
 }
 

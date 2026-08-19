@@ -152,8 +152,65 @@ export class RuntimeMousePipelineReproTest {
         expect(received[2].decoded.mouse?.release).toBe(true);
         expect(readCount).toBe(0);
 
+        // A bare Escape is initially ambiguous with an ANSI sequence. When
+        // normal text arrives next, it must be emitted before that text.
+        dataHandler!('\u001b');
+        dataHandler!('fours');
+        expect(received[3].decoded.partial).toBe(true);
+        expect(received[4].decoded.controlKey).toBe('escape');
+        expect(received[5].decoded.text).toBe('fours');
+
         controller.stop();
         expect(rawMode).toBe(false);
         expect(paused).toBe(true);
+    }
+
+    @Test('Escape leaves transcript navigation before the next composer input')
+    async escapeReturnsFromTranscriptToComposer() {
+        const instance = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!.instance;
+        instance.sessionState.setInput('', 0);
+        instance.sessionState.setMessages([
+            { id: 'long', role: 'assistant', content: Array.from({ length: 12 }, (_value, index) => `line ${index}`).join('\n'), createdAt: 1 } as any
+        ]);
+        expect(instance.sessionState.focusLatestLongMessage()).toEqual(true);
+
+        await instance.handleTerminalInput({ text: '\u001b', controlKey: 'escape', partial: false }, '\u001b');
+        await instance.handleTerminalInput({ text: 'fours', partial: false }, 'fours');
+
+        expect(instance.sessionState.messagesFocused).toEqual(false);
+        expect(instance.sessionState.inputFocused).toEqual(true);
+        expect(instance.sessionState.input).toEqual('fours');
+    }
+
+    @Test('a delayed Escape returns from transcript navigation before composer input')
+    async delayedEscapeReturnsFromTranscriptToComposer() {
+        const { ConsoleTerminalInputController } = await import('@tsdi/components/console');
+        const instance = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!.instance;
+        instance.sessionState.setInput('', 0);
+        instance.sessionState.setMessages([
+            { id: 'long', role: 'assistant', content: Array.from({ length: 12 }, (_value, index) => `line ${index}`).join('\n'), createdAt: 1 } as any
+        ]);
+        expect(instance.sessionState.focusLatestLongMessage()).toEqual(true);
+
+        let dataHandler: ((chunk: string) => void) | undefined;
+        const controller = new ConsoleTerminalInputController({
+            input: {
+                on: (_event, handler) => { dataHandler = handler as (chunk: string) => void; },
+                setRawMode: () => undefined,
+                resume: () => undefined,
+                pause: () => undefined
+            },
+            onChunk: (decoded, chunk) => instance.handleTerminalInput(decoded, chunk)
+        });
+        controller.start();
+        dataHandler!('\u001b');
+        await this.settle();
+        dataHandler!('fours');
+        await this.settle();
+        controller.stop();
+
+        expect(instance.sessionState.messagesFocused).toEqual(false);
+        expect(instance.sessionState.inputFocused).toEqual(true);
+        expect(instance.sessionState.input).toEqual('fours');
     }
 }
