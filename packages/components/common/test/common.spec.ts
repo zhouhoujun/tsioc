@@ -25,6 +25,15 @@ export class CommonComponentUtilitiesTest {
         expect(processCommonTextInputChunk('go', 2, '\r', { hasSelectMenu: true }).shouldConfirmSelection).toBeTruthy();
     }
 
+    @Test('handles backspace delete and cursor sequences')
+    textEditing() {
+        expect(processCommonTextInputChunk('abcd', 4, '\u007f').value).toEqual('abc');
+        expect(processCommonTextInputChunk('abcd', 1, '\u001b[3~').value).toEqual('acd');
+        const moved = processCommonTextInputChunk('abcd', 4, '\u001b[D');
+        expect(moved.cursor).toEqual(3);
+        expect(moved.value).toEqual('abcd');
+    }
+
     @Test('filters command history entries')
     history() {
         expect(shouldSkipCommonHistoryEntry(' /help')).toBeTruthy();

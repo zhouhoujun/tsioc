@@ -69,7 +69,8 @@ export function processCommonTextInputChunk(
         altKey: options.altKey || text === '\u001b\r' || text === '\u001b\n',
         hasSelectMenu: options.hasSelectMenu
     });
-    for (const char of text) {
+    for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
         if (char === '\r' || char === '\n') {
             if (options.submitOnEnter !== false && enterAction === 'submit') {
                 shouldSubmit = true;
@@ -81,6 +82,34 @@ export function processCommonTextInputChunk(
             }
             continue;
         }
+        if (char === '\t') continue;
+        if (char === '\u007f' || char === '\b') {
+            if (nextCursor > 0) {
+                nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
+                nextCursor -= 1;
+            }
+            continue;
+        }
+        if (char === '\u001b') {
+            const sequence3 = text.slice(index, index + 3);
+            const sequence4 = text.slice(index, index + 4);
+            if (sequence3 === '\u001b[D') nextCursor = Math.max(0, nextCursor - 1);
+            else if (sequence3 === '\u001b[C') nextCursor = Math.min(nextValue.length, nextCursor + 1);
+            else if (sequence3 === '\u001b[H') nextCursor = 0;
+            else if (sequence3 === '\u001b[F') nextCursor = nextValue.length;
+            else if (sequence4 === '\u001b[3~') {
+                if (nextCursor < nextValue.length) {
+                    nextValue = `${nextValue.slice(0, nextCursor)}${nextValue.slice(nextCursor + 1)}`;
+                }
+                index += 3;
+                continue;
+            } else {
+                continue;
+            }
+            index += 2;
+            continue;
+        }
+        if (char < ' ') continue;
         nextValue = `${nextValue.slice(0, nextCursor)}${char}${nextValue.slice(nextCursor)}`;
         nextCursor += char.length;
     }

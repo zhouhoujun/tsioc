@@ -259,12 +259,21 @@ export interface ConsoleTerminalInputLike {
 export interface ConsoleTerminalInputControllerOptions {
     input?: ConsoleTerminalInputLike;
     decoder?: TerminalInputSequenceDecoder;
-    pollIntervalMs?: number;
     onChunk: (
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ) => void | Promise<void>;
 }
+
+interface ConsoleProcessGlobal {
+    process?: {
+        stdin?: ConsoleTerminalInputLike;
+    };
+}
+
+const EMPTY_TERMINAL_INPUT: ConsoleTerminalInputLike = {
+    on: () => undefined
+};
 
 @Abstract()
 export abstract class ConsoleTerminalInputLifecycle {
@@ -308,16 +317,15 @@ export abstract class ConsoleTerminalSurfaceAccessor {
 export class ConsoleTerminalInputController {
     protected readonly input: ConsoleTerminalInputLike;
     protected readonly decoder: TerminalInputSequenceDecoder;
-    protected readonly pollIntervalMs: number;
     protected started = false;
     protected resumed = false;
     protected dataHandler?: (chunk: ConsoleTextChunk) => void;
-    protected pollTimer?: ReturnType<typeof setInterval>;
 
     constructor(protected options: ConsoleTerminalInputControllerOptions) {
-        this.input = options.input || (globalThis as any).process?.stdin;
+        this.input = options.input
+            || (globalThis as ConsoleProcessGlobal).process?.stdin
+            || EMPTY_TERMINAL_INPUT;
         this.decoder = options.decoder || new TerminalInputSequenceDecoder();
-        this.pollIntervalMs = Math.max(10, Math.floor(options.pollIntervalMs || 20));
     }
 
     start(): void {
@@ -335,21 +343,6 @@ export class ConsoleTerminalInputController {
         this.input.setRawMode?.(true);
         this.input.resume?.();
         this.resumed = true;
-        if (this.input.read) {
-            this.pollTimer = setInterval(() => {
-                if (!this.started || this.input.readable === false) {
-                    return;
-                }
-                while (true) {
-                    const chunk = this.input.read?.();
-                    if (chunk == null) {
-                        break;
-                    }
-                    this.dataHandler?.(chunk);
-                }
-            }, this.pollIntervalMs);
-            this.pollTimer.unref?.();
-        }
     }
 
     stop(): void {
@@ -357,10 +350,6 @@ export class ConsoleTerminalInputController {
             return;
         }
         this.started = false;
-        if (this.pollTimer) {
-            clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
         if (this.dataHandler) {
             if (this.input.off) {
                 this.input.off('data', this.dataHandler);

@@ -383,6 +383,7 @@ export class AgentConsoleSessionState {
     messagesFocused = false;
     selectedMessageId = '';
     messageDetailOpen = false;
+    messageDetailTakesFocus = true;
     messageDetailScroll = 0;
     messageDetailColumnScroll = 0;
     turnStartedAt = 0;
@@ -797,7 +798,7 @@ export class AgentConsoleSessionState {
             && !this.approvalsFocused
             && !this.reviewOpen
             && !this.messagesFocused
-            && !this.messageDetailOpen
+            && !this.hasMessageDetailFocus()
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
     }
 
@@ -834,7 +835,7 @@ export class AgentConsoleSessionState {
     }
 
     hasMessageDetailFocus(): boolean {
-        return !!this.messageDetailOpen;
+        return !!this.messageDetailOpen && !!this.messageDetailTakesFocus;
     }
 
     isAnyFocusActive(): boolean {
@@ -1220,11 +1221,12 @@ export class AgentConsoleSessionState {
         return this.displayMessages.find(item => item.id === this.selectedMessageId);
     }
 
-    openMessageDetail(): void {
+    openMessageDetail(takeFocus = true): void {
         if (!this.selectedMessage) {
             return;
         }
         this.messageDetailOpen = true;
+        this.messageDetailTakesFocus = takeFocus;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.syncDerivedInputFocus();
@@ -1235,6 +1237,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.messageDetailOpen = false;
+        this.messageDetailTakesFocus = true;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.syncDerivedInputFocus();

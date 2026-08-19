@@ -96,6 +96,11 @@ export class RuntimeMousePipelineReproTest {
 
         expect(instance.sessionState.selectedMessageId).toEqual('a1');
         expect(instance.sessionState.messageDetailOpen).toEqual(true);
+        expect(instance.sessionState.inputFocused).toEqual(true);
+
+        const text = decoder.decode('fours');
+        await (handler as any).handleTerminalInput(text, 'fours');
+        expect(instance.sessionState.input).toEqual('fours');
     }
 
     @Test('ConsoleTerminalInputController decodes and forwards real SGR stdin chunks')
@@ -108,9 +113,11 @@ export class RuntimeMousePipelineReproTest {
         let rawMode: boolean | undefined;
         let resumed = false;
         let paused = false;
+        let readCount = 0;
         const fakeInput = {
             on: (_evt: string, handler: (chunk: string) => void) => { dataHandler = handler; },
             off: () => undefined,
+            read: () => { readCount += 1; return null; },
             setRawMode: (enabled: boolean) => { rawMode = enabled; },
             resume: () => { resumed = true; },
             pause: () => { paused = true; }
@@ -142,6 +149,7 @@ export class RuntimeMousePipelineReproTest {
         dataHandler!('\x1b[<0;12;5m');
         expect(received.length).toBe(3); // release event
         expect(received[2].decoded.mouse?.release).toBe(true);
+        expect(readCount).toBe(0);
 
         controller.stop();
         expect(rawMode).toBe(false);

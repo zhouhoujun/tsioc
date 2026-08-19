@@ -319,7 +319,7 @@ export class HtmlConsoleTest {
         messagesPanel.instance.onMessageLineClick(collapsedLine);
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
-        expect(ref.instance.sessionState.inputFocused).toEqual(false);
+        expect(ref.instance.sessionState.inputFocused).toEqual(true);
 
         const collapseLine = messagesPanel.instance.renderedLines.find(line => line.toggleContent === 'Click to collapse');
         expect(collapseLine?.messageId).toEqual('a1');

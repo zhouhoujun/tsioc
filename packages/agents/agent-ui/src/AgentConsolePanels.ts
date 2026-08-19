@@ -2044,7 +2044,7 @@ export class AgentConsoleMessageLineComponent {
             return;
         }
         this.state.setSelectedMessageId(messageId);
-        this.state.openMessageDetail();
+        this.state.openMessageDetail(false);
     }
 
     get tokens(): Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> {
@@ -2316,7 +2316,7 @@ export class AgentConsoleMessagesPanelComponent {
         if (!messageItem || messageItem.lines.length <= COLLAPSED_MESSAGE_PREVIEW_LINES) {
             return;
         }
-        this.state.openMessageDetail();
+        this.state.openMessageDetail(false);
     }
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
@@ -2546,7 +2546,7 @@ export class AgentConsoleMessageDetailPanelComponent {
 
     onExpandedChange(expanded: boolean): void {
         if (expanded) {
-            this.state.openMessageDetail();
+            this.state.openMessageDetail(false);
             return;
         }
         this.state.closeMessageDetail();
