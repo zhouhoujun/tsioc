@@ -167,6 +167,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         '.bmp': 'image/bmp',
         '.svg': 'image/svg+xml'
     };
+
+    shouldEnableTerminalMouseTracking(): boolean {
+        return false;
+    }
     protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
         '.pdf': 'application/pdf'
     };
@@ -1834,7 +1838,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showStatusPanel(): boolean {
-        return !!this.state.statusline.length || !!this.state.notice || !!this.state.pendingApprovals.length;
+        return (this.state.consoleOptions.showStatusline && !!this.state.statusline.length)
+            || !!this.state.notice
+            || !!this.state.pendingApprovals.length;
     }
 
     get showSessionsPanel(): boolean {
@@ -7291,7 +7297,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         if (!action) return false;
         if (isAgentConsoleThreadNavigationAction(action) && !this.canThreadNavigate()) return false;
-        if (isAgentConsoleMessageNavigationAction(action) && !this.canMessageNavigate()) return false;
+        if (isAgentConsoleMessageNavigationAction(action) && !this.canMessageNavigate()) {
+            const canEnterTranscript = action === 'message-page-up'
+                && !this.state.hasMessageFocus()
+                && !this.state.messageDetailOpen
+                && !this.state.selectMenu;
+            if (!canEnterTranscript) return false;
+        }
         return await this.executeGlobalKeyAction(action);
     }
 
@@ -7526,6 +7538,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return this.navigateThreadParent();
         }
         if (action === 'message-page-up') {
+            if (!this.state.hasMessageFocus()) {
+                return this.state.focusLatestLongMessage();
+            }
             this.state.moveMessageSelectionPage(-1);
             return true;
         }

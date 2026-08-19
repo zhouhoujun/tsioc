@@ -17,5 +17,6 @@ export class AgentConsolePlatformPolicyTest {
             ui: { console: { workingPresentation: 'dashboard' } }
         });
         expect(options.ui.console.workingPresentation).toEqual('compact');
+        expect(options.ui.console.showStatusline).toEqual(false);
     }
 }

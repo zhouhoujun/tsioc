@@ -27,8 +27,6 @@ export interface AgentTuiConfig {
     keybinds?: Record<string, string | null>;
     /** Scroll speed multiplier for the message view. */
     scrollSpeed?: number;
-    /** Whether mouse events are enabled (e.g. click-to-focus). */
-    mouse?: boolean;
     /** Whether attention/notification sounds are enabled. */
     attentionSound?: boolean;
     /** Timeout in ms for leader-key chord sequences. */
@@ -60,7 +58,6 @@ export interface AgentTuiResolvedConfig {
     theme: string;
     keybinds: Record<string, string | null>;
     scrollSpeed: number;
-    mouse: boolean;
     attentionSound: boolean;
     leaderTimeout: number;
     diffStyle: AgentTuiDiffStyle;
@@ -75,7 +72,6 @@ export const defaultAgentTuiConfig: AgentTuiResolvedConfig = {
     theme: 'dark',
     keybinds: {},
     scrollSpeed: 1,
-    mouse: false,
     attentionSound: false,
     leaderTimeout: 3000,
     diffStyle: 'auto',
@@ -117,7 +113,6 @@ export function normalizeAgentTuiConfig(input?: Partial<AgentTuiConfig>): AgentT
     const scrollSpeed = typeof source.scrollSpeed === 'number' && source.scrollSpeed > 0
         ? source.scrollSpeed
         : defaultAgentTuiConfig.scrollSpeed;
-    const mouse = typeof source.mouse === 'boolean' ? source.mouse : defaultAgentTuiConfig.mouse;
     const attentionSound = typeof source.attentionSound === 'boolean' ? source.attentionSound : defaultAgentTuiConfig.attentionSound;
     const leaderTimeout = typeof source.leaderTimeout === 'number' && source.leaderTimeout >= 0
         ? source.leaderTimeout
@@ -150,7 +145,7 @@ export function normalizeAgentTuiConfig(input?: Partial<AgentTuiConfig>): AgentT
     const rawMode = typeof source.rawMode === 'boolean'
         ? source.rawMode
         : defaultAgentTuiConfig.rawMode;
-    return { theme, keybinds, scrollSpeed, mouse, attentionSound, leaderTimeout, diffStyle, cursor, scrollAcceleration, attention, terminalTitle, rawMode };
+    return { theme, keybinds, scrollSpeed, attentionSound, leaderTimeout, diffStyle, cursor, scrollAcceleration, attention, terminalTitle, rawMode };
 }
 
 export function mergeAgentTuiConfig(...layers: Array<Partial<AgentTuiConfig> | undefined>): AgentTuiResolvedConfig {
@@ -167,9 +162,6 @@ export function mergeAgentTuiConfig(...layers: Array<Partial<AgentTuiConfig> | u
         }
         if (typeof layer.scrollSpeed === 'number') {
             merged.scrollSpeed = layer.scrollSpeed;
-        }
-        if (typeof layer.mouse === 'boolean') {
-            merged.mouse = layer.mouse;
         }
         if (typeof layer.attentionSound === 'boolean') {
             merged.attentionSound = layer.attentionSound;

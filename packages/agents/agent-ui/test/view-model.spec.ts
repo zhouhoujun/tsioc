@@ -8406,6 +8406,21 @@ export class AgentConsoleComponentTest {
         state.setMessagesFocused(true);
         expect(await state.handleFocusKey('enter')).toEqual(true);
         expect(state.messageDetailOpen).toEqual(true);
+        expect(await state.handleFocusKey('enter')).toEqual(true);
+        expect(state.messageDetailOpen).toEqual(false);
+    }
+
+    @Test('page up entry focuses the latest long message without a command')
+    pageUpEntryFocusesLatestLongMessage() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'long', role: 'assistant', content: Array.from({ length: 12 }, (_value, index) => `line ${index}`).join('\n'), createdAt: 1 },
+            { id: 'short', role: 'assistant', content: 'done', createdAt: 2 }
+        ]);
+        expect(state.focusLatestLongMessage()).toEqual(true);
+        expect(state.messagesFocused).toEqual(true);
+        expect(state.selectedMessageId).toEqual('long');
+        expect(state.inputFocused).toEqual(false);
     }
 
     @Test('session state copies selected message content when messages are focused')

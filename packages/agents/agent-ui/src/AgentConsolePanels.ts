@@ -191,10 +191,12 @@ export class AgentConsoleStatusPanelComponent {
             return [];
         }
         const lines: string[] = [];
-        for (const field of this.state.statusline) {
-            const line = this.statuslineFieldLine(field);
-            if (line) {
-                lines.push(line);
+        if (this.state.consoleOptions.showStatusline) {
+            for (const field of this.state.statusline) {
+                const line = this.statuslineFieldLine(field);
+                if (line) {
+                    lines.push(line);
+                }
             }
         }
         lines.push(
@@ -2330,9 +2332,16 @@ export class AgentConsoleMessagesPanelComponent {
             return this.messageItems;
         }
         if (this.state.messagesFocused) {
-            return this.messageItems.map(item => this.isReasoningMessageItem(item)
-                ? this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES)
-                : item);
+            return this.messageItems.map(item => {
+                if (this.state.messageDetailOpen
+                    && item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
+                    return item;
+                }
+                return this.truncateMessageItem(
+                    item,
+                    this.isReasoningMessageItem(item) ? REASONING_MESSAGE_PREVIEW_LINES : COLLAPSED_MESSAGE_PREVIEW_LINES
+                );
+            });
         }
         if (this.state.messageDetailOpen) {
             return this.messageItems.map(item => {
@@ -2351,7 +2360,7 @@ export class AgentConsoleMessagesPanelComponent {
                         prefixStyle: {},
                         content,
                         toggleContent: content,
-                        tokens: [{ text: content, tone: 'muted', style: toggleStyle } as AgentConsoleMarkdownToken as any],
+                        tokens: [{ text: content, tone: 'muted', style: toggleStyle }],
                         itemStyle: {
                             ...(baseLine.itemStyle || {}),
                             padding: '1em 1ch'
@@ -2399,7 +2408,7 @@ export class AgentConsoleMessagesPanelComponent {
                 text: toggleText,
                 tone: 'muted',
                 style: toggleStyle
-            } as AgentConsoleMarkdownToken as any],
+            }],
             itemStyle: {
                 ...(baseLine.itemStyle || {}),
                 padding: '1em 1ch'

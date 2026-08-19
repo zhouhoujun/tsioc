@@ -84,7 +84,6 @@ export interface AgentCliOptions {
     tuiTheme?: string;
     tuiKeybinds?: Record<string, string | null>;
     tuiScrollSpeed?: string;
-    tuiMouse?: boolean;
     tuiAttentionSound?: boolean;
     tuiLeaderTimeout?: string;
 }
@@ -484,7 +483,6 @@ export function resolveCliTuiConfig(options: AgentCliOptions, root?: string): Ag
     const envLayer: Record<string, any> = {};
     if (process.env.TSDI_AGENT_TUI_THEME) envLayer.theme = process.env.TSDI_AGENT_TUI_THEME;
     if (process.env.TSDI_AGENT_TUI_SCROLL_SPEED) envLayer.scrollSpeed = parseInt(process.env.TSDI_AGENT_TUI_SCROLL_SPEED, 10);
-    if (process.env.TSDI_AGENT_TUI_MOUSE) envLayer.mouse = process.env.TSDI_AGENT_TUI_MOUSE === '1' || process.env.TSDI_AGENT_TUI_MOUSE === 'true';
     if (process.env.TSDI_AGENT_TUI_ATTENTION_SOUND) envLayer.attentionSound = process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === '1' || process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === 'true';
     if (process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT) envLayer.leaderTimeout = parseInt(process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT, 10);
     if (envKeybinds) {
@@ -493,7 +491,6 @@ export function resolveCliTuiConfig(options: AgentCliOptions, root?: string): Ag
     if (options.tuiTheme) cliLayer.theme = options.tuiTheme;
     if (options.tuiKeybinds) cliLayer.keybinds = options.tuiKeybinds;
     if (options.tuiScrollSpeed) cliLayer.scrollSpeed = parseInt(options.tuiScrollSpeed, 10);
-    if (typeof options.tuiMouse === 'boolean') cliLayer.mouse = options.tuiMouse;
     if (typeof options.tuiAttentionSound === 'boolean') cliLayer.attentionSound = options.tuiAttentionSound;
     if (options.tuiLeaderTimeout) cliLayer.leaderTimeout = parseInt(options.tuiLeaderTimeout, 10);
     return mergeAgentTuiConfig(file, envLayer, cliLayer);

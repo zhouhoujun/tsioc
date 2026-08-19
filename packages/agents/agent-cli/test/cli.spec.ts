@@ -318,7 +318,6 @@ export class AgentCliTest {
         const resolved = resolveCliConfig({ root });
         expect(resolved.tui?.theme).toBe('dark');
         expect(resolved.tui?.scrollSpeed).toBe(1);
-        expect(resolved.tui?.mouse).toBe(false);
         expect(resolved.tui?.leaderTimeout).toBe(3000);
     }
 
@@ -348,12 +347,10 @@ export class AgentCliTest {
         const resolved = resolveCliConfig({
             root,
             tuiTheme: 'high-contrast',
-            tuiScrollSpeed: '5',
-            tuiMouse: true
+            tuiScrollSpeed: '5'
         });
         expect(resolved.tui?.theme).toBe('high-contrast');
         expect(resolved.tui?.scrollSpeed).toBe(5);
-        expect(resolved.tui?.mouse).toBe(true);
     }
 
     @Test('environment variables override tui.json but not CLI options')

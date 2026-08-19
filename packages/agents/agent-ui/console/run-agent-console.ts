@@ -110,7 +110,8 @@ export function buildConsoleAgentOptions(
             console: {
                 ...(agentOptions?.ui?.console || {}),
                 workspace: agentOptions?.ui?.console?.workspace || resolved.workspace,
-                workingPresentation: 'compact'
+                workingPresentation: 'compact',
+                showStatusline: false
             }
         }
     });

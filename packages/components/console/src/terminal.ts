@@ -540,7 +540,9 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             renderer,
             root,
             width: () => resolveTerminalSize(this.output || {}).columns,
-            height: () => resolveTerminalSize(this.output || {}).rows,
+            height: this.mouseTrackingEnabled
+                ? () => resolveTerminalSize(this.output || {}).rows
+                : undefined,
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',

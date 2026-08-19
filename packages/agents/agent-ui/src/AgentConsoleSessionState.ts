@@ -318,6 +318,7 @@ export interface AgentConsoleOptions {
     username?: string;
     shareBaseUrl?: string;
     workingPresentation?: 'compact' | 'dashboard';
+    showStatusline?: boolean;
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -369,7 +370,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageStatusSymbol: '',
     username: 'you',
     shareBaseUrl: '',
-    workingPresentation: 'dashboard'
+    workingPresentation: 'dashboard',
+    showStatusline: true,
 };
 
 @Injectable()
@@ -1207,6 +1209,32 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+    }
+
+    focusLatestLongMessage(): boolean {
+        if (this.input || this.inputLocked || this.modalPromptActive || this.hasBlockingSelectMenu()) {
+            return false;
+        }
+        const messages = this.displayMessages;
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+            const message = messages[index];
+            const content = String(message.content || '');
+            if (content.split('\n').length > 8 || content.length > 800) {
+                this.selectedMessageId = message.id;
+                this.messageDetailOpen = false;
+                this.messagesFocused = true;
+                this.syncDerivedInputFocus();
+                return true;
+            }
+        }
+        if (!messages.length) {
+            return false;
+        }
+        this.selectedMessageId = messages[messages.length - 1].id;
+        this.messageDetailOpen = false;
+        this.messagesFocused = true;
+        this.syncDerivedInputFocus();
+        return true;
     }
 
     selectLastUserMessage(): void {
@@ -3899,6 +3927,9 @@ export class AgentConsoleSessionState {
                 return true;
             }
             switch (normalized) {
+                case 'enter':
+                    this.closeMessageDetail();
+                    return true;
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
                     return true;

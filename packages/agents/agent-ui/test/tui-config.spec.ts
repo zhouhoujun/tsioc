@@ -11,7 +11,6 @@ export class AgentTuiConfigTest {
         expect(resolved).toEqual(defaultAgentTuiConfig);
         expect(resolved.theme).toEqual('dark');
         expect(resolved.scrollSpeed).toEqual(1);
-        expect(resolved.mouse).toEqual(false);
         expect(resolved.attentionSound).toEqual(false);
         expect(resolved.leaderTimeout).toEqual(3000);
         expect(resolved.diffStyle).toEqual('auto');
@@ -46,13 +45,12 @@ export class AgentTuiConfigTest {
     @Test('later layers win (CLI > env > file)')
     priorityOrder() {
         const resolved = mergeAgentTuiConfig(
-            { theme: 'light', scrollSpeed: 2, mouse: true, diffStyle: 'stacked', scrollAcceleration: true, cursor: { style: 'line' } },
+            { theme: 'light', scrollSpeed: 2, diffStyle: 'stacked', scrollAcceleration: true, cursor: { style: 'line' } },
             { theme: 'solarized', scrollSpeed: 3, diffStyle: 'auto' },
             { theme: 'high-contrast' }
         );
         expect(resolved.theme).toEqual('high-contrast');
         expect(resolved.scrollSpeed).toEqual(3);
-        expect(resolved.mouse).toEqual(true);
         expect(resolved.diffStyle).toEqual('auto');
         expect(resolved.scrollAcceleration).toEqual(true);
         expect(resolved.cursor).toEqual({ style: 'line', blinking: true });
@@ -88,7 +86,6 @@ export class AgentTuiConfigTest {
             scrollSpeed: -5,
             leaderTimeout: -1,
             theme: '',
-            mouse: 'yes' as any,
             diffStyle: 'side-by-side' as any,
             scrollAcceleration: 'on' as any,
             cursor: { style: 'rainbow' as any, blinking: 'nope' as any },
@@ -97,7 +94,6 @@ export class AgentTuiConfigTest {
         expect(resolved.scrollSpeed).toEqual(1);
         expect(resolved.leaderTimeout).toEqual(3000);
         expect(resolved.theme).toEqual('dark');
-        expect(resolved.mouse).toEqual(false);
         expect(resolved.diffStyle).toEqual('auto');
         expect(resolved.scrollAcceleration).toEqual(false);
         expect(resolved.cursor).toEqual({ style: 'block', blinking: true });

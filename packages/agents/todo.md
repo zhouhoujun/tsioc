@@ -523,8 +523,8 @@ grep -r "from 'node:" src/                 # 应为空
 
 1. `@tsdi/agent-ui/console` 去掉 dashboard 式统计展示，只保留对当前 turn 有直接帮助的最小 Working 状态；`@tsdi/agent-ui/web-console` / `@tsdi/agent-ui/web` 现有功能不受影响。
 2. 用户输入消息开头不显示时间。`showTimestamps` 仍可控制其他普通消息的时间展示；时间线事件节点继续不显示开始时刻，只在完成/失败且有 `durationMs` 时显示耗时。
-3. 时间线中的长内容按统一阈值折叠，可用鼠标展开/收起；展开不抢 composer 焦点，收起后输入仍可编辑。
-4. 鼠标滚轮滚动的是命令窗口实际可见 transcript 行，而不是只修改消息数组窗口或状态计数；输入区、状态栏等 footer 固定，滚动时不丢焦点。
+3. 时间线中的长内容按统一阈值折叠。浏览器继续用鼠标点击；console 不接管鼠标，通过空 composer 下 `PageUp` 聚焦最近长消息、`↑/↓` 选择、`Enter` 展开/收起、`Esc` 返回 composer。
+4. console 不启用 mouse tracking，不解析滚轮；命令窗口保留终端自身的 scrollback 行为。`AgentTuiConfig`、CLI 参数和环境变量中的旧 `mouse` 字段全部删除，防止后续重新启用。
 5. 遵守根 `AGENTS.md`：无定时刷新、无布局脏节点缓存、`agent-ui/src` 不引用 `@tsdi/components/console`，跨平台能力放在 components 通用层。
 
 ### 已确认的根因
@@ -532,9 +532,8 @@ grep -r "from 'node:" src/                 # 应为空
 - 当前 `AgentConsoleWorkingPanelComponent` 的 `workingDetail` 拼入 `dashboardCountersLabel`，并保留 stats/quality/usage/compaction/diagnostics/detail 等 dashboard getter；共享组件无法区分 console 与 web 展示策略。
 - `resolveTimelineMeta` 以 `showTimestamps` 为总开关，用户消息仍会得到 `HH:mm`；这与“用户输入不加前置时间”冲突。
 - 长消息折叠依赖 `messageDetailOpen + selectedMessageId`，缓存曾遗漏展开状态；时间线事件还存在 reasoning 专用截断与普通消息截断两套规则，需要统一为显式的可折叠判定。
-- 当前滚轮实现只在 `AgentConsoleComponent.dispatchTerminalMouseAt` 修改 `messageViewportOffset`，随后由 `visibleMessages` 按“消息条数”切片。这不是终端 viewport：一条消息可能占多行，且 `TuiTerminalSurface.render()` 仍把整棵 root 的 `layout.lines` 直接传给 `renderPrimaryTerminalScreen`。
-- `components/console` 已有正确的行级窗口函数 `composePrimaryTerminalScreen(... scrollOffset ...)` / `windowRenderedLinesFromBottom`，但 `TuiTerminalSurface` 没有传终端高度和 scroll offset，也没有把 transcript/footer 区域接入该路径。因此“offset 变了”不等于命令窗口滚动，这正是此前反复修改仍失败的核心原因。
-- 现有滚轮回归只断言 `messageViewportOffset` 从 0 变为 3，再变回 0；它没有断言 `surface.lastRenderedLines` 或真实 PTY 画面变化，属于无效验收。
+- 此前应用层 wheel viewport 会进入 alternate-screen 风格的固定窗口并吞掉终端原生滚轮，且 console click target 与 composer 焦点相互干扰；这与 Codex 类 CLI 的 transcript 浏览方式冲突。
+- 长消息只依赖鼠标 click target 时，关闭 mouse tracking 后 console 没有可发现的聚焦入口，因此需要独立的键盘状态机；web 的点击路径保持不变。
 
 ### P171-1 · 建立可复现基线，先写失败测试
 
@@ -558,12 +557,12 @@ Console 专项验证必须独立：
 1. 在 `packages/agents/agent-ui/test/console-tui-interaction.spec.ts`（或等价 console 专项 spec）建立只使用 `TuiConsoleModule` 的 harness，不复用 HTML renderer 测试上下文。
 2. fake stdout 必须提供真实 `rows/columns/isTTY/write/on/off`，输入通过 `ConsoleTerminalInputController` 或 runner 注入的 `ConsoleTerminalInputHandler` 发送原始 SGR bytes，禁止直接调用 state 方法伪造滚轮和点击。
 3. harness 暴露 ANSI strip 后的 screen snapshot、`lastRenderedLines`、click targets 和 cursor row；每个断言针对 console 最终画面。
-4. 长内容用真实 TUI click target 坐标执行 press/release，连续验证“折叠 → 展开 → 折叠”；滚轮用 64/65 button 序列验证可见编号变化。
+4. console 输入原始 `PageUp`/方向键/`Enter`/`Esc`，验证“composer → 最近长消息 → 展开 → 收起 → composer”；web 继续用 click target 验证点击往返。
 5. 该专项 spec 可单独运行，作为每轮修改的第一道回归；HTML/browser spec 只验证 web 不回归，不能替代 console 验收。
 
 验收：修改实现前上述最终画面断言必须失败，证明测试能捕获用户看到的问题。
 
-### P171-2 · 在 components/console 实现真正的行级 viewport
+### P171-2 · components/console 放开原生终端 scrollback
 
 涉及：
 
@@ -572,17 +571,14 @@ Console 专项验证必须独立：
 
 设计：
 
-1. 给 `TuiTerminalSurfaceOptions` 增加有类型的高度来源 `height?: number | (() => number)`，生命周期用 `resolveTerminalSize(output).rows` 注入。
-2. surface 自己维护 `scrollOffsetRows` 与 `maxScrollOffsetRows`；滚轮是 surface 级输入，不由 agent-ui 按消息条数解释。
-3. 渲染时依据 renderer 的 `TerminalRenderRegion` 划分：可滚区域为 `transcript`，输入框/选择器/状态行作为 footer。若当前 root 尚未提供稳定 region，先在共享 TUI renderer 通过 `render-region` 属性产出明确区域，禁止用 CSS class/文本内容猜测。
-4. 复用 `composePrimaryTerminalScreen` 和 `windowRenderedLinesFromBottom`，按终端物理行裁剪，并将 `scrollOffsetRows` 传入；不要复制一套字符串切片算法。
-5. wheel up/down 调整 row offset 后调用 `requestRender()`；新内容到达时：offset=0 自动跟随底部，offset>0 保持当前阅读锚点并显示“距底部/有新内容”提示。
-6. resize 时 clamp offset；destroy/detach 时清零；click target、region、cursor target 坐标必须映射到裁剪后的可见行。
-7. 不使用 `setInterval`/`setTimeout` 驱动滚动或刷新；只有 wheel、resize、真实数据 CHANGE_EVENT 触发渲染。
+1. lifecycle 提供 `shouldEnableTerminalMouseTracking()`；console consumer 固定返回 `false`，web 不经过这条终端路径。
+2. mouse tracking 关闭时，不写入 `?1000h/?1002h/?1006h`，也不给 surface 注入固定终端高度，让输出进入终端原生 scrollback。
+3. 不在 agent-ui 处理 SGR wheel，不维护应用层滚动 offset，不设置 `tui.mouse`。
+4. 不使用 `setInterval`/`setTimeout` 驱动滚动或刷新；界面仍完全由响应式数据变化驱动。
 
-必须覆盖：窄终端换行、多行中文、ANSI 样式、超长单消息、resize、滚动后点击、滚动中新增消息、滚到底恢复自动跟随。
+必须覆盖：窄终端换行、多行中文、ANSI 样式、超长单消息、resize、连续输出进入原生 scrollback，以及关闭 mouse tracking 后的清理序列。
 
-### P171-3 · agent-ui 接入 surface 滚动并移除错误的消息条数偏移
+### P171-3 · agent-ui 增加键盘 transcript 导航
 
 涉及：
 
@@ -594,12 +590,12 @@ Console 专项验证必须独立：
 
 步骤：
 
-1. 在 `ConsoleTerminalSurfaceAccessor` port 增加有类型的 `scrollViewport(deltaRows): boolean`、`scrollViewportToEdge(...)` 和只读 viewport 状态（若 UI 提示需要）。console adapter 转发到 components/console surface；web adapter 保持无操作或使用 DOM 原生滚动。
-2. `dispatchTerminalMouseAt` 识别 wheel 后调用 surface port；详情 panel 有自己的局部滚动时，仅当指针确实位于详情 region 才滚局部详情，否则滚主 transcript。不能再用 `messageDetailOpen` 全局猜测鼠标所在区域。
-3. 删除 `messageViewportOffset`、`scrollMessageViewport()` 及 `visibleMessages` 中按消息条数切片的临时实现；消息选择窗口与终端物理行 viewport 分离。
-4. wheel 事件不得改变 `messagesFocused`、`messageDetailTakesFocus`、`inputFocused` 或 input cursor。
+1. 空 composer 下 `PageUp` 选择最近超过折叠阈值的消息；没有长消息时回退到最近消息。composer 有内容、被锁定或 modal/menu 活跃时不得抢焦点。
+2. transcript 聚焦后 `↑/↓` 移动选择，`Enter` 打开详情，再按 `Enter` 收起；`Esc` 关闭详情并回到 composer。
+3. focused 只表示键盘选择，不自动展开；长消息仍保持折叠，避免聚焦瞬间造成布局跳变。
+4. web 的 `onMessageLineClick` 保持点击展开/收起，不把 console 的无鼠标策略扩散到浏览器。
 
-验收：真实 PTY 中连续滚轮可浏览超过一屏的历史输出，向下滚到底恢复最新消息；随后输入、Backspace、Delete 均正常。
+验收：真实 PTY 可用终端原生滚轮浏览历史；应用不收到鼠标序列。键盘可稳定展开/收起长消息，`Esc` 后输入、Backspace、Delete 均正常。
 
 ### P171-4 · Console 去 dashboard，保留 Web 能力
 
@@ -636,7 +632,7 @@ Console 专项验证必须独立：
 5. 展开/收起只改变内容可见性，不抢输入焦点；toggle 重新渲染后 click target 必须刷新，连续点击同一节点可稳定往返。
 6. 缓存 key 必须包含所有影响输出的折叠状态；或者移除收益有限的 `messageItemsCache`，优先保证响应式正确性，禁止引入布局层脏节点复用。
 
-验收：用户输入行不含 `HH:mm`；完成事件显示 `1.3s` 等耗时；12+ 行事件可用鼠标连续展开/收起；展开后输入 `fours`、退格、Delete 正常。
+验收：用户输入行不含 `HH:mm`；完成事件显示 `1.3s` 等耗时；12+ 行事件在 web 可点击、console 可用 Enter 连续展开/收起；返回 composer 后输入 `fours`、退格、Delete 正常。
 
 ### P171-6 · 全量验证与真实终端验收
 
@@ -664,7 +660,7 @@ cd packages/agents/agent-ui
 npx ts-node -r tsconfig-paths/register test/run-console-tui.tmp.ts
 ```
 
-专项必须覆盖：固定 80x20 与 120x30 两种尺寸、长单行换行、30+ 行时间线、连续三次展开/折叠、滚轮上下到底、滚动中新增输出、滚动后输入编辑。任何一项只验证 state 数值而未验证 screen snapshot，均视为未完成。
+专项必须覆盖：固定 80x20 与 120x30 两种尺寸、长单行换行、30+ 行时间线、键盘连续三次展开/折叠、`Esc` 返回输入、浏览器点击不回归。PTY 另检查未输出 mouse enable 序列且终端原生 scrollback 可用。
 
 静态约束：
 
@@ -677,17 +673,16 @@ git diff --check
 真实 PTY 手工脚本（必须记录结果，不能只跑 unit test）：
 
 1. 启动 `npm run chat -- --workspace <fixture>`，准备至少 50 个可辨识编号行，终端高度设为 20–24 行。
-2. 截图/捕获初始底部可见编号；滚轮上滚 5 次，确认早期编号进入画面且输入/footer 不移动；滚轮下滚到底，确认最新编号恢复。
-3. 在上滚状态产生新输出，确认阅读位置不跳；回到底部后确认自动跟随。
-4. 点击长时间线节点展开、收起各 3 次；每次检查完整/折叠内容与 click target 对齐。
-5. 展开后输入 `fours`，执行 Backspace、Delete、左右键和粘贴，确认无吞键、无重复输入。
-6. console 画面不出现 dashboard 统计；用户输入行前无时间；完成节点仅显示耗时。
+2. 捕获启动输出，确认不存在 `?1000h`、`?1002h`、`?1006h` mouse enable 序列；用终端原生滚轮查看历史。
+3. 空 composer 按 `PageUp` 聚焦最近长消息，`Enter` 展开、再次 `Enter` 收起，连续执行 3 次；`↑/↓` 可切换消息。
+4. 按 `Esc` 返回 composer 后输入 `fours`，执行 Backspace、Delete、左右键和粘贴，确认无吞键、无重复输入。
+5. console 画面不出现 dashboard 统计；用户输入行前无时间；完成节点仅显示耗时。
 
 ### 完成定义
 
-- [x] components/console 的 viewport 画面级失败测试先红后绿。
-- [x] `surface.lastRenderedLines` 与真实 PTY 均证明滚轮改变可见内容。
-- [x] 删除按消息条数实现的临时 `messageViewportOffset` 方案。
+- [x] console 不启用 mouse tracking，真实 PTY 无 mouse enable 序列并保留终端原生 scrollback。
+- [x] 删除 `AgentTuiConfig`、CLI 与环境变量中的旧 `mouse` 配置入口。
+- [x] `PageUp`/方向键/`Enter`/`Esc` 构成稳定的 console transcript 导航，web 点击行为保持。
 - [x] console 无 dashboard，web 功能不回归。
 - [x] 用户输入无前置时间，完成节点仅显示耗时。
 - [x] 长时间线节点稳定展开/收起且不影响输入。
