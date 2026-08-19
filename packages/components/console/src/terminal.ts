@@ -233,6 +233,9 @@ export interface TuiTerminalSurfaceOptions {
     output?: { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void };
     root?: RNode | RNode[];
     width?: number | (() => number);
+    height?: number | (() => number);
+    scrollRegionId?: string;
+    footerRegionId?: string;
     placeCursor?: boolean | (() => boolean);
     cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
     stablePrefixRows?: number | ((lines: string[]) => number);
@@ -307,6 +310,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getTerminalRootStartRow(): number;
     abstract dispatchClickAt(node?: ConsoleNode): boolean;
     abstract dispatchMouse?(mouse: SelectMenuMouseEvent): boolean;
+    scrollViewport?(_deltaRows: number): boolean { return false; }
+    scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
     abstract notifyNonMouseInput?(): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
     abstract writeRawTerminalData?(text: string): boolean;
@@ -459,6 +464,14 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.dispatchMouse(mouse) ?? false;
     }
 
+    scrollViewport?(deltaRows: number): boolean {
+        return this.surface?.scrollViewport(deltaRows) ?? false;
+    }
+
+    scrollViewportToEdge?(edge: 'start' | 'end'): boolean {
+        return this.surface?.scrollViewportToEdge(edge) ?? false;
+    }
+
     notifyNonMouseInput?(): boolean {
         return this.surface?.notifyNonMouseInput() ?? false;
     }
@@ -527,6 +540,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             renderer,
             root,
             width: () => resolveTerminalSize(this.output || {}).columns,
+            height: () => resolveTerminalSize(this.output || {}).rows,
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
@@ -619,6 +633,8 @@ export class TuiTerminalSurface {
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
+    protected scrollOffsetRows = 0;
+    protected maxScrollOffsetRows = 0;
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -654,6 +670,14 @@ export class TuiTerminalSurface {
         return this.terminalRow;
     }
 
+    get viewportScrollOffset(): number {
+        return this.scrollOffsetRows;
+    }
+
+    get viewportMaxScrollOffset(): number {
+        return this.maxScrollOffsetRows;
+    }
+
     attach(root: RNode | RNode[]): this {
         this.detach();
         this.root = root;
@@ -679,6 +703,8 @@ export class TuiTerminalSurface {
         this.renderedLines = [];
         this.terminalRow = 0;
         this.clickTargetsCache = [];
+        this.scrollOffsetRows = 0;
+        this.maxScrollOffsetRows = 0;
         this.scheduled = false;
     }
 
@@ -704,9 +730,10 @@ export class TuiTerminalSurface {
         }
         const width = this.resolveWidth();
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width });
-        const lines = layout.lines || [];
-        this.clickTargetsCache = (layout.clickTargets || []).slice();
-        const cursorTarget = layout.cursorTargets?.[0];
+        const viewport = this.resolveViewportLayout(layout);
+        const lines = viewport.lines;
+        this.clickTargetsCache = viewport.clickTargets;
+        const cursorTarget = viewport.cursorTargets[0];
         const cursorMode = this.resolveCursorMode();
         const cursorRow = cursorMode === 'prompt' && cursorTarget
             ? cursorTarget.row
@@ -714,7 +741,7 @@ export class TuiTerminalSurface {
         const result = renderPrimaryTerminalScreen({
             state: this.renderState,
             lines,
-            regions: layout.regions,
+            regions: viewport.regions,
             width,
             stablePrefixRows: this.resolveStablePrefixRows(lines, layout.regions || []),
             cursorRow,
@@ -731,6 +758,30 @@ export class TuiTerminalSurface {
         return result;
     }
 
+    scrollViewport(deltaRows: number): boolean {
+        const delta = Number.isFinite(deltaRows) ? Math.trunc(deltaRows) : 0;
+        if (!delta || !this.maxScrollOffsetRows) {
+            return false;
+        }
+        const next = Math.max(0, Math.min(this.maxScrollOffsetRows, this.scrollOffsetRows + delta));
+        if (next === this.scrollOffsetRows) {
+            return false;
+        }
+        this.scrollOffsetRows = next;
+        this.requestRender();
+        return true;
+    }
+
+    scrollViewportToEdge(edge: 'start' | 'end'): boolean {
+        const next = edge === 'start' ? this.maxScrollOffsetRows : 0;
+        if (next === this.scrollOffsetRows) {
+            return false;
+        }
+        this.scrollOffsetRows = next;
+        this.requestRender();
+        return true;
+    }
+
     dispatchClickAt(node?: ConsoleNode): boolean {
         if (this.destroyed || !node?.dispatchEvent) {
             return false;
@@ -742,6 +793,9 @@ export class TuiTerminalSurface {
     dispatchMouse(mouse?: SelectMenuMouseEvent): boolean {
         if (!mouse) {
             return false;
+        }
+        if ((mouse.button & 64) !== 0) {
+            return this.scrollViewport((mouse.button & 1) === 0 ? 3 : -3);
         }
         if (this.mouseHandedOff) {
             // keep tracking disabled through the clear window so a native click
@@ -804,6 +858,84 @@ export class TuiTerminalSurface {
             this.reclaimMouseTracking();
         }, this.resolveMouseHandoffReclaimMs());
         this.reclaimTimer.unref?.();
+    }
+
+    protected resolveViewportLayout(layout: ReturnType<TuiTerminalSurfaceRenderer['renderToTuiLayout']>): {
+        lines: string[];
+        regions: TerminalRenderRegion[];
+        cursorTargets: TerminalCursorTarget[];
+        clickTargets: TerminalClickTarget[];
+    } {
+        const allLines = layout.lines || [];
+        const allRegions = layout.regions || [];
+        const height = this.resolveHeight();
+        const scrollRegionId = this.options.scrollRegionId || 'transcript';
+        const footerRegionId = this.options.footerRegionId || 'footer';
+        const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
+        const footerRegion = allRegions.find(region => region.id === footerRegionId);
+        if (!height || !scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
+            this.maxScrollOffsetRows = 0;
+            this.scrollOffsetRows = 0;
+            return {
+                lines: allLines,
+                regions: allRegions,
+                cursorTargets: layout.cursorTargets || [],
+                clickTargets: layout.clickTargets || []
+            };
+        }
+        const prefix = allLines.slice(0, scrollRegion.startRow);
+        const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
+        const footer = allLines.slice(footerRegion.startRow);
+        const availableRows = Math.max(0, height - prefix.length - footer.length);
+        this.maxScrollOffsetRows = Math.max(0, transcript.length - availableRows);
+        this.scrollOffsetRows = Math.max(0, Math.min(this.scrollOffsetRows, this.maxScrollOffsetRows));
+        const end = Math.max(0, transcript.length - this.scrollOffsetRows);
+        const start = Math.max(0, end - availableRows);
+        const visibleTranscript = transcript.slice(start, end);
+        const transcriptAbsoluteStart = scrollRegion.startRow + start;
+        const transcriptAbsoluteEnd = scrollRegion.startRow + end;
+        const footerOutputStart = prefix.length + visibleTranscript.length;
+        const mapRow = (row: number): number | undefined => {
+            if (row >= transcriptAbsoluteStart && row < transcriptAbsoluteEnd) {
+                return prefix.length + row - transcriptAbsoluteStart;
+            }
+            if (row >= footerRegion.startRow) {
+                return footerOutputStart + row - footerRegion.startRow;
+            }
+            if (row < scrollRegion.startRow) {
+                return row;
+            }
+            return undefined;
+        };
+        const cursorTargets = (layout.cursorTargets || []).flatMap(target => {
+            const row = mapRow(target.row);
+            return row === undefined ? [] : [{ ...target, row }];
+        });
+        const clickTargets = (layout.clickTargets || []).flatMap(target => {
+            const rows = Array.from({ length: Math.max(1, target.height) }, (_value, index) => mapRow(target.y + index))
+                .filter((row): row is number => row !== undefined);
+            if (!rows.length) return [];
+            return [{ ...target, y: Math.min(...rows), height: Math.max(...rows) - Math.min(...rows) + 1 }];
+        });
+        const regions = allRegions.flatMap(region => {
+            const startRow = mapRow(region.startRow);
+            const endRow = mapRow(Math.max(region.startRow, region.endRow - 1));
+            if (startRow === undefined || endRow === undefined) return [];
+            return [{ id: region.id, startRow, endRow: endRow + 1 }];
+        });
+        return {
+            lines: [...prefix, ...visibleTranscript, ...footer],
+            regions,
+            cursorTargets,
+            clickTargets
+        };
+    }
+
+    protected resolveHeight(): number | undefined {
+        const configured = typeof this.options.height === 'function' ? this.options.height() : this.options.height;
+        return typeof configured === 'number' && Number.isFinite(configured)
+            ? Math.max(1, Math.floor(configured))
+            : undefined;
     }
 
     protected reclaimMouseTracking(): void {

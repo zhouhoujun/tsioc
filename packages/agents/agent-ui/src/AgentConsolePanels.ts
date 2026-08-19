@@ -672,9 +672,11 @@ export class AgentConsoleWorkingPanelComponent {
             parts.push(this.translator?.translate('agent.dashboard.tokens', { count: this.totalTokens })
                 || `${this.totalTokens} tokens`);
         }
-        const dashboard = this.dashboardCountersLabel;
-        if (dashboard) {
-            parts.push(dashboard);
+        if (this.state.consoleOptions.workingPresentation === 'dashboard') {
+            const dashboard = this.dashboardCountersLabel;
+            if (dashboard) {
+                parts.push(dashboard);
+            }
         }
         return ` ${parts.join(' · ')}`;
     }
@@ -2079,7 +2081,6 @@ const messageItemsCache = new WeakMap<object, {
     showUsername: boolean;
     timelineMode: boolean;
     messageDetailOpen: boolean;
-    messageViewportOffset: number;
     items: AgentConsoleRenderedMessageItem[];
 }>();
 
@@ -2201,10 +2202,6 @@ export class AgentConsoleMessagesPanelComponent {
         if (this.state.messageDetailOpen) {
             return messages;
         }
-        if (!this.state.messagesFocused && this.state.messageViewportOffset > 0) {
-            const end = Math.max(visibleCount, messages.length - this.state.messageViewportOffset);
-            return messages.slice(Math.max(0, end - visibleCount), end);
-        }
         if (!this.state.messagesFocused && messages.length > visibleCount) {
             const pinnedIndex = this.resolvePinnedRootMessageIndex(messages);
             if (pinnedIndex >= 0 && pinnedIndex < messages.length - visibleCount) {
@@ -2232,7 +2229,6 @@ export class AgentConsoleMessagesPanelComponent {
         const showUsername = this.state.showUsername;
         const timelineMode = this.state.timelineMode;
         const messageDetailOpen = this.state.messageDetailOpen;
-        const messageViewportOffset = this.state.messageViewportOffset;
         const cached = messageItemsCache.get(this);
 
         if (cached
@@ -2247,8 +2243,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.showToolOutput === showToolOutput
             && cached.showUsername === showUsername
             && cached.timelineMode === timelineMode
-            && cached.messageDetailOpen === messageDetailOpen
-            && cached.messageViewportOffset === messageViewportOffset) {
+            && cached.messageDetailOpen === messageDetailOpen) {
             return cached.items;
         }
 
@@ -2279,7 +2274,6 @@ export class AgentConsoleMessagesPanelComponent {
             showUsername,
             timelineMode,
             messageDetailOpen,
-            messageViewportOffset,
             items
         });
         return items;

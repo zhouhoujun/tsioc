@@ -109,7 +109,8 @@ export function buildConsoleAgentOptions(
             rawMode: tui?.rawMode ?? agentOptions?.ui?.rawMode,
             console: {
                 ...(agentOptions?.ui?.console || {}),
-                workspace: agentOptions?.ui?.console?.workspace || resolved.workspace
+                workspace: agentOptions?.ui?.console?.workspace || resolved.workspace,
+                workingPresentation: 'compact'
             }
         }
     });

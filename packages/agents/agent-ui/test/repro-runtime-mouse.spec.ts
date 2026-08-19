@@ -102,22 +102,48 @@ export class RuntimeMousePipelineReproTest {
         await (handler as any).handleTerminalInput(text, 'fours');
         expect(instance.sessionState.input).toEqual('fours');
 
-        instance.sessionState.closeMessageDetail();
-        instance.sessionState.setMessages(Array.from({ length: 12 }, (_value, index) => ({
-            id: `m${index}`,
-            role: 'assistant',
-            content: `message ${index}`,
-            createdAt: index
-        })) as any);
-        const wheelUp = decoder.decode('\x1b[<64;10;5M');
-        await (handler as any).handleTerminalInput(wheelUp, '\x1b[<64;10;5M');
-        expect(instance.sessionState.messageViewportOffset).toEqual(3);
-        expect(instance.sessionState.inputFocused).toEqual(true);
+    }
 
-        const wheelDown = decoder.decode('\x1b[<65;10;5M');
-        await (handler as any).handleTerminalInput(wheelDown, '\x1b[<65;10;5M');
-        expect(instance.sessionState.messageViewportOffset).toEqual(0);
-        expect(instance.sessionState.inputFocused).toEqual(true);
+    @Test('console wheel changes the visible TUI transcript and keeps composer focus')
+    async consoleWheelScrollsVisibleTranscript() {
+        const runners = this.ctx.get(ApplicationRunners);
+        const instance = runners.getRef(AgentConsoleComponent)!.instance;
+        const handler = this.ctx.get(ConsoleTerminalInputHandler, null)!;
+        const accessor = this.ctx.get(ConsoleTerminalSurfaceAccessor, null)!;
+        instance.sessionState.setTimelineMode(true);
+        instance.sessionState.setMessages(Array.from({ length: 30 }, (_value, index) => ({
+            id: `timeline-${index + 1}`,
+            role: 'assistant',
+            content: `timeline node ${String(index + 1).padStart(2, '0')}`,
+            createdAt: index + 1
+        })) as any);
+        await this.settle();
+
+        const before = accessor.getLastRenderedLines();
+        expect(before.some(line => line.includes('timeline node 30'))).toBe(true);
+        const decoder = new TerminalInputSequenceDecoder();
+        for (let index = 0; index < 10; index += 1) {
+            const wheelUp = decoder.decode('\x1b[<64;10;5M');
+            await (handler as any).handleTerminalInput(wheelUp, '\x1b[<64;10;5M');
+        }
+        await this.settle();
+
+        const after = accessor.getLastRenderedLines();
+        const visibleNodeNumbers = (lines: string[]) => lines.flatMap(line => {
+            const match = line.match(/timeline node (\d+)/);
+            return match ? [Number(match[1])] : [];
+        });
+        expect(after).not.toEqual(before);
+        expect(after.some(line => line.includes('timeline node 30'))).toBe(false);
+        expect(Math.min(...visibleNodeNumbers(after))).toBeLessThan(Math.min(...visibleNodeNumbers(before)));
+        expect(instance.sessionState.inputFocused).toBe(true);
+
+        for (let index = 0; index < 10; index += 1) {
+            const wheelDown = decoder.decode('\x1b[<65;10;5M');
+            await (handler as any).handleTerminalInput(wheelDown, '\x1b[<65;10;5M');
+        }
+        await this.settle();
+        expect(accessor.getLastRenderedLines().some(line => line.includes('timeline node 30'))).toBe(true);
     }
 
     @Test('ConsoleTerminalInputController decodes and forwards real SGR stdin chunks')

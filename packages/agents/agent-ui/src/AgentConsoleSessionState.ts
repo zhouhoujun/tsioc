@@ -317,6 +317,7 @@ export interface AgentConsoleOptions {
     messageStatusSymbol?: string;
     username?: string;
     shareBaseUrl?: string;
+    workingPresentation?: 'compact' | 'dashboard';
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -367,7 +368,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     },
     messageStatusSymbol: '',
     username: 'you',
-    shareBaseUrl: ''
+    shareBaseUrl: '',
+    workingPresentation: 'dashboard'
 };
 
 @Injectable()
@@ -381,7 +383,6 @@ export class AgentConsoleSessionState {
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
     messagesFocused = false;
-    messageViewportOffset = 0;
     selectedMessageId = '';
     messageDetailOpen = false;
     messageDetailTakesFocus = true;
@@ -1173,12 +1174,6 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
-    }
-
-    scrollMessageViewport(delta: number): void {
-        const visibleCount = Math.max(1, this.consoleOptions.messagesVisibleItems);
-        const maxOffset = Math.max(0, this.displayMessages.length - visibleCount);
-        this.messageViewportOffset = Math.max(0, Math.min(maxOffset, this.messageViewportOffset + delta));
     }
 
     moveMessageSelectionPage(delta: number, pageSize?: number): void {

@@ -135,7 +135,7 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
-        <agent-console-brand-panel></agent-console-brand-panel>
+        <agent-console-brand-panel renderRegion="transcript"></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
@@ -148,7 +148,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
-        <agent-console-input-panel></agent-console-input-panel>
+        <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
         <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
@@ -5987,15 +5987,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
-        if ((mouse.button & 64) !== 0) {
-            const delta = (mouse.button & 1) === 0 ? -3 : 3;
-            if (this.state.messageDetailOpen) {
-                this.state.scrollMessageDetail(delta);
-            } else {
-                this.state.scrollMessageViewport(-delta);
-            }
-            return;
-        }
         this.surfaceAccessor?.dispatchMouse?.(mouse);
     }
 

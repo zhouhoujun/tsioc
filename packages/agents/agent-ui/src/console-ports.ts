@@ -21,6 +21,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi?: (value: string) => string): string;
     dispatchMouse?(event: SelectMenuMouseEvent): void;
+    scrollViewport?(deltaRows: number): boolean;
+    scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
     writeRawTerminalData?(data: string): void;
     notifyNonMouseInput?(): void;
     stopTerminal?(): void;

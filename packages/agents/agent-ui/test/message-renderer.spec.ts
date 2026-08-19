@@ -218,14 +218,16 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].statusStyle?.color).not.toEqual(items[1].lines[0].statusStyle?.color);
     }
 
-    @Test('renders timestamps in meta when showTimestamps is enabled')
+    @Test('omits user timestamps while preserving timestamp display for assistant messages')
     renderTimestampsInMeta() {
         const createdAt = new Date(2026, 0, 15, 9, 5).getTime();
         const items = renderAgentConsoleMessageItems([
-            { id: 'u1', role: 'user', content: 'hi', createdAt }
+            { id: 'u1', role: 'user', content: 'hi', createdAt },
+            { id: 'a1', role: 'assistant', content: 'hello', createdAt }
         ] as any, { showTimestamps: true });
 
-        expect(items[0].lines[0].meta).toContain('09:05');
+        expect(items[0].lines[0].meta).toEqual('');
+        expect(items[1].lines[0].meta).toContain('09:05');
 
         const without = renderAgentConsoleMessageItems([
             { id: 'u2', role: 'user', content: 'hi', createdAt }

@@ -555,7 +555,10 @@ function resolveTimelineMeta(
         if (Number.isFinite(durationMs) && durationMs >= 0) {
             parts.push(formatTimelineDuration(durationMs));
         }
-    } else if (showTimestamps && typeof message?.createdAt === 'number' && Number.isFinite(message.createdAt)) {
+    } else if (templateKind !== 'user'
+        && showTimestamps
+        && typeof message?.createdAt === 'number'
+        && Number.isFinite(message.createdAt)) {
         const date = new Date(message.createdAt);
         parts.push(`${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`);
     }

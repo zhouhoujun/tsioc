@@ -34,7 +34,13 @@ export class MouseClickPathReproTest {
 
         consoleRef.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: 'hello', createdAt: 0 } as any,
-            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
+            {
+                id: 'a1',
+                role: 'assistant',
+                content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'),
+                createdAt: 1,
+                metadata: { uiKind: 'event', uiEventType: 'tool_completed', uiEventLabel: 'tool', status: 'success', durationMs: 1250 }
+            } as any
         ]);
         await Promise.resolve();
         await Promise.resolve();

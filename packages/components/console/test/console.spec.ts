@@ -90,6 +90,23 @@ class ConsoleLoopUpdateTestComponent {
 }
 
 @Component({
+    selector: 'console-viewport-test',
+    template: `
+    <section>
+        <div renderRegion="transcript">
+            <label v-for="line in lines">{{line}}</label>
+        </div>
+        <div renderRegion="footer">
+            <label>fixed footer</label>
+        </div>
+    </section>
+    `
+})
+class ConsoleViewportTestComponent {
+    lines = Array.from({ length: 30 }, (_value, index) => `transcript ${String(index + 1).padStart(2, '0')}`);
+}
+
+@Component({
     selector: 'console-loop-scope-update-test',
     template: `
     <section>
@@ -1127,6 +1144,42 @@ export class ConsoleRendererTest {
                 release: true
             })).toBe(true);
             expect(ref.instance.selected).toBe('2');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('scrolls the rendered transcript by terminal rows while keeping the footer fixed')
+    async scrollsRenderedTranscriptViewport() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
+            expect(surface.lastRenderedLines[surface.lastRenderedLines.length - 1]).toContain('fixed footer');
+            expect(surface.dispatchMouse({ button: 64, x: 1, y: 1, release: false })).toBe(true);
+            await Promise.resolve();
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 23'))).toBe(true);
+            expect(surface.lastRenderedLines[surface.lastRenderedLines.length - 1]).toContain('fixed footer');
+
+            expect(surface.dispatchMouse({ button: 65, x: 1, y: 1, release: false })).toBe(true);
+            await Promise.resolve();
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
         } finally {
             surface?.destroy();
             await ctx.close();
