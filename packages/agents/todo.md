@@ -182,7 +182,7 @@
     - [x] 排除 `compiler-fns.ts` 延迟绑定微任务和 `ConsoleElement` `CHANGE_EVENT` 为根因。
     - [x] 将详情面板改为 `v-if="showMessageDetailPanel"`，仅在 enter 模式且详情打开时实例化；分页状态继续由跨平台 `AgentConsoleSessionState` 保留。
     - [x] 删除 `console-renderer.spec.ts` 堆监控、timing probes 和临时 `run-diag.tmp.ts`。
-    - [ ] 全量测试：`tsc --noEmit` + `build:web` + `npm test` —— 目标：全绿无 OOM。
+    - [x] 全量验证：`agent-ui` `tsc --noEmit`、`build:web`、`npm test`（665 passing）；共享渲染层 `components`（135 passing）、`components/console`（73 passing）、`components/html`（117 passing）均 EXIT=0，无 OOM。
 
 - **P173 · G96 · 计划进度实时勾选反馈（中-高）** `platform: src/（跨平台）`
   - 目标：agent 在执行过程中实时更新 plan items 的 status，对话流中的内联 plan 清单即时反映进度（类似 Codex 的 checkbox 逐步勾选）。
@@ -254,7 +254,7 @@
 
 ## 回归基线
 
-截至 P171（2026-08-19）：十包 **2156+ passing 全部 EXIT=0**；跨包共享渲染层 core 133 / components 126 / components/console 72 / components/html 117 / agent-ui 654 passing；受影响包 `tsc --noEmit` 与 build 通过，agent-ui build:web 保持通过。
+截至 P172 收尾（2026-08-20）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 665 passing，均 EXIT=0；受影响包 `tsc --noEmit` 与 `build:web` 通过。
 
 ---
 
