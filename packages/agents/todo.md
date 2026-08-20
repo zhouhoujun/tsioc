@@ -240,6 +240,7 @@
   - Console 专项：真实 PTY 验收 plan 内联显示、文件变更概要内联、进度分隔符。
   - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 应为空。
   - 回归基线：确保 P0–P171 已有测试不回归。
+  - **已完成（2026-08-20）**：components 135、components/console 73、components/html 117、agent-ui 670 全部通过；agent-ui `tsc --noEmit` 与 `build:web` 通过；`src/` 无直接 console/Node import。构建保留既存 `/snapshots` duplicate-case warning，不影响退出码。
 
 ### 批次 V · 低优先级打磨（P179–P181）
 
