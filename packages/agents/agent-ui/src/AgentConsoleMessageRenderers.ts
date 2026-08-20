@@ -9,7 +9,7 @@ import {
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
-export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange';
+export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary';
 
 export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
     style: Record<string, string>;
@@ -210,6 +210,14 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         continuationLead: () => '  '
     },
     {
+        templateKind: 'timelineBoundary',
+        roleLabel: '',
+        roleStyle: theme => styleTextToObject(theme.statusLabel),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+        lead: () => '',
+        continuationLead: () => ''
+    },
+    {
         templateKind: 'system',
         roleLabel: resolveMessageRoleLabel('system'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'system'),
@@ -368,6 +376,9 @@ export function resolveMessageTemplateKind(message?: AgentMessage | null): Agent
     }
     if (message?.metadata?.uiKind === 'file-change') {
         return 'fileChange';
+    }
+    if (message?.metadata?.uiKind === 'timeline-boundary') {
+        return 'timelineBoundary';
     }
     // Shell messages stay in the 'tool' template even on failure; their
     // failed/error state is carried by the status, not by the template.

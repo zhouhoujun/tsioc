@@ -1609,6 +1609,20 @@ export class AgentConsoleTuiRendererTest {
         expect(message?.content).toContain('src/a.ts (+1 -1)');
     }
 
+    @Test('timeline mode adds a plan step boundary without changing selection')
+    async timelineModeAddsPlanBoundary() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{ id: 'a1', role: 'assistant', content: 'working', createdAt: 1 } as any]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design', status: 'completed' },
+            { id: 'p2', content: 'Implement', status: 'in_progress' }
+        ] as any);
+        ref.instance.sessionState.setTimelineMode(true);
+        expect(ref.instance.sessionState.displayMessages.find(item => item.id === '__timeline_plan_boundary__')?.content)
+            .toEqual('-- plan 2/2 --');
+        expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
+    }
+
     @Test('setMessages does not auto-select synthetic plan message')
     async setMessagesDoesNotSelectPlanMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

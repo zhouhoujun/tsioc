@@ -945,6 +945,20 @@ export class AgentConsoleSessionState {
         if (this.fileChangeMessage) {
             filtered.push(this.fileChangeMessage);
         }
+        if (this.timelineMode) {
+            const active = this.planTodos.find(todo => todo.status === 'in_progress')
+                || this.planTodos.find(todo => todo.status === 'pending');
+            if (active) {
+                const index = this.planTodos.indexOf(active) + 1;
+                filtered.push({
+                    id: '__timeline_plan_boundary__',
+                    role: 'assistant',
+                    content: `-- plan ${index}/${this.planTodos.length} --`,
+                    createdAt: Date.now(),
+                    metadata: { uiKind: 'timeline-boundary', planIndex: index, planTotal: this.planTodos.length }
+                } as AgentMessage);
+            }
+        }
         return filtered;
     }
 
@@ -959,7 +973,7 @@ export class AgentConsoleSessionState {
             this.messageDetailColumnScroll = 0;
         } else {
             const selectable = displayMessages.filter(m =>
-                m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__'
+                m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__' && m.id !== '__timeline_plan_boundary__'
             );
             const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
             if (shouldFollowLatest || !this.selectedMessageId || !selectable.some(item => item.id === this.selectedMessageId)) {
