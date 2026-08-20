@@ -1,6 +1,7 @@
 import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
 import { noReact, ReactiveEffect } from './effect';
 import { ComputedMetadata } from './decorators/computed';
+import { isNoReactiveProperty } from './decorators/reactive-operation';
 // import { RNode } from './renderer/Node';
 
 const REACT_FlAG = Symbol('__REACT');
@@ -95,24 +96,28 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
     // 创建代理
     const proxy = new Proxy(target, {
         get(target, key, receiver) {
-            if (key !== REACT_FlAG && isSubscribable(target)) {
+            // Resolve methods before dependency tracking. Reading an operation
+            // such as `state.setMessages` must not subscribe a binding to the
+            // method property; state reads performed by the method through its
+            // proxy `this` remain tracked normally.
+            let res = Reflect.get(target, key, receiver);
+            const isNoReactive = key !== REACT_FlAG && isNoReactiveProperty(target, key, res);
+            if (!isNoReactive && key !== REACT_FlAG && isSubscribable(target)) {
                 bindSubscribableEffect(target, effect);
                 effect.track(target, SUBSCRIBABLE_NOTIFY);
             }
-            // 如果是计算属性求值过程，只追踪依赖属性的访问
-            if (isComputing && currentComputedKey) {
-                const computedDep = computeds?.find(c => c.propertyKey === currentComputedKey);
-                if (computedDep?.dependencies?.includes(key as string)) {
-                    // 只对依赖属性进行追踪
+            if (!isNoReactive && key !== REACT_FlAG) {
+                // If the property is a computed getter, its value is tracked
+                // below by the computed handler rather than as a function key.
+                if (isComputing && currentComputedKey) {
+                    const computedDep = computeds?.find(c => c.propertyKey === currentComputedKey);
+                    if (computedDep?.dependencies?.includes(key as string)) {
+                        effect.track(target, key);
+                    }
+                } else {
                     effect.track(target, key);
                 }
-            } else {
-                // 正常情况下的依赖追踪
-                effect.track(target, key);
             }
-
-            // Reflect.get保证this指向正确
-            let res = Reflect.get(target, key, receiver);
             const computedDep = computeds?.find(c => c.propertyKey === key);
             // 处理计算属性
             if (computedDep) {

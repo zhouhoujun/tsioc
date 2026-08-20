@@ -30,6 +30,7 @@ export { Directive, Directive as DirectiveDecorator } from './decorators/directi
 export { CUSTOM_ELEMENTS, DIRECTIVES } from './decorators/directive';
 export * from './decorators/atteribute';
 export * from './decorators/computed';
+export * from './decorators/reactive-operation';
 export * from './decorators/query';
 
 export * from './impl/compiler';

@@ -141,7 +141,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-sessions-panel v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel v-show="!showMessageDetailPanel"></agent-console-messages-panel>
-        <agent-console-message-detail-panel renderRegion="transcript" v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
+        <agent-console-message-detail-panel renderRegion="transcript" v-if="showMessageDetailPanel"></agent-console-message-detail-panel>
         <agent-console-tasks-panel v-show="showTasksPanel && !showMessageDetailPanel"></agent-console-tasks-panel>
         <agent-console-jobs-panel v-show="showJobsPanel && !showMessageDetailPanel"></agent-console-jobs-panel>
         <agent-console-review-panel v-show="showReviewPanel && !showMessageDetailPanel"></agent-console-review-panel>

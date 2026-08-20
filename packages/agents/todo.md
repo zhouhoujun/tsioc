@@ -178,12 +178,11 @@
     - 内联 plan 清单与 TasksPanel 双向同步：面板中的操作反映到内联，内联的视觉状态反映到面板。
     - TUI 和 browser 均支持；console 端用 checkbox 字符，browser 端可用 styled checkbox。
   - 锚点：`AgentConsoleMessageRenderers.ts`（新增 renderer）、`AgentConsoleComponent.ts`（plan 消息插入逻辑）、`AgentConsoleSessionState.ts`（plan 内联状态）。
-  - **当前进行中（阻塞 P172 提交）**：修复 agent-ui 测试套件 OOM（`npm test` 全绿后才提交 P172）。
-    - [ ] `compiler-fns.ts:232,387,1281`：追踪延迟绑定微任务 → 找出什么触发重新入队 —— 目标：找到无限微任务链（堆监控 180s 无输出 = 微任务饿死宏任务，无监控时 OOM 在 ~1955MB，两者一致指向无限微任务链）
-    - [ ] `console.ts` `ConsoleElement`：检查 `notifyChanged` override 与 `setAttribute` 是否重新触发 `CHANGE_EVENT` —— 目标：排除渲染循环源
-    - [ ] `packages/components`：修复 Suite3 微任务级联根因 —— 目标：堆保持在 600MB 以下
-    - [ ] `console-renderer.spec.ts`：回退全部诊断改动（`testHeapDiag`、堆监控、timing probes）—— 目标：测试文件干净
-    - [ ] 全量测试：`tsc --noEmit` + `build:web` + `npm test` —— 目标：全绿无 OOM
+  - **内存问题已定位并修复（2026-08-20）**：`0708cda81` 新增的 `agent-console-message-detail-panel` 使用 `v-show` 常驻实例化；即使详情关闭，其 `detailLines` / `detailIndexes` / `visibleLines` 绑定仍参与响应式重跑，`console-renderer.spec.ts` 会在详情测试后持续增配并 OOM。
+    - [x] 排除 `compiler-fns.ts` 延迟绑定微任务和 `ConsoleElement` `CHANGE_EVENT` 为根因。
+    - [x] 将详情面板改为 `v-if="showMessageDetailPanel"`，仅在 enter 模式且详情打开时实例化；分页状态继续由跨平台 `AgentConsoleSessionState` 保留。
+    - [x] 删除 `console-renderer.spec.ts` 堆监控、timing probes 和临时 `run-diag.tmp.ts`。
+    - [ ] 全量测试：`tsc --noEmit` + `build:web` + `npm test` —— 目标：全绿无 OOM。
 
 - **P173 · G96 · 计划进度实时勾选反馈（中-高）** `platform: src/（跨平台）`
   - 目标：agent 在执行过程中实时更新 plan items 的 status，对话流中的内联 plan 清单即时反映进度（类似 Codex 的 checkbox 逐步勾选）。

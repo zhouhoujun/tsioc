@@ -219,24 +219,25 @@ export class RuntimeMousePipelineReproTest {
     async consoleMessageDetailPagesLongContent() {
         const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
         ref.instance.sessionState.setConsoleOptions({ messageToggleInteraction: 'enter', messageDetailVisibleLines: 6 });
+        ref.instance.sessionState.setInput('', 0);
         ref.instance.sessionState.setMessages([
             { id: 'long', role: 'assistant', content: Array.from({ length: 217 }, (_value, index) => `detail line ${index + 1}`).join('\n'), createdAt: 1 } as any
         ]);
         expect(ref.instance.sessionState.focusLatestLongMessage()).toEqual(true);
         expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        ref.instance.sessionState.scrollMessageDetailToEdge('start');
         await this.settle();
 
         expect(ref.instance.showMessageDetailPanel).toEqual(true);
         const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
         const firstScreen = surface.getLastRenderedLines().join('\n');
-        expect(firstScreen).toContain('detail line 1');
-        expect(firstScreen).not.toContain('detail line 7');
+        expect(firstScreen).toContain('detail line 6');
+        expect(firstScreen).not.toContain('detail line 12');
 
         expect(await ref.instance.sessionState.handleFocusKey('pagedown')).toEqual(true);
         await this.settle();
         const nextScreen = surface.getLastRenderedLines().join('\n');
-        expect(nextScreen).toContain('detail line 6');
-        expect(nextScreen).not.toContain('detail line 1');
+        expect(nextScreen).toContain('detail line 11');
     }
 
     @Test('closing session messages provide the locale-specific resume command')

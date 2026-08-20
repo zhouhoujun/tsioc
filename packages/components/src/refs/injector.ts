@@ -112,7 +112,6 @@ export class NodeInjector extends ContextInjector {
     detachNodes(nodes: RNode[]): void {
         const visited = new Set<RNode>();
         // Collect refs to destroy AFTER walking the full tree (avoid re-entrant mutation)
-        const dirsToDestroy: DirectiveRef<any>[] = [];
         const compsToDestroy: ComponentRef<any>[] = [];
 
         const walk = (node: RNode | null | undefined): void => {
@@ -121,10 +120,6 @@ export class NodeInjector extends ContextInjector {
             }
             visited.add(node);
 
-            const dirs = this.directiveRefs.get(node);
-            if (dirs?.length) {
-                dirsToDestroy.push(...dirs);
-            }
             const comp = this.componentRefs.get(node);
             if (comp) {
                 compsToDestroy.push(comp);
@@ -157,9 +152,6 @@ export class NodeInjector extends ContextInjector {
 
         nodes.forEach(node => walk(node));
 
-        for (const dir of dirsToDestroy) {
-            try { (dir.instance as any)?.onDestroy?.(); } catch { /* ignore cleanup errors */ }
-        }
         for (const comp of compsToDestroy) {
             try { comp.hostView?.destroy(); } catch { /* ignore cleanup errors */ }
         }

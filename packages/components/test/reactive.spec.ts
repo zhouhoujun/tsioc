@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { isReactive, canReactive, reactive } from '../src/reactive';
 import { ReactiveEffect, noReact } from '../src/effect';
+import { NoReactive } from '../src/decorators/reactive-operation';
 
 class MockEffect extends ReactiveEffect<void> {
     private _active = true;
@@ -153,6 +154,31 @@ describe('Reactive', () => {
             
             expect(effect.getTrackCount()).toBe(1);
             expect(value).toBe(1);
+        });
+
+        it('should only skip method tracking when explicitly marked', () => {
+            class State {
+                value = 1;
+
+                @NoReactive
+                readValue() {
+                    return this.value;
+                }
+
+                plainMethod() {
+                    return this.value;
+                }
+
+                @NoReactive
+                propertyMethod = () => this.value;
+            }
+            const state = reactive(new State(), effect);
+            state.readValue();
+            expect(effect.getTracks().some(track => track.key === 'readValue')).toBeFalsy();
+            state.plainMethod();
+            expect(effect.getTracks().some(track => track.key === 'plainMethod')).toBeTruthy();
+            state.propertyMethod();
+            expect(effect.getTracks().some(track => track.key === 'propertyMethod')).toBeFalsy();
         });
 
         it('should trigger on property set', () => {
