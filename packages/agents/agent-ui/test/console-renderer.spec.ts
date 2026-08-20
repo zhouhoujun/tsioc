@@ -1553,6 +1553,21 @@ export class AgentConsoleTuiRendererTest {
         expect(planMessage!.content).toContain('[ ] Write tests');
     }
 
+    @Test('working detail includes the active plan step when no tool is running')
+    async workingDetailIncludesActivePlanStep() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'completed' },
+            { id: 'p2', content: 'Implement API', status: 'in_progress' },
+            { id: 'p3', content: 'Write tests', status: 'pending' }
+        ] as any);
+        await Promise.resolve();
+
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.workingDetail).toContain('plan 2/3: Implement API');
+    }
+
     @Test('clearPlanTodos removes inline plan message from displayMessages')
     async clearPlanTodosRemovesInlineMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
@@ -1570,6 +1585,17 @@ export class AgentConsoleTuiRendererTest {
         const displayAfter = ref.instance.sessionState.displayMessages;
         expect(displayAfter.some(m => m.id === '__plan_todo_inline__')).toBe(false);
         expect(displayAfter.length).toEqual(1);
+    }
+
+    @Test('completed inline plan includes a completion summary')
+    async completedPlanIncludesSummary() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'completed' },
+            { id: 'p2', content: 'Implement API', status: 'completed' }
+        ] as any);
+        expect(ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')?.content)
+            .toContain('Plan completed: 2/2 steps, 0 failures');
     }
 
     @Test('setMessages does not auto-select synthetic plan message')

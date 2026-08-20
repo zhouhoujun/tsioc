@@ -1778,10 +1778,15 @@ export class AgentConsoleSessionState {
         const content = this.planTodos.map((item, index) =>
             `${index + 1}. [${this.todoStatusMark(item.status)}] ${item.content}`
         ).join('\n');
+        const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        const completedCount = this.planTodos.filter(item => item.status === 'completed').length;
+        const summary = activeCount === 0
+            ? `Plan completed: ${completedCount}/${this.planTodos.length} steps, ${this.planTodos.filter(item => item.status === 'cancelled').length} failures`
+            : '';
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
-            content,
+            content: summary ? `${content}\n${summary}` : content,
             createdAt: Date.now(),
             metadata: {
                 uiKind: 'plan-todo',

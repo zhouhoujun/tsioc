@@ -685,10 +685,18 @@ export class AgentConsoleWorkingPanelComponent {
             parts.push(progress);
             parts.push(this.runningLabel);
         } else {
+            const activePlan = this.state.planTodos.find(todo => todo.status === 'in_progress')
+                || this.state.planTodos.find(todo => todo.status === 'pending');
+            if (activePlan) {
+                const index = this.state.planTodos.indexOf(activePlan) + 1;
+                parts.push(`plan ${index}/${this.state.planTodos.length}: ${activePlan.content}`);
+            }
             const latest = [...this.state.activities].reverse().find(activity =>
                 activity.kind !== 'model' && activity.kind !== 'turn'
             );
-            parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
+            if (!activePlan) {
+                parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
+            }
         }
         if (this.totalTokens > 0) {
             parts.push(this.translator?.translate('agent.dashboard.tokens', { count: this.totalTokens })

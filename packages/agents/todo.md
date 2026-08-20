@@ -191,6 +191,7 @@
     - 在 Working 面板的 `workingDetail` 中追加当前 plan step 信息（如 `plan 3/7: executing step "write test"`）。
     - plan 完成时，在对话流中追加一条总结消息（`Plan completed: 7/7 steps, 0 failures`）。
   - 锚点：`AgentConsoleSessionState.ts`（setPlanTodos 触发机制）、`AgentConsolePanels.ts`（workingDetail 追加）、`AgentConsoleMessageRenderers.ts`（plan re-render）。
+  - **已完成（2026-08-20）**：inline plan 使用固定消息 ID 原地更新状态；Working 面板在无工具运行时显示当前 `plan N/M` 步骤；全部完成时追加 `Plan completed: X/X steps, 0 failures` 摘要，并覆盖 agent-ui TUI/browser 回归。
 
 ### 批次 II · 文件变更概要内联（P174–P175）
 
