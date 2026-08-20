@@ -68,6 +68,7 @@ export class AgentWebConsoleTest {
     @After()
     async clean() {
         await this.ctx?.close();
+        if (global.gc) global.gc();
     }
 
     @Test('mountAgentWebConsole throws without a baseUrl')

@@ -450,6 +450,7 @@ export class AgentConsoleSessionState {
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planScope: 'project' | 'thread' | '' = '';
+    protected planMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
@@ -936,7 +937,11 @@ export class AgentConsoleSessionState {
     }
 
     get displayMessages(): AgentMessage[] {
-        return this.messages.filter(message => this.isDisplayMessage(message));
+        const filtered = this.messages.filter(message => this.isDisplayMessage(message));
+        if (this.planMessage) {
+            return [...filtered, this.planMessage];
+        }
+        return filtered;
     }
 
     setMessages(messages: AgentMessage[]): void {
@@ -949,9 +954,10 @@ export class AgentConsoleSessionState {
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
         } else {
+            const selectable = displayMessages.filter(m => m.id !== '__plan_todo_inline__');
             const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
-            if (shouldFollowLatest || !this.selectedMessageId || !displayMessages.some(item => item.id === this.selectedMessageId)) {
-                this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
+            if (shouldFollowLatest || !this.selectedMessageId || !selectable.some(item => item.id === this.selectedMessageId)) {
+                this.selectedMessageId = selectable.length ? selectable[selectable.length - 1].id : '';
                 this.messageDetailScroll = 0;
                 this.messageDetailColumnScroll = 0;
             }
@@ -1762,6 +1768,41 @@ export class AgentConsoleSessionState {
         this.planTodos = todos.slice();
         this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
         this.planScope = scope || '';
+        this.planMessage = this.buildPlanMessage();
+    }
+
+    protected buildPlanMessage(): AgentMessage | null {
+        if (!this.planTodos.length) {
+            return null;
+        }
+        const content = this.planTodos.map((item, index) =>
+            `${index + 1}. [${this.todoStatusMark(item.status)}] ${item.content}`
+        ).join('\n');
+        return {
+            id: '__plan_todo_inline__',
+            role: 'assistant',
+            content,
+            createdAt: Date.now(),
+            metadata: {
+                uiKind: 'plan-todo',
+                planItems: this.planTodos,
+                planTodoSourceSessionId: this.planTodoSourceSessionId,
+                planScope: this.planScope
+            }
+        };
+    }
+
+    protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {
+        switch (status) {
+            case 'completed':
+                return 'x';
+            case 'cancelled':
+                return '-';
+            case 'in_progress':
+                return '>';
+            default:
+                return ' ';
+        }
     }
 
     hasActivePlanTodos(): boolean {
@@ -1775,6 +1816,7 @@ export class AgentConsoleSessionState {
         this.planTodos = [];
         this.planTodoSourceSessionId = '';
         this.planScope = '';
+        this.planMessage = null;
     }
 
     setTasksFocused(focused: boolean): void {

@@ -4,6 +4,47 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, TuiRenderer, TuiTemplateModule, TuiTerminalSurface } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
+
+let _heapDiagCount = 0;
+async function heapDiag(label: string, ctx: ApplicationContext) {
+    const v8 = require('v8');
+    _heapDiagCount++;
+    const before = process.memoryUsage().heapUsed;
+    let refCount = '?';
+    try {
+        const mref = (ctx as any)._parent;
+        if (mref?.injector?.records) refCount = String(mref.injector.records.size);
+    } catch {}
+    console.log(`[HEAP-DIAG] #${_heapDiagCount} ${label} starting close (heap ${(before/1024/1024).toFixed(1)}MB, refs ${refCount})`);
+    const timer = setInterval(() => {
+        const h = process.memoryUsage().heapUsed;
+        const handles = (process as any)._getActiveHandles?.() ?? [];
+        const timers = handles.filter((h: any) => h?.constructor?.name === 'Timeout');
+        console.log(`[HEAP-DIAG] #${_heapDiagCount} ${label} STILL CLOSING (${(h/1024/1024).toFixed(1)}MB) timers=${timers.length} handles=${handles.length}`);
+    }, 5000);
+    try {
+        await Promise.race([
+            ctx?.close().then(() => console.log(`[HEAP-DIAG] #${_heapDiagCount} ${label} close resolved`)),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('close timeout')), 30000))
+        ]);
+    } catch (e: any) {
+        console.log(`[HEAP-DIAG] #${_heapDiagCount} ${label} close error: ${e.message}`);
+    }
+    clearInterval(timer);
+    if (global.gc) global.gc();
+    const after = process.memoryUsage().heapUsed;
+    const mb = (after / 1024 / 1024).toFixed(1);
+    const delta = ((after - before) / 1024 / 1024).toFixed(1);
+    console.log(`[HEAP-DIAG] #${_heapDiagCount} ${label} heap: ${mb}MB delta: ${delta}MB refs: ${refCount}`);
+    if (_heapDiagCount <= 3) {
+        try {
+            const snapPath = `/tmp/heap-after-${_heapDiagCount}-${Date.now()}.heapsnapshot`;
+            v8.writeHeapSnapshot(snapPath);
+            console.log(`[HEAP-DIAG] snapshot ${snapPath}`);
+        } catch {}
+    }
+}
+
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleApprovalsPanelComponent,
@@ -34,7 +75,7 @@ export class AgentConsoleDashboardRendererTest {
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() { await heapDiag('Suite1-Dashboard', this.ctx); }
 
     @Test('renders agent console through console template module')
     async render() {
@@ -351,7 +392,7 @@ export class AgentConsoleMessagesRendererTest {
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() { await heapDiag('Suite2-Messages', this.ctx); }
 
     @Test('renders message history before jobs panel in root output')
     async renderMessagesBeforeJobsPanel() {
@@ -598,22 +639,40 @@ export class AgentConsoleMessagesRendererTest {
 
 }
 
+function testHeapDiag(label: string) {
+    if (global.gc) global.gc();
+    const h = process.memoryUsage().heapUsed;
+    console.log(`[TEST-HEAP] ${label}: ${(h/1024/1024).toFixed(1)}MB`);
+    return h;
+}
+
 @Suite('Agent Console Operational Panels Renderer')
 export class AgentConsoleOperationalPanelsRendererTest {
     ctx!: ApplicationContext;
+    private _heapMonitor?: ReturnType<typeof setInterval>;
 
     @Before()
     async init() {
+        testHeapDiag('S3-before-Application.run');
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        testHeapDiag('S3-after-Application.run');
+        this._heapMonitor = setInterval(() => {
+            if (global.gc) global.gc();
+            console.log(`[S3-MONITOR] heap: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB`);
+        }, 200);
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() {
+        if (this._heapMonitor) { clearInterval(this._heapMonitor); this._heapMonitor = undefined; }
+        await heapDiag('Suite3-Operational', this.ctx);
+    }
 
     @Test('renders working line with token usage while running')
     async renderWorkingLine() {
+        testHeapDiag('S3-T1-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setStatus('running');
         ref.instance.sessionState.turnStartedAt = Date.now() - 65000;
@@ -624,6 +683,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         });
         ref.instance.sessionState.pushActivity('turn', 'Design an exam system');
         await ref.render();
+        testHeapDiag('S3-T1-after-render');
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
@@ -638,6 +698,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
     @Test('renders focused tool list with selected tool details')
     async renderFocusedToolList() {
+        testHeapDiag('S3-T2-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setTools([
             { name: 'read_file', toolset: 'filesystem', active: true, activationKind: 'always' } as any,
@@ -653,6 +714,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         ref.instance.sessionState.setToolsFocused(true);
         ref.instance.sessionState.setSelectedToolName('write_file');
         await ref.render();
+        testHeapDiag('S3-T2-after-render');
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const toolsPanel = ref.hostView.query(AgentConsoleToolsPanelComponent) as ComponentRef<AgentConsoleToolsPanelComponent>;
@@ -666,6 +728,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
     @Test('renders focused tool runs panel with selected run details')
     async renderFocusedToolRunsPanel() {
+        testHeapDiag('S3-T3-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.clearToolActivity();
         ref.instance.sessionState.setToolRunsFocused(false);
@@ -677,6 +740,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         });
         ref.instance.sessionState.setToolRunsFocused(true);
         await ref.render();
+        testHeapDiag('S3-T3-after-render');
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const runsPanel = ref.hostView.query(AgentConsoleToolRunsPanelComponent) as ComponentRef<AgentConsoleToolRunsPanelComponent>;
@@ -692,6 +756,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
     @Test('tool runs panel stays hidden until focused')
     async toolRunsPanelHiddenUntilFocused() {
+        testHeapDiag('S3-T4-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.clearToolActivity();
         ref.instance.sessionState.setToolRunsFocused(false);
@@ -699,6 +764,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
             name: 'read_file', status: 'success', durationMs: 100, message: 'ok', updatedAt: 1
         });
         await ref.render();
+        testHeapDiag('S3-T4-after-render');
 
         const runsPanel = ref.hostView.query(AgentConsoleToolRunsPanelComponent) as ComponentRef<AgentConsoleToolRunsPanelComponent>;
 
@@ -711,6 +777,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
     @Test('renders focused approval list with selected request details')
     async renderFocusedApprovalList() {
+        testHeapDiag('S3-T5-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setPendingApprovals([
             {
@@ -739,6 +806,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         ref.instance.sessionState.setApprovalsFocused(true);
         ref.instance.sessionState.setSelectedApprovalId('approval-2');
         await ref.render();
+        testHeapDiag('S3-T5-after-render');
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const approvalsPanel = ref.hostView.query(AgentConsoleApprovalsPanelComponent) as ComponentRef<AgentConsoleApprovalsPanelComponent>;
@@ -752,6 +820,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
     @Test('renders expanded message content inline without a dedicated detail panel')
     async renderMessageDetailPanel() {
+        testHeapDiag('S3-T6-before-mutations');
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '\tline1\n\tline2\n\tline3\n\tline4\n\tline5\n\tline6\n\tline7', createdAt: 1 } as any
@@ -760,6 +829,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         ref.instance.sessionState.openMessageDetail();
         await ref.render();
         await Promise.resolve();
+        testHeapDiag('S3-T6-after-render');
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const detailPanel = ref.hostView.query(AgentConsoleMessageDetailPanelComponent) as ComponentRef<AgentConsoleMessageDetailPanelComponent> | null;
@@ -770,6 +840,13 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(messageLines.some(line => line.includes('line1'))).toBe(true);
         expect(messageLines.some(line => line.includes('line7'))).toBe(true);
         expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
+
+        await Promise.resolve();
+        testHeapDiag('S3-T6-after-microtask');
+        await new Promise<void>(r => setTimeout(r, 0));
+        testHeapDiag('S3-T6-after-macrotask-0');
+        await new Promise<void>(r => setTimeout(r, 100));
+        testHeapDiag('S3-T6-after-macrotask-100');
     }
 
 }
@@ -786,7 +863,7 @@ export class AgentConsoleReviewRendererTest {
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() { await heapDiag('Suite4-Review', this.ctx); }
 
     @Test('renders coding task review panel with diff and worker details')
     async renderCodingTaskReviewPanel() {
@@ -1141,7 +1218,7 @@ export class AgentConsoleTuiRendererTest {
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() { await heapDiag('Suite5-TUI', this.ctx); }
 
     @Test('renders agent console panels when created from module context for tui chat')
     async renderFromModuleContext() {
@@ -1518,6 +1595,70 @@ export class AgentConsoleTuiRendererTest {
         expect(sessionLines.some(line => line.includes('[project-a] chat-10'))).toBe(true);
         expect(sessionLines.some(line => line.includes('[project-a] chat-8'))).toBe(true);
         expect(sessionLines.some(line => line.includes('chat-2'))).toBe(false);
+    }
+
+    @Test('setPlanTodos appends inline plan message to messages panel')
+    async planTodoInlineMessageAppearsInMessagesPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'build feature X', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: 'Starting work', createdAt: 2 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' },
+            { id: 'p2', content: 'Implement API', status: 'pending' },
+            { id: 'p3', content: 'Write tests', status: 'pending' }
+        ] as any);
+        await Promise.resolve();
+
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messages = messagesPanel.instance.messages;
+        const planMessage = messages.find(m => (m as any).id === '__plan_todo_inline__');
+
+        expect(planMessage).toBeTruthy();
+        expect(planMessage!.metadata?.uiKind).toEqual('plan-todo');
+        expect(planMessage!.metadata?.planItems).toEqual([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' },
+            { id: 'p2', content: 'Implement API', status: 'pending' },
+            { id: 'p3', content: 'Write tests', status: 'pending' }
+        ]);
+        expect(planMessage!.content).toContain('[>] Design architecture');
+        expect(planMessage!.content).toContain('[ ] Implement API');
+        expect(planMessage!.content).toContain('[ ] Write tests');
+    }
+
+    @Test('clearPlanTodos removes inline plan message from displayMessages')
+    async clearPlanTodosRemovesInlineMessage() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'build feature X', createdAt: 1 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' }
+        ] as any);
+
+        const displayBefore = ref.instance.sessionState.displayMessages;
+        expect(displayBefore.some(m => m.id === '__plan_todo_inline__')).toBe(true);
+
+        ref.instance.sessionState.clearPlanTodos();
+        const displayAfter = ref.instance.sessionState.displayMessages;
+        expect(displayAfter.some(m => m.id === '__plan_todo_inline__')).toBe(false);
+        expect(displayAfter.length).toEqual(1);
+    }
+
+    @Test('setMessages does not auto-select synthetic plan message')
+    async setMessagesDoesNotSelectPlanMessage() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' }
+        ] as any);
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'build feature X', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: 'Starting work', createdAt: 2 } as any
+        ]);
+
+        expect(ref.instance.sessionState.selectedMessageId).not.toEqual('__plan_todo_inline__');
+        expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 
 }

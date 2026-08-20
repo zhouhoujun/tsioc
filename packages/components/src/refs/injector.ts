@@ -103,15 +103,32 @@ export class NodeInjector extends ContextInjector {
         this.viewContainerRefs.clear();
         this.localRefNodes.clear();
         this.parentNodes.clear();
+        this.elementRefs.clear();
+        this._allDirectiveRefs?.clear();
+        this._payload = undefined;
+        super.clear();
     }
 
     detachNodes(nodes: RNode[]): void {
         const visited = new Set<RNode>();
+        // Collect refs to destroy AFTER walking the full tree (avoid re-entrant mutation)
+        const dirsToDestroy: DirectiveRef<any>[] = [];
+        const compsToDestroy: ComponentRef<any>[] = [];
+
         const walk = (node: RNode | null | undefined): void => {
             if (!node || visited.has(node)) {
                 return;
             }
             visited.add(node);
+
+            const dirs = this.directiveRefs.get(node);
+            if (dirs?.length) {
+                dirsToDestroy.push(...dirs);
+            }
+            const comp = this.componentRefs.get(node);
+            if (comp) {
+                compsToDestroy.push(comp);
+            }
 
             this.componentRefs.delete(node);
             this.directiveRefs.delete(node);
@@ -139,6 +156,13 @@ export class NodeInjector extends ContextInjector {
         };
 
         nodes.forEach(node => walk(node));
+
+        for (const dir of dirsToDestroy) {
+            try { (dir.instance as any)?.onDestroy?.(); } catch { /* ignore cleanup errors */ }
+        }
+        for (const comp of compsToDestroy) {
+            try { comp.hostView?.destroy(); } catch { /* ignore cleanup errors */ }
+        }
     }
 
     getParentInjector(): NodeInjector | null {

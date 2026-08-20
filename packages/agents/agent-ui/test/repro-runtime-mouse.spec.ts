@@ -48,7 +48,7 @@ export class RuntimeMousePipelineReproTest {
     }
 
     @After()
-    async clean() { await this.ctx?.close(); }
+    async clean() { await this.ctx?.close(); if (global.gc) global.gc(); }
 
     protected async settle(): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, 50));

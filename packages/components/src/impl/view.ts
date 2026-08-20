@@ -69,20 +69,19 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     destroy(): void {
         if (this._isDestroyed) return;
 
-        // 标记为已销毁
         this._isDestroyed = true;
 
+        this.injector.offDestroy(this);
         this.injector.detachNodes(this.rootNodes);
 
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());
         this._destroyCallbacks = [];
 
-        // // 清理响应式副作用
-        // if (this.effect) {
-        //     this.effect.stop();
-        // }
-        // this.injector.destroy();
+        // 清理响应式副作用
+        if (this.effect) {
+            this.effect.stop();
+        }
     }
 
     get localRefIndex(): Map<string, RNode> {

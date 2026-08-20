@@ -356,5 +356,6 @@ export class HtmlConsoleTest {
     @After()
     async clean() {
         await this.ctx?.close();
+        if (global.gc) global.gc();
     }
 }

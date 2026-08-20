@@ -83,10 +83,21 @@ export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRe
     }
 
     async destroy(): Promise<void> {
+        const parent = this.getParent();
+        // Must capture before parent.destroy() — clear() nulls _parent.
+        const envInjector = parent?.getParent();
         try {
             await this.runners.stop();
         } finally {
             super.destroy();
+        }
+        if (parent && !parent.destroyed) {
+            parent.destroy();
+        }
+        // Destroy env injector to trigger DefaultRuntime.onDestroy() which
+        // is the ONLY path that clears INJECTORS/SCOPES/MODULES/FACTORIES.
+        if (envInjector && !envInjector.destroyed) {
+            (envInjector as any).destroy();
         }
     }
 

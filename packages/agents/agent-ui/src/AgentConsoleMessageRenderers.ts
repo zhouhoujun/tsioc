@@ -9,7 +9,7 @@ import {
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
-export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system';
+export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo';
 
 export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
     style: Record<string, string>;
@@ -120,6 +120,39 @@ function resolveMessageRoleStyle(theme: AgentConsoleTheme, templateKind: AgentCo
     }
 }
 
+function resolvePlanTodoStatusMark(status: string): string {
+    switch (status) {
+        case 'completed':
+            return 'x';
+        case 'cancelled':
+            return '-';
+        case 'in_progress':
+            return '>';
+        default:
+            return ' ';
+    }
+}
+
+export function resolvePlanTodoContent(message: AgentMessage, compact = false): string {
+    const items = Array.isArray(message.metadata?.planItems) ? message.metadata.planItems : [];
+    if (!items.length) {
+        return String(message.content || '').trim();
+    }
+    if (compact) {
+        const active = items.find((item: any) => item.status === 'in_progress')
+            || items.find((item: any) => item.status === 'pending');
+        if (!active) {
+            const completed = items.filter((item: any) => item.status === 'completed').length;
+            return `plan ${items.length} · ${completed}/${items.length} completed`;
+        }
+        const activeIndex = items.indexOf(active);
+        return `plan ${items.length} · current ${activeIndex + 1}. [${resolvePlanTodoStatusMark(active.status)}] ${active.content}`;
+    }
+    return items.map((item: any, index: number) =>
+        `${index + 1}. [${resolvePlanTodoStatusMark(item.status)}] ${item.content}`
+    ).join('\n');
+}
+
 const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     {
         templateKind: 'error',
@@ -152,6 +185,21 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser, 'user'),
         lead: () => '',
         continuationLead: () => ''
+    },
+    {
+        templateKind: 'planTodo',
+        roleLabel: '◈ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            borderLeft: `3px solid ${rowSelected ? 'transparent' : '#58a6ff'}`,
+            background: rowSelected ? '' : 'rgba(88, 166, 255, 0.05)'
+        }),
+        lead: () => '',
+        continuationLead: () => '  '
     },
     {
         templateKind: 'system',
@@ -305,6 +353,11 @@ function renderAgentConsolePlainTextLines(
 }
 
 export function resolveMessageTemplateKind(message?: AgentMessage | null): AgentConsoleMessageTemplateKind {
+    // Plan todo messages are synthesized by the session state and rendered
+    // inline in the conversation flow with a distinct visual treatment.
+    if (message?.metadata?.uiKind === 'plan-todo') {
+        return 'planTodo';
+    }
     // Shell messages stay in the 'tool' template even on failure; their
     // failed/error state is carried by the status, not by the template.
     if (message?.metadata?.error && message?.metadata?.type !== 'shell') {
@@ -328,6 +381,11 @@ export function resolveAgentConsoleMessageStatus(
 ): AgentConsoleMessageStatus | undefined {
     if (!message || templateKind === 'user') {
         return undefined;
+    }
+    if (message?.metadata?.uiKind === 'plan-todo') {
+        const items: any[] = Array.isArray(message.metadata.planItems) ? message.metadata.planItems : [];
+        const hasActive = items.some(item => item.status === 'pending' || item.status === 'in_progress');
+        return hasActive ? 'running' : 'success';
     }
     if (message?.metadata?.uiKind === 'event') {
         const status = String(message.metadata.status || '').trim();
