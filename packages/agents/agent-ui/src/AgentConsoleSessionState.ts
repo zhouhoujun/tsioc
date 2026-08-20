@@ -451,6 +451,7 @@ export class AgentConsoleSessionState {
     planTodoSourceSessionId = '';
     planScope: 'project' | 'thread' | '' = '';
     protected planMessage: AgentMessage | null = null;
+    protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
@@ -939,7 +940,10 @@ export class AgentConsoleSessionState {
     get displayMessages(): AgentMessage[] {
         const filtered = this.messages.filter(message => this.isDisplayMessage(message));
         if (this.planMessage) {
-            return [...filtered, this.planMessage];
+            filtered.push(this.planMessage);
+        }
+        if (this.fileChangeMessage) {
+            filtered.push(this.fileChangeMessage);
         }
         return filtered;
     }
@@ -954,7 +958,9 @@ export class AgentConsoleSessionState {
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
         } else {
-            const selectable = displayMessages.filter(m => m.id !== '__plan_todo_inline__');
+            const selectable = displayMessages.filter(m =>
+                m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__'
+            );
             const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
             if (shouldFollowLatest || !this.selectedMessageId || !selectable.some(item => item.id === this.selectedMessageId)) {
                 this.selectedMessageId = selectable.length ? selectable[selectable.length - 1].id : '';
@@ -2133,6 +2139,7 @@ export class AgentConsoleSessionState {
             this.reviewDiff = payload.diff ?? null;
             this.reviewWorkers = Array.isArray(payload.workers) ? payload.workers.slice() : [];
         }
+        this.fileChangeMessage = this.buildFileChangeMessage();
         const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
         if (selectedTaskId) {
             this.selectedReviewTaskId = selectedTaskId;
@@ -2172,6 +2179,24 @@ export class AgentConsoleSessionState {
         this.selectedReviewHunkIndex = 0;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
+    }
+
+    protected buildFileChangeMessage(): AgentMessage | null {
+        const files = this.aggregateReviewFileSections;
+        if (!files.length) {
+            return null;
+        }
+        const content = [
+            `files changed: ${files.length}`,
+            ...files.map(file => `${file.path} (+${file.additions} -${file.deletions})`)
+        ].join('\n');
+        return {
+            id: '__file_change_inline__',
+            role: 'assistant',
+            content,
+            createdAt: Date.now(),
+            metadata: { uiKind: 'file-change', reviewTaskId: this.reviewTask?.id }
+        };
     }
 
     closeReview(): void {
@@ -4050,6 +4075,10 @@ export class AgentConsoleSessionState {
                     this.selectLastMessage();
                     return true;
                 case 'enter':
+                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
+                        this.openReview();
+                        return true;
+                    }
                     this.openMessageDetail();
                     return true;
                 default:

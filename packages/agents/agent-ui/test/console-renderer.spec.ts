@@ -1598,6 +1598,17 @@ export class AgentConsoleTuiRendererTest {
             .toContain('Plan completed: 2/2 steps, 0 failures');
     }
 
+    @Test('review diff appends an inline file change summary')
+    async reviewDiffAppendsInlineFileChangeSummary() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({ id: 'task-1', title: 'Task one' }, {
+            diff: 'diff --git a/src/a.ts b/src/a.ts\n--- a/src/a.ts\n+++ b/src/a.ts\n+new line\n-old line'
+        });
+        const message = ref.instance.sessionState.displayMessages.find(item => item.id === '__file_change_inline__');
+        expect(message?.content).toContain('files changed: 1');
+        expect(message?.content).toContain('src/a.ts (+1 -1)');
+    }
+
     @Test('setMessages does not auto-select synthetic plan message')
     async setMessagesDoesNotSelectPlanMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

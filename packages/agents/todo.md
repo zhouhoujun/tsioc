@@ -203,6 +203,7 @@
     - TUI 用 emoji/符号前缀，browser 用 styled badge。
     - 文件变更概要点击/Enter 可展开为完整 diff（复用既有 review 面板）。
   - 锚点：`AgentConsoleMessageRenderers.ts`（新增 renderer）、`AgentConsoleComponent.ts`（file change 消息插入）。
+  - **已完成（2026-08-20）**：打开 coding task 或 git review 时从统一 diff 解析生成固定 ID 的 inline 文件摘要，显示文件数及 `+/-` 统计；合成消息不参与自动选中，消息流 Enter 可复用 review 层；agent-ui 全套 668 passing。
 
 - **P175 · G98 · 工具执行输出内联增强（中）** `platform: src/（跨平台）`
   - 目标：CommandExecution 的输出更完整地内联在对话流中，减少摘要截断。

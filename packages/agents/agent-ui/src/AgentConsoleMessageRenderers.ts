@@ -9,7 +9,7 @@ import {
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
-export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo';
+export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange';
 
 export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
     style: Record<string, string>;
@@ -202,6 +202,14 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         continuationLead: () => '  '
     },
     {
+        templateKind: 'fileChange',
+        roleLabel: 'Δ ',
+        roleStyle: theme => styleTextToObject(theme.toolsAccent),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+        lead: () => '',
+        continuationLead: () => '  '
+    },
+    {
         templateKind: 'system',
         roleLabel: resolveMessageRoleLabel('system'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'system'),
@@ -357,6 +365,9 @@ export function resolveMessageTemplateKind(message?: AgentMessage | null): Agent
     // inline in the conversation flow with a distinct visual treatment.
     if (message?.metadata?.uiKind === 'plan-todo') {
         return 'planTodo';
+    }
+    if (message?.metadata?.uiKind === 'file-change') {
+        return 'fileChange';
     }
     // Shell messages stay in the 'tool' template even on failure; their
     // failed/error state is carried by the status, not by the template.
