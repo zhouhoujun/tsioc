@@ -224,7 +224,6 @@
     - `/display timeline` 控制是否显示这些分隔符。
   - 锚点：`AgentConsoleComponent.ts`（step boundary 插入逻辑）、`AgentConsoleSessionState.ts`（timeline 显示控制）。
   - **已完成（2026-08-20）**：timeline 模式在对话流追加固定 ID 的当前 plan step 分隔符，跨 TUI/browser 渲染且不参与消息自动选中；agent-ui 全套 670 passing。
-  - **已完成（2026-08-20）**：timeline 模式在对话流追加固定 ID 的当前 plan step 分隔符，跨 TUI/browser 渲染且不参与消息自动选中；新增回归覆盖。
 
 - **P177 · G100 · Working 面板精简 + plan step 集成（中）** `platform: src/（跨平台）`
   - 目标：Working 面板在 console 端（compact 模式）追加当前 plan step 信息，使面板与对话流信息同步。
@@ -232,6 +231,7 @@
     - `workingDetail` 在 `runningTools` 为空时，显示当前 plan step 的 content（如 `plan 3/7: write failing test for auth module`）。
     - 避免与对话流内联 plan 重复：对话流显示完整清单，Working 面板只显示当前 step。
   - 锚点：`AgentConsolePanels.ts`（workingDetail 逻辑）。
+  - **已完成（2026-08-20）**：compact Working 面板在无运行工具时显示当前 `plan N/M` 与步骤内容，运行工具时保留工具进度优先；agent-ui 回归已覆盖。
 
 ### 批次 IV · 验证与回归（P178）
 
