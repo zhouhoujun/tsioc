@@ -276,6 +276,22 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(visible[0].lines[0].content).toEqual('src/a.ts');
     }
 
+    @Test('keeps a larger tool output preview while message detail can use the original content')
+    renderToolOutputPreviewAndDetailContent() {
+        const content = 'x'.repeat(401);
+        const message = {
+            id: 't1',
+            role: 'tool',
+            name: 'terminal',
+            content,
+            createdAt: 1,
+            metadata: { receipt: { toolName: 'terminal' } }
+        };
+        const preview = renderAgentConsoleMessageItems([message] as any, { showToolOutput: true });
+        expect(preview[0].lines[0].content).toEqual(`${'x'.repeat(400)}...[truncated]`);
+        expect(message.content).toEqual(content);
+    }
+
     @Test('shows the username label when showUsername is enabled')
     renderUsernameLabels() {
         const items = renderAgentConsoleMessageItems([

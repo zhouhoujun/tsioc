@@ -17,7 +17,7 @@ export function summarizeToolDisplayText(
         return text;
     }
 
-    return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+    return text.length > 400 ? `${text.slice(0, 400)}...[truncated]` : text;
 }
 
 function summarizeToolPayload(toolName: string, payload: Record<string, any>, phase: 'input' | 'output'): string | undefined {

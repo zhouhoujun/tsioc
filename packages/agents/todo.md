@@ -212,6 +212,7 @@
     - 对话流中的 tool result 消息增加"展开"交互：默认显示 summary，Enter 展开完整输出。
     - `AgentConsoleMessageRenderers` 中 tool result renderer 增加展开/折叠 toggle。
   - 锚点：`AgentConsoleMessageRenderers.ts`（tool result renderer 增强）、`AgentConsoleSessionState.ts`（tool output 展开状态）。
+  - **已完成（2026-08-20）**：通用工具输出预览从 200 提升至 400 字符；消息流仍显示摘要，已有 Enter 详情面板读取原始消息内容并支持分页，TUI/browser 共用同一渲染路径。
 
 ### 批次 III · 进度反馈线性化（P176–P177）
 
