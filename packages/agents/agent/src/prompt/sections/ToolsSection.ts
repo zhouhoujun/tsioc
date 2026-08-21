@@ -34,9 +34,14 @@ export class ToolsSection extends PromptSection {
             lines.push('For substantial coding or test-writing tasks, prefer `coding_task` so discovery, edits, and verification happen within one coordinated tool run.');
             lines.push('If the user asked for an actual code change, default to executing the change with tools instead of replying with instructions alone.');
         }
-        if (toolNames.has('todo') || toolNames.has('project_intel')) {
+        if (toolNames.has('todo')) {
             lines.push('');
-            lines.push('For pure answer-generation tasks such as designs, plans, explanations, and proposals, do not call `todo` or `project_intel` unless the user explicitly asked for tracked execution, a handoff summary, or workspace/project analysis.');
+            lines.push('Use `todo` to maintain the session plan: create it before starting multi-step work (one item per step, concise and verifiable), update item statuses as you go, and keep exactly one item in_progress while working.');
+            lines.push('Do not use `todo` for single-turn answers that need no tool work.');
+        }
+        if (toolNames.has('project_intel')) {
+            lines.push('');
+            lines.push('For pure answer-generation tasks such as designs, plans, explanations, and proposals, do not call `project_intel` unless the user explicitly asked for a handoff summary or workspace/project analysis.');
         }
         if (toolNames.has('git_operations')) {
             lines.push('');
@@ -50,7 +55,9 @@ export class ToolsSection extends PromptSection {
         }
 
         lines.push('');
-        lines.push('For multi-step requests, break the work into explicit subtasks before calling tools.');
+        lines.push(toolNames.has('todo')
+            ? 'For multi-step requests, break the work into explicit subtasks and record them with `todo` before calling other tools.'
+            : 'For multi-step requests, break the work into explicit subtasks before calling tools.');
         lines.push('Prefer small sequential tool steps over one opaque action.');
         lines.push('After a useful tool result, do not stop at a bare summary; either continue with the next step or ask one concise follow-up question and state the next action.');
 
