@@ -449,6 +449,7 @@ export class AgentConsoleSessionState {
     taskRecords: Record<string, any>[] = [];
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
+    planTodoExpanded = false;
     planScope: 'project' | 'thread' | '' = '';
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
@@ -1199,6 +1200,10 @@ export class AgentConsoleSessionState {
         this.messageDetailColumnScroll = 0;
     }
 
+    isPlanTodoMessageSelected(): boolean {
+        return this.selectedMessageId === '__plan_todo_inline__' && this.planTodos.length > 7;
+    }
+
     moveMessageSelection(delta: number): void {
         const displayMessages = this.displayMessages;
         if (!displayMessages.length) {
@@ -1786,6 +1791,9 @@ export class AgentConsoleSessionState {
 
     setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread'): void {
         this.planTodos = todos.slice();
+        if (this.planTodos.length <= 7) {
+            this.planTodoExpanded = false;
+        }
         this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
         this.planScope = scope || '';
         this.planMessage = this.buildPlanMessage();
@@ -1803,18 +1811,33 @@ export class AgentConsoleSessionState {
         const summary = activeCount === 0
             ? `Plan completed: ${completedCount}/${this.planTodos.length} steps, ${this.planTodos.filter(item => item.status === 'cancelled').length} failures`
             : '';
+        const collapsible = this.planTodos.length > 7;
+        const visibleContent = collapsible && !this.planTodoExpanded
+            ? `Plan ${this.planTodos.length} steps (${completedCount} done)`
+            : content;
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
-            content: summary ? `${content}\n${summary}` : content,
+            content: summary ? `${visibleContent}\n${summary}` : visibleContent,
             createdAt: Date.now(),
             metadata: {
                 uiKind: 'plan-todo',
                 planItems: this.planTodos,
                 planTodoSourceSessionId: this.planTodoSourceSessionId,
-                planScope: this.planScope
+                planScope: this.planScope,
+                planCollapsed: collapsible && !this.planTodoExpanded,
+                planTodoExpanded: this.planTodoExpanded
             }
         };
+    }
+
+    togglePlanTodoExpanded(): boolean {
+        if (this.planTodos.length <= 7) {
+            return false;
+        }
+        this.planTodoExpanded = !this.planTodoExpanded;
+        this.planMessage = this.buildPlanMessage();
+        return true;
     }
 
     protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {
@@ -1839,6 +1862,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.planTodos = [];
+        this.planTodoExpanded = false;
         this.planTodoSourceSessionId = '';
         this.planScope = '';
         this.planMessage = null;
@@ -4089,6 +4113,9 @@ export class AgentConsoleSessionState {
                     this.selectLastMessage();
                     return true;
                 case 'enter':
+                    if (this.selectedMessage?.metadata?.uiKind === 'plan-todo') {
+                        return this.togglePlanTodoExpanded();
+                    }
                     if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
                         this.openReview();
                         return true;

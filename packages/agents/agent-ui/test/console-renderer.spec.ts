@@ -1553,6 +1553,25 @@ export class AgentConsoleTuiRendererTest {
         expect(planMessage!.content).toContain('[ ] Write tests');
     }
 
+    @Test('collapses long inline plans and expands them with Enter')
+    async longInlinePlanTogglesWithEnter() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos(Array.from({ length: 8 }, (_, index) => ({
+            id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
+        })) as any);
+        const collapsed = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
+        expect(collapsed.content).toEqual('Plan 8 steps (2 done)');
+        expect(collapsed.metadata?.planCollapsed).toEqual(true);
+
+        ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
+        ref.instance.sessionState.setMessagesFocused(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        const expanded = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
+        expect(expanded.content).toContain('1. [x] Step 1');
+        expect(expanded.content).toContain('8. [ ] Step 8');
+        expect(expanded.metadata?.planCollapsed).toEqual(false);
+    }
+
     @Test('working detail includes the active plan step when no tool is running')
     async workingDetailIncludesActivePlanStep() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

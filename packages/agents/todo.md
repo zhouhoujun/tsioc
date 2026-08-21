@@ -247,6 +247,7 @@
 - **P179 · G102 · plan 内联清单折叠/展开（低-中）** `platform: src/（跨平台）`
   - 计划清单超过 7 项时自动折叠为摘要（`plan 7 steps (4 done)`），Enter 展开完整清单。
   - 避免长计划占据过多对话空间。
+  - **已完成（2026-08-21）**：超过 7 项的内联计划默认显示 `Plan N steps (M done)` 摘要；消息聚焦后按 Enter 展开/折叠完整清单，TUI/browser 共用状态与渲染路径；agent-ui 671 passing。
 
 - **P180 · G103 · 文件变更内联的 keyboard navigation（低）** `platform: src/（跨平台）`
   - 文件变更概要内联时，↑/↓ 选择文件，Enter 展开 diff，Esc 收起。
