@@ -257,13 +257,13 @@
 - **P181 · G104 · plan 与 goal 系统集成（低）** `platform: src/（跨平台）`
   - `Goal` 系统的 criteria 与 plan items 自动关联：plan 完成时检查 goal criteria 覆盖率。
   - 对话流中显示 goal 进度（如 `goal: 3/5 criteria met`）。
-  - **已完成（2026-08-21）**：会话加载时读取已链接 Goal，计划消息按标准化文本匹配 success criteria 并显示 `goal: X/Y criteria met`；Goal API 缺失时保持兼容；TUI/browser 共用状态与渲染路径；agent-ui 673 passing。
+  - **已完成（2026-08-21）**：会话加载时读取已链接 Goal，计划消息按标准化文本匹配 success criteria 并显示 `goal: X/Y criteria met`；Goal API 缺失时保持兼容；TUI/browser 共用状态与渲染路径；agent-ui 674 passing。
 
 ---
 
 ## 回归基线
 
-截至 P172 收尾（2026-08-20）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 665 passing，均 EXIT=0；受影响包 `tsc --noEmit` 与 `build:web` 通过。
+截至 P181 收尾（2026-08-21）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 674 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过。
 
 ### P178 收尾复核（2026-08-21）
 
