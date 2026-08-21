@@ -24,7 +24,7 @@ import {
 } from '@tsdi/agent';
 import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
-import { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsolePendingQuestion, AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -65,6 +65,7 @@ export class AgentConsoleEventBridge {
         bind(AgentTurnStartedEvent, (event: AgentTurnStartedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
                 this.state.setStatus('running');
+                this.state.setPendingQuestion(null);
                 this.state.pushActivity('turn', this.translator?.translate('agent.turn.understanding') || 'Understanding the request');
                 if (!this.appRpc) {
                     this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('turn-start'), 'Analyzing request', {
@@ -146,6 +147,9 @@ export class AgentConsoleEventBridge {
                 this.state.clearRunningTool(event.toolName);
                 if (event.toolName === 'todo') {
                     this.state.setPlanTodos(this.normalizePlanTodos(event.output));
+                }
+                if (event.toolName === 'ask_user') {
+                    this.state.setPendingQuestion(this.normalizePendingQuestion(event.output));
                 }
                 this.state.upsertToolRun({
                     name: event.toolName,
@@ -333,6 +337,20 @@ export class AgentConsoleEventBridge {
                 status: this.normalizeTodoStatus(item?.status)
             }))
             .filter((item: { id: string; content: string }) => !!item.id && !!item.content);
+    }
+
+    protected normalizePendingQuestion(output: any): AgentConsolePendingQuestion | null {
+        const question = String(output?.question || '').trim();
+        if (!question) {
+            return null;
+        }
+        return {
+            question,
+            options: Array.isArray(output?.options) ? output.options.map((item: any) => String(item || '').trim()).filter(Boolean) : [],
+            context: typeof output?.context === 'string' && output.context.trim() ? output.context.trim() : undefined,
+            severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
+            updatedAt: Date.now()
+        };
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {

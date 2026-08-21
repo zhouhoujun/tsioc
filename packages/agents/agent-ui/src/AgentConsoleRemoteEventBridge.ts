@@ -1,6 +1,7 @@
 import { AgentConsoleAppRpc } from '@tsdi/agent';
 import {
     AgentConsoleApprovalRequest,
+    AgentConsolePendingQuestion,
     AgentConsoleSessionState,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
@@ -95,6 +96,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
     switch (event.type) {
         case 'turn_started':
             state.setStatus('running');
+            state.setPendingQuestion(null);
             state.pushActivity('turn', 'Understanding the request');
             break;
         case 'stream_chunk':
@@ -132,6 +134,9 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             state.clearRunningTool(String(data.toolName || ''));
             if (data.toolName === 'todo' && data.output?.todos) {
                 state.setPlanTodos(normalizePlanTodos(data.output.todos));
+            }
+            if (data.toolName === 'ask_user' && data.output?.kind === 'ask_user') {
+                state.setPendingQuestion(normalizePendingQuestion(data.output));
             }
             state.upsertToolRun(buildToolRun('success', data, {
                 durationMs: data.receipt?.durationMs,
@@ -248,6 +253,20 @@ function normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'comp
         default:
             return 'pending';
     }
+}
+
+function normalizePendingQuestion(output: any): AgentConsolePendingQuestion | null {
+    const question = String(output?.question || '').trim();
+    if (!question) {
+        return null;
+    }
+    return {
+        question,
+        options: Array.isArray(output?.options) ? output.options.map((item: any) => String(item || '').trim()).filter(Boolean) : [],
+        context: typeof output?.context === 'string' && output.context.trim() ? output.context.trim() : undefined,
+        severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
+        updatedAt: Date.now()
+    };
 }
 
 function describeToolInvoked(toolName: string): string {

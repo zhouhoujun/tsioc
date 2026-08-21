@@ -150,10 +150,12 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-tools-panel v-show="showToolsPanel && !showMessageDetailPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
+        <agent-console-pending-question-panel v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
         <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
         <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
+        <agent-console-text-overlay-panel v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
     </div>
     `
 })
@@ -355,7 +357,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected notify(message: string, duration?: number): void {
         void duration;
+        const lines = String(message || '').split('\n').filter(line => line.trim().length);
         this.state.setNotice(message);
+        if (lines.length > 3) {
+            this.state.openTextOverlay('notice', lines);
+        }
     }
 
     protected notifyBusyState(message = 'Wait for the current turn to finish.'): void {
@@ -1707,6 +1713,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setPendingApprovals([]);
             this.state.clearReview();
             this.state.clearPlanTodos();
+            this.state.setPendingQuestion(null);
             this.state.clearToolActivity();
             this.state.setContextPreparation(null);
             this.state.closeMessageDetail();
@@ -1902,6 +1909,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get showHealthPopover(): boolean {
         return this.state.healthPopoverVisible;
+    }
+
+    get showTextOverlayPanel(): boolean {
+        return this.state.hasTextOverlayFocus();
+    }
+
+    get showPendingQuestionPanel(): boolean {
+        return !!this.state.pendingQuestion;
     }
 
     // ---- generic component bindings ----
@@ -5852,10 +5867,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         sessions: Array<{ id: string; updatedAt?: number }>
     ): Promise<{ todos: AgentConsolePlanTodoItem[]; sourceSessionId?: string } | null> {
         if (!this.appRpc) {
-            if (sessionId === this.state.sessionId) {
-                this.state.clearPlanTodos();
+            const todos = await this.loadLocalTodoPlan(sessionId);
+            if (sessionId !== this.state.sessionId) {
+                return null;
             }
-            return null;
+            if (!todos.length) {
+                this.state.clearPlanTodos();
+                return null;
+            }
+            return { todos, sourceSessionId: sessionId };
         }
         const relatedSessions = sessions
             .slice()
@@ -5906,6 +5926,25 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return null;
         }
         return { todos: nextTodos, sourceSessionId: sourceSessionId || sessionId };
+    }
+
+    protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
+        if (!sessionId || !this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') {
+            return [];
+        }
+        try {
+            const output = await this.toolRegistry.invoke('todo', undefined, sessionId, undefined, this.state.workspace);
+            return Array.isArray(output?.todos)
+                ? output.todos.map((item: any) => ({
+                    id: String(item?.id || '').trim(),
+                    content: String(item?.content || '').trim(),
+                    status: this.normalizeTodoStatus(item?.status)
+                })).filter((item: any) => !!item.id && !!item.content)
+                : [];
+        } catch (error: any) {
+            void error;
+            return [];
+        }
     }
 
     protected async refreshTodoPlan(
@@ -8187,7 +8226,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected resolveKeymapContext(): AgentConsoleKeymapContext {
         if (this.state.hasApprovalFocus()) return 'approval';
-        if (this.state.hasMessageFocus() || this.state.hasMessageDetailFocus()) return 'pager';
+        if (this.state.hasMessageFocus() || this.state.hasMessageDetailFocus() || this.state.hasTextOverlayFocus()) return 'pager';
         if (this.state.hasSessionFocus() || this.state.hasTaskFocus() || this.state.hasScheduledJobFocus()
             || this.state.hasToolFocus() || this.state.hasBlockingSelectMenu()) return 'list';
         if (this.state.inputFocused && !this.state.isAnyFocusActive()) return 'composer';
@@ -8207,7 +8246,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (action === 'list') {
             const globalEntries = Object.entries(this.globalKeymap!.effectiveBindings(context)).map(([key, value]) => `${key} -> ${value}`);
             const vimEntries = Object.entries(this.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
-            this.notify([...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])].join('\n') || 'No key bindings.');
+            const entries = [...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])];
+            if (!entries.length) {
+                this.notify('No key bindings.');
+                return;
+            }
+            this.state.openTextOverlay(scope ? `keymap ${scope}` : 'keymap', entries);
             return;
         }
         if (action === 'set') {
