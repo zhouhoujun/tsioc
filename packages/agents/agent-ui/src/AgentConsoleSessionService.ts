@@ -242,7 +242,7 @@ export class AgentConsoleSessionService {
         return [];
     }
 
-    async loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<{ messages: AgentMessage[]; sections?: AgentSessionSection[]; nextCursor?: string; hasMore?: boolean; }> {
+    async loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<{ messages: AgentMessage[]; sections?: AgentSessionSection[]; goalSummary?: any; nextCursor?: string; hasMore?: boolean; }> {
         if (this.appRpc) {
             const params: Record<string, any> = { sessionId };
             if (options?.cursor) {
@@ -259,6 +259,7 @@ export class AgentConsoleSessionService {
                 return {
                     messages: page.messages,
                     sections: Array.isArray(page.sections) ? page.sections : undefined,
+                    goalSummary: page.goalSummary,
                     nextCursor: page.nextCursor,
                     hasMore: !!page.hasMore
                 };
@@ -272,7 +273,10 @@ export class AgentConsoleSessionService {
                 : undefined;
             return {
                 messages,
-                sections: Array.isArray(state?.sections) ? state.sections : undefined
+                sections: Array.isArray(state?.sections) ? state.sections : undefined,
+                goalSummary: typeof (this.runtime as any).getSessionGoal === 'function'
+                    ? await (this.runtime as any).getSessionGoal(sessionId)
+                    : undefined
             };
         }
         if (this.sessionStore) {

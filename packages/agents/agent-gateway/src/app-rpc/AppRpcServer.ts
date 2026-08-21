@@ -658,10 +658,14 @@ export class AppRpcServer {
         const sections = Array.isArray(state.sections)
             ? state.sections.map(section => ({ ...section }))
             : [];
+        const goalSummary = typeof (this.runtime as any).getSessionGoal === 'function'
+            ? await (this.runtime as any).getSessionGoal(sessionId)
+            : undefined;
         return {
             sessionId,
             messages: page,
             sections,
+            goalSummary,
             nextCursor: page.length ? page[page.length - 1].id : (cursor || undefined),
             hasMore
         };

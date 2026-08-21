@@ -8947,6 +8947,15 @@ export class AgentConsoleComponentTest {
         await expect((component as any).openSession('goal-optional')).resolves.toBeUndefined();
     }
 
+    @Test('session page carries goal summary without a second goal request')
+    async sessionPageCarriesGoalSummary() {
+        const runtime = new RuntimeStub() as any;
+        runtime.getSessionGoal = async () => ({ id: 'g1', title: 'Release', successCriteria: ['tests pass'], status: 'active' });
+        const service = new AgentConsoleSessionService(undefined, undefined, runtime);
+        const page = await service.loadMessagesPage('goal-batch');
+        expect(page.goalSummary?.id).toEqual('g1');
+    }
+
     @Test('input panel prompt shows a plan-mode badge when enabled')
     async inputPromptShowsPlanBadge() {
         const state = new AgentConsoleSessionState();

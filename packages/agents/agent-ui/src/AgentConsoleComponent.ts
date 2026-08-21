@@ -1740,6 +1740,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.state.setMessages(page.messages);
         this.state.setSections(page.sections);
+        this.state.setGoalSummary(page.goalSummary || null);
     }
 
     protected async selectApprovalRequest(
@@ -5665,16 +5666,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.normalizeLoadedMessages(messages);
     }
 
-    protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[] }> {
+    protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }> {
         if (this.sessionService) {
             const page = await this.sessionService.loadMessagesPage(sessionId);
             return {
                 messages: this.normalizeLoadedMessages(page.messages),
-                sections: Array.isArray(page.sections) ? page.sections : []
+                sections: Array.isArray(page.sections) ? page.sections : [],
+                goalSummary: page.goalSummary
             };
         }
         const messages = await this.runtime.getMessages(sessionId);
-        return { messages: this.normalizeLoadedMessages(messages), sections: [] };
+        return { messages: this.normalizeLoadedMessages(messages), sections: [], goalSummary: undefined };
     }
 
     protected async searchSessionContent(
