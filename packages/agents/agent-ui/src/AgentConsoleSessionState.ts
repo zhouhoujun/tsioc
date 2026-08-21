@@ -387,6 +387,20 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageToggleInteraction: 'click',
 };
 
+export interface AgentConsoleTextOverlayState {
+    title: string;
+    lines: string[];
+    scroll: number;
+}
+
+export interface AgentConsolePendingQuestion {
+    question: string;
+    options: string[];
+    context?: string;
+    severity: 'low' | 'medium' | 'high';
+    updatedAt: number;
+}
+
 @Injectable()
 export class AgentConsoleSessionState {
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
@@ -441,6 +455,7 @@ export class AgentConsoleSessionState {
     selectedToolRunIndex = 0;
     approvalsFocused = false;
     selectedApprovalId = '';
+    textOverlay: AgentConsoleTextOverlayState | null = null;
     reviewOpen = false;
     gitSnapshotOpen = false;
     gitSnapshotCurrentRef = '';
@@ -459,6 +474,7 @@ export class AgentConsoleSessionState {
     planTodoExpanded = false;
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
+    pendingQuestion: AgentConsolePendingQuestion | null = null;
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
@@ -869,7 +885,8 @@ export class AgentConsoleSessionState {
             || this.hasApprovalFocus()
             || this.hasReviewFocus()
             || this.hasMessageFocus()
-            || this.hasMessageDetailFocus();
+            || this.hasMessageDetailFocus()
+            || this.hasTextOverlayFocus();
     }
 
     shouldRenderTerminalCursor(): boolean {
@@ -949,7 +966,18 @@ export class AgentConsoleSessionState {
     get displayMessages(): AgentMessage[] {
         const filtered = this.messages.filter(message => this.isDisplayMessage(message));
         if (this.planMessage) {
-            filtered.push(this.planMessage);
+            let lastUserIndex = -1;
+            for (let index = filtered.length - 1; index >= 0; index--) {
+                if (String(filtered[index]?.role || '').toLowerCase() === 'user') {
+                    lastUserIndex = index;
+                    break;
+                }
+            }
+            if (lastUserIndex >= 0) {
+                filtered.splice(lastUserIndex + 1, 0, this.planMessage);
+            } else {
+                filtered.unshift(this.planMessage);
+            }
         }
         if (this.fileChangeMessage) {
             filtered.push(this.fileChangeMessage);
@@ -1828,20 +1856,29 @@ export class AgentConsoleSessionState {
         if (!this.planTodos.length) {
             return null;
         }
-        const content = this.planTodos.map((item, index) =>
-            `${index + 1}. [${this.todoStatusMark(item.status)}] ${item.content}`
-        ).join('\n');
+        const total = this.planTodos.length;
         const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
         const completedCount = this.planTodos.filter(item => item.status === 'completed').length;
+        const inProgressCount = this.planTodos.filter(item => item.status === 'in_progress').length;
+        const cancelledCount = this.planTodos.filter(item => item.status === 'cancelled').length;
         const summary = activeCount === 0
-            ? `Plan completed: ${completedCount}/${this.planTodos.length} steps, ${this.planTodos.filter(item => item.status === 'cancelled').length} failures`
+            ? `Plan completed: ${completedCount}/${total} steps, ${cancelledCount} failures`
             : '';
         const goalProgress = this.goalCriteriaProgress;
         const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
-        const collapsible = this.planTodos.length > 7;
+        const collapsible = total > 7;
+        const barWidth = Math.min(total, 20);
+        const doneCount = completedCount + inProgressCount;
+        const filled = Math.round((barWidth * doneCount) / total);
+        const bar = '▓'.repeat(filled) + '░'.repeat(barWidth - filled);
+        const items = this.planTodos.map((item, index) =>
+            `${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}`
+        );
         const visibleContent = collapsible && !this.planTodoExpanded
-            ? `Plan ${this.planTodos.length} steps (${completedCount} done)`
-            : content;
+            ? `Plan ${total} steps (${completedCount} done)`
+            : activeCount > 0
+                ? [`plan ${doneCount}/${total} ${bar}`, ...items].join('\n')
+                : '';
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
@@ -1867,16 +1904,16 @@ export class AgentConsoleSessionState {
         return true;
     }
 
-    protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {
+    protected planTodoGlyph(status: AgentConsolePlanTodoItem['status']): string {
         switch (status) {
             case 'completed':
-                return 'x';
+                return '✓';
             case 'cancelled':
-                return '-';
+                return '⊘';
             case 'in_progress':
-                return '>';
+                return '▸';
             default:
-                return ' ';
+                return '☐';
         }
     }
 
@@ -1894,6 +1931,10 @@ export class AgentConsoleSessionState {
         this.planTodoSourceSessionId = '';
         this.planScope = '';
         this.planMessage = null;
+    }
+
+    setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
+        this.pendingQuestion = question;
     }
 
     setTasksFocused(focused: boolean): void {
@@ -2766,6 +2807,60 @@ export class AgentConsoleSessionState {
         this.notice = message;
     }
 
+    openTextOverlay(title: string, lines: string[]): void {
+        const content = (Array.isArray(lines) ? lines : []).map(line => String(line ?? ''));
+        if (!content.length) {
+            return;
+        }
+        this.textOverlay = { title: String(title || ''), lines: content, scroll: 0 };
+        this.syncDerivedInputFocus();
+    }
+
+    closeTextOverlay(): void {
+        if (!this.textOverlay) {
+            return;
+        }
+        this.textOverlay = null;
+        this.syncDerivedInputFocus();
+    }
+
+    hasTextOverlayFocus(): boolean {
+        return !!this.textOverlay;
+    }
+
+    get textOverlayVisibleLines(): string[] {
+        if (!this.textOverlay) {
+            return [];
+        }
+        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        return this.textOverlay.lines.slice(this.textOverlay.scroll, this.textOverlay.scroll + visible);
+    }
+
+    scrollTextOverlay(delta: number): void {
+        if (!this.textOverlay) {
+            return;
+        }
+        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        const maxScroll = Math.max(0, this.textOverlay.lines.length - visible);
+        this.textOverlay.scroll = Math.max(0, Math.min(maxScroll, this.textOverlay.scroll + delta));
+    }
+
+    scrollTextOverlayPage(delta: number, pageSize?: number): void {
+        if (!this.textOverlay) {
+            return;
+        }
+        const resolvedPageSize = pageSize ?? this.consoleOptions.reviewDetailPageSize;
+        this.scrollTextOverlay(delta * Math.max(1, resolvedPageSize));
+    }
+
+    scrollTextOverlayToEdge(position: 'start' | 'end'): void {
+        if (!this.textOverlay) {
+            return;
+        }
+        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        this.textOverlay.scroll = position === 'start' ? 0 : Math.max(0, this.textOverlay.lines.length - visible);
+    }
+
     setCommandHints(commands: string[]): void {
         this.commandHints = Array.from(new Set(commands.filter(Boolean)));
         this.refreshInputSuggestions();
@@ -3012,6 +3107,10 @@ export class AgentConsoleSessionState {
     }
 
     async dismissFocusLayer(): Promise<boolean> {
+        if (this.textOverlay) {
+            this.closeTextOverlay();
+            return true;
+        }
         if (this.selectMenu) {
             await this.cancelSelectMenu();
             return true;
@@ -3900,7 +3999,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.gitSnapshotOpen || this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
+        if (!!this.textOverlay || this.gitSnapshotOpen || this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
@@ -3951,6 +4050,34 @@ export class AgentConsoleSessionState {
         const normalized = String(key || '').trim().toLowerCase();
         if (!normalized) {
             return false;
+        }
+        if (this.textOverlay) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'down':
+                    this.scrollTextOverlay(1);
+                    return true;
+                case 'up':
+                    this.scrollTextOverlay(-1);
+                    return true;
+                case 'pageup':
+                    this.scrollTextOverlayPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollTextOverlayPage(1);
+                    return true;
+                case 'home':
+                    this.scrollTextOverlayToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollTextOverlayToEdge('end');
+                    return true;
+                default:
+                    return false;
+            }
         }
         if (this.gitSnapshotOpen) {
             if (this.isDismissKey(normalized)) {
@@ -4577,7 +4704,7 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'menuBlocked' };
         }
 
-        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
+        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
                 const consumed = await this.handleFocusKey(focusKey);
