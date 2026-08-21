@@ -272,6 +272,12 @@
 - 静态边界：`packages/agents/agent-ui/src` 不直接引用 `@tsdi/components/console` 或 Node API。
 - 结论：P178 验证与收尾完成，P172–P177 无回归。
 
+### agent-ui 测试性能复核（2026-08-21）
+
+- 定位：`openSession()` 每次切换同步查询 `goal.get`，Goal 仅用于装饰性计划提示，却处于高频会话加载路径；对 674 个测试造成约 5 秒 runner 内耗时回退。
+- 修复：移除会话打开时的 Goal 查询；Goal 命令仍按需读取，计划状态可继续通过 `setGoalSummary()` 注入，避免 RPC/存储访问阻塞会话切换。
+- 验证：agent-ui `674 passing`，runner 内部耗时由 16.9s 降至 13.2s；异步后台查询反而升至 40.5s，未采用。
+
 ---
 
 ## 代码质量审计（2026-08-17）
