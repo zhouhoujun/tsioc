@@ -12,11 +12,13 @@ import {
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
+    AgentConsolePendingQuestionPanelComponent,
     AgentConsoleReviewPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleJobsPanelComponent,
     AgentConsoleTasksPanelComponent,
+    AgentConsoleTextOverlayPanelComponent,
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent,
@@ -433,8 +435,32 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 4 more lines. Click to expand'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 5 more lines'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
+    }
+
+    @Test('keeps trailing question lines visible when unfocused messages collapse')
+    async keepsTrailingLinesVisibleWhenUnfocusedMessagesCollapse() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{
+            id: 'a2',
+            role: 'assistant',
+            content: [
+                ...Array.from({ length: 10 }, (_, index) => `detail ${index + 1}`),
+                '需要我继续完成这些收尾吗？'
+            ].join('\n'),
+            createdAt: 2
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('detail 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 6 more lines'))).toBe(true);
+        expect(messageLines.some(line => line.includes('需要我继续完成这些收尾吗？'))).toBe(true);
     }
 
     @Test('opens truncated message detail from terminal mouse click')
@@ -1548,9 +1574,10 @@ export class AgentConsoleTuiRendererTest {
             { id: 'p2', content: 'Implement API', status: 'pending' },
             { id: 'p3', content: 'Write tests', status: 'pending' }
         ]);
-        expect(planMessage!.content).toContain('[>] Design architecture');
-        expect(planMessage!.content).toContain('[ ] Implement API');
-        expect(planMessage!.content).toContain('[ ] Write tests');
+        expect(planMessage!.content).toContain('▸ Design architecture');
+        expect(planMessage!.content).toContain('☐ Implement API');
+        expect(planMessage!.content).toContain('☐ Write tests');
+        expect(planMessage!.content).toContain('plan 1/3 ');
     }
 
     @Test('collapses long inline plans and expands them with Enter')
@@ -1567,9 +1594,110 @@ export class AgentConsoleTuiRendererTest {
         ref.instance.sessionState.setMessagesFocused(true);
         expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
         const expanded = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
-        expect(expanded.content).toContain('1. [x] Step 1');
-        expect(expanded.content).toContain('8. [ ] Step 8');
+        expect(expanded.content).toContain('plan 2/8 ▓▓░░░░░░');
+        expect(expanded.content).toContain('1. ✓ Step 1');
+        expect(expanded.content).toContain('8. ☐ Step 8');
         expect(expanded.metadata?.planCollapsed).toEqual(false);
+    }
+
+    @Test('inline plan card sits right after the latest user request')
+    async inlinePlanCardSitsAfterLatestUserRequest() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'first request', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: 'working on it', createdAt: 2 } as any,
+            { id: 'u2', role: 'user', content: 'second request', createdAt: 3 } as any,
+            { id: 'a2', role: 'assistant', content: 'still working', createdAt: 4 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Step one', status: 'in_progress' }
+        ] as any);
+
+        const display = ref.instance.sessionState.displayMessages;
+        const planIndex = display.findIndex(m => m.id === '__plan_todo_inline__');
+        expect(planIndex).toBeGreaterThan(-1);
+        expect(planIndex).toEqual(display.findIndex(m => m.id === 'u2') + 1);
+    }
+
+    @Test('expanded plan stays fully visible when messages are not focused')
+    async expandedPlanStaysVisibleWhenUnfocused() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos(Array.from({ length: 8 }, (_, index) => ({
+            id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
+        })) as any);
+        ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
+        ref.instance.sessionState.setMessagesFocused(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        ref.instance.sessionState.setMessagesFocused(false);
+
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const rendered = (panel.instance as any).renderedMessageItems as Array<{ lines: Array<{ messageId?: string; content: string }> }>;
+        const planItem = rendered.find(item => item.lines.some(line => line.messageId === '__plan_todo_inline__'));
+        const contents = planItem!.lines.map(line => line.content).join('\n');
+        expect(contents).toContain('plan 2/8 ▓▓░░░░░░');
+        expect(contents).toContain('8. ☐ Step 8');
+    }
+
+    @Test('/keymap list opens a scrollable overlay that Esc closes')
+    async keymapListOpensScrollableOverlay() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        await (ref.instance as any).handleCommand('/keymap list');
+        expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(true);
+        const panel = ref.hostView.query(AgentConsoleTextOverlayPanelComponent) as ComponentRef<AgentConsoleTextOverlayPanelComponent>;
+        expect(panel).toBeTruthy();
+        expect((panel.instance as any).visibleLines.length).toBeGreaterThan(0);
+
+        ref.instance.sessionState.openTextOverlay('scroll', Array.from({ length: 60 }, (_, index) => `line ${index + 1}`));
+        ref.instance.sessionState.scrollTextOverlayPage(1);
+        expect(ref.instance.sessionState.textOverlay!.scroll).toBeGreaterThan(0);
+        for (let index = 0; index < 20; index++) {
+            ref.instance.sessionState.scrollTextOverlayPage(1);
+        }
+        const maxScroll = Math.max(0, 60 - ref.instance.sessionState.consoleOptions.reviewDetailVisibleLines);
+        expect(ref.instance.sessionState.textOverlay!.scroll).toEqual(maxScroll);
+
+        await ref.instance.sessionState.handleEscapeKey();
+        expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(false);
+    }
+
+    @Test('long notices open a text overlay instead of the status strip')
+    async longNoticeOpensTextOverlay() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        (ref.instance as any).notify('line1\nline2\nline3\nline4\nline5');
+        expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(true);
+        expect(ref.instance.sessionState.textOverlay!.title).toEqual('notice');
+        ref.instance.sessionState.closeTextOverlay();
+
+        (ref.instance as any).notify('short note');
+        expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(false);
+        expect(ref.instance.sessionState.notice).toEqual('short note');
+    }
+
+    @Test('ask_user surfaces a pending question card and fills the composer')
+    async pendingQuestionCardFillsComposer() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        expect(ref.instance.showPendingQuestionPanel).toEqual(false);
+
+        ref.instance.sessionState.setPendingQuestion({
+            question: 'Which database should we use?',
+            options: ['postgres', 'sqlite'],
+            context: 'affects schema migrations',
+            severity: 'high',
+            updatedAt: Date.now()
+        });
+        expect(ref.instance.showPendingQuestionPanel).toEqual(true);
+
+        const panel = new AgentConsolePendingQuestionPanelComponent(ref.instance.sessionState);
+        expect(panel.pendingQuestionTitle).toEqual('[high] ? Which database should we use?');
+        expect(panel.pendingQuestionContext).toEqual('affects schema migrations');
+        expect(panel.pendingQuestionOptionItems.map(item => item.label)).toEqual(['1. postgres', '2. sqlite']);
+
+        panel.onPendingQuestionOptionClick('sqlite');
+        expect(ref.instance.sessionState.input).toEqual('sqlite');
+        expect(ref.instance.sessionState.inputFocused).toEqual(true);
+
+        ref.instance.sessionState.setPendingQuestion(null);
+        expect(ref.instance.showPendingQuestionPanel).toEqual(false);
     }
 
     @Test('working detail includes the active plan step when no tool is running')

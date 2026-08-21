@@ -7978,6 +7978,54 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.planScope).toEqual('project');
     }
 
+    @Test('refreshTodoPlan restores session todos from the local todo tool when no app rpc exists')
+    async refreshTodoPlanRestoresTodosFromLocalToolWithoutAppRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const invoked: Array<{ name: string; sessionId?: string }> = [];
+        const toolRegistry = {
+            getToolDefinitions(): any[] {
+                return [{ name: 'todo', toolset: 'planning', activation: { kind: 'always', activated: true } }];
+            },
+            async isToolActive(): Promise<boolean> {
+                return true;
+            },
+            async invoke(name: string, _input: any, sessionId?: string): Promise<any> {
+                invoked.push({ name, sessionId });
+                if (name === 'todo') {
+                    return {
+                        todos: [
+                            { id: 'todo-a', content: 'local restore todo', status: 'completed' },
+                            { id: 'todo-b', content: 'local active todo', status: 'in_progress' },
+                            { id: '', content: 'dropped invalid todo', status: 'pending' }
+                        ]
+                    };
+                }
+                return undefined;
+            }
+        };
+        const component = createConsole(runtime, scheduler, toolRegistry as any);
+
+        component.sessionState.configure({ sessionId: 'chat-local' });
+        await (component as any).refreshTodoPlan('chat-local');
+
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a', 'todo-b']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-local');
+        expect(invoked.some(call => call.name === 'todo' && call.sessionId === 'chat-local')).toEqual(true);
+
+        const emptyComponent = createConsole(runtime, scheduler, {
+            getToolDefinitions(): any[] {
+                return [];
+            },
+            async invoke(): Promise<any> {
+                return undefined;
+            }
+        } as any);
+        emptyComponent.sessionState.configure({ sessionId: 'chat-empty' });
+        await (emptyComponent as any).refreshTodoPlan('chat-empty');
+        expect(emptyComponent.sessionState.planTodos).toEqual([]);
+    }
+
     @Test('loadThreadCodingTasks aggregates coding tasks within the thread only')
     async loadThreadCodingTasksAggregatesWithinThreadOnly() {
         const runtime = new RuntimeStub();
