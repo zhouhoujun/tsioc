@@ -1647,6 +1647,20 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.sessionState.reviewOpen).toEqual(true);
     }
 
+    @Test('inline plan reports goal criteria coverage')
+    async inlinePlanReportsGoalCriteriaCoverage() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setGoalSummary({
+            id: 'g1', title: 'Release', successCriteria: ['tests pass', 'build clean']
+        });
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Make tests pass', status: 'completed' },
+            { id: 'p2', content: 'Review docs', status: 'pending' }
+        ] as any);
+        const message = ref.instance.sessionState.displayMessages.find(item => item.id === '__plan_todo_inline__');
+        expect(message?.content).toContain('goal: 1/2 criteria met');
+    }
+
     @Test('timeline mode adds a plan step boundary without changing selection')
     async timelineModeAddsPlanBoundary() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

@@ -239,6 +239,13 @@ export interface AgentConsolePlanTodoItem {
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
 }
 
+export interface AgentConsoleGoalSummary {
+    id: string;
+    title: string;
+    successCriteria: string[];
+    status?: string;
+}
+
 export interface AgentConsoleSessionMeta {
     sessionId?: string;
     provider?: string;
@@ -450,6 +457,7 @@ export class AgentConsoleSessionState {
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planTodoExpanded = false;
+    goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
@@ -1799,6 +1807,23 @@ export class AgentConsoleSessionState {
         this.planMessage = this.buildPlanMessage();
     }
 
+    setGoalSummary(goal: AgentConsoleGoalSummary | null | undefined): void {
+        this.goalSummary = goal ? {
+            id: String(goal.id || ''), title: String(goal.title || ''),
+            successCriteria: Array.isArray(goal.successCriteria) ? goal.successCriteria.map(String) : [],
+            status: goal.status
+        } : null;
+        this.planMessage = this.buildPlanMessage();
+    }
+
+    get goalCriteriaProgress(): { met: number; total: number } | null {
+        const criteria = this.goalSummary?.successCriteria || [];
+        if (!criteria.length) return null;
+        const planText = this.planTodos.map(item => item.content).join(' ').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ');
+        const met = criteria.filter(item => planText.includes(String(item).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim())).length;
+        return { met, total: criteria.length };
+    }
+
     protected buildPlanMessage(): AgentMessage | null {
         if (!this.planTodos.length) {
             return null;
@@ -1811,6 +1836,8 @@ export class AgentConsoleSessionState {
         const summary = activeCount === 0
             ? `Plan completed: ${completedCount}/${this.planTodos.length} steps, ${this.planTodos.filter(item => item.status === 'cancelled').length} failures`
             : '';
+        const goalProgress = this.goalCriteriaProgress;
+        const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
         const collapsible = this.planTodos.length > 7;
         const visibleContent = collapsible && !this.planTodoExpanded
             ? `Plan ${this.planTodos.length} steps (${completedCount} done)`
@@ -1818,7 +1845,7 @@ export class AgentConsoleSessionState {
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
-            content: summary ? `${visibleContent}\n${summary}` : visibleContent,
+            content: [visibleContent, summary, goalLine].filter(Boolean).join('\n'),
             createdAt: Date.now(),
             metadata: {
                 uiKind: 'plan-todo',
@@ -1863,6 +1890,7 @@ export class AgentConsoleSessionState {
         }
         this.planTodos = [];
         this.planTodoExpanded = false;
+        this.goalSummary = null;
         this.planTodoSourceSessionId = '';
         this.planScope = '';
         this.planMessage = null;

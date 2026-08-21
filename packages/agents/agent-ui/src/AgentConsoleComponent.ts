@@ -1740,6 +1740,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         this.state.setMessages(page.messages);
         this.state.setSections(page.sections);
+        const goal = this.appRpc
+            ? await this.appRpc.request('goal.get', { sessionId: target.id })
+            : typeof this.runtime.getSessionGoal === 'function'
+                ? await this.runtime.getSessionGoal(target.id)
+                : undefined;
+        this.state.setGoalSummary(goal || null);
     }
 
     protected async selectApprovalRequest(

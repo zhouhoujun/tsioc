@@ -257,6 +257,7 @@
 - **P181 · G104 · plan 与 goal 系统集成（低）** `platform: src/（跨平台）`
   - `Goal` 系统的 criteria 与 plan items 自动关联：plan 完成时检查 goal criteria 覆盖率。
   - 对话流中显示 goal 进度（如 `goal: 3/5 criteria met`）。
+  - **已完成（2026-08-21）**：会话加载时读取已链接 Goal，计划消息按标准化文本匹配 success criteria 并显示 `goal: X/Y criteria met`；Goal API 缺失时保持兼容；TUI/browser 共用状态与渲染路径；agent-ui 673 passing。
 
 ---
 
