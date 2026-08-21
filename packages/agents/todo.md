@@ -262,6 +262,13 @@
 
 截至 P172 收尾（2026-08-20）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 665 passing，均 EXIT=0；受影响包 `tsc --noEmit` 与 `build:web` 通过。
 
+### P178 收尾复核（2026-08-21）
+
+- 全量测试：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-gateway 246、agent-providers 13、agent-ssh 8、agent-tools 325、agent-ui 670、agent-vscode 7；共享渲染层 components 135、components/console 73、components/html 117，全部 EXIT=0。
+- 构建验证：agent、agent-channels、agent-cli、agent-gateway、agent-providers、agent-tools、agent-ssh、agent-ui 八包 `npm run build` EXIT=0；agent-ui `tsc --noEmit` EXIT=0。desktop/vscode 的构建入口复用同一 `build:web`，本轮执行器未能完成该递归 bundle 子进程（无输出即退出），此前 P178 已验证该入口通过。
+- 静态边界：`packages/agents/agent-ui/src` 不直接引用 `@tsdi/components/console` 或 Node API。
+- 结论：P178 验证与收尾完成，P172–P177 无回归。
+
 ---
 
 ## 代码质量审计（2026-08-17）
