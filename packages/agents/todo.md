@@ -261,9 +261,102 @@
 
 ---
 
+## 改进计划 v9（G105–G113，Codex 对标 UI 细节修复）
+
+> 背景（2026-08-21 用户实测反馈 + 源码定位）：v8 的内联 plan / 文件摘要 / timeline 已落地，但真实使用暴露三个体验断点：
+> 1. assistant 长回复尾部的问询（如「需要我继续完成这些收尾吗？」）被折叠吞掉；
+> 2. `/keymap` 列表输出挤进顶部 notice 条一闪而过，应弹 overlay 对话框；
+> 3. plan/todo 从不出现——系统提示明确抑制模型主动调用 `todo`，且即便调用了，plan 卡片也被 push 到消息流末尾并同样吃 8 行折叠。
+
+### 根因定位（file:line 证据，2026-08-21）
+
+| # | 现象 | 根因 | 锚点 |
+|---|---|---|---|
+| 1 | 尾部问询被折叠 | 非 focused 模式对**所有**消息做 `truncateMessageItem`（默认保头 8 行、去尾）；reasoning 4 行。问句在长回复末尾必然被截掉 | `agent-ui/src/AgentConsolePanels.ts:2364-2407`（renderedMessageItems）、`:2417`（truncateMessageItem）、`:52-53`（COLLAPSED_MESSAGE_PREVIEW_LINES=8 / REASONING=4） |
+| 1b | 「Click to expand」误导 | TUI 禁用鼠标跟踪，click 文案不可达；未聚焦消息区时 Enter 展开路径也不可达 | `AgentConsoleComponent.ts:173`（shouldEnableTerminalMouseTracking=false）、`AgentConsolePanels.ts:2457-2465` |
+| 2 | /keymap 在顶部一闪而过 | `runKeymapCommand('list')` 把全部键位 join 后 `notify()` → `setNotice()` 单行状态条；长列表塞不进也留不住 | `AgentConsoleComponent.ts:8207-8211`、`:356-359`；`AgentConsolePanels.ts:155-166` |
+| 3a | 无规划 | 系统提示反向抑制：「Do not call \`todo\` … unless the user explicitly asks」——与 Codex 相反（Codex 要求复杂任务先 update_plan 并随执行更新） | `agent/src/prompt/sections/IdentitySection.ts:58-62`、`ToolsSection.ts:37-39` |
+| 3b | plan 卡片位置错误 | `displayMessages` 把 planMessage **push 到列表末尾**：不在时间线位置、把真实消息挤出可视窗口 | `AgentConsoleSessionState.ts:949-972` |
+| 3c | plan 卡片被折叠 | plan 卡片与普通消息一样吃 8 行折叠（自身 >7 项摘要折叠之外又叠一层） | `AgentConsolePanels.ts:2407` |
+| 4 | 问询无交互 | `ask_user` 仅返回 payload「host may surface」，console 端无任何交互呈现（仅 i18n activity 文案）；追问只能埋在正文里被折叠 | `agent-tools/planning/ask-user.tool.ts`；agent-ui/src 全文无 ask_user 处理 |
+
+### Codex 参照行为
+
+- `update_plan` 工具 + 系统提示要求：复杂多步任务**开始前**建立计划、每步完成即更新状态；TUI 内联持久 plan 卡片原地刷新勾选。
+- assistant 最终回复全文可见，永不自动截断；折叠只用于工具输出 / reasoning。
+- 追问 / 审批是交互式选择控件（编号选项 + 键盘选择 + 高亮框），不是纯文本。
+- 键位/帮助类参考信息以可滚动覆盖层或持久 scrollback 呈现，不用瞬态状态条。
+
+### 批次 I · 折叠策略重构（P182–P183）
+
+- **P182 · G105 · 保尾折叠：assistant/user 消息不吞尾部（高）** `platform: src/（跨平台）`
+  - 非 focused 默认模式：`templateKind` 为 assistant / user / planTodo / fileChange 的消息**不做 head 截断**；reasoning 维持 4 行、tool/system 维持 8 行折叠。
+  - 若仍需限制超高消息：改「头 N−2 行 + `… N more lines` + 尾 2 行」的保尾策略，保证结尾问询永远可见。
+  - focused 模式的 8 行预览保留（那是显式浏览态），但同样采用保尾变体。
+  - 锚点：`AgentConsolePanels.ts` renderedMessageItems / truncateMessageItem；补 console-renderer.spec 用例（长回复尾行必须出现在 renderedLines）。
+- **P183 · G106 · 折叠交互文案与可达性（中）** `platform: src/（跨平台）`
+  - TUI 下展开文案改「enter 展开」（复用既有 i18n enter 变体），mouse 关闭时不再出现 click 提示；browser 保持 click 文案。
+  - 未聚焦消息区时提供展开路径：Enter 直接作用于最新折叠消息，或底部 hint 提示先按方向键聚焦。
+  - 锚点：`AgentConsolePanels.ts` messageExpandLabel/messageCollapseLabel、键位处理层。
+
+### 批次 II · 参考类命令 overlay 化（P184–P185）
+
+- **P184 · G107 · /keymap /help /tools 结果进 overlay（高）** `platform: src/（跨平台）`
+  - 新增通用列表 overlay 组件（复用 which-key overlay / select-menu 基建）：标题 + 可滚动列表 + `/` 过滤 + PgUp/PgDn + Esc 关闭。
+  - `/keymap list`、`/help`、`/tools` 默认打开 overlay；带参数的写操作（set/unset/reset/record）保持 notify 反馈不变。
+  - 键位数据源直接读 `AgentConsoleKeymap.effectiveBindings(context)` 与 vim bindings，按 context 分组展示。
+  - 锚点：`AgentConsoleComponent.ts` runKeymapCommand/handleCommand、`AgentConsoleSessionState.ts`（overlay 状态）、`AgentConsolePanels.ts`（新组件）。
+- **P185 · G108 · notify 分级：长内容自动转 overlay（低-中）** `platform: src/（跨平台）`
+  - `notify()` 增加阈值判断：超过 3 行或超长单行的内容自动走 overlay 而非 notice 条；notice 只承载短瞬态反馈。
+  - 防止未来其他命令再犯同类错。
+  - 锚点：`AgentConsoleComponent.ts` notify()。
+
+### 批次 III · Plan/todo 真正跑起来（P186–P188）
+
+- **P186 · G109 · 系统提示反转：主动规划指引（高）** `platform: agent/src/prompt`
+  - IdentitySection / ToolsSection 改为 Codex 式主动规划口径：
+    - 多步/编码/重构类任务：**开始执行前必须**调用 `todo` 建立计划（每项一句话、可验证），随后每完成一步立即更新对应项 status；新增发现的工作也并入计划。
+    - 单轮问答/闲聊/纯解释：可省略 todo（保留原豁免，但删掉「unless the user explicitly asks」这种把默认变成「从不」的表述）。
+  - 同步调整 ToolsSection 中对 project_intel 的抑制措辞时不得误伤 todo 的主动性要求。
+  - 锚点：`agent/src/prompt/sections/IdentitySection.ts:58-62`、`ToolsSection.ts:37-53`；prompt snapshot 类测试同步更新。
+- **P187 · G110 · plan 卡片固定位置 + 免折叠 + 渲染强化（高）** `platform: src/（跨平台）`
+  - `displayMessages` 不再把 planMessage push 到末尾：插入到当前 turn 根用户消息之后（时间线位置），且不参与 `visibleMessages` 窗口挤出逻辑（plan 活跃时固定占位）。
+  - plan 卡片豁免通用 8 行折叠（它有自己的 >7 项摘要折叠），避免双重折叠。
+  - 渲染强化：checkbox 字形（`☐/▸/☒/⊘`）、进度条（`plan 3/7 ▓▓▓░░░░░`）、in_progress 项高亮；TUI/browser 共用同一渲染函数。
+  - 锚点：`AgentConsoleSessionState.ts` displayMessages/buildPlanMessage、`AgentConsoleMessageRenderers.ts` planTodo renderer、`AgentConsolePanels.ts` truncateMessageItem 豁免。
+- **P188 · G111 · 会话恢复回放 planTodos（中）** `platform: src/ + agent RPC`
+  - openSession / loadMessagesPage 后恢复 planTodos：优先从会话持久化数据（todo store 或 session metadata）读取；旧会话无数据时降级为空，不报错。
+  - 切换会话/fork 后计划卡片仍在，与 goal 摘要同路径加载（不新增高频 RPC）。
+  - 锚点：`AgentConsoleSessionState.ts` openSession 相关流程、agent 侧 session 读取接口。
+
+### 批次 IV · 问询交互化（P189）
+
+- **P189 · G112 · ask_user 交互化：问题选择控件（中-高）** `platform: src/（跨平台）`
+  - EventBridge 监听 `ask_user` 完成事件 → `state.pendingQuestion { question, options, severity }` → composer 上方渲染选择框：编号选项 + ↑↓/数字键选择 + Enter 确认 + Esc 转自由输入。
+  - 选择结果自动填入 composer 并发送（走既有 queue/steer 通道）；turn 内阻塞等待为 stretch 目标（需 runtime 支持 pending-question 挂起/恢复），首期允许非阻塞注入。
+  - 视觉语言与既有 approval pending 队列统一。
+  - 锚点：`AgentConsoleEventBridge.ts` / `AgentConsoleRemoteEventBridge.ts`（新增 ask_user 绑定）、`AgentConsoleSessionState.ts`（pendingQuestion 状态）、composer 面板组件。
+
+### 批次 V · 验证与回归（P190）
+
+- **P190 · G113 · 全量验证与真实终端验收** `platform: 验证（跨平台）`
+  - 自动测试：agent-ui 全套 + components / components/console / components/html 回归 + agent 包 prompt 相关测试 + `tsc --noEmit` + `build:web`。
+  - PTY 实测三场景：① 长回复尾部问询在默认模式可见；② `/keymap` 弹出 overlay 且可滚动/过滤/Esc 关闭；③ 多步任务中模型主动调 `todo`，plan 卡片出现在根请求之后并实时勾选。
+  - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 为空；新代码无 node API 直接引用。
+  - 回归基线：P0–P181 既有测试不回归。
+
+---
+
 ## 回归基线
 
-截至 P181 收尾（2026-08-21）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 674 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过。
+截至 P190 收尾（2026-08-22）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过。
+
+### P190 收尾复核（2026-08-22）
+
+- 全量测试：agent-ui 682 passing（P182–P189 净增 8：保尾折叠、参考类命令 overlay 化与 notify 分级、plan 卡片渲染强化与会话恢复回放、ask_user 问题选择卡）、components 135、components/console 73、components/html 117，均 EXIT=0，P0–P181 既有测试零回归。
+- 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` esbuild bundle EXIT=0。
+- 静态边界：`packages/agents/agent-ui/src` 不直接引用 `@tsdi/components/console` 或 Node API（扫描仅命中 `console-ports.ts` 的规则注释本身）。
+- PTY 实测三场景（长回复尾部问询可见 / `/keymap` overlay 滚动过滤 / plan 卡片实时勾选）：自动化环境无真实模型接入，留待人工在真实终端验收。
 
 ### P178 收尾复核（2026-08-21）
 
