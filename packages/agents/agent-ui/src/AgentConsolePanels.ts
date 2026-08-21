@@ -51,6 +51,7 @@ import {
 
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
+const QUESTION_TAIL_VISIBLE_BUDGET = 6;
 
 function escapeFollowUpTerm(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1839,6 +1840,119 @@ export class AgentConsoleToolsPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-text-overlay-panel',
+    template: `
+    <div class="console-panel console-text-overlay-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{overlayTitle}}</label>
+        <label v-style="listStyle" v-for="line in visibleLines">{{line}}</label>
+        <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
+    </div>
+    `
+})
+export class AgentConsoleTextOverlayPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get shellStyle() {
+        return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.toolRunsShell : {};
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolRunsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get overlayTitle(): string {
+        const overlay = this.state.textOverlay;
+        if (!overlay) {
+            return '';
+        }
+        return `${overlay.title} ${overlay.lines.length} lines · ${overlay.scroll + 1}-${Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines)}`.trim();
+    }
+
+    get visibleLines(): string[] {
+        return this.state.textOverlayVisibleLines;
+    }
+
+    get hintLabel(): string {
+        return this.state.hasTextOverlayFocus() ? 'Esc close · ↑↓ scroll' : '';
+    }
+}
+
+@Component({
+    selector: 'agent-console-pending-question-panel',
+    template: `
+    <div class="console-panel console-pending-question-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
+        <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
+        <label v-style="listStyle" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</label>
+        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">select an option to fill the input</label>
+    </div>
+    `
+})
+export class AgentConsolePendingQuestionPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get shellStyle() {
+        return this.activeThemeStyles.toolRunsShell;
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolRunsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get pendingQuestionTitle(): string {
+        const question = this.state.pendingQuestion;
+        if (!question) {
+            return '';
+        }
+        const severity = question.severity === 'high' ? '[high] ' : '';
+        return `${severity}? ${question.question}`;
+    }
+
+    get pendingQuestionContext(): string {
+        return this.state.pendingQuestion?.context || '';
+    }
+
+    get pendingQuestionOptionItems(): Array<{ label: string; value: string }> {
+        return (this.state.pendingQuestion?.options || []).map((option, index) => ({ label: `${index + 1}. ${option}`, value: option }));
+    }
+
+    onPendingQuestionOptionClick(option: string): void {
+        this.state.setInput(option, option.length);
+        this.state.setInputFocused(true);
+    }
+}
+
+@Component({
     selector: 'agent-console-tool-runs-panel',
     template: `
     <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
@@ -2352,10 +2466,10 @@ export class AgentConsoleMessagesPanelComponent {
             return;
         }
         this.state.setSelectedMessageId(messageId);
-        const messageItem = this.messageItems.find(item =>
-            item.lines.some(renderedLine => renderedLine.messageId === messageId)
+        const truncatedItem = this.renderedMessageItems.find(item =>
+            item.lines.some(renderedLine => renderedLine.messageId === messageId && renderedLine.previewCollapsed)
         );
-        if (!messageItem || messageItem.lines.length <= COLLAPSED_MESSAGE_PREVIEW_LINES) {
+        if (!truncatedItem) {
             return;
         }
         this.state.openMessageDetail(false);
@@ -2371,9 +2485,14 @@ export class AgentConsoleMessagesPanelComponent {
                     && item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
                     return item;
                 }
+                if (this.isPlanTodoMessageItem(item)) {
+                    return item;
+                }
+                const reasoning = this.isReasoningMessageItem(item);
                 return this.truncateMessageItem(
                     item,
-                    this.isReasoningMessageItem(item) ? REASONING_MESSAGE_PREVIEW_LINES : COLLAPSED_MESSAGE_PREVIEW_LINES
+                    reasoning ? REASONING_MESSAGE_PREVIEW_LINES : COLLAPSED_MESSAGE_PREVIEW_LINES,
+                    !reasoning
                 );
             });
         }
@@ -2404,7 +2523,13 @@ export class AgentConsoleMessagesPanelComponent {
                 };
             });
         }
-        return this.messageItems.map(item => this.truncateMessageItem(item));
+        return this.messageItems.map(item => this.isPlanTodoMessageItem(item)
+            ? item
+            : this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true));
+    }
+
+    protected isPlanTodoMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
+        return item.lines.some(line => line.messageId === '__plan_todo_inline__');
     }
 
     protected isReasoningMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
@@ -2416,21 +2541,31 @@ export class AgentConsoleMessagesPanelComponent {
 
     protected truncateMessageItem(
         item: AgentConsoleRenderedMessageItem,
-        previewLines: number = COLLAPSED_MESSAGE_PREVIEW_LINES
+        previewLines: number = COLLAPSED_MESSAGE_PREVIEW_LINES,
+        preserveTail = false
     ): AgentConsoleRenderedMessageItem {
         if (item.lines.length <= previewLines) {
             return item;
         }
-        const lines = item.lines.slice(0, previewLines);
-        const hiddenCount = item.lines.length - lines.length;
-        const baseLine = lines[lines.length - 1];
+        const questionTail = preserveTail ? this.trailingQuestionLineCount(item.lines) : 0;
+        const tailLines = questionTail > 0
+            ? questionTail
+            : preserveTail ? Math.min(2, previewLines - 2) : 0;
+        const visibleBudget = questionTail > 0 ? QUESTION_TAIL_VISIBLE_BUDGET : previewLines;
+        const headCount = preserveTail
+            ? Math.max(visibleBudget - tailLines - 1, 1)
+            : previewLines;
+        const head = item.lines.slice(0, headCount);
+        const tail = tailLines > 0 ? item.lines.slice(-tailLines) : [];
+        const hiddenCount = item.lines.length - headCount - tailLines;
+        const baseLine = head[head.length - 1];
         const toggleText = this.messageExpandLabel(hiddenCount);
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
         };
         const toggleStyle = { ...previewStyle, cursor: 'pointer' };
-        lines.push({
+        const toggleLine: AgentConsoleRenderedLine = {
             ...baseLine,
             previewCollapsed: true,
             prefix: '',
@@ -2447,18 +2582,26 @@ export class AgentConsoleMessagesPanelComponent {
                 padding: '1em 1ch'
             },
             lineStyle: toggleStyle
-        });
+        };
+        const lines = [...head, toggleLine, ...tail];
         return {
             ...item,
             lines
         };
     }
 
+    protected trailingQuestionLineCount(lines: AgentConsoleRenderedLine[]): number {
+        let count = 0;
+        while (count < lines.length && /[？?]\s*$/.test(String(lines[lines.length - 1 - count]?.content || '').trimEnd())) {
+            count++;
+        }
+        return count;
+    }
+
     protected messageExpandLabel(hiddenCount: number): string {
         if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
             return this.translator?.translate('agent.message.expandEnter', { count: hiddenCount })
-                || this.translator?.translate('agent.message.expand', { count: hiddenCount })
-                || `… ${hiddenCount} more lines. Click to expand`;
+                || `… ${hiddenCount} more lines. Press Enter to expand`;
         }
         return this.translator?.translate('agent.message.expand', { count: hiddenCount })
             || `… ${hiddenCount} more lines. Click to expand`;
@@ -2467,8 +2610,7 @@ export class AgentConsoleMessagesPanelComponent {
     protected messageCollapseLabel(): string {
         if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
             return this.translator?.translate('agent.message.collapseEnter')
-                || this.translator?.translate('agent.message.collapse')
-                || 'Click to collapse';
+                || 'Press Enter to collapse';
         }
         return this.translator?.translate('agent.message.collapse') || 'Click to collapse';
     }

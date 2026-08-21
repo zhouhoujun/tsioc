@@ -261,7 +261,7 @@ export function renderAgentConsoleMessageItem(
     const streaming = messageStreaming || !!context.streaming;
     const markdownLines = hideToolOutput
         ? []
-        : context.rawMode
+        : context.rawMode || templateKind === 'planTodo'
             ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
