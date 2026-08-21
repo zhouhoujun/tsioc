@@ -252,6 +252,7 @@
 - **P180 · G103 · 文件变更内联的 keyboard navigation（低）** `platform: src/（跨平台）`
   - 文件变更概要内联时，↑/↓ 选择文件，Enter 展开 diff，Esc 收起。
   - 复用既有的 review 面板导航逻辑。
+  - **已完成（2026-08-21）**：文件摘要聚焦时 ↑/↓ 选择文件，Enter 打开对应 review，Esc 复用 focus layer 收起；TUI/browser 共用 `AgentConsoleSessionState` 键盘路径；agent-ui 672 passing。
 
 - **P181 · G104 · plan 与 goal 系统集成（低）** `platform: src/（跨平台）`
   - `Goal` 系统的 criteria 与 plan items 自动关联：plan 完成时检查 goal criteria 覆盖率。

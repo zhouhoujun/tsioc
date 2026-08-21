@@ -1628,6 +1628,25 @@ export class AgentConsoleTuiRendererTest {
         expect(message?.content).toContain('src/a.ts (+1 -1)');
     }
 
+    @Test('file change summary supports keyboard file selection and opens review')
+    async fileChangeSummaryKeyboardNavigation() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({ id: 'task-2', title: 'Task two' }, {
+            diff: [
+                'diff --git a/src/a.ts b/src/a.ts\n--- a/src/a.ts\n+++ b/src/a.ts\n+one',
+                'diff --git a/src/b.ts b/src/b.ts\n--- a/src/b.ts\n+++ b/src/b.ts\n+two'
+            ].join('\n')
+        });
+        ref.instance.sessionState.closeReview();
+        ref.instance.sessionState.setSelectedMessageId('__file_change_inline__');
+        ref.instance.sessionState.setMessagesFocused(true);
+
+        expect(await ref.instance.sessionState.handleFocusKey('down')).toEqual(true);
+        expect(ref.instance.sessionState.selectedReviewFileSection?.path).toEqual('src/b.ts');
+        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        expect(ref.instance.sessionState.reviewOpen).toEqual(true);
+    }
+
     @Test('timeline mode adds a plan step boundary without changing selection')
     async timelineModeAddsPlanBoundary() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

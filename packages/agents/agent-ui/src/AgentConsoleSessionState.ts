@@ -4095,9 +4095,17 @@ export class AgentConsoleSessionState {
                     await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
                     return true;
                 case 'down':
+                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
+                        this.moveReviewFileSelection(1);
+                        return true;
+                    }
                     this.moveMessageSelection(1);
                     return true;
                 case 'up':
+                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
+                        this.moveReviewFileSelection(-1);
+                        return true;
+                    }
                     this.moveMessageSelection(-1);
                     return true;
                 case 'pageup':
