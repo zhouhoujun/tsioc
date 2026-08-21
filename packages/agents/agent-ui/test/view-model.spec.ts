@@ -8939,6 +8939,14 @@ export class AgentConsoleComponentTest {
         expect(appRpc.calls.find(call => call.method === 'goal.create')?.params.sessionId).toEqual('goal-rpc');
     }
 
+    @Test('session opening tolerates unavailable goal lookup')
+    async sessionOpeningToleratesUnavailableGoalLookup() {
+        const runtime = new RuntimeStub() as any;
+        runtime.getSessionGoal = async () => { throw new Error('unsupported'); };
+        const { component } = createConsoleParts(runtime, new SchedulerStub());
+        await expect((component as any).openSession('goal-optional')).resolves.toBeUndefined();
+    }
+
     @Test('input panel prompt shows a plan-mode badge when enabled')
     async inputPromptShowsPlanBadge() {
         const state = new AgentConsoleSessionState();
