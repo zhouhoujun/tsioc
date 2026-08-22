@@ -75,8 +75,7 @@ function toRpcError(payload: RpcEnvelope | undefined): Error | undefined {
         return undefined;
     }
     const error = new Error(payload.error.message ?? `RPC error ${payload.error.code}`);
-    (error as any).code = payload.error.code;
-    (error as any).data = payload.error.data;
+    Object.assign(error, { code: payload.error.code, data: payload.error.data });
     return error;
 }
 
@@ -119,8 +118,8 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
             });
             if (!response.ok) {
                 const detail = await parseJsonResponse(response);
-                const message = typeof detail === 'object' && detail && typeof (detail as any).error === 'string'
-                    ? (detail as any).error
+                const message = typeof detail === 'object' && detail && 'error' in detail && typeof (detail as { error?: unknown }).error === 'string'
+                    ? (detail as { error: string }).error
                     : `HTTP ${response.status}`;
                 throw new Error(message);
             }
@@ -152,8 +151,8 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
             });
             if (!response.ok) {
                 const detail = await parseJsonResponse(response);
-                const message = typeof detail === 'object' && detail && typeof (detail as any).error === 'string'
-                    ? (detail as any).error
+                const message = typeof detail === 'object' && detail && 'error' in detail && typeof (detail as { error?: unknown }).error === 'string'
+                    ? (detail as { error: string }).error
                     : `HTTP ${response.status}`;
                 throw new Error(message);
             }
@@ -183,7 +182,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     }
                     if (message.error) {
                         const error = new Error(message.error.message ?? `RPC error ${message.error.code}`);
-                        (error as any).code = message.error.code;
+                        Object.assign(error, { code: message.error.code });
                         throw error;
                     }
                     if (message.method === 'run.turn_stream.chunk') {
@@ -212,7 +211,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                 const message = this.parseLine(remainder);
                 if (message?.error) {
                     const error = new Error(message.error.message ?? `RPC error ${message.error.code}`);
-                    (error as any).code = message.error.code;
+                    Object.assign(error, { code: message.error.code });
                     throw error;
                 }
                 if (message && 'result' in message) {

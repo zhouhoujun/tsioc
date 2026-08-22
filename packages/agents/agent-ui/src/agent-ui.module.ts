@@ -2,11 +2,12 @@ import { Module } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
+import { getGlobalProcess } from './global-process';
 import { agentUiChinese, agentUiEnglish } from './agent-ui.i18n';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 
 function resolveDefaultLocale(): string {
-    const env = (globalThis as any)?.process?.env || {};
+    const env = getGlobalProcess()?.env || {};
     const lang = String(env.LANG || env.LC_ALL || '').toLowerCase();
     return /^zh|_cn/i.test(lang) ? 'zh-CN' : 'en';
 }
