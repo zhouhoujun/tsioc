@@ -347,6 +347,66 @@
 
 ---
 
+## 改进计划 v10（G114–G124，Codex v0.149/opencode v1.18.21 对标 + 工程质量）
+
+> 基准更新（2026-08-22 调研）：Codex 最新 stable **v0.149.0**（0.150 alpha 进行中）、opencode **v1.18.21**（repo 已迁 anomalyco/opencode）。
+> 上游增量不大：Codex 以 agents dashboard / 工作目录命令 / 渲染性能为主；opencode 以子代理可恢复失败与网络重试为主。
+> 本轮同时纳入工程质量专项（巨石组件拆分、测试耗时、类型抑制治理）。
+
+### 批次 A · 上游对标（P191–P196）
+
+- **P191 · G114 · agents 任务总览 dashboard（高）** `platform: src/（跨平台）`
+  - 对照 Codex `codex agents` 交互式任务面板：统一入口搜索/打开/停止后台任务与 delegation threads，支持可配置快捷键。
+  - 现状缺口：本项目后台任务（/jobs、runBackgroundTasksCommand）与委派线程（delegation tree/lineage/list）分散在多个命令与面板，无统一交互总览。
+  - 锚点：`AgentConsoleComponent.ts` runBackgroundTasksCommand/openDelegation*、`AgentConsolePanels.ts`（新 dashboard 组件）。
+- **P192 · G115 · 工作目录命令 /cd /pwd（中）** `platform: src/ + agent RPC`
+  - 对照 Codex `/cd` `/pwd` `/cwd`：会话内切换/查看工作目录，TUI/browser 共用；需 agent 侧 session cwd 支持或 host 桥接。
+- **P193 · G116 · 会话恢复的权限/sandbox/delegation 模式一致性（中）** `platform: src/ + agent RPC`
+  - 对照 Codex #39153（resume/fork 恢复 permission profile）：openSession 时恢复 sandbox mode / delegation mode / Yolo 标记，而非回落默认值。
+- **P194 · G117 · 子代理失败可恢复 UX（中）** `platform: src/（跨平台）`
+  - 对照 opencode v1.18.20：worker/coding_task 失败时在消息流暴露可重试 task_id 与一键 retry 入口，替代仅日志可见。
+- **P195 · G118 · skills 注入 token budget 可配置（低-中）** `platform: agent/src/prompt`
+  - 对照 Codex #38978：skill catalog 注入系统提示的 token 预算可由 tui.json/config 配置，超预算按最近使用/优先级裁剪。
+- **P196 · G119 · 网络错误重试分类补全（低）** `platform: agent/src/models`
+  - 对照 opencode v1.18.20：补齐 `network_error`/`network-error` 变体与 capacity 类流错误的退避重试分类（P76 基础上扩展用例）。
+
+### 批次 B · TUI 渲染性能（P197–P198）
+
+- **P197 · G120 · transcript 视窗化渲染评估（中）** `platform: components/console + src/`
+  - 对照 Codex #39063/#39065：长 transcript 只渲染可视区行；先做基线测量再决定是否落地，遵守"数据变化驱动渲染"契约（禁止脏节点跳过方案）。
+- **P198 · G121 · 流式 code fence 不重复整块重渲 + 回放缓冲上限（中）** `platform: src/（跨平台）`
+  - 对照 Codex #39061/#39081：streaming markdown 的 code fence 增量合并策略；非活跃会话的回放缓冲按 delta 大小设上限防内存膨胀。
+
+### 批次 C · 工程质量专项（P199–P201）
+
+- **P199 · G122 · AgentConsoleComponent 按功能域拆分（高）** `platform: src/（跨平台，纯重构）`
+  - 目标：9171 LOC 单类拆为功能域模块（观测/diagnostics、review+git diff、coding_task 编排、模型/profile、键位处理、命令分发、SSH、语音、导出附件、设置持久化等），行为零变化。
+  - 约束：响应式绑定与模板引用路径不变；每批迁移后 agent-ui 全套测试保持绿。
+  - 拆分设计（2026-08-22 定稿）：沿用 DiagnosticsHandlers/ExportHandlers 既定模式——每域一个 `AgentConsole<域>Handlers.ts`：① 顶部 `ReviewHandlerContext` 式结构化 ctx 接口（state 结构子集 + appRpc + notify + 少量 getter/setter）；② 域内逻辑为以 ctx 为首参的导出自由函数（纯函数不收 ctx）；③ 组件保留同名薄委托方法（内部调用点/测试签名零改动），组件侧新增 `xxxCtx()` 私有构造器；④ 静态缓存随域迁移（如 review 注解 WeakMap）。依赖方向：Component → Handlers 单向，Handlers 禁止 import Component。
+  - 迁移批次与状态：
+    - [x] 批次 A · review+git diff → `AgentConsoleReviewHandlers.ts`（2026-08-22，组件 9039→8704 行，tsc 干净，agent-ui 682 passing EXIT=0）
+    - [ ] 批次 B · coding_task 编排（openCodingTaskReview/canCancel/Rollback/Retry/describeRollback/CheckpointSummary/buildLineageMetadata 等）
+    - [x] 批次 C · voice → `AgentConsoleVoiceHandlers.ts`（2026-08-22，组件 8704→8582 行，ctx 用真实 AudioCaptureAdapter/AudioPlaybackAdapter 类型 + 捕获状态 getter/setter 钩子，tsc 干净，682 passing EXIT=0）
+    - [x] 批次 D · model/profile 域 → `AgentConsoleModelHandlers.ts`（2026-08-22，组件 8582→8411 行；resolveInitialModelProfile/options 四方法/store+activation 十方法共 15 个函数逐字迁移；4 个可变状态字段经 getter/setter 钩子，options() 返回活引用保持原地变更语义；累计 9039→8411）
+    - [x] 批次 E · edit 模式入口 → `AgentConsoleEditModeHandlers.ts`（2026-08-22，组件 8411→8391 行；enterEditMode/startEditTarget/dismissEditMode 三方法逐字迁移；5 个可变字段经 getter/setter 钩子、EDIT_ESCAPE_WINDOW_MS 注入 ctx；累计 9039→8391）
+  - 会话小结（2026-08-22）：A/C/D/E 四批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→8391 行）。剩余批次建议顺序：settings（无编排耦合、体量次小）→ coding_task → keymap / handleCommand（编排域，必须最后）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
+    - [ ] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）
+    - [ ] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）
+    - [ ] 批次 F · handleCommand 大 switch 按域表化（最后做，风险最高）
+    - [ ] 附带清理：`AgentConsoleSshHandlers.ts` 为孤儿模块（index 导出但组件未接线、逻辑重复），接线或删除需先 diff 两份实现
+  - 后续批次沿用批次 A 流程：逐字迁移仅替换 this→ctx → python 行号手术替换组件方法体为委托 → tsc --noEmit → agent-ui 全套测试。
+- **P200 · G123 · PTY 三场景验收脚手架（中）** ✅ 已落地（2026-08-22）
+  - P190 遗留人工验收项：编写可复用 PTY 脚本（伪模型注入）+ 验收清单，覆盖长回复尾部问询可见 / keymap overlay / plan 实时勾选三场景。
+  - 交付：`packages/agents/acceptance/`（`fake_model_server.py` OpenAI 兼容假模型：120 行长文→todo pending→todo completed→收尾语，支持 SSE 流式；`run_acceptance.py` pty.fork 驱动 + ANSI 剥离视口断言 + 失败现场转储 artifacts；`CHECKLIST.md` 用法/env 旋钮/人工目检清单）。假模型已冒烟（healthz + turn1 内容断言）；全链路首跑需先 `cd packages/agents/agent-cli && npm run build`。
+  - 关键事实：CLI 环境覆盖 `AGENT_PROVIDER/AGENT_MODEL/AGENT_API_KEY/AGENT_BASE_URL`（agent-cli/src/config.ts:504-519）；which-key 开关键 `ctrl+alt+k`（AgentConsoleKeymap.ts:101）；todo 工具入参 `{todos:[{id,content,status}]}`（agent-tools/planning/todo.tool.ts）。
+- **P201 · G124 · 测试耗时与类型抑制治理（中）** 📊 数据结论已出；类型抑制已治理首批（2026-08-22）
+  - agent-ui runner 内 ~9s 耗时热点分析优化；18 处结构性 `as any` 逐处评估类型安全替代或记录保留理由。
+  - 耗时实测（全量单跑）：678 个计时用例执行合计 ~10.7s（runner 报表含启动开销 ~16-24s 波动）；**top20 慢用例合计 6.15s 占执行 58%**，其余 658 个仅 4.52s。热点全部为 ConsoleRenderer DOM 渲染类用例（榜首"expanding an older pinned message…"1265ms，其余 0.2–0.6s），共性是用例内真实 DOM 渲染 + 固定 settle 等待窗口。结论：优化属测试基建改造（统一 settle 收敛/事件驱动等待/fake timers），与行为验证置信度耦合，不在纯重构批次顺手改；后续单独立项。
+  - `as any` 治理（实测 42 处）：✅ 本轮修复 9 处——HttpAgentConsoleAppRpc 错误增强 ×5（`(error as any).code=` → `Object.assign(error, {code…})`、detail 探测 → `'error' in detail` 结构化收窄）；全局 process 访问 ×2 → 新增 `src/global-process.ts` 类型守卫 `getGlobalProcess()`（组件 cwd + module locale 两处接入）。
+  - 其余 ~33 处分类保留理由：①能力探测簇 ~13 处（SessionService listProjects/listThreads/getSessionState/getSessionGoal/setArchived/fork、approvalManager.setAutoApprove、runtime.getSessionArchetype）——运行时依赖 typeof 存在性检查，替换应随拆分批次 B-F 同域迁移引入"可选扩展接口"；②options 扩展字段簇 ~5 处（ui.console 的 workspace/connectors/authorizeConnector）——应在 AgentTuiConfig schema 层补声明后消除；③渲染层杂项 ~15 处（visibleMessages/reviewTask/fileAdapter.read/getToolDefinitions/rawMode 联合/multicaster handler 绑定等）——各自需局部结构类型或上游签名调整，逐项独立评估。
+
+---
+
 ## 回归基线
 
 截至 P190 收尾（2026-08-22）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过。
