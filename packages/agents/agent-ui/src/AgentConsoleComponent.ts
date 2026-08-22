@@ -56,6 +56,36 @@ import {
     openSummaryQualityRecords as openSummaryQualityRecordsFn
 } from './AgentConsoleDiagnosticsHandlers';
 import {
+    ReviewHandlerContext,
+    resolveReviewAnnotationsSessionId,
+    getReviewAnnotationsCacheKey,
+    saveReviewAnnotationsCacheToDisk,
+    restoreReviewAnnotationsCacheFromDisk,
+    restoreReviewAnnotationsCacheFromDiskForScope,
+    rememberVolatileReviewAnnotations,
+    getVolatileReviewAnnotations,
+    getReviewAnnotationsVolatileCache,
+    applyReviewAnnotationsForScope,
+    extractReviewAnnotations,
+    looksLikeReviewAnnotationMap,
+    parseWorktreeDiffArgs,
+    describeWorktreeDiffScope,
+    buildGitDiffReviewPrompt,
+    parseReviewFindingsFromText,
+    fetchGitDiffReview,
+    saveReviewFindings,
+    openGitDiffReviewPanel,
+    openGitDiffReview,
+    runGitDiffReviewAnalysis,
+    listReviewFindings,
+    showReviewRun,
+    openWorktreeDiff
+} from './AgentConsoleReviewHandlers';
+import { getGlobalProcess } from './global-process';
+import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
+import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
+import { dismissEditMode, enterEditMode, EditModeHandlerContext, startEditTarget } from './AgentConsoleEditModeHandlers';
+import {
     AgentConsoleApprovalRequest,
     AgentConsoleHealthItem,
     AgentConsolePendingAttachment,
@@ -178,7 +208,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
         '.pdf': 'application/pdf'
     };
-    protected static readonly REVIEW_ANNOTATIONS_VOLATILE_CACHE = new WeakMap<object, Map<string, Record<string, any>>>();
     protected static readonly SEARCH_SESSION_LIMIT = 100;
     protected static readonly SEARCH_CONCURRENCY = 6;
     protected static readonly EDIT_ESCAPE_WINDOW_MS = 400;
@@ -279,17 +308,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected resolveInitialModelProfile(): string {
-        const model = this.options.model;
-        if (model?.defaultProfile === 'strong') {
-            return 'strong';
-        }
-        if (model?.defaultProfile === 'flash' || model?.defaultProfile === 'fast') {
-            return 'flash';
-        }
-        if (model?.thinkingBudget || model?.reasoning) {
-            return 'strong';
-        }
-        return '';
+        return resolveInitialModelProfile(this.modelCtx());
     }
 
     protected isCancelPromptValue(value?: string): boolean {
@@ -576,162 +595,38 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
     }
 
+    private voiceCtx(): VoiceHandlerContext {
+        return {
+            state: this.state,
+            sessionService: this.sessionService,
+            audioCapture: this.audioCapture,
+            audioPlayback: this.audioPlayback,
+            notify: (message, duration) => this.notify(message, duration),
+            getCaptureSessionId: () => this.voiceCaptureSessionId,
+            setCaptureSessionId: value => { this.voiceCaptureSessionId = value; },
+            getCaptureFeed: () => this.voiceCaptureFeed,
+            setCaptureFeed: feed => { this.voiceCaptureFeed = feed; }
+        };
+    }
+
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Voice control is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        if (!sessionId) {
-            this.notify('No session selected. Start a session before using /voice.');
-            return true;
-        }
-        const sub = (arg || '').trim().split(/\s+/)[0];
-        switch (sub) {
-            case 'start': {
-                const result = await this.sessionService.startVoiceSession(
-                    sessionId,
-                    this.audioCapture ? { format: this.audioCapture.format } : undefined
-                );
-                if (result?.ok) {
-                    const captureError = await this.startVoiceCapture(sessionId);
-                    if (captureError) {
-                        await this.sessionService.cancelVoiceSession(sessionId).catch(() => undefined);
-                        this.notify(`Voice capture could not be started: ${captureError}`);
-                        return true;
-                    }
-                    this.notify(`Voice session started (${sessionId}). Speak into the capture device; run /voice stop to transcribe.`);
-                } else {
-                    this.notify(result?.error || 'Voice session could not be started.');
-                }
-                return true;
-            }
-            case 'stop': {
-                await this.stopVoiceCapture(false);
-                const result = await this.sessionService.endVoiceSession(sessionId);
-                if (result?.ok && result.transcribed) {
-                    const playbackError = await this.playVoiceReply(result);
-                    this.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
-                } else {
-                    this.notify(result?.error || (result?.transcribed ? `Transcribed: ${result.transcribed}` : 'Voice session produced no transcription.'));
-                }
-                return true;
-            }
-            case 'cancel': {
-                await this.stopVoiceCapture(true);
-                const result = await this.sessionService.cancelVoiceSession(sessionId);
-                if (result?.ok) {
-                    this.notify(result.cancelled ? 'Voice session cancelled.' : 'No voice session was active.');
-                } else {
-                    this.notify(result?.error || 'Voice session could not be cancelled.');
-                }
-                return true;
-            }
-            default: {
-                const status = await this.sessionService.getVoiceStatus(sessionId);
-                const available = status?.available ? 'available' : 'unavailable';
-                const missing = Array.isArray(status?.missing) && status.missing.length
-                    ? ` (missing ${status.missing.join(', ')})`
-                    : '';
-                const active = status?.active ? 'active' : 'inactive';
-                this.notify(`voice ${available}${missing} · session ${active}${Number(status?.bufferedBytes ?? 0) > 0 ? ` · buffered ${status.bufferedBytes} bytes` : ''}\nUsage: /voice start|stop|cancel|status`);
-                return true;
-            }
-        }
+        return handleVoiceCommand(this.voiceCtx(), arg);
     }
 
     protected async startVoiceCapture(sessionId: string): Promise<string | undefined> {
-        if (!this.audioCapture) {
-            return undefined;
-        }
-        if (!this.audioCapture.isAvailable) {
-            return this.audioCapture.missingComponents.join(', ') || 'capture adapter unavailable';
-        }
-        if (this.voiceCaptureSessionId) {
-            return `capture already active for ${this.voiceCaptureSessionId}`;
-        }
-        this.voiceCaptureSessionId = sessionId;
-        this.voiceCaptureFeed = Promise.resolve();
-        try {
-            await this.audioCapture.start({
-                onChunk: chunk => {
-                    this.voiceCaptureFeed = this.voiceCaptureFeed.then(async () => {
-                        if (this.voiceCaptureSessionId !== sessionId || !this.sessionService) {
-                            return;
-                        }
-                        const result = await this.sessionService.feedVoiceAudio(sessionId, chunk);
-                        if (result?.ok === false) {
-                            throw new Error(result.error || 'audio upload failed');
-                        }
-                    }).catch(error => {
-                        if (this.voiceCaptureSessionId === sessionId) {
-                            this.voiceCaptureSessionId = '';
-                            this.notify(`Voice capture error: ${error?.message ?? String(error)}`);
-                            void Promise.resolve(this.audioCapture?.cancel()).catch(() => undefined);
-                            void this.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
-                        }
-                    });
-                },
-                // Keep the session id until stopVoiceCapture drains queued chunks.
-                onEnd: () => undefined,
-                onError: error => {
-                    if (this.voiceCaptureSessionId === sessionId) {
-                        this.voiceCaptureSessionId = '';
-                        this.notify(`Voice capture error: ${error.message}`);
-                        void this.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
-                    }
-                }
-            }, { format: this.audioCapture.format, sampleRate: 16000, channels: 1 });
-            return undefined;
-        } catch (error: any) {
-            this.voiceCaptureSessionId = '';
-            return error?.message ?? String(error);
-        }
+        return startVoiceCapture(this.voiceCtx(), sessionId);
     }
 
     protected async stopVoiceCapture(cancel: boolean): Promise<void> {
-        if (!this.audioCapture || !this.voiceCaptureSessionId) {
-            return;
-        }
-        if (cancel) {
-            this.voiceCaptureSessionId = '';
-            await this.audioCapture.cancel();
-            return;
-        }
-        await this.audioCapture.stop();
-        await this.voiceCaptureFeed;
-        this.voiceCaptureSessionId = '';
+        return stopVoiceCapture(this.voiceCtx(), cancel);
     }
 
     protected async playVoiceReply(result: Record<string, any>): Promise<string | undefined> {
-        const audio = result?.audio;
-        if (!this.audioPlayback || !Array.isArray(audio?.chunks) || audio.chunks.length === 0) {
-            return undefined;
-        }
-        if (!this.audioPlayback.isAvailable) {
-            return this.audioPlayback.missingComponents.join(', ') || 'playback adapter unavailable';
-        }
-        try {
-            const chunks = audio.chunks.map((chunk: string) => this.decodeVoiceAudioChunk(chunk));
-            await this.audioPlayback.play(chunks, {
-                format: audio.format as AudioPlaybackFormat,
-                sampleRate: 16000,
-                channels: 1
-            });
-            return undefined;
-        } catch (error: any) {
-            return error?.message ?? String(error);
-        }
+        return playVoiceReply(this.voiceCtx(), result);
     }
 
     protected decodeVoiceAudioChunk(value: string): Uint8Array {
-        const runtimeBuffer = (globalThis as { Buffer?: { from(value: string, encoding: string): Uint8Array } }).Buffer;
-        if (runtimeBuffer) return new Uint8Array(runtimeBuffer.from(value, 'base64'));
-        if (typeof globalThis.atob === 'function') {
-            const binary = globalThis.atob(value);
-            return Uint8Array.from(binary, char => char.charCodeAt(0));
-        }
-        throw new Error('Base64 decoding is unavailable in this environment.');
+        return decodeVoiceAudioChunk(value);
     }
 
     /**
@@ -1154,26 +1049,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return lines.sort((a, b) => a.localeCompare(b));
     }
 
+    private reviewCtx(): ReviewHandlerContext {
+        return {
+            state: this.state,
+            appRpc: this.appRpc,
+            notify: (message, duration) => this.notify(message, duration),
+            activateToolForSession: (toolName, sessionId) => this.activateToolForSession(toolName, sessionId),
+            getOpenReviewRequestId: () => this.openReviewRequestId
+        };
+    }
+
     protected resolveReviewAnnotationsSessionId(): string {
-        return String(
-            this.state.reviewTask?.sourceSessionId
-            || this.state.reviewTask?.sessionId
-            || this.state.sessionId
-            || ''
-        ).trim();
+        return resolveReviewAnnotationsSessionId(this.reviewCtx());
     }
 
     protected getReviewAnnotationsCacheKey(): string | undefined {
-        const stateCacheKey = String(this.state.selectedReviewTaskCacheKey || '').trim();
-        if (stateCacheKey) {
-            return stateCacheKey;
-        }
-        const sessionId = this.resolveReviewAnnotationsSessionId();
-        const reviewTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
-        if (!sessionId || !reviewTaskId) {
-            return undefined;
-        }
-        return `${sessionId}:${reviewTaskId}`;
+        return getReviewAnnotationsCacheKey(this.reviewCtx());
     }
 
     protected async refreshSessions(currentSessionId = this.state.sessionId): Promise<void> {
@@ -2292,31 +2183,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {
-        const cacheKey = this.getReviewAnnotationsCacheKey();
-        const selectedTaskId = String(this.state.selectedReviewTaskId || this.state.reviewTask?.id || '').trim();
-        if (!cacheKey) {
-            return;
-        }
-        const annotations = selectedTaskId || cacheKey
-            ? this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {}
-            : {};
-        const snapshot = this.rememberVolatileReviewAnnotations(cacheKey, annotations);
-        if (!this.appRpc) {
-            return;
-        }
-        try {
-            await this.appRpc.request('review_annotations.save', {
-                sessionId: this.resolveReviewAnnotationsSessionId(),
-                cacheKey,
-                cache: snapshot
-            });
-        } catch {
-            // annotation persistence is best-effort
-        }
+        await saveReviewAnnotationsCacheToDisk(this.reviewCtx(), cache);
     }
 
     protected async restoreReviewAnnotationsCacheFromDisk(): Promise<void> {
-        return this.restoreReviewAnnotationsCacheFromDiskForScope();
+        await restoreReviewAnnotationsCacheFromDisk(this.reviewCtx());
     }
 
     protected async restoreReviewAnnotationsCacheFromDiskForScope(scope?: {
@@ -2325,68 +2196,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         sessionId?: string;
         requestId?: number;
     }): Promise<void> {
-        const cacheKey = String(scope?.cacheKey || this.getReviewAnnotationsCacheKey() || '').trim();
-        if (!cacheKey) {
-            return;
-        }
-        const sessionId = String(scope?.sessionId || this.resolveReviewAnnotationsSessionId() || '').trim();
-        const selectedTaskId = String(scope?.selectedTaskId || this.state.selectedReviewTaskId || '').trim();
-        if (scope?.requestId != null && scope.requestId !== this.openReviewRequestId) {
-            return;
-        }
-        const volatileAnnotations = this.getVolatileReviewAnnotations(cacheKey);
-        if (volatileAnnotations !== undefined) {
-            this.applyReviewAnnotationsForScope(cacheKey, selectedTaskId, volatileAnnotations);
-            return;
-        }
-        if (!this.appRpc) {
-            return;
-        }
-        try {
-            const cache = await this.appRpc.request('review_annotations.load', {
-                sessionId,
-                cacheKey
-            });
-            if (scope?.requestId != null && scope.requestId !== this.openReviewRequestId) {
-                return;
-            }
-            if (cache && (selectedTaskId || cacheKey)) {
-                const annotations = this.extractReviewAnnotations(cache, { cacheKey, selectedTaskId }) || {};
-                const snapshot = this.rememberVolatileReviewAnnotations(cacheKey, annotations);
-                this.applyReviewAnnotationsForScope(cacheKey, selectedTaskId, snapshot);
-            }
-        } catch {
-            // annotation restore is best-effort
-        }
+        await restoreReviewAnnotationsCacheFromDiskForScope(this.reviewCtx(), scope);
     }
 
     protected rememberVolatileReviewAnnotations(cacheKey: string, annotations?: Record<string, any> | null): Record<string, any> {
-        const snapshot = { ...(annotations || {}) };
-        this.getReviewAnnotationsVolatileCache(true)?.set(cacheKey, snapshot);
-        return { ...snapshot };
+        return rememberVolatileReviewAnnotations(this.reviewCtx(), cacheKey, annotations);
     }
 
     protected getVolatileReviewAnnotations(cacheKey: string): Record<string, any> | undefined {
-        const cache = this.getReviewAnnotationsVolatileCache();
-        if (!cache?.has(cacheKey)) {
-            return undefined;
-        }
-        const cached = cache.get(cacheKey);
-        return { ...(cached || {}) };
+        return getVolatileReviewAnnotations(this.reviewCtx(), cacheKey);
     }
 
     protected getReviewAnnotationsVolatileCache(create = false): Map<string, Record<string, any>> | undefined {
-        const owner = this.appRpc as object | null | undefined;
-        if (!owner) {
-            return undefined;
-        }
-        const existing = AgentConsoleComponent.REVIEW_ANNOTATIONS_VOLATILE_CACHE.get(owner);
-        if (existing || !create) {
-            return existing;
-        }
-        const cache = new Map<string, Record<string, any>>();
-        AgentConsoleComponent.REVIEW_ANNOTATIONS_VOLATILE_CACHE.set(owner, cache);
-        return cache;
+        return getReviewAnnotationsVolatileCache(this.reviewCtx(), create);
     }
 
     protected applyReviewAnnotationsForScope(
@@ -2394,44 +2216,18 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         selectedTaskId: string,
         annotations: Record<string, any>
     ): void {
-        const cacheEntryKey = cacheKey || selectedTaskId;
-        this.state.setAnnotationCache({
-            ...this.state.getAnnotationCache(),
-            ...(cacheEntryKey ? { [cacheEntryKey]: { ...annotations } } : {})
-        });
-        this.state.reviewFileAnnotations = { ...annotations };
+        applyReviewAnnotationsForScope(this.reviewCtx(), cacheKey, selectedTaskId, annotations);
     }
 
     protected extractReviewAnnotations(
         cache: Record<string, Record<string, any>> | Record<string, any> | null | undefined,
         scope: { cacheKey?: string; selectedTaskId?: string }
     ): Record<string, any> | undefined {
-        const cacheKey = String(scope.cacheKey || '').trim();
-        const selectedTaskId = String(scope.selectedTaskId || '').trim();
-        const direct = cache && typeof cache === 'object' && cacheKey
-            ? (cache as Record<string, any>)[cacheKey]
-            : undefined;
-        if (this.looksLikeReviewAnnotationMap(direct)) {
-            return direct;
-        }
-        const legacy = cache && typeof cache === 'object' && selectedTaskId
-            ? (cache as Record<string, any>)[selectedTaskId]
-            : undefined;
-        if (this.looksLikeReviewAnnotationMap(legacy)) {
-            return legacy;
-        }
-        if (this.looksLikeReviewAnnotationMap(cache)) {
-            return cache as Record<string, any>;
-        }
-        return undefined;
+        return extractReviewAnnotations(cache, scope);
     }
 
     protected looksLikeReviewAnnotationMap(value: unknown): value is Record<string, any> {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return false;
-        }
-        const entries = Object.values(value as Record<string, any>);
-        return entries.every(entry => !!entry && typeof entry === 'object' && typeof entry.status === 'string');
+        return looksLikeReviewAnnotationMap(value);
     }
 
     protected ensureWorkspaceMentionResolver(): void {
@@ -2705,7 +2501,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (configured) {
             return configured;
         }
-        return String((globalThis as any)?.process?.cwd?.() || '').trim();
+        return String(getGlobalProcess()?.cwd?.() || '').trim();
     }
 
     protected async openCodingTaskReview(
@@ -2774,75 +2570,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async openGitDiffReview(base?: string): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        const resolvedBase = String(base || '').trim() || 'HEAD';
-        const review = await this.fetchGitDiffReview(sessionId, resolvedBase);
-        if (!review) {
-            return true;
-        }
-        const files = Array.isArray(review.files) ? review.files : [];
-        if (!files.length) {
-            this.notify(`No changes to review against ${resolvedBase}.`);
-            return true;
-        }
-        this.openGitDiffReviewPanel(review, resolvedBase);
-        this.notify(`git diff ${resolvedBase}: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
-        return true;
+        return openGitDiffReview(this.reviewCtx(), base);
     }
 
     protected async openWorktreeDiff(args?: string): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Worktree diff is unavailable without app RPC.');
-            return true;
-        }
-        const parsed = this.parseWorktreeDiffArgs(args);
-        if (parsed.error) {
-            this.notify(parsed.error);
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        let review: Record<string, any> | null = null;
-        try {
-            await this.activateToolForSession('review_diff', sessionId);
-            const result = await this.appRpc.request('review.diff', {
-                sessionId,
-                scope: parsed.scope,
-                ...(parsed.paths.length ? { paths: parsed.paths } : {})
-            });
-            review = result?.review && typeof result.review === 'object' ? result.review : null;
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to gather the worktree diff.');
-            return true;
-        }
-        const files = Array.isArray(review?.files) ? review.files : [];
-        if (!files.length) {
-            this.notify(`No ${this.describeWorktreeDiffScope(parsed.scope)} changes.`);
-            return true;
-        }
-        const label = this.describeWorktreeDiffScope(parsed.scope);
-        const reviewTask = {
-            id: `worktree-diff:${parsed.scope}`,
-            title: `${label} diff`,
-            sourceSessionId: sessionId,
-            status: 'done',
-            metadata: { reviewMode: 'worktree-diff', scope: parsed.scope, paths: parsed.paths }
-        };
-        this.state.setSessionsFocused(false);
-        this.state.setTasksFocused(false);
-        this.state.setJobsFocused(false);
-        this.state.setToolsFocused(false);
-        this.state.setApprovalsFocused(false);
-        this.state.setMessagesFocused(false);
-        this.state.closeMessageDetail();
-        this.state.openReview(reviewTask, { diff: String(review?.diff || '') || null });
-        this.state.setNotice('');
-        this.state.setLastError('');
-        this.notify(`${label} diff: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
-        return true;
+        return openWorktreeDiff(this.reviewCtx(), args);
     }
 
     protected parseWorktreeDiffArgs(args?: string): {
@@ -2850,240 +2582,43 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         paths: string[];
         error?: string;
     } {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const flags = tokens.filter(token => token === '--staged' || token === '--unstaged' || token === '--untracked');
-        if (flags.length > 1) {
-            return { scope: 'working-tree', paths: [], error: 'Use only one of --staged, --unstaged, or --untracked.' };
-        }
-        const unknownFlag = tokens.find(token => token.startsWith('--') && !flags.some(flag => flag === token));
-        if (unknownFlag) {
-            return { scope: 'working-tree', paths: [], error: `Unknown /diff option: ${unknownFlag}` };
-        }
-        const scope = flags[0] ? flags[0].slice(2) as 'staged' | 'unstaged' | 'untracked' : 'working-tree';
-        return { scope, paths: tokens.filter(token => !token.startsWith('--')) };
+        return parseWorktreeDiffArgs(args);
     }
 
     protected describeWorktreeDiffScope(scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked'): string {
-        return scope === 'working-tree' ? 'Working tree' : scope[0].toUpperCase() + scope.slice(1);
+        return describeWorktreeDiffScope(scope);
     }
 
     protected async runGitDiffReviewAnalysis(base?: string): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        const resolvedBase = String(base || '').trim() || 'HEAD';
-        const review = await this.fetchGitDiffReview(sessionId, resolvedBase);
-        if (!review) {
-            return true;
-        }
-        const files = Array.isArray(review.files) ? review.files : [];
-        const diff = String(review.diff || '');
-        if (!files.length || !diff.trim()) {
-            this.notify(`No changes to review against ${resolvedBase}.`);
-            return true;
-        }
-        this.notify(`Running review analysis against ${resolvedBase}...`);
-        let content = '';
-        try {
-            const turn = await this.appRpc.request('run.turn', {
-                sessionId,
-                input: this.buildGitDiffReviewPrompt(resolvedBase, files, diff)
-            });
-            content = String(turn?.message?.content || '');
-        } catch (error: any) {
-            this.notify(error?.message || 'The review analysis turn failed.');
-            return true;
-        }
-        const findings = this.parseReviewFindingsFromText(content);
-        if (!findings.length) {
-            this.notify('Review produced no parseable findings.');
-            this.openGitDiffReviewPanel(review, resolvedBase);
-            return true;
-        }
-        const saved = await this.saveReviewFindings(sessionId, {
-            base: resolvedBase,
-            commitSha: typeof review.commitSha === 'string' && review.commitSha.trim() ? review.commitSha.trim() : undefined,
-            files,
-            diffSummary: String(review.stats || '').trim() || undefined,
-            findings
-        });
-        if (saved) {
-            this.notify(`${findings.length} finding${findings.length === 1 ? '' : 's'} saved${saved.id ? ` (${saved.id})` : ''}.`);
-        }
-        this.openGitDiffReviewPanel(review, resolvedBase);
-        return true;
+        return runGitDiffReviewAnalysis(this.reviewCtx(), base);
     }
 
     protected async listReviewFindings(commit?: string): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        try {
-            const result = await this.appRpc.request('review.list', {
-                sessionId,
-                ...(commit ? { commit } : {})
-            });
-            const runs = Array.isArray(result?.runs) ? result.runs : [];
-            if (!runs.length) {
-                this.notify(commit ? `No review runs found for commit ${commit}.` : 'No review runs saved.');
-                return true;
-            }
-            for (const run of runs) {
-                const fileCount = Array.isArray(run.files) ? run.files.length : 0;
-                const findingCount = Array.isArray(run.findings) ? run.findings.length : 0;
-                const sha = String(run.commitSha || '').slice(0, 12);
-                this.notify(`[${run.id}] ${run.base} · ${fileCount} file${fileCount === 1 ? '' : 's'} · ${findingCount} finding${findingCount === 1 ? '' : 's'}${sha ? ` · ${sha}` : ''}`);
-            }
-            return true;
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to list review runs.');
-            return true;
-        }
+        return listReviewFindings(this.reviewCtx(), commit);
     }
 
     protected async showReviewRun(id: string | undefined): Promise<boolean> {
-        const resolvedId = String(id || '').trim();
-        if (!resolvedId) {
-            this.notify('Review run id is required. Usage: /review show <id>');
-            return true;
-        }
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return true;
-        }
-        const sessionId = this.state.sessionId;
-        try {
-            const result = await this.appRpc.request('review.get', { sessionId, id: resolvedId });
-            const run = result?.run;
-            if (!run) {
-                this.notify(`Review run "${resolvedId}" was not found.`);
-                return true;
-            }
-            const findings = Array.isArray(run.findings) ? run.findings : [];
-            if (!findings.length) {
-                this.notify(`Review run "${resolvedId}" (${run.base}) has no findings.`);
-                return true;
-            }
-            this.notify(`Review run "${resolvedId}" (${run.base}) · ${findings.length} finding${findings.length === 1 ? '' : 's'}:`);
-            for (const finding of findings) {
-                const category = String(finding?.category || 'suggestion');
-                const severity = String(finding?.severity || 'info');
-                const file = String(finding?.anchor?.file || '?');
-                const line = typeof finding?.anchor?.line === 'number' ? `:${finding.anchor.line}` : '';
-                this.notify(`[${category}/${severity}] ${file}${line} ${String(finding?.summary || '')}`);
-                if (String(finding?.suggestion || '').trim()) {
-                    this.notify(`  fix: ${String(finding.suggestion).trim()}`);
-                }
-            }
-            return true;
-        } catch (error: any) {
-            this.notify(error?.message || `Failed to load review run "${resolvedId}".`);
-            return true;
-        }
+        return showReviewRun(this.reviewCtx(), id);
     }
 
     protected buildGitDiffReviewPrompt(base: string, files: string[], diff: string): string {
-        return [
-            `Review the following git diff against ${base}.`,
-            `Changed files (${files.length}): ${files.join(', ')}`,
-            'Analyze the diff and produce a JSON array of findings. Each finding must be an object with:',
-            '- category: "correctness" | "risk" | "suggestion"',
-            '- severity: "error" | "warning" | "info"',
-            '- summary: short one-line description',
-            '- detail: optional longer explanation',
-            '- anchor: optional { "file": string, "line"?: number, "endLine"?: number } pointing into the diff',
-            '- suggestion: optional concrete fix recommendation',
-            'Return only the JSON array, no markdown fences, no prose.',
-            '',
-            '```diff',
-            diff,
-            '```'
-        ].join('\n');
+        return buildGitDiffReviewPrompt(base, files, diff);
     }
 
     protected parseReviewFindingsFromText(text: string): Record<string, any>[] {
-        const trimmed = String(text || '').trim();
-        if (!trimmed) {
-            return [];
-        }
-        const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        const candidate = fenced ? fenced[1].trim() : trimmed;
-        const start = candidate.indexOf('[');
-        const end = candidate.lastIndexOf(']');
-        if (start < 0 || end <= start) {
-            return [];
-        }
-        try {
-            const parsed = JSON.parse(candidate.slice(start, end + 1));
-            return Array.isArray(parsed)
-                ? parsed.filter((entry): entry is Record<string, any> => !!entry && typeof entry === 'object')
-                : [];
-        } catch {
-            return [];
-        }
+        return parseReviewFindingsFromText(text);
     }
 
     protected async saveReviewFindings(sessionId: string, run: Record<string, any>): Promise<Record<string, any> | null> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return null;
-        }
-        try {
-            const result = await this.appRpc.request('review.save', { sessionId, run });
-            return result?.run ?? result ?? null;
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to save the review run.');
-            return null;
-        }
+        return saveReviewFindings(this.reviewCtx(), sessionId, run);
     }
 
     protected openGitDiffReviewPanel(review: Record<string, any>, base: string): void {
-        const sessionId = this.state.sessionId;
-        const reviewTask = {
-            id: `git-diff:${base}`,
-            title: `git diff ${base}`,
-            sourceSessionId: sessionId,
-            status: 'done',
-            metadata: { reviewMode: 'git-diff', base }
-        };
-        this.state.setSessionsFocused(false);
-        this.state.setTasksFocused(false);
-        this.state.setJobsFocused(false);
-        this.state.setToolsFocused(false);
-        this.state.setApprovalsFocused(false);
-        this.state.setMessagesFocused(false);
-        this.state.closeMessageDetail();
-        this.state.openReview(reviewTask, { diff: String(review.diff || '') || null });
-        this.state.setNotice('');
-        this.state.setLastError('');
+        openGitDiffReviewPanel(this.reviewCtx(), review, base);
     }
 
     protected async fetchGitDiffReview(sessionId: string, base: string): Promise<Record<string, any> | null> {
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return null;
-        }
-        try {
-            await this.activateToolForSession('review_diff', sessionId);
-        } catch {
-            // Activation may fail when the tool is not registered; the diff
-            // RPC below then surfaces the precise error.
-        }
-        try {
-            const result = await this.appRpc.request('review.diff', { sessionId, base });
-            if (!result || typeof result !== 'object' || !result.review) {
-                this.notify(`Failed to gather the git diff against ${base}.`);
-                return null;
-            }
-            return result.review as Record<string, any>;
-        } catch (error: any) {
-            this.notify(error?.message || `Failed to gather the git diff against ${base}.`);
-            return null;
-        }
+        return fetchGitDiffReview(this.reviewCtx(), sessionId, base);
     }
 
     protected describeCodingTaskRollback(task: any): string {
@@ -7494,58 +7029,37 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return images;
     }
 
+    private editCtx(): EditModeHandlerContext {
+        return {
+            state: this.state,
+            notify: (message, duration) => this.notify(message, duration),
+            editEscapeWindowMs: AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS,
+            getEditableUserMessages: () => this.getEditableUserMessages(),
+            extractEditableMessageText: target => this.extractEditableMessageText(target),
+            getEditableImageParts: target => this.getEditableImageParts(target),
+            getTargetMessageId: () => this.editTargetMessageId,
+            setTargetMessageId: value => { this.editTargetMessageId = value; },
+            getLastSessionMessageId: () => this.lastEditSessionMessageId,
+            setLastSessionMessageId: value => { this.lastEditSessionMessageId = value; },
+            getDismissedAt: () => this.editDismissedAt,
+            setDismissedAt: value => { this.editDismissedAt = value; },
+            getDraftBefore: () => this.editDraftBefore,
+            setDraftBefore: value => { this.editDraftBefore = value; },
+            getAttachmentsBefore: () => this.editAttachmentsBefore,
+            setAttachmentsBefore: value => { this.editAttachmentsBefore = value; }
+        };
+    }
+
     protected async enterEditMode(): Promise<boolean> {
-        const editable = this.getEditableUserMessages();
-        if (!editable.length) {
-            this.notify('No user message to edit.');
-            return true;
-        }
-        const recentDismiss = this.editDismissedAt > 0
-            && (Date.now() - this.editDismissedAt) <= AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS;
-        if (recentDismiss && this.lastEditSessionMessageId) {
-            const index = editable.findIndex(message => message.id === this.lastEditSessionMessageId);
-            if (index > 0) {
-                this.startEditTarget(editable[index - 1]);
-                return true;
-            }
-            this.notify('Already at the first user message.');
-            return true;
-        }
-        this.startEditTarget(editable[editable.length - 1]);
-        return true;
+        return enterEditMode(this.editCtx());
     }
 
     protected startEditTarget(target: AgentMessage): void {
-        this.editAttachmentsBefore = this.state.pendingAttachments.slice();
-        this.editDraftBefore = this.state.input;
-        this.editTargetMessageId = target.id;
-        const text = this.extractEditableMessageText(target);
-        this.state.setInput(text, text.length);
-        const imageParts = this.getEditableImageParts(target);
-        if (imageParts.length) {
-            this.state.setPendingAttachments(imageParts.map((part, index) => ({
-                id: `edit-${target.id}-${index}`,
-                kind: 'image',
-                path: part.imageUrl,
-                name: part.name || `image-${index + 1}`,
-                mediaType: part.mediaType,
-                imageUrl: part.imageUrl
-            })));
-        } else {
-            this.state.clearPendingAttachments();
-        }
-        this.notify(`Editing message ${target.id.slice(0, 8)}… Enter to submit, Esc cancels, Esc,Esc for previous.`);
+        startEditTarget(this.editCtx(), target);
     }
 
     protected dismissEditMode(): boolean {
-        if (!this.editTargetMessageId) return true;
-        this.lastEditSessionMessageId = this.editTargetMessageId;
-        this.editDismissedAt = Date.now();
-        this.editTargetMessageId = '';
-        this.state.setInput(this.editDraftBefore, this.editDraftBefore.length);
-        this.state.setPendingAttachments(this.editAttachmentsBefore);
-        this.notify('Edit cancelled — draft restored.');
-        return true;
+        return dismissEditMode(this.editCtx());
     }
 
     protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<boolean> {
@@ -8032,87 +7546,42 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.toolRegistry.getToolDefinitions(sessionId) as any[];
     }
 
-    protected getModelProfileOptions(): AgentConsoleSelectOption[] {
-        const model = this.options.model as AgentUiResolvedModelProfile | undefined;
-        const profiles = model?.profiles || {};
-        const entries = Object.entries(profiles).filter(([, profile]) => !!profile);
-        if (!entries.length) {
-            return [];
-        }
-        const currentProfile = String(model?.defaultProfile || this.state.modelProfile || '').trim();
-        return entries.map(([name, profile]) => {
-            const merged = this.resolveModelProfileConfig(name);
-            const selected = currentProfile === name;
-            return {
-                label: selected ? `${name} [current]` : name,
-                value: name,
-                description: [merged.provider, merged.model].filter(Boolean).join(' / '),
-                detail: [
-                    `Profile: ${name}`,
-                    `Provider: ${merged.provider || '-'}`,
-                    `Model: ${merged.model || '-'}`,
-                    merged.baseUrl ? `Base URL: ${merged.baseUrl}` : '',
-                    profile?.reasoning != null ? `Reasoning: ${profile.reasoning ? 'on' : 'off'}` : '',
-                    profile?.thinkingBudget != null ? `Thinking budget: ${profile.thinkingBudget}` : ''
-                ].filter(Boolean).join('\n')
-            };
-        });
-    }
-
-    protected async loadModelProfileOptions(): Promise<AgentConsoleSelectOption[]> {
-        if (this.appRpc) {
-            const profiles = await this.appRpc.request('model.list');
-            return Array.isArray(profiles)
-                ? profiles.map((profile: any) => ({
-                    label: profile?.selected ? `${profile.name} [current]` : String(profile?.name || ''),
-                    value: String(profile?.name || ''),
-                    description: [profile?.provider, profile?.model].filter(Boolean).join(' / '),
-                    detail: [
-                        `Profile: ${profile?.name || '-'}`,
-                        `Provider: ${profile?.provider || '-'}`,
-                        `Model: ${profile?.model || '-'}`,
-                        profile?.baseUrl ? `Base URL: ${profile.baseUrl}` : '',
-                        profile?.reasoning != null ? `Reasoning: ${profile.reasoning ? 'on' : 'off'}` : '',
-                        profile?.thinkingBudget != null ? `Thinking budget: ${profile.thinkingBudget}` : ''
-                        ,profile?.capabilities ? `Capabilities: ${Object.entries(profile.capabilities).filter(([, enabled]) => enabled === true || enabled === 'full' || enabled === 'partial').map(([name]) => name).join(', ')}` : ''
-                    ].filter(Boolean).join('\n')
-                })).filter((item: AgentConsoleSelectOption) => !!item.value)
-                : [];
-        }
-        return this.getModelProfileOptions();
-    }
-
-    protected resolveModelProfileConfig(profileName: string): AgentUiResolvedModelProfile {
-        const model = (this.options.model || {}) as AgentUiResolvedModelProfile;
-        const baseHeaders = model.headers ? { ...model.headers } : undefined;
-        const profile = model.profiles?.[profileName] || {} as AgentUiResolvedModelProfile;
+    private modelCtx(): ModelHandlerContext {
         return {
-            ...model,
-            ...profile,
-            headers: {
-                ...(baseHeaders || {}),
-                ...(profile.headers || {})
-            }
+            state: this.state,
+            appRpc: this.appRpc,
+            options: () => this.options,
+            modelStore: this.modelStore,
+            notify: (message, duration) => this.notify(message, duration),
+            select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
+            updateTerminalTitle: () => this.updateTerminalTitle(),
+            persistSettings: patch => this.persistSettings(patch),
+            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
+            getFavorites: () => this.modelFavorites,
+            setFavorites: value => { this.modelFavorites = value; },
+            getRecents: () => this.modelRecents,
+            setRecents: value => { this.modelRecents = value; },
+            getReasoningEffort: () => this.modelReasoningEffort,
+            setReasoningEffort: value => { this.modelReasoningEffort = value; },
+            nextActivateRequestId: () => ++this.activateModelRequestId,
+            peekActivateRequestId: () => this.activateModelRequestId
         };
     }
 
+    protected getModelProfileOptions(): AgentConsoleSelectOption[] {
+        return getModelProfileOptions(this.modelCtx());
+    }
+
+    protected async loadModelProfileOptions(): Promise<AgentConsoleSelectOption[]> {
+        return loadModelProfileOptions(this.modelCtx());
+    }
+
+    protected resolveModelProfileConfig(profileName: string): AgentUiResolvedModelProfile {
+        return resolveModelProfileConfig(this.modelCtx(), profileName);
+    }
+
     protected async openModelSwitcher(): Promise<void> {
-        const options = await this.loadModelProfileOptions();
-        if (!options.length) {
-            this.notify('No model profiles configured.');
-            return;
-        }
-        const currentProfile = String(
-            this.appRpc ? this.state.modelProfile : (this.options.model?.defaultProfile || this.state.modelProfile || '')
-        ).trim();
-        const selected = await this.select(
-            'Model profiles',
-            options,
-            Math.max(0, options.findIndex(item => item.value === currentProfile || item.label.startsWith(`${currentProfile} [`)))
-        );
-        if (selected) {
-            await this.activateModelProfile(selected);
-        }
+        return openModelSwitcher(this.modelCtx());
     }
 
     protected async runInitCommand(args: string): Promise<void> {
@@ -8842,160 +8311,43 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async activateModelProfile(profileName: string): Promise<void> {
-        const name = String(profileName || '').trim();
-        if (!name) {
-            return;
-        }
-        if (this.appRpc) {
-            const requestId = ++this.activateModelRequestId;
-            const sessionId = this.state.sessionId;
-            const result = await this.appRpc.request('model.activate', { sessionId, name });
-            if (requestId !== this.activateModelRequestId || sessionId !== this.state.sessionId) {
-                return;
-            }
-                this.state.setModelProfile(String(result?.modelProfile || name));
-                if (result?.provider) {
-                    this.state.setProvider(String(result.provider));
-                }
-                if (result?.model) {
-                    this.state.setModel(String(result.model));
-                }
-            this.updateTerminalTitle();
-            this.notify(`Switched model profile to ${name}.`);
-            await this.recordRecentModel(String(result?.modelProfile || name));
-            return;
-        }
-        const profiles = this.options.model?.profiles || {};
-        if (!profiles[name]) {
-            this.notify(`Unknown model profile: ${name}`);
-            return;
-        }
-        this.options.model = this.options.model || {};
-        this.options.model.defaultProfile = name;
-        const resolved = this.resolveModelProfileConfig(name);
-            this.state.setModelProfile(name);
-            if (resolved.provider) {
-                this.state.setProvider(resolved.provider);
-            }
-            if (resolved.model) {
-                this.state.setModel(resolved.model);
-            }
-        this.updateTerminalTitle();
-        this.notify(`Switched model profile to ${name}.`);
-        await this.recordRecentModel(name);
+        return activateModelProfile(this.modelCtx(), profileName);
     }
 
     protected async restoreModelStore(): Promise<void> {
-        const data = await this.modelStore?.load(this.resolveHistoryWorkspace());
-        this.modelFavorites = data?.favorites || [];
-        this.modelRecents = data?.recents || [];
-        this.modelReasoningEffort = this.options.model?.reasoningEffort || 'medium';
+        return restoreModelStore(this.modelCtx());
     }
 
     protected async persistModelStore(): Promise<void> {
-        await this.modelStore?.save(this.resolveHistoryWorkspace(), {
-            favorites: this.modelFavorites,
-            recents: this.modelRecents
-        });
+        return persistModelStore(this.modelCtx());
     }
 
     protected async toggleModelFavorite(): Promise<void> {
-        const name = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
-        if (!name) {
-            this.notify('No active model profile to favorite.');
-            return;
-        }
-        const index = this.modelFavorites.indexOf(name);
-        if (index >= 0) {
-            this.modelFavorites.splice(index, 1);
-            await this.persistModelStore();
-            this.notify(`Removed ${name} from favorites.`);
-        } else {
-            this.modelFavorites.push(name);
-            await this.persistModelStore();
-            this.notify(`Added ${name} to favorites.`);
-        }
+        return toggleModelFavorite(this.modelCtx());
     }
 
     protected async cycleRecentModel(delta: 1 | -1): Promise<void> {
-        if (!this.modelRecents.length) {
-            this.notify('No recent models yet.');
-            return;
-        }
-        const current = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
-        let index = this.modelRecents.indexOf(current);
-        if (index < 0) {
-            index = delta > 0 ? -1 : 0;
-        }
-        const next = this.modelRecents[(index + delta + this.modelRecents.length) % this.modelRecents.length];
-        await this.activateModelProfile(next);
+        return cycleRecentModel(this.modelCtx(), delta);
     }
 
     protected async cycleModelVariant(): Promise<void> {
-        const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
-        const current = this.modelReasoningEffort;
-        const next = tiers[(tiers.indexOf(current) + 1) % tiers.length];
-        await this.setModelReasoningEffort(next);
+        return cycleModelVariant(this.modelCtx());
     }
 
     protected async setModelReasoningEffort(next: 'low' | 'medium' | 'high'): Promise<void> {
-        if (this.appRpc) {
-            const sessionId = this.state.sessionId;
-            const name = String(this.state.modelProfile || this.options.model?.defaultProfile || '').trim();
-            if (!name) {
-                this.notify('No active model profile to cycle variant for.');
-                return;
-            }
-            const requestId = ++this.activateModelRequestId;
-            const result = await this.appRpc.request('model.activate', { sessionId, name, reasoningEffort: next });
-            if (requestId !== this.activateModelRequestId || sessionId !== this.state.sessionId) {
-                return;
-            }
-            const returned = String(result?.reasoningEffort || '');
-            if (returned === 'low' || returned === 'medium' || returned === 'high') {
-                next = returned;
-            }
-        }
-        this.modelReasoningEffort = next;
-        this.options.model = this.options.model || {};
-        this.options.model.reasoningEffort = next;
-        await this.persistSettings({ thinkingLevel: next });
-        this.notify(`Reasoning effort: ${this.modelReasoningEffort}.`);
+        return setModelReasoningEffort(this.modelCtx(), next);
     }
 
     protected async recordRecentModel(name: string): Promise<void> {
-        const trimmed = String(name || '').trim();
-        if (!trimmed) {
-            return;
-        }
-        this.modelRecents = [trimmed, ...this.modelRecents.filter((item) => item !== trimmed)].slice(0, 10);
-        await this.persistModelStore();
+        return recordRecentModel(this.modelCtx(), name);
     }
 
     protected async queueNextTurnModelProfile(profileName: string): Promise<void> {
-        const name = String(profileName || '').trim();
-        if (!name) {
-            this.notify('Usage: /model once <profile>.');
-            return;
-        }
-        if (!this.appRpc) {
-            const profiles = this.options.model?.profiles || {};
-            if (!profiles[name]) {
-                this.notify(`Unknown model profile: ${name}`);
-                return;
-            }
-        }
-        this.state.setOneShotModelProfile(name);
-        this.notify(`Queued model profile ${name} for the next prompt.`);
+        return queueNextTurnModelProfile(this.modelCtx(), profileName);
     }
 
     protected consumePendingTurnModelProfile(): string | undefined {
-        const profile = String(this.state.oneShotModelProfile || '').trim();
-        if (!profile) {
-            return undefined;
-        }
-        this.state.setOneShotModelProfile('');
-        return profile;
+        return consumePendingTurnModelProfile(this.modelCtx());
     }
 
     protected async activateTool(name: string): Promise<boolean> {
