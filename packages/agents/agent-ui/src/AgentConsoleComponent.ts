@@ -86,6 +86,39 @@ import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCa
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, startEditTarget } from './AgentConsoleEditModeHandlers';
 import {
+    CodingTaskHandlerContext,
+    resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
+    captureTaskViewContext as captureTaskViewContextFn,
+    isTaskViewContextCurrent as isTaskViewContextCurrentFn,
+    resolveFocusedCodingTask as resolveFocusedCodingTaskFn,
+    describeCodingTaskRollback as describeCodingTaskRollbackFn,
+    describeCodingTaskCheckpointSummary as describeCodingTaskCheckpointSummaryFn,
+    canCancelCodingTask as canCancelCodingTaskFn,
+    canRollbackCodingTask as canRollbackCodingTaskFn,
+    canRetryCodingTask as canRetryCodingTaskFn,
+    resolveCodingTaskRetrySourceTaskId as resolveCodingTaskRetrySourceTaskIdFn,
+    buildCodingTaskLineageMetadata as buildCodingTaskLineageMetadataFn,
+    buildCodingTaskChoice as buildCodingTaskChoiceFn,
+    orderCodingTasksByLineage as orderCodingTasksByLineageFn,
+    buildCodingTaskSelectOption as buildCodingTaskSelectOptionFn,
+    loadCodingTasks as loadCodingTasksFn,
+    selectCodingTask as selectCodingTaskFn,
+    openCodingTaskReview as openCodingTaskReviewFn,
+    openCodingTaskReviewSelector as openCodingTaskReviewSelectorFn,
+    openThreadCodingTaskReviewSelector as openThreadCodingTaskReviewSelectorFn,
+    openCodingTaskInspector as openCodingTaskInspectorFn,
+    rollbackCodingTask as rollbackCodingTaskFn,
+    retryFailedCodingTask as retryFailedCodingTaskFn,
+    cancelCodingTask as cancelCodingTaskFn,
+    refreshScheduledTasks as refreshScheduledTasksFn,
+    openScheduledJobsDashboard as openScheduledJobsDashboardFn,
+    toggleScheduledTask as toggleScheduledTaskFn,
+    pauseScheduledTask as pauseScheduledTaskFn,
+    resumeScheduledTask as resumeScheduledTaskFn,
+    cancelScheduledTask as cancelScheduledTaskFn,
+    recoverScheduledTask as recoverScheduledTaskFn
+} from './AgentConsoleCodingTaskHandlers';
+import {
     AgentConsoleApprovalRequest,
     AgentConsoleHealthItem,
     AgentConsolePendingAttachment,
@@ -1059,6 +1092,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    private codingTaskCtx(): CodingTaskHandlerContext {
+        return {
+            state: this.state,
+            appRpc: this.appRpc,
+            scheduler: this.scheduler,
+            notify: (message, duration) => this.notify(message, duration),
+            select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
+            getTaskViewContextVersion: () => this.taskViewContextVersion,
+            bumpTaskViewContextVersion: () => ++this.taskViewContextVersion,
+            getOpenReviewRequestId: () => this.openReviewRequestId,
+            bumpOpenReviewRequestId: () => ++this.openReviewRequestId,
+            resolveProjectSessionIdsFor: (sessionId) => this.resolveProjectSessionIdsFor(sessionId),
+            resolveThreadSessionIdsFor: (sessionId) => this.resolveThreadSessionIdsFor(sessionId),
+            restoreReviewAnnotationsCacheFromDiskForScope: (scope) => this.restoreReviewAnnotationsCacheFromDiskForScope(scope)
+        };
+    }
+
     protected resolveReviewAnnotationsSessionId(): string {
         return resolveReviewAnnotationsSessionId(this.reviewCtx());
     }
@@ -1494,29 +1544,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected resolveCodingTaskSessionId(task?: Record<string, any> | null): string {
-        const sessionId = String(task?.sourceSessionId || task?.sessionId || '').trim();
-        return sessionId || this.state.sessionId;
+        return resolveCodingTaskSessionIdFn(this.codingTaskCtx(), task);
     }
 
     protected captureTaskViewContext(): { sessionId: string; version: number } {
-        return {
-            sessionId: this.state.sessionId,
-            version: this.taskViewContextVersion
-        };
+        return captureTaskViewContextFn(this.codingTaskCtx());
     }
 
     protected isTaskViewContextCurrent(context: { sessionId: string; version: number }): boolean {
-        return context.sessionId === this.state.sessionId && context.version === this.taskViewContextVersion;
+        return isTaskViewContextCurrentFn(this.codingTaskCtx(), context);
     }
 
     protected resolveFocusedCodingTask(): Record<string, any> | null {
-        if (this.state.reviewOpen && this.state.reviewTask) {
-            return this.state.reviewTask;
-        }
-        if (this.state.tasksFocused && this.state.selectedTask) {
-            return this.state.selectedTask;
-        }
-        return null;
+        return resolveFocusedCodingTaskFn(this.codingTaskCtx());
     }
 
     protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
@@ -2509,64 +2549,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         taskRecord?: Record<string, any> | null,
         options?: { returnFalseOnStale?: boolean }
     ): Promise<boolean> {
-        const resolvedTaskId = String(taskId || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Review task id is required.');
-            return false;
-        }
-        if (!this.appRpc) {
-            this.notify('Review is unavailable without app RPC.');
-            return false;
-        }
-        const taskViewContextVersion = ++this.taskViewContextVersion;
-        const requestId = ++this.openReviewRequestId;
-
-        const resolvedTask = taskRecord ?? this.state.taskRecords.find(task => task?.id === resolvedTaskId) ?? null;
-        const sessionId = this.resolveCodingTaskSessionId(resolvedTask);
-        const [loadedTask, diffResult] = await Promise.all([
-            resolvedTask ? Promise.resolve(resolvedTask) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
-            this.appRpc.request('coding_task.diff', { sessionId, taskId: resolvedTaskId })
-        ]);
-        if (requestId !== this.openReviewRequestId || taskViewContextVersion !== this.taskViewContextVersion) {
-            return options?.returnFalseOnStale ? false : true;
-        }
-
-        if (!loadedTask && !diffResult?.diff && !Array.isArray(diffResult?.workers)) {
-            this.notify(`Coding task "${resolvedTaskId}" was not found.`);
-            return false;
-        }
-
-        const reviewTask = loadedTask || {
-            id: resolvedTaskId,
-            title: resolvedTaskId,
-            sourceSessionId: sessionId,
-            status: 'unknown',
-            metadata: {
-                executionMode: diffResult?.executionMode ?? null
-            }
-        };
-
-            this.state.setSessionsFocused(false);
-            this.state.setTasksFocused(false);
-            this.state.setJobsFocused(false);
-            this.state.setToolsFocused(false);
-            this.state.setApprovalsFocused(false);
-            this.state.setMessagesFocused(false);
-            this.state.closeMessageDetail();
-            this.state.openReview(reviewTask, {
-                diff: diffResult?.diff ?? null,
-                workers: Array.isArray(diffResult?.workers) ? diffResult.workers : [],
-                executionMode: diffResult?.executionMode ?? null
-            });
-            this.state.setNotice('');
-            this.state.setLastError('');
-        await this.restoreReviewAnnotationsCacheFromDiskForScope({
-            cacheKey: `${String(reviewTask?.sourceSessionId || reviewTask?.sessionId || sessionId || '').trim()}:${resolvedTaskId}`.replace(/^:/, ''),
-            selectedTaskId: resolvedTaskId,
-            sessionId: String(reviewTask?.sourceSessionId || reviewTask?.sessionId || sessionId || '').trim(),
-            requestId
-        });
-        return true;
+        return openCodingTaskReviewFn(this.codingTaskCtx(), taskId, taskRecord, options);
     }
 
     protected async openGitDiffReview(base?: string): Promise<boolean> {
@@ -2622,62 +2605,27 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected describeCodingTaskRollback(task: any): string {
-        const rollback = task?.result?.rollback;
-        if (rollback?.available === true) {
-            return rollback.mode ? `rollback ready (${rollback.mode})` : 'rollback ready';
-        }
-        if (rollback?.rolledBackAt) {
-            return rollback.mode ? `rolled back (${rollback.mode})` : 'rolled back';
-        }
-        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
-        const availableCheckpoint = checkpoints.find((entry: any) => entry?.status === 'available');
-        if (availableCheckpoint) {
-            return availableCheckpoint.mode ? `rollback ready (${availableCheckpoint.mode})` : 'rollback ready';
-        }
-        return 'rollback unavailable';
+        return describeCodingTaskRollbackFn(task);
     }
 
     protected describeCodingTaskCheckpointSummary(task: any): string | undefined {
-        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
-        if (!checkpoints.length) {
-            return undefined;
-        }
-        const available = checkpoints.filter((entry: any) => entry?.status === 'available').length;
-        const applied = checkpoints.filter((entry: any) => entry?.status === 'applied').length;
-        const invalidated = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
-        return `${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`;
+        return describeCodingTaskCheckpointSummaryFn(task);
     }
 
     protected canCancelCodingTask(task: any): boolean {
-        const status = String(task?.status || '').trim();
-        return status === 'planned' || status === 'running';
+        return canCancelCodingTaskFn(task);
     }
 
     protected canRollbackCodingTask(task: any): boolean {
-        if (!task) {
-            return false;
-        }
-        if (task?.result?.rollback?.available === true) {
-            return true;
-        }
-        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
-        return checkpoints.some((entry: any) => entry?.status === 'available');
+        return canRollbackCodingTaskFn(task);
     }
 
     protected canRetryCodingTask(task: any): boolean {
-        if (!task) {
-            return false;
-        }
-        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
-        if (workers.some((worker: any) => worker?.status === 'failed')) {
-            return true;
-        }
-        return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
+        return canRetryCodingTaskFn(task);
     }
 
     protected resolveCodingTaskRetrySourceTaskId(task: any): string | undefined {
-        const value = task?.retryOfTaskId || task?.metadata?.retrySourceTaskId || task?.metadata?.retryOfTaskId;
-        return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+        return resolveCodingTaskRetrySourceTaskIdFn(task);
     }
 
     protected buildCodingTaskLineageMetadata(task: any, tasks: any[]): {
@@ -2686,252 +2634,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         retryDepth?: number;
         lineageTaskCount: number;
     } {
-        const taskId = String(task?.id || '').trim();
-        const retryOfTaskId = this.resolveCodingTaskRetrySourceTaskId(task);
-        const taskById = new Map<string, any>(tasks
-            .filter(item => typeof item?.id === 'string' && item.id.trim())
-            .map(item => [String(item.id).trim(), item]));
-        const seen = new Set<string>();
-        let lineageRootTaskId = taskId;
-        let retryDepth = 0;
-        let currentRetrySource = retryOfTaskId;
-        while (currentRetrySource && !seen.has(currentRetrySource)) {
-            seen.add(currentRetrySource);
-            lineageRootTaskId = currentRetrySource;
-            retryDepth += 1;
-            const nextTask = taskById.get(currentRetrySource);
-            currentRetrySource = nextTask ? this.resolveCodingTaskRetrySourceTaskId(nextTask) : undefined;
-        }
-        const lineageTaskCount = tasks.filter(item => {
-            const itemId = String(item?.id || '').trim();
-            if (!itemId) {
-                return false;
-            }
-            if (itemId === lineageRootTaskId) {
-                return true;
-            }
-            const source = this.resolveCodingTaskRetrySourceTaskId(item);
-            if (!source) {
-                return false;
-            }
-            const itemSeen = new Set<string>();
-            let current: string | undefined = source;
-            while (current && !itemSeen.has(current)) {
-                if (current === lineageRootTaskId) {
-                    return true;
-                }
-                itemSeen.add(current);
-                const nextTask = taskById.get(current);
-                current = nextTask ? this.resolveCodingTaskRetrySourceTaskId(nextTask) : undefined;
-            }
-            return false;
-        }).length || 1;
-        return {
-            ...(retryOfTaskId ? { retryOfTaskId } : {}),
-            lineageRootTaskId: lineageRootTaskId || taskId,
-            ...(retryDepth > 0 ? { retryDepth } : {}),
-            lineageTaskCount
-        };
+        return buildCodingTaskLineageMetadataFn(task, tasks);
     }
 
     protected buildCodingTaskChoice(task: any, tasks: any[] = []) {
-        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
-        const rollback = task?.result?.rollback;
-        const lineage = this.buildCodingTaskLineageMetadata(task, tasks.length ? tasks : [task]);
-        return {
-            id: task.id,
-            title: String(task.title || task.id),
-            sourceSessionId: String(task?.sourceSessionId || task?.sessionId || '').trim() || undefined,
-            status: task.status,
-            executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
-            workerCount: workers.length,
-            rollbackAvailable: this.canRollbackCodingTask(task),
-            rollbackMode: rollback?.mode,
-            checkpointSummary: this.describeCodingTaskCheckpointSummary(task),
-            retryOfTaskId: lineage.retryOfTaskId,
-            lineageRootTaskId: lineage.lineageRootTaskId,
-            retryDepth: lineage.retryDepth,
-            lineageTaskCount: lineage.lineageTaskCount,
-            updatedAt: task.updatedAt,
-            detail: task?.result?.diff?.summary || task?.planning?.summary || task?.goal
-        };
+        return buildCodingTaskChoiceFn(task, tasks);
     }
 
     protected orderCodingTasksByLineage(tasks: any[]): any[] {
-        const tasksById = new Map<string, any>(tasks
-            .filter(task => typeof task?.id === 'string' && task.id.trim())
-            .map(task => [String(task.id).trim(), task]));
-        const childrenByParent = new Map<string, any[]>();
-        const roots: any[] = [];
-
-        for (const task of tasks) {
-            const parentId = this.resolveCodingTaskRetrySourceTaskId(task);
-            if (!parentId || !tasksById.has(parentId)) {
-                roots.push(task);
-                continue;
-            }
-            const siblings = childrenByParent.get(parentId) || [];
-            siblings.push(task);
-            childrenByParent.set(parentId, siblings);
-        }
-
-        const compareByUpdatedAt = (left: any, right: any) => {
-            const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
-            if (activityDelta !== 0) {
-                return activityDelta;
-            }
-            return String(left?.id || '').localeCompare(String(right?.id || ''));
-        };
-        const computeFamilyUpdatedAt = (task: any, seen = new Set<string>()): number => {
-            const taskId = String(task?.id || '').trim();
-            if (!taskId || seen.has(taskId)) {
-                return Number(task?.updatedAt || 0);
-            }
-            seen.add(taskId);
-            const childMax = (childrenByParent.get(taskId) || [])
-                .reduce((max, child) => Math.max(max, computeFamilyUpdatedAt(child, new Set(seen))), 0);
-            return Math.max(Number(task?.updatedAt || 0), childMax);
-        };
-
-        roots.sort((left, right) => {
-            const activityDelta = computeFamilyUpdatedAt(right) - computeFamilyUpdatedAt(left);
-            if (activityDelta !== 0) {
-                return activityDelta;
-            }
-            return compareByUpdatedAt(left, right);
-        });
-        for (const siblings of childrenByParent.values()) {
-            siblings.sort(compareByUpdatedAt);
-        }
-
-        const ordered: any[] = [];
-        const visited = new Set<string>();
-        const visit = (task: any) => {
-            const taskId = String(task?.id || '').trim();
-            if (!taskId || visited.has(taskId)) {
-                return;
-            }
-            visited.add(taskId);
-            ordered.push(task);
-            for (const child of childrenByParent.get(taskId) || []) {
-                visit(child);
-            }
-        };
-
-        for (const root of roots) {
-            visit(root);
-        }
-        const remaining = tasks.filter(task => !visited.has(String(task?.id || '').trim())).sort(compareByUpdatedAt);
-        for (const task of remaining) {
-            visit(task);
-        }
-        return ordered;
+        return orderCodingTasksByLineageFn(tasks);
     }
 
     protected buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
-        const choice = this.buildCodingTaskChoice(task, tasks);
-        const lineageSegments = choice.retryOfTaskId
-            ? [
-                `retry ${typeof choice.retryDepth === 'number' ? choice.retryDepth : 1}`,
-                `from ${choice.retryOfTaskId}`
-            ]
-            : ['root'];
-        if (typeof choice.lineageTaskCount === 'number') {
-            lineageSegments.push(`lineage ${choice.lineageTaskCount}`);
-        }
-        return {
-            label: `${choice.id} · ${choice.title}`,
-            value: choice.id,
-            description: [
-                ...lineageSegments,
-                choice.sourceSessionId ? `session ${choice.sourceSessionId}` : '',
-                choice.status,
-                choice.executionMode,
-                `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
-                this.describeCodingTaskRollback(task)
-            ].filter(Boolean).join(' · ') || 'review',
-            detail: [
-                `Task: ${choice.id}`,
-                `Title: ${choice.title}`,
-                choice.sourceSessionId ? `Session: ${choice.sourceSessionId}` : '',
-                choice.status ? `Status: ${choice.status}` : '',
-                choice.executionMode ? `Mode: ${choice.executionMode}` : '',
-                choice.retryOfTaskId ? `Retry Of: ${choice.retryOfTaskId}` : '',
-                choice.lineageRootTaskId ? `Lineage Root: ${choice.lineageRootTaskId}` : '',
-                typeof choice.retryDepth === 'number' ? `Retry Depth: ${choice.retryDepth}` : '',
-                typeof choice.lineageTaskCount === 'number' && choice.lineageTaskCount > 1 ? `Lineage Tasks: ${choice.lineageTaskCount}` : '',
-                `Workers: ${choice.workerCount || 0}`,
-                `Rollback: ${this.describeCodingTaskRollback(task)}`,
-                choice.checkpointSummary ? `Checkpoints: ${choice.checkpointSummary}` : '',
-                task?.result?.diff?.summary ? `Diff: ${task.result.diff.summary}` : '',
-                task?.planning?.summary ? `Plan: ${task.planning.summary}` : '',
-                task?.goal ? `Goal: ${task.goal}` : ''
-            ].filter(Boolean).join('\n')
-        };
+        return buildCodingTaskSelectOptionFn(task, tasks);
     }
 
     protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds = this.resolveProjectSessionIdsFor(sessionId)): Promise<any[]> {
-        if (!this.appRpc) {
-            if (sessionId === this.state.sessionId) {
-                    this.state.setTaskRecords([]);
-                    this.state.setReviewTasks([]);
-            }
-            return [];
-        }
-        const responses = await Promise.allSettled(sessionIds.map(async sessionId => {
-            const result = await this.appRpc!.request('coding_task.list', { sessionId });
-            const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
-            return tasks.map((task: any) => ({
-                ...task,
-                sourceSessionId: sessionId
-            }));
-        }));
-        const tasks = this.orderCodingTasksByLineage(
-            responses
-                .flatMap(result => result.status === 'fulfilled' ? result.value : [])
-                .sort((left, right) => {
-                    const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
-                    if (activityDelta !== 0) {
-                        return activityDelta;
-                    }
-                    return String(left?.id || '').localeCompare(String(right?.id || ''));
-                })
-        );
-        if (sessionId !== this.state.sessionId) {
-            return tasks;
-        }
-            this.state.setTaskRecords(tasks);
-            this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task, tasks)));
-        return tasks;
+        return loadCodingTasksFn(this.codingTaskCtx(), sessionId, sessionIds);
     }
 
     protected async openCodingTaskReviewSelector(): Promise<boolean> {
-        const selectedTask = await this.selectCodingTask({
-            title: 'Coding tasks',
-            unavailableNotice: 'Review is unavailable without app RPC.',
-            emptyNotice: 'No coding tasks available.',
-            selectedTaskId: String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim() || undefined
-        });
-        if (!selectedTask) {
-            return true;
-        }
-        await this.openCodingTaskReview(selectedTask.id, selectedTask);
-        return true;
+        return openCodingTaskReviewSelectorFn(this.codingTaskCtx());
     }
 
     protected async openThreadCodingTaskReviewSelector(): Promise<boolean> {
-        const selectedTask = await this.selectCodingTask({
-            title: 'Coding tasks (thread)',
-            unavailableNotice: 'Review is unavailable without app RPC.',
-            emptyNotice: 'No coding tasks available in this thread.',
-            selectedTaskId: String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim() || undefined,
-            sessionIds: this.resolveThreadSessionIdsFor()
-        });
-        if (!selectedTask) {
-            return true;
-        }
-        await this.openCodingTaskReview(selectedTask.id, selectedTask);
-        return true;
+        return openThreadCodingTaskReviewSelectorFn(this.codingTaskCtx());
     }
 
     protected async selectCodingTask(options: {
@@ -2942,324 +2669,51 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         selectedTaskId?: string;
         sessionIds?: string[];
     }): Promise<any | null> {
-        if (!this.appRpc) {
-            this.notify(options.unavailableNotice);
-            return null;
-        }
-        const tasks = await this.loadCodingTasks(undefined, options.sessionIds);
-        const filteredTasks = typeof options.filter === 'function'
-            ? tasks.filter(task => options.filter!(task))
-            : tasks;
-        if (!filteredTasks.length) {
-            this.notify(options.emptyNotice);
-            return null;
-        }
-        const selectedIndex = Math.max(0, filteredTasks.findIndex(task => task?.id === options.selectedTaskId));
-        const selectedTaskId = await this.select(
-            options.title,
-            filteredTasks.map((task: any) => this.buildCodingTaskSelectOption(task, filteredTasks)),
-            selectedIndex,
-            this.state.consoleOptions.selectHint
-        );
-        if (!selectedTaskId) {
-            return null;
-        }
-        return filteredTasks.find((task: any) => task.id === selectedTaskId) || null;
+        return selectCodingTaskFn(this.codingTaskCtx(), options);
     }
 
     protected async openCodingTaskInspector(taskId?: string, options?: { returnFalseOnStale?: boolean }): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify('Task inspector is unavailable without app RPC.');
-            return true;
-        }
-        const taskViewContextVersion = ++this.taskViewContextVersion;
-        const tasks = await this.loadCodingTasks();
-        if (taskViewContextVersion !== this.taskViewContextVersion) {
-            return options?.returnFalseOnStale ? false : true;
-        }
-        if (!tasks.length) {
-            this.notify('No coding tasks available.');
-            return true;
-        }
-        const resolvedTaskId = String(taskId || '').trim();
-        const preferredTaskId = String(this.state.reviewTask?.id || this.state.selectedTask?.id || '').trim();
-        const selectedTaskId = resolvedTaskId && tasks.some((task: any) => task.id === resolvedTaskId)
-            ? resolvedTaskId
-            : preferredTaskId && tasks.some((task: any) => task.id === preferredTaskId)
-                ? preferredTaskId
-                : tasks[0].id;
-            this.state.setSessionsFocused(false);
-            this.state.setToolsFocused(false);
-            this.state.setApprovalsFocused(false);
-            this.state.setJobsFocused(false);
-            this.state.setMessagesFocused(false);
-            this.state.closeMessageDetail();
-            this.state.closeReview();
-            this.state.closeGitSnapshotDetail();
-            this.state.setSelectedReviewTaskId(selectedTaskId);
-            this.state.setTasksFocused(true);
-            this.state.setNotice('');
-            this.state.setLastError('');
-        return true;
+        return openCodingTaskInspectorFn(this.codingTaskCtx(), taskId, options);
     }
 
     protected async rollbackCodingTask(taskId?: string): Promise<boolean> {
-        const fallbackTask = this.resolveFocusedCodingTask();
-        const explicitTaskId = String(taskId || '').trim();
-        let selectedTask = fallbackTask || null;
-        let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
-        if (!resolvedTaskId || (!explicitTaskId && selectedTask && !this.canRollbackCodingTask(selectedTask))) {
-            selectedTask = await this.selectCodingTask({
-                title: 'Rollback coding tasks',
-                unavailableNotice: 'Rollback is unavailable without app RPC.',
-                emptyNotice: 'No rollbackable coding tasks available.',
-                filter: (task: any) => this.canRollbackCodingTask(task),
-                selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
-            });
-            if (!selectedTask) {
-                return true;
-            }
-            resolvedTaskId = String(selectedTask.id || '').trim();
-        }
-        if (!resolvedTaskId) {
-            this.notify('Rollback task id is required.');
-            return true;
-        }
-        if (!this.appRpc) {
-            this.notify('Rollback is unavailable without app RPC.');
-            return true;
-        }
-        if (selectedTask && selectedTask.id === resolvedTaskId && !this.canRollbackCodingTask(selectedTask)) {
-            this.notify(`Rollback is unavailable for ${resolvedTaskId}.`);
-            return true;
-        }
-
-        const sessionId = this.resolveCodingTaskSessionId(selectedTask);
-        const taskViewContext = this.captureTaskViewContext();
-        const result = await this.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
-        if (result?.rolledBack !== true) {
-            this.notify(`Rollback failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        if (!this.isTaskViewContextCurrent(taskViewContext)) {
-            return true;
-        }
-
-        const opened = await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null, { returnFalseOnStale: true });
-        if (!opened || sessionId !== this.state.sessionId) {
-            return true;
-        }
-        this.notify(`Rolled back ${resolvedTaskId}.`);
-        return true;
+        return rollbackCodingTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async retryFailedCodingTask(taskId?: string): Promise<boolean> {
-        const fallbackTask = this.resolveFocusedCodingTask();
-        const explicitTaskId = String(taskId || '').trim();
-        let selectedTask = fallbackTask || null;
-        let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
-        if (!resolvedTaskId || (!explicitTaskId && selectedTask && !this.canRetryCodingTask(selectedTask))) {
-            selectedTask = await this.selectCodingTask({
-                title: 'Retry coding tasks',
-                unavailableNotice: 'Retry is unavailable without app RPC.',
-                emptyNotice: 'No retryable coding tasks available.',
-                filter: (task: any) => this.canRetryCodingTask(task),
-                selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
-            });
-            if (!selectedTask) {
-                return true;
-            }
-            resolvedTaskId = String(selectedTask.id || '').trim();
-        }
-        if (!resolvedTaskId) {
-            this.notify('Retry task id is required.');
-            return true;
-        }
-        if (!this.appRpc) {
-            this.notify('Retry is unavailable without app RPC.');
-            return true;
-        }
-        if (selectedTask && selectedTask.id === resolvedTaskId && !this.canRetryCodingTask(selectedTask)) {
-            this.notify(`Retry is unavailable for ${resolvedTaskId}.`);
-            return true;
-        }
-
-        const sessionId = this.resolveCodingTaskSessionId(selectedTask);
-        const taskViewContext = this.captureTaskViewContext();
-        const result = await this.appRpc.request('coding_task.retry_failed', { sessionId, taskId: resolvedTaskId });
-        if (result?.retried !== true || !result?.task?.id) {
-            this.notify(`Retry failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        if (!this.isTaskViewContextCurrent(taskViewContext)) {
-            return true;
-        }
-
-        const opened = await this.openCodingTaskReview(result.task.id, result.task, { returnFalseOnStale: true });
-        if (!opened || sessionId !== this.state.sessionId) {
-            return true;
-        }
-        this.notify(`Retried failed workers from ${resolvedTaskId} as ${result.task.id}.`);
-        return true;
+        return retryFailedCodingTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async refreshScheduledTasks(): Promise<void> {
-        if (!this.scheduler) {
-            return;
-        }
-        this.state.setScheduledTasks(this.scheduler.getTasks());
-        this.state.setTasksCount(this.scheduler.getTasks().length);
+        return refreshScheduledTasksFn(this.codingTaskCtx());
     }
 
     protected async openScheduledJobsDashboard(taskId?: string): Promise<boolean> {
-        if (!this.scheduler) {
-            this.notify('Scheduler is unavailable.');
-            return true;
-        }
-        const tasks = this.scheduler.getTasks();
-            this.state.setScheduledTasks(tasks);
-            this.state.setSessionsFocused(false);
-            this.state.setTasksFocused(false);
-            this.state.setToolsFocused(false);
-            this.state.setApprovalsFocused(false);
-            this.state.setMessagesFocused(false);
-            this.state.closeMessageDetail();
-            this.state.closeReview();
-            this.state.closeGitSnapshotDetail();
-            this.state.setJobsFocused(true);
-            if (taskId) {
-                this.state.setSelectedScheduledTaskId(taskId);
-            }
-            this.state.setNotice('');
-            this.state.setLastError('');
-        return true;
+        return openScheduledJobsDashboardFn(this.codingTaskCtx(), taskId);
     }
 
     protected async toggleScheduledTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Scheduled task id is required.');
-            return true;
-        }
-        const selected = this.state.selectedScheduledTask;
-        if (!selected || selected.id !== resolvedTaskId) {
-            this.notify(`Scheduled task "${resolvedTaskId}" was not found.`);
-            return true;
-        }
-        if (selected.paused) {
-            return this.resumeScheduledTask(resolvedTaskId);
-        }
-        return this.pauseScheduledTask(resolvedTaskId);
+        return toggleScheduledTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async pauseScheduledTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Scheduled task id is required.');
-            return true;
-        }
-        if (!this.scheduler.pause) {
-            this.notify('Pause is unavailable on the configured scheduler.');
-            return true;
-        }
-        const task = await this.scheduler.pause(resolvedTaskId);
-        if (!task) {
-            this.notify(`Pause failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        await this.refreshScheduledTasks();
-        this.state.setSelectedScheduledTaskId(resolvedTaskId);
-        this.notify(`Paused ${resolvedTaskId}.`);
-        return true;
+        return pauseScheduledTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async resumeScheduledTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Scheduled task id is required.');
-            return true;
-        }
-        if (!this.scheduler.resume) {
-            this.notify('Resume is unavailable on the configured scheduler.');
-            return true;
-        }
-        const task = await this.scheduler.resume(resolvedTaskId);
-        if (!task) {
-            this.notify(`Resume failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        await this.refreshScheduledTasks();
-        this.state.setSelectedScheduledTaskId(resolvedTaskId);
-        this.notify(`Resumed ${resolvedTaskId}.`);
-        return true;
+        return resumeScheduledTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async cancelScheduledTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Scheduled task id is required.');
-            return true;
-        }
-        await this.scheduler.cancel(resolvedTaskId);
-        await this.refreshScheduledTasks();
-        this.notify(`Cancelled ${resolvedTaskId}.`);
-        return true;
+        return cancelScheduledTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async recoverScheduledTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Scheduled task id is required.');
-            return true;
-        }
-        if (!this.scheduler.recover) {
-            this.notify('Recover is unavailable on the configured scheduler.');
-            return true;
-        }
-        const task = await this.scheduler.recover(resolvedTaskId);
-        if (!task) {
-            this.notify(`Recover failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        await this.refreshScheduledTasks();
-        this.state.setSelectedScheduledTaskId(resolvedTaskId);
-        this.notify(`Recovered ${resolvedTaskId}.`);
-        return true;
+        return recoverScheduledTaskFn(this.codingTaskCtx(), taskId);
     }
 
     protected async cancelCodingTask(taskId?: string): Promise<boolean> {
-        const resolvedTaskId = String(taskId || this.state.selectedTask?.id || '').trim();
-        if (!resolvedTaskId) {
-            this.notify('Cancel task id is required.');
-            return true;
-        }
-        if (!this.appRpc) {
-            this.notify('Cancel is unavailable without app RPC.');
-            return true;
-        }
-        const targetTask = this.state.selectedTask;
-        if (targetTask && targetTask.id === resolvedTaskId && !this.canCancelCodingTask(targetTask)) {
-            this.notify(`Cancel is unavailable for ${resolvedTaskId}.`);
-            return true;
-        }
-
-        const sessionId = this.resolveCodingTaskSessionId(targetTask);
-        const taskViewContext = this.captureTaskViewContext();
-        const result = await this.appRpc.request('coding_task.cancel', { sessionId, taskId: resolvedTaskId });
-        if (result?.cancelled !== true) {
-            this.notify(`Cancel failed for ${resolvedTaskId}.`);
-            return true;
-        }
-        if (!this.isTaskViewContextCurrent(taskViewContext)) {
-            return true;
-        }
-
-        const opened = await this.openCodingTaskInspector(resolvedTaskId, { returnFalseOnStale: true });
-        if (!opened || sessionId !== this.state.sessionId) {
-            return true;
-        }
-        this.notify(`Cancelled ${resolvedTaskId}.`);
-        return true;
+        return cancelCodingTaskFn(this.codingTaskCtx(), taskId);
     }
 
 
@@ -5508,7 +4962,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         sessionId = this.state.sessionId,
         sessionIds = this.resolveThreadSessionIdsFor(sessionId)
     ): Promise<any[]> {
-        return this.loadCodingTasks(sessionId, sessionIds);
+        return loadCodingTasksFn(this.codingTaskCtx(), sessionId, sessionIds);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {

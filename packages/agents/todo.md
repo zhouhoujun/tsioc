@@ -385,11 +385,11 @@
   - 拆分设计（2026-08-22 定稿）：沿用 DiagnosticsHandlers/ExportHandlers 既定模式——每域一个 `AgentConsole<域>Handlers.ts`：① 顶部 `ReviewHandlerContext` 式结构化 ctx 接口（state 结构子集 + appRpc + notify + 少量 getter/setter）；② 域内逻辑为以 ctx 为首参的导出自由函数（纯函数不收 ctx）；③ 组件保留同名薄委托方法（内部调用点/测试签名零改动），组件侧新增 `xxxCtx()` 私有构造器；④ 静态缓存随域迁移（如 review 注解 WeakMap）。依赖方向：Component → Handlers 单向，Handlers 禁止 import Component。
   - 迁移批次与状态：
     - [x] 批次 A · review+git diff → `AgentConsoleReviewHandlers.ts`（2026-08-22，组件 9039→8704 行，tsc 干净，agent-ui 682 passing EXIT=0）
-    - [ ] 批次 B · coding_task 编排（openCodingTaskReview/canCancel/Rollback/Retry/describeRollback/CheckpointSummary/buildLineageMetadata 等）
+    - [x] 批次 B · coding_task 编排 → `AgentConsoleCodingTaskHandlers.ts`（2026-08-25，组件 8391→7844 行 −547 行；CodingTaskHandlerContext/CodingTaskHandlerState 接口 + ~30 个导出函数逐字迁移；ctx 用 bumpOpenReviewRequestId/bumpTaskViewContextVersion 解决计数器语义；tsc 干净，682 passing EXIT=0，build:web EXIT=0）
     - [x] 批次 C · voice → `AgentConsoleVoiceHandlers.ts`（2026-08-22，组件 8704→8582 行，ctx 用真实 AudioCaptureAdapter/AudioPlaybackAdapter 类型 + 捕获状态 getter/setter 钩子，tsc 干净，682 passing EXIT=0）
-    - [x] 批次 D · model/profile 域 → `AgentConsoleModelHandlers.ts`（2026-08-22，组件 8582→8411 行；resolveInitialModelProfile/options 四方法/store+activation 十方法共 15 个函数逐字迁移；4 个可变状态字段经 getter/setter 钩子，options() 返回活引用保持原地变更语义；累计 9039→8411）
+    - [x] 批次 D · model/profile 域 → `AgentConsoleModelHandlers.ts`（2026-08-22，组件 8582→8411 行；resolveInitialModelProfile/options 四方法/store+activation 十方法共 15 个函数逐字迁移；4 个可变状态字段经 getter/setter 钩子、options() 返回活引用保持原地变更语义；累计 9039→8411）
     - [x] 批次 E · edit 模式入口 → `AgentConsoleEditModeHandlers.ts`（2026-08-22，组件 8411→8391 行；enterEditMode/startEditTarget/dismissEditMode 三方法逐字迁移；5 个可变字段经 getter/setter 钩子、EDIT_ESCAPE_WINDOW_MS 注入 ctx；累计 9039→8391）
-  - 会话小结（2026-08-22）：A/C/D/E 四批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→8391 行）。剩余批次建议顺序：settings（无编排耦合、体量次小）→ coding_task → keymap / handleCommand（编排域，必须最后）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
+  - 会话小结（2026-08-25）：A/B/C/D/E 五批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→7844 行 −1195 行）。剩余批次建议顺序：settings（无编排耦合、体量次小）→ keymap / handleCommand（编排域，必须最后）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
     - [ ] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）
     - [ ] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）
     - [ ] 批次 F · handleCommand 大 switch 按域表化（最后做，风险最高）
