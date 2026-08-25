@@ -397,7 +397,7 @@
     - [x] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）✅（2026-08-25）
     - [x] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）✅（2026-08-25）
     - [x] 批次 F · handleCommand 89-case switch → COMMAND_HANDLERS dispatch table（2026-08-26，组件 7890→6916 行 −974 行；CommandHandlerContext 接口 + 89 handler 函数 + buildCommandContext() 桥接；tsc --noEmit 干净、agent-ui 682 passing EXIT=0）
-    - [ ] 附带清理：`AgentConsoleSshHandlers.ts` 为孤儿模块（index 导出但组件未接线、逻辑重复），接线或删除需先 diff 两份实现
+    - [x] 附带清理：`AgentConsoleSshHandlers.ts` 孤儿模块已删除（2026-08-26，逻辑与组件内联 SSH 方法完全重复，已 diff 确认；移除 index re-export + 删除文件，tsc 干净、682 passing）
   - P199 A–F 累计：组件从 9039→6916 行（−2123 行，−23.5%）。
   - 后续批次沿用批次 A 流程：逐字迁移仅替换 this→ctx → python 行号手术替换组件方法体为委托 → tsc --noEmit → agent-ui 全套测试。
 - **P200 · G123 · PTY 三场景验收脚手架（中）** ✅ 已落地（2026-08-22）

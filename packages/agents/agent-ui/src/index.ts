@@ -29,7 +29,6 @@ export * from './AgentConsoleReviewHandlers';
 export * from './AgentConsoleVoiceHandlers';
 export * from './AgentConsoleModelHandlers';
 export * from './AgentConsoleEditModeHandlers';
-export * from './AgentConsoleSshHandlers';
 export * from './console-ports';
 export * from './agent-ui.module';
 export * from './AgentConsoleComponent';
