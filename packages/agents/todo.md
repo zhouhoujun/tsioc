@@ -389,10 +389,10 @@
     - [x] 批次 C · voice → `AgentConsoleVoiceHandlers.ts`（2026-08-22，组件 8704→8582 行，ctx 用真实 AudioCaptureAdapter/AudioPlaybackAdapter 类型 + 捕获状态 getter/setter 钩子，tsc 干净，682 passing EXIT=0）
     - [x] 批次 D · model/profile 域 → `AgentConsoleModelHandlers.ts`（2026-08-22，组件 8582→8411 行；resolveInitialModelProfile/options 四方法/store+activation 十方法共 15 个函数逐字迁移；4 个可变状态字段经 getter/setter 钩子、options() 返回活引用保持原地变更语义；累计 9039→8411）
     - [x] 批次 E · edit 模式入口 → `AgentConsoleEditModeHandlers.ts`（2026-08-22，组件 8411→8391 行；enterEditMode/startEditTarget/dismissEditMode 三方法逐字迁移；5 个可变字段经 getter/setter 钩子、EDIT_ESCAPE_WINDOW_MS 注入 ctx；累计 9039→8391）
-  - 会话小结（2026-08-25）：A/B/C/D/E 五批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→7844 行 −1195 行）。剩余批次建议顺序：settings（无编排耦合、体量次小）→ keymap / handleCommand（编排域，必须最后）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
-    - [ ] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）
-    - [ ] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）
-    - [ ] 批次 F · handleCommand 大 switch 按域表化（最后做，风险最高）
+  - 会话小结（2026-08-25）：A/B/C/D/E 五批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→7844 行 −1195 行）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
+    - [x] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）✅（2026-08-25）
+    - [x] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）✅（2026-08-25）
+    - [ ] 批次 F · handleCommand 大 switch 按域表化（最后做，风险最高）— 暂缓，编排域体量大、耦合深，后续专项推进
     - [ ] 附带清理：`AgentConsoleSshHandlers.ts` 为孤儿模块（index 导出但组件未接线、逻辑重复），接线或删除需先 diff 两份实现
   - 后续批次沿用批次 A 流程：逐字迁移仅替换 this→ctx → python 行号手术替换组件方法体为委托 → tsc --noEmit → agent-ui 全套测试。
 - **P200 · G123 · PTY 三场景验收脚手架（中）** ✅ 已落地（2026-08-22）
@@ -409,7 +409,15 @@
 
 ## 回归基线
 
-截至 P190 收尾（2026-08-22）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过。
+截至 P199 收尾（2026-08-25）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→7845 行（−1294 行，−14.3%）。
+
+### P199 收尾复核（2026-08-25，AgentConsoleComponent 拆分）
+
+- A/B/C/D/E 五批全部完成：review+git diff → ReviewHandlers、coding_task → CodingTaskHandlers、voice → VoiceHandlers、model/profile → ModelHandlers、edit 模式 → EditModeHandlers、设置持久化、消息编辑模式。
+- 全量测试：agent-ui 682 passing、components 135、components/console 73、components/html 117，均 EXIT=0。
+- 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` esbuild EXIT=0。
+- 静态边界：`packages/agents/agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接引用。
+- 剩余：批次 F（handleCommand 大 switch 表化，风险最高，暂缓）+ SshHandlers 孤儿模块清理。
 
 ### P190 收尾复核（2026-08-22）
 
@@ -452,7 +460,7 @@
 ### 大文件（>500 LOC）
 | 文件 | LOC | 评估 |
 |---|---|---|
-| AgentConsoleComponent.ts | 9171 | 核心组件，建议按功能域拆分 |
+| AgentConsoleComponent.ts | 7845 | 核心组件，拆分后 −1294 行（P199 A–E 批次），剩余 handleCommand 域待后续专项 |
 | AgentConsoleSessionState.ts | 4426 | 状态管理，规模合理 |
 | AgentConsolePanels.ts | 3459 | 面板渲染，规模合理 |
 | DefaultAgentRuntime.ts | 3191 | 运行时核心，规模合理 |
@@ -471,7 +479,7 @@
 | VS Code dist | 24KB（agent-vscode） |
 | 总测试耗时（串行） | ~75–80s |
 | 总 LOC（src） | ~62,600 |
-| 各包 LOC | agent 22,948 / agent-ui 22,922 / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
+| 各包 LOC | agent 22,948 / agent-ui 22,922（组件拆分后 ~21,628） / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
 
 ---
 
