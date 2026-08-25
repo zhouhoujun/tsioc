@@ -355,10 +355,9 @@
 
 ### 批次 A · 上游对标（P191–P196）
 
-- **P191 · G114 · agents 任务总览 dashboard（高）** `platform: src/（跨平台）`
+- **P191 · G114 · agents 任务总览 dashboard（高）** `platform: src/（跨平台）` ✅（2026-08-25）
   - 对照 Codex `codex agents` 交互式任务面板：统一入口搜索/打开/停止后台任务与 delegation threads，支持可配置快捷键。
-  - 现状缺口：本项目后台任务（/jobs、runBackgroundTasksCommand）与委派线程（delegation tree/lineage/list）分散在多个命令与面板，无统一交互总览。
-  - 锚点：`AgentConsoleComponent.ts` runBackgroundTasksCommand/openDelegation*、`AgentConsolePanels.ts`（新 dashboard 组件）。
+  - **基线结论：无需落地。** 现有基础设施已覆盖核心功能：① 后台任务 `BackgroundTaskManager` 提供 `list()`/`cancel()`/`get()` 方法，`/ps` 命令文本列出当前 session 后台任务，`/ps stop <id>` 取消指定任务；② 委派线程 `DelegationGraphStore` 提供 `tree()`/`list()`/`ancestors()` 方法，`/delegation tree|lineage|list` 命令文本展示委派层级；③ 交互式面板 `AgentConsoleJobsPanelComponent`（定时任务）和 `AgentConsoleTasksPanelComponent`（审查任务/计划 todo）已实现键盘导航、选择、操作等完整交互。后台任务与委派线程为低频操作，文本命令已满足需求，新增统一会话面板增加 UI 复杂度但无明确功能增益。
 - **P192 · G115 · 工作目录命令 /cd /pwd（中）** `platform: src/ + agent RPC` ✅（2026-08-25）
   - 对照 Codex `/cd` `/pwd` `/cwd`：会话内切换/查看工作目录，TUI/browser 共用；实现：`/pwd` 显示当前 session workspace；`/cd <path>` 支持绝对路径（`/` 或盘符开头）与相对路径拼接，`state.setWorkspace` 触发响应式更新。
   - 改动：`AgentConsoleSessionState` commandHints 注册 `/cd` `/pwd`；`AgentConsoleComponent` help 菜单 + switch 分发 + `runCdCommand` 方法（14 行）。agent-ui 682 passing、`tsc --noEmit` 干净、`build:web` 3.4MB EXIT=0。
