@@ -188,6 +188,7 @@ import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
+import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
@@ -2733,6 +2734,169 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
 
+
+    protected buildCommandContext(): CommandHandlerContext {
+        const self = this;
+        return {
+            state: {
+                get sessionId() { return self.state.sessionId; },
+                get sessions() { return self.state.sessions; },
+                get projects() { return self.state.projects; },
+                get threads() { return self.state.threads; },
+                get sections() { return self.state.sections; },
+                get messages() { return self.state.messages; },
+                get tools() { return self.state.tools; },
+                get toolRuns() { return self.state.toolRuns; },
+                get pendingAttachments() { return self.state.pendingAttachments; },
+                get notice() { return self.state.notice; },
+                get input() { return self.state.input; },
+                get workspace() { return self.state.workspace; },
+                get status() { return self.state.status; },
+                get provider() { return self.state.provider; },
+                get model() { return self.state.model; },
+                get planTodos() { return self.state.planTodos; },
+                get reviewFileSections() { return self.state.reviewFileSections; },
+                get reviewFileAnnotations() { return self.state.reviewFileAnnotations; },
+                get consoleOptions() { return self.state.consoleOptions; },
+                get commandHints() { return self.state.commandHints; },
+                setInput: (v, c) => self.state.setInput(v, c),
+                setNotice: (m) => self.state.setNotice(m),
+                setTitle: (t) => self.state.setTitle(t),
+                setSessionsFocused: (f) => self.state.setSessionsFocused(f),
+                setMessagesFocused: (f) => self.state.setMessagesFocused(f),
+                setToolsFocused: (f) => self.state.setToolsFocused(f),
+                setApprovalsFocused: (f) => self.state.setApprovalsFocused(f),
+                setJobsFocused: (f) => self.state.setJobsFocused(f),
+                setTasksFocused: (f) => self.state.setTasksFocused(f),
+                setToolRunsFocused: (f) => self.state.setToolRunsFocused(f),
+                setProjectsFocused: (f) => self.state.setProjectsFocused(f),
+                closeMessageDetail: () => self.state.closeMessageDetail(),
+                closeReview: () => self.state.closeReview(),
+                closeGitSnapshotDetail: () => self.state.closeGitSnapshotDetail(),
+                openTextOverlay: (k, l) => self.state.openTextOverlay(k, l),
+                setPendingApprovals: (p) => self.state.setPendingApprovals(p),
+                getReviewAnnotationSummary: () => self.state.getReviewAnnotationSummary(),
+                approveAllReviewFiles: () => self.state.approveAllReviewFiles(),
+                clearAllReviewAnnotations: () => self.state.clearAllReviewAnnotations(),
+                clearReviewFileAnnotation: () => self.state.clearReviewFileAnnotation(),
+                getReviewExportReport: () => self.state.getReviewExportReport(),
+                computeFileRiskScore: (s) => self.state.computeFileRiskScore(s),
+                setReviewFileAnnotation: (status, comment) => self.state.setReviewFileAnnotation(status, comment),
+                setSessions: (s) => self.state.setSessions(s),
+                setProjects: (p) => self.state.setProjects(p),
+                setThreads: (t) => self.state.setThreads(t),
+                setProjectContext: () => self.state.setProjectContext(),
+            },
+            notify: (m, d) => self.notify(m, d),
+            select: (t, o, i, h) => self.select(t, o, i, h),
+            isTurnInProgress: () => self.isTurnInProgress(),
+            notifyBusyState: () => self.notifyBusyState(),
+            sessionService: self.sessionService,
+            openSession: (id) => self.openSession(id),
+            refreshSessions: () => self.refreshSessions(),
+            refreshCurrentSections: () => self.refreshCurrentSections(),
+            refreshThreadTodoPlan: () => self.refreshThreadTodoPlan(),
+            loadThreadCodingTasks: () => self.loadThreadCodingTasks(),
+            workspace: self.workspace,
+            updateTerminalTitle: () => self.updateTerminalTitle(),
+            requestTerminalExit: (m) => self.requestTerminalExit(m),
+            closingSessionMessage: () => self.closingSessionMessage(),
+            runInitCommand: (a) => self.runInitCommand(a),
+            runPlanCommand: (a) => self.runPlanCommand(a),
+            runArchetypeCommand: (a) => self.runArchetypeCommand(a),
+            runVimCommand: (a) => self.runVimCommand(a),
+            runKeymapCommand: (a) => self.runKeymapCommand(a),
+            runPermissionsCommand: (a) => self.runPermissionsCommand(a),
+            runStatusCommand: () => self.runStatusCommand(),
+            runCdCommand: (a) => self.runCdCommand(a),
+            runGoalCommand: (a) => self.runGoalCommand(a),
+            runUndoCommand: () => self.runUndoCommand(),
+            runRedoCommand: () => self.runRedoCommand(),
+            runExportCommand: (a) => self.runExportCommand(a),
+            runAttachCommand: (a) => self.runAttachCommand(a),
+            runSkillsCommand: (a) => self.runSkillsCommand(a),
+            runMcpCommand: (a) => self.runMcpCommand(a),
+            runPluginsCommand: (a) => self.runPluginsCommand(a),
+            runAppsCommand: (a) => self.runAppsCommand(a),
+            runSshCommand: (a) => self.runSshCommand(a),
+            runThemeCommand: (a) => self.runThemeCommand(a),
+            runThinkingCommand: (a) => self.runThinkingCommand(a),
+            runDisplayCommand: (a) => self.runDisplayCommand(a),
+            toggleTimelineMode: () => self.toggleTimelineMode(),
+            runRawModeCommand: (a) => self.runRawModeCommand(a),
+            runStashCommand: (a) => self.runStashCommand(a),
+            runStatuslineCommand: (a) => self.runStatuslineCommand(a),
+            runHooksCommand: () => self.runHooksCommand(),
+            runMemoriesCommand: (a) => self.runMemoriesCommand(a),
+            runFastCommand: (a) => self.runFastCommand(a),
+            runPersonalityCommand: (a) => self.runPersonalityCommand(a),
+            runDebugConfigCommand: () => self.runDebugConfigCommand(),
+            runSettingsCommand: () => self.runSettingsCommand(),
+            runYoloCommand: (a) => self.runYoloCommand(a),
+            runExperimentalCommand: (a) => self.runExperimentalCommand(a),
+            runFeedbackCommand: () => self.runFeedbackCommand(),
+            runBackgroundTasksCommand: (a) => self.runBackgroundTasksCommand(a),
+            runIdeCommand: (a) => self.runIdeCommand(a),
+            runEditorCommand: (a) => self.runEditorCommand(a),
+            runShareCommand: (a) => self.runShareCommand(a),
+            runUnshareCommand: (a) => self.runUnshareCommand(a),
+            runTitleCommand: (a) => self.runTitleCommand(a),
+            runGitSnapshotsCommand: (a) => self.runGitSnapshotsCommand(a),
+            runApproveRetryCommand: () => self.runApproveRetryCommand(),
+            openScheduledJobsDashboard: (a) => self.openScheduledJobsDashboard(a),
+            openCodingTaskInspector: (a) => self.openCodingTaskInspector(a),
+            openThreadCodingTaskReviewSelector: () => self.openThreadCodingTaskReviewSelector(),
+            openCodingTaskReview: (a) => self.openCodingTaskReview(a),
+            openCodingTaskReviewSelector: () => self.openCodingTaskReviewSelector(),
+            openWorktreeDiff: (a) => self.openWorktreeDiff(a),
+            retryFailedCodingTask: (a) => self.retryFailedCodingTask(a),
+            rollbackCodingTask: (a) => self.rollbackCodingTask(a),
+            openSummaryQualityRecords: (p) => self.openSummaryQualityRecords(p),
+            openSummaryQualityTrend: (p, b, m) => self.openSummaryQualityTrend(p, b, m),
+            parseSummaryQualityTrendArgs: (a) => self.parseSummaryQualityTrendArgs(a),
+            formatSummaryQualityAggregate: (a) => self.formatSummaryQualityAggregate(a),
+            openCompactionHistory: (a) => self.openCompactionHistory(a),
+            openCompactionHistoryTrend: (s, b, m) => self.openCompactionHistoryTrend(s, b, m),
+            parseCompactionHistoryTrendArgs: (a) => self.parseCompactionHistoryTrendArgs(a),
+            openTurnDiagnostics: (s) => self.openTurnDiagnostics(s),
+            openTurnDiagnosticsList: (s) => self.openTurnDiagnosticsList(s),
+            openTurnDiagnosticsTrend: (s, b, m) => self.openTurnDiagnosticsTrend(s, b, m),
+            parseTurnDiagnosticsTrendArgs: (a) => self.parseTurnDiagnosticsTrendArgs(a),
+            openDelegationTree: (s, st, d) => self.openDelegationTree(s, st, d),
+            openDelegationLineage: (s) => self.openDelegationLineage(s),
+            openDelegationList: (s) => self.openDelegationList(s),
+            runDelegationModeCommand: (a) => self.runDelegationModeCommand(a),
+            openHarnessAudit: (s) => self.openHarnessAudit(s),
+            openHarnessProfile: (s) => self.openHarnessProfile(s),
+            handleVoiceCommand: (a) => self.handleVoiceCommand(a),
+            getPendingApprovals: (s) => self.getPendingApprovals(s),
+            applyApprovalDecision: (d, r) => self.applyApprovalDecision(d, r),
+            copyFocusedTextActionHandler: (t, l) => self.copyFocusedTextActionHandler(t, l),
+            searchSessionContent: (q, s) => self.searchSessionContent(q, s),
+            activateSelectedToolActionHandler: (t) => self.activateSelectedToolActionHandler(t),
+            resolveSessionProjectKey: (s) => self.resolveSessionProjectKey(s),
+            resolveSessionThreadKey: (s) => self.resolveSessionThreadKey(s),
+            handleMenuSelection: (v) => self.handleMenuSelection(v),
+            submitMultilineDraft: () => self.submitMultilineDraft(),
+            get multilineMode() { return self.multilineMode; },
+            set multilineMode(v) { self.multilineMode = v; },
+            get draftLines() { return self.draftLines; },
+            set draftLines(v) { self.draftLines = v; },
+            get shellMultilineMode() { return self.shellMultilineMode; },
+            set shellMultilineMode(v) { self.shellMultilineMode = v; },
+            get shellDraftLines() { return self.shellDraftLines; },
+            set shellDraftLines(v) { self.shellDraftLines = v; },
+            openGitDiffReview: (b) => self.openGitDiffReview(b),
+            runGitDiffReviewAnalysis: (b) => self.runGitDiffReviewAnalysis(b),
+            listReviewFindings: (c) => self.listReviewFindings(c),
+            showReviewRun: (id) => self.showReviewRun(id),
+            openModelSwitcher: () => self.openModelSwitcher(),
+            activateModelProfile: (n) => self.activateModelProfile(n),
+            queueNextTurnModelProfile: (n) => self.queueNextTurnModelProfile(n),
+            openUsage: (i) => self.openUsage(i),
+        } as CommandHandlerContext;
+    }
+
     protected async handleCommand(value: string): Promise<boolean> {
         const parsed = this.parseSlashCommandLine(value);
         if (!parsed.command.startsWith('/')) {
@@ -2745,1150 +2909,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 : `Unknown command: ${parsed.command}`);
             return true;
         }
-        switch (resolved.command) {
-            case '/help':
-                const helpSelection = await this.select('Help', [
-                    { label: '/model', value: '/model', description: 'switch model or queue next-turn profile' },
-                    { label: '/plan', value: '/plan', description: 'toggle read-only plan mode (write tools denied)' },
-                    { label: '/archetype', value: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]' },
-                    { label: '/vim', value: '/vim', description: 'toggle vim-style normal/insert input mode' },
-                    { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset key bindings per context (global/composer/list/approval/pager/vim); record <action> captures the next key' },
-                    { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
-                    { label: '/status', value: '/status', description: 'show session status' },
-                    { label: '/cd', value: '/cd', description: 'change working directory: /cd <path>' },
-                    { label: '/pwd', value: '/pwd', description: 'print current working directory' },
-                    { label: '/goal', value: '/goal', description: 'create, show, link, complete, or reopen a persistent goal' },
-                    { label: '/undo', value: '/undo', description: 'revert the last file change' },
-                    { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
-                    { label: '/export', value: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]' },
-                    { label: '/attach', value: '/attach', description: 'attach an image for the next prompt' },
-                    { label: '/ssh', value: '/ssh', description: 'SSH hosts: list / connect / disconnect / forward' },
-                    { label: '/init', value: '/init', description: 'generate AGENTS.md project context' },
-                    { label: '/sessions', value: '/sessions', description: 'sessions' },
-                    { label: '/title', value: '/title', description: 'set current session title: /title <name> (blank clears)' },
-                    { label: '/pin', value: '/pin', description: 'pin the current session to the top of the list' },
-                    { label: '/unpin', value: '/unpin', description: 'unpin the current session' },
-                    { label: '/snapshot', value: '/snapshot', description: 'snapshot current session: /snapshot [label]' },
-                    { label: '/snapshots', value: '/snapshots', description: 'list / restore / delete session snapshots' },
-                    { label: '/sections', value: '/sections', description: 'session sections: /sections [<label> to create]' },
-                    { label: '/git-snapshots', value: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert' },
-                    { label: '/messages', value: '/messages', description: 'messages' },
-                    { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
-                    { label: '/tasks', value: '/tasks', description: 'task inspector' },
-                    { label: '/threadplan', value: '/threadplan', description: 'thread plan todos' },
-                    { label: '/threadreview', value: '/threadreview', description: 'thread coding task review' },
-                    { label: '/review', value: '/review', description: 'coding task review' },
-                    { label: '/diff', value: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]' },
-                    { label: '/theme', value: '/theme', description: 'preview or apply a saved UI theme' },
-                    { label: '/thinking', value: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)' },
-                    { label: '/display', value: '/display', description: 'toggle message timestamp visibility: /display [on|off]' },
-                    { label: '/timeline', value: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)' },
-                    { label: '/raw', value: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]' },
-                    { label: '/stash', value: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]' },
-                    { label: '/skills', value: '/skills', description: 'browse skills: /skills [query | <id>]' },
-                    { label: '/mcp', value: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]' },
-                    { label: '/plugins', value: '/plugins', description: 'browse installed plugins: /plugins [<id>]' },
-                    { label: '/apps', value: '/apps', description: 'browse connectors or insert one into the prompt: /apps [<id>]' },
-                    { label: '/statusline', value: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field' },
-                    { label: '/hooks', value: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)' },
-                    { label: '/memories', value: '/memories', description: 'memory injection: status / on / off' },
-                    { label: '/fast', value: '/fast', description: 'switch to fast/strong model profile: /fast [profile]' },
-                    { label: '/personality', value: '/personality', description: 'personality presets: list / set <name> / unset' },
-                    { label: '/debug-config', value: '/debug-config', description: 'show resolved config (model, profile, ui options, session)' },
-                    { label: '/settings', value: '/settings', description: 'unified settings dialog: general, keybinds, providers' },
-                    { label: '/yolo', value: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]' },
-                    { label: '/experimental', value: '/experimental', description: 'experimental features: list / <name> on|off' },
-                    { label: '/feedback', value: '/feedback', description: 'packaging diagnostics for feedback reports' },
-                    { label: '/ide', value: '/ide', description: 'IDE bridge: show attached editor context' },
-                    { label: '/editor', value: '/editor', description: 'edit the draft in an external editor (Ctrl+G)' },
-                    { label: '/ps', value: '/ps', description: 'background tasks: list / stop <id>' },
-                    { label: '/resume', value: '/resume', description: 'resume an existing or archived session' },
-                    { label: '/archive', value: '/archive', description: 'archive the current session without deleting its transcript' },
-                    { label: '/fork', value: '/fork', description: 'fork the current session [messageId]' },
-                    { label: '/side', value: '/side', description: 'open a temporary side session fork' },
-                    { label: '/retry', value: '/retry', description: 'retry failed workers' },
-                    { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
-                    { label: '/multiline', value: '/multiline', description: 'multiline' },
-                    { label: '/cancel', value: '/cancel', description: 'cancel running turn' },
-                    { label: '/copy', value: '/copy', description: 'copy reply' },
-                    { label: '/share', value: '/share', description: 'create a shareable link for this session (gateway)' },
-                    { label: '/unshare', value: '/unshare', description: 'revoke a session share: /unshare [token]' },
-                    { label: '/approvals', value: '/approvals', description: 'approvals' },
-                    { label: '/approve retry', value: '/approve retry', description: 'retry the most recent auto-review-rejected action once' },
-                    { label: '/usage', value: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]' },
-                    { label: '/quality', value: '/quality', description: 'quality stats / list / trend by provider' },
-                    { label: '/quality trend', value: '/quality trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' },
-                    { label: '/compact', value: '/compact', description: 'force compaction now [reason]' },
-                    { label: '/compactions', value: '/compactions', description: 'compaction history [sessionId]' },
-                    { label: '/compactions trend', value: '/compactions trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' },
-                    { label: '/diagnostics', value: '/diagnostics', description: 'turn diagnostics [sessionId]' },
-                    { label: '/diagnostics list', value: '/diagnostics list', description: 'turn diagnostics records [sessionId]' },
-                    { label: '/diagnostics trend', value: '/diagnostics trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' },
-                    { label: '/delegation', value: '/delegation', description: 'delegation edges [sessionId]' },
-                    { label: '/delegation tree', value: '/delegation tree', description: 'delegation tree [sessionId] [status] [depth]' },
-                    { label: '/delegation lineage', value: '/delegation lineage', description: 'delegation lineage [sessionId]' },
-                    { label: '/delegation mode', value: '/delegation mode', description: 'delegation mode [disabled|explicit|proactive|default]' },
-                    { label: '/harness audit', value: '/harness audit', description: 'failure-pattern audit [sessionId]' },
-                    { label: '/harness profile', value: '/harness profile', description: 'governance profile list/current/diff' },
-                    { label: '/voice', value: '/voice', description: 'voice session status/start/stop/cancel' },
-                    { label: '@workspace', value: '@workspace', description: 'context' },
-                    { label: '/exit', value: '/exit', description: 'exit' }
-                ], 0, this.state.consoleOptions.selectHint);
-                if (helpSelection) {
-                    await this.handleMenuSelection(helpSelection);
-                }
-                return true;
-            case '/model':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                if (parsed.args) {
-                    const modelArgs = String(parsed.args || '').trim();
-                    if (modelArgs.toLowerCase().startsWith('once')) {
-                        const profileName = modelArgs.slice(4).trim();
-                        if (!profileName) {
-                            this.notify('Usage: /model once <profile>.');
-                            return true;
-                        }
-                        await this.queueNextTurnModelProfile(profileName);
-                        return true;
-                    }
-                    await this.activateModelProfile(parsed.args);
-                    return true;
-                }
-                await this.openModelSwitcher();
-                return true;
-            case '/init':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runInitCommand(parsed.args);
-                return true;
-            case '/plan':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runPlanCommand(parsed.args);
-                return true;
-            case '/archetype':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runArchetypeCommand(parsed.args);
-                return true;
-            case '/vim':
-                await this.runVimCommand(parsed.args);
-                return true;
-            case '/keymap':
-                await this.runKeymapCommand(parsed.args);
-                return true;
-            case '/permissions':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runPermissionsCommand(parsed.args);
-                return true;
-            case '/status':
-                await this.runStatusCommand();
-                return true;
-            case '/cd':
-                this.runCdCommand(parsed.args);
-                return true;
-            case '/pwd':
-                this.notify(this.workspace);
-                return true;
-            case '/goal':
-                await this.runGoalCommand(parsed.args);
-                return true;
-            case '/undo':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runUndoCommand();
-                return true;
-            case '/redo':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runRedoCommand();
-                return true;
-            case '/export':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.runExportCommand(parsed.args);
-            case '/attach':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.runAttachCommand(parsed.args);
-            case '/tools':
-                if (parsed.args) {
-                    await this.activateSelectedToolActionHandler(parsed.args);
-                    return true;
-                }
-                if (!this.state.tools.length) {
-                    this.notify('No tools available.');
-                    return true;
-                }
-                this.state.setSessionsFocused(false);
-                this.state.setMessagesFocused(false);
-                this.state.closeMessageDetail();
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setToolsFocused(true);
-                return true;
-            case '/skills':
-                return this.runSkillsCommand(parsed.args);
-            case '/mcp':
-                return this.runMcpCommand(parsed.args);
-            case '/plugins':
-                return this.runPluginsCommand(parsed.args);
-            case '/apps':
-                return this.runAppsCommand(parsed.args);
-            case '/ssh':
-                await this.runSshCommand(parsed.args);
-                return true;
-            case '/jobs':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.openScheduledJobsDashboard(parsed.args);
-            case '/tasks':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.openCodingTaskInspector(parsed.args);
-            case '/threadplan':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.refreshThreadTodoPlan();
-                await this.loadThreadCodingTasks();
-                if (!this.state.planTodos.length) {
-                    this.notify('No plan todos in this thread.');
-                }
-                this.state.setSessionsFocused(false);
-                this.state.setToolsFocused(false);
-                this.state.setApprovalsFocused(false);
-                this.state.setJobsFocused(false);
-                this.state.setMessagesFocused(false);
-                this.state.setTasksFocused(true);
-                return true;
-            case '/threadreview':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.openThreadCodingTaskReviewSelector();
-            case '/review':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                if (parsed.args) {
-                    const arg = parsed.args.trim();
-                    if (arg === 'summary') {
-                        const lines = this.state.getReviewAnnotationSummary();
-                        for (const line of lines) {
-                            this.notify(line);
-                        }
-                        return true;
-                    }
-                    if (arg === 'approve-all') {
-                        this.state.approveAllReviewFiles();
-                        this.notify('All files approved.');
-                        return true;
-                    }
-                    if (arg === 'clear-all') {
-                        this.state.clearAllReviewAnnotations();
-                        this.notify('All annotations cleared.');
-                        return true;
-                    }
-                    if (arg === 'clear') {
-                        this.state.clearReviewFileAnnotation();
-                        this.notify('Annotation cleared.');
-                        return true;
-                    }
-                    if (arg === 'export') {
-                        const report = this.state.getReviewExportReport();
-                        if (!report.length) {
-                            this.notify('No review data to export.');
-                            return true;
-                        }
-                        for (const line of report) {
-                            this.notify(line);
-                        }
-                        return true;
-                    }
-                    if (arg === 'risk') {
-                        const sections = this.state.reviewFileSections;
-                        if (!sections.length) {
-                            this.notify('No review files to analyze.');
-                            return true;
-                        }
-                        for (const section of sections) {
-                            const risk = this.state.computeFileRiskScore(section);
-                            const annot = this.state.reviewFileAnnotations[section.path];
-                            const marker = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
-                            this.notify(`${String(risk.score).padStart(2, ' ')} ${risk.level.padEnd(8, ' ')} ${section.path} (+${section.additions}/-${section.deletions})${marker}${annot?.comment ? ` - ${annot.comment}` : ''}`);
-                        }
-                        return true;
-                    }
-                    if (arg.startsWith('approve')) {
-                        const comment = arg.slice(7).trim() || undefined;
-                        this.state.setReviewFileAnnotation('approved', comment);
-                        this.notify(comment ? `File approved: ${comment}` : 'File approved.');
-                        return true;
-                    }
-                    if (arg.startsWith('reject')) {
-                        const comment = arg.slice(6).trim() || undefined;
-                        this.state.setReviewFileAnnotation('rejected', comment);
-                        this.notify(comment ? `File rejected: ${comment}` : 'File rejected.');
-                        return true;
-                    }
-                    if (arg === 'diff' || arg.startsWith('diff ')) {
-                        const base = arg.length > 5 ? arg.slice(5).trim() : undefined;
-                        return this.openGitDiffReview(base);
-                    }
-                    if (arg === 'run' || arg.startsWith('run ')) {
-                        const base = arg.length > 4 ? arg.slice(4).trim() : undefined;
-                        return this.runGitDiffReviewAnalysis(base);
-                    }
-                    if (arg === 'findings' || arg.startsWith('findings ')) {
-                        const commit = arg.length > 9 ? arg.slice(9).trim() : undefined;
-                        return this.listReviewFindings(commit);
-                    }
-                    if (arg === 'show' || arg.startsWith('show ')) {
-                        const id = arg.length > 5 ? arg.slice(5).trim() : undefined;
-                        return this.showReviewRun(id);
-                    }
-                    await this.openCodingTaskReview(arg);
-                    return true;
-                }
-                return this.openCodingTaskReviewSelector();
-            case '/diff':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.openWorktreeDiff(parsed.args);
-            case '/theme':
-                return this.runThemeCommand(parsed.args);
-            case '/thinking':
-                return this.runThinkingCommand(parsed.args);
-            case '/display':
-                return this.runDisplayCommand(parsed.args);
-            case '/timeline':
-                await this.toggleTimelineMode();
-                return true;
-            case '/raw':
-                return this.runRawModeCommand(parsed.args);
-            case '/stash':
-                return this.runStashCommand(parsed.args);
-            case '/statusline':
-                return this.runStatuslineCommand(parsed.args);
-            case '/hooks':
-                return this.runHooksCommand();
-            case '/memories':
-                return this.runMemoriesCommand(parsed.args);
-            case '/fast':
-                return this.runFastCommand(parsed.args);
-            case '/personality':
-                return this.runPersonalityCommand(parsed.args);
-            case '/debug-config':
-                return this.runDebugConfigCommand();
-            case '/settings':
-                return this.runSettingsCommand();
-            case '/yolo':
-                return this.runYoloCommand(parsed.args);
-            case '/experimental':
-                return this.runExperimentalCommand(parsed.args);
-            case '/feedback':
-                return this.runFeedbackCommand();
-            case '/ps':
-                return this.runBackgroundTasksCommand(parsed.args);
-            case '/ide':
-                return this.runIdeCommand(parsed.args);
-            case '/editor':
-                return this.runEditorCommand(parsed.args);
-            case '/retry':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.retryFailedCodingTask(parsed.args);
-            case '/rollback':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.rollbackCodingTask(parsed.args);
-            case '/clear':
-                await this.openSession(undefined);
-                this.notify('Started a new session.');
-                return true;
-            case '/approvals': {
-                const pending = await this.getPendingApprovals(this.state.sessionId);
-                if (!pending.length) {
-                    this.notify('No pending approvals.');
-                    return true;
-                }
-                this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
-                this.state.setSessionsFocused(false);
-                this.state.setToolsFocused(false);
-                this.state.setMessagesFocused(false);
-                this.state.closeMessageDetail();
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setApprovalsFocused(true);
-                this.updateTerminalTitle();
-                return true;
-            }
-            case '/usage':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                return this.openUsage(parsed.args?.trim() || undefined);
-            case '/quality': {
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                const arg = parsed.args?.trim() || '';
-                if (arg === 'list' || arg.startsWith('list ')) {
-                    const provider = arg.slice(4).trim() || undefined;
-                    return this.openSummaryQualityRecords(provider);
-                }
-                if (arg === 'trend' || arg.startsWith('trend ')) {
-                    const { provider, bucketSize, maxBuckets } = this.parseSummaryQualityTrendArgs(arg.slice(5));
-                    return this.openSummaryQualityTrend(provider, bucketSize, maxBuckets);
-                }
-                const provider = arg || undefined;
-                const aggregates = this.sessionService
-                    ? await this.sessionService.getSummaryQualityStats(provider)
-                    : [];
-                if (!aggregates.length) {
-                    this.notify(
-                        provider
-                            ? `No summary quality stats recorded for provider '${provider}'.`
-                            : 'No summary quality stats recorded yet.'
-                    );
-                    return true;
-                }
-                this.notify(
-                    aggregates
-                        .map(item => this.formatSummaryQualityAggregate(item))
-                        .join(' | ')
-                );
-                return true;
-            }
-            case '/compactions':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                {
-                    const arg = parsed.args?.trim() || '';
-                    if (arg === 'trend' || arg.startsWith('trend ')) {
-                        const { sessionId, bucketSize, maxBuckets } = this.parseCompactionHistoryTrendArgs(arg.slice(5));
-                        return this.openCompactionHistoryTrend(sessionId, bucketSize, maxBuckets);
-                    }
-                }
-                return this.openCompactionHistory(parsed.args);
-            case '/compact': {
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                const reason = parsed.args?.trim() || undefined;
-                const result = await this.sessionService?.compactSession(this.state.sessionId, reason) ?? { compacted: false };
-                if (result.error) {
-                    this.notify(`Compaction failed: ${result.error}`);
-                    return true;
-                }
-                if (!result.compacted) {
-                    this.notify('Nothing to compact: history already within budget.');
-                    return true;
-                }
-                const summary = typeof result.summary === 'string' && result.summary.trim()
-                    ? ` · ${result.summary.trim()}`
-                    : '';
-                const before = typeof result.beforeMessageCount === 'number' ? result.beforeMessageCount : 0;
-                const after = typeof result.afterMessageCount === 'number' ? result.afterMessageCount : 0;
-                const ratio = typeof result.compressionRatio === 'number' ? `${result.compressionRatio}%` : 'n/a';
-                this.notify(`Compacted ${before} -> ${after} messages (${ratio} tokens saved).${summary}`);
-                return true;
-            }
-            case '/diagnostics':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                {
-                    const arg = parsed.args?.trim() || '';
-                    if (arg === 'trend' || arg.startsWith('trend ')) {
-                        const { sessionId, bucketSize, maxBuckets } = this.parseTurnDiagnosticsTrendArgs(arg.slice(5));
-                        return this.openTurnDiagnosticsTrend(sessionId, bucketSize, maxBuckets);
-                    }
-                    if (arg === 'list' || arg.startsWith('list ')) {
-                        const sessionId = arg.slice(4).trim() || undefined;
-                        return this.openTurnDiagnosticsList(sessionId);
-                    }
-                    const sessionId = arg || undefined;
-                    return this.openTurnDiagnostics(sessionId);
-                }
-            case '/delegation':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                {
-                    const arg = parsed.args?.trim() || '';
-                    if (arg === 'tree' || arg.startsWith('tree ')) {
-                        const rest = arg.slice(4).trim();
-                        const tokens = rest.split(/\s+/).filter(Boolean);
-                        const sessionId = tokens[0];
-                        const status = tokens[1];
-                        const depthRaw = tokens[2] !== undefined && /^\d+$/.test(tokens[2]) ? parseInt(tokens[2], 10) : undefined;
-                        return this.openDelegationTree(sessionId, status, depthRaw);
-                    }
-                    if (arg === 'lineage' || arg.startsWith('lineage ')) {
-                        return this.openDelegationLineage(arg.slice(7).trim() || undefined);
-                    }
-                    if (arg === 'mode' || arg.startsWith('mode ')) {
-                        await this.runDelegationModeCommand(arg.slice(4).trim());
-                        return true;
-                    }
-                    return this.openDelegationList(arg || undefined);
-                }
-            case '/harness':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                {
-                    const arg = parsed.args?.trim() || '';
-                    if (arg === 'audit' || arg.startsWith('audit ')) {
-                        const sessionId = arg.slice(5).trim() || undefined;
-                        return this.openHarnessAudit(sessionId);
-                    }
-                    if (arg === 'profile' || arg.startsWith('profile ')) {
-                        return this.openHarnessProfile(arg.slice(7).trim() || undefined);
-                    }
-                    this.notify('Usage: /harness audit [sessionId] | /harness profile [list|current|diff <from> <to>]');
-                    return true;
-                }
-            case '/voice':
-                return this.handleVoiceCommand(parsed.args?.trim() || '');
-            case '/copy': {
-                if (parsed.args) {
-                    switch (parsed.args) {
-                        case 'input':
-                            await this.copyFocusedTextActionHandler(this.state.input, 'input');
-                            return true;
-                        case 'workspace':
-                            await this.copyFocusedTextActionHandler(this.state.workspace, 'workspace');
-                            return true;
-                        case 'session':
-                            await this.copyFocusedTextActionHandler(this.state.sessionId, 'session');
-                            return true;
-                        case 'model':
-                            await this.copyFocusedTextActionHandler(
-                                [this.state.provider, this.state.model].filter(Boolean).join(' / '),
-                                'model'
-                            );
-                            return true;
-                        default:
-                            this.notify('Nothing to copy.');
-                            return true;
-                    }
-                }
-                const msgs = this.state.messages;
-                for (let i = msgs.length - 1; i >= 0; i--) {
-                    if (msgs[i].role === 'assistant' && msgs[i].content) {
-                        await this.copyFocusedTextActionHandler(msgs[i].content, 'assistant message');
-                        return true;
-                    }
-                }
-                this.notify('Nothing to copy.');
-                return true;
-            }
-            case '/share':
-                return this.runShareCommand(parsed.args);
-            case '/unshare':
-                return this.runUnshareCommand(parsed.args);
-            case '/session': {
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                if (parsed.args) {
-                    await this.refreshSessions();
-                    await this.openSession(parsed.args);
-                    return true;
-                }
-                if (!this.state.sessions.length) {
-                    this.notify('No sessions available.');
-                    return true;
-                }
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setMessagesFocused(false);
-                this.state.setSessionsFocused(true);
-                return true;
-            }
-            case '/new':
-                await this.openSession(parsed.args || undefined);
-                return true;
-            case '/sessions':
-                await this.refreshSessions();
-                if (!this.state.sessions.length) {
-                    this.notify('No sessions available.');
-                    return true;
-                }
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setMessagesFocused(false);
-                this.state.setSessionsFocused(true);
-                return true;
-            case '/resume': {
-                if (this.isTurnInProgress()) { this.notifyBusyState(); return true; }
-                const all = await this.sessionService?.listSessions(this.state.sessionId, undefined, { includeArchived: true }) || [];
-                if (!all.length) { this.notify('No sessions available.'); return true; }
-                const selected = await this.select('Resume session', all.map(item => ({
-                    label: `${item.id}${item.archived ? ' (archived)' : ''}`,
-                    value: item.id,
-                    description: item.title || item.summary || `${item.messageCount || 0} messages`
-                })));
-                if (selected) await this.openSession(selected);
-                return true;
-            }
-            case '/archive': {
-                const archivedSessionId = this.state.sessionId;
-                if (!archivedSessionId || !this.sessionService) { this.notify('No current session to archive.'); return true; }
-                await this.sessionService.setSessionArchived(archivedSessionId, true);
-                await this.refreshSessions();
-                this.notify(`Archived session ${archivedSessionId}.`);
-                return true;
-            }
-            case '/fork':
-            case '/side': {
-                if (this.isTurnInProgress()) { this.notifyBusyState(); return true; }
-                const source = this.state.sessionId;
-                if (!source || !this.sessionService) { this.notify('No current session to fork.'); return true; }
-                const messageId = String(parsed.args || '').trim() || undefined;
-                const forked = await this.sessionService.forkSession(source, messageId);
-                if (!forked) { this.notify('Failed to fork the current session.'); return true; }
-                await this.openSession(forked);
-                this.notify(`${resolved.command === '/side' ? 'Opened side session' : 'Forked session'} ${forked}.`);
-                return true;
-            }
-            case '/pin':
-            case '/unpin': {
-                const pinSessionId = this.state.sessionId;
-                if (!pinSessionId || !this.sessionService) {
-                    this.notify('No current session to pin.');
-                    return true;
-                }
-                const pin = resolved.command === '/pin';
-                await this.sessionService.setSessionPinned(pinSessionId, pin);
-                await this.refreshSessions();
-                this.notify(pin ? `Pinned session ${pinSessionId}.` : `Unpinned session ${pinSessionId}.`);
-                return true;
-            }
-            case '/title': {
-                const titleText = String(parsed.args || '').trim();
-                const titleVerb = titleText.split(/\s+/)[0]?.toLowerCase();
-                if (!titleText || titleVerb === 'list' || titleVerb === 'set' || titleVerb === 'unset') {
-                    return this.runTitleCommand(titleText);
-                }
-                const titleSessionId = this.state.sessionId;
-                if (!titleSessionId || !this.sessionService) {
-                    this.notify('No current session to title.');
-                    return true;
-                }
-                const title = titleText;
-                await this.sessionService.setSessionTitle(titleSessionId, title || undefined);
-                await this.refreshSessions();
-                this.state.setTitle(title);
-                this.updateTerminalTitle();
-                this.notify(title ? `Session titled "${title}".` : 'Session title cleared.');
-                return true;
-            }
-            case '/snapshot': {
-                const snapshotSessionId = this.state.sessionId;
-                if (!snapshotSessionId || !this.sessionService) {
-                    this.notify('No current session to snapshot.');
-                    return true;
-                }
-                const label = String(parsed.args || '').trim() || undefined;
-                const snapshotId = await this.sessionService.createSessionSnapshot(snapshotSessionId, label);
-                if (snapshotId) {
-                    this.notify(`Snapshot created: ${snapshotId}`);
-                } else {
-                    this.notify('Snapshot creation failed.');
-                }
-                return true;
-            }
-            case '/snapshots': {
-                const snapshotSessionId = this.state.sessionId;
-                if (!snapshotSessionId || !this.sessionService) {
-                    this.notify('No current session for snapshots.');
-                    return true;
-                }
-                const snapshots = await this.sessionService.listSessionSnapshots(snapshotSessionId);
-                if (!snapshots.length) {
-                    this.notify('No snapshots for the current session. Use /snapshot [label] to create one.');
-                    return true;
-                }
-                const choice = await this.select(
-                    `Snapshots (${snapshots.length})`,
-                    snapshots.map((snapshot, index) => ({
-                        label: `${String(snapshot.label || 'snapshot').trim()} · ${snapshot.messageCount ?? 0} msgs${snapshot.summary ? ` · ${snapshot.summary}` : ''}`,
-                        value: String(snapshot.snapshotId || index),
-                        detail: snapshot.snapshotId
-                    })),
-                    0,
-                    this.state.consoleOptions.selectHint
-                );
-                if (!choice) return true;
-                const action = await this.select(
-                    'Snapshot action',
-                    [
-                        { label: 'restore', value: 'restore', detail: 'replace current transcript with this snapshot' },
-                        { label: 'delete', value: 'delete', detail: 'remove this snapshot' }
-                    ],
-                    0,
-                    this.state.consoleOptions.selectHint
-                );
-                if (!action) return true;
-                if (action === 'restore') {
-                    await this.sessionService.restoreSessionSnapshot(snapshotSessionId, choice);
-                    await this.refreshSessions();
-                    await this.openSession(snapshotSessionId);
-                    this.notify('Snapshot restored.');
-                } else {
-                    await this.sessionService.deleteSessionSnapshot(snapshotSessionId, choice);
-                    this.notify('Snapshot deleted.');
-                }
-                return true;
-            }
-            case '/git-snapshots':
-            case '/snapshots':
-                if (this.isTurnInProgress()) {
-                    this.notifyBusyState();
-                    return true;
-                }
-                await this.runGitSnapshotsCommand(String(parsed.args || '').trim());
-                return true;
-            case '/toolruns':
-                if (!this.state.toolRuns.length) {
-                    this.notify('No tool runs available.');
-                    return true;
-                }
-                this.state.setSessionsFocused(false);
-                this.state.setMessagesFocused(false);
-                this.state.setProjectsFocused(false);
-                this.state.setToolsFocused(false);
-                this.state.setApprovalsFocused(false);
-                this.state.setTasksFocused(false);
-                this.state.setJobsFocused(false);
-                this.state.closeMessageDetail();
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setToolRunsFocused(true);
-                return true;
-            case '/search':
-                if (!parsed.args || !parsed.args.trim()) {
-                    this.notify('Usage: /search <query>');
-                    return true;
-                }
-                {
-                    const rawQuery = parsed.args.trim();
-                    let agentResults: SessionSearchMatch[] = [];
-                    try {
-                        agentResults = await (this.sessionService?.searchSessions(rawQuery) ?? Promise.resolve([]));
-                    } catch {
-                        agentResults = [];
-                    }
-                    if (agentResults.length) {
-                        const currentId = this.state.sessionId;
-                        const sessionId = await this.select(
-                            `Search: "${rawQuery}" (${agentResults.length})`,
-                            agentResults.map(result => ({
-                                label: `${result.sessionId}${result.sessionId === currentId ? ' [current]' : ''} (${result.count} msg)`,
-                                value: result.sessionId,
-                                detail: result.snippet || result.summary || result.workspace || ''
-                            })),
-                            0,
-                            this.state.consoleOptions.selectHint
-                        );
-                        if (sessionId) {
-                            await this.openSession(sessionId);
-                        }
-                        return true;
-                    }
-                    const query = rawQuery.toLowerCase();
-                    let sessions = this.state.sessions.slice();
-                    if (!sessions.length && this.sessionService) {
-                        const loaded = await this.sessionService.listSessions(this.state.sessionId);
-                        sessions = loaded.map(item => ({
-                            id: item.id,
-                            current: !!item.current,
-                            workspace: item.workspace,
-                            updatedAt: item.lastActiveAt,
-                            messageCount: item.messageCount,
-                            summary: item.summary,
-                            title: item.title,
-                            pinned: !!item.pinned,
-                            projectKey: item.projectKey,
-                            projectId: item.projectId,
-                            primaryThreadId: item.primaryThreadId,
-                            sessionRole: item.sessionRole,
-                            rootRequest: item.rootRequest,
-                            focusSummary: item.focusSummary,
-                            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id
-                        }));
-                    }
-                    if (!sessions.length) {
-                        this.notify('No sessions to search.');
-                        return true;
-                    }
-                    const metadataMatches = sessions.filter(s => {
-                        const id = (s.id || '').toLowerCase();
-                        const summary = (s.summary || '').toLowerCase();
-                        const ws = (s.workspace || '').toLowerCase();
-                        const proj = (s.projectLabel || s.projectKey || s.projectId || '').toLowerCase();
-                        return id.includes(query) || summary.includes(query) || ws.includes(query) || proj.includes(query);
-                    });
-                    this.notify(`Searching ${sessions.length} session${sessions.length === 1 ? '' : 's'} for "${rawQuery}"…`);
-                    const contentHits = await this.searchSessionContent(query, sessions);
-                    const seen = new Set<string>();
-                    const merged: AgentConsoleSessionItem[] = [];
-                    for (const s of metadataMatches) {
-                        if (!seen.has(s.id)) {
-                            seen.add(s.id);
-                            merged.push(s);
-                        }
-                    }
-                    for (const s of sessions) {
-                        if (!seen.has(s.id) && contentHits.has(s.id)) {
-                            seen.add(s.id);
-                            merged.push(s);
-                        }
-                    }
-                    if (!merged.length) {
-                        this.notify(`No sessions matching "${rawQuery}".`);
-                        return true;
-                    }
-                    const sessionId = await this.select(
-                        `Search: "${rawQuery}" (${merged.length})`,
-                        merged.map(s => {
-                            const hit = contentHits.get(s.id);
-                            const name = String(s.title || '').trim() || s.id;
-                            const pinned = s.pinned ? ' 📌' : '';
-                            return {
-                                label: `${name}${s.current ? ' [current]' : ''}${hit ? ` (${hit.count} msg)` : ''} (${s.messageCount ?? '?'})${pinned}`,
-                                value: s.id,
-                                detail: hit ? hit.snippet : (s.summary || s.workspace || '')
-                            };
-                        }),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (sessionId) {
-                        await this.openSession(sessionId);
-                    }
-                }
-                return true;
-            case '/projects':
-                if (!this.state.projects.length) {
-                    await this.refreshSessions();
-                }
-                if (!this.state.projects.length) {
-                    this.notify('No projects available.');
-                    return true;
-                }
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                {
-                    const project = await this.select(
-                        'Projects',
-                        this.state.projects.map(p => ({
-                            label: `${p.label} (${p.sessionCount})`,
-                            value: p.key,
-                            detail: p.lastActive ? `last active ${new Date(p.lastActive).toLocaleDateString()}` : undefined
-                        })),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (!project) return true;
-                    const projectSessions = this.state.sessions.filter(
-                        s => this.resolveSessionProjectKey(s) === project
-                    );
-                    if (!projectSessions.length) {
-                        this.notify('No sessions in this project.');
-                        return true;
-                    }
-                    const sessionId = await this.select(
-                        `Sessions in ${project}`,
-                        projectSessions.map(s => ({
-                            label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
-                            value: s.id,
-                            detail: s.summary
-                        })),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (!sessionId) return true;
-                    await this.openSession(sessionId);
-                }
-                return true;
-            case '/threads':
-                if (!this.state.threads.length) {
-                    await this.refreshSessions();
-                }
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                {
-                    if (!this.state.threads.length) {
-                        this.notify('No threads available.');
-                        return true;
-                    }
-                    const thread = await this.select(
-                        'Threads',
-                        this.state.threads.map(t => ({
-                            label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${t.sections.length} sections]` : ''}`,
-                            value: t.key,
-                            detail: t.lastActive ? `last active ${new Date(t.lastActive).toLocaleDateString()}` : undefined
-                        })),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (!thread) return true;
-                    const threadSessions = this.state.sessions.filter(
-                        s => this.resolveSessionThreadKey(s) === thread
-                    );
-                    if (!threadSessions.length) {
-                        this.notify('No sessions in this thread.');
-                        return true;
-                    }
-                    const sessionId = await this.select(
-                        `Sessions in ${thread}`,
-                        threadSessions.map(s => ({
-                            label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
-                            value: s.id,
-                            detail: s.summary
-                        })),
-                        0,
-                        this.state.consoleOptions.selectHint
-                    );
-                    if (!sessionId) return true;
-                    await this.openSession(sessionId);
-                }
-                return true;
-            case '/sections': {
-                const sectionSessionId = this.state.sessionId;
-                if (!this.sessionService || !sectionSessionId) {
-                    this.notify('No session service or current session.');
-                    return true;
-                }
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                const labelArg = String(parsed.args || '').trim();
-                if (labelArg) {
-                    await this.sessionService.createSection(sectionSessionId, labelArg);
-                    await this.refreshCurrentSections();
-                    this.notify(`Section "${labelArg}" created.`);
-                    return true;
-                }
-                await this.refreshCurrentSections();
-                if (!this.state.sections.length) {
-                    this.notify('No sections. Create one with /sections <label>.');
-                    return true;
-                }
-                const section = await this.select(
-                    'Sections',
-                    this.state.sections.map(item => {
-                        const count = this.state.messages.filter(message => message.sectionId === item.id).length;
-                        return {
-                            label: `${item.label}${count ? ` (${count} messages)` : ''}`,
-                            value: item.id,
-                            detail: `created ${new Date(item.createdAt).toLocaleString()}`
-                        };
-                    }),
-                    0,
-                    this.state.consoleOptions.selectHint
-                );
-                if (!section) {
-                    return true;
-                }
-                const action = await this.select(
-                    'Section actions',
-                    [
-                        { label: 'Rename', value: 'rename', description: 'rename this section (choose a new label below)' },
-                        { label: 'Delete', value: 'delete', description: 'delete this section and detach its messages' },
-                        { label: 'Move to start', value: 'start', description: 'move this section to the top' },
-                        { label: 'Move to end', value: 'end', description: 'move this section to the bottom' },
-                        { label: 'Create before', value: 'before', description: 'create a new section before this one' },
-                        { label: 'Create after', value: 'after', description: 'create a new section after this one' }
-                    ],
-                    0,
-                    this.state.consoleOptions.selectHint
-                );
-                if (!action) {
-                    return true;
-                }
-                if (action === 'delete') {
-                    await this.sessionService.deleteSection(sectionSessionId, section);
-                    await this.refreshCurrentSections();
-                    this.notify('Section deleted.');
-                } else if (action === 'start' || action === 'end') {
-                    const index = this.state.sections.findIndex(item => item.id === section);
-                    if (action === 'start' && index <= 0) {
-                        this.notify(index < 0 ? 'Section not found.' : 'Section already at start.');
-                        return true;
-                    }
-                    if (action === 'end' && (index < 0 || index === this.state.sections.length - 1)) {
-                        this.notify(index < 0 ? 'Section not found.' : 'Section already at end.');
-                        return true;
-                    }
-                    await this.sessionService.moveSection(
-                        sectionSessionId,
-                        section,
-                        undefined,
-                        { beforeId: action === 'start' ? this.state.sections[0].id : undefined }
-                    );
-                    await this.refreshCurrentSections();
-                    this.notify(action === 'start' ? 'Section moved to start.' : 'Section moved to end.');
-                } else if (action === 'before' || action === 'after') {
-                    const targetIndex = this.state.sections.findIndex(item => item.id === section);
-                    const beforeId = action === 'before'
-                        ? section
-                        : this.state.sections[targetIndex + 1]?.id;
-                    const label = await this.select('New section label', [
-                        { label: 'Continue from previous section', value: '' },
-                        { label: 'Next step', value: 'Next step' },
-                        { label: 'Implementation', value: 'Implementation' },
-                        { label: 'Analysis', value: 'Analysis' }
-                    ], 0, this.state.consoleOptions.selectHint);
-                    if (label === undefined) {
-                        return true;
-                    }
-                    const created = await this.sessionService.createSection(sectionSessionId, label || 'Section', undefined, { beforeId });
-                    await this.refreshCurrentSections();
-                    this.notify(`Section "${created.label}" created.`);
-                } else if (action === 'rename') {
-                    const label = await this.select('Rename section to', [
-                        { label: 'Next step', value: 'Next step' },
-                        { label: 'Implementation', value: 'Implementation' },
-                        { label: 'Analysis', value: 'Analysis' },
-                        { label: 'Refactor', value: 'Refactor' },
-                        { label: 'Review', value: 'Review' }
-                    ], 0, this.state.consoleOptions.selectHint);
-                    if (!label) {
-                        return true;
-                    }
-                    await this.sessionService.renameSection(sectionSessionId, section, label);
-                    await this.refreshCurrentSections();
-                    this.notify(`Section renamed to "${label}".`);
-                }
-                return true;
-            }
-            case '/messages':
-                this.state.closeReview();
-                this.state.closeGitSnapshotDetail();
-                this.state.setSessionsFocused(false);
-                this.state.setMessagesFocused(true);
-                return true;
-            case '/approve':
-            case '/deny': {
-                const isApprove = resolved.command === '/approve';
-                if (isApprove && String(parsed.args || '').trim().toLowerCase() === 'retry') {
-                    return this.runApproveRetryCommand();
-                }
-                const pend = await this.getPendingApprovals(this.state.sessionId);
-                if (!pend.length) { this.notify('No pending approvals.'); return true; }
-                if (parsed.args) {
-                    const exact = pend.find((item: any) => item.id === parsed.args);
-                    const matches = exact ? [exact] : pend.filter((item: any) => item.id.startsWith(parsed.args));
-                    if (matches.length === 1) {
-                        const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', matches[0].id);
-                        this.notify(applied
-                            ? `${isApprove ? 'Approved' : 'Denied'} ${matches[0].toolName} (${matches[0].id.slice(0, 8)}).`
-                            : `Approval request ${matches[0].id.slice(0, 8)} is no longer pending.`);
-                    } else {
-                        this.notify(matches.length > 1
-                            ? `Approval id "${parsed.args}" is ambiguous.`
-                            : `Approval id "${parsed.args}" not found.`);
-                    }
-                    return true;
-                }
-                const req = pend.length === 1 ? pend[0] : null;
-                if (!req) {
-                    const sel = await this.select(isApprove ? 'Approve' : 'Deny',
-                        pend.map((r: any) => ({ label: r.toolName + ' (' + r.id.slice(0, 8) + ')', value: r.id, description: r.reason })));
-                    if (!sel) { return true; }
-                    const found = pend.find((r: any) => r.id === sel);
-                    if (found) {
-                        const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', found.id);
-                        this.notify(applied
-                            ? `${isApprove ? 'Approved' : 'Denied'} ${found.toolName} (${found.id.slice(0, 8)}).`
-                            : `Approval request ${found.id.slice(0, 8)} is no longer pending.`);
-                    }
-                    return true;
-                }
-                if (req) {
-                    const applied = await this.applyApprovalDecision(isApprove ? 'approve' : 'deny', req.id);
-                    this.notify(applied
-                        ? `${isApprove ? 'Approved' : 'Denied'} ${req.toolName} (${req.id.slice(0, 8)}).`
-                        : `Approval request ${req.id.slice(0, 8)} is no longer pending.`);
-                }
-                return true;
-            }
-            case '/quit':
-            case '/exit':
-                await this.requestTerminalExit(this.closingSessionMessage());
-                return true;
-            case '/multiline':
-                this.multilineMode = !this.multilineMode;
-                if (!this.multilineMode) { this.draftLines = []; }
-                return true;
-            case '/cancel':
-                if (this.isTurnInProgress()) {
-                    const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
-                    this.notify(cancelled
-                        ? 'Cancelling current turn...'
-                        : 'No running turn to cancel.');
-                    return true;
-                }
-                this.draftLines = [];
-                this.multilineMode = false;
-                this.shellDraftLines = [];
-                this.shellMultilineMode = false;
-                return true;
-            case '/send':
-                if (!this.draftLines.length) { return true; }
-                await this.submitMultilineDraft();
-                return true;
-            default:
-                return false;
+        const handler = COMMAND_HANDLERS[resolved.command];
+        if (handler) {
+            return handler(this.buildCommandContext(), String(parsed.args || '').trim(), resolved);
         }
+        return false;
     }
+
 
     protected async handleMenuSelection(value: string): Promise<void> {
         const selected = String(value || '').trim();

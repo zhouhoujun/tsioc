@@ -396,8 +396,9 @@
   - 会话小结（2026-08-25）：A/B/C/D/E 五批已落地并全量回归绿（tsc --noEmit 干净、agent-ui 682 passing EXIT=0、build:web EXIT=0，组件 9039→7844 行 −1195 行）。迁移模式已固化：逐字迁移仅 this→ctx → python 锚点手术替换为委托 → tsc → 全量测试。
     - [x] 批次 D · 设置持久化（theme/statusline/title/raw/stash restore+persist）✅（2026-08-25）
     - [x] 批次 E · 消息编辑模式（enterEditMode/saveEdit…）✅（2026-08-25）
-    - [ ] 批次 F · handleCommand 大 switch 按域表化（最后做，风险最高）— 暂缓，编排域体量大、耦合深，后续专项推进
+    - [x] 批次 F · handleCommand 89-case switch → COMMAND_HANDLERS dispatch table（2026-08-26，组件 7890→6916 行 −974 行；CommandHandlerContext 接口 + 89 handler 函数 + buildCommandContext() 桥接；tsc --noEmit 干净、agent-ui 682 passing EXIT=0）
     - [ ] 附带清理：`AgentConsoleSshHandlers.ts` 为孤儿模块（index 导出但组件未接线、逻辑重复），接线或删除需先 diff 两份实现
+  - P199 A–F 累计：组件从 9039→6916 行（−2123 行，−23.5%）。
   - 后续批次沿用批次 A 流程：逐字迁移仅替换 this→ctx → python 行号手术替换组件方法体为委托 → tsc --noEmit → agent-ui 全套测试。
 - **P200 · G123 · PTY 三场景验收脚手架（中）** ✅ 已落地（2026-08-22）
   - P190 遗留人工验收项：编写可复用 PTY 脚本（伪模型注入）+ 验收清单，覆盖长回复尾部问询可见 / keymap overlay / plan 实时勾选三场景。
@@ -413,15 +414,15 @@
 
 ## 回归基线
 
-截至 P199 收尾 + P196 补全（2026-08-25）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→7845 行（−1294 行，−14.3%）。
+截至 P199 batch F 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
-### P199 收尾复核（2026-08-25，AgentConsoleComponent 拆分）
+### P199 收尾复核（2026-08-26，AgentConsoleComponent 拆分）
 
-- A/B/C/D/E 五批全部完成：review+git diff → ReviewHandlers、coding_task → CodingTaskHandlers、voice → VoiceHandlers、model/profile → ModelHandlers、edit 模式 → EditModeHandlers、设置持久化、消息编辑模式。
+- A/B/C/D/E/F 六批全部完成：review+git diff → ReviewHandlers、coding_task → CodingTaskHandlers、voice → VoiceHandlers、model/profile → ModelHandlers、edit 模式 → EditModeHandlers、设置持久化、消息编辑模式、handleCommand 89-case switch → COMMAND_HANDLERS dispatch table。
 - 全量测试：agent-ui 682 passing、components 135、components/console 73、components/html 117，均 EXIT=0。
 - 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` esbuild EXIT=0。
 - 静态边界：`packages/agents/agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接引用。
-- 剩余：批次 F（handleCommand 大 switch 表化，风险最高，暂缓）+ SshHandlers 孤儿模块清理。
+- 剩余：SshHandlers 孤儿模块清理 + P201 ~33 处 `as any` 逐项治理。
 
 ### P190 收尾复核（2026-08-22）
 
@@ -464,7 +465,7 @@
 ### 大文件（>500 LOC）
 | 文件 | LOC | 评估 |
 |---|---|---|
-| AgentConsoleComponent.ts | 7845 | 核心组件，拆分后 −1294 行（P199 A–E 批次），剩余 handleCommand 域待后续专项 |
+| AgentConsoleComponent.ts | 6916 | 核心组件，P199 A–F 六批拆分累计 −2123 行（−23.5%） |
 | AgentConsoleSessionState.ts | 4426 | 状态管理，规模合理 |
 | AgentConsolePanels.ts | 3459 | 面板渲染，规模合理 |
 | DefaultAgentRuntime.ts | 3191 | 运行时核心，规模合理 |
