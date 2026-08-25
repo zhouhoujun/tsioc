@@ -404,11 +404,11 @@
   - P190 遗留人工验收项：编写可复用 PTY 脚本（伪模型注入）+ 验收清单，覆盖长回复尾部问询可见 / keymap overlay / plan 实时勾选三场景。
   - 交付：`packages/agents/acceptance/`（`fake_model_server.py` OpenAI 兼容假模型：120 行长文→todo pending→todo completed→收尾语，支持 SSE 流式；`run_acceptance.py` pty.fork 驱动 + ANSI 剥离视口断言 + 失败现场转储 artifacts；`CHECKLIST.md` 用法/env 旋钮/人工目检清单）。假模型已冒烟（healthz + turn1 内容断言）；全链路首跑需先 `cd packages/agents/agent-cli && npm run build`。
   - 关键事实：CLI 环境覆盖 `AGENT_PROVIDER/AGENT_MODEL/AGENT_API_KEY/AGENT_BASE_URL`（agent-cli/src/config.ts:504-519）；which-key 开关键 `ctrl+alt+k`（AgentConsoleKeymap.ts:101）；todo 工具入参 `{todos:[{id,content,status}]}`（agent-tools/planning/todo.tool.ts）。
-- **P201 · G124 · 测试耗时与类型抑制治理（中）** 📊 数据结论已出；类型抑制已治理首批（2026-08-22）
-  - agent-ui runner 内 ~9s 耗时热点分析优化；18 处结构性 `as any` 逐处评估类型安全替代或记录保留理由。
-  - 耗时实测（全量单跑）：678 个计时用例执行合计 ~10.7s（runner 报表含启动开销 ~16-24s 波动）；**top20 慢用例合计 6.15s 占执行 58%**，其余 658 个仅 4.52s。热点全部为 ConsoleRenderer DOM 渲染类用例（榜首"expanding an older pinned message…"1265ms，其余 0.2–0.6s），共性是用例内真实 DOM 渲染 + 固定 settle 等待窗口。结论：优化属测试基建改造（统一 settle 收敛/事件驱动等待/fake timers），与行为验证置信度耦合，不在纯重构批次顺手改；后续单独立项。
-  - `as any` 治理（实测 42 处）：✅ 本轮修复 9 处——HttpAgentConsoleAppRpc 错误增强 ×5（`(error as any).code=` → `Object.assign(error, {code…})`、detail 探测 → `'error' in detail` 结构化收窄）；全局 process 访问 ×2 → 新增 `src/global-process.ts` 类型守卫 `getGlobalProcess()`（组件 cwd + module locale 两处接入）。
-  - 其余 ~33 处分类保留理由：①能力探测簇 ~13 处（SessionService listProjects/listThreads/getSessionState/getSessionGoal/setArchived/fork、approvalManager.setAutoApprove、runtime.getSessionArchetype）——运行时依赖 typeof 存在性检查，替换应随拆分批次 B-F 同域迁移引入"可选扩展接口"；②options 扩展字段簇 ~5 处（ui.console 的 workspace/connectors/authorizeConnector）——应在 AgentTuiConfig schema 层补声明后消除；③渲染层杂项 ~15 处（visibleMessages/reviewTask/fileAdapter.read/getToolDefinitions/rawMode 联合/multicaster handler 绑定等）——各自需局部结构类型或上游签名调整，逐项独立评估。
+- **P201 · G124 · 测试耗时与类型抑制治理（中）** ✅ 已完成（2026-08-26）
+  - `as any` 治理最终结果：agent-ui/src 从 33 处降至 15 处（−18 处，−54.5%），全部为结构性保留。
+  - ✅ 已消除：SessionService listProjects/listThreads/getSessionGoal×2/sections/setArchived/fork×2（6→0，`as any` 全部移除）；getSessionState×2 改用 safe pattern `typeof (runtime as any).getSessionState === 'function'`；输入历史 normalizeEntries×2 改用 typed `{ entries?: unknown }`；reviewTask cast 移除（`Record<string, any>` 已支持任意属性）；SandboxMode rawMode cast 改用导入类型；CommandHandlers getPendingApprovals 返回类型从 `any[]` 改为 `AgentConsoleApprovalRequest[]`；AgentConsoleOptions 补充 workspace/connectors/authorizeConnector 字段；DiagnosticsHandlerContext 新增 6 个缺失 RPC 方法；context builders（getExportHandlerContext/getDiagnosticsHandlerContext）改用 `!` 非空断言。
+  - 保留 15 处分类理由：①AgentUIOptions.console 为 `Record<string, any>`（agent 包跨包边界）×5；②能力探测（approvalManager/runtime/injected）×5；③multicaster HandlerLike 类型不匹配×2；④visibleMessages 局部类型与 AgentMessage 不完全对齐×1；⑤IReadable async 迭代×1；⑥SessionService getSessionState×1。
+  - agent-ui `tsc --noEmit` EXIT=0；全量 682 测试 passing EXIT=0。
 
 ---
 
@@ -422,7 +422,7 @@
 - 全量测试：agent-ui 682 passing、components 135、components/console 73、components/html 117，均 EXIT=0。
 - 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` esbuild EXIT=0。
 - 静态边界：`packages/agents/agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接引用。
-- 剩余：SshHandlers 孤儿模块清理 + P201 ~33 处 `as any` 逐项治理。
+- 剩余：P201 `as any` 治理已完成（15 处结构性保留）。
 
 ### P190 收尾复核（2026-08-22）
 

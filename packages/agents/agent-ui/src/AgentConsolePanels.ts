@@ -2954,7 +2954,7 @@ export class AgentConsoleReviewPanelComponent {
         const title = String(this.reviewTask?.title || this.state.selectedReviewTaskId || 'review');
         const taskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
         const status = this.reviewTask?.status || 'unknown';
-        const sourceSessionId = String((this.reviewTask as any)?.sourceSessionId || '').trim();
+        const sourceSessionId = String(this.reviewTask?.sourceSessionId || '').trim();
         const projectLabel = String(this.state.projectLabel || '').trim();
         const executionMode = this.state.reviewExecutionMode || 'n/a';
         const total = this.contentLines.length;

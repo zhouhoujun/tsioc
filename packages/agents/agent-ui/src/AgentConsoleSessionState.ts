@@ -330,6 +330,9 @@ export interface AgentConsoleOptions {
     showMessageTimestamps?: boolean;
     /** Platform-specific wording for expandable messages. */
     messageToggleInteraction?: 'click' | 'enter';
+    workspace?: string;
+    connectors?: Record<string, unknown>;
+    authorizeConnector?: (appId: string) => boolean | Promise<boolean>;
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -385,6 +388,9 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     showStatusline: true,
     showMessageTimestamps: true,
     messageToggleInteraction: 'click',
+    workspace: '',
+    connectors: undefined as unknown as Record<string, unknown>,
+    authorizeConnector: undefined as unknown as (appId: string) => boolean | Promise<boolean>,
 };
 
 export interface AgentConsoleTextOverlayState {

@@ -175,9 +175,7 @@ export class AgentConsoleSessionService {
             return this.withCurrentProjectSessions(this.sortProjectChoices(groups), currentSessionId);
         }
         if (this.sessionStore) {
-            const projectIndexes = typeof (this.sessionStore as any).listProjects === 'function'
-                ? await this.sessionStore.listProjects()
-                : undefined;
+            const projectIndexes = await this.sessionStore?.listProjects();
             if (Array.isArray(projectIndexes) && projectIndexes.length > 0) {
                 const sessions = await this.listSessions(currentSessionId, context);
                 return this.withCurrentProjectSessions(this.groupProjectIndexes(projectIndexes, sessions), currentSessionId);
@@ -230,9 +228,7 @@ export class AgentConsoleSessionService {
             return this.withCurrentThreads(this.sortThreadChoices(groups), currentSessionId);
         }
         if (this.sessionStore) {
-            const threadIndexes = typeof (this.sessionStore as any).listThreads === 'function'
-                ? await this.sessionStore.listThreads()
-                : undefined;
+            const threadIndexes = await this.sessionStore?.listThreads();
             const sessions = await this.listSessions(currentSessionId, context);
             if (Array.isArray(threadIndexes) && threadIndexes.length > 0) {
                 return this.withCurrentThreads(this.groupThreadIndexes(threadIndexes, sessions), currentSessionId);
@@ -274,16 +270,14 @@ export class AgentConsoleSessionService {
             return {
                 messages,
                 sections: Array.isArray(state?.sections) ? state.sections : undefined,
-                goalSummary: typeof (this.runtime as any).getSessionGoal === 'function'
-                    ? await (this.runtime as any).getSessionGoal(sessionId)
-                    : undefined
+                goalSummary: await this.runtime?.getSessionGoal(sessionId)
             };
         }
         if (this.sessionStore) {
             const state = await this.sessionStore.get(sessionId);
             return {
                 messages: Array.isArray(state.messages) ? state.messages : [],
-                sections: Array.isArray((state as any).sections) ? (state as any).sections : undefined
+                sections: Array.isArray(state.sections) ? state.sections : undefined
             };
         }
         return { messages: [] };
@@ -397,7 +391,7 @@ export class AgentConsoleSessionService {
             await this.appRpc.request('session.set_archived', { sessionId, archived }, context);
             return;
         }
-        await (this.sessionStore as any)?.setArchived(sessionId, archived);
+        await this.sessionStore?.setArchived(sessionId, archived);
     }
 
     async forkSession(sessionId: string, messageId?: string, forkSessionId?: string, context?: any): Promise<string> {
@@ -406,7 +400,7 @@ export class AgentConsoleSessionService {
             const result = await this.appRpc.request('session.fork', { sessionId, ...(messageId ? { messageId } : {}), ...(forkSessionId ? { forkSessionId } : {}) }, context);
             return String(result?.sessionId || '');
         }
-        const state = await (this.sessionStore as any)?.fork(sessionId, messageId, forkSessionId);
+        const state = await this.sessionStore?.fork(sessionId, messageId, forkSessionId);
         return String(state?.sessionId || '');
     }
 
@@ -632,12 +626,60 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.trend) ? result.trend : [];
     }
 
+    async listSummaryQualityRecords(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('summary_quality.records', { sessionId }, context);
+        return Array.isArray(result?.records) ? result.records : [];
+    }
+
+    async getSummaryQualityAggregate(sessionId?: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc) {
+            return {};
+        }
+        const result = await this.appRpc.request('summary_quality.aggregate', sessionId ? { sessionId } : {}, context);
+        return result?.aggregate ?? {};
+    }
+
     async listCompactionHistory(sessionId: string, options?: { level?: string; limit?: number }, context?: any): Promise<Array<Record<string, any>>> {
         if (!this.appRpc) {
             return [];
         }
         const result = await this.appRpc.request('compaction_history.list', { sessionId, ...options }, context);
         return Array.isArray(result?.records) ? result.records : [];
+    }
+
+    async listTurnDiagnosticsRecords(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('turn_diagnostics.list', { sessionId }, context);
+        return Array.isArray(result?.records) ? result.records : [];
+    }
+
+    async getCompactionHistoryAggregate(sessionId?: string, context?: any): Promise<Record<string, any>> {
+        if (!this.appRpc) {
+            return {};
+        }
+        const result = await this.appRpc.request('compaction_history.aggregate', sessionId ? { sessionId } : {}, context);
+        return result?.aggregate ?? {};
+    }
+
+    async listCompactionHistoryTrend(options: { sessionId?: string; bucketSize?: number; maxBuckets?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('compaction_history.trend', options, context);
+        return Array.isArray(result?.trend) ? result.trend : [];
+    }
+
+    async listTurnDiagnosticsTrend(options: { sessionId?: string; bucketSize?: number; maxBuckets?: number }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const result = await this.appRpc.request('turn_diagnostics.trend', options, context);
+        return Array.isArray(result?.trend) ? result.trend : [];
     }
 
     /**

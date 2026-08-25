@@ -92,8 +92,8 @@ export class AgentConsoleInputHistoryStore {
     protected normalizeEntries(value: unknown): string[] {
         const entries: any[] = Array.isArray(value)
             ? value
-            : Array.isArray((value as any)?.entries)
-                ? (value as any).entries
+            : Array.isArray((value as { entries?: unknown })?.entries)
+                ? (value as { entries: unknown[] }).entries
                 : [];
         return Array.from(new Set(entries
             .map((entry: any) => String(entry || '').trim())

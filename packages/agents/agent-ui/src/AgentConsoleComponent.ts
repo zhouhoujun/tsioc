@@ -12,6 +12,7 @@ import {
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
+import type { SandboxMode } from '@tsdi/agent/src/harness/sandbox-exec';
 import {
     runExportCommand as runExportCommandFn,
     parseExportArgs as parseExportArgsFn,
@@ -546,9 +547,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     private getExportHandlerContext() {
         return {
-            state: this.state as any,
-            sessionService: this.sessionService as any,
-            app: this.app as any,
+            state: this.state,
+            sessionService: this.sessionService!,
+            app: this.app!,
             workspace: this.workspace,
             notify: (msg: string) => this.notify(msg),
         };
@@ -618,8 +619,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     private getDiagnosticsHandlerContext() {
         return {
-            state: this.state as any,
-            sessionService: this.sessionService as any,
+            state: this.state,
+            sessionService: this.sessionService!,
             notify: (msg: string) => this.notify(msg),
             select: (title: string, options: any[], footer?: string) => this.select(title, options, 0, footer),
         };
@@ -6048,7 +6049,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.toolRegistry) {
             return [];
         }
-        return this.toolRegistry.getToolDefinitions(sessionId) as any[];
+        return this.toolRegistry.getToolDefinitions(sessionId);
     }
 
     private modelCtx(): ModelHandlerContext {
@@ -6508,7 +6509,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         try {
-            await this.setSessionSandboxMode(this.state.sessionId, rawMode === 'default' ? null : rawMode as any);
+            await this.setSessionSandboxMode(this.state.sessionId, rawMode === 'default' ? null : rawMode as SandboxMode);
             this.notify(`Sandbox mode set to ${rawMode}.`);
         } catch (error) {
             this.notify(`Failed to set sandbox mode: ${error instanceof Error ? error.message : String(error)}`);

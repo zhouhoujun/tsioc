@@ -171,7 +171,7 @@ export interface CommandHandlerContext {
     handleVoiceCommand(arg: string): Promise<boolean>;
 
     // ── approvals ──
-    getPendingApprovals(sessionId: string): Promise<any[]>;
+    getPendingApprovals(sessionId: string): Promise<AgentConsoleApprovalRequest[]>;
     applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean>;
 
     // ── copy / search ──
@@ -1080,7 +1080,7 @@ async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resol
         ctx.notify('No pending approvals.');
         return true;
     }
-    ctx.state.setPendingApprovals(pending as any[]);
+    ctx.state.setPendingApprovals(pending);
     ctx.state.setSessionsFocused(false);
     ctx.state.setToolsFocused(false);
     ctx.state.setMessagesFocused(false);
