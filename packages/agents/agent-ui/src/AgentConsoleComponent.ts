@@ -1679,6 +1679,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setMessages(page.messages);
         this.state.setSections(page.sections);
         this.state.setGoalSummary(page.goalSummary || null);
+        await this.restoreSessionModes(target.id);
+    }
+
+    protected async restoreSessionModes(sessionId: string): Promise<void> {
+        try {
+            let planMode = false;
+            if (this.appRpc) {
+                const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
+                planMode = result?.enabled === true;
+            } else {
+                planMode = this.runtime.isPlanMode(sessionId);
+            }
+            this.state.setPlanMode(planMode);
+        } catch {
+            // runtime may not support plan mode queries — leave current value
+        }
     }
 
     protected async selectApprovalRequest(
