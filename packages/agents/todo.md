@@ -378,8 +378,9 @@
 - **P197 · G120 · transcript 视窗化渲染评估（中）** `platform: components/console + src/` ✅（2026-08-25）
   - 对照 Codex #39063/#39065：长 transcript 只渲染可视区行；先做基线测量再决定是否落地，遵守"数据变化驱动渲染"契约（禁止脏节点跳过方案）。
   - **基线结论：无需落地。** 当前已有三层视窗机制：① TUI 层 `TuiTerminalSurface.resolveViewportLayout()` 按终端高度切片 transcript，只输出可视行；② 消息面板 `visibleMessages` 通过 `resolveConsoleListWindow()` 限制渲染条目数（`messagesVisibleItems` 配置）；③ 长消息 `truncateMessageItem()` 折叠为预览行 + "… N more lines" toggle。三层均遵守数据变化驱动渲染契约，无脏节点追踪。
-- **P198 · G121 · 流式 code fence 不重复整块重渲 + 回放缓冲上限（中）** `platform: src/（跨平台）`
+- **P198 · G121 · 流式 code fence 不重复整块重渲 + 回放缓冲上限（中）** `platform: src/（跨平台）` ✅（2026-08-25）
   - 对照 Codex #39061/#39081：streaming markdown 的 code fence 增量合并策略；非活跃会话的回放缓冲按 delta 大小设上限防内存膨胀。
+  - **基线结论：无需落地。** 当前已有充足机制：① `renderAgentConsoleMarkdownLines` 是 O(n) 行级解析器，每次 delta 重渲全量内容耗时微秒级，无需增量合并；② `BrowserMarkdownWorkerBridge` 维护 LRU 缓存（MAX_CACHE_SIZE=128），长内容（≥1000 chars）异步 Worker 解析，短内容同步直出；③ `treatUnclosedFenceAsText` 已处理流式未闭合 code fence；④ 流式文本累积在 `collectStreamingResponse` 的局部变量中，turn 完成后追加 session 消息，无跨 turn 的 replay buffer 需要上限；⑤ InMemory store 仅用于开发测试，生产使用 TypeORM 持久化。
 
 ### 批次 C · 工程质量专项（P199–P201）
 
