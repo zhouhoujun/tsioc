@@ -1,5 +1,6 @@
 import { PromptSection, PromptSectionContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
+import { AgentSkillTokenBudgetOptions } from '@tsdi/agent';
 import { LocalSkillRegistry } from './LocalSkillRegistry';
 import { SkillSessionStore } from './SkillSessionStore';
 
@@ -27,13 +28,21 @@ export class ActiveSkillsSection extends PromptSection {
         }
         const lines = ['## Active Skills'];
         const compacted = context.extra?.contextPreparation?.compactionTriggered === true;
-        active.forEach(skill => {
-            lines.push(`### ${skill.title}`);
+        const budget = context.extra?.skillTokenBudget as AgentSkillTokenBudgetOptions | undefined;
+        const maxChars = budget?.maxChars;
+        const compactActive = budget?.compactActive !== false;
+        let totalChars = 0;
+        const sections: string[] = [];
+        for (const skill of active) {
             const remote = skill.metadata?.source === 'remote' || skill.metadata?.source?.startsWith('plugin:');
-            lines.push(compacted && remote
+            const compactedRemote = compacted && remote;
+            const useCompact = compactedRemote || (compactActive && maxChars != null && totalChars >= maxChars);
+            const body = useCompact
                 ? `${skill.summary}\nFull instructions remain available through read_skill('${skill.id}').`
-                : skill.promptFull);
-        });
-        return lines.join('\n');
+                : skill.promptFull;
+            totalChars += body.length;
+            sections.push(`### ${skill.title}\n${body}`);
+        }
+        return [...lines, ...sections].join('\n');
     }
 }

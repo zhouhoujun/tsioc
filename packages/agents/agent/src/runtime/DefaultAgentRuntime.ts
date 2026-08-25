@@ -1225,7 +1225,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString(),
-                extra: { contextPreparation: preparedHistory.report }
+                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget }
             });
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));

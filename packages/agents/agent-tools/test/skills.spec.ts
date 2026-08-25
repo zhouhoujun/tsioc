@@ -8,6 +8,7 @@ import { RemoteSkillManager, RemoteSkillProcessRunner } from '../skills/remote-s
 import { AgentSkillDefinition } from '../skills/types';
 import { AgentPluginManager } from '../skills/plugin-manager';
 import { ActiveSkillsSection } from '../skills/ActiveSkillsSection';
+import { SkillsCatalogSection } from '../skills/SkillsCatalogSection';
 import { LocalSkillRegistry } from '../skills/LocalSkillRegistry';
 import { SkillSessionStore } from '../skills/SkillSessionStore';
 
@@ -163,6 +164,136 @@ export class ActiveSkillsSectionCompactionTest {
 
         const normal = section.render({ sessionId: 's1' } as any);
         expect(normal).toContain('REMOTE FULL');
+    }
+}
+
+@Suite('ActiveSkillsSection skill token budget')
+export class ActiveSkillsSectionTokenBudgetTest {
+    @Test('compacts all skills to summary when maxChars is very small')
+    compactAllWhenOverBudget() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'Skill A', summary: 'Summary A.', promptFull: 'FULL A BODY' },
+            { id: 'b', title: 'Skill B', summary: 'Summary B.', promptFull: 'FULL B BODY' }
+        ]);
+        const sessions = new SkillSessionStore();
+        sessions.activate('s1', 'a');
+        sessions.activate('s1', 'b');
+        const section = new ActiveSkillsSection(registry, sessions);
+
+        const result = section.render({ sessionId: 's1', extra: { skillTokenBudget: { maxChars: 10 } } } as any);
+        expect(result).toContain('Summary A.');
+        expect(result).toContain('Summary B.');
+        expect(result).not.toContain('FULL A BODY');
+        expect(result).not.toContain('FULL B BODY');
+    }
+
+    @Test('keeps full prompt for first skill when budget allows')
+    keepsFirstSkillFull() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'Skill A', summary: 'Summary A.', promptFull: 'FULL A' },
+            { id: 'b', title: 'Skill B', summary: 'Summary B.', promptFull: 'FULL B' }
+        ]);
+        const sessions = new SkillSessionStore();
+        sessions.activate('s1', 'a');
+        sessions.activate('s1', 'b');
+        const section = new ActiveSkillsSection(registry, sessions);
+
+        const result = section.render({ sessionId: 's1', extra: { skillTokenBudget: { maxChars: 200 } } } as any);
+        expect(result).toContain('FULL A');
+        expect(result).toContain('FULL B');
+    }
+
+    @Test('respects compactActive=false to disable budget-based compaction')
+    respectsCompactActiveFalse() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'Skill A', summary: 'Summary A.', promptFull: 'FULL A' },
+            { id: 'b', title: 'Skill B', summary: 'Summary B.', promptFull: 'FULL B' }
+        ]);
+        const sessions = new SkillSessionStore();
+        sessions.activate('s1', 'a');
+        sessions.activate('s1', 'b');
+        const section = new ActiveSkillsSection(registry, sessions);
+
+        const result = section.render({ sessionId: 's1', extra: { skillTokenBudget: { maxChars: 10, compactActive: false } } } as any);
+        expect(result).toContain('FULL A');
+        expect(result).toContain('FULL B');
+    }
+
+    @Test('without budget config renders full prompts as before')
+    noBudgetRendersFull() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'Skill A', summary: 'Summary A.', promptFull: 'FULL A' }
+        ]);
+        const sessions = new SkillSessionStore();
+        sessions.activate('s1', 'a');
+        const section = new ActiveSkillsSection(registry, sessions);
+
+        const result = section.render({ sessionId: 's1' } as any);
+        expect(result).toContain('FULL A');
+    }
+}
+
+@Suite('SkillsCatalogSection skill token budget')
+export class SkillsCatalogSectionTokenBudgetTest {
+    @Test('truncates catalog when over budget')
+    truncatesOverBudget() {
+        const registry = new LocalSkillRegistry([
+            { id: 'aaa', title: 'AAA', summary: 'First skill summary.' },
+            { id: 'bbb', title: 'BBB', summary: 'Second skill summary.' },
+            { id: 'ccc', title: 'CCC', summary: 'Third skill summary.' },
+            { id: 'ddd', title: 'DDD', summary: 'Fourth skill summary.' }
+        ]);
+        const section = new SkillsCatalogSection(registry);
+
+        const result = section.render({ extra: { skillTokenBudget: { maxChars: 80 } } } as any);
+        expect(result).toContain('## Available Skills');
+        expect(result).toContain('- aaa:');
+        expect(result).toContain('...');
+        expect(result).toContain('more');
+        expect(result).not.toContain('- ddd:');
+    }
+
+    @Test('shows all skills when under budget')
+    showsAllWhenUnderBudget() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'A', summary: 'Short.' },
+            { id: 'b', title: 'B', summary: 'Short.' }
+        ]);
+        const section = new SkillsCatalogSection(registry);
+
+        const result = section.render({ extra: { skillTokenBudget: { maxChars: 5000 } } } as any);
+        expect(result).toContain('- a:');
+        expect(result).toContain('- b:');
+        expect(result).not.toContain('...');
+    }
+
+    @Test('respects truncateCatalog=false to disable catalog truncation')
+    respectsTruncateCatalogFalse() {
+        const registry = new LocalSkillRegistry([
+            { id: 'aaa', title: 'AAA', summary: 'First skill summary.' },
+            { id: 'bbb', title: 'BBB', summary: 'Second skill summary.' },
+            { id: 'ccc', title: 'CCC', summary: 'Third skill summary.' },
+            { id: 'ddd', title: 'DDD', summary: 'Fourth skill summary.' }
+        ]);
+        const section = new SkillsCatalogSection(registry);
+
+        const result = section.render({ extra: { skillTokenBudget: { maxChars: 80, truncateCatalog: false } } } as any);
+        expect(result).toContain('- aaa:');
+        expect(result).toContain('- ddd:');
+        expect(result).not.toContain('...');
+    }
+
+    @Test('without budget config renders full catalog as before')
+    noBudgetRendersFull() {
+        const registry = new LocalSkillRegistry([
+            { id: 'a', title: 'A', summary: 'First.' },
+            { id: 'b', title: 'B', summary: 'Second.' }
+        ]);
+        const section = new SkillsCatalogSection(registry);
+
+        const result = section.render({} as any);
+        expect(result).toContain('- a:');
+        expect(result).toContain('- b:');
     }
 }
 

@@ -198,6 +198,31 @@ export interface AgentVerificationOptions {
 }
 
 /**
+ * P195: token budget for skill content injected into the system prompt.
+ * When the combined character count of active skills exceeds `maxChars`,
+ * skills are compacted to their summary (oldest-activated first) and
+ * the catalog section is truncated to keep total skill content within budget.
+ */
+export interface AgentSkillTokenBudgetOptions {
+    /**
+     * Maximum characters allowed for all skill content combined in the
+     * system prompt (active skills + catalog). Undefined = unlimited.
+     * Tokens are approximated at ~4 chars per token.
+     */
+    maxChars?: number;
+    /**
+     * When over budget, compact active skills to summary only (drop promptFull)
+     * starting from the least-recently activated skill. Default true.
+     */
+    compactActive?: boolean;
+    /**
+     * When over budget after compaction, truncate the catalog listing.
+     * Default true.
+     */
+    truncateCatalog?: boolean;
+}
+
+/**
  * P98: rollout token budget (G25). Tracks cumulative token consumption across
  * agent threads/sessions and enforces a per-scope cap: when remaining budget
  * crosses the reminder thresholds the runtime publishes
@@ -262,6 +287,8 @@ export interface AgentOptions {
     hooks?: AgentHooksOptions;
     /** P98: rollout token budget enforcement (G25). */
     tokenBudget?: AgentTokenBudgetOptions;
+    /** P195: skill content token budget for system prompt injection (default unlimited). */
+    skillTokenBudget?: AgentSkillTokenBudgetOptions;
     /** G29: per-session delegation mode (default 'explicit'). Per-turn overrides via AgentTurnInput.agent.delegationMode. */
     delegationMode?: AgentDelegationMode;
 }

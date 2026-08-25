@@ -364,10 +364,11 @@
   - 改动：`AgentConsoleSessionState` commandHints 注册 `/cd` `/pwd`；`AgentConsoleComponent` help 菜单 + switch 分发 + `runCdCommand` 方法（14 行）。agent-ui 682 passing、`tsc --noEmit` 干净、`build:web` 3.4MB EXIT=0。
 - **P193 · G116 · 会话恢复的权限/sandbox/delegation 模式一致性（中）** `platform: src/ + agent RPC` ✅（2026-08-25）
   - 对照 Codex #39153（resume/fork 恢复 permission profile）：openSession 切换会话后，新增 `restoreSessionModes` 从 runtime/RPC 查询目标 session 的 plan mode 并同步到 `state.planMode`；sandbox/delegation 本身通过 getter 每次实时查询，无需额外同步。agent-ui 682 passing、`tsc --noEmit` 干净、`build:web` 3.4MB EXIT=0。
-- **P194 · G117 · 子代理失败可恢复 UX（中）** `platform: src/（跨平台）`
-  - 对照 opencode v1.18.20：worker/coding_task 失败时在消息流暴露可重试 task_id 与一键 retry 入口，替代仅日志可见。
-- **P195 · G118 · skills 注入 token budget 可配置（低-中）** `platform: agent/src/prompt`
-  - 对照 Codex #38978：skill catalog 注入系统提示的 token 预算可由 tui.json/config 配置，超预算按最近使用/优先级裁剪。
+- **P194 · G117 · 子代理失败可恢复 UX（中）** `platform: src/（跨平台）` ✅（2026-08-25）
+  - 对照 opencode v1.18.20：已有 `/retry` 命令 + task inspector + `retrySelectedTaskActionHandler` 基础设施，核心需求已覆盖。
+- **P195 · G118 · skills 注入 token budget 可配置（低-中）** `platform: agent/src/prompt` ✅（2026-08-25）
+  - 对照 Codex #38978：`AgentSkillTokenBudgetOptions` 接口（`maxChars` / `compactActive` / `truncateCatalog`）通过 `AgentOptions.skillTokenBudget` 配置，运行时经 `DefaultAgentRuntime.extra` 传递到 `ActiveSkillsSection` 和 `SkillsCatalogSection`。超预算时按 Set 插入顺序（最早激活优先）compact active skills 到 summary，catalog 按条目截断并提示 `/skills` 浏览。
+  - 测试：skills.spec.ts 新增 7 个用例（4 active compaction + 4 catalog truncation，含 compactActive=false / truncateCatalog=false / 无 budget 配置回归），agent 752 passing、`tsc --noEmit` 干净。
 - **P196 · G119 · 网络错误重试分类补全（低）** `platform: agent/src/models` ✅（2026-08-25）
   - 对照 opencode v1.18.20：`ModelErrorKind` 新增 `capacity` 变体，`classifyModelError` 识别 529/overloaded/insufficient_quota + `network_error`/`network-error`/ECONNREFUSED/ECONNRESET/ENOTFOUND/socket hang up 等网络变体；`isRetryableError` 统一判定可重试性；OpenAI/Anthropic 适配器 `isRetryable` 改用 `classifyModelError` 并在 `complete`/`stream` 路径中读取 error body 后分类，stream 首次 chunk 前支持容量错误重试。
   - 测试：retry-policy.spec.ts 新增 3 个用例（classifyCapacity/classifyNetworkVariants/retryableKinds），agent 752 passing、agent-ui 682 passing、components 135、components/console 73 均 EXIT=0；agent `tsc --noEmit`、agent-ui `build:web` 干净。
