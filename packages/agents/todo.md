@@ -359,8 +359,9 @@
   - 对照 Codex `codex agents` 交互式任务面板：统一入口搜索/打开/停止后台任务与 delegation threads，支持可配置快捷键。
   - 现状缺口：本项目后台任务（/jobs、runBackgroundTasksCommand）与委派线程（delegation tree/lineage/list）分散在多个命令与面板，无统一交互总览。
   - 锚点：`AgentConsoleComponent.ts` runBackgroundTasksCommand/openDelegation*、`AgentConsolePanels.ts`（新 dashboard 组件）。
-- **P192 · G115 · 工作目录命令 /cd /pwd（中）** `platform: src/ + agent RPC`
-  - 对照 Codex `/cd` `/pwd` `/cwd`：会话内切换/查看工作目录，TUI/browser 共用；需 agent 侧 session cwd 支持或 host 桥接。
+- **P192 · G115 · 工作目录命令 /cd /pwd（中）** `platform: src/ + agent RPC` ✅（2026-08-25）
+  - 对照 Codex `/cd` `/pwd` `/cwd`：会话内切换/查看工作目录，TUI/browser 共用；实现：`/pwd` 显示当前 session workspace；`/cd <path>` 支持绝对路径（`/` 或盘符开头）与相对路径拼接，`state.setWorkspace` 触发响应式更新。
+  - 改动：`AgentConsoleSessionState` commandHints 注册 `/cd` `/pwd`；`AgentConsoleComponent` help 菜单 + switch 分发 + `runCdCommand` 方法（14 行）。agent-ui 682 passing、`tsc --noEmit` 干净、`build:web` 3.4MB EXIT=0。
 - **P193 · G116 · 会话恢复的权限/sandbox/delegation 模式一致性（中）** `platform: src/ + agent RPC`
   - 对照 Codex #39153（resume/fork 恢复 permission profile）：openSession 时恢复 sandbox mode / delegation mode / Yolo 标记，而非回落默认值。
 - **P194 · G117 · 子代理失败可恢复 UX（中）** `platform: src/（跨平台）`

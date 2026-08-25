@@ -2739,6 +2739,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/keymap', value: '/keymap', description: 'list/set/unset/reset key bindings per context (global/composer/list/approval/pager/vim); record <action> captures the next key' },
                     { label: '/permissions', value: '/permissions', description: 'show or change readonly/sandbox session permissions' },
                     { label: '/status', value: '/status', description: 'show session status' },
+                    { label: '/cd', value: '/cd', description: 'change working directory: /cd <path>' },
+                    { label: '/pwd', value: '/pwd', description: 'print current working directory' },
                     { label: '/goal', value: '/goal', description: 'create, show, link, complete, or reopen a persistent goal' },
                     { label: '/undo', value: '/undo', description: 'revert the last file change' },
                     { label: '/redo', value: '/redo', description: 're-apply the last undone file change' },
@@ -2877,6 +2879,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 return true;
             case '/status':
                 await this.runStatusCommand();
+                return true;
+            case '/cd':
+                this.runCdCommand(parsed.args);
+                return true;
+            case '/pwd':
+                this.notify(this.workspace);
                 return true;
             case '/goal':
                 await this.runGoalCommand(parsed.args);
@@ -7478,6 +7486,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             lines.push(`proxy required · ${proxy.http || proxy.https ? 'configured' : 'missing'}`);
         }
         this.notify(lines.join('\n'));
+    }
+
+    protected runCdCommand(args: string): void {
+        const target = String(args || '').trim();
+        if (!target) {
+            this.notify(this.workspace);
+            return;
+        }
+        const current = this.workspace;
+        let resolved: string;
+        if (target.startsWith('/') || /^[A-Z]:\\/i.test(target)) {
+            resolved = target;
+        } else if (current) {
+            resolved = current.endsWith('/') ? current + target : current + '/' + target;
+        } else {
+            resolved = target;
+        }
+        resolved = resolved.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+        this.state.setWorkspace(resolved);
+        this.notify(`workspace → ${resolved}`);
     }
 
     protected async runStatusCommand(): Promise<void> {
