@@ -2,7 +2,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
-import { retryDelayMs } from './RetryPolicy';
+import { classifyModelError, isRetryableError, retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -171,11 +171,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             }
 
             if (!response.ok) {
-                if (this.isRetryable(response.status) && attempt <= MAX_RETRIES) {
+                const detail = await this.readResponseError(response);
+                if (this.isRetryable(response.status, detail) && attempt <= MAX_RETRIES) {
                     cleanup();
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
-                const detail = await this.readResponseError(response);
                 throw new Error(`Model request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
             }
 
@@ -206,7 +206,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
     }
 
-    async *stream(request: ModelRequest): AsyncGenerator<StreamChunk> {
+    async *stream(request: ModelRequest, attempt = 1): AsyncGenerator<StreamChunk> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
             throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
@@ -238,6 +238,13 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
+                if (!emittedAnyChunk && this.isRetryable(response.status, detail) && attempt <= MAX_RETRIES) {
+                    cleanup();
+                    for await (const chunk of this.stream(request, attempt + 1)) {
+                        yield chunk;
+                    }
+                    return;
+                }
                 throw new Error(`Model streaming request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
             }
 
@@ -429,8 +436,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return `${this.resolveApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
     }
 
-    private isRetryable(status: number): boolean {
-        return status === 429 || status === 500 || status === 502 || status === 503;
+    private isRetryable(status: number, error?: unknown): boolean {
+        return isRetryableError(classifyModelError(status, error));
     }
 
     private async readResponseError(response: Response): Promise<string> {

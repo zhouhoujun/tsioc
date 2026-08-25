@@ -1,6 +1,6 @@
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
-import { retryDelayMs } from './RetryPolicy';
+import { classifyModelError, isRetryableError, retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -147,10 +147,10 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 cleanup();
-                if (this.isRetryable(response.status) && attempt <= MAX_RETRIES) {
+                const errorBody = await response.text().catch(() => '');
+                if (this.isRetryable(response.status, errorBody) && attempt <= MAX_RETRIES) {
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
-                const errorBody = await response.text().catch(() => '');
                 throw new Error(`Anthropic request failed: ${response.status} ${errorBody}`);
             }
 
@@ -163,7 +163,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
     // ── stream ─────────────────────────────────────────────────────────
 
-    async *stream(request: ModelRequest): AsyncGenerator<StreamChunk> {
+    async *stream(request: ModelRequest, attempt = 1): AsyncGenerator<StreamChunk> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
             throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY'}.`);
@@ -180,7 +180,15 @@ export class AnthropicModelAdapter extends ModelAdapter {
             });
 
             if (!response.ok) {
-                throw new Error(`Anthropic streaming request failed: ${response.status}`);
+                const errorBody = await response.text().catch(() => '');
+                if (this.isRetryable(response.status, errorBody) && attempt <= MAX_RETRIES) {
+                    cleanup();
+                    for await (const chunk of this.stream(request, attempt + 1)) {
+                        yield chunk;
+                    }
+                    return;
+                }
+                throw new Error(`Anthropic streaming request failed: ${response.status}${errorBody ? ` ${errorBody}` : ''}`);
             }
 
             const reader = response.body?.getReader();
@@ -606,8 +614,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
         return `${this.resolveBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
     }
 
-    private isRetryable(status: number): boolean {
-        return status === 429 || status === 500 || status === 502 || status === 503 || status === 529;
+    private isRetryable(status: number, error?: unknown): boolean {
+        return isRetryableError(classifyModelError(status, error));
     }
 
     private async retry(request: ModelRequest, attempt: number, _status: number, retryAfter?: string | null): Promise<ModelResponse> {

@@ -1835,6 +1835,7 @@ export class ModelProviderTest {
             return {
                 ok: false,
                 status: 400,
+                headers: new Map(),
                 async text() {
                     return JSON.stringify({
                         error: { message: 'The reasoning_content in the thinking mode must be passed back to the API.' }

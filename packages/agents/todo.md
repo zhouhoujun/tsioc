@@ -367,8 +367,9 @@
   - 对照 opencode v1.18.20：worker/coding_task 失败时在消息流暴露可重试 task_id 与一键 retry 入口，替代仅日志可见。
 - **P195 · G118 · skills 注入 token budget 可配置（低-中）** `platform: agent/src/prompt`
   - 对照 Codex #38978：skill catalog 注入系统提示的 token 预算可由 tui.json/config 配置，超预算按最近使用/优先级裁剪。
-- **P196 · G119 · 网络错误重试分类补全（低）** `platform: agent/src/models`
-  - 对照 opencode v1.18.20：补齐 `network_error`/`network-error` 变体与 capacity 类流错误的退避重试分类（P76 基础上扩展用例）。
+- **P196 · G119 · 网络错误重试分类补全（低）** `platform: agent/src/models` ✅（2026-08-25）
+  - 对照 opencode v1.18.20：`ModelErrorKind` 新增 `capacity` 变体，`classifyModelError` 识别 529/overloaded/insufficient_quota + `network_error`/`network-error`/ECONNREFUSED/ECONNRESET/ENOTFOUND/socket hang up 等网络变体；`isRetryableError` 统一判定可重试性；OpenAI/Anthropic 适配器 `isRetryable` 改用 `classifyModelError` 并在 `complete`/`stream` 路径中读取 error body 后分类，stream 首次 chunk 前支持容量错误重试。
+  - 测试：retry-policy.spec.ts 新增 3 个用例（classifyCapacity/classifyNetworkVariants/retryableKinds），agent 752 passing、agent-ui 682 passing、components 135、components/console 73 均 EXIT=0；agent `tsc --noEmit`、agent-ui `build:web` 干净。
 
 ### 批次 B · TUI 渲染性能（P197–P198）
 
@@ -409,7 +410,7 @@
 
 ## 回归基线
 
-截至 P199 收尾（2026-08-25）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→7845 行（−1294 行，−14.3%）。
+截至 P199 收尾 + P196 补全（2026-08-25）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→7845 行（−1294 行，−14.3%）。
 
 ### P199 收尾复核（2026-08-25，AgentConsoleComponent 拆分）
 
