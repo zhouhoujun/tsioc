@@ -2,7 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -2346,7 +2346,7 @@ export class AgentConsoleMessagesPanelComponent {
     get visibleMessages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const messages = this.messages;
         if (this.state.timelineMode) {
-            return messages;
+            return this.resolveTimelineVisibleMessages(messages);
         }
         const visibleCount = this.state.consoleOptions.messagesVisibleItems;
         if (this.state.messageDetailOpen) {
@@ -2364,6 +2364,39 @@ export class AgentConsoleMessagesPanelComponent {
         const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
         const window = resolveConsoleListWindow(messages.length, selectedIndex, visibleCount);
         return messages.slice(window.start, window.start + window.count);
+    }
+
+    protected resolveTimelineVisibleMessages(
+        messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>
+    ): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
+        const limit = Math.max(1, this.state.consoleOptions.messagesVisibleItems);
+        if (messages.length <= limit) {
+            return messages;
+        }
+        const structural = messages.filter(message => message.metadata?.uiKind === 'plan-todo'
+            || message.metadata?.uiKind === 'file-change'
+            || message.metadata?.uiKind === 'timeline-boundary');
+        const transcript = messages.filter(message => !structural.includes(message));
+        const activeScope = String(this.state.activeTurnEventScope || '').trim();
+        const current = activeScope
+            ? messages.filter(message => String(message.metadata?.uiEventKey || '').startsWith(`${activeScope}:`))
+            : [];
+        const tail = transcript.slice(-limit);
+        const retained = new Set(tail.map(message => message.id));
+        current.forEach(message => retained.add(message.id));
+        const visible = transcript.filter(message => retained.has(message.id));
+        const hidden = transcript.length - visible.length;
+        if (hidden <= 0) {
+            return [...visible, ...structural];
+        }
+        const summary = {
+            id: '__timeline_hidden_summary__',
+            role: 'assistant',
+            content: `${hidden} earlier timeline events hidden · press /timeline verbose to view all`,
+            createdAt: Number((messages[0] as AgentMessage)?.createdAt || Date.now()),
+            metadata: { uiKind: 'event', uiEventType: 'timeline_summary', status: 'success', label: 'timeline' }
+        };
+        return [summary, ...visible, ...structural];
     }
 
     get messageItems(): AgentConsoleRenderedMessageItem[] {

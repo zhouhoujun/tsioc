@@ -609,7 +609,15 @@ Turn: Fix session restore                                      running  01:42
   - 指标：当前 step 首屏可见率、同一 toolCall 行数、80 列无横向截断率、失败定位按键数、事件到 UI 延迟；阈值写入 CI 回归报告。
   - 验收：全部指标达标、agent-ui/components/console 回归、构建、todo 更新、提交。
 
-截至 P199 batch F 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
+截至 P220 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / agent-ui 685 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
+
+### P219–P220 收尾复核（2026-08-26，Timeline 可读性重构）
+
+- P219（Timeline event model 与稳定聚合键）：新增 timeline execution metadata（source/sequence/toolCallId/receiptId/attempt），本地与 SSE 桥接统一按 call/receipt 稳定键原地更新。
+- P220（Step-first 时间线渲染器）：时间线边界升级为 `step N/M + 状态 glyph + 步骤标题`，使用独立上下边框和强调样式；event 行在 timeline 模式使用 `├─`/`·` 层级标记并加深续行缩进。
+- 全量测试：agent-ui 685 passing、components 135、components/console 73、agent 752，均 EXIT=0。
+- 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` 3.4MB EXIT=0。
+- 静态边界：`packages/agents/agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接引用。
 
 ### P199 收尾复核（2026-08-26，AgentConsoleComponent 拆分）
 

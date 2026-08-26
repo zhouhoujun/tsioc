@@ -1803,6 +1803,26 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 
+    @Test('timeline mode keeps a bounded scan window and summarizes hidden history')
+    timelineModeBoundsHistory() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3 });
+        ref.instance.sessionState.setMessages(Array.from({ length: 8 }, (_, index) => ({
+            id: `event-${index + 1}`,
+            role: 'assistant',
+            content: `event ${index + 1}`,
+            createdAt: index + 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        })) as any);
+        ref.instance.sessionState.setTimelineMode(true);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const visible = panel.instance.visibleMessages;
+        expect(visible[0].id).toEqual('__timeline_hidden_summary__');
+        expect(visible[0].content).toContain('earlier timeline events hidden');
+        expect(visible.slice(1).map(item => item.id).filter(id => String(id).startsWith('event-')))
+            .toEqual(['event-6', 'event-7', 'event-8']);
+    }
+
     @Test('setMessages does not auto-select synthetic plan message')
     async setMessagesDoesNotSelectPlanMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
