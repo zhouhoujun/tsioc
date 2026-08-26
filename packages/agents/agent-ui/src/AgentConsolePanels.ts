@@ -2895,6 +2895,131 @@ export class AgentConsoleMessageDetailPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-timeline-event-detail-panel',
+    template: `
+    <div class="console-panel console-timeline-event-detail-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{summaryLabel}}</label>
+        <label v-style="hintStyle">{{hintLabel}}</label>
+        <label v-style="lineStyle" v-for="index in detailIndexes">
+            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span v-style="lineContentStyle">{{detailLineContentAt(index)}}</span>
+        </label>
+    </div>
+    `
+})
+export class AgentConsoleTimelineEventDetailPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get shellStyle() {
+        return this.shouldShow
+            ? {
+                padding: '1em 1ch',
+                ...(styleTextToObject(this.activeTheme.messagesShell))
+            }
+            : {};
+    }
+
+    get accentStyle() {
+        return styleTextToObject(this.activeTheme.toolsAccent);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get lineStyle() {
+        return {
+            ...styleTextToObject(this.activeTheme.statusValue),
+            'white-space': 'nowrap'
+        };
+    }
+
+    get lineNumberStyle() {
+        return styleTextToObject(this.activeTheme.messageDetailLineNumber);
+    }
+
+    get lineContentStyle() {
+        return {
+            ...styleTextToObject(this.activeTheme.statusValue),
+            'white-space': 'nowrap'
+        };
+    }
+
+    get shouldShow(): boolean {
+        return this.state.timelineEventInspectorOpen && !!this.state.selectedTimelineEvent;
+    }
+
+    get contentLines(): string[] {
+        return this.state.timelineEventDetailLines;
+    }
+
+    get visibleLines(): string[] {
+        const lines = this.contentLines;
+        const start = Math.max(0, Math.min(lines.length, this.state.timelineEventDetailScroll));
+        return lines.slice(start, start + this.state.messageDetailVisibleLines);
+    }
+
+    get summaryLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const event = this.state.selectedTimelineEvent;
+        if (!event) {
+            return '';
+        }
+        const m = event.metadata || {};
+        const eventType = m.uiEventType || 'unknown';
+        const status = m.status || 'running';
+        const total = this.contentLines.length;
+        const start = Math.min(total, this.state.timelineEventDetailScroll + 1);
+        const end = Math.min(total, this.state.timelineEventDetailScroll + this.visibleLines.length);
+        return `${eventType} ${status}  |  lines ${start}-${end} / ${total}`;
+    }
+
+    get hintLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return this.state.consoleOptions.messageDetailHint;
+    }
+
+    get detailIndexes(): number[] {
+        return Array.from({ length: this.state.messageDetailVisibleLines }, (_value, index) => index);
+    }
+
+    detailLineNumberAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const lineNumber = this.state.timelineEventDetailScroll + index + 1;
+        return `${String(lineNumber).padStart(3, ' ')}| `;
+    }
+
+    detailLineContentAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const start = Math.max(0, this.state.timelineEventDetailColumnScroll);
+        return line.slice(start);
+    }
+
+}
+
+@Component({
     selector: 'agent-console-review-panel',
     template: `
     <div class="console-panel console-review-panel" v-style="shellStyle">

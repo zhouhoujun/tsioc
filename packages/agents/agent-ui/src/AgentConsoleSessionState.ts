@@ -438,6 +438,10 @@ export class AgentConsoleSessionState {
     messageDetailTakesFocus = true;
     messageDetailScroll = 0;
     messageDetailColumnScroll = 0;
+    timelineEventInspectorOpen = false;
+    selectedTimelineEventId = '';
+    timelineEventDetailScroll = 0;
+    timelineEventDetailColumnScroll = 0;
     turnStartedAt = 0;
     status = 'idle';
     provider = '';
@@ -856,6 +860,7 @@ export class AgentConsoleSessionState {
             && !this.approvalsFocused
             && !this.reviewOpen
             && !this.messagesFocused
+            && !this.timelineEventInspectorOpen
             && !this.hasMessageDetailFocus()
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
     }
@@ -905,6 +910,7 @@ export class AgentConsoleSessionState {
             || this.hasApprovalFocus()
             || this.hasReviewFocus()
             || this.hasMessageFocus()
+            || this.hasTimelineEventInspectorFocus
             || this.hasMessageDetailFocus()
             || this.hasTextOverlayFocus();
     }
@@ -1237,6 +1243,10 @@ export class AgentConsoleSessionState {
             this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         }
         if (!focused) {
+            this.timelineEventInspectorOpen = false;
+            this.selectedTimelineEventId = '';
+            this.timelineEventDetailScroll = 0;
+            this.timelineEventDetailColumnScroll = 0;
             this.messageDetailOpen = false;
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
@@ -1345,6 +1355,191 @@ export class AgentConsoleSessionState {
 
     get selectedMessage(): AgentMessage | undefined {
         return this.displayMessages.find(item => item.id === this.selectedMessageId);
+    }
+
+    get selectedTimelineEvent(): AgentMessage | undefined {
+        if (!this.selectedTimelineEventId) {
+            return undefined;
+        }
+        return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
+    }
+
+    protected isTimelineEventMessage(message?: AgentMessage | null): boolean {
+        if (!message) {
+            return false;
+        }
+        const metadata = message.metadata || {};
+        return metadata.uiKind === 'event'
+            && (metadata.uiEventType === 'tool_invoked' || metadata.uiEventType === 'tool_completed' || metadata.uiEventType === 'tool_failed');
+    }
+
+    openTimelineEventInspector(eventMessage?: AgentMessage): void {
+        const target = eventMessage || this.selectedMessage;
+        if (!target || !this.isTimelineEventMessage(target)) {
+            return;
+        }
+        this.selectedTimelineEventId = target.id;
+        this.timelineEventInspectorOpen = true;
+        this.timelineEventDetailScroll = 0;
+        this.timelineEventDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    closeTimelineEventInspector(): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        this.timelineEventInspectorOpen = false;
+        this.selectedTimelineEventId = '';
+        this.timelineEventDetailScroll = 0;
+        this.timelineEventDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    get hasTimelineEventInspectorFocus(): boolean {
+        return !!this.timelineEventInspectorOpen;
+    }
+
+    get timelineEventDetailLines(): string[] {
+        const event = this.selectedTimelineEvent;
+        if (!event) {
+            return [];
+        }
+        const m = event.metadata || {};
+        const timeline = m.timeline || {};
+        const status = m.status || 'running';
+        const eventType = m.uiEventType || 'unknown';
+        const durationMs = m.durationMs;
+        const attempt = timeline.attempt;
+        const source = timeline.source || 'local';
+        const toolCallId = timeline.toolCallId || '';
+        const receiptId = timeline.receiptId || '';
+
+        const lines: string[] = [];
+        lines.push(`── Event Inspector ──────────────────────────`);
+        lines.push('');
+        lines.push(`Type:       ${eventType}`);
+        lines.push(`Status:     ${status}`);
+        if (durationMs != null) {
+            lines.push(`Duration:   ${this.formatDuration(durationMs)}`);
+        }
+        if (attempt != null && attempt > 1) {
+            lines.push(`Attempt:    ${attempt}`);
+        }
+        lines.push(`Source:     ${source}`);
+        if (toolCallId) {
+            lines.push(`ToolCallID: ${toolCallId}`);
+        }
+        if (receiptId) {
+            lines.push(`ReceiptID:  ${receiptId}`);
+        }
+        lines.push('');
+        lines.push(`── Content ──────────────────────────────────`);
+        lines.push('');
+        const content = String(event.content || '');
+        if (content) {
+            content.split('\n').forEach(line => lines.push(line));
+        } else {
+            lines.push('(no content)');
+        }
+        lines.push('');
+        lines.push(`── Key Bindings ─────────────────────────────`);
+        lines.push(`  r       retry tool call (if failed)`);
+        lines.push(`  copy    copy event detail`);
+        lines.push(`  ↑/↓     scroll detail`);
+        lines.push(`  PgUp/PgDn  scroll page`);
+        lines.push(`  ←/→     scroll columns`);
+        lines.push(`  Home/End   jump to start/end`);
+        lines.push(`  Enter/Esc  close inspector`);
+        return lines;
+    }
+
+    get timelineEventDetailMaxColumn(): number {
+        return this.timelineEventDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
+    }
+
+    protected formatDuration(ms: number): string {
+        if (ms < 1000) {
+            return `${ms}ms`;
+        }
+        const s = ms / 1000;
+        if (s < 60) {
+            return `${s.toFixed(1)}s`;
+        }
+        const m = Math.floor(s / 60);
+        const rem = s - m * 60;
+        return `${m}m ${rem.toFixed(0)}s`;
+    }
+
+    scrollTimelineEventDetail(delta: number): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        const lines = this.timelineEventDetailLines;
+        const maxScroll = Math.max(0, lines.length - this.messageDetailVisibleLines);
+        this.timelineEventDetailScroll = Math.max(0, Math.min(maxScroll, this.timelineEventDetailScroll + delta));
+    }
+
+    scrollTimelineEventDetailPage(delta: number, pageSize?: number): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        const resolvedPageSize = pageSize ?? Math.max(1, this.messageDetailVisibleLines - 1);
+        this.scrollTimelineEventDetail(delta * Math.max(1, resolvedPageSize));
+    }
+
+    scrollTimelineEventDetailToEdge(position: 'start' | 'end'): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        const lines = this.timelineEventDetailLines;
+        this.timelineEventDetailScroll = position === 'start'
+            ? 0
+            : Math.max(0, lines.length - this.messageDetailVisibleLines);
+    }
+
+    scrollTimelineEventDetailColumns(delta: number): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        const maxScroll = Math.max(0, this.timelineEventDetailMaxColumn - 1);
+        this.timelineEventDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.timelineEventDetailColumnScroll + delta));
+    }
+
+    scrollTimelineEventDetailColumnsToEdge(position: 'start' | 'end'): void {
+        if (!this.timelineEventInspectorOpen) {
+            return;
+        }
+        this.timelineEventDetailColumnScroll = position === 'start'
+            ? 0
+            : Math.max(0, this.timelineEventDetailMaxColumn - 1);
+    }
+
+    protected canRetryTimelineEvent(): boolean {
+        if (!this.timelineEventInspectorOpen) {
+            return false;
+        }
+        const event = this.selectedTimelineEvent;
+        if (!event) {
+            return false;
+        }
+        return event.metadata?.uiEventType === 'tool_failed'
+            || event.metadata?.status === 'error'
+            || event.metadata?.status === 'failed';
+    }
+
+    protected buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null {
+        const event = this.selectedTimelineEvent;
+        if (!event) {
+            return null;
+        }
+        const m = event.metadata || {};
+        return {
+            toolCallId: m.timeline?.toolCallId,
+            receiptId: m.timeline?.receiptId,
+            attempt: m.timeline?.attempt,
+            uiEventKey: m.uiEventKey
+        };
     }
 
     openMessageDetail(takeFocus = true): void {
@@ -3140,6 +3335,13 @@ export class AgentConsoleSessionState {
             this.closeReview();
             return true;
         }
+        if (this.timelineEventInspectorOpen) {
+            this.closeTimelineEventInspector();
+            if (this.messagesFocused) {
+                this.setMessagesFocused(false);
+            }
+            return true;
+        }
         if (this.messageDetailOpen) {
             this.closeMessageDetail();
             if (this.messagesFocused) {
@@ -4016,7 +4218,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (!!this.textOverlay || this.gitSnapshotOpen || this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
+        if (!!this.textOverlay || this.gitSnapshotOpen || this.reviewOpen || this.timelineEventInspectorOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
@@ -4217,6 +4419,57 @@ export class AgentConsoleSessionState {
                     return false;
             }
         }
+        if (this.timelineEventInspectorOpen) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'enter':
+                case 'esc':
+                    this.closeTimelineEventInspector();
+                    return true;
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.timelineEventDetailLines.join('\n'), 'timeline event');
+                    return true;
+                case 'down':
+                    this.scrollTimelineEventDetail(1);
+                    return true;
+                case 'up':
+                    this.scrollTimelineEventDetail(-1);
+                    return true;
+                case 'left':
+                    this.scrollTimelineEventDetailColumns(-4);
+                    return true;
+                case 'right':
+                    this.scrollTimelineEventDetailColumns(4);
+                    return true;
+                case 'pageup':
+                    this.scrollTimelineEventDetailPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollTimelineEventDetailPage(1);
+                    return true;
+                case 'home':
+                    this.scrollTimelineEventDetailToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollTimelineEventDetailToEdge('end');
+                    return true;
+                case 'r':
+                    if (this.canRetryTimelineEvent()) {
+                        const payload = this.buildTimelineEventRetryPayload();
+                        if (payload?.toolCallId) {
+                            await this.retrySelectedTaskAction?.(payload.toolCallId);
+                        }
+                        this.closeTimelineEventInspector();
+                        return true;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        }
         if (this.messageDetailOpen) {
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
@@ -4298,6 +4551,10 @@ export class AgentConsoleSessionState {
                     }
                     if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
                         this.openReview();
+                        return true;
+                    }
+                    if (this.isTimelineEventMessage(this.selectedMessage)) {
+                        this.openTimelineEventInspector();
                         return true;
                     }
                     this.openMessageDetail();

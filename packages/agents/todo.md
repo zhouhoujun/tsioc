@@ -599,6 +599,7 @@ Turn: Fix session restore                                      running  01:42
   - 为 event row 提供结构化 inspector：input/output、压缩日志、关联文件/diff、duration、attempt/retry、审批与错误 cause；Enter/点击打开，Esc 返回原 group。
   - 失败工具/blocked step 可从 inspector 调用既有 retry/approve/open-review action，成功事件只提供 copy/jump，避免误操作。
   - 验收：权限门、断线后 retry、详情大输出分页、focus return 均测试；全量验证并提交。
+  - **已完成（2026-08-26）**：`AgentConsoleSessionState` 新增 `timelineEventInspectorOpen`/`selectedTimelineEventId`/`timelineEventDetailScroll`/`timelineEventDetailColumnScroll` 状态字段；`openTimelineEventInspector`/`closeTimelineEventInspector` 方法带 scroll 重置与 `syncDerivedInputFocus`；`timelineEventDetailLines` getter 输出结构化 inspector 行（type/status/duration/attempt/source/toolCallId/receiptId/content/key bindings）；scroll/column/edge/page 方法；`canRetryTimelineEvent`（检查 `tool_failed`/`error`/`failed`）与 `buildTimelineEventRetryPayload`；`handleFocusKey` 新增 `timelineEventInspectorOpen` 键盘块（enter/esc 关闭、copy、scroll、r=retry）；`dismissFocusLayer`/`handleEscapeKey`/`setMessagesFocused(false)`/`isAnyFocusActive` 已集成。`AgentConsoleTimelineEventDetailPanelComponent` 新增于 `AgentConsolePanels.ts`，模板含 `agent-console-timeline-event-detail-panel`。`AgentConsoleComponent` 新增 `showTimelineEventInspector` getter。模块注册（import/declarations/exports）完成。27 项测试通过，`tsc --noEmit` EXIT=0，agent-ui 712 passing。
 
 - **P223 · 时间线偏好与迁移** `platform: agent-ui/src + settings`
   - 将 `/timeline` 从简单开关升级为 `compact | steps | verbose`：compact 仅当前步骤与异常，steps 为默认分组视图，verbose 保留现有逐事件诊断视图。
