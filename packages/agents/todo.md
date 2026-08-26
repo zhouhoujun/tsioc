@@ -534,6 +534,79 @@
   - 扩展 PTY 脚本覆盖问询、blocked/failed plan、断线重放、overlay 过滤、focus stack；补 browser Playwright 多 viewport 与长 transcript 基线。
   - 记录首屏渲染、事件到 UI 延迟、键盘操作步数和内存峰值；设定回归阈值并纳入每批收尾清单。
 
+## UI 时间线可读性专项：Codex / opencode 对照与优化计划
+
+### 现状与根因（代码核验）
+- **消息洪泛**：timeline 将 turn、tool invoked、tool completed、reasoning 等都作为独立 `uiKind: event` 消息；同一工具的开始/结束不能在同一行原地替换。一次多工具任务会把“正在读文件 / 已读文件”重复铺满 transcript。
+- **上下文缺失**：`timeline-boundary` 仅渲染 `-- plan N/M --`，没有 step 标题、状态、依赖、owner、累计耗时或本步骤事件计数；阅读者无法从边界理解当前在做什么。
+- **层级混淆**：普通 assistant 正文、工具事件、系统状态都复用 message row；角色符号、status、meta、文本横向混排，窄终端下优先级和换行位置不稳定。
+- **长会话退化**：timeline 模式绕过 `messagesVisibleItems`，直接渲染全部消息；虽不会破坏响应式契约，却会使历史事件和当前执行竞争有限终端高度。
+- **信息密度失衡**：成功的低价值读取、空结果、重复 retry 与失败事件权重一致；缺少“默认只看当前步骤 + 失败 + 有产出的工具”的渐进披露。
+- **交互薄弱**：event 行没有动作模型，无法展开原始输入/输出、跳到关联文件/diff、查看重试链或从失败处恢复；详情只面向普通消息选择。
+- **跨端风险**：`white-space: normal` + `overflow-wrap: anywhere` 可避免溢出，但会打断路径、命令和 diff token；TUI/browser 未定义等价的缩进、截断和语义色彩规范。
+
+### Codex / opencode 可借鉴的交互原则
+
+| 原则 | Codex 参照 | opencode 参照 | 本项目采用方式 |
+|---|---|---|---|
+| 一次执行一个可读单元 | tool/file/todo 是 thread item，运行态原地更新为结果 | tool block 承载运行、输出、错误与耗时 | 同一 `toolCallId` 聚为一个事件卡，running→success/failed 原地更新 |
+| 先摘要后细节 | 命令、文件变更默认短摘要，输出按需展开 | step/tool block 可折叠，详情不打断对话 | 默认展示意图、目标、结果、耗时；输入/输出/日志放 inspector |
+| 步骤为主线 | todo 更新是可见进度锚点 | task/agent 状态形成执行阶段 | 每个 plan step 形成有标题的 group，事件归属其下 |
+| 异常优先 | 失败/审批在流中显著且可继续操作 | 错误保留 retry 上下文 | failed/blocked/approval 固定展开，提供 retry/approve/jump action |
+| 长记录可扫描 | 对话流不被完整 stdout 淹没 | 历史步骤可折叠 | 默认保留当前 step、未解决异常、最近完成 step；旧成功组自动收起但可搜索 |
+
+### 目标信息架构
+
+```
+Turn: Fix session restore                                      running  01:42
+  Step 2/4  Restore persisted plan                         active  00:31
+    ✓ Inspect session schema                                      0.4s
+    ▸ Update restore path                                  running  0.8s
+    · 2 files changed                                      +42 -6
+  Step 1/4  Reproduce failure                              done    0.7s
+  ! Step 3/4  Verify migration                             blocked
+      Test environment awaiting approval                         [open]
+```
+
+- **Turn group**：用户请求的执行容器，显示状态、累计耗时、成功/失败步骤计数；不是每个低级 event 的平铺容器。
+- **Step group**：由 plan step 或无计划时的 inferred activity 产生；始终显示标题、状态与最近结果，可折叠其 children。
+- **Event row**：统一为 `intent → target → outcome · duration`，成功默认一行，失败保留错误首行和操作。
+- **Inspector**：Enter/点击只打开选中 row 的结构化详情（输入、输出、日志、关联文件、retry lineage），不在 transcript 内展开海量文本。
+
+### 可执行计划（P219–P224）
+
+> 所有批次遵循通用收尾：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新 `todo.md` → 单独提交。实现必须保留 TUI/browser 共用状态与渲染路径，禁止使用 timer 主动刷新。
+
+- **P219 · Timeline event model 与稳定聚合键** `platform: agent-ui/src + agent event/RPC`
+  - 引入 `AgentConsoleTimelineTurn`/`Step`/`Event` 数据模型，使用 turnId、planId/stepId、toolCallId、attemptId 聚合；同一工具运行态与终态原地更新。
+  - event bridge 保留原始事件审计，但 transcript 改读聚合 projection；对旧事件推断稳定 key，远端用 sequence 去重。
+  - 验收：同一 toolCall 的 start/completed 只占一条、retry 显示 attempt lineage、local/SSE 投影一致；agent-ui 全量测试、构建、提交。
+
+- **P220 · Step-first 时间线渲染器** `platform: agent-ui/src（跨平台）`
+  - 新增专用 timeline renderer，按 Turn→Step→Event 输出，而非复用普通 message row；边界显示 `step N/M + 标题 + 状态 + elapsed`，并将事件绑定当前 step。
+  - 规范行宽：路径/命令保留尾部、自然语言按词换行、代码/日志进 inspector；成功/运行/失败/blocked 使用稳定图标和可读文本，不依赖纯色区分。
+  - 验收：80/120 列 TUI snapshot、browser desktop/mobile render、CJK 与超长路径用例；全量测试、todo 更新、提交。
+
+- **P221 · 渐进披露与可扫描窗口** `platform: agent-ui/src（跨平台）`
+  - 默认展开当前 step、失败/blocked/approval、最近完成 step；自动收起更早成功 step，展示 `N events hidden` 摘要，用户可按 Enter 展开。
+  - 恢复 `messagesVisibleItems` 的语义窗口，但 pin 当前 turn 和异常 group；提供 active/failures/files 筛选、上一步/下一失败快捷键与全文搜索。
+  - 验收：100+ event transcript 不淹没 composer；键盘无鼠标完整操作；TUI/browser 渲染一致；测试、构建、提交。
+
+- **P222 · Timeline inspector 与恢复动作** `platform: agent-ui/src + agent RPC`
+  - 为 event row 提供结构化 inspector：input/output、压缩日志、关联文件/diff、duration、attempt/retry、审批与错误 cause；Enter/点击打开，Esc 返回原 group。
+  - 失败工具/blocked step 可从 inspector 调用既有 retry/approve/open-review action，成功事件只提供 copy/jump，避免误操作。
+  - 验收：权限门、断线后 retry、详情大输出分页、focus return 均测试；全量验证并提交。
+
+- **P223 · 时间线偏好与迁移** `platform: agent-ui/src + settings`
+  - 将 `/timeline` 从简单开关升级为 `compact | steps | verbose`：compact 仅当前步骤与异常，steps 为默认分组视图，verbose 保留现有逐事件诊断视图。
+  - 保留旧 boolean 配置兼容映射，明确状态栏可见当前模式；不改变 raw transcript/export 的完整性。
+  - 验收：旧设置迁移、命令/键位、不同模式输出、持久化恢复测试；tsc/build、todo 更新、提交。
+
+- **P224 · 时间线可读性验收与基准** `platform: agent-ui tests + acceptance`
+  - 增加真实 PTY 录屏/文本 snapshot 场景：多步骤并行、重试失败、长工具输出、窄终端 CJK、断线重放；browser 使用 Playwright 验证焦点与折叠。
+  - 指标：当前 step 首屏可见率、同一 toolCall 行数、80 列无横向截断率、失败定位按键数、事件到 UI 延迟；阈值写入 CI 回归报告。
+  - 验收：全部指标达标、agent-ui/components/console 回归、构建、todo 更新、提交。
+
 截至 P199 batch F 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
 ### P199 收尾复核（2026-08-26，AgentConsoleComponent 拆分）
