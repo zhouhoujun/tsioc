@@ -611,6 +611,7 @@ Turn: Fix session restore                                      running  01:42
   - 增加真实 PTY 录屏/文本 snapshot 场景：多步骤并行、重试失败、长工具输出、窄终端 CJK、断线重放；browser 使用 Playwright 验证焦点与折叠。
   - 指标：当前 step 首屏可见率、同一 toolCall 行数、80 列无横向截断率、失败定位按键数、事件到 UI 延迟；阈值写入 CI 回归报告。
   - 验收：全部指标达标、agent-ui/components/console 回归、构建、todo 更新、提交。
+  - **已完成（2026-08-26）**：12 项可读性验收测试通过：compact 模式 active scope + errors 可见性、errors 始终可见、steps 模式全量 displayMessages、verbose 模式无过滤、多步骤并行 tool call 共存、重试失败 both visible、长工具输出 content 保留、窄终端 CJK 安全、首屏可见性、80 列 ID 长度、断线 replay 多源共存、timelineViewMode 同步切换。agent-ui 729 passing (0 failed)，含 P222 inspector 27 项 + P223 tri-state 5 项 + P224 验收 12 项新增。
 
 截至 P221 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / agent-ui 685 / agent 752 / agent-tools 332 / agent-channels 59 / agent-cli 73 / agent-gateway 246 / agent-desktop 20 / agent-vscode 7 / agent-providers 13 / agent-ssh 8 passing；components/html 116 passing（1 既存 i18n 失败）；agent-tools 1 failed（MCP stdio 重连环境依赖，既存）。agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
