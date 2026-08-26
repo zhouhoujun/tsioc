@@ -53,6 +53,13 @@
 - P170 agent-ui 平台组件边界（src/ 无 console/node 直接引用，通过 DI ports 桥接）。
 - P171 Console 展示收敛：去 dashboard、用户消息无前置时间、时间线长内容折叠、原生终端 scrollback、键盘 transcript 导航（PageUp/↑/↓/Enter/Esc）。
 
+### 计划/任务/修改展示能力归并（P172–P202，已完成）
+- 计划生命周期：`todo` 四态计划、`merge/replace` 持久化、跨会话恢复、goal criteria 覆盖率、完成摘要与失败计数。
+- 对话内联：固定 ID 计划卡片插入最近用户请求之后，实时勾选、进度条、长计划折叠/Enter 展开、timeline step 边界；文件变更摘要与 coding task 结果同样内联。
+- 执行反馈：Working 面板显示当前 plan step；工具输出摘要可进入详情；长 assistant/user 消息采用保尾折叠；`/keymap`/帮助类内容使用可滚动 overlay。
+- 任务与恢复：coding task 具备 worker、lineage、retry、rollback、checkpoint、diff summary；会话切换恢复 plan mode、todo、goal 与任务聚合。
+- 工程收尾：AgentConsoleComponent 已按域拆分，类型抑制治理完成；PTY 验收脚手架、全量测试、构建和跨平台边界检查已落地。
+
 ---
 
 ## 差距分析：Codex vs 本项目——计划/任务/代码修改展示
@@ -420,6 +427,112 @@
 - 全量回归已执行：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 117、agent-ui 674 均通过；agent-tools 333 通过。
 - 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
+
+## 深入差距分析：五个领域（2026-08-26 核验）
+
+> 下列“当前状态”以仓库代码为准；早期盘点中标为“完全没有”的项目，若已由 P67–P202 补齐，统一归入已完成能力，不再重复立项。
+
+### 1. 智能上下文压缩
+- 当前：已有 token 估算、overflow 检测、anchor 保留、工具消息裁剪、`SimpleSessionSummarizer`/`LLMSessionSummarizer`、压缩历史与 replay、媒体占位符及质量指标。
+- 主要差距：摘要仍以单次全局压缩为主；预算不按会话模式自适应；缺少 light→medium→deep 渐进策略；用户追问压缩细节时没有按段选择性恢复；压缩成本/保真度尚未在 UI 中形成可操作反馈。
+
+### 2. 多 Agent 并行高层编排
+- 当前：`spawn_agent`、轻量/嵌套 runner、delegation graph、worker 分类、toolset 过滤、session 合并、`parallel_spawn`/`coding_task` 已覆盖基础并行与重试。
+- 主要差距：缺少统一的 `map_reduce`、fan-out、race、wait-all/wait-any 协议；依赖图主要是记录而非可调度 DAG；结果聚合仍由调用方拼接；缺少编排器级实时进度、部分失败策略和成本/并发预算。
+
+### 3. Diff Review UI
+- 当前：已有统一 diff 解析、文件摘要内联、Review 面板、hunk 导航、side-by-side、annotation、git snapshot/revert/unrevert 与 RPC。
+- 主要差距：审查意见尚未形成逐行/逐 hunk comment thread；批量批准/拒绝与规则化门禁不足；大型 diff 的虚拟化和增量加载不足；review 结论尚未稳定回写为 agent 可消费的结构化反馈。
+
+### 4. 后台任务仪表板
+- 当前：后台任务 manager、`/ps`、任务/委派面板、取消、审计与状态事件已存在。
+- 主要差距：缺少统一的跨 session 任务总览；历史运行、耗时、重试、失败原因和资源消耗缺少趋势视图；任务筛选/排序/批量取消与恢复操作分散在命令和多个面板；实时进度事件尚未统一为可订阅的数据模型。
+
+### 5. 项目维度线程组织
+- 当前：SessionStore 项目字段、项目索引/元数据、按 workspace/thread 聚合、项目级 todo/goal 汇总及 `/cd` `/pwd` 已实现。
+- 主要差距：InMemory 与持久化实现的项目语义仍需契约化测试；CLI 缺少完整的 project 列表/切换/归档命令；UI 尚无稳定的项目→session→delegation 树；workspace 自动项目检测、重命名和跨目录迁移策略不统一。
+
+## 改进计划 v11：计划任务 Todo 深化与五域补齐（P203–P212）
+
+> 参考 Codex 的“计划是对话流一等事件、每步原地更新”和 opencode 的“可恢复任务/依赖执行”模式。每个 P 批次完成后必须执行：检查完成项与 diff → 受影响包全量测试 → `tsc --noEmit`/构建验证 → 更新本文件 → 独立提交。
+
+### 批次 I · Todo 数据契约与分解质量
+- **P203 · Todo schema v2 与迁移** `platform: agent/src + agent-tools`
+  - 增加 `parentId`、`kind`、`acceptance`、`dependsOn`、`estimate`、`owner`、`updatedAt`；保留旧 payload 兼容并提供 schema version/migration。
+  - `TodoStore` 增加依赖环检测、重复 id 冲突报告、状态转移校验（单一 in_progress、依赖未完成不可启动）。
+  - 验收：旧会话可读写；非法迁移有明确错误；agent/agent-tools 全量测试、构建、todo 更新、提交。
+- **P204 · 自动分解器与计划质量门** `platform: agent/src/prompt + agent-tools`
+  - 在 todo 调用前增加可验证性规则：每项必须是单一动作，包含产出/验证信号；对过粗、重复、无序步骤返回修正建议。
+  - 支持 `decompose` 预览与 `accept/revise` 两阶段，避免模型一次写入不可执行长清单。
+  - 验收：复杂任务生成 3–9 个可验证步骤；单轮问答不强制 todo；新增 prompt/tool tests，并完成收尾提交。
+
+### 批次 II · Todo 执行与对话展示
+- **P205 · 依赖感知调度与可恢复执行** `platform: agent/src/runtime + agent-tools`
+  - 将 `dependsOn` 转为可执行 DAG；支持 ready/running/blocked/failed/skipped；失败后仅重跑受影响分支并保留成功产物。
+  - 与 coding_task/delegation graph 对齐 task id、重试和取消语义。
+  - 验收：并行分支、依赖阻塞、部分失败恢复、取消幂等均有测试；全量验证后提交。
+- **P206 · 计划事件流统一** `platform: agent/src + agent-ui/src`
+  - 定义 `plan_created/step_started/step_blocked/step_completed/plan_completed` 事件，工具调用、delegation、coding task 共用；支持断线重放和序列号去重。
+  - 验收：远程/本地桥接一致，重复事件不重复渲染，恢复会话可补齐缺失步骤；agent-ui 全量测试、tsc、build:web、提交。
+- **P207 · 计划卡片信息架构升级** `platform: agent-ui/src（跨平台）`
+  - 计划卡片显示层级、依赖阻塞原因、验收条件、当前 owner、耗时与失败入口；长计划支持按层级折叠、过滤 active/blocked/failed。
+  - 保持 TUI/browser 共用渲染函数，不引入定时刷新；键盘支持跳转 blocked/failed 与 Enter 查看详情。
+  - 验收：新增渲染/键盘用例，旧 P172–P202 用例零回归，完成构建、todo 更新、提交。
+
+### 批次 III · 上下文与审查闭环
+- **P208 · 渐进压缩与选择性恢复** `platform: agent/src/context`
+  - 实现 light/medium/deep 三档，依据剩余预算、turn 类型、工具密度自适应选择；保留段落索引与证据引用。
+  - 新增 `context.restore` 按消息/工具/文件选择性恢复，并在 UI 显示压缩前后 token、保留率和可恢复入口。
+  - 验收：压缩质量/成本基准、恢复正确性、旧 replay 兼容；agent 全量测试、构建、todo 更新、提交。
+- **P209 · Review comment/结论回写** `platform: agent-ui/src + agent RPC`
+  - 支持逐行/逐 hunk comment、批量 approve/reject、review gate；将结论结构化写回 session，供 agent 下一 turn 消费。
+  - 验收：并排/统一视图、分页大 diff、断线恢复、权限隔离均有测试；全量验证后提交。
+
+### 批次 IV · 编排、后台与项目视图
+- **P210 · 编排原语与聚合器** `platform: agent-tools + agent/src/runtime`
+  - 提供 `map_reduce`、`fan_out`、`race`、`wait_all`、`wait_any`，统一并发/成本/超时预算；聚合器输出带来源、置信度和冲突列表。
+  - 验收：成功、超时、部分失败、取消、预算耗尽、结果冲突均可重放测试；构建与提交。
+- **P211 · 统一后台任务总览** `platform: agent-ui/src + agent RPC`
+  - 建立跨 session task feed（状态、进度、耗时、重试、资源）；统一搜索/过滤/排序/批量取消/重试；命令 `/ps` 与面板共用数据源。
+  - 验收：事件流断线重连、权限隔离、历史聚合、TUI/browser 交互测试；全量验证、todo 更新、提交。
+- **P212 · 项目/线程树与自动检测** `platform: agent/src + agent-cli + agent-ui/src`
+  - 统一 project contract（InMemory/TypeORM/RPC）；新增 CLI `/project list|switch|archive`；UI 展示 project→session→thread→delegation 树；按 git root/配置文件自动检测并允许覆盖。
+  - 验收：跨 workspace、归档、迁移、fork、项目级 plan 汇总场景；相关包全量测试、构建、todo 更新、提交。
+
+## UI 互动专项审计：当前欠缺与优化计划
+
+### 已确认的问题（按影响排序）
+- **问询不可键盘操作（高）**：`pending-question-panel` 只有点击事件；`handleFocusKey` 没有 pending-question 分支，TUI 无法用数字键/↑↓/Enter 选择，也没有 Esc 转自由输入的明确状态。
+- **计划卡片不是完整交互控件（高）**：计划合成消息可 Enter 展开，但没有逐项聚焦、依赖/验收条件查看、失败步骤重试或跳转到产生该步骤的工具；用户只能回到 composer 重新描述。
+- **计划事件反馈滞后（中-高）**：主要依赖 `tool_completed` 输出刷新；流式执行中缺少 step_started/blocked 事件，网络断线时无法按序号补齐或判断过期更新。
+- **焦点模型分散（中-高）**：messages/tasks/approvals/jobs/tools 等各自维护 focus flag，pending question、text overlay、review detail 之间缺少统一 focus stack；Esc 行为依赖分支顺序，新增面板容易产生抢键或无法返回。
+- **Overlay 能力不完整（中）**：text overlay 具备滚动但没有通用过滤、选择结果、焦点陷阱和可访问性语义；`/keymap` 等列表在浏览器端也缺少搜索高亮与快捷键提示。
+- **任务/审批反馈不够可操作（中）**：任务面板能打开/取消/重试，但没有确认态、失败原因定位到消息/工具、批量操作和操作结果 toast；审批缺少风险详情折叠与默认安全动作提示。
+- **跨端交互契约不足（中）**：测试多为 state/view-model 断言，真实 TUI 的窄终端、长文本、鼠标关闭时键盘可达性，以及 browser tab/ARIA/focus ring 尚未形成矩阵验收。
+- **自动化验收缺口（中）**：PTY 脚手架覆盖 plan 出现和状态翻转，但未覆盖 pending question、blocked/failed 分支、断线重放、overlay 过滤和 focus stack 回退。
+
+### UI 互动改进批次（P213–P218）
+
+> 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新 `todo.md` 验证记录 → 单独提交。
+
+- **P213 · Pending question 键盘交互与提交闭环** `platform: agent-ui/src（跨平台）`
+  - 引入 `questionFocused` 与 selected option index，统一支持 ↑↓、数字键、Enter 填入并发送、Esc 关闭并保留自由输入；点击与键盘走同一 action。
+  - 问题切换/turn 完成/会话切换时清理焦点，避免 stale question；补 TUI/browser 渲染及键盘测试。
+- **P214 · 统一 FocusStack 与键盘路由** `platform: agent-ui/src（跨平台）`
+  - 用可序列化 focus layer 栈替代散落布尔 flag；定义 push/pop/replace、Esc 回退一层、Enter/方向键由顶层消费，面板只声明 capabilities。
+  - 保持旧 API 委托兼容，加入焦点转移矩阵测试（overlay→review→messages→composer）。
+- **P215 · Plan step inspector 与操作入口** `platform: agent-ui/src + agent RPC`
+  - 计划卡片支持逐项选择、详情（acceptance/dependsOn/owner/evidence）、失败步骤 retry、blocked 原因和跳转关联 tool/review；TUI 使用稳定快捷键，browser 提供按钮与 focus ring。
+  - 不允许 UI 直接修改未授权状态，所有 mutation 经 RPC/统一 action。
+- **P216 · 计划事件序列与断线重放** `platform: agent/src + agent-ui/src`
+  - 落地 plan event envelope（sequence、planId、stepId、timestamp、source），桥接层去重、乱序缓冲、断线补拉；旧 `tool_completed` payload 转换为兼容事件。
+  - 增加网络抖动、重复、跨 session 串线和恢复测试，并在 UI 标示 stale/reconnecting。
+- **P217 · Overlay/任务/审批互动统一** `platform: agent-ui/src（跨平台）`
+  - 通用 overlay 支持过滤、分页、选择、确认/取消和结果反馈；任务/审批复用同一交互协议，增加批量取消/重试、风险详情和可撤销 toast。
+  - 验收窄终端与 browser 键盘 Tab/ARIA/focus ring，鼠标不可用时功能完整。
+- **P218 · UI 互动验收矩阵与性能基线** `platform: agent-ui acceptance + tests`
+  - 扩展 PTY 脚本覆盖问询、blocked/failed plan、断线重放、overlay 过滤、focus stack；补 browser Playwright 多 viewport 与长 transcript 基线。
+  - 记录首屏渲染、事件到 UI 延迟、键盘操作步数和内存峰值；设定回归阈值并纳入每批收尾清单。
 
 截至 P199 batch F 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
