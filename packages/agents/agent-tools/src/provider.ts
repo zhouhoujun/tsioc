@@ -55,7 +55,7 @@ import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
 import { ImageGenerateTool } from '../media/image-generate.tool';
-import { SpawnAgentTool, ParallelSpawnTool, OrchestrateTool } from '../agent';
+import { SpawnAgentTool, ParallelSpawnTool, OrchestrateTool, FanOutTool, MapReduceTool, RaceTool, WaitAllTool, WaitAnyTool } from '../agent';
 import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from '../code-execution';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
@@ -178,6 +178,11 @@ const toolItems = {
     spawn_agent: SpawnAgentTool,
     parallel_spawn: ParallelSpawnTool,
     orchestrate: OrchestrateTool,
+    fan_out: FanOutTool,
+    map_reduce: MapReduceTool,
+    race: RaceTool,
+    wait_all: WaitAllTool,
+    wait_any: WaitAnyTool,
     execute_code: ExecuteCodeTool,
     knowledge_search: KnowledgeSearchTool,
     knowledge_store: KnowledgeStoreTool,
@@ -227,7 +232,7 @@ const toolGroups = {
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal'],
     ssh: ['ssh_exec', 'ssh_put', 'ssh_get', 'ssh_tunnel'],
-    agent: ['spawn_agent', 'parallel_spawn', 'orchestrate'],
+    agent: ['spawn_agent', 'parallel_spawn', 'orchestrate', 'fan_out', 'map_reduce', 'race', 'wait_all', 'wait_any'],
     code_execution: ['execute_code'],
     knowledge: ['knowledge_search', 'knowledge_store'],
     git: ['git_operations'],

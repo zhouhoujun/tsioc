@@ -9,6 +9,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
 import { SpawnAgentTool, ParallelSpawnTool, SpawnAgentAdapter } from '../agent';
 import { OrchestrateTool } from '../agent/orchestrate.tool';
+import { FanOutTool, MapReduceTool, RaceTool, WaitAllTool, WaitAnyTool } from '../agent/orchestrate-primitives.tool';
 import { SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { NestedAgentRunRequest, NestedAgentRunResult } from '../src/nested-agent-runner';
 import { VisionAdapter } from '../media/vision-analyze.tool';
@@ -3677,6 +3678,335 @@ export class AgentToolsPackageTest {
         expect(summary).toContain('artifacts=diff.patch');
     }
 
+    @Test('fan_out runs all tasks and returns unified output')
+    async fanOutRunsAllTasksAndReturnsUnifiedOutput() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map(input => ({
+                    output: `result: ${input.goal}`,
+                    sessionId: `s-${input.goal}`,
+                    summary: `summary for ${input.goal}`,
+                    turnCount: 1,
+                    toolCalls: 0,
+                    completed: ['step-a'],
+                    nextSteps: ['next-a'],
+                    risks: [],
+                    artifacts: ['out.txt']
+                }));
+            }
+        };
+        const tool = new FanOutTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'alpha' }, { goal: 'beta' }]
+        }, createSessionContext());
+
+        expect(result.primitive).toBe('fan_out');
+        expect(result.taskCount).toBe(2);
+        expect(result.succeededCount).toBe(2);
+        expect(result.failedCount).toBe(0);
+        expect(result.results[0].output).toContain('alpha');
+        expect(result.results[1].output).toContain('beta');
+        expect(result.completed).toContain('step-a');
+        expect(result.budget.elapsedMs).toBeGreaterThanOrEqual(0);
+    }
+
+    @Test('fan_out empty tasks returns error output')
+    async fanOutEmptyTasksReturnsErrorOutput() {
+        const tool = new FanOutTool({ async spawnParallel() { return []; } } as any);
+        const result = await tool.invoke({ tasks: [] }, createSessionContext());
+        expect(result.taskCount).toBe(0);
+        expect(result.risks.length).toBeGreaterThan(0);
+    }
+
+    @Test('fan_out handles partial failures')
+    async fanOutHandlesPartialFailures() {
+        let callIndex = 0;
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, i) => i === 1
+                    ? { output: '', error: 'worker failed', sessionId: `s-${i}` }
+                    : { output: `ok: ${input.goal}`, sessionId: `s-${i}`, summary: `done ${i}` }
+                );
+            }
+        };
+        const tool = new FanOutTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'good' }, { goal: 'bad' }, { goal: 'good2' }]
+        }, createSessionContext());
+
+        expect(result.succeededCount).toBe(2);
+        expect(result.failedCount).toBe(1);
+        expect(result.failures.length).toBe(1);
+        expect(result.failures[0].goal).toBe('bad');
+    }
+
+    @Test('fan_out respects timeout budget')
+    async fanOutRespectsTimeoutBudget() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                await new Promise(r => setTimeout(r, 200));
+                return inputs.map(() => ({ output: 'late' }));
+            }
+        };
+        const tool = new FanOutTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'slow' }],
+            timeoutMs: 50
+        }, createSessionContext());
+
+        expect(result.timedOutCount).toBe(1);
+        expect(result.results[0].error).toContain('Timed out');
+    }
+
+    @Test('map_reduce fans out map phase then synthesizes via reduce')
+    async mapReduceFansOutThenSynthesizes() {
+        const calls: string[] = [];
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                for (const input of inputs) {
+                    calls.push(input.goal);
+                }
+                return inputs.map(input => ({
+                    output: `output for: ${input.goal}`,
+                    sessionId: 's1',
+                    summary: `summary for: ${input.goal}`,
+                    turnCount: 1,
+                    toolCalls: 0
+                }));
+            }
+        };
+        const tool = new MapReduceTool(adapter as any);
+        const result = await tool.invoke({
+            mapGoal: 'Research {input}',
+            inputs: ['react', 'vue', 'svelte'],
+            reduceGoal: 'Synthesize research into a comparison table'
+        }, createSessionContext());
+
+        expect(result.primitive).toBe('map_reduce');
+        expect(calls.length).toBe(4);
+        expect(calls[0]).toContain('Research react');
+        expect(calls[3]).toContain('Synthesize research');
+        expect(result.aggregated).toBeDefined();
+        expect(result.aggregated!.length).toBe(4);
+        expect(result.aggregated![3].source).toBe('reduce');
+    }
+
+    @Test('map_reduce detects conflicts between map results')
+    async mapReduceDetectsConflicts() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, i) => ({
+                    output: `out ${i}`,
+                    sessionId: 's1',
+                    summary: i === 0 ? 'yes it works' : 'no it does not work',
+                    turnCount: 1,
+                    toolCalls: 0
+                }));
+            }
+        };
+        const tool = new MapReduceTool(adapter as any);
+        const result = await tool.invoke({
+            mapGoal: 'Check {input}',
+            inputs: ['feature-a', 'feature-b'],
+            reduceGoal: 'Combine'
+        }, createSessionContext());
+
+        expect(result.conflicts).toBeDefined();
+        expect(result.conflicts!.length).toBeGreaterThan(0);
+    }
+
+    @Test('race returns first successful result')
+    async raceReturnsFirstSuccessfulResult() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, i) => ({
+                    output: `result ${i}`,
+                    sessionId: `s-${i}`,
+                    summary: i === 0 ? 'winner summary' : 'loser',
+                    turnCount: 1,
+                    toolCalls: 0
+                }));
+            }
+        };
+        const tool = new RaceTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'approach-a' }, { goal: 'approach-b' }]
+        }, createSessionContext());
+
+        expect(result.primitive).toBe('race');
+        expect(result.succeededCount).toBe(1);
+        expect(result.aggregated).toBeDefined();
+        expect(result.aggregated!.length).toBe(1);
+        expect(result.aggregated![0].source).toBe('approach-a');
+    }
+
+    @Test('race returns no winner when all tasks fail')
+    async raceReturnsNoWinnerWhenAllFail() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map(() => ({
+                    output: '',
+                    error: 'failed',
+                    sessionId: 's1'
+                }));
+            }
+        };
+        const tool = new RaceTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'a' }, { goal: 'b' }]
+        }, createSessionContext());
+
+        expect(result.succeededCount).toBe(0);
+        expect(result.failedCount).toBe(2);
+        expect(result.summary).toContain('no winner');
+    }
+
+    @Test('wait_all waits for all tasks and collects results')
+    async waitAllWaitsForAllTasks() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, i) => ({
+                    output: `result ${i}`,
+                    sessionId: `s-${i}`,
+                    summary: `summary ${i}`,
+                    turnCount: 1,
+                    toolCalls: 0,
+                    completed: [`step-${i}`],
+                    artifacts: [`file-${i}.txt`]
+                }));
+            }
+        };
+        const tool = new WaitAllTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'task-1' }, { goal: 'task-2' }, { goal: 'task-3' }]
+        }, createSessionContext());
+
+        expect(result.primitive).toBe('wait_all');
+        expect(result.taskCount).toBe(3);
+        expect(result.succeededCount).toBe(3);
+        expect(result.failedCount).toBe(0);
+        expect(result.completed).toContain('step-0');
+        expect(result.completed).toContain('step-1');
+        expect(result.completed).toContain('step-2');
+        expect(result.artifacts).toContain('file-0.txt');
+    }
+
+    @Test('wait_all handles timeout')
+    async waitAllHandlesTimeout() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                await new Promise(r => setTimeout(r, 300));
+                return inputs.map(() => ({ output: 'late' }));
+            }
+        };
+        const tool = new WaitAllTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'slow' }],
+            timeoutMs: 50
+        }, createSessionContext());
+
+        expect(result.timedOutCount).toBe(1);
+    }
+
+    @Test('wait_any returns first successful result')
+    async waitAnyReturnsFirstSuccess() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map((input, i) => ({
+                    output: `result ${i}`,
+                    sessionId: `s-${i}`,
+                    summary: i === 0 ? 'fast winner' : 'slow loser',
+                    turnCount: 1,
+                    toolCalls: 0
+                }));
+            }
+        };
+        const tool = new WaitAnyTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'fast' }, { goal: 'slow' }]
+        }, createSessionContext());
+
+        expect(result.primitive).toBe('wait_any');
+        expect(result.succeededCount).toBe(1);
+        expect(result.aggregated).toBeDefined();
+        expect(result.aggregated!.length).toBe(1);
+    }
+
+    @Test('wait_any returns no winner when all fail')
+    async waitAnyReturnsNoWinnerWhenAllFail() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map(() => ({
+                    output: '',
+                    error: 'all failed',
+                    sessionId: 's1'
+                }));
+            }
+        };
+        const tool = new WaitAnyTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'a' }, { goal: 'b' }]
+        }, createSessionContext());
+
+        expect(result.succeededCount).toBe(0);
+        expect(result.summary).toContain('no winner');
+    }
+
+    @Test('map_reduce empty inputs returns error')
+    async mapReduceEmptyInputsReturnsError() {
+        const tool = new MapReduceTool({ async spawnParallel() { return []; } } as any);
+        const result = await tool.invoke({
+            mapGoal: 'do {input}',
+            inputs: [],
+            reduceGoal: 'combine'
+        }, createSessionContext());
+        expect(result.taskCount).toBe(0);
+        expect(result.risks.length).toBeGreaterThan(0);
+    }
+
+    @Test('fan_out passes budget fields through output')
+    async fanOutPassesBudgetFieldsThroughOutput() {
+        const adapter = {
+            async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                return inputs.map(() => ({ output: 'ok', sessionId: 's1' }));
+            }
+        };
+        const tool = new FanOutTool(adapter as any);
+        const result = await tool.invoke({
+            tasks: [{ goal: 'x' }],
+            concurrency: 2,
+            timeoutMs: 5000
+        }, createSessionContext());
+
+        expect(result.budget.concurrency).toBe(2);
+        expect(result.budget.timeoutMs).toBe(5000);
+        expect(result.budget.elapsedMs).toBeGreaterThanOrEqual(0);
+    }
+
+    @Test('race empty tasks returns error output')
+    async raceEmptyTasksReturnsErrorOutput() {
+        const tool = new RaceTool({ async spawnParallel() { return []; } } as any);
+        const result = await tool.invoke({ tasks: [] }, createSessionContext());
+        expect(result.taskCount).toBe(0);
+        expect(result.risks.length).toBeGreaterThan(0);
+    }
+
+    @Test('wait_all empty tasks returns error output')
+    async waitAllEmptyTasksReturnsErrorOutput() {
+        const tool = new WaitAllTool({ async spawnParallel() { return []; } } as any);
+        const result = await tool.invoke({ tasks: [] }, createSessionContext());
+        expect(result.taskCount).toBe(0);
+        expect(result.risks.length).toBeGreaterThan(0);
+    }
+
+    @Test('wait_any empty tasks returns error output')
+    async waitAnyEmptyTasksReturnsErrorOutput() {
+        const tool = new WaitAnyTool({ async spawnParallel() { return []; } } as any);
+        const result = await tool.invoke({ tasks: [] }, createSessionContext());
+        expect(result.taskCount).toBe(0);
+        expect(result.risks.length).toBeGreaterThan(0);
+    }
+
     @Test('parse delegated agent reports with diff and structured lists')
     async parseDelegatedAgentReportsWithDiffAndStructuredLists() {
         const adapter = new DelegatingSpawnAgentAdapter(new RandomUuidGenerator(),{
@@ -4824,7 +5154,7 @@ export class AgentToolsPackageTest {
 
     @Test('group tool registration includes new groups')
     groupedToolRegistrationIncludesNewGroups() {
-        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent', 'parallel_spawn', 'orchestrate']);
+        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent', 'parallel_spawn', 'orchestrate', 'fan_out', 'map_reduce', 'race', 'wait_all', 'wait_any']);
         expect(AGENT_TOOL_GROUPS.code_execution).toEqual(['execute_code']);
         expect(AGENT_TOOL_GROUPS.knowledge).toEqual(['knowledge_search', 'knowledge_store']);
         expect(AGENT_TOOL_GROUPS.git).toEqual(['git_operations']);

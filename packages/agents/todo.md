@@ -498,7 +498,7 @@
   - 验收：并排/统一视图、分页大 diff、断线恢复、权限隔离均有测试；全量验证后提交。
 
 ### 批次 IV · 编排、后台与项目视图
-- **P210 · 编排原语与聚合器** `platform: agent-tools + agent/src/runtime`
+- **P210 · 编排原语与聚合器** `platform: agent-tools + agent/src/runtime` ✅ `agent 771 · agent-tools 400 · agent-ui 759`
   - 提供 `map_reduce`、`fan_out`、`race`、`wait_all`、`wait_any`，统一并发/成本/超时预算；聚合器输出带来源、置信度和冲突列表。
   - 验收：成功、超时、部分失败、取消、预算耗尽、结果冲突均可重放测试；构建与提交。
 - **P211 · 统一后台任务总览** `platform: agent-ui/src + agent RPC`
