@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { TodoStore, TodoItem, validateTodos, TodoValidationResult } from '../planning/todo-store';
+import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
 
 function createSessionContext(opts: { sessionId?: string } = {}): any {
@@ -276,5 +276,155 @@ export class TodoStoreV2Test {
         ]);
         expect(result.valid).toBe(false);
         expect(result.errors.length).toBeGreaterThanOrEqual(3);
+    }
+}
+
+@Suite('plan quality gate (P204)')
+export class PlanQualityGateTest {
+
+    @Test('empty list returns valid with score 100')
+    testEmptyValid() {
+        const result = validatePlanQuality([]);
+        expect(result.valid).toBe(true);
+        expect(result.score).toBe(100);
+        expect(result.suggestions.length).toBe(0);
+    }
+
+    @Test('single good item passes with high score')
+    testSingleGoodItem() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Write unit tests for the auth module', status: 'pending', acceptance: 'All edge cases covered' }
+        ]);
+        expect(result.valid).toBe(true);
+        expect(result.score).toBeGreaterThanOrEqual(85);
+    }
+
+    @Test('short content triggers warning')
+    testShortContent() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Fix bug', status: 'pending' }
+        ]);
+        expect(result.suggestions.some(s => s.itemId === '1' && s.message.includes('too short'))).toBe(true);
+    }
+
+    @Test('multi-action content triggers error')
+    testMultiActionContent() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Write auth module and then add tests for it', status: 'pending' }
+        ]);
+        expect(result.valid).toBe(false);
+        expect(result.suggestions.some(s => s.itemId === '1' && s.severity === 'error' && s.message.includes('multiple actions'))).toBe(true);
+    }
+
+    @Test('missing acceptance criteria triggers info')
+    testMissingAcceptance() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Implement the login endpoint with validation', status: 'pending' }
+        ]);
+        expect(result.suggestions.some(s => s.itemId === '1' && s.severity === 'info' && s.message.includes('acceptance'))).toBe(true);
+        expect(result.score).toBeLessThan(100);
+    }
+
+    @Test('completed items do not require acceptance')
+    testCompletedNoAcceptance() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Implement the login endpoint', status: 'completed' }
+        ]);
+        expect(result.suggestions.some(s => s.itemId === '1' && s.message.includes('acceptance'))).toBe(false);
+    }
+
+    @Test('duplicate content detected')
+    testDuplicateContent() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Write tests for auth module', status: 'pending' },
+            { id: '2', content: 'Write tests for auth module', status: 'pending' }
+        ]);
+        expect(result.valid).toBe(false);
+        expect(result.suggestions.some(s => s.severity === 'error' && s.message.includes('Duplicate'))).toBe(true);
+    }
+
+    @Test('out-of-order dependency triggers warning')
+    testDependencyOrder() {
+        const result = validatePlanQuality([
+            { id: 'b', content: 'Second step that depends on first', status: 'pending', dependsOn: ['a'] },
+            { id: 'a', content: 'First step that should come before', status: 'pending' }
+        ]);
+        expect(result.suggestions.some(s => s.itemId === 'b' && s.message.includes('appears later'))).toBe(true);
+    }
+
+    @Test('in-order dependency does not trigger warning')
+    testDependencyInOrder() {
+        const result = validatePlanQuality([
+            { id: 'a', content: 'First step that should come before', status: 'pending' },
+            { id: 'b', content: 'Second step that depends on first', status: 'pending', dependsOn: ['a'] }
+        ]);
+        expect(result.suggestions.some(s => s.message.includes('appears later'))).toBe(false);
+    }
+
+    @Test('long content triggers warning')
+    testLongContent() {
+        const long = 'A'.repeat(350);
+        const result = validatePlanQuality([
+            { id: '1', content: long, status: 'pending' }
+        ]);
+        expect(result.suggestions.some(s => s.itemId === '1' && s.message.includes('very long'))).toBe(true);
+    }
+
+    @Test('valid plan gives high score')
+    testValidPlanHighScore() {
+        const result = validatePlanQuality([
+            { id: '1', content: 'Write the database migration script', status: 'pending', acceptance: 'Migration runs cleanly' },
+            { id: '2', content: 'Update ORM models to match schema', status: 'pending', dependsOn: ['1'], acceptance: 'Type checks pass' },
+            { id: '3', content: 'Add integration tests for new fields', status: 'pending', dependsOn: ['2'], acceptance: 'Tests pass with coverage' }
+        ]);
+        expect(result.valid).toBe(true);
+        expect(result.score).toBeGreaterThanOrEqual(85);
+    }
+
+    @Test('TodoTool action validate returns quality without persisting')
+    async todoToolActionValidate() {
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
+        const result = await tool.invoke({
+            action: 'validate',
+            todos: [
+                { id: '1', content: 'Fix bug', status: 'pending' }
+            ]
+        }, createSessionContext({ sessionId: 'qg1' }));
+        expect(result.quality).toBeDefined();
+        expect(result.quality.suggestions.length).toBeGreaterThan(0);
+        expect(result.validation).toBeDefined();
+        const persisted = await store.read('qg1');
+        expect(persisted.length).toBe(0);
+    }
+
+    @Test('TodoTool action decompose returns quality without persisting')
+    async todoToolActionDecompose() {
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
+        const result = await tool.invoke({
+            action: 'decompose',
+            todos: [
+                { id: '1', content: 'Write auth module and then add tests', status: 'pending' }
+            ]
+        }, createSessionContext({ sessionId: 'qg2' }));
+        expect(result.quality).toBeDefined();
+        expect(result.quality.valid).toBe(false);
+        const persisted = await store.read('qg2');
+        expect(persisted.length).toBe(0);
+    }
+
+    @Test('normal replace now includes quality in result')
+    async normalReplaceIncludesQuality() {
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
+        const result = await tool.invoke({
+            todos: [
+                { id: '1', content: 'Write auth module', status: 'pending', acceptance: 'Tests pass' }
+            ]
+        }, createSessionContext({ sessionId: 'qg3' }));
+        expect(result.quality).toBeDefined();
+        expect(result.quality.valid).toBe(true);
+        expect(result.todos.length).toBe(1);
     }
 }

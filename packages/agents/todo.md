@@ -461,10 +461,11 @@
   - 增加 `parentId`、`kind`、`acceptance`、`dependsOn`、`estimate`、`owner`、`updatedAt`；保留旧 payload 兼容并提供 schema version/migration。
   - `TodoStore` 增加依赖环检测（DFS coloring）、重复 id 冲突报告、状态转移校验（单一 in_progress、依赖未完成不可启动）。
   - 验收：旧会话可读写；非法迁移有明确错误；agent 354 + agent-ui 729 passing (0 failed)，含 20 项 v2 新测试（旧会话兼容、v2 字段持久化/合并、kind 归一化、空 dependsOn/空 parentId 过滤、validateTodos 清洁/重复 id/缺失依赖/缺失父项/依赖环/多 in_progress/未完成依赖 in_progress、store.validate()、TodoTool validation 返回、多项错误收集）。
-- **P204 · 自动分解器与计划质量门** `platform: agent/src/prompt + agent-tools`
-  - 在 todo 调用前增加可验证性规则：每项必须是单一动作，包含产出/验证信号；对过粗、重复、无序步骤返回修正建议。
-  - 支持 `decompose` 预览与 `accept/revise` 两阶段，避免模型一次写入不可执行长清单。
-  - 验收：复杂任务生成 3–9 个可验证步骤；单轮问答不强制 todo；新增 prompt/tool tests，并完成收尾提交。
+- **P204 · 自动分解器与计划质量门** `platform: agent/src/prompt + agent-tools` — **已完成（2026-08-27）**
+  - `validatePlanQuality()` 质量门：单一动作检测（中英文连词）、过短/过长警告、缺失验收条件提示、重复内容检测、依赖顺序检查，返回 score + suggestions。
+  - TodoTool 新增 `action: 'validate'|'decompose'` 参数：preview 模式仅验证不持久化，返回 quality + validation。
+  - 正常 replace/merge 调用自动包含 quality 门反馈。
+  - 验收：agent-tools 368 + agent-ui 729 passing (0 failed)，含 14 项质量门新测试（空列表、优质项、过短、多动作、缺失验收、已完成免验收、重复内容、依赖顺序、过长、优质计划高分、validate action、decompose action、replace 带 quality）。
 
 ### 批次 II · Todo 执行与对话展示
 - **P205 · 依赖感知调度与可恢复执行** `platform: agent/src/runtime + agent-tools`

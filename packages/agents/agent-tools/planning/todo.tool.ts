@@ -1,11 +1,11 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { TodoStore, validateTodos } from './todo-store';
+import { TodoStore, validateTodos, validatePlanQuality, PlanQualityResult } from './todo-store';
 
 @Injectable()
 export class TodoTool implements AgentTool {
     name = 'todo';
-    description = 'Read or update the current session todo list.';
+    description = 'Read, update, or validate the current session todo list.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -27,7 +27,12 @@ export class TodoTool implements AgentTool {
                     required: ['id', 'content', 'status']
                 }
             },
-            merge: { type: 'boolean' }
+            merge: { type: 'boolean' },
+            action: {
+                type: 'string',
+                enum: ['validate', 'decompose'],
+                description: 'validate: check quality without persisting. decompose: validate plan quality and return suggestions without persisting.'
+            }
         }
     };
     toolset = 'planning';
@@ -45,6 +50,11 @@ export class TodoTool implements AgentTool {
         if (!Array.isArray(input.todos)) {
             throw new Error('Invalid todo input: todos must be an array.');
         }
+
+        if (input.action === 'validate' || input.action === 'decompose') {
+            return this.validateOnly(input.todos);
+        }
+
         if (input.merge) {
             await this.store.merge(sessionId, input.todos);
         } else {
@@ -57,6 +67,25 @@ export class TodoTool implements AgentTool {
         const todos = await this.store.read(sessionId);
         const summary = await this.store.summarize(sessionId);
         const validation = validateTodos(todos);
-        return { todos, summary, validation };
+        const quality = validatePlanQuality(todos);
+        return { todos, summary, validation, quality };
+    }
+
+    private validateOnly(todos: any[]): { quality: PlanQualityResult; validation: ReturnType<typeof validateTodos> } {
+        const normalized = todos.map((t: any) => ({
+            id: String(t?.id ?? ''),
+            content: String(t?.content ?? ''),
+            status: String(t?.status ?? 'pending'),
+            parentId: t?.parentId,
+            kind: t?.kind,
+            acceptance: t?.acceptance,
+            dependsOn: t?.dependsOn,
+            estimate: t?.estimate,
+            owner: t?.owner
+        }));
+        return {
+            quality: validatePlanQuality(normalized),
+            validation: validateTodos(normalized)
+        };
     }
 }

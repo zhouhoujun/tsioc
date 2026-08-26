@@ -40,6 +40,19 @@ export interface TodoValidationResult {
     errors: string[];
 }
 
+export interface PlanQualitySuggestion {
+    itemId: string;
+    severity: 'error' | 'warning' | 'info';
+    message: string;
+    suggestion?: string;
+}
+
+export interface PlanQualityResult {
+    valid: boolean;
+    score: number;
+    suggestions: PlanQualitySuggestion[];
+}
+
 const VALID_STATUSES: TodoStatus[] = ['pending', 'in_progress', 'completed', 'cancelled'];
 const VALID_KINDS: TodoItemKind[] = ['task', 'milestone', 'bug', 'feature', 'chore'];
 
@@ -189,6 +202,105 @@ function detectCycle(todos: TodoItem[]): boolean {
         }
     }
     return false;
+}
+
+const SINGLE_ACTION_PATTERNS = /\b(and then|also add|as well as|同时|另外|并且|然后再)\b/i;
+const MIN_CONTENT_LENGTH = 8;
+const MAX_CONTENT_LENGTH = 200;
+const COARSE_CONTENT_LENGTH = 300;
+
+export function validatePlanQuality(todos: TodoItem[]): PlanQualityResult {
+    const suggestions: PlanQualitySuggestion[] = [];
+    let score = 100;
+
+    if (todos.length === 0) {
+        return { valid: true, score: 100, suggestions: [] };
+    }
+
+    const contentSeen = new Map<string, string>();
+    const idSet = new Set(todos.map(t => t.id));
+    const idPosition = new Map(todos.map((t, i) => [t.id, i]));
+
+    for (const item of todos) {
+        const content = (item.content || '').trim();
+
+        if (content.length < MIN_CONTENT_LENGTH) {
+            suggestions.push({
+                itemId: item.id,
+                severity: 'warning',
+                message: `Content too short (${content.length} chars) — likely too vague`,
+                suggestion: 'Expand to describe the specific action and expected output'
+            });
+            score -= 5;
+        }
+
+        if (content.length > COARSE_CONTENT_LENGTH) {
+            suggestions.push({
+                itemId: item.id,
+                severity: 'warning',
+                message: `Content very long (${content.length} chars) — may describe multiple actions`,
+                suggestion: 'Split into smaller, single-action steps'
+            });
+            score -= 5;
+        }
+
+        if (SINGLE_ACTION_PATTERNS.test(content)) {
+            suggestions.push({
+                itemId: item.id,
+                severity: 'error',
+                message: 'Content appears to describe multiple actions',
+                suggestion: 'Each step should be a single atomic action. Split conjunction phrases into separate steps'
+            });
+            score -= 15;
+        }
+
+        if (item.status !== 'completed' && item.status !== 'cancelled') {
+            if (!item.acceptance) {
+                suggestions.push({
+                    itemId: item.id,
+                    severity: 'info',
+                    message: 'No acceptance criteria defined',
+                    suggestion: 'Add an "acceptance" field describing how to verify this step is done'
+                });
+                score -= 3;
+            }
+        }
+
+        const normalizedContent = content.toLowerCase().replace(/\s+/g, ' ');
+        if (contentSeen.has(normalizedContent)) {
+            suggestions.push({
+                itemId: item.id,
+                severity: 'error',
+                message: `Duplicate content with item "${contentSeen.get(normalizedContent)}"`,
+                suggestion: 'Remove the duplicate or differentiate the items'
+            });
+            score -= 10;
+        } else {
+            contentSeen.set(normalizedContent, item.id);
+        }
+
+        if (item.dependsOn) {
+            for (const depId of item.dependsOn) {
+                const depPos = idPosition.get(depId);
+                const myPos = idPosition.get(item.id);
+                if (depPos !== undefined && myPos !== undefined && depPos > myPos) {
+                    suggestions.push({
+                        itemId: item.id,
+                        severity: 'warning',
+                        message: `Depends on "${depId}" which appears later in the list`,
+                        suggestion: 'Reorder so dependencies come before dependent items'
+                    });
+                    score -= 5;
+                }
+            }
+        }
+    }
+
+    return {
+        valid: !suggestions.some(s => s.severity === 'error'),
+        score: Math.max(0, score),
+        suggestions
+    };
 }
 
 @Injectable()
