@@ -489,7 +489,7 @@
   - 验收：agent-ui 740 passing（含计划卡片渲染、折叠、过滤、键盘导航用例）；agent-tools 383 passing；tsc --noEmit 无错误。
 
 ### 批次 III · 上下文与审查闭环
-- **P208 · 渐进压缩与选择性恢复** `platform: agent/src/context`
+- **P208 · 渐进压缩与选择性恢复** `platform: agent/src/context` ✅ `agent 765 · agent-tools 383 · agent-ui 740`
   - 实现 light/medium/deep 三档，依据剩余预算、turn 类型、工具密度自适应选择；保留段落索引与证据引用。
   - 新增 `context.restore` 按消息/工具/文件选择性恢复，并在 UI 显示压缩前后 token、保留率和可恢复入口。
   - 验收：压缩质量/成本基准、恢复正确性、旧 replay 兼容；agent 全量测试、构建、todo 更新、提交。

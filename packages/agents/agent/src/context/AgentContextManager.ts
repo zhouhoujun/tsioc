@@ -26,6 +26,30 @@ export interface ContextBudget {
 
 export type CompactionLevel = 'light' | 'medium' | 'deep';
 
+/**
+ * Signals extracted from the current message history to drive adaptive
+ * compaction level selection beyond pure token pressure.
+ */
+export interface CompactionSignals {
+    /** Fraction of messages that are tool-role (0–1). High density → heavier compaction. */
+    toolDensity: number;
+    /** Dominant tool category in the old section. */
+    turnType: 'research' | 'edit' | 'mixed' | 'minimal';
+    /** Ratio of estimated tokens to maxHistoryTokens (0–1+). */
+    remainingBudget: number;
+}
+
+/**
+ * Metadata attached to compaction summary messages so the UI and restore
+ * logic can reference which conversation segments and evidence the summary covers.
+ */
+export interface CompactionSummaryMetadata {
+    /** Original message indices (0-based) of messages included in the compaction. */
+    paragraphIndex: number[];
+    /** Evidence references extracted from compacted messages (file paths, tool names). */
+    evidenceRefs: Array<{ kind: 'file' | 'tool'; value: string }>;
+}
+
 export interface StashedContext {
     messages: AgentMessage[];
     timestamp: number;
@@ -49,6 +73,8 @@ export interface ContextPreparationReport {
     toolMessagesCompacted: number;
     /** Percentage of tokens saved: Math.round((1 - after/before) * 100) */
     compressionRatio: number;
+    /** Percentage of tokens retained: Math.round(after/before * 100) */
+    retentionRate: number;
     /** Cumulative tokens saved across all prepareHistory calls */
     cumulativeTokenSavings: number;
     /** Whether a compaction replay was applied: the last user message was
@@ -338,12 +364,119 @@ export class AgentContextManager {
         this.originalMessageStore.delete(sessionId);
     }
 
-    private selectCompactionLevel(estimatedTokens: number): CompactionLevel {
+    restoreByMessageIds(sessionId: string, messageIds: string[]): AgentMessage[] | undefined {
+        this.purgeExpiredStash();
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) return undefined;
+        const idSet = new Set(messageIds);
+        const restored = record.messages.filter(m => idSet.has(m.id));
+        return restored.length > 0 ? restored : undefined;
+    }
+
+    restoreByTool(sessionId: string, toolName: string): AgentMessage[] | undefined {
+        this.purgeExpiredStash();
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) return undefined;
+        const restored: AgentMessage[] = [];
+        const seen = new Set<string>();
+        for (const msg of record.messages) {
+            if (msg.role === 'tool' && msg.name === toolName && !seen.has(msg.id)) {
+                seen.add(msg.id);
+                restored.push(msg);
+                continue;
+            }
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls = msg.metadata.toolCalls as Array<{ name?: string }>;
+                if (calls.some(c => c.name === toolName) && !seen.has(msg.id)) {
+                    seen.add(msg.id);
+                    restored.push(msg);
+                }
+            }
+        }
+        return restored.length > 0 ? restored : undefined;
+    }
+
+    restoreByFile(sessionId: string, filePath: string): AgentMessage[] | undefined {
+        this.purgeExpiredStash();
+        const record = this.originalMessageStore.get(sessionId);
+        if (!record) return undefined;
+        const restored: AgentMessage[] = [];
+        const seen = new Set<string>();
+        for (const msg of record.messages) {
+            if (seen.has(msg.id)) continue;
+            const content = String(msg.content || '');
+            if (content.includes(filePath)) {
+                seen.add(msg.id);
+                restored.push(msg);
+            }
+        }
+        return restored.length > 0 ? restored : undefined;
+    }
+
+    private analyzeCompactionSignals(messages: AgentMessage[]): CompactionSignals {
+        let toolCount = 0;
+        const categoryCounts: Record<string, number> = {};
+        const categories: Record<string, string> = {
+            read_file: 'research', read: 'research', look_at: 'research', glob: 'research',
+            grep: 'research', search: 'research', web_search: 'research', websearch: 'research',
+            grep_app_searchGitHub: 'research',
+            edit: 'edit', edit_file: 'edit', write_file: 'edit', write: 'edit',
+            ast_grep_replace: 'edit', ast_grep_search: 'edit',
+            bash: 'edit', exec: 'edit', shell_exec: 'edit',
+        };
+        for (const msg of messages) {
+            if (msg.role === 'tool') {
+                toolCount++;
+                const cat = categories[msg.name || ''] || 'mixed';
+                categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            }
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls = msg.metadata.toolCalls as Array<{ name?: string }>;
+                for (const call of calls) {
+                    const cat = categories[call.name || ''] || 'mixed';
+                    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                }
+            }
+        }
+        const total = messages.length || 1;
+        const toolDensity = toolCount / total;
+        let turnType: CompactionSignals['turnType'] = 'minimal';
+        let maxCount = 0;
+        for (const [cat, count] of Object.entries(categoryCounts)) {
+            if (count > maxCount) {
+                maxCount = count;
+                turnType = cat as CompactionSignals['turnType'];
+            }
+        }
+        if (maxCount <= 1) turnType = 'minimal';
+        const remainingBudget = this.estimateMessages(messages) / this.budget.maxHistoryTokens;
+        return { toolDensity, turnType, remainingBudget };
+    }
+
+    private selectCompactionLevel(estimatedTokens: number, signals?: CompactionSignals): CompactionLevel {
         const maxTokens = this.budget.maxHistoryTokens;
-        if (estimatedTokens >= maxTokens * 1.5) {
+        const budgetRatio = estimatedTokens / maxTokens;
+
+        if (budgetRatio >= 1.5) {
             return 'deep';
         }
-        if (estimatedTokens >= maxTokens * 0.6) {
+        if (budgetRatio >= 1.0) {
+            return 'medium';
+        }
+
+        if (signals) {
+            if (signals.toolDensity > 0.5 && signals.turnType === 'edit') {
+                return budgetRatio >= 0.7 ? 'medium' : 'light';
+            }
+            if (signals.toolDensity > 0.6 && budgetRatio >= 0.5) {
+                return 'medium';
+            }
+            if (signals.turnType === 'research' && signals.toolDensity > 0.4 && budgetRatio >= 0.8) {
+                return 'medium';
+            }
+        }
+
+        if (budgetRatio >= 0.6) {
             return 'medium';
         }
         return 'light';
@@ -465,8 +598,9 @@ export class AgentContextManager {
         const beforeMessageCount = messages.length;
         const beforeTokens = this.estimateMessages(messages);
         const compactionTriggered = this.shouldCompact(messages);
+        const signals = compactionTriggered ? this.analyzeCompactionSignals(messages) : undefined;
         const level: CompactionLevel = compactionTriggered
-            ? this.selectCompactionLevel(beforeTokens)
+            ? this.selectCompactionLevel(beforeTokens, signals)
             : 'light';
 
         if (compactionTriggered && this.compactionHookRunner) {
@@ -504,7 +638,8 @@ export class AgentContextManager {
         const beforeMessageCount = messages.length;
         const beforeTokens = this.estimateMessages(messages);
         const compactionTriggered = true;
-        const level: CompactionLevel = this.selectCompactionLevel(beforeTokens);
+        const signals = this.analyzeCompactionSignals(messages);
+        const level: CompactionLevel = this.selectCompactionLevel(beforeTokens, signals);
 
         if (this.compactionHookRunner) {
             await this.compactionHookRunner('beforeCompaction', {
@@ -816,11 +951,17 @@ export class AgentContextManager {
                 };
             }
 
+            const oldStartIdx = messages.length - recentMessages.length - oldMessages.length;
+            const summaryMeta: CompactionSummaryMetadata = {
+                paragraphIndex: Array.from({ length: oldMessages.length }, (_, i) => oldStartIdx + i),
+                evidenceRefs: this.extractEvidenceRefs(oldMessages)
+            };
             const summaryMessage: AgentMessage = {
                 id: `compact-${Date.now()}`,
                 role: 'system',
                 content: `[Context Summary — compressed ${oldMessages.length} messages]\n${summary}`,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                metadata: { compactionSummary: summaryMeta }
             };
 
             const compacted = [...systemMessages, summaryMessage, ...preservedAnchors, ...recentMessages];
@@ -1110,6 +1251,43 @@ export class AgentContextManager {
         return summarized !== content;
     }
 
+    private extractEvidenceRefs(messages: AgentMessage[]): CompactionSummaryMetadata['evidenceRefs'] {
+        const refs: CompactionSummaryMetadata['evidenceRefs'] = [];
+        const seen = new Set<string>();
+        for (const msg of messages) {
+            if (msg.role === 'tool' && msg.name) {
+                const key = `tool:${msg.name}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    refs.push({ kind: 'tool', value: msg.name });
+                }
+            }
+            if (msg.role === 'assistant' && msg.metadata?.toolCalls) {
+                const calls = msg.metadata.toolCalls as Array<{ name?: string }>;
+                for (const call of calls) {
+                    if (call.name) {
+                        const key = `tool:${call.name}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            refs.push({ kind: 'tool', value: call.name });
+                        }
+                    }
+                }
+            }
+            const content = String(msg.content || '');
+            const fileMatches = content.matchAll(/(?:^|\s)((?:\/|\.\/|\.\.\/)[^\s:;,()]+(?:\.\w+))/g);
+            for (const match of fileMatches) {
+                const filePath = match[1];
+                const key = `file:${filePath}`;
+                if (!seen.has(key) && filePath.length < 200) {
+                    seen.add(key);
+                    refs.push({ kind: 'file', value: filePath });
+                }
+            }
+        }
+        return refs;
+    }
+
     private buildCompactedToolContent(message: AgentMessage): string {
         const toolName = String(message.name || 'tool').trim() || 'tool';
         const receiptSummary = String(message.metadata?.receipt?.outputSummary || '').trim();
@@ -1246,6 +1424,20 @@ export class AgentContextManager {
     listCompactedSessions(): string[] {
         this.purgeExpiredStash();
         return [...this.originalMessageStore.keys()];
+    }
+
+    getRecoverableSessions(): Array<{ sessionId: string; timestamp: number; level: CompactionLevel; messageCount: number }> {
+        this.purgeExpiredStash();
+        const result: Array<{ sessionId: string; timestamp: number; level: CompactionLevel; messageCount: number }> = [];
+        for (const [sessionId, stash] of this.originalMessageStore) {
+            result.push({
+                sessionId,
+                timestamp: stash.timestamp,
+                level: stash.level,
+                messageCount: stash.messages.length
+            });
+        }
+        return result;
     }
 
     /**
@@ -1649,10 +1841,14 @@ export class AgentContextManager {
             .replace(/\s+/g, '_');
     }
 
-    private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount' | 'replayed'>): ContextPreparationReport {
+    private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount' | 'replayed' | 'retentionRate'>): ContextPreparationReport {
+        const retentionRate = report.beforeTokens > 0
+            ? Math.round((report.afterTokens / report.beforeTokens) * 100)
+            : 100;
         return {
             ...report,
             replayed: false,
+            retentionRate,
             prunedMessageCount: Math.max(0, report.beforeMessageCount - report.afterMessageCount)
         };
     }

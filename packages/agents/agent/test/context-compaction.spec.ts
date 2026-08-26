@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { AgentContextManager, StashedContext, CompactionLevel } from '../src/context/AgentContextManager';
+import { AgentContextManager, StashedContext, CompactionLevel, CompactionSignals } from '../src/context/AgentContextManager';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
@@ -26,7 +26,8 @@ interface TestAgentContextManager {
     readonly effectiveCompactionMinTokens: number;
     readonly effectiveRecentWindow: number;
     isErrorContextMessage(msg: AgentMessage): boolean;
-    selectCompactionLevel(estimatedTokens: number): CompactionLevel;
+    selectCompactionLevel(estimatedTokens: number, signals?: CompactionSignals): CompactionLevel;
+    analyzeCompactionSignals(messages: AgentMessage[]): CompactionSignals;
 }
 
 function asTestCtx(ctx: AgentContextManager): TestAgentContextManager {
@@ -1028,6 +1029,98 @@ export class ContextCompactionTest {
         expect(prepared.report.cumulativeTokenSavings).toBeGreaterThanOrEqual(0);
     }
 
+    /* --- analyzeCompactionSignals --- */
+
+    @Test('analyzeCompactionSignals computes toolDensity as ratio of tool messages')
+    async signalsToolDensity() {
+        const ctx = new AgentContextManager();
+        const messages: AgentMessage[] = [
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
+            { id: 't1', role: 'tool', content: 'result', name: 'read_file', createdAt: 2 },
+            { id: 't2', role: 'tool', content: 'result', name: 'read_file', createdAt: 3 },
+            { id: 'a1', role: 'assistant', content: 'done', createdAt: 4 },
+        ];
+        const signals = asTestCtx(ctx).analyzeCompactionSignals(messages);
+        expect(signals.toolDensity).toBeCloseTo(0.5);
+    }
+
+    @Test('analyzeCompactionSignals classifies turnType as edit when edit tools dominate')
+    async signalsTurnTypeEdit() {
+        const ctx = new AgentContextManager();
+        const messages: AgentMessage[] = [
+            { id: 'u1', role: 'user', content: 'edit', createdAt: 1 },
+            { id: 't1', role: 'tool', content: 'ok', name: 'edit', createdAt: 2 },
+            { id: 't2', role: 'tool', content: 'ok', name: 'write_file', createdAt: 3 },
+            { id: 'a1', role: 'assistant', content: 'done', createdAt: 4 },
+        ];
+        const signals = asTestCtx(ctx).analyzeCompactionSignals(messages);
+        expect(signals.turnType).toEqual('edit');
+    }
+
+    @Test('analyzeCompactionSignals classifies turnType as research when read tools dominate')
+    async signalsTurnTypeResearch() {
+        const ctx = new AgentContextManager();
+        const messages: AgentMessage[] = [
+            { id: 'u1', role: 'user', content: 'search', createdAt: 1 },
+            { id: 't1', role: 'tool', content: 'ok', name: 'read_file', createdAt: 2 },
+            { id: 't2', role: 'tool', content: 'ok', name: 'grep', createdAt: 3 },
+            { id: 'a1', role: 'assistant', content: 'done', createdAt: 4 },
+        ];
+        const signals = asTestCtx(ctx).analyzeCompactionSignals(messages);
+        expect(signals.turnType).toEqual('research');
+    }
+
+    @Test('analyzeCompactionSignals computes remainingBudget ratio')
+    async signalsRemainingBudget() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 10000 });
+        const messages: AgentMessage[] = [
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
+        ];
+        const signals = asTestCtx(ctx).analyzeCompactionSignals(messages);
+        expect(signals.remainingBudget).toBeLessThan(1);
+    }
+
+    /* --- selectCompactionLevel with signals --- */
+
+    @Test('selectCompactionLevel with edit-heavy signals triggers medium earlier')
+    async signalsEditHeavyEarlyMedium() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        const signals: CompactionSignals = { toolDensity: 0.6, turnType: 'edit', remainingBudget: 0.75 };
+        expect(asTestCtx(ctx).selectCompactionLevel(22400, signals)).toEqual('medium');
+    }
+
+    @Test('selectCompactionLevel with high density signals triggers medium at 0.5x')
+    async signalsHighDensityEarlyMedium() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        const signals: CompactionSignals = { toolDensity: 0.7, turnType: 'mixed', remainingBudget: 0.55 };
+        expect(asTestCtx(ctx).selectCompactionLevel(17600, signals)).toEqual('medium');
+    }
+
+    @Test('selectCompactionLevel with research signals triggers medium at 0.8x')
+    async signalsResearchMedium() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        const signals: CompactionSignals = { toolDensity: 0.5, turnType: 'research', remainingBudget: 0.85 };
+        expect(asTestCtx(ctx).selectCompactionLevel(27200, signals)).toEqual('medium');
+    }
+
+    /* --- retentionRate in report --- */
+
+    @Test('prepareHistory report includes retentionRate')
+    async reportIncludesRetentionRate() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 500 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const messages = this.makeToolMessages(8);
+        const prepared = await ctx.prepareHistory(messages);
+        expect(typeof prepared.report.retentionRate).toEqual('number');
+        expect(prepared.report.retentionRate).toBeGreaterThanOrEqual(0);
+        expect(prepared.report.retentionRate).toBeLessThanOrEqual(100);
+    }
+
     /* --- selective detail recovery --- */
 
     @Test('prepareHistory with sessionId stashes original messages')
@@ -1068,6 +1161,82 @@ export class ContextCompactionTest {
         expect(ctx.hasCompactedContent('test-session')).toEqual(true);
         ctx.clearCompactedContent('test-session');
         expect(ctx.hasCompactedContent('test-session')).toEqual(false);
+    }
+
+    @Test('restoreByMessageIds returns matching messages')
+    async restoreByMessageIds() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'm1', role: 'user', content: 'a', createdAt: 1 },
+                { id: 'm2', role: 'assistant', content: 'b', createdAt: 2 },
+                { id: 'm3', role: 'user', content: 'c', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const result = ctx.restoreByMessageIds('s1', ['m1', 'm3']);
+        expect(result).toBeDefined();
+        expect(result!.length).toBe(2);
+        expect(result!.map(m => m.id)).toEqual(['m1', 'm3']);
+    }
+
+    @Test('restoreByMessageIds returns undefined for missing session')
+    async restoreByMessageIdsMissingSession() {
+        const ctx = new AgentContextManager();
+        expect(ctx.restoreByMessageIds('nope', ['m1'])).toBeUndefined();
+    }
+
+    @Test('restoreByTool returns tool-role messages and assistant messages with matching toolCalls')
+    async restoreByTool() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'm1', role: 'tool', content: 'result', name: 'grep', createdAt: 1 },
+                { id: 'm2', role: 'assistant', content: 'done', metadata: { toolCalls: [{ name: 'grep' }] } as any, createdAt: 2 },
+                { id: 'm3', role: 'tool', content: 'result', name: 'edit', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const result = ctx.restoreByTool('s1', 'grep');
+        expect(result).toBeDefined();
+        expect(result!.length).toBe(2);
+        expect(result!.map(m => m.id)).toEqual(['m1', 'm2']);
+    }
+
+    @Test('restoreByFile returns messages containing the file path')
+    async restoreByFile() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'm1', role: 'tool', content: 'read /src/foo.ts', createdAt: 1 },
+                { id: 'm2', role: 'assistant', content: 'edited /src/bar.ts', createdAt: 2 },
+                { id: 'm3', role: 'user', content: 'see /src/foo.ts', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const result = ctx.restoreByFile('s1', '/src/foo.ts');
+        expect(result).toBeDefined();
+        expect(result!.length).toBe(2);
+        expect(result!.map(m => m.id)).toEqual(['m1', 'm3']);
+    }
+
+    @Test('getRecoverableSessions returns session metadata')
+    async recoverableSessions() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        const now = Date.now();
+        store.set('s1', { messages: [{ id: 'm1', role: 'user', content: '', createdAt: 1 }], timestamp: now, level: 'light' });
+        store.set('s2', { messages: [], timestamp: now, level: 'deep' });
+        const result = ctx.getRecoverableSessions();
+        expect(result.length).toBe(2);
+        expect(result.find(s => s.sessionId === 's1')!.messageCount).toBe(1);
+        expect(result.find(s => s.sessionId === 's2')!.level).toBe('deep');
     }
 
     /* --- aggressive prune (deep level) --- */

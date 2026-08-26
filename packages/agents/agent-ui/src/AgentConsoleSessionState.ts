@@ -4358,6 +4358,7 @@ export class AgentConsoleSessionState {
             `${report.beforeMessageCount}→${report.afterMessageCount} msgs`,
             `${report.beforeTokens}→${report.afterTokens} tok`,
             `${report.compressionRatio}% saved`,
+            `${report.retentionRate}% retained`,
             report.preservedAnchorCount ? `${report.preservedAnchorCount} anchors` : '',
             report.toolMessagesCompacted ? `${report.toolMessagesCompacted} tools` : '',
             report.cumulativeTokenSavings ? `cum ${report.cumulativeTokenSavings} tok` : ''
