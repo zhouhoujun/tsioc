@@ -257,6 +257,11 @@ export function renderAgentConsoleMessageItem(
     const roleLabel = context.showUsername
         ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
         : baseRoleLabel;
+    const timelineEvent = message?.metadata?.uiKind === 'event';
+    const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
+    const effectiveRoleLabel = context.timelineMode && timelineEvent
+        ? (timelineEventType.startsWith('tool_') || timelineEventType === 'tool_call' ? '  ├─ ' : '  · ')
+        : roleLabel;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
@@ -292,7 +297,7 @@ export function renderAgentConsoleMessageItem(
         const rendered = buildRenderedLine(
             { ...line, tokens: cursorTokens },
             isFirst ? renderer.lead(rowSelected) : renderer.continuationLead(rowSelected),
-            roleLabel,
+            effectiveRoleLabel,
             renderer,
             theme,
             rowSelected,
@@ -306,7 +311,7 @@ export function renderAgentConsoleMessageItem(
         return {
             ...rendered,
             messageId: message?.id,
-            role: isFirst ? rendered.role : rendered.role ? '  ' : '',
+            role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
             meta: isFirst ? timelineMeta : '',
             metaStyle: isFirst ? resolveTimelineMetaStyle(theme, rowSelected, templateKind) : {},

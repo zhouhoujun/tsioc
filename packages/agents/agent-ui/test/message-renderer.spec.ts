@@ -258,6 +258,16 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(completed[0].lines[0].meta).not.toContain('09:05');
     }
 
+    @Test('timeline event rows use compact hierarchy markers')
+    renderTimelineEventHierarchy() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'event-tool', role: 'assistant', content: 'Read src/index.ts', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        }] as any, { timelineMode: true });
+        expect(items[0].lines[0].role).toContain('├─');
+        expect(items[0].lines[0].content).toEqual('Read src/index.ts');
+    }
+
     @Test('hides tool output content when showToolOutput is disabled')
     renderToolOutputHidden() {
         const message = {

@@ -587,7 +587,7 @@ Turn: Fix session restore                                      running  01:42
   - 新增专用 timeline renderer，按 Turn→Step→Event 输出，而非复用普通 message row；边界显示 `step N/M + 标题 + 状态 + elapsed`，并将事件绑定当前 step。
   - 规范行宽：路径/命令保留尾部、自然语言按词换行、代码/日志进 inspector；成功/运行/失败/blocked 使用稳定图标和可读文本，不依赖纯色区分。
   - 验收：80/120 列 TUI snapshot、browser desktop/mobile render、CJK 与超长路径用例；全量测试、todo 更新、提交。
-  - **部分完成（2026-08-26）**：时间线边界升级为 `step N/M + 状态 glyph + 步骤标题`，使用独立上下边框和强调样式；agent-ui `683 passing`，`tsc --noEmit` 与 `build:web` 通过。事件分组 renderer 留待本批后续迭代。
+  - **已完成（2026-08-26）**：时间线边界升级为 `step N/M + 状态 glyph + 步骤标题`，使用独立上下边框和强调样式；event 行在 timeline 模式使用 `├─`/`·` 层级标记并加深续行缩进。agent-ui `684 passing`，`tsc --noEmit` 与 `build:web` 通过。更深的折叠/inspector 由 P221/P222 承接。
 
 - **P221 · 渐进披露与可扫描窗口** `platform: agent-ui/src（跨平台）`
   - 默认展开当前 step、失败/blocked/approval、最近完成 step；自动收起更早成功 step，展示 `N events hidden` 摘要，用户可按 Enter 展开。
