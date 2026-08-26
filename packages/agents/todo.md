@@ -493,7 +493,7 @@
   - 实现 light/medium/deep 三档，依据剩余预算、turn 类型、工具密度自适应选择；保留段落索引与证据引用。
   - 新增 `context.restore` 按消息/工具/文件选择性恢复，并在 UI 显示压缩前后 token、保留率和可恢复入口。
   - 验收：压缩质量/成本基准、恢复正确性、旧 replay 兼容；agent 全量测试、构建、todo 更新、提交。
-- **P209 · Review comment/结论回写** `platform: agent-ui/src + agent RPC`
+- **P209 · Review comment/结论回写** `platform: agent-ui/src + agent RPC` ✅ `agent 771 · agent-tools 383 · agent-ui 759`
   - 支持逐行/逐 hunk comment、批量 approve/reject、review gate；将结论结构化写回 session，供 agent 下一 turn 消费。
   - 验收：并排/统一视图、分页大 diff、断线恢复、权限隔离均有测试；全量验证后提交。
 

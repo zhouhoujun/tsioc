@@ -129,7 +129,8 @@ export async function mountAgentWebConsole(
         token: config.token,
         rpc,
         ...(config.fetchImpl ? { fetchImpl: config.fetchImpl } : {}),
-        reconnectDelayMs: 3000
+        reconnectDelayMs: 3000,
+        onReconnected: () => state.onSessionReconnected?.()
     });
 
     const rootRef = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent> | undefined;

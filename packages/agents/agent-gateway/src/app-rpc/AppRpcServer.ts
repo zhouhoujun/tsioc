@@ -221,6 +221,10 @@ export class AppRpcServer {
                         'coding_task.rollback',
                         'review_annotations.save',
                         'review_annotations.load',
+                        'review.conclusions.write',
+                        'review_gate.set',
+                        'review_gate.clear',
+                        'review_gate.status',
                         'summary_quality.list',
                         'summary_quality.stats',
                         'summary_quality.trend',
@@ -417,6 +421,14 @@ export class AppRpcServer {
                 return this.saveReviewAnnotations(params, context);
             case 'review_annotations.load':
                 return this.loadReviewAnnotations(params, context);
+            case 'review_gate.set':
+                return this.setReviewGate(params, context);
+            case 'review_gate.clear':
+                return this.clearReviewGate(params, context);
+            case 'review_gate.status':
+                return this.getReviewGateStatus(params, context);
+            case 'review.conclusions.write':
+                return this.writeReviewConclusions(params, context);
             case 'summary_quality.list':
                 return this.listSummaryQuality(params, context);
             case 'summary_quality.stats':
@@ -2899,6 +2911,40 @@ export class AppRpcServer {
 
     private reviewAnnotationsMemoryKey(cacheKey: string): string {
         return `${AppRpcServer.REVIEW_ANNOTATIONS_CACHE_KEY}:${cacheKey}`;
+    }
+
+    private async setReviewGate(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean; taskId: string }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const taskId = this.requireString(params?.taskId, 'taskId');
+        this.runtime.setReviewGate(sessionId, taskId);
+        return { ok: true, taskId };
+    }
+
+    private async clearReviewGate(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        this.runtime.clearReviewGate(sessionId);
+        return { ok: true };
+    }
+
+    private async getReviewGateStatus(params: any, context: AppRpcRequestContext): Promise<{ active: boolean; taskId?: string }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return this.runtime.getReviewGateStatus(sessionId);
+    }
+
+    private async writeReviewConclusions(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean; key: string }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        const conclusions = params?.conclusions;
+        if (!conclusions || typeof conclusions !== 'object') {
+            throw new AppRpcError(-32602, 'review.conclusions.write requires a conclusions object');
+        }
+        const key = 'review.conclusions';
+        const value = JSON.stringify(conclusions);
+        await this.runtime.putMemory(sessionId, key, value, 'session');
+        return { ok: true, key };
     }
 
     private resolveExportFormat(format?: unknown): 'json' | 'jsonl' {

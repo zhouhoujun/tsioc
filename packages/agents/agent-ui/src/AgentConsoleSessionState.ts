@@ -525,8 +525,11 @@ export class AgentConsoleSessionState {
     selectedReviewPatchFilter: AgentConsoleReviewPatchFilter = 'all';
     reviewSideBySide = false;
     reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
+    reviewHunkAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
     protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
     onReviewAnnotationsPersist?: (cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>) => void;
+    onReviewConclusionsWriteBack?: (conclusions: { files: Record<string, AgentConsoleReviewAnnotation>; hunks: Record<string, AgentConsoleReviewAnnotation>; summary: { totalFiles: number; approvedFiles: number; rejectedFiles: number; totalHunks: number; approvedHunks: number; rejectedHunks: number } }) => void;
+    onSessionReconnected?: () => void;
     getAnnotationCache(): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
         this.syncCurrentReviewAnnotationCache();
         return { ...this.reviewAnnotationCache };
@@ -2644,7 +2647,23 @@ export class AgentConsoleSessionState {
             }
             this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(this.reviewTask) || this.resolveReviewAnnotationCacheKey(nextItem) || selectedTaskId;
             const cached = this.reviewAnnotationCache[this.selectedReviewTaskCacheKey] || this.reviewAnnotationCache[selectedTaskId];
-            this.reviewFileAnnotations = cached ? { ...cached } : {};
+            if (cached) {
+                const fileAnnots: Record<string, AgentConsoleReviewAnnotation> = {};
+                const hunkAnnots: Record<string, AgentConsoleReviewAnnotation> = {};
+                for (const [key, val] of Object.entries(cached)) {
+                    const hashIdx = key.lastIndexOf('#');
+                    if (hashIdx > 0 && /^\d+$/.test(key.slice(hashIdx + 1))) {
+                        hunkAnnots[key] = val;
+                    } else {
+                        fileAnnots[key] = val;
+                    }
+                }
+                this.reviewFileAnnotations = fileAnnots;
+                this.reviewHunkAnnotations = hunkAnnots;
+            } else {
+                this.reviewFileAnnotations = {};
+                this.reviewHunkAnnotations = {};
+            }
         }
         if (!this.reviewTask && !this.reviewDiff && !this.reviewWorkers.length) {
             return;
@@ -2759,6 +2778,7 @@ export class AgentConsoleSessionState {
         this.selectedReviewPatchFilter = 'all';
         this.reviewSideBySide = false;
         this.reviewFileAnnotations = {};
+        this.reviewHunkAnnotations = {};
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
@@ -2895,25 +2915,150 @@ export class AgentConsoleSessionState {
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
     }
 
+    rejectAllReviewFiles(comment?: string): void {
+        if (!this.reviewOpen) return;
+        const sections = this.reviewFileSections;
+        for (const section of sections) {
+            this.reviewFileAnnotations[section.path] = {
+                status: 'rejected',
+                comment,
+                createdAt: new Date().toISOString()
+            };
+        }
+        this.syncCurrentReviewAnnotationCache();
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
+    }
+
+    /** Generate a hunk annotation key from file path and hunk index. */
+    protected hunkAnnotationKey(filePath: string, hunkIndex: number): string {
+        return `${filePath}#${hunkIndex}`;
+    }
+
+    /** Set an annotation on a specific hunk within a file. */
+    setReviewHunkAnnotation(status: 'approved' | 'rejected', comment?: string, filePath?: string, hunkIndex?: number): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        const idx = hunkIndex ?? this.selectedReviewHunkIndex;
+        if (!path) return;
+        this.reviewHunkAnnotations[this.hunkAnnotationKey(path, idx)] = {
+            status,
+            comment,
+            createdAt: new Date().toISOString()
+        };
+        this.syncCurrentReviewAnnotationCache();
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
+    }
+
+    /** Clear annotation on a specific hunk. */
+    clearReviewHunkAnnotation(filePath?: string, hunkIndex?: number): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        const idx = hunkIndex ?? this.selectedReviewHunkIndex;
+        if (!path) return;
+        delete this.reviewHunkAnnotations[this.hunkAnnotationKey(path, idx)];
+        this.syncCurrentReviewAnnotationCache();
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
+    }
+
+    /** Get annotation for a specific hunk. */
+    getReviewHunkAnnotation(filePath: string, hunkIndex: number): AgentConsoleReviewAnnotation | undefined {
+        return this.reviewHunkAnnotations[this.hunkAnnotationKey(filePath, hunkIndex)];
+    }
+
+    /** Approve all hunks within a given file (or the currently selected file). */
+    approveAllReviewHunksForFile(comment?: string, filePath?: string): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        if (!path) return;
+        const section = this.reviewFileSections.find(s => s.path === path);
+        if (!section) return;
+        const hunks = this.parseReviewHunks(section);
+        for (let i = 0; i < hunks.length; i++) {
+            this.reviewHunkAnnotations[this.hunkAnnotationKey(path, i)] = {
+                status: 'approved',
+                comment,
+                createdAt: new Date().toISOString()
+            };
+        }
+        this.syncCurrentReviewAnnotationCache();
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
+    }
+
+    /** Reject all hunks within a given file (or the currently selected file). */
+    rejectAllReviewHunksForFile(comment?: string, filePath?: string): void {
+        if (!this.reviewOpen) return;
+        const path = filePath ?? this.selectedReviewFileSection?.path;
+        if (!path) return;
+        const section = this.reviewFileSections.find(s => s.path === path);
+        if (!section) return;
+        const hunks = this.parseReviewHunks(section);
+        for (let i = 0; i < hunks.length; i++) {
+            this.reviewHunkAnnotations[this.hunkAnnotationKey(path, i)] = {
+                status: 'rejected',
+                comment,
+                createdAt: new Date().toISOString()
+            };
+        }
+        this.syncCurrentReviewAnnotationCache();
+        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
+    }
+
+    /** Collect all annotations (file + hunk) into a structured object for write-back. */
+    collectReviewConclusions(): { files: Record<string, AgentConsoleReviewAnnotation>; hunks: Record<string, AgentConsoleReviewAnnotation>; summary: { totalFiles: number; approvedFiles: number; rejectedFiles: number; totalHunks: number; approvedHunks: number; rejectedHunks: number } } {
+        const fileEntries = Object.entries(this.reviewFileAnnotations);
+        const hunkEntries = Object.entries(this.reviewHunkAnnotations);
+        return {
+            files: { ...this.reviewFileAnnotations },
+            hunks: { ...this.reviewHunkAnnotations },
+            summary: {
+                totalFiles: fileEntries.length,
+                approvedFiles: fileEntries.filter(([, a]) => a.status === 'approved').length,
+                rejectedFiles: fileEntries.filter(([, a]) => a.status === 'rejected').length,
+                totalHunks: hunkEntries.length,
+                approvedHunks: hunkEntries.filter(([, a]) => a.status === 'approved').length,
+                rejectedHunks: hunkEntries.filter(([, a]) => a.status === 'rejected').length
+            }
+        };
+    }
+
+    /** Serialize conclusions and fire write-back callback for the host to persist. */
+    writeReviewConclusions(): { files: Record<string, AgentConsoleReviewAnnotation>; hunks: Record<string, AgentConsoleReviewAnnotation>; summary: { totalFiles: number; approvedFiles: number; rejectedFiles: number; totalHunks: number; approvedHunks: number; rejectedHunks: number } } {
+        const conclusions = this.collectReviewConclusions();
+        this.onReviewConclusionsWriteBack?.(conclusions);
+        return conclusions;
+    }
+
     clearAllReviewAnnotations(): void {
         if (!this.reviewOpen) return;
         this.reviewFileAnnotations = {};
+        this.reviewHunkAnnotations = {};
         this.syncCurrentReviewAnnotationCache();
         this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
     }
 
     getReviewAnnotationSummary(): string[] {
         const lines: string[] = [];
-        const entries = Object.entries(this.reviewFileAnnotations);
-        if (!entries.length) {
+        const fileEntries = Object.entries(this.reviewFileAnnotations);
+        const hunkEntries = Object.entries(this.reviewHunkAnnotations);
+        if (!fileEntries.length && !hunkEntries.length) {
             lines.push('No annotations.');
             return lines;
         }
-        const approved = entries.filter(([, a]) => a.status === 'approved').length;
-        const rejected = entries.filter(([, a]) => a.status === 'rejected').length;
-        lines.push(`Annotations: ${approved} approved, ${rejected} rejected`);
-        for (const [path, annot] of entries) {
-            lines.push(`  ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? ` — ${annot.comment}` : ''}`);
+        if (fileEntries.length) {
+            const approved = fileEntries.filter(([, a]) => a.status === 'approved').length;
+            const rejected = fileEntries.filter(([, a]) => a.status === 'rejected').length;
+            lines.push(`File Annotations: ${approved} approved, ${rejected} rejected`);
+            for (const [path, annot] of fileEntries) {
+                lines.push(`  ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? ` — ${annot.comment}` : ''}`);
+            }
+        }
+        if (hunkEntries.length) {
+            const hApproved = hunkEntries.filter(([, a]) => a.status === 'approved').length;
+            const hRejected = hunkEntries.filter(([, a]) => a.status === 'rejected').length;
+            lines.push(`Hunk Annotations: ${hApproved} approved, ${hRejected} rejected`);
+            for (const [key, annot] of hunkEntries) {
+                lines.push(`  ${annot.status === 'approved' ? '✓' : '✗'} ${key}${annot.comment ? ` — ${annot.comment}` : ''}`);
+            }
         }
         return lines;
     }
@@ -2935,29 +3080,33 @@ export class AgentConsoleSessionState {
         lines.push(`Date: ${new Date().toISOString()}`);
         lines.push(`Status: ${task?.status ?? 'unknown'}`);
         lines.push('');
-        const entries = Object.entries(this.reviewFileAnnotations);
-        if (!entries.length) {
+        const fileEntries = Object.entries(this.reviewFileAnnotations);
+        const hunkEntries = Object.entries(this.reviewHunkAnnotations);
+        if (!fileEntries.length && !hunkEntries.length) {
             lines.push('No annotations.');
             return lines;
         }
-        const approved = entries.filter(([, a]) => a.status === 'approved');
-        const rejected = entries.filter(([, a]) => a.status === 'rejected');
-        lines.push(`## Summary`);
-        lines.push(`- Approved: ${approved.length}`);
-        lines.push(`- Rejected: ${rejected.length}`);
-        lines.push(`- Total: ${entries.length}`);
-        lines.push('');
-        if (approved.length) {
-            lines.push(`## Approved Files`);
-            for (const [path, annot] of approved) {
-                lines.push(`- ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
+        if (fileEntries.length) {
+            const approved = fileEntries.filter(([, a]) => a.status === 'approved');
+            const rejected = fileEntries.filter(([, a]) => a.status === 'rejected');
+            lines.push(`## File Annotations`);
+            lines.push(`- Approved: ${approved.length}`);
+            lines.push(`- Rejected: ${rejected.length}`);
+            lines.push('');
+            for (const [path, annot] of fileEntries) {
+                lines.push(`- ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
             }
             lines.push('');
         }
-        if (rejected.length) {
-            lines.push(`## Rejected Files`);
-            for (const [path, annot] of rejected) {
-                lines.push(`- ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
+        if (hunkEntries.length) {
+            const hApproved = hunkEntries.filter(([, a]) => a.status === 'approved');
+            const hRejected = hunkEntries.filter(([, a]) => a.status === 'rejected');
+            lines.push(`## Hunk Annotations`);
+            lines.push(`- Approved: ${hApproved.length}`);
+            lines.push(`- Rejected: ${hRejected.length}`);
+            lines.push('');
+            for (const [key, annot] of hunkEntries) {
+                lines.push(`- ${annot.status === 'approved' ? '✓' : '✗'} ${key}${annot.comment ? `: ${annot.comment}` : ''}`);
             }
             lines.push('');
         }
@@ -4165,7 +4314,9 @@ export class AgentConsoleSessionState {
         for (let hunkIndex = 0; hunkIndex < hunks.length; hunkIndex++) {
             const hunk = hunks[hunkIndex];
             lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor, hunk.startIndex)));
-            lines.push(hunk.header);
+            const hunkAnnot = this.getReviewHunkAnnotation(section.path, hunkIndex);
+            const hunkMark = hunkAnnot ? (hunkAnnot.status === 'approved' ? ' ✓' : ' ✗') : '';
+            lines.push(`${hunk.header}${hunkMark}`);
             if (this.isReviewHunkFolded(groupKey, section.path, hunkIndex)) {
                 lines.push(this.buildReviewFoldedHunkSummary(hunk));
             } else {
@@ -4187,7 +4338,9 @@ export class AgentConsoleSessionState {
         for (let hunkIndex = 0; hunkIndex < hunks.length; hunkIndex++) {
             const hunk = hunks[hunkIndex];
             lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor, hunk.startIndex)));
-            lines.push(hunk.header);
+            const hunkAnnot = this.getReviewHunkAnnotation(section.path, hunkIndex);
+            const hunkMark = hunkAnnot ? (hunkAnnot.status === 'approved' ? ' ✓' : ' ✗') : '';
+            lines.push(`${hunk.header}${hunkMark}`);
             if (this.isReviewHunkFolded(groupKey, section.path, hunkIndex)) {
                 lines.push(this.buildReviewFoldedHunkSummary(hunk));
             } else {
@@ -4272,8 +4425,10 @@ export class AgentConsoleSessionState {
         if (!cacheKey) {
             return;
         }
-        if (Object.keys(this.reviewFileAnnotations).length > 0) {
-            this.reviewAnnotationCache[cacheKey] = { ...this.reviewFileAnnotations };
+        const hasFileAnnots = Object.keys(this.reviewFileAnnotations).length > 0;
+        const hasHunkAnnots = Object.keys(this.reviewHunkAnnotations).length > 0;
+        if (hasFileAnnots || hasHunkAnnots) {
+            this.reviewAnnotationCache[cacheKey] = { ...this.reviewFileAnnotations, ...this.reviewHunkAnnotations };
             return;
         }
         delete this.reviewAnnotationCache[cacheKey];

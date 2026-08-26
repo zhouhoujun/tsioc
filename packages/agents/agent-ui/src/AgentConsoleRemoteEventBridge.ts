@@ -18,6 +18,7 @@ export interface AgentConsoleRemoteEventBridgeOptions {
     fetchImpl?: typeof fetch;
     rpc?: AgentConsoleAppRpc | null;
     reconnectDelayMs?: number;
+    onReconnected?: () => void;
 }
 
 interface SseFrame {
@@ -367,6 +368,7 @@ function truncateText(value: string): string {
 export class AgentConsoleRemoteEventBridge {
     protected parserBuffer = '';
     protected active = false;
+    protected hasConnected = false;
     protected reconnectTimer?: ReturnType<typeof setTimeout>;
     protected sessionId = '';
     protected fetchImpl: typeof fetch;
@@ -434,6 +436,10 @@ export class AgentConsoleRemoteEventBridge {
                 }
             }
         }
+        if (this.hasConnected) {
+            this.options.onReconnected?.();
+        }
+        this.hasConnected = true;
         this.scheduleReconnect();
     }
 

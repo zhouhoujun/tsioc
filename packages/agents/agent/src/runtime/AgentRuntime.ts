@@ -421,4 +421,16 @@ export abstract class AgentRuntime {
     ): Promise<import('../harness/TokenBudgetTracker').TokenBudgetScopeState[]> {
         return [];
     }
+
+    setReviewGate(_sessionId: string, _taskId: string): void {
+        // no-op by default
+    }
+
+    clearReviewGate(_sessionId: string): void {
+        // no-op by default
+    }
+
+    getReviewGateStatus(_sessionId: string): { active: boolean; taskId?: string } {
+        return { active: false };
+    }
 }

@@ -2179,6 +2179,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
         this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
+        this.state.onReviewConclusionsWriteBack = (conclusions) => this.writeReviewConclusionsToMemory(conclusions);
+        this.state.onSessionReconnected = () => this.restoreReviewAnnotationsCacheFromDisk();
         this.restoreReviewAnnotationsCacheFromDisk();
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
@@ -2247,6 +2249,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {
         await saveReviewAnnotationsCacheToDisk(this.reviewCtx(), cache);
+    }
+
+    protected async writeReviewConclusionsToMemory(conclusions: Record<string, any>): Promise<void> {
+        const ctx = this.reviewCtx();
+        if (!ctx.appRpc) return;
+        const sessionId = ctx.state.sessionId;
+        if (!sessionId) return;
+        await ctx.appRpc.request('review.conclusions.write', { sessionId, conclusions });
     }
 
     protected async restoreReviewAnnotationsCacheFromDisk(): Promise<void> {

@@ -122,6 +122,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected toolApprovalManager?: ToolApprovalManager;
     protected hookManager?: AgentHookManager;
     protected _stopped = false;
+    private reviewGates = new Map<string, { active: boolean; taskId: string }>();
     protected sessionTurnQueues = new Map<string, Array<() => void>>();
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
@@ -263,6 +264,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
         await this.ensureSessionWorkspace(input.sessionId);
+        const gate = this.reviewGates.get(input.sessionId);
+        if (gate?.active) {
+            throw new Error(`Review gate active for task "${gate.taskId}". Complete or release the review before continuing.`);
+        }
         await this.app.publishEvent(new AgentTurnStartedEvent(this, input.sessionId, input.input));
         const userMessage = this.createMessage(
             'user',
@@ -552,6 +557,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
         // Undo the side effects the turn already applied, newest first.
         const rollback = await this.rollbackTurnCompensations(sessionId, 'cancelled');
         return { cancelled: true, ...rollback };
+    }
+
+    override setReviewGate(sessionId: string, taskId: string): void {
+        this.reviewGates.set(sessionId, { active: true, taskId });
+    }
+
+    override clearReviewGate(sessionId: string): void {
+        this.reviewGates.delete(sessionId);
+    }
+
+    override getReviewGateStatus(sessionId: string): { active: boolean; taskId?: string } {
+        const gate = this.reviewGates.get(sessionId);
+        return gate ? { active: gate.active, taskId: gate.taskId } : { active: false };
     }
 
     /**
