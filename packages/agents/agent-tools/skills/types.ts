@@ -14,7 +14,8 @@ export interface AgentSkillDefinition {
     id: string;
     title: string;
     summary: string;
-    promptFull: string;
+    /** Full instructions; catalog-only definitions may provide summary only. */
+    promptFull?: string;
     aliases?: string[];
     tools?: AgentSkillToolRef[];
     metadata?: AgentSkillMetadata;

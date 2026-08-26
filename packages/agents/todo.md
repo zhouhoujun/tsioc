@@ -414,6 +414,13 @@
 
 ## 回归基线
 
+### P202 收尾复核（2026-08-26）
+
+- `agent-tools` P195 类型兼容修复：`AgentSkillDefinition.promptFull` 改为可选，目录摘要型 skill 可正常注册；预算过小时主动技能按当前条目超预算即时 compact。测试 `333 passing`。
+- 全量回归已执行：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 117、agent-ui 674 均通过；agent-tools 333 通过。
+- 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
+- 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
+
 截至 P199 batch F 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / components/html 117 / agent-ui 682 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
 ### P199 收尾复核（2026-08-26，AgentConsoleComponent 拆分）

@@ -36,10 +36,11 @@ export class ActiveSkillsSection extends PromptSection {
         for (const skill of active) {
             const remote = skill.metadata?.source === 'remote' || skill.metadata?.source?.startsWith('plugin:');
             const compactedRemote = compacted && remote;
-            const useCompact = compactedRemote || (compactActive && maxChars != null && totalChars >= maxChars);
+            const exceedsBudget = maxChars != null && totalChars + (skill.promptFull?.length ?? 0) > maxChars;
+            const useCompact = compactedRemote || (compactActive && exceedsBudget);
             const body = useCompact
                 ? `${skill.summary}\nFull instructions remain available through read_skill('${skill.id}').`
-                : skill.promptFull;
+                : skill.promptFull ?? skill.summary;
             totalChars += body.length;
             sections.push(`### ${skill.title}\n${body}`);
         }
