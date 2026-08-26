@@ -1010,9 +1010,16 @@ export class AgentConsoleSessionState {
                 filtered.push({
                     id: '__timeline_plan_boundary__',
                     role: 'assistant',
-                    content: `-- plan ${index}/${this.planTodos.length} --`,
+                    content: `-- step ${index}/${this.planTodos.length} ${this.planTodoGlyph(active.status)} ${active.content} --`,
                     createdAt: Date.now(),
-                    metadata: { uiKind: 'timeline-boundary', planIndex: index, planTotal: this.planTodos.length }
+                    metadata: {
+                        uiKind: 'timeline-boundary',
+                        planIndex: index,
+                        planTotal: this.planTodos.length,
+                        planStepId: active.id,
+                        planStepStatus: active.status,
+                        planStepContent: active.content
+                    }
                 } as AgentMessage);
             }
         }

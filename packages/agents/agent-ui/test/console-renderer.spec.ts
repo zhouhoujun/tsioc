@@ -1799,7 +1799,7 @@ export class AgentConsoleTuiRendererTest {
         ] as any);
         ref.instance.sessionState.setTimelineMode(true);
         expect(ref.instance.sessionState.displayMessages.find(item => item.id === '__timeline_plan_boundary__')?.content)
-            .toEqual('-- plan 2/2 --');
+            .toEqual('-- step 2/2 ▸ Implement --');
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 

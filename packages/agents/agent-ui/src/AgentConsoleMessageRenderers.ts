@@ -211,9 +211,17 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     },
     {
         templateKind: 'timelineBoundary',
-        roleLabel: '',
-        roleStyle: theme => styleTextToObject(theme.statusLabel),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+        roleLabel: '┄ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            'font-weight': 'bold',
+            'border-top': rowSelected ? '2px solid transparent' : '2px solid #58a6ff',
+            'border-bottom': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.25)'
+        }),
         lead: () => '',
         continuationLead: () => ''
     },
