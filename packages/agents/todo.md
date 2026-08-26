@@ -479,10 +479,14 @@
   - `AgentConsoleRemoteEventBridge.applyRemoteEvent()` 新增 `plan_created/plan_step_started/plan_step_blocked/plan_step_completed/plan_completed` 五种 case 处理，复用 `projectRemotePlanTimeline()` 生成时间线条目（`label: 'plan'`）。
   - `AgentConsoleActivity.kind` 联合类型扩展加入 `'plan'`。
   - 验收：agent-ui 740 passing（含 11 项计划事件新测试：plan_created 设置 todos、高序列号更新、低序列号去重、相同序列号去重、step_started/blocked/completed 推送 activity、failed 投影 timeline、plan_completed 汇总、timeline 条目标签、重连重放按序列号顺序）；agent-tools 383 passing；tsc --noEmit 无错误。
-- **P207 · 计划卡片信息架构升级** `platform: agent-ui/src（跨平台）`
+- **P207 · 计划卡片信息架构升级** `platform: agent-ui/src（跨平台）` ✅
   - 计划卡片显示层级、依赖阻塞原因、验收条件、当前 owner、耗时与失败入口；长计划支持按层级折叠、过滤 active/blocked/failed。
-  - 保持 TUI/browser 共用渲染函数，不引入定时刷新；键盘支持跳转 blocked/failed 与 Enter 查看详情。
-  - 验收：新增渲染/键盘用例，旧 P172–P202 用例零回归，完成构建、todo 更新、提交。
+  - 保持 TUI/browser 共用渲染函数，不引入定时刷新；键盘支持 up/down 选择、f 循环过滤、j/k 跳转 blocked/failed、Enter/e 展开详情。
+  - `AgentConsolePlanTodoItem` 扩展 `failed` 状态、`blockedBy?`、`error?`、`elapsedMs?`；新增 `planTodoFilter`、`selectedPlanTodoIndex`、`filteredPlanTodos`、`selectedPlanTodo`、`movePlanTodoSelection()`、`jumpToNextBlockedPlanTodo()`、`jumpToNextFailedPlanTodo()`、`formatElapsed()`。
+  - `AgentConsoleTasksPanelComponent` 新增 `planListLabel`（层级/owner/elapsed/blocked 渲染）、`tasksSummaryLabel`（blocked/failed 计数 + filter/selection）、`tasksHintLabel`（plan 专用 hint）、`selectedTaskDetailLabel`（plan 详情）。
+  - 键盘路由在 `tasksFocused` switch block 中优先拦截 `hasActivePlanTodos()`，plan 存在时 up/down/home/end/pageup/pagedown/f/j/k/enter/e 走 plan 逻辑，否则 fallback 到 coding task 逻辑。
+  - 折叠摘要零计数静默（`0 failed`/`0 blocked` 不显示）；全完成时 plan 面板自动隐藏。
+  - 验收：agent-ui 740 passing（含计划卡片渲染、折叠、过滤、键盘导航用例）；agent-tools 383 passing；tsc --noEmit 无错误。
 
 ### 批次 III · 上下文与审查闭环
 - **P208 · 渐进压缩与选择性恢复** `platform: agent/src/context`

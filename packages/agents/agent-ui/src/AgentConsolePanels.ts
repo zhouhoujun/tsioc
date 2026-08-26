@@ -1203,10 +1203,28 @@ export class AgentConsoleTasksPanelComponent {
             if (!active) {
                 return '';
             }
-            return `${sourcePrefix}current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}`;
+            const blockedInfo = active.blockedBy?.length ? ` blocked by ${active.blockedBy.join(',')}` : '';
+            const ownerInfo = active.owner ? ` (${active.owner})` : '';
+            return `${sourcePrefix}current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}${ownerInfo}${blockedInfo}`;
         }
-        const lines = this.planTodos.map((todo, index) => `${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}`);
-        return sourcePrefix ? [`${sourcePrefix.trimEnd()}`, ...lines].join('\n') : lines.join('\n');
+        const filtered = this.state.filteredPlanTodos;
+        const filterLabel = this.state.planTodoFilterLabel;
+        const filterPrefix = filterLabel !== 'all' ? `[${filterLabel}] ` : '';
+        const lines = filtered.map((todo, index) => {
+            const marker = this.state.selectedPlanTodoIndex === index ? '›' : ' ';
+            const hierarchy = todo.parentId ? '  ' : '';
+            const blocked = todo.blockedBy?.length ? ` ← blocked by ${todo.blockedBy.join(',')}` : '';
+            const owner = todo.owner ? ` (${todo.owner})` : '';
+            const elapsed = todo.elapsedMs ? ` ${this.state.formatElapsed(todo.elapsedMs)}` : '';
+            const error = todo.status === 'failed' && todo.error ? ` err: ${todo.error}` : '';
+            return `${marker}${hierarchy}${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}${owner}${elapsed}${blocked}${error}`;
+        });
+        const totalCount = this.planTodos.length;
+        const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+        const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
+        const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
+        const header = `${sourcePrefix}${filterPrefix}plan ${totalCount} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}`;
+        return [header, ...lines].join('\n');
     }
 
     get taskListLabel(): string {
@@ -1244,8 +1262,12 @@ export class AgentConsoleTasksPanelComponent {
         const projectSuffix = projectLabel ? ` · project ${projectLabel}` : '';
         if (this.shouldShowPlanTodos) {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+            const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
+            const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
             const scopeSuffix = this.state.planScope === 'thread' ? ' · thread' : '';
-            return `plan ${this.planTodos.length} · active ${activeCount}${scopeSuffix}${projectSuffix}`;
+            const filterLabel = this.state.planTodoFilter !== 'all' ? ` · filter ${this.state.planTodoFilterLabel}` : '';
+            const selectedSuffix = this.state.selectedPlanTodoIndex >= 0 ? ` · ${this.state.selectedPlanTodoIndex + 1}/${this.state.filteredPlanTodos.length}` : '';
+            return `plan ${this.planTodos.length} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}${filterLabel}${selectedSuffix}${scopeSuffix}${projectSuffix}`;
         }
         const totalCount = this.state.reviewTaskChoices.length;
         const filteredCount = this.tasks.length;
@@ -1265,6 +1287,15 @@ export class AgentConsoleTasksPanelComponent {
     get tasksHintLabel(): string {
         if (!this.shouldShow || !this.state.tasksFocused) {
             return '';
+        }
+        if (this.shouldShowPlanTodos) {
+            const actions = ['esc back'];
+            actions.push('f filter');
+            actions.push('j jump blocked');
+            actions.push('k jump failed');
+            actions.push('enter detail');
+            actions.push('e expand');
+            return `up/down move   ${actions.join('   ')}`;
         }
         const selected = this.state.selectedTask;
         const actions = ['enter review'];
@@ -1291,7 +1322,11 @@ export class AgentConsoleTasksPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        if (this.shouldShowPlanTodos && !this.state.selectedTask) {
+        if (this.shouldShowPlanTodos) {
+            const planDetail = this.state.selectedPlanTodoDetailLabel;
+            if (planDetail) {
+                return planDetail;
+            }
             return this.state.projectSummary ? `summary ${this.state.projectSummary}` : '';
         }
         if (!this.state.selectedTask) {

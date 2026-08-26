@@ -250,13 +250,16 @@ export interface AgentConsoleReviewGroup {
 export interface AgentConsolePlanTodoItem {
     id: string;
     content: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed';
     parentId?: string;
     kind?: 'task' | 'milestone' | 'bug' | 'feature' | 'chore';
     acceptance?: string;
     dependsOn?: string[];
+    blockedBy?: string[];
     estimate?: string;
     owner?: string;
+    error?: string;
+    elapsedMs?: number;
     updatedAt?: number;
 }
 
@@ -503,6 +506,8 @@ export class AgentConsoleSessionState {
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planTodoExpanded = false;
+    planTodoFilter: 'all' | 'active' | 'blocked' | 'failed' = 'all';
+    selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
@@ -2090,8 +2095,10 @@ export class AgentConsoleSessionState {
         const completedCount = this.planTodos.filter(item => item.status === 'completed').length;
         const inProgressCount = this.planTodos.filter(item => item.status === 'in_progress').length;
         const cancelledCount = this.planTodos.filter(item => item.status === 'cancelled').length;
+        const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
+        const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
         const summary = activeCount === 0
-            ? `Plan completed: ${completedCount}/${total} steps, ${cancelledCount} failures`
+            ? `Plan completed: ${completedCount}/${total} steps, ${cancelledCount + failedCount} failures`
             : '';
         const goalProgress = this.goalCriteriaProgress;
         const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
@@ -2100,18 +2107,28 @@ export class AgentConsoleSessionState {
         const doneCount = completedCount + inProgressCount;
         const filled = Math.round((barWidth * doneCount) / total);
         const bar = '▓'.repeat(filled) + '░'.repeat(barWidth - filled);
-        const items = this.planTodos.map((item, index) =>
-            `${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}`
-        );
-        const visibleContent = collapsible && !this.planTodoExpanded
-            ? `Plan ${total} steps (${completedCount} done)`
-            : activeCount > 0
-                ? [`plan ${doneCount}/${total} ${bar}`, ...items].join('\n')
+        const filtered = this.filteredPlanTodos;
+        const filterLabel = this.planTodoFilter !== 'all' ? ` [${this.planTodoFilter}]` : '';
+        const items = filtered.map((item, index) => {
+            const marker = this.selectedPlanTodoIndex === index ? '›' : ' ';
+            const hierarchy = item.parentId ? '  ' : '';
+            const blocked = item.blockedBy?.length ? ` ← blocked by ${item.blockedBy.join(',')}` : '';
+            const owner = item.owner ? ` (${item.owner})` : '';
+            const elapsed = item.elapsedMs ? ` ${this.formatElapsed(item.elapsedMs)}` : '';
+            const error = item.status === 'failed' && item.error ? ` err: ${item.error}` : '';
+            return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${elapsed}${blocked}${error}`;
+        });
+        const summaryHeader = `plan ${doneCount}/${total} ${bar}${filterLabel} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}`;
+        const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
+            ? `Plan ${total} steps (${completedCount} done${failedCount ? `, ${failedCount} failed` : ''}${blockedCount ? `, ${blockedCount} blocked` : ''})`
+            : activeCount > 0 || (this.planTodoFilter !== 'all' && filtered.length > 0)
+                ? [summaryHeader, ...items].join('\n')
                 : '';
+        const detailLine = this.selectedPlanTodoDetailLabel;
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
-            content: [visibleContent, summary, goalLine].filter(Boolean).join('\n'),
+            content: [visibleContent, summary, goalLine, detailLine].filter(Boolean).join('\n'),
             createdAt: Date.now(),
             metadata: {
                 uiKind: 'plan-todo',
@@ -2119,9 +2136,19 @@ export class AgentConsoleSessionState {
                 planTodoSourceSessionId: this.planTodoSourceSessionId,
                 planScope: this.planScope,
                 planCollapsed: collapsible && !this.planTodoExpanded,
-                planTodoExpanded: this.planTodoExpanded
+                planTodoExpanded: this.planTodoExpanded,
+                planTodoFilter: this.planTodoFilter,
+                selectedPlanTodoIndex: this.selectedPlanTodoIndex
             }
         };
+    }
+
+    formatElapsed(ms: number): string {
+        if (ms < 1000) return `${ms}ms`;
+        if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return `${m}m${s}s`;
     }
 
     togglePlanTodoExpanded(): boolean {
@@ -2141,6 +2168,8 @@ export class AgentConsoleSessionState {
                 return '⊘';
             case 'in_progress':
                 return '▸';
+            case 'failed':
+                return '✗';
             default:
                 return '☐';
         }
@@ -2156,10 +2185,121 @@ export class AgentConsoleSessionState {
         }
         this.planTodos = [];
         this.planTodoExpanded = false;
+        this.planTodoFilter = 'all';
+        this.selectedPlanTodoIndex = -1;
         this.goalSummary = null;
         this.planTodoSourceSessionId = '';
         this.planScope = '';
         this.planMessage = null;
+    }
+
+    get filteredPlanTodos(): AgentConsolePlanTodoItem[] {
+        if (this.planTodoFilter === 'all') {
+            return this.planTodos;
+        }
+        switch (this.planTodoFilter) {
+            case 'active':
+                return this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress');
+            case 'blocked':
+                return this.planTodos.filter(item => (item.blockedBy && item.blockedBy.length > 0) || item.status === 'pending');
+            case 'failed':
+                return this.planTodos.filter(item => item.status === 'failed' || item.status === 'cancelled');
+            default:
+                return this.planTodos;
+        }
+    }
+
+    get selectedPlanTodo(): AgentConsolePlanTodoItem | null {
+        const filtered = this.filteredPlanTodos;
+        if (this.selectedPlanTodoIndex < 0 || this.selectedPlanTodoIndex >= filtered.length) {
+            return null;
+        }
+        return filtered[this.selectedPlanTodoIndex];
+    }
+
+    get planTodoFilterLabel(): string {
+        switch (this.planTodoFilter) {
+            case 'active': return 'active';
+            case 'blocked': return 'blocked';
+            case 'failed': return 'failed';
+            default: return 'all';
+        }
+    }
+
+    setPlanTodoFilter(filter: 'all' | 'active' | 'blocked' | 'failed'): void {
+        this.planTodoFilter = filter;
+        this.selectedPlanTodoIndex = -1;
+        this.planMessage = this.buildPlanMessage();
+    }
+
+    movePlanTodoSelection(direction: -1 | 1): boolean {
+        const filtered = this.filteredPlanTodos;
+        if (!filtered.length) {
+            this.selectedPlanTodoIndex = -1;
+            return false;
+        }
+        if (this.selectedPlanTodoIndex < 0) {
+            this.selectedPlanTodoIndex = direction > 0 ? 0 : filtered.length - 1;
+        } else {
+            this.selectedPlanTodoIndex = Math.max(0, Math.min(filtered.length - 1, this.selectedPlanTodoIndex + direction));
+        }
+        return true;
+    }
+
+    jumpToNextBlockedPlanTodo(): boolean {
+        const filtered = this.filteredPlanTodos;
+        if (!filtered.length) return false;
+        const start = this.selectedPlanTodoIndex < 0 ? 0 : this.selectedPlanTodoIndex + 1;
+        for (let i = start; i < filtered.length; i++) {
+            if (filtered[i].blockedBy && filtered[i].blockedBy!.length > 0) {
+                this.selectedPlanTodoIndex = i;
+                return true;
+            }
+        }
+        for (let i = 0; i < start; i++) {
+            if (filtered[i].blockedBy && filtered[i].blockedBy!.length > 0) {
+                this.selectedPlanTodoIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    jumpToNextFailedPlanTodo(): boolean {
+        const filtered = this.filteredPlanTodos;
+        if (!filtered.length) return false;
+        const start = this.selectedPlanTodoIndex < 0 ? 0 : this.selectedPlanTodoIndex + 1;
+        for (let i = start; i < filtered.length; i++) {
+            if (filtered[i].status === 'failed' || filtered[i].status === 'cancelled') {
+                this.selectedPlanTodoIndex = i;
+                return true;
+            }
+        }
+        for (let i = 0; i < start; i++) {
+            if (filtered[i].status === 'failed' || filtered[i].status === 'cancelled') {
+                this.selectedPlanTodoIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    get selectedPlanTodoDetailLabel(): string {
+        const item = this.selectedPlanTodo;
+        if (!item) return '';
+        const parts = [
+            `#${item.id} ${item.content}`,
+            `status ${item.status}`,
+            item.kind ? `kind ${item.kind}` : '',
+            item.owner ? `owner ${item.owner}` : '',
+            item.estimate ? `estimate ${item.estimate}` : '',
+            item.dependsOn?.length ? `depends on ${item.dependsOn.join(', ')}` : '',
+            item.blockedBy?.length ? `blocked by ${item.blockedBy.join(', ')}` : '',
+            item.acceptance ? `acceptance: ${item.acceptance}` : '',
+            item.error ? `error: ${item.error}` : '',
+            item.elapsedMs ? `elapsed ${item.elapsedMs}ms` : ''
+        ];
+        return parts.filter(Boolean).join('\n');
     }
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
@@ -4635,6 +4775,52 @@ export class AgentConsoleSessionState {
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
                 return true;
+            }
+            if (this.hasActivePlanTodos()) {
+                switch (normalized) {
+                    case 'up':
+                        this.movePlanTodoSelection(-1);
+                        return true;
+                    case 'down':
+                        this.movePlanTodoSelection(1);
+                        return true;
+                    case 'home':
+                        this.selectedPlanTodoIndex = 0;
+                        return true;
+                    case 'end': {
+                        const filtered = this.filteredPlanTodos;
+                        this.selectedPlanTodoIndex = filtered.length > 0 ? filtered.length - 1 : -1;
+                        return true;
+                    }
+                    case 'pageup': {
+                        const pfUp = this.filteredPlanTodos;
+                        this.selectedPlanTodoIndex = pfUp.length > 0 ? 0 : -1;
+                        return true;
+                    }
+                    case 'pagedown': {
+                        const pfDown = this.filteredPlanTodos;
+                        this.selectedPlanTodoIndex = pfDown.length > 0 ? pfDown.length - 1 : -1;
+                        return true;
+                    }
+                    case 'f': {
+                        const cycle: Array<'all' | 'active' | 'blocked' | 'failed'> = ['all', 'active', 'blocked', 'failed'];
+                        const next = cycle[(cycle.indexOf(this.planTodoFilter) + 1) % cycle.length];
+                        this.setPlanTodoFilter(next);
+                        return true;
+                    }
+                    case 'j':
+                        this.jumpToNextBlockedPlanTodo();
+                        return true;
+                    case 'k':
+                        this.jumpToNextFailedPlanTodo();
+                        return true;
+                    case 'enter':
+                        this.planTodoExpanded = !this.planTodoExpanded;
+                        return true;
+                    case 'e':
+                        this.planTodoExpanded = !this.planTodoExpanded;
+                        return true;
+                }
             }
             switch (normalized) {
                 case 'copy':
