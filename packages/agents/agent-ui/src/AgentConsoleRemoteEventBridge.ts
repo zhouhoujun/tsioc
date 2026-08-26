@@ -205,6 +205,42 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             state.setLastError(String(data.error || ''));
             state.pushActivity('error', `Background task ${data.taskId || '?'} failed: ${data.error || 'unknown error'}`);
             break;
+        case 'plan_created': {
+            const steps = Array.isArray(data.steps) ? data.steps : [];
+            const normalized = normalizePlanTodos(steps);
+            const seq = Number(data.sequence) || 0;
+            state.setPlanTodos(normalized, undefined, undefined, seq);
+            state.pushActivity('plan', `Plan created: ${normalized.length} step${normalized.length === 1 ? '' : 's'}`);
+            projectRemotePlanTimeline(state, data, 'plan_created', 'success', `Plan created (${normalized.length} steps)`);
+            break;
+        }
+        case 'plan_step_started': {
+            const stepId = String(data.stepId || '');
+            const owner = data.owner ? ` → ${data.owner}` : '';
+            state.pushActivity('plan', `Step started: ${stepId}${owner}`);
+            projectRemotePlanTimeline(state, data, 'plan_step_started', 'running', `Step started: ${stepId}`);
+            break;
+        }
+        case 'plan_step_blocked': {
+            const blockedId = String(data.stepId || '');
+            const reason = String(data.reason || 'dependencies not met');
+            state.pushActivity('plan', `Step blocked: ${blockedId} (${reason})`);
+            projectRemotePlanTimeline(state, data, 'plan_step_blocked', 'running', `Step blocked: ${blockedId} (${reason})`);
+            break;
+        }
+        case 'plan_step_completed': {
+            const completedId = String(data.stepId || '');
+            const stepStatus = String(data.status || 'completed');
+            state.pushActivity('plan', `Step ${stepStatus}: ${completedId}`);
+            projectRemotePlanTimeline(state, data, 'plan_step_completed', stepStatus === 'failed' ? 'error' : 'success', `Step ${stepStatus}: ${completedId}`);
+            break;
+        }
+        case 'plan_completed': {
+            const summary = data.summary && typeof data.summary === 'object' ? data.summary : {};
+            state.pushActivity('plan', `Plan completed: ${summary.completed ?? '?'} done, ${summary.failed ?? 0} failed`);
+            projectRemotePlanTimeline(state, data, 'plan_completed', 'success', 'Plan completed');
+            break;
+        }
         case 'error':
             state.setStatus('error');
             state.setLastError(String(data.error || ''));
@@ -299,6 +335,25 @@ function projectRemoteToolTimeline(
         toolCallId: toolCallId || undefined,
         receiptId: receiptId || undefined,
         attempt: Number(data?.receipt?.attemptCount) || undefined,
+        source: 'remote',
+        sequence: Number(data?.sequence) || undefined
+    });
+}
+
+function projectRemotePlanTimeline(
+    state: AgentConsoleSessionState,
+    data: any,
+    eventType: string,
+    status: 'running' | 'success' | 'error',
+    content: string
+): void {
+    const planId = String(data?.planId || '').trim() || 'plan';
+    const stepId = String(data?.stepId || '').trim();
+    const key = state.qualifyUiEventKey(`plan:${planId}${stepId ? `:${stepId}` : ''}`);
+    state.upsertUiEventMessage(key, content, {
+        eventType,
+        label: 'plan',
+        status,
         source: 'remote',
         sequence: Number(data?.sequence) || undefined
     });

@@ -108,7 +108,7 @@ export interface AgentConsoleContextPreparationSnapshot extends ContextPreparati
 
 export interface AgentConsoleActivity {
     id: string;
-    kind: 'turn' | 'tool' | 'model' | 'error' | 'rollback';
+    kind: 'turn' | 'tool' | 'model' | 'error' | 'rollback' | 'plan';
     message: string;
     createdAt: number;
 }
@@ -503,6 +503,7 @@ export class AgentConsoleSessionState {
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planTodoExpanded = false;
+    protected planEventSequence = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
@@ -2047,7 +2048,13 @@ export class AgentConsoleSessionState {
         this.taskRecords = tasks.slice();
     }
 
-    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread'): void {
+    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread', sequence?: number): void {
+        if (sequence !== undefined && sequence <= this.planEventSequence) {
+            return;
+        }
+        if (sequence !== undefined) {
+            this.planEventSequence = sequence;
+        }
         this.planTodos = todos.slice();
         if (this.planTodos.length <= 7) {
             this.planTodoExpanded = false;

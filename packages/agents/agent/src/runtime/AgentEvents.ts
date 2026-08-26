@@ -305,3 +305,78 @@ export class AgentTokenBudgetExceededEvent extends ApplicationEvent {
         super(source);
     }
 }
+
+export interface AgentPlanStepInfo {
+    id: string;
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed' | 'blocked';
+    parentId?: string;
+    dependsOn?: string[];
+    owner?: string;
+    estimate?: string;
+    kind?: 'task' | 'milestone' | 'bug' | 'feature' | 'chore';
+}
+
+export class AgentPlanCreatedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly planId: string,
+        readonly steps: AgentPlanStepInfo[],
+        readonly sequence: number,
+        readonly sourceTool?: string
+    ) {
+        super(source);
+    }
+}
+
+export class AgentPlanStepStartedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly planId: string,
+        readonly stepId: string,
+        readonly sequence: number,
+        readonly owner?: string
+    ) {
+        super(source);
+    }
+}
+
+export class AgentPlanStepBlockedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly planId: string,
+        readonly stepId: string,
+        readonly sequence: number,
+        readonly reason: string
+    ) {
+        super(source);
+    }
+}
+
+export class AgentPlanStepCompletedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly planId: string,
+        readonly stepId: string,
+        readonly sequence: number,
+        readonly status: 'completed' | 'cancelled' | 'failed'
+    ) {
+        super(source);
+    }
+}
+
+export class AgentPlanCompletedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly planId: string,
+        readonly sequence: number,
+        readonly summary: { total: number; completed: number; cancelled: number; failed: number }
+    ) {
+        super(source);
+    }
+}

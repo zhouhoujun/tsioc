@@ -283,3 +283,197 @@ export class RemoteEventBridgeConnectionTest {
         expect(bridge.connected).toBe(false);
     }
 }
+
+@Suite('AgentConsoleRemoteEventBridge plan lifecycle events')
+export class RemoteEventBridgePlanEventsTest {
+    @Test('plan_created sets planTodos from steps with sequence')
+    planCreatedSetsTodos() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [
+                    { id: 's1', content: 'Step one', status: 'pending' },
+                    { id: 's2', content: 'Step two', status: 'in_progress' }
+                ]
+            }
+        });
+        expect(state.planTodos.length).toEqual(2);
+        expect(state.planTodos[0].id).toEqual('s1');
+        expect(state.planTodos[0].content).toEqual('Step one');
+        expect(state.planTodos[0].status).toEqual('pending');
+        expect(state.planTodos[1].id).toEqual('s2');
+        expect(state.planTodos[1].status).toEqual('in_progress');
+        expect(state.activities.some(a => a.kind === 'plan')).toBe(true);
+    }
+
+    @Test('plan_created with higher sequence updates planTodos')
+    planCreatedHigherSequenceUpdates() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [{ id: 's1', content: 'Step one', status: 'pending' }]
+            }
+        });
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 2,
+                steps: [
+                    { id: 's1', content: 'Step one', status: 'completed' },
+                    { id: 's2', content: 'Step two', status: 'pending' }
+                ]
+            }
+        });
+        expect(state.planTodos.length).toEqual(2);
+        expect(state.planTodos[0].status).toEqual('completed');
+    }
+
+    @Test('plan_created with lower sequence is deduped (no update)')
+    planCreatedLowerSequenceDeduped() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 3,
+                steps: [{ id: 's1', content: 'Step one', status: 'completed' }]
+            }
+        });
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [{ id: 'old', content: 'Old step', status: 'pending' }]
+            }
+        });
+        expect(state.planTodos.length).toEqual(1);
+        expect(state.planTodos[0].id).toEqual('s1');
+    }
+
+    @Test('plan_created with same sequence is deduped')
+    planCreatedSameSequenceDeduped() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 2,
+                steps: [{ id: 's1', content: 'Original', status: 'pending' }]
+            }
+        });
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 2,
+                steps: [{ id: 's1', content: 'Changed', status: 'in_progress' }]
+            }
+        });
+        expect(state.planTodos[0].content).toEqual('Original');
+    }
+
+    @Test('plan_step_started pushes activity with stepId')
+    planStepStarted() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_step_started', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', stepId: 's1', sequence: 2, owner: 'agent'
+            }
+        });
+        const planActivities = state.activities.filter(a => a.kind === 'plan');
+        expect(planActivities.length).toBeGreaterThan(0);
+        expect(planActivities[planActivities.length - 1].message).toContain('s1');
+    }
+
+    @Test('plan_step_blocked pushes activity with reason')
+    planStepBlocked() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_step_blocked', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', stepId: 's2', sequence: 3, reason: 'dependency s1 not met'
+            }
+        });
+        const planActivities = state.activities.filter(a => a.kind === 'plan');
+        expect(planActivities.length).toBeGreaterThan(0);
+        expect(planActivities[planActivities.length - 1].message).toContain('blocked');
+        expect(planActivities[planActivities.length - 1].message).toContain('dependency s1 not met');
+    }
+
+    @Test('plan_step_completed pushes activity with status')
+    planStepCompleted() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_step_completed', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', stepId: 's1', sequence: 4, status: 'completed'
+            }
+        });
+        const planActivities = state.activities.filter(a => a.kind === 'plan');
+        expect(planActivities.length).toBeGreaterThan(0);
+        expect(planActivities[planActivities.length - 1].message).toContain('completed');
+        expect(planActivities[planActivities.length - 1].message).toContain('s1');
+    }
+
+    @Test('plan_step_completed with failed status projects error timeline')
+    planStepCompletedFailed() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_step_completed', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', stepId: 's1', sequence: 5, status: 'failed'
+            }
+        });
+        const planActivities = state.activities.filter(a => a.kind === 'plan');
+        expect(planActivities[planActivities.length - 1].message).toContain('failed');
+    }
+
+    @Test('plan_completed pushes activity with summary')
+    planCompleted() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_completed', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 10,
+                summary: { total: 5, completed: 4, cancelled: 0, failed: 1 }
+            }
+        });
+        const planActivities = state.activities.filter(a => a.kind === 'plan');
+        expect(planActivities.length).toBeGreaterThan(0);
+        expect(planActivities[planActivities.length - 1].message).toContain('4 done');
+        expect(planActivities[planActivities.length - 1].message).toContain('1 failed');
+    }
+
+    @Test('plan events project timeline entries with plan label')
+    planEventsProjectTimeline() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [{ id: 's1', content: 'Step', status: 'pending' }]
+            }
+        });
+        const events = state.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(events.some(e => e.metadata?.timeline?.source === 'remote')).toBe(true);
+        expect(events.some(e => e.metadata?.uiEventLabel === 'plan')).toBe(true);
+    }
+
+    @Test('reconnect replay applies plan_created events in order')
+    reconnectReplayPlanEvents() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [{ id: 's1', content: 'First', status: 'pending' }]
+            }
+        });
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 2,
+                steps: [
+                    { id: 's1', content: 'First', status: 'completed' },
+                    { id: 's2', content: 'Second', status: 'pending' }
+                ]
+            }
+        });
+        applyRemoteEvent(state, {
+            type: 'plan_created', sessionId: 's1', data: {
+                sessionId: 's1', planId: 'p1', sequence: 1,
+                steps: [{ id: 'stale', content: 'Stale', status: 'pending' }]
+            }
+        });
+        expect(state.planTodos.length).toEqual(2);
+        expect(state.planTodos[0].status).toEqual('completed');
+        expect(state.planTodos[1].content).toEqual('Second');
+    }
+}

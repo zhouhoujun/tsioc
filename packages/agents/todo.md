@@ -473,9 +473,12 @@
   - 失败后 BFS 传播跳过所有 transitive dependents，已成功产物保留（cancelled 视为 completed）。
   - TodoTool 新增 `action: 'schedule'`：preview 模式仅计算调度不持久化。
   - 验收：agent-tools 383 passing (0 failed)，含 18 项 DAG 调度新测试（空列表、单就绪、已完成、cancelled、in_progress、failed、依赖阻塞、依赖解除、并行分支、菱形依赖、失败跳过 transitive、部分失败保留兄弟、cancel 幂等、schedule action、链式依赖）。
-- **P206 · 计划事件流统一** `platform: agent/src + agent-ui/src`
-  - 定义 `plan_created/step_started/step_blocked/step_completed/plan_completed` 事件，工具调用、delegation、coding task 共用；支持断线重放和序列号去重。
-  - 验收：远程/本地桥接一致，重复事件不重复渲染，恢复会话可补齐缺失步骤；agent-ui 全量测试、tsc、build:web、提交。
+- **P206 · 计划事件流统一** `platform: agent/src + agent-ui/src` — **已完成（2026-08-27）**
+  - `AgentEvents.ts` 新增 5 个计划生命周期事件类：`AgentPlanCreatedEvent`、`AgentPlanStepStartedEvent`、`AgentPlanStepBlockedEvent`、`AgentPlanStepCompletedEvent`、`AgentPlanCompletedEvent`，均携带 `sequence: number` 字段。
+  - `AgentConsoleSessionState` 新增 `planEventSequence` 字段，`setPlanTodos()` 增加可选 `sequence` 参数实现递增去重：`sequence <= planEventSequence` 时跳过写入。
+  - `AgentConsoleRemoteEventBridge.applyRemoteEvent()` 新增 `plan_created/plan_step_started/plan_step_blocked/plan_step_completed/plan_completed` 五种 case 处理，复用 `projectRemotePlanTimeline()` 生成时间线条目（`label: 'plan'`）。
+  - `AgentConsoleActivity.kind` 联合类型扩展加入 `'plan'`。
+  - 验收：agent-ui 740 passing（含 11 项计划事件新测试：plan_created 设置 todos、高序列号更新、低序列号去重、相同序列号去重、step_started/blocked/completed 推送 activity、failed 投影 timeline、plan_completed 汇总、timeline 条目标签、重连重放按序列号顺序）；agent-tools 383 passing；tsc --noEmit 无错误。
 - **P207 · 计划卡片信息架构升级** `platform: agent-ui/src（跨平台）`
   - 计划卡片显示层级、依赖阻塞原因、验收条件、当前 owner、耗时与失败入口；长计划支持按层级折叠、过滤 active/blocked/failed。
   - 保持 TUI/browser 共用渲染函数，不引入定时刷新；键盘支持跳转 blocked/failed 与 Enter 查看详情。
