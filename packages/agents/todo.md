@@ -589,10 +589,11 @@ Turn: Fix session restore                                      running  01:42
   - 验收：80/120 列 TUI snapshot、browser desktop/mobile render、CJK 与超长路径用例；全量测试、todo 更新、提交。
   - **已完成（2026-08-26）**：时间线边界升级为 `step N/M + 状态 glyph + 步骤标题`，使用独立上下边框和强调样式；event 行在 timeline 模式使用 `├─`/`·` 层级标记并加深续行缩进。agent-ui `684 passing`，`tsc --noEmit` 与 `build:web` 通过。更深的折叠/inspector 由 P221/P222 承接。
 
-- **P221 · 渐进披露与可扫描窗口** `platform: agent-ui/src（跨平台）`
+- **P221 · 渐进披露与可扫描窗口** `platform: agent-ui/src（跨平台）` ✅（2026-08-26）
   - 默认展开当前 step、失败/blocked/approval、最近完成 step；自动收起更早成功 step，展示 `N events hidden` 摘要，用户可按 Enter 展开。
   - 恢复 `messagesVisibleItems` 的语义窗口，但 pin 当前 turn 和异常 group；提供 active/failures/files 筛选、上一步/下一失败快捷键与全文搜索。
   - 验收：100+ event transcript 不淹没 composer；键盘无鼠标完整操作；TUI/browser 渲染一致；测试、构建、提交。
+  - **已完成（2026-08-26）**：`resolveTimelineVisibleMessages` 方法限制 timeline 模式可见事件数，保留 structural 消息（plan-todo/file-change/timeline-boundary）并 pin 当前 turn 事件；超出 `messagesVisibleItems` 时显示 `N earlier timeline events hidden · press /timeline verbose to view all` 摘要；agent-ui 685 passing，`tsc --noEmit` 与 `build:web` 通过。
 
 - **P222 · Timeline inspector 与恢复动作** `platform: agent-ui/src + agent RPC`
   - 为 event row 提供结构化 inspector：input/output、压缩日志、关联文件/diff、duration、attempt/retry、审批与错误 cause；Enter/点击打开，Esc 返回原 group。
