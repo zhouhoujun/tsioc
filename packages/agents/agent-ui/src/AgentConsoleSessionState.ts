@@ -113,6 +113,20 @@ export interface AgentConsoleActivity {
     createdAt: number;
 }
 
+export interface AgentConsoleUiEventOptions {
+    eventType?: string;
+    label?: string;
+    status?: 'running' | 'success' | 'failed' | 'error';
+    eventKey?: string;
+    durationMs?: number;
+    /** Stable execution identity for running-to-terminal event replacement. */
+    toolCallId?: string;
+    receiptId?: string;
+    attempt?: number;
+    source?: 'local' | 'remote' | 'stream';
+    sequence?: number;
+}
+
 export interface AgentConsoleToolRun {
     name: string;
     status: 'running' | 'success' | 'error';
@@ -1090,16 +1104,7 @@ export class AgentConsoleSessionState {
         this.setMessages(filtered);
     }
 
-    appendUiEventMessage(
-        content: string,
-        options: {
-            eventType?: string;
-            label?: string;
-            status?: 'running' | 'success' | 'failed' | 'error';
-            eventKey?: string;
-            durationMs?: number;
-        } = {}
-    ): void {
+    appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void {
         const text = String(content || '').trim();
         if (!text) {
             return;
@@ -1112,12 +1117,7 @@ export class AgentConsoleSessionState {
     upsertUiEventMessage(
         eventKey: string,
         content: string,
-        options: {
-            eventType?: string;
-            label?: string;
-            status?: 'running' | 'success' | 'failed' | 'error';
-            durationMs?: number;
-        } = {}
+        options: AgentConsoleUiEventOptions = {}
     ): void {
         const text = String(content || '').trim();
         if (!text) {
@@ -1178,15 +1178,7 @@ export class AgentConsoleSessionState {
 
     protected createUiEventMessage(
         content: string,
-        options: {
-            id?: string;
-            createdAt?: number;
-            eventType?: string;
-            label?: string;
-            status?: 'running' | 'success' | 'failed' | 'error';
-            eventKey?: string;
-            durationMs?: number;
-        } = {}
+        options: AgentConsoleUiEventOptions & { id?: string; createdAt?: number } = {}
     ): AgentMessage {
         return {
             id: options.id || `ui-event-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -1199,7 +1191,14 @@ export class AgentConsoleSessionState {
                 uiEventLabel: options.label || 'state',
                 uiEventKey: options.eventKey,
                 durationMs: options.durationMs,
-                status: options.status || 'running'
+                status: options.status || 'running',
+                timeline: {
+                    source: options.source || 'local',
+                    sequence: options.sequence,
+                    toolCallId: options.toolCallId,
+                    receiptId: options.receiptId,
+                    attempt: options.attempt
+                }
             }
         };
     }
@@ -1216,7 +1215,12 @@ export class AgentConsoleSessionState {
             && leftMetadata.uiEventLabel === rightMetadata.uiEventLabel
             && leftMetadata.uiEventKey === rightMetadata.uiEventKey
             && leftMetadata.durationMs === rightMetadata.durationMs
-            && leftMetadata.status === rightMetadata.status;
+            && leftMetadata.status === rightMetadata.status
+            && leftMetadata.timeline?.source === rightMetadata.timeline?.source
+            && leftMetadata.timeline?.sequence === rightMetadata.timeline?.sequence
+            && leftMetadata.timeline?.toolCallId === rightMetadata.timeline?.toolCallId
+            && leftMetadata.timeline?.receiptId === rightMetadata.timeline?.receiptId
+            && leftMetadata.timeline?.attempt === rightMetadata.timeline?.attempt;
     }
 
     setMessagesFocused(focused: boolean): void {

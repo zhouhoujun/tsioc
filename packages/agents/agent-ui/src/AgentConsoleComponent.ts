@@ -3349,7 +3349,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     this.state.upsertUiEventMessage(eventKey, content, {
                         eventType: 'tool_call',
                         label: 'tool',
-                        status: 'running'
+                        status: 'running',
+                        toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
+                        receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
+                        attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
+                        source: 'stream',
+                        sequence: Number(chunk?.sequence) || undefined
                     });
                 } else {
                     this.state.appendUiEventMessage(content, {
@@ -3463,14 +3468,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.upsertUiEventMessage(eventKey, content, {
                     eventType,
                     label,
-                    status
+                    status,
+                    toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
+                    receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
+                    attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
+                    source: 'stream',
+                    sequence: Number(chunk?.sequence) || undefined
                 });
                 return;
             }
             this.state.appendUiEventMessage(content, {
                 eventType,
                 label,
-                status
+                status,
+                source: 'stream',
+                sequence: Number(chunk?.sequence) || undefined
             });
     }
 
@@ -3507,8 +3519,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             case 'tool_failed':
             case 'tool_skipped': {
                 const toolCallId = String(chunk?.toolCallId || '').trim();
-                if (toolCallId) {
-                    return `tool:${toolCallId}`;
+                const receiptId = String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim();
+                if (toolCallId || receiptId) {
+                    return `tool:${toolCallId || receiptId}`;
                 }
                 const toolName = this.resolveToolEventName(chunk);
                 return toolName ? `tool:${toolName}` : undefined;

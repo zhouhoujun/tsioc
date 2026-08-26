@@ -111,6 +111,26 @@ export class RemoteEventBridgeMappingTest {
         expect(state.planTodos).toEqual([{ id: 't1', content: 'Step one', status: 'in_progress' }]);
     }
 
+    @Test('remote tool lifecycle projects one timeline event with execution identity')
+    remoteToolLifecycleProjectsStableTimelineEvent() {
+        const state = makeState();
+        applyRemoteEvent(state, { type: 'tool_invoked', sessionId: 's1', data: {
+            sessionId: 's1', toolName: 'read_file', toolCallId: 'call-1', sequence: 4,
+            inputSummary: 'src/index.ts'
+        } });
+        applyRemoteEvent(state, { type: 'tool_completed', sessionId: 's1', data: {
+            sessionId: 's1', toolName: 'read_file', toolCallId: 'call-1', sequence: 5,
+            receipt: { toolCallId: 'call-1', receiptId: 'receipt-1', durationMs: 42, attemptCount: 1 }
+        } });
+
+        const events = state.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(events.length).toEqual(1);
+        expect(events[0].content).toContain('completed');
+        expect(events[0].metadata?.timeline).toEqual({
+            source: 'remote', sequence: 5, toolCallId: 'call-1', receiptId: 'receipt-1', attempt: 1
+        });
+    }
+
     @Test('tool_failed records error and clears running')
     toolFailed() {
         const state = makeState();

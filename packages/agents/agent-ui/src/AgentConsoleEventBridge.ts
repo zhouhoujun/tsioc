@@ -134,10 +134,14 @@ export class AgentConsoleEventBridge {
                 });
                 this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'running'));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary), {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary), {
                         eventType: 'tool_invoked',
                         label: 'tool',
-                        status: 'running'
+                        status: 'running',
+                        toolCallId: event.receipt?.toolCallId,
+                        receiptId: event.receipt?.receiptId,
+                        attempt: event.receipt?.attemptCount,
+                        source: 'local'
                     });
                 }
         });
@@ -168,11 +172,15 @@ export class AgentConsoleEventBridge {
                 });
                 this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'completed'));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
                         eventType: 'tool_completed',
                         label: 'tool',
                         status: 'success',
-                        durationMs: event.receipt?.durationMs
+                        durationMs: event.receipt?.durationMs,
+                        toolCallId: event.receipt?.toolCallId,
+                        receiptId: event.receipt?.receiptId,
+                        attempt: event.receipt?.attemptCount,
+                        source: 'local'
                     });
                 }
             await this.refreshTools();
@@ -204,11 +212,15 @@ export class AgentConsoleEventBridge {
                         error: event.error.message
                     }) || `${this.describeToolName(event.toolName)} failed: ${event.error.message}`));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), `${event.toolName} failed: ${event.error.message}`, {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), `${event.toolName} failed: ${event.error.message}`, {
                         eventType: 'tool_failed',
                         label: 'tool',
                         status: 'error',
-                        durationMs: event.receipt?.durationMs
+                        durationMs: event.receipt?.durationMs,
+                        toolCallId: event.receipt?.toolCallId,
+                        receiptId: event.receipt?.receiptId,
+                        attempt: event.receipt?.attemptCount,
+                        source: 'local'
                     });
                 }
         });
@@ -466,7 +478,7 @@ export class AgentConsoleEventBridge {
         return text.length > 120 ? `${text.slice(0, 120)}...` : text;
     }
 
-    protected resolveToolEventKey(toolName: string, toolCallId?: string): string {
-        return toolCallId ? `tool:${toolCallId}` : `tool:${toolName}`;
+    protected resolveToolEventKey(toolName: string, toolCallId?: string, receiptId?: string): string {
+        return toolCallId || receiptId ? `tool:${toolCallId || receiptId}` : `tool:${toolName}`;
     }
 }

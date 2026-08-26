@@ -129,6 +129,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('tool', describeToolInvoked(String(data.toolName || '')));
+            projectRemoteToolTimeline(state, data, 'tool_invoked', 'running', describeToolInvoked(String(data.toolName || '')));
             break;
         case 'tool_completed':
             state.clearRunningTool(String(data.toolName || ''));
@@ -148,6 +149,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('tool', describeToolCompleted(String(data.toolName || '')));
+            projectRemoteToolTimeline(state, data, 'tool_completed', 'success', describeToolCompleted(String(data.toolName || '')));
             break;
         case 'tool_failed':
             state.clearRunningTool(String(data.toolName || ''));
@@ -160,6 +162,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('error', `${data.toolName || 'tool'} failed: ${data.error || 'unknown error'}`);
+            projectRemoteToolTimeline(state, data, 'tool_failed', 'error', `${data.toolName || 'tool'} failed: ${data.error || 'unknown error'}`);
             break;
         case 'approval_requested': {
             const request = data.request && typeof data.request === 'object' ? data.request : {};
@@ -275,6 +278,30 @@ function describeToolInvoked(toolName: string): string {
 
 function describeToolCompleted(toolName: string): string {
     return `${toolName.replace(/[._-]+/g, ' ')} completed`;
+}
+
+function projectRemoteToolTimeline(
+    state: AgentConsoleSessionState,
+    data: any,
+    eventType: string,
+    status: 'running' | 'success' | 'error',
+    content: string
+): void {
+    const toolName = String(data?.toolName || '').trim() || 'tool';
+    const toolCallId = String(data?.toolCallId || data?.receipt?.toolCallId || '').trim();
+    const receiptId = String(data?.receiptId || data?.receipt?.receiptId || '').trim();
+    const key = state.qualifyUiEventKey(`tool:${toolCallId || receiptId || toolName}`);
+    state.upsertUiEventMessage(key, content, {
+        eventType,
+        label: 'tool',
+        status,
+        durationMs: Number(data?.receipt?.durationMs) || undefined,
+        toolCallId: toolCallId || undefined,
+        receiptId: receiptId || undefined,
+        attempt: Number(data?.receipt?.attemptCount) || undefined,
+        source: 'remote',
+        sequence: Number(data?.sequence) || undefined
+    });
 }
 
 function truncateText(value: string): string {
