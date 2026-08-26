@@ -1,6 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { TodoStore } from './todo-store';
+import { TodoStore, validateTodos } from './todo-store';
 
 @Injectable()
 export class TodoTool implements AgentTool {
@@ -16,7 +16,13 @@ export class TodoTool implements AgentTool {
                     properties: {
                         id: { type: 'string' },
                         content: { type: 'string' },
-                        status: { type: 'string', enum: ['pending', 'in_progress', 'completed', 'cancelled'] }
+                        status: { type: 'string', enum: ['pending', 'in_progress', 'completed', 'cancelled'] },
+                        parentId: { type: 'string' },
+                        kind: { type: 'string', enum: ['task', 'milestone', 'bug', 'feature', 'chore'] },
+                        acceptance: { type: 'string' },
+                        dependsOn: { type: 'array', items: { type: 'string' } },
+                        estimate: { type: 'string' },
+                        owner: { type: 'string' }
                     },
                     required: ['id', 'content', 'status']
                 }
@@ -48,9 +54,9 @@ export class TodoTool implements AgentTool {
     }
 
     private async buildResult(sessionId: string): Promise<any> {
-        return {
-            todos: await this.store.read(sessionId),
-            summary: await this.store.summarize(sessionId)
-        };
+        const todos = await this.store.read(sessionId);
+        const summary = await this.store.summarize(sessionId);
+        const validation = validateTodos(todos);
+        return { todos, summary, validation };
     }
 }

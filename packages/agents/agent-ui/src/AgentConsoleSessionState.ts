@@ -251,6 +251,13 @@ export interface AgentConsolePlanTodoItem {
     id: string;
     content: string;
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    parentId?: string;
+    kind?: 'task' | 'milestone' | 'bug' | 'feature' | 'chore';
+    acceptance?: string;
+    dependsOn?: string[];
+    estimate?: string;
+    owner?: string;
+    updatedAt?: number;
 }
 
 export interface AgentConsoleGoalSummary {

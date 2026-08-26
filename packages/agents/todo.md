@@ -457,10 +457,10 @@
 > 参考 Codex 的“计划是对话流一等事件、每步原地更新”和 opencode 的“可恢复任务/依赖执行”模式。每个 P 批次完成后必须执行：检查完成项与 diff → 受影响包全量测试 → `tsc --noEmit`/构建验证 → 更新本文件 → 独立提交。
 
 ### 批次 I · Todo 数据契约与分解质量
-- **P203 · Todo schema v2 与迁移** `platform: agent/src + agent-tools`
+- **P203 · Todo schema v2 与迁移** `platform: agent/src + agent-tools` — **已完成（2026-08-27）**
   - 增加 `parentId`、`kind`、`acceptance`、`dependsOn`、`estimate`、`owner`、`updatedAt`；保留旧 payload 兼容并提供 schema version/migration。
-  - `TodoStore` 增加依赖环检测、重复 id 冲突报告、状态转移校验（单一 in_progress、依赖未完成不可启动）。
-  - 验收：旧会话可读写；非法迁移有明确错误；agent/agent-tools 全量测试、构建、todo 更新、提交。
+  - `TodoStore` 增加依赖环检测（DFS coloring）、重复 id 冲突报告、状态转移校验（单一 in_progress、依赖未完成不可启动）。
+  - 验收：旧会话可读写；非法迁移有明确错误；agent 354 + agent-ui 729 passing (0 failed)，含 20 项 v2 新测试（旧会话兼容、v2 字段持久化/合并、kind 归一化、空 dependsOn/空 parentId 过滤、validateTodos 清洁/重复 id/缺失依赖/缺失父项/依赖环/多 in_progress/未完成依赖 in_progress、store.validate()、TodoTool validation 返回、多项错误收集）。
 - **P204 · 自动分解器与计划质量门** `platform: agent/src/prompt + agent-tools`
   - 在 todo 调用前增加可验证性规则：每项必须是单一动作，包含产出/验证信号；对过粗、重复、无序步骤返回修正建议。
   - 支持 `decompose` 预览与 `accept/revise` 两阶段，避免模型一次写入不可执行长清单。

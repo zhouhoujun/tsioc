@@ -2389,9 +2389,9 @@ export class AgentConsoleMessagesPanelComponent {
                 : [];
             const errors = transcript.filter(message => message.metadata?.status === 'error' || message.metadata?.status === 'failed');
             const retained = new Set<string>();
-            current.forEach(message => retained.add(message.id));
-            errors.forEach(message => retained.add(message.id));
-            const visible = transcript.filter(message => retained.has(message.id));
+            current.forEach(message => { if (message.id) retained.add(message.id); });
+            errors.forEach(message => { if (message.id) retained.add(message.id); });
+            const visible = transcript.filter(message => message.id != null && retained.has(message.id));
             const hidden = transcript.length - visible.length;
             if (hidden <= 0) {
                 return [...visible, ...structural];
