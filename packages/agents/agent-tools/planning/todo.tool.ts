@@ -1,6 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { TodoStore, validateTodos, validatePlanQuality, PlanQualityResult } from './todo-store';
+import { TodoStore, validateTodos, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from './todo-store';
 
 @Injectable()
 export class TodoTool implements AgentTool {
@@ -30,8 +30,8 @@ export class TodoTool implements AgentTool {
             merge: { type: 'boolean' },
             action: {
                 type: 'string',
-                enum: ['validate', 'decompose'],
-                description: 'validate: check quality without persisting. decompose: validate plan quality and return suggestions without persisting.'
+                enum: ['validate', 'decompose', 'schedule'],
+                description: 'validate: check quality without persisting. decompose: validate plan quality and return suggestions without persisting. schedule: resolve DAG and return execution schedule without persisting.'
             }
         }
     };
@@ -55,6 +55,10 @@ export class TodoTool implements AgentTool {
             return this.validateOnly(input.todos);
         }
 
+        if (input.action === 'schedule') {
+            return this.scheduleOnly(input.todos);
+        }
+
         if (input.merge) {
             await this.store.merge(sessionId, input.todos);
         } else {
@@ -75,7 +79,7 @@ export class TodoTool implements AgentTool {
         const normalized = todos.map((t: any) => ({
             id: String(t?.id ?? ''),
             content: String(t?.content ?? ''),
-            status: String(t?.status ?? 'pending'),
+            status: String(t?.status ?? 'pending') as any,
             parentId: t?.parentId,
             kind: t?.kind,
             acceptance: t?.acceptance,
@@ -87,5 +91,20 @@ export class TodoTool implements AgentTool {
             quality: validatePlanQuality(normalized),
             validation: validateTodos(normalized)
         };
+    }
+
+    private scheduleOnly(todos: any[]): TodoScheduleResult {
+        const normalized = todos.map((t: any) => ({
+            id: String(t?.id ?? ''),
+            content: String(t?.content ?? ''),
+            status: String(t?.status ?? 'pending') as any,
+            parentId: t?.parentId,
+            kind: t?.kind,
+            acceptance: t?.acceptance,
+            dependsOn: t?.dependsOn,
+            estimate: t?.estimate,
+            owner: t?.owner
+        }));
+        return resolveSchedule(normalized);
     }
 }

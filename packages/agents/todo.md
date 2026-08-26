@@ -468,10 +468,11 @@
   - 验收：agent-tools 368 + agent-ui 729 passing (0 failed)，含 14 项质量门新测试（空列表、优质项、过短、多动作、缺失验收、已完成免验收、重复内容、依赖顺序、过长、优质计划高分、validate action、decompose action、replace 带 quality）。
 
 ### 批次 II · Todo 执行与对话展示
-- **P205 · 依赖感知调度与可恢复执行** `platform: agent/src/runtime + agent-tools`
-  - 将 `dependsOn` 转为可执行 DAG；支持 ready/running/blocked/failed/skipped；失败后仅重跑受影响分支并保留成功产物。
-  - 与 coding_task/delegation graph 对齐 task id、重试和取消语义。
-  - 验收：并行分支、依赖阻塞、部分失败恢复、取消幂等均有测试；全量验证后提交。
+- **P205 · 依赖感知调度与可恢复执行** `platform: agent/src/runtime + agent-tools` — **已完成（2026-08-27）**
+  - `resolveSchedule(todos)` 将 `dependsOn` 转为可执行 DAG；状态：ready/running/blocked/failed/skipped/completed。
+  - 失败后 BFS 传播跳过所有 transitive dependents，已成功产物保留（cancelled 视为 completed）。
+  - TodoTool 新增 `action: 'schedule'`：preview 模式仅计算调度不持久化。
+  - 验收：agent-tools 383 passing (0 failed)，含 18 项 DAG 调度新测试（空列表、单就绪、已完成、cancelled、in_progress、failed、依赖阻塞、依赖解除、并行分支、菱形依赖、失败跳过 transitive、部分失败保留兄弟、cancel 幂等、schedule action、链式依赖）。
 - **P206 · 计划事件流统一** `platform: agent/src + agent-ui/src`
   - 定义 `plan_created/step_started/step_blocked/step_completed/plan_completed` 事件，工具调用、delegation、coding task 共用；支持断线重放和序列号去重。
   - 验收：远程/本地桥接一致，重复事件不重复渲染，恢复会话可补齐缺失步骤；agent-ui 全量测试、tsc、build:web、提交。

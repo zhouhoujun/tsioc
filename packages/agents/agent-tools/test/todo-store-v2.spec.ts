@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult } from '../planning/todo-store';
+import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
 
 function createSessionContext(opts: { sessionId?: string } = {}): any {
@@ -426,5 +426,182 @@ export class PlanQualityGateTest {
         expect(result.quality).toBeDefined();
         expect(result.quality.valid).toBe(true);
         expect(result.todos.length).toBe(1);
+    }
+}
+
+@Suite('todo DAG scheduling (P205)')
+export class TodoDagScheduleTest {
+
+    @Test('empty list returns empty schedule')
+    async emptyList() {
+        const result = resolveSchedule([]);
+        expect(result.all.length).toBe(0);
+        expect(result.summary.total).toBe(0);
+    }
+
+    @Test('single item with no deps is ready')
+    async singleItemReady() {
+        const result = resolveSchedule([
+            item('a', { status: 'pending' })
+        ]);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('a');
+        expect(result.blocked.length).toBe(0);
+    }
+
+    @Test('completed item shows as completed')
+    async completedItem() {
+        const result = resolveSchedule([
+            item('a', { status: 'completed' })
+        ]);
+        expect(result.completed.length).toBe(1);
+        expect(result.completed[0].id).toBe('a');
+        expect(result.ready.length).toBe(0);
+    }
+
+    @Test('cancelled item shows as completed in schedule')
+    async cancelledItemAsCompleted() {
+        const result = resolveSchedule([
+            item('a', { status: 'cancelled' })
+        ]);
+        expect(result.completed.length).toBe(1);
+    }
+
+    @Test('in_progress item shows as running')
+    async inProgressAsRunning() {
+        const result = resolveSchedule([
+            item('a', { status: 'in_progress' })
+        ]);
+        expect(result.running.length).toBe(1);
+        expect(result.running[0].id).toBe('a');
+    }
+
+    @Test('failed item shows as failed')
+    async failedItem() {
+        const result = resolveSchedule([
+            item('a', { status: 'failed' })
+        ]);
+        expect(result.failed.length).toBe(1);
+        expect(result.failed[0].id).toBe('a');
+    }
+
+    @Test('item blocked by incomplete dep')
+    async blockedByIncompleteDep() {
+        const result = resolveSchedule([
+            item('a', { status: 'pending', dependsOn: ['b'] }),
+            item('b', { status: 'pending' })
+        ]);
+        expect(result.blocked.length).toBe(1);
+        expect(result.blocked[0].id).toBe('a');
+        expect(result.blocked[0].blockedBy).toEqual(['b']);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('b');
+    }
+
+    @Test('item unblocked when dep completes')
+    async unblockedWhenDepCompletes() {
+        const result = resolveSchedule([
+            item('a', { status: 'pending', dependsOn: ['b'] }),
+            item('b', { status: 'completed' })
+        ]);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('a');
+        expect(result.blocked.length).toBe(0);
+    }
+
+    @Test('parallel branches with no cross-deps both ready')
+    async parallelBranchesBothReady() {
+        const result = resolveSchedule([
+            item('a', { status: 'pending' }),
+            item('b', { status: 'pending' }),
+            item('c', { status: 'pending' })
+        ]);
+        expect(result.ready.length).toBe(3);
+    }
+
+    @Test('diamond dependency resolves correctly')
+    async diamondDependency() {
+        const result = resolveSchedule([
+            item('a', { status: 'completed' }),
+            item('b', { status: 'completed', dependsOn: ['a'] }),
+            item('c', { status: 'completed', dependsOn: ['a'] }),
+            item('d', { status: 'pending', dependsOn: ['b', 'c'] })
+        ]);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('d');
+    }
+
+    @Test('failed item skips all transitive dependents')
+    async failedSkipsTransitiveDependents() {
+        const result = resolveSchedule([
+            item('a', { status: 'failed' }),
+            item('b', { status: 'pending', dependsOn: ['a'] }),
+            item('c', { status: 'pending', dependsOn: ['b'] })
+        ]);
+        expect(result.failed.length).toBe(1);
+        expect(result.failed[0].id).toBe('a');
+        expect(result.skipped.length).toBe(2);
+        const skippedIds = result.skipped.map(e => e.id);
+        expect(skippedIds).toContain('b');
+        expect(skippedIds).toContain('c');
+    }
+
+    @Test('partial failure preserves completed siblings')
+    async partialFailurePreservesCompletedSiblings() {
+        const result = resolveSchedule([
+            item('a', { status: 'failed' }),
+            item('b', { status: 'completed', dependsOn: ['a'] }),
+            item('c', { status: 'pending', dependsOn: ['b'] })
+        ]);
+        expect(result.failed.length).toBe(1);
+        expect(result.completed.length).toBe(1);
+        expect(result.completed[0].id).toBe('b');
+        expect(result.skipped.length).toBe(1);
+        expect(result.skipped[0].id).toBe('c');
+    }
+
+    @Test('cancel is idempotent - already cancelled stays completed')
+    async cancelIdempotent() {
+        const result = resolveSchedule([
+            item('a', { status: 'cancelled' }),
+            item('b', { status: 'pending', dependsOn: ['a'] })
+        ]);
+        expect(result.completed.length).toBe(1);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('b');
+    }
+
+    @Test('TodoTool schedule action returns schedule without persisting')
+    async todoToolScheduleAction() {
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
+        const result = await tool.invoke({
+            action: 'schedule',
+            todos: [
+                { id: 'a', content: 'Step a', status: 'completed' },
+                { id: 'b', content: 'Step b', status: 'pending', dependsOn: ['a'] }
+            ]
+        }, createSessionContext({ sessionId: 'sched1' }));
+        expect(result.ready).toBeDefined();
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('b');
+        expect(result.completed.length).toBe(1);
+        const persisted = await store.read('sched1');
+        expect(persisted.length).toBe(0);
+    }
+
+    @Test('chain of dependencies resolves correct ready items')
+    async chainDependency() {
+        const result = resolveSchedule([
+            item('a', { status: 'completed' }),
+            item('b', { status: 'completed', dependsOn: ['a'] }),
+            item('c', { status: 'pending', dependsOn: ['b'] }),
+            item('d', { status: 'pending', dependsOn: ['c'] })
+        ]);
+        expect(result.ready.length).toBe(1);
+        expect(result.ready[0].id).toBe('c');
+        expect(result.blocked.length).toBe(1);
+        expect(result.blocked[0].id).toBe('d');
+        expect(result.blocked[0].blockedBy).toEqual(['c']);
     }
 }

@@ -1,7 +1,7 @@
 import { MemoryStore } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 
-export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed';
 
 export type TodoItemKind = 'task' | 'milestone' | 'bug' | 'feature' | 'chore';
 
@@ -53,7 +53,149 @@ export interface PlanQualityResult {
     suggestions: PlanQualitySuggestion[];
 }
 
-const VALID_STATUSES: TodoStatus[] = ['pending', 'in_progress', 'completed', 'cancelled'];
+export type TodoScheduleState = 'ready' | 'running' | 'blocked' | 'failed' | 'skipped' | 'completed';
+
+export interface TodoScheduleEntry {
+    id: string;
+    content?: string;
+    state: TodoScheduleState;
+    dependsOn?: string[];
+    /** Which unfinished deps block this item. Empty when ready/running. */
+    blockedBy?: string[];
+    error?: string;
+}
+
+export interface TodoScheduleResult {
+    ready: TodoScheduleEntry[];
+    running: TodoScheduleEntry[];
+    blocked: TodoScheduleEntry[];
+    failed: TodoScheduleEntry[];
+    skipped: TodoScheduleEntry[];
+    completed: TodoScheduleEntry[];
+    all: TodoScheduleEntry[];
+    summary: {
+        total: number;
+        ready: number;
+        running: number;
+        blocked: number;
+        failed: number;
+        skipped: number;
+        completed: number;
+    };
+}
+
+/**
+ * Compute DAG schedule from a list of todos.
+ *
+ * Resolution rules (aligned with coding_task semantics):
+ * - `completed`/`cancelled` items → state `'completed'` (treat cancelled as done for deps)
+ * - `in_progress` items → state `'running'`
+ * - `failed` items → state `'failed'`, ALL transitive dependents → `'skipped'`
+ * - Items whose deps are all completed → `'ready'`
+ * - Items with unfinished deps → `'blocked'` with `blockedBy` listing the unmet deps
+ * - Already-completed/skipped items downstream of a failure → `'skipped'` (preserve successful artifacts)
+ */
+export function resolveSchedule(todos: TodoItem[]): TodoScheduleResult {
+    const byId = new Map(todos.map(t => [t.id, t]));
+    const idSet = new Set(todos.map(t => t.id));
+
+    const children = new Map<string, string[]>();
+    for (const item of todos) {
+        for (const dep of item.dependsOn ?? []) {
+            if (idSet.has(dep)) {
+                if (!children.has(dep)) children.set(dep, []);
+                children.get(dep)!.push(item.id);
+            }
+        }
+    }
+
+    function transitiveDependents(failedIds: Set<string>): Set<string> {
+        const result = new Set<string>();
+        const queue = [...failedIds];
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            for (const childId of children.get(current) ?? []) {
+                if (!result.has(childId) && !failedIds.has(childId)) {
+                    result.add(childId);
+                    queue.push(childId);
+                }
+            }
+        }
+        return result;
+    }
+
+    const failedIds = new Set<string>();
+    for (const item of todos) {
+        if (item.status === 'failed') {
+            failedIds.add(item.id);
+        }
+    }
+    const skippedIds = transitiveDependents(failedIds);
+
+    const entries: TodoScheduleEntry[] = [];
+    for (const item of todos) {
+        const deps = (item.dependsOn ?? []).filter(d => idSet.has(d));
+
+        if (item.status === 'completed' || item.status === 'cancelled') {
+            entries.push({ id: item.id, content: item.content, state: 'completed', dependsOn: item.dependsOn });
+            continue;
+        }
+
+        if (failedIds.has(item.id)) {
+            entries.push({ id: item.id, content: item.content, state: 'failed', dependsOn: item.dependsOn });
+            continue;
+        }
+
+        if (skippedIds.has(item.id)) {
+            entries.push({ id: item.id, content: item.content, state: 'skipped', dependsOn: item.dependsOn });
+            continue;
+        }
+
+        if (item.status === 'in_progress') {
+            entries.push({ id: item.id, content: item.content, state: 'running', dependsOn: item.dependsOn });
+            continue;
+        }
+
+        const unmetDeps = deps.filter(depId => {
+            const depItem = byId.get(depId);
+            return depItem && depItem.status !== 'completed' && depItem.status !== 'cancelled';
+        });
+
+        if (unmetDeps.length > 0) {
+            entries.push({ id: item.id, content: item.content, state: 'blocked', dependsOn: item.dependsOn, blockedBy: unmetDeps });
+        } else {
+            entries.push({ id: item.id, content: item.content, state: 'ready', dependsOn: item.dependsOn });
+        }
+    }
+
+    const ready = entries.filter(e => e.state === 'ready');
+    const running = entries.filter(e => e.state === 'running');
+    const blocked = entries.filter(e => e.state === 'blocked');
+    const failed = entries.filter(e => e.state === 'failed');
+    const skipped = entries.filter(e => e.state === 'skipped');
+    const completed = entries.filter(e => e.state === 'completed');
+
+    return {
+        ready,
+        running,
+        blocked,
+        failed,
+        skipped,
+        completed,
+        all: entries,
+        summary: {
+            total: entries.length,
+            ready: ready.length,
+            running: running.length,
+            blocked: blocked.length,
+            failed: failed.length,
+            skipped: skipped.length,
+            completed: completed.length
+        }
+    };
+}
+
+const VALID_STATUSES: TodoStatus[] = ['pending', 'in_progress', 'completed', 'cancelled', 'failed'];
 const VALID_KINDS: TodoItemKind[] = ['task', 'milestone', 'bug', 'feature', 'chore'];
 
 function normalizeStatus(status: unknown): TodoStatus {
