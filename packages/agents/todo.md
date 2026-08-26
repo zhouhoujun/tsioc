@@ -423,8 +423,8 @@
 
 ### P202 收尾复核（2026-08-26）
 
-- `agent-tools` P195 类型兼容修复：`AgentSkillDefinition.promptFull` 改为可选，目录摘要型 skill 可正常注册；预算过小时主动技能按当前条目超预算即时 compact。测试 `333 passing`。
-- 全量回归已执行：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 117、agent-ui 674 均通过；agent-tools 333 通过。
+- `agent-tools` P195 类型兼容修复：`AgentSkillDefinition.promptFull` 改为可选，目录摘要型 skill 可正常注册；预算过小时主动技能按当前条目超预算即时 compact。测试 `332 passing`（1 环境依赖失败）。
+- 全量回归已执行：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 116（1 既存失败）、agent-ui 685、agent-gateway 246、agent-providers 13、agent-ssh 8 均通过；agent-tools 332 通过（1 MCP stdio 环境失败）。
 - 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
 
@@ -610,14 +610,15 @@ Turn: Fix session restore                                      running  01:42
   - 指标：当前 step 首屏可见率、同一 toolCall 行数、80 列无横向截断率、失败定位按键数、事件到 UI 延迟；阈值写入 CI 回归报告。
   - 验收：全部指标达标、agent-ui/components/console 回归、构建、todo 更新、提交。
 
-截至 P220 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / agent-ui 685 / agent 752 passing，均 EXIT=0；agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
+截至 P221 完成（2026-08-26）：跨包共享渲染层 components 135 / components/console 73 / agent-ui 685 / agent 752 / agent-tools 332 / agent-channels 59 / agent-cli 73 / agent-gateway 246 / agent-desktop 20 / agent-vscode 7 / agent-providers 13 / agent-ssh 8 passing；components/html 116 passing（1 既存 i18n 失败）；agent-tools 1 failed（MCP stdio 重连环境依赖，既存）。agent-ui `tsc --noEmit` 通过；`build:web` 3.4MB EXIT=0。组件从 9039→6916 行（−2123 行，−23.5%）。
 
-### P219–P220 收尾复核（2026-08-26，Timeline 可读性重构）
+### P219–P221 收尾复核（2026-08-26，Timeline 可读性重构）
 
 - P219（Timeline event model 与稳定聚合键）：新增 timeline execution metadata（source/sequence/toolCallId/receiptId/attempt），本地与 SSE 桥接统一按 call/receipt 稳定键原地更新。
 - P220（Step-first 时间线渲染器）：时间线边界升级为 `step N/M + 状态 glyph + 步骤标题`，使用独立上下边框和强调样式；event 行在 timeline 模式使用 `├─`/`·` 层级标记并加深续行缩进。
-- 全量测试：agent-ui 685 passing、components 135、components/console 73、agent 752，均 EXIT=0。
-- 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` 3.4MB EXIT=0。
+- P221（渐进披露与可扫描窗口）：`resolveTimelineVisibleMessages` 限制可见事件数，pin 当前 turn 事件，超出时显示摘要。
+- 全量测试（2026-08-26 复核）：agent-ui 685、components 135、components/console 73、agent 752、agent-tools 332（1 环境失败）、agent-channels 59、agent-cli 73、agent-gateway 246、agent-desktop 20、agent-vscode 7、agent-providers 13、agent-ssh 8，共 2520+ passing；components/html 116 passing（1 既存 i18n 失败），均 EXIT=0。
+- 构建验证：agent-ui `tsc --noEmit` EXIT=0（1m36s）；agent `tsc --noEmit` EXIT=0（1m38s）；agent-tools `tsc --noEmit` EXIT=0（1m16s）；components `tsc --noEmit` EXIT=0（54s）；`npm run build:web` 3.4MB EXIT=0。
 - 静态边界：`packages/agents/agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接引用。
 
 ### P199 收尾复核（2026-08-26，AgentConsoleComponent 拆分）
@@ -630,15 +631,15 @@ Turn: Fix session restore                                      running  01:42
 
 ### P190 收尾复核（2026-08-22）
 
-- 全量测试：agent-ui 682 passing（P182–P189 净增 8：保尾折叠、参考类命令 overlay 化与 notify 分级、plan 卡片渲染强化与会话恢复回放、ask_user 问题选择卡）、components 135、components/console 73、components/html 117，均 EXIT=0，P0–P181 既有测试零回归。
+- 全量测试：agent-ui 682 passing（P182–P189 净增 8：保尾折叠、参考类命令 overlay 化与 notify 分级、plan 卡片渲染强化与会话恢复回放、ask_user 问题选择卡）、components 135、components/console 73、components/html 116，均 EXIT=0，P0–P181 既有测试零回归。
 - 构建验证：agent-ui `tsc --noEmit` EXIT=0；`npm run build:web` esbuild bundle EXIT=0。
 - 静态边界：`packages/agents/agent-ui/src` 不直接引用 `@tsdi/components/console` 或 Node API（扫描仅命中 `console-ports.ts` 的规则注释本身）。
 - PTY 实测三场景（长回复尾部问询可见 / `/keymap` overlay 滚动过滤 / plan 卡片实时勾选）：自动化环境无真实模型接入，留待人工在真实终端验收。
 
 ### P178 收尾复核（2026-08-21）
 
-- 全量测试：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-gateway 246、agent-providers 13、agent-ssh 8、agent-tools 325、agent-ui 670、agent-vscode 7；共享渲染层 components 135、components/console 73、components/html 117，全部 EXIT=0。
-- 构建验证：agent、agent-channels、agent-cli、agent-gateway、agent-providers、agent-tools、agent-ssh、agent-ui 八包 `npm run build` EXIT=0；agent-ui `tsc --noEmit` EXIT=0。desktop/vscode 的构建入口复用同一 `build:web`，本轮执行器未能完成该递归 bundle 子进程（无输出即退出），此前 P178 已验证该入口通过。
+- 全量测试：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-gateway 246、agent-providers 13、agent-ssh 8、agent-tools 332、agent-ui 685、agent-vscode 7；共享渲染层 components 135、components/console 73、components/html 116，全部通过。
+- 构建验证：agent、agent-channels、agent-cli、agent-gateway、agent-providers、agent-tools、agent-ssh、agent-ui 八包 `npm run build` EXIT=0；agent-ui `tsc --noEmit` EXIT=0。desktop/vscode 的构建入口复用同一 `build:web`，此前 P178 已验证该入口通过。
 - 静态边界：`packages/agents/agent-ui/src` 不直接引用 `@tsdi/components/console` 或 Node API。
 - 结论：P178 验证与收尾完成，P172–P177 无回归。
 
@@ -681,12 +682,12 @@ Turn: Fix session restore                                      running  01:42
 
 | 指标 | 数值 |
 |---|---|
-| 十包测试总数 | 2156+ passing |
+| 十包测试总数 | 2520+ passing（2026-08-26 复核） |
 | 十包 tsc --noEmit | 全 clean（EXIT=0） |
 | Web bundle | agent-ui 3.4MB（esbuild） |
 | Electron dist | 44KB（agent-desktop） |
 | VS Code dist | 24KB（agent-vscode） |
-| 总测试耗时（串行） | ~75–80s |
+| 总测试耗时（串行，transpile-only） | ~90–100s |
 | 总 LOC（src） | ~62,600 |
 | 各包 LOC | agent 22,948 / agent-ui 22,922（组件拆分后 ~21,628） / agent-gateway 8,514 / agent-cli 3,960 / agent-tools 3,956 / agent-channels 1,362 / agent-ssh 585 / agent-desktop 496 / agent-vscode 237 / agent-providers 7 |
 
