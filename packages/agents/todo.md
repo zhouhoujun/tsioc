@@ -605,6 +605,7 @@ Turn: Fix session restore                                      running  01:42
   - 将 `/timeline` 从简单开关升级为 `compact | steps | verbose`：compact 仅当前步骤与异常，steps 为默认分组视图，verbose 保留现有逐事件诊断视图。
   - 保留旧 boolean 配置兼容映射，明确状态栏可见当前模式；不改变 raw transcript/export 的完整性。
   - 验收：旧设置迁移、命令/键位、不同模式输出、持久化恢复测试；tsc/build、todo 更新、提交。
+  - **已完成（2026-08-26）**：`AgentConsoleSessionState` 新增 `timelineViewMode: 'off' | 'compact' | 'steps' | 'verbose'` 字段，`timelineMode` 保留为计算 getter（`timelineViewMode !== 'off'`）向后兼容；`setTimelineMode` 同时接受 boolean 与 tri-state string。`AgentConsoleSettingsStore` 新增 `timelineViewMode` 字段 + `resolveTimelineViewMode` helper 从旧 `timelineMode: boolean` 迁移，save 写 version 2。`AgentConsoleComponent` 的 `toggleTimelineMode` 替换为 `runTimelineModeCommand(args?)`：无参数循环 off→compact→steps→verbose→off，有参数直接设置；`restoreSettings` 优先读 `timelineViewMode`，fallback 旧 boolean。`AgentConsoleCommandHandlers` 接口 + handler 更新为 `runTimelineModeCommand(args?)`。`AgentConsolePanels.resolveTimelineVisibleMessages` 三分支：`verbose` 全量返回，`compact` 仅当前 scope + error/failed，`steps` 保留原有 tail + scope + structural + summary。717 项测试通过，旧 timeline 测试已适配 4 模式循环。
 
 - **P224 · 时间线可读性验收与基准** `platform: agent-ui tests + acceptance`
   - 增加真实 PTY 录屏/文本 snapshot 场景：多步骤并行、重试失败、长工具输出、窄终端 CJK、断线重放；browser 使用 Playwright 验证焦点与折叠。

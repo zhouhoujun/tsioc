@@ -9,6 +9,7 @@ export interface AgentConsoleSettingsData {
     showToolOutput?: boolean;
     showUsername?: boolean;
     timelineMode?: boolean;
+    timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
     thinkingLevel?: 'low' | 'medium' | 'high';
     yoloMode?: boolean;
 }
@@ -22,6 +23,7 @@ export class AgentConsoleSettingsStore {
         try {
             const text = await this.fileAdapter.readText(this.path(workspace));
             const parsed = JSON.parse(text);
+            const timelineViewMode = resolveTimelineViewMode(parsed);
             return {
                 language: typeof parsed?.language === 'string' && parsed.language.trim() ? parsed.language.trim() : undefined,
                 vimMode: typeof parsed?.vimMode === 'boolean' ? parsed.vimMode : undefined,
@@ -29,7 +31,7 @@ export class AgentConsoleSettingsStore {
                 showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
                 showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
                 showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
-                timelineMode: typeof parsed?.timelineMode === 'boolean' ? parsed.timelineMode : undefined,
+                timelineViewMode,
                 thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
                     ? parsed.thinkingLevel
                     : undefined,
@@ -44,15 +46,16 @@ export class AgentConsoleSettingsStore {
         if (!workspace || !this.fileAdapter) return;
         const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
         await this.fileAdapter.mkdir(directory, { recursive: true });
+        const mode = data.timelineViewMode ?? (typeof data.timelineMode === 'boolean' ? (data.timelineMode ? 'compact' : 'off') : undefined);
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({
-            version: 1,
+            version: 2,
             ...(data.language ? { language: data.language } : {}),
             ...(typeof data.vimMode === 'boolean' ? { vimMode: data.vimMode } : {}),
             ...(typeof data.showThinking === 'boolean' ? { showThinking: data.showThinking } : {}),
             ...(typeof data.showTimestamps === 'boolean' ? { showTimestamps: data.showTimestamps } : {}),
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
-            ...(typeof data.timelineMode === 'boolean' ? { timelineMode: data.timelineMode } : {}),
+            ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
             ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {})
         }, null, 2));
@@ -61,4 +64,16 @@ export class AgentConsoleSettingsStore {
     private path(workspace: string): string {
         return this.fileAdapter!.join(workspace, '.tsdi-agent', 'settings.json');
     }
+}
+
+const TIMELINE_VIEW_MODES = new Set<string>(['off', 'compact', 'steps', 'verbose']);
+
+function resolveTimelineViewMode(parsed: Record<string, unknown>): 'off' | 'compact' | 'steps' | 'verbose' | undefined {
+    if (typeof parsed?.timelineViewMode === 'string' && TIMELINE_VIEW_MODES.has(parsed.timelineViewMode)) {
+        return parsed.timelineViewMode as 'off' | 'compact' | 'steps' | 'verbose';
+    }
+    if (typeof parsed?.timelineMode === 'boolean') {
+        return parsed.timelineMode ? 'compact' : 'off';
+    }
+    return undefined;
 }

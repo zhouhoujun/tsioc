@@ -2369,6 +2369,10 @@ export class AgentConsoleMessagesPanelComponent {
     protected resolveTimelineVisibleMessages(
         messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>
     ): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
+        const mode = this.state.timelineViewMode;
+        if (mode === 'verbose') {
+            return messages;
+        }
         const limit = Math.max(1, this.state.consoleOptions.messagesVisibleItems);
         if (messages.length <= limit) {
             return messages;
@@ -2378,6 +2382,31 @@ export class AgentConsoleMessagesPanelComponent {
             || message.metadata?.uiKind === 'timeline-boundary');
         const transcript = messages.filter(message => !structural.includes(message));
         const activeScope = String(this.state.activeTurnEventScope || '').trim();
+
+        if (mode === 'compact') {
+            const current = activeScope
+                ? messages.filter(message => String(message.metadata?.uiEventKey || '').startsWith(`${activeScope}:`))
+                : [];
+            const errors = transcript.filter(message => message.metadata?.status === 'error' || message.metadata?.status === 'failed');
+            const retained = new Set<string>();
+            current.forEach(message => retained.add(message.id));
+            errors.forEach(message => retained.add(message.id));
+            const visible = transcript.filter(message => retained.has(message.id));
+            const hidden = transcript.length - visible.length;
+            if (hidden <= 0) {
+                return [...visible, ...structural];
+            }
+            const summary = {
+                id: '__timeline_hidden_summary__',
+                role: 'assistant',
+                content: `${hidden} events hidden · compact mode shows active step + errors only`,
+                createdAt: Number((messages[0] as AgentMessage)?.createdAt || Date.now()),
+                metadata: { uiKind: 'event', uiEventType: 'timeline_summary', status: 'success', label: 'timeline' }
+            };
+            return [summary, ...visible, ...structural];
+        }
+
+        // steps mode (default): tail + active scope + structural
         const current = activeScope
             ? messages.filter(message => String(message.metadata?.uiEventKey || '').startsWith(`${activeScope}:`))
             : [];

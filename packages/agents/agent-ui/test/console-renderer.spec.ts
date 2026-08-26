@@ -1814,7 +1814,7 @@ export class AgentConsoleTuiRendererTest {
             createdAt: index + 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
         })) as any);
-        ref.instance.sessionState.setTimelineMode(true);
+        ref.instance.sessionState.setTimelineMode('steps');
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visible = panel.instance.visibleMessages;
         expect(visible[0].id).toEqual('__timeline_hidden_summary__');

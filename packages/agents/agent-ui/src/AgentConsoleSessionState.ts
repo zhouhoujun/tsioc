@@ -555,7 +555,10 @@ export class AgentConsoleSessionState {
     showTimestamps = true;
     showToolOutput = true;
     showUsername = false;
-    timelineMode = false;
+    timelineViewMode: 'off' | 'compact' | 'steps' | 'verbose' = 'off';
+    get timelineMode(): boolean {
+        return this.timelineViewMode !== 'off';
+    }
     planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
@@ -3108,8 +3111,12 @@ export class AgentConsoleSessionState {
         this.showUsername = !!value;
     }
 
-    setTimelineMode(value: boolean): void {
-        this.timelineMode = !!value;
+    setTimelineMode(value: boolean | 'off' | 'compact' | 'steps' | 'verbose'): void {
+        if (typeof value === 'boolean') {
+            this.timelineViewMode = value ? 'compact' : 'off';
+        } else {
+            this.timelineViewMode = value;
+        }
     }
 
     setWhichKeyVisible(value: boolean): void {

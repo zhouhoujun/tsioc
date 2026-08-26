@@ -9846,10 +9846,18 @@ export class AgentConsoleComponentTest {
 
             await (component as any).handleCommand('/timeline');
             expect(component.sessionState.timelineMode).toEqual(true);
-            expect((await store.load(workspace)).timelineMode).toEqual(true);
+            expect(component.sessionState.timelineViewMode).toEqual('compact');
+            expect((await store.load(workspace)).timelineViewMode).toEqual('compact');
 
             await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
             await (component as any).handleTerminalInput({ text: 'g', partial: false }, 'g');
+            expect(component.sessionState.timelineViewMode).toEqual('steps');
+            await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+            await (component as any).handleTerminalInput({ text: 'g', partial: false }, 'g');
+            expect(component.sessionState.timelineViewMode).toEqual('verbose');
+            await (component as any).handleTerminalInput({ text: '\u0018', partial: false }, '\u0018');
+            await (component as any).handleTerminalInput({ text: 'g', partial: false }, 'g');
+            expect(component.sessionState.timelineViewMode).toEqual('off');
             expect(component.sessionState.timelineMode).toEqual(false);
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });

@@ -2828,7 +2828,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             runThemeCommand: (a) => self.runThemeCommand(a),
             runThinkingCommand: (a) => self.runThinkingCommand(a),
             runDisplayCommand: (a) => self.runDisplayCommand(a),
-            toggleTimelineMode: () => self.toggleTimelineMode(),
+            runTimelineModeCommand: (a) => self.runTimelineModeCommand(a),
             runRawModeCommand: (a) => self.runRawModeCommand(a),
             runStashCommand: (a) => self.runStashCommand(a),
             runStatuslineCommand: (a) => self.runStatuslineCommand(a),
@@ -4313,8 +4313,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (typeof persisted.showUsername === 'boolean') {
             this.state.setShowUsername(persisted.showUsername);
         }
-        if (typeof persisted.timelineMode === 'boolean') {
-            this.state.setTimelineMode(persisted.timelineMode);
+        if (persisted.timelineViewMode) {
+            this.state.setTimelineMode(persisted.timelineViewMode);
+        } else if (typeof persisted.timelineMode === 'boolean') {
+            this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
@@ -4843,15 +4845,34 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return true;
     }
 
-    protected async toggleTimelineMode(): Promise<void> {
-        const visible = !this.state.timelineMode;
-        this.state.setTimelineMode(visible);
-        this.notify(visible ? 'Timeline view enabled (compact chronological list).' : 'Timeline view disabled.');
+    protected async runTimelineModeCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim().toLowerCase();
+        const modes: Array<'off' | 'compact' | 'steps' | 'verbose'> = ['off', 'compact', 'steps', 'verbose'];
+        const labels: Record<string, string> = {
+            off: 'Timeline view disabled.',
+            compact: 'Timeline view: compact (current step + anomalies only).',
+            steps: 'Timeline view: steps (default grouped view).',
+            verbose: 'Timeline view: verbose (all events, diagnostic).'
+        };
+        let next: 'off' | 'compact' | 'steps' | 'verbose';
+        if (parsed && modes.includes(parsed as any)) {
+            next = parsed as 'off' | 'compact' | 'steps' | 'verbose';
+        } else if (!parsed) {
+            const current = this.state.timelineViewMode;
+            const idx = modes.indexOf(current);
+            next = modes[(idx + 1) % modes.length];
+        } else {
+            this.notify(`Usage: /timeline [off|compact|steps|verbose]`);
+            return true;
+        }
+        this.state.setTimelineMode(next);
+        this.notify(labels[next]);
         try {
-            await this.persistSettings({ timelineMode: visible });
+            await this.persistSettings({ timelineViewMode: next });
         } catch (error: any) {
             this.notify(error?.message || 'Failed to save timeline mode.');
         }
+        return true;
     }
 
     protected async invokeTool(name: string, input: any): Promise<any> {
@@ -5698,7 +5719,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         if (action === 'timeline-mode') {
-            await this.toggleTimelineMode();
+            await this.runTimelineModeCommand();
             return true;
         }
         const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode'>, string> = {

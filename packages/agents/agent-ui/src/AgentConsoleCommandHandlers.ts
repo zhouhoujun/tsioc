@@ -116,7 +116,7 @@ export interface CommandHandlerContext {
     runThemeCommand(args: string): Promise<boolean>;
     runThinkingCommand(args: string): Promise<boolean>;
     runDisplayCommand(args: string): Promise<boolean>;
-    toggleTimelineMode(): void;
+    runTimelineModeCommand(args?: string): Promise<boolean>;
     runRawModeCommand(args: string): Promise<boolean>;
     runStashCommand(args: string): Promise<boolean>;
     runStatuslineCommand(args: string): Promise<boolean>;
@@ -1378,7 +1378,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/theme': (ctx, args) => ctx.runThemeCommand(args),
     '/thinking': (ctx, args) => ctx.runThinkingCommand(args),
     '/display': (ctx, args) => ctx.runDisplayCommand(args),
-    '/timeline': async (ctx) => { await ctx.toggleTimelineMode(); return true; },
+    '/timeline': (ctx, args) => ctx.runTimelineModeCommand(args),
     '/raw': (ctx, args) => ctx.runRawModeCommand(args),
     '/stash': (ctx, args) => ctx.runStashCommand(args),
     '/statusline': (ctx, args) => ctx.runStatuslineCommand(args),
