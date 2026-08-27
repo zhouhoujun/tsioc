@@ -1100,6 +1100,7 @@ export class AgentConsoleSessionsPanelComponent {
     template: `
     <div class="console-panel console-tasks-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="backgroundTaskFeedLabel">{{backgroundTaskFeedLabel}}</label>
         <label v-style="metaStyle" v-show="tasksHintLabel">{{tasksHintLabel}}</label>
         <label v-style="listStyle" v-show="taskListLabel">{{taskListLabel}}</label>
         <label v-style="detailStyle" v-show="selectedTaskDetailLabel">{{selectedTaskDetailLabel}}</label>
@@ -1142,6 +1143,19 @@ export class AgentConsoleTasksPanelComponent {
 
     get detailStyle() {
         return this.activeThemeStyles.statusValue;
+    }
+
+    get backgroundTaskFeedLabel(): string {
+        const tasks = this.state.filteredBackgroundTasks;
+        if (!tasks.length) return '';
+        const running = tasks.filter(task => task.status === 'running').length;
+        const failed = tasks.filter(task => task.status === 'failed').length;
+        const lines = tasks.slice(0, 8).map(task => {
+            const marker = task.status === 'running' ? '>' : task.status === 'completed' ? 'x' : task.status === 'failed' ? '!' : '-';
+            return `[${marker}] ${task.id} · ${task.goal} · ${task.sessionId}`;
+        });
+        const summary = `background ${tasks.length} · running ${running}${failed ? ` · failed ${failed}` : ''}`;
+        return [summary, ...lines].join('\n');
     }
 
     get listStyle() {

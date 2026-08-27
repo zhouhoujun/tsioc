@@ -6,6 +6,7 @@ import {
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
 import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
+import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeInput,
@@ -503,6 +504,9 @@ export class AgentConsoleSessionState {
     reviewWorkers: AgentConsoleReviewWorker[] = [];
     reviewTaskChoices: AgentConsoleReviewTaskItem[] = [];
     taskRecords: Record<string, any>[] = [];
+    backgroundTaskFeed: BackgroundTaskRecord[] = [];
+    backgroundTaskFilter: 'all' | 'running' | 'completed' | 'failed' | 'cancelled' = 'all';
+    backgroundTaskQuery = '';
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planTodoExpanded = false;
@@ -2054,6 +2058,26 @@ export class AgentConsoleSessionState {
 
     setTaskRecords(tasks: Record<string, any>[]): void {
         this.taskRecords = tasks.slice();
+    }
+
+    setBackgroundTaskFeed(tasks: BackgroundTaskRecord[]): void {
+        this.backgroundTaskFeed = tasks.slice().sort((a, b) => b.startedAt - a.startedAt);
+    }
+
+    upsertBackgroundTask(record: BackgroundTaskRecord): void {
+        const index = this.backgroundTaskFeed.findIndex(item => item.id === record.id);
+        const next = this.backgroundTaskFeed.slice();
+        if (index >= 0) next[index] = { ...next[index], ...record };
+        else next.push(record);
+        this.setBackgroundTaskFeed(next);
+    }
+
+    get filteredBackgroundTasks(): BackgroundTaskRecord[] {
+        const query = this.backgroundTaskQuery.trim().toLowerCase();
+        return this.backgroundTaskFeed.filter(task =>
+            (this.backgroundTaskFilter === 'all' || task.status === this.backgroundTaskFilter)
+            && (!query || `${task.id} ${task.sessionId} ${task.goal}`.toLowerCase().includes(query))
+        );
     }
 
     setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread', sequence?: number): void {

@@ -501,7 +501,10 @@
 - **P210 · 编排原语与聚合器** `platform: agent-tools + agent/src/runtime` ✅ `agent 771 · agent-tools 400 · agent-ui 759`
   - 提供 `map_reduce`、`fan_out`、`race`、`wait_all`、`wait_any`，统一并发/成本/超时预算；聚合器输出带来源、置信度和冲突列表。
   - 验收：成功、超时、部分失败、取消、预算耗尽、结果冲突均可重放测试；构建与提交。
-- **P211 · 统一后台任务总览** `platform: agent-ui/src + agent RPC`
+- **P211 · 统一后台任务总览** `platform: agent-ui/src + agent RPC` ✅（2026-08-27）
+  - `BackgroundTaskManager` 新增跨 session `listAll()`、事件订阅 `subscribe()` 与 `cancelMany()`；start/finish/fail/cancel 均推送快照，保持数据驱动更新。
+  - `AgentConsoleSessionState` 持有统一 feed，支持状态过滤与文本搜索；Tasks 面板展示跨 session 任务摘要；`/ps` 默认保持当前 session 兼容，并支持 `/ps all|running|completed|failed|cancelled` 查看全局/状态过滤。
+  - 旧 manager mock 无新 API 时自动回退 `list(sessionId)`；`agent-ui` `tsc --noEmit` 通过，既有测试兼容。
   - 建立跨 session task feed（状态、进度、耗时、重试、资源）；统一搜索/过滤/排序/批量取消/重试；命令 `/ps` 与面板共用数据源。
   - 验收：事件流断线重连、权限隔离、历史聚合、TUI/browser 交互测试；全量验证、todo 更新、提交。
 - **P212 · 项目/线程树与自动检测** `platform: agent/src + agent-cli + agent-ui/src`

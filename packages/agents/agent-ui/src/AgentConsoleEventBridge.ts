@@ -25,6 +25,7 @@ import {
 import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsolePendingQuestion, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -38,7 +39,8 @@ export class AgentConsoleEventBridge {
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
         @Optional() private app?: ApplicationContext | null,
-        @Optional() private translator?: TranslatorService
+        @Optional() private translator?: TranslatorService,
+        @Optional() private backgroundTasks?: BackgroundTaskManager | null
     ) {
         this.stateRef = state;
     }
@@ -57,6 +59,14 @@ export class AgentConsoleEventBridge {
             return;
         }
         const multicaster = this.app.eventMulticaster as ApplicationEventMulticaster;
+        if (this.backgroundTasks) {
+            const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => any[]; subscribe?: (listener: (record: any) => void) => () => void };
+            const initial = typeof manager.listAll === 'function' ? manager.listAll() : manager.list(this.state.sessionId);
+            this.state.setBackgroundTaskFeed(initial);
+            if (typeof manager.subscribe === 'function') {
+                manager.subscribe(record => this.state.upsertBackgroundTask(record));
+            }
+        }
         const bind = (event: any, handler: (evt: any) => void | Promise<void>) => {
             this.eventBindings.push({ event, handler });
             multicaster.addListener(event, handler as any);
@@ -271,17 +281,23 @@ export class AgentConsoleEventBridge {
         });
 
         bind(AgentBackgroundTaskStartedEvent, (event: AgentBackgroundTaskStartedEvent) => {
+            const task = this.backgroundTasks?.get(event.taskId);
+            if (task) this.state.upsertBackgroundTask(task);
             if (event.sessionId !== this.state.sessionId) return;
             this.state.pushActivity('tool', `Background task ${event.taskId} started: ${this.truncateNotification(event.goal)}`);
         });
 
         bind(AgentBackgroundTaskCompletedEvent, (event: AgentBackgroundTaskCompletedEvent) => {
+            const task = this.backgroundTasks?.get(event.taskId);
+            if (task) this.state.upsertBackgroundTask(task);
             if (event.sessionId !== this.state.sessionId) return;
             const detail = event.summary ? `: ${this.truncateNotification(event.summary)}` : '';
             this.state.pushActivity('tool', `Background task ${event.taskId} completed${detail}`);
         });
 
         bind(AgentBackgroundTaskFailedEvent, (event: AgentBackgroundTaskFailedEvent) => {
+            const task = this.backgroundTasks?.get(event.taskId);
+            if (task) this.state.upsertBackgroundTask(task);
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setLastError(event.error.message);
             this.state.pushActivity('error', `Background task ${event.taskId} failed: ${event.error.message}`);

@@ -5232,17 +5232,30 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(this.backgroundTasks.cancel(taskId) ? `Background task ${taskId} cancelled.` : `No running background task ${taskId}.`);
             return true;
         }
-        const tasks = this.backgroundTasks.list(this.state.sessionId);
+        const filter = (parts[0] || 'current').toLowerCase();
+        const allowed = new Set(['current', 'all', 'running', 'completed', 'failed', 'cancelled']);
+        if (!allowed.has(filter)) {
+            this.notify('Usage: /ps [all|running|completed|failed|cancelled] or /ps stop <taskId>');
+            return true;
+        }
+        const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
+        const allTasks = typeof manager.listAll === 'function'
+            ? manager.listAll()
+            : manager.list(this.state.sessionId);
+        const tasks = allTasks.filter(task =>
+            (filter === 'all' || filter === 'current' ? filter === 'all' || task.sessionId === this.state.sessionId : true)
+            && (['running', 'completed', 'failed', 'cancelled'].includes(filter) ? task.status === filter : true)
+        );
         if (!tasks.length) {
-            this.notify('No background tasks for this session. Start one with a /jobs or delegated long-running task.');
+            this.notify(`No ${filter === 'all' ? '' : filter + ' '}background tasks.`);
             return true;
         }
         const lines = tasks.map(task => {
             const status = String(task.status).toUpperCase();
             const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
-            return `${status}${meta} ${task.id} - ${task.goal}`;
+            return `${status}${meta} ${task.id} [session ${task.sessionId}] - ${task.goal}`;
         });
-        this.notify(`Background tasks:\n${lines.join('\n')}`);
+        this.notify(`Background tasks (${filter}):\n${lines.join('\n')}`);
         return true;
     }
 

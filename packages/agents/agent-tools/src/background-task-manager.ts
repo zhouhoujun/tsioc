@@ -84,6 +84,7 @@ function truncateGoal(prompt: string): string {
 export class BackgroundTaskManager {
     private tasks = new Map<string, BackgroundTaskRecord>();
     private waiters = new Set<(record: BackgroundTaskRecord) => void>();
+    private listeners = new Set<(record: BackgroundTaskRecord) => void>();
 
     constructor(
         private uuid: UuidGenerator,
@@ -105,6 +106,7 @@ export class BackgroundTaskManager {
             startedAt: Date.now()
         };
         this.tasks.set(id, record);
+        this.notify(record);
         this.publish(new AgentBackgroundTaskStartedEvent(this, ownerSessionId, id, record.goal));
         void this.runner.run(request).then(
             result => this.finish(id, result),
@@ -123,6 +125,23 @@ export class BackgroundTaskManager {
             .filter(record => record.sessionId === ownerSessionId)
             .sort((left, right) => right.startedAt - left.startedAt)
             .map(record => this.clone(record));
+    }
+
+    /** Snapshot of tasks across all sessions, newest first. */
+    listAll(): BackgroundTaskRecord[] {
+        return Array.from(this.tasks.values())
+            .sort((left, right) => right.startedAt - left.startedAt)
+            .map(record => this.clone(record));
+    }
+
+    /** Subscribe to task snapshots. Returns an unsubscribe function. */
+    subscribe(listener: (record: BackgroundTaskRecord) => void): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    cancelMany(taskIds: string[]): number {
+        return Array.from(new Set(taskIds)).reduce((count, taskId) => count + (this.cancel(taskId) ? 1 : 0), 0);
     }
 
     cancel(taskId: string): boolean {
@@ -179,6 +198,13 @@ export class BackgroundTaskManager {
         this.waiters.forEach(waiter => {
             try {
                 waiter(snapshot);
+            } catch {
+                return;
+            }
+        });
+        this.listeners.forEach(listener => {
+            try {
+                listener(snapshot);
             } catch {
                 return;
             }
