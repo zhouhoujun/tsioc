@@ -567,6 +567,13 @@
   - 增加 plan 分解/执行基准集，指标包括可验证步骤率、依赖正确率、无证据完成率、失败恢复成功率、计划版本冲突率和 token 开销。
   - 扩展 PTY/browser 验收：计划创建→并行执行→失败→确认 retry→恢复→review gate→完成；记录首屏当前步骤可见率、失败定位按键数和 event-to-UI 延迟阈值。
   - 验收：基线结果入库，CI 输出回归报告，components/components-console/agent/agent-tools/agent-ui 受影响包回归通过。
+  - **已完成（2026-08-27，part A：plan 质量度量评估器核心；part B PTY/browser 端到端验收顺延）**：
+    - 新增 `agent-tools/planning/plan-eval.ts`：纯函数、无模型依赖的 plan 分解/执行度量。输入 `PlanEvalTrace`（step 状态、`dependsOn`、`completedWithoutEvidence`/`everFailed`/`recovered` 标记、`writes` 版本冲突记录、token 计数）。
+    - 六个指标（`computePlanEvalMetrics`）：可验证步骤率（step 同时有 `acceptance` + `evidence`）、依赖正确率（`dependsOn` 边引用真实 step 的比例）、无证据完成率（`completed` 中 `completedWithoutEvidence` 的比例，越低越好）、失败恢复成功率（曾失败/阻塞后又 `completed` 的比例）、计划版本冲突率（revision-aware 写入中被判 stale/`TodoPlanConflict` 的比例，越低越好）、token 每步开销（`(tokensUsed - payloadTokens)/acceptedSteps`，越低越好）。
+    - `buildPlanEvalReport` 聚合多 trace 均值 + 与 baseline 的回归 delta（负向 = 改善），`renderPlanEvalReport`/`summarizePlanEvalReport` 输出 CI 可读报告；`stepsFromCompiledPlan`/`stepsFromReconcileResult`/`planConflictsFromResult` 适配器把真实 `compilePlan`/`reconcileStepStatus`/冲突结果映射为 trace，保证度量落在地真实行为上。
+    - `planning/index.ts` 增加 `export * from './plan-eval'`。
+    - 测试：新增 `test/plan-eval.spec.ts` 9 项（六指标各自边界、reconcile 适配器完成无满意证据标记、compilePlan 适配器可验证率、报告均值/回归 delta/渲染/摘要）→ `463 passing`（454→463），`tsc --noEmit` EXIT=0；下游 agent / agent-cli / agent-ui `tsc --noEmit` EXIT=0。
+    - **顺延（part B，下个增量）**：PTY/browser 端到端验收（计划创建→并行执行→失败→retry→恢复→review gate→完成，记录首屏可见率/定位按键数/event-to-UI 延迟）与基线结果持久化入库/CI 回归报告流水线未在本增量实现（本增量落地可复用的纯函数度量层，供后续 acceptance/CI 消费）。
 
 ## UI 互动专项审计：当前欠缺与优化计划
 
