@@ -265,6 +265,53 @@ function createAgentCli(): Command {
             }
         });
 
+    project
+        .command('switch <projectKey>')
+        .description('Inspect a project and its sessions (useful as a project context switch in CLI hosts).')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--json', 'Output JSON.')
+        .action(async (projectKey: string, options: any) => {
+            const ctx = await runAgentApplication(options, {});
+            try {
+                const sessionStore = ctx.get(SessionStore);
+                const projects = await sessionStore.listProjects();
+                const project = projects.find((item: any) => item.projectKey === projectKey || item.projectId === projectKey);
+                if (!project) {
+                    process.stdout.write(`Project not found: ${projectKey}\n`);
+                    return;
+                }
+                const result = { project, sessionIds: project.sessionIds.slice() };
+                process.stdout.write(options.json ? JSON.stringify(result, null, 2) + '\n' : `${formatProjectSessionsHeader(project)}\nActive project: ${project.projectKey}\nSessions: ${project.sessionIds.length}\n`);
+            } finally {
+                await ctx.close();
+            }
+        });
+
+    project
+        .command('archive <projectKey>')
+        .description('Archive or restore every session belonging to a project.')
+        .option('--root <dir>', 'Agent config root.')
+        .option('--restore', 'Restore sessions instead of archiving them.')
+        .option('--json', 'Output JSON.')
+        .action(async (projectKey: string, options: any) => {
+            const ctx = await runAgentApplication(options, {});
+            try {
+                const sessionStore = ctx.get(SessionStore);
+                const projects = await sessionStore.listProjects();
+                const project = projects.find((item: any) => item.projectKey === projectKey || item.projectId === projectKey);
+                if (!project) {
+                    process.stdout.write(`Project not found: ${projectKey}\n`);
+                    return;
+                }
+                const archived = !options.restore;
+                await Promise.all(project.sessionIds.map((id: string) => sessionStore.setArchived(id, archived)));
+                const result = { projectKey, archived, sessionIds: project.sessionIds };
+                process.stdout.write(options.json ? JSON.stringify(result, null, 2) + '\n' : `${archived ? 'Archived' : 'Restored'} ${project.sessionIds.length} session${project.sessionIds.length === 1 ? '' : 's'} in ${projectKey}.\n`);
+            } finally {
+                await ctx.close();
+            }
+        });
+
     const tools = program
         .command('tools')
         .description('Inspect resolved tool configuration.');

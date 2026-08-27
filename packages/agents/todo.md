@@ -507,7 +507,8 @@
   - 旧 manager mock 无新 API 时自动回退 `list(sessionId)`；`agent-ui` `tsc --noEmit` 通过，既有测试兼容。
   - 建立跨 session task feed（状态、进度、耗时、重试、资源）；统一搜索/过滤/排序/批量取消/重试；命令 `/ps` 与面板共用数据源。
   - 验收：事件流断线重连、权限隔离、历史聚合、TUI/browser 交互测试；全量验证、todo 更新、提交。
-- **P212 · 项目/线程树与自动检测** `platform: agent/src + agent-cli + agent-ui/src`
+- **P212 · 项目/线程树与自动检测** `platform: agent/src + agent-cli + agent-ui/src` 🚧（2026-08-27，CLI 子项完成）
+  - CLI 新增 `project switch <projectKey>`（支持 `--json`）与 `project archive <projectKey> [--restore]`，复用 SessionStore 项目索引和归档契约；项目/线程 UI 树及跨存储契约沿用现有实现，自动 git-root 检测仍待后续补齐。
   - 统一 project contract（InMemory/TypeORM/RPC）；新增 CLI `/project list|switch|archive`；UI 展示 project→session→thread→delegation 树；按 git root/配置文件自动检测并允许覆盖。
   - 验收：跨 workspace、归档、迁移、fork、项目级 plan 汇总场景；相关包全量测试、构建、todo 更新、提交。
 
