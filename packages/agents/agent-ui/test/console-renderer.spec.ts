@@ -1700,6 +1700,23 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.showPendingQuestionPanel).toEqual(false);
     }
 
+    @Test('pending question supports keyboard selection and dismissal')
+    async pendingQuestionKeyboardSelection() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const state = ref.instance.sessionState;
+        state.setPendingQuestion({ question: 'Pick one', options: ['alpha', 'beta', 'gamma'], severity: 'medium', updatedAt: Date.now() });
+        await state.handleFocusKey('down');
+        expect(state.pendingQuestionSelectedIndex).toEqual(1);
+        await state.handleFocusKey('1');
+        expect(state.input).toEqual('alpha');
+        await state.handleFocusKey('down');
+        await state.handleFocusKey('return');
+        expect(state.input).toEqual('beta');
+        await state.handleEscapeKey();
+        expect(state.pendingQuestion).toEqual(null);
+        expect(state.inputFocused).toEqual(true);
+    }
+
     @Test('working detail includes the active plan step when no tool is running')
     async workingDetailIncludesActivePlanStep() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
