@@ -2353,6 +2353,16 @@ export class AgentConsoleSessionState {
         return true;
     }
 
+    retrySelectedPlanTodo(): boolean {
+        const item = this.selectedPlanTodo;
+        if (!item || item.status !== 'failed') return false;
+        this.planTodos = this.planTodos.map(todo => todo.id === item.id
+            ? { ...todo, status: 'pending', error: undefined, blockedBy: undefined, elapsedMs: undefined }
+            : todo);
+        this.planMessage = this.buildPlanMessage();
+        return true;
+    }
+
     setTasksFocused(focused: boolean): void {
         this.tasksFocused = focused;
         if (focused && !this.selectedReviewTaskId && this.filteredReviewTaskChoices.length) {
@@ -5046,6 +5056,8 @@ export class AgentConsoleSessionState {
                     case 'e':
                         this.planTodoExpanded = !this.planTodoExpanded;
                         return true;
+                    case 'r':
+                        return this.retrySelectedPlanTodo();
                 }
             }
             switch (normalized) {
