@@ -428,7 +428,7 @@
 - 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
 
-## 深入差距分析：五个领域（2026-08-26 核验）
+## 深入差距分析：五个领域（2026-08-26 核验，已由 P203–P212 覆盖，保留历史）
 
 > 下列“当前状态”以仓库代码为准；早期盘点中标为“完全没有”的项目，若已由 P67–P202 补齐，统一归入已完成能力，不再重复立项。
 
@@ -452,66 +452,73 @@
 - 当前：SessionStore 项目字段、项目索引/元数据、按 workspace/thread 聚合、项目级 todo/goal 汇总及 `/cd` `/pwd` 已实现。
 - 主要差距：InMemory 与持久化实现的项目语义仍需契约化测试；CLI 缺少完整的 project 列表/切换/归档命令；UI 尚无稳定的项目→session→delegation 树；workspace 自动项目检测、重命名和跨目录迁移策略不统一。
 
-## 改进计划 v11：计划任务 Todo 深化与五域补齐（P203–P212）
+## 已实现能力归并：计划、执行与五域（P203–P212）
 
-> 参考 Codex 的“计划是对话流一等事件、每步原地更新”和 opencode 的“可恢复任务/依赖执行”模式。每个 P 批次完成后必须执行：检查完成项与 diff → 受影响包全量测试 → `tsc --noEmit`/构建验证 → 更新本文件 → 独立提交。
+- **Todo 分解与执行控制面**：schema v2（层级、依赖、验收、owner、估时、更新时间）、旧 payload 迁移、状态机/环检测/单执行校验、质量门、DAG schedule preview、失败依赖传播、plan 生命周期事件与序列去重均已完成。
+- **计划展示与恢复**：对话内联计划、Tasks 面板层级/过滤/详情、当前步骤与时间线、失败/阻塞定位、键盘导航、会话切换恢复和跨端共享渲染路径均已完成。
+- **上下文与审查闭环**：自适应 light/medium/deep 压缩、按消息/工具/文件恢复、压缩指标；逐行/逐 hunk review comment、批量结论和 review gate 回写均已完成。
+- **并行与任务**：`parallel_spawn`、`fan_out`、`map_reduce`、`race`、`wait_all`、`wait_any`、预算/超时/冲突聚合；跨 session BackgroundTask feed、`/ps` 过滤与 Tasks 面板共用数据源均已完成。
+- **项目组织**：InMemory/TypeORM 项目索引、workspace/thread 聚合、`project list|sessions|switch|archive` CLI、`/projects`/`/threads` UI 与 git-root 自动归组均已完成。
 
-### 批次 I · Todo 数据契约与分解质量
-- **P203 · Todo schema v2 与迁移** `platform: agent/src + agent-tools` — **已完成（2026-08-27）**
-  - 增加 `parentId`、`kind`、`acceptance`、`dependsOn`、`estimate`、`owner`、`updatedAt`；保留旧 payload 兼容并提供 schema version/migration。
-  - `TodoStore` 增加依赖环检测（DFS coloring）、重复 id 冲突报告、状态转移校验（单一 in_progress、依赖未完成不可启动）。
-  - 验收：旧会话可读写；非法迁移有明确错误；agent 354 + agent-ui 729 passing (0 failed)，含 20 项 v2 新测试（旧会话兼容、v2 字段持久化/合并、kind 归一化、空 dependsOn/空 parentId 过滤、validateTodos 清洁/重复 id/缺失依赖/缺失父项/依赖环/多 in_progress/未完成依赖 in_progress、store.validate()、TodoTool validation 返回、多项错误收集）。
-- **P204 · 自动分解器与计划质量门** `platform: agent/src/prompt + agent-tools` — **已完成（2026-08-27）**
-  - `validatePlanQuality()` 质量门：单一动作检测（中英文连词）、过短/过长警告、缺失验收条件提示、重复内容检测、依赖顺序检查，返回 score + suggestions。
-  - TodoTool 新增 `action: 'validate'|'decompose'` 参数：preview 模式仅验证不持久化，返回 quality + validation。
-  - 正常 replace/merge 调用自动包含 quality 门反馈。
-  - 验收：agent-tools 368 + agent-ui 729 passing (0 failed)，含 14 项质量门新测试（空列表、优质项、过短、多动作、缺失验收、已完成免验收、重复内容、依赖顺序、过长、优质计划高分、validate action、decompose action、replace 带 quality）。
+## 深入差距分析：当前五域（2026-08-27 复核）
 
-### 批次 II · Todo 执行与对话展示
-- **P205 · 依赖感知调度与可恢复执行** `platform: agent/src/runtime + agent-tools` — **已完成（2026-08-27）**
-  - `resolveSchedule(todos)` 将 `dependsOn` 转为可执行 DAG；状态：ready/running/blocked/failed/skipped/completed。
-  - 失败后 BFS 传播跳过所有 transitive dependents，已成功产物保留（cancelled 视为 completed）。
-  - TodoTool 新增 `action: 'schedule'`：preview 模式仅计算调度不持久化。
-  - 验收：agent-tools 383 passing (0 failed)，含 18 项 DAG 调度新测试（空列表、单就绪、已完成、cancelled、in_progress、failed、依赖阻塞、依赖解除、并行分支、菱形依赖、失败跳过 transitive、部分失败保留兄弟、cancel 幂等、schedule action、链式依赖）。
-- **P206 · 计划事件流统一** `platform: agent/src + agent-ui/src` — **已完成（2026-08-27）**
-  - `AgentEvents.ts` 新增 5 个计划生命周期事件类：`AgentPlanCreatedEvent`、`AgentPlanStepStartedEvent`、`AgentPlanStepBlockedEvent`、`AgentPlanStepCompletedEvent`、`AgentPlanCompletedEvent`，均携带 `sequence: number` 字段。
-  - `AgentConsoleSessionState` 新增 `planEventSequence` 字段，`setPlanTodos()` 增加可选 `sequence` 参数实现递增去重：`sequence <= planEventSequence` 时跳过写入。
-  - `AgentConsoleRemoteEventBridge.applyRemoteEvent()` 新增 `plan_created/plan_step_started/plan_step_blocked/plan_step_completed/plan_completed` 五种 case 处理，复用 `projectRemotePlanTimeline()` 生成时间线条目（`label: 'plan'`）。
-  - `AgentConsoleActivity.kind` 联合类型扩展加入 `'plan'`。
-  - 验收：agent-ui 740 passing（含 11 项计划事件新测试：plan_created 设置 todos、高序列号更新、低序列号去重、相同序列号去重、step_started/blocked/completed 推送 activity、failed 投影 timeline、plan_completed 汇总、timeline 条目标签、重连重放按序列号顺序）；agent-tools 383 passing；tsc --noEmit 无错误。
-- **P207 · 计划卡片信息架构升级** `platform: agent-ui/src（跨平台）` ✅
-  - 计划卡片显示层级、依赖阻塞原因、验收条件、当前 owner、耗时与失败入口；长计划支持按层级折叠、过滤 active/blocked/failed。
-  - 保持 TUI/browser 共用渲染函数，不引入定时刷新；键盘支持 up/down 选择、f 循环过滤、j/k 跳转 blocked/failed、Enter/e 展开详情。
-  - `AgentConsolePlanTodoItem` 扩展 `failed` 状态、`blockedBy?`、`error?`、`elapsedMs?`；新增 `planTodoFilter`、`selectedPlanTodoIndex`、`filteredPlanTodos`、`selectedPlanTodo`、`movePlanTodoSelection()`、`jumpToNextBlockedPlanTodo()`、`jumpToNextFailedPlanTodo()`、`formatElapsed()`。
-  - `AgentConsoleTasksPanelComponent` 新增 `planListLabel`（层级/owner/elapsed/blocked 渲染）、`tasksSummaryLabel`（blocked/failed 计数 + filter/selection）、`tasksHintLabel`（plan 专用 hint）、`selectedTaskDetailLabel`（plan 详情）。
-  - 键盘路由在 `tasksFocused` switch block 中优先拦截 `hasActivePlanTodos()`，plan 存在时 up/down/home/end/pageup/pagedown/f/j/k/enter/e 走 plan 逻辑，否则 fallback 到 coding task 逻辑。
-  - 折叠摘要零计数静默（`0 failed`/`0 blocked` 不显示）；全完成时 plan 面板自动隐藏。
-  - 验收：agent-ui 740 passing（含计划卡片渲染、折叠、过滤、键盘导航用例）；agent-tools 383 passing；tsc --noEmit 无错误。
+> 参照 Codex 的 `update_plan`（计划作为持久 thread item、状态原地更新）与 opencode 的 task/workflow（任务可恢复、资源受控、结果可聚合）。下列为已落地能力之外的真实缺口。
 
-### 批次 III · 上下文与审查闭环
-- **P208 · 渐进压缩与选择性恢复** `platform: agent/src/context` ✅ `agent 765 · agent-tools 383 · agent-ui 740`
-  - 实现 light/medium/deep 三档，依据剩余预算、turn 类型、工具密度自适应选择；保留段落索引与证据引用。
-  - 新增 `context.restore` 按消息/工具/文件选择性恢复，并在 UI 显示压缩前后 token、保留率和可恢复入口。
-  - 验收：压缩质量/成本基准、恢复正确性、旧 replay 兼容；agent 全量测试、构建、todo 更新、提交。
-- **P209 · Review comment/结论回写** `platform: agent-ui/src + agent RPC` ✅ `agent 771 · agent-tools 383 · agent-ui 759`
-  - 支持逐行/逐 hunk comment、批量 approve/reject、review gate；将结论结构化写回 session，供 agent 下一 turn 消费。
-  - 验收：并排/统一视图、分页大 diff、断线恢复、权限隔离均有测试；全量验证后提交。
+**代码证据（2026-08-27）**：`AgentContextManager` 已存在 `CompactionLevel` 和 `restoreByMessageIds/Tool/File`；agent-tools provider 已注册 `fan_out/map_reduce/race/wait_all/wait_any`；Review 与计划 lifecycle event 已存在。反之，TodoStore 查询不到 `revision/expectedRevision`；`DefaultAgentRuntime` 的 EvidenceLedger 只记录 turn evidence，未关联 `stepId`；`resolveSchedule()` 未调用编排工具；`BackgroundTaskManager` 使用进程内 `Map`；UI 计划消息固定 ID 为 `__plan_todo_inline__`。v12 仅针对这些缺口立项。
 
-### 批次 IV · 编排、后台与项目视图
-- **P210 · 编排原语与聚合器** `platform: agent-tools + agent/src/runtime` ✅ `agent 771 · agent-tools 400 · agent-ui 759`
-  - 提供 `map_reduce`、`fan_out`、`race`、`wait_all`、`wait_any`，统一并发/成本/超时预算；聚合器输出带来源、置信度和冲突列表。
-  - 验收：成功、超时、部分失败、取消、预算耗尽、结果冲突均可重放测试；构建与提交。
-- **P211 · 统一后台任务总览** `platform: agent-ui/src + agent RPC` ✅（2026-08-27）
-  - `BackgroundTaskManager` 新增跨 session `listAll()`、事件订阅 `subscribe()` 与 `cancelMany()`；start/finish/fail/cancel 均推送快照，保持数据驱动更新。
-  - `AgentConsoleSessionState` 持有统一 feed，支持状态过滤与文本搜索；Tasks 面板展示跨 session 任务摘要；`/ps` 默认保持当前 session 兼容，并支持 `/ps all|running|completed|failed|cancelled` 查看全局/状态过滤。
-  - 旧 manager mock 无新 API 时自动回退 `list(sessionId)`；`agent-ui` `tsc --noEmit` 通过，既有测试兼容。
-  - 建立跨 session task feed（状态、进度、耗时、重试、资源）；统一搜索/过滤/排序/批量取消/重试；命令 `/ps` 与面板共用数据源。
-  - 验收：事件流断线重连、权限隔离、历史聚合、TUI/browser 交互测试；全量验证、todo 更新、提交。
-- **P212 · 项目/线程树与自动检测** `platform: agent/src + agent-cli + agent-ui/src` ✅（2026-08-27）
-  - CLI 新增 `project switch <projectKey>`（支持 `--json`）与 `project archive <projectKey> [--restore]`，复用 SessionStore 项目索引和归档契约。
-  - Runtime 在 workspace 存在且可访问时自动向上探测 `.git` 根目录，使 InMemory/TypeORM 项目归组一致；虚拟/不存在 workspace 保留原值，避免误归组。项目/线程 UI 树沿用既有 `/projects`、`/threads` 聚合实现。
-  - 统一 project contract（InMemory/TypeORM/RPC）；新增 CLI `/project list|switch|archive`；UI 展示 project→session→thread→delegation 树；按 git root/配置文件自动检测并允许覆盖。
-  - 验收：跨 workspace、归档、迁移、fork、项目级 plan 汇总场景；相关包全量测试、构建、todo 更新、提交。
+| 领域 | 当前能力 | 剩余不足 | 优先级 |
+|---|---|---|---|
+| 智能上下文压缩 | 自适应三级压缩、索引化恢复、质量指标已具备。 | 预算策略仍主要基于 token/密度阈值；用户无法在 UI 比较不同压缩层级、预览恢复成本或将恢复内容限定注入下一 turn。 | 中 |
+| 多 Agent 编排 | 五种并发原语、DAG preview、预算/聚合已具备。 | 计划 DAG 尚未直接驱动 worker 调度；任务依赖、并发配额、局部失败策略与实时进度仍分散在调用方。 | 高 |
+| Diff Review | hunk/line comment、批量结论、gate、回写和快照已具备。 | 大 diff 缺少按文件/hunk 的虚拟化和增量载入；agent 消费 review 结论缺少“必须先处理 rejected findings”的 turn 前门禁。 | 中 |
+| 后台任务仪表板 | 跨 session feed、事件订阅、`/ps`、Tasks 面板已具备。 | feed 仍为进程内快照，重启/远端 host 的历史、进度百分比、资源使用、批量操作确认和恢复策略未形成统一持久 RPC。 | 高 |
+| 项目维度线程组织 | 索引、CLI、UI 选择器和 git-root 归组已具备。 | 项目→session→thread→delegation 仍是分开的视图；显式重命名/迁移/覆盖 git-root 与跨存储契约测试不足。 | 中 |
+
+## 改进计划 v12：Todo 分解、执行和展示闭环（P225–P232）
+
+> 核心目标：把 Todo 从“模型建议的清单”升级为“可审计、可恢复、以证据推进的执行控制面”。每一项收尾**必须**执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件（含测试数字与遗留环境限制）→ 独立提交。
+
+### 批次 I · 计划分解质量与持久化
+- **P225 · Plan revision / optimistic concurrency contract** `platform: agent-tools + agent RPC + agent-ui/src`
+  - 为 TodoStore 引入 `planId`、`revision`、事件 cursor；replace/merge/retry 必须携带预期 revision，冲突返回结构化 rebase payload，禁止旧 UI 或重连 replay 覆盖新计划。
+  - 将当前失败步骤的 retry 从 composer 草稿升级为显式、可确认的 `todo` mutation；保留“发送 retry prompt”作为无权限 host 的降级路径。
+  - 验收：双客户端竞争、乱序事件、fork/restore、retry/cancel 幂等和旧 schema 迁移。
+- **P226 · Evidence-aware plan compiler** `platform: agent/src/prompt + agent-tools`
+  - 在现有质量门之上建立分解编译器：每项必须映射到 acceptance、依赖、预期证据类型（test/diff/diagnostic/review）和风险；将模糊/多动作项拆为提案，要求模型确认或工具自动规范化。
+  - 提示词要求复杂 coding task 先 `decompose`，再按 accepted plan 执行；单轮问答豁免，避免过度规划。
+  - 验收：中英文复杂请求、重复/循环依赖、无验证步骤、低风险单项、token 预算和 prompt snapshot。
+
+### 批次 II · Todo 驱动执行
+- **P227 · Plan execution reconciler** `platform: agent/src/runtime + agent-tools`
+  - 建立 tool receipt / LSP / verify / review evidence 到 plan step 的确定性关联；只有满足 acceptance 的证据才能自动 completed，失败证据转 failed/blocked 并记录 cause/next action。
+  - 生成可消费的 step summary，下一 turn 注入未解决步骤和最近失败原因，而非完整 Todo 文本。
+  - 验收：测试通过/失败、无关工具、并行工具、review rejected、人工 override、重放一致性。
+- **P228 · Plan DAG → orchestration bridge** `platform: agent-tools + agent/src/runtime`
+  - 将 `resolveSchedule()` 的 ready 集映射到 `fan_out`/`wait_all`，按 owner、toolset、cost/concurrency budget 调度 worker；支持串行屏障、可选步骤、部分失败和取消传播。
+  - 聚合 worker 结果时回写每个 step 的 evidence 和 lineage，避免调用方自行拼接字符串。
+  - 验收：链/菱形 DAG、超时、预算耗尽、worker 重试、取消、部分成功与 deterministic replay。
+
+### 批次 III · 计划展示与用户控制
+- **P229 · Plan-first transcript renderer** `platform: agent-ui/src（跨平台）`
+  - 用稳定 `planId/revision/stepId` 渲染一个 plan thread item，步骤事件原地归并；同一执行不再同时分散在 plan 卡、timeline 和工具摘要。
+  - 设计三层披露：紧凑进度（当前/异常）、步骤树（依赖/owner/evidence）、inspector（receipt/diff/test/review）；TUI 与 browser 共用 renderer，不加 timer。
+  - 验收：80/120 列、mobile、CJK/超长路径、100+ step、重连/版本冲突、无鼠标键盘可达。
+- **P230 · Plan interaction action model** `platform: agent-ui/src + agent RPC`
+  - 完成/retry/block/unblock/reorder/assign/approve 统一走受权限保护的 action port，带确认、optimistic UI、错误回滚和 audit link；composer retry 只作为显式 fallback。
+  - 统一 focus stack/overlay 的 plan inspector 操作，避免面板各自抢键。
+  - 验收：权限拒绝、离线重试、action 幂等、Esc 回退、screen-reader/Tab 和 TUI 快捷键矩阵。
+
+### 批次 IV · 后台和项目控制面
+- **P231 · Durable task/project control-plane RPC** `platform: agent + agent-gateway + agent-ui/src`
+  - 持久化 background task 历史和状态事件，暴露 cursor 分页/订阅/取消批量 action；补 progress、elapsed、retry、usage 与失败 cause，跨重启/远端 host 一致。
+  - 将 project→session→thread→delegation 作为单一查询投影，支持命名、迁移、归档和显式 workspace override。
+  - 验收：重启、权限隔离、SSE 断线补拉、跨 workspace、fork、迁移及索引一致性。
+
+### 批次 V · 验收与度量
+- **P232 · Plan quality and UX evaluation harness** `platform: agent-tools tests + agent-ui acceptance`
+  - 增加 plan 分解/执行基准集，指标包括可验证步骤率、依赖正确率、无证据完成率、失败恢复成功率、计划版本冲突率和 token 开销。
+  - 扩展 PTY/browser 验收：计划创建→并行执行→失败→确认 retry→恢复→review gate→完成；记录首屏当前步骤可见率、失败定位按键数和 event-to-UI 延迟阈值。
+  - 验收：基线结果入库，CI 输出回归报告，components/components-console/agent/agent-tools/agent-ui 受影响包回归通过。
 
 ## UI 互动专项审计：当前欠缺与优化计划
 
