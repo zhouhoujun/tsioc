@@ -500,6 +500,12 @@
   - 在现有质量门之上建立分解编译器：每项必须映射到 acceptance、依赖、预期证据类型（test/diff/diagnostic/review）和风险；将模糊/多动作项拆为提案，要求模型确认或工具自动规范化。
   - 提示词要求复杂 coding task 先 `decompose`，再按 accepted plan 执行；单轮问答豁免，避免过度规划。
   - 验收：中英文复杂请求、重复/循环依赖、无验证步骤、低风险单项、token 预算和 prompt snapshot。
+  - **已完成（2026-08-27，plan-compiler + decompose action + 可配置分割）**：
+    - 新增 `agent-tools/planning/plan-compiler.ts`：`compilePlan` 为每项推导 acceptance/evidence（test/diff/diagnostic/review）/risk 并拆模糊/多动作项为 `proposed:true` 提案；`autoNormalizeStep`/`inferEvidenceType`/`inferRiskLevel`/`defaultAcceptanceFor`；支持 `acceptAll` 批量确认。`planning/index.ts` 已导出。
+    - `TodoTool` 新增 `decompose` action（不持久化，返回 `PlanCompileResult`：steps/proposals/accepted/rejected），保留 `validate`/`schedule`。
+    - **不写死硬编码分割正则**（对齐 opencode/codex：续跑由 todo status 驱动，不靠解析固定连词）：`MULTI_ACTION_PATTERNS` 改为数据驱动——导出 `DEFAULT_CONJUNCTIONS` + `buildMultiActionPattern(conjunctions?)` 构建器，`splitAtomicFragments(content, conjunctions?)` 可注入自定义集合，`compilePlan(..., { conjunctions })` / TodoTool `conjunctions` 入参可覆盖默认；`\b` 边界仅对纯词字符 token 启用（CJK 与标点按字面量匹配）。
+    - 提示词（`IdentitySection`/`ToolsSection`）恢复复杂/多部分请求先 `todo action:"decompose"` 的指引。
+    - 测试：agent-tools 新增 `plan-compiler.spec.ts`（compile 单/多动作、acceptAll、拒空、evidence/risk/acceptance、自定义连词注入）+ `todo-store-v2.spec.ts` decompose 断言 → `420 passing`；agent `771 passing`；两包 `tsc --noEmit` EXIT=0。
 
 ### 批次 II · Todo 驱动执行
 - **P227 · Plan execution reconciler** `platform: agent/src/runtime + agent-tools`

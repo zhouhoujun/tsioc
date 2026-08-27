@@ -399,7 +399,7 @@ export class PlanQualityGateTest {
         expect(persisted.length).toBe(0);
     }
 
-    @Test('TodoTool action decompose returns quality without persisting')
+    @Test('TodoTool action decompose returns compiled plan without persisting')
     async todoToolActionDecompose() {
         const store = new TodoStore();
         const tool = new TodoTool(store);
@@ -409,8 +409,8 @@ export class PlanQualityGateTest {
                 { id: '1', content: 'Write auth module and then add tests', status: 'pending' }
             ]
         }, createSessionContext({ sessionId: 'qg2' }));
-        expect(result.quality).toBeDefined();
-        expect(result.quality.valid).toBe(false);
+        expect(result.steps).toBeDefined();
+        expect(result.proposals.length).toBeGreaterThan(0);
         const persisted = await store.read('qg2');
         expect(persisted.length).toBe(0);
     }

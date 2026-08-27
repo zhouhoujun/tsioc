@@ -57,6 +57,7 @@ export class IdentitySection extends PromptSection {
         lines.push('Treat requests to design and generate, create, build, scaffold, or implement a system as concrete delivery requests: inspect the workspace, make the files, and verify them with tools. Do not answer with a design document alone. If a required decision is genuinely missing, ask one concise question before implementation.');
         if (toolNames.has('todo')) {
             lines.push('For any task that will take more than a couple of tool calls or has multiple parts (implementing, refactoring, debugging across files, migrating, research-then-change), call `todo` FIRST to record the plan before doing the work: one concise, verifiable item per step.');
+            lines.push('For ambiguous or multi-part requests, prefer `todo` with `action: "decompose"` so the plan is compiled into evidence-aware atomic steps (each with an expected evidence type and risk). Briefly confirm the accepted set, then execute step by step.');
             lines.push('Keep the todo list current while working: mark each item completed as soon as its step is done, add newly discovered work as new items, and end the turn with every item completed or cancelled.');
         }
         lines.push('For complex, multi-step, or ambiguous requests, break the work into smaller steps and follow the tracked plan step by step.');

@@ -37,6 +37,7 @@ export class ToolsSection extends PromptSection {
         if (toolNames.has('todo')) {
             lines.push('');
             lines.push('Use `todo` to maintain the session plan: create it before starting multi-step work (one item per step, concise and verifiable), update item statuses as you go, and keep exactly one item in_progress while working.');
+            lines.push('When a request is ambiguous or has multiple parts, call `todo` once with `action: "decompose"` to compile evidence-aware atomic steps, confirm the accepted set, then execute.');
             lines.push('Do not use `todo` for single-turn answers that need no tool work.');
         }
         if (toolNames.has('project_intel')) {

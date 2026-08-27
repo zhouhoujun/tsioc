@@ -1,6 +1,7 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
 import { TodoStore, validateTodos, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from './todo-store';
+import { compilePlan, PlanCompileResult } from './plan-compiler';
 
 @Injectable()
 export class TodoTool implements AgentTool {
@@ -31,7 +32,16 @@ export class TodoTool implements AgentTool {
             action: {
                 type: 'string',
                 enum: ['validate', 'decompose', 'schedule'],
-                description: 'validate: check quality without persisting. decompose: validate plan quality and return suggestions without persisting. schedule: resolve DAG and return execution schedule without persisting.'
+                description: 'validate: check quality without persisting. decompose: compile the plan into evidence-aware atomic steps and return split proposals for confirmation (without persisting). schedule: resolve DAG and return execution schedule without persisting.'
+            },
+            acceptAll: {
+                type: 'boolean',
+                description: 'When action is decompose, auto-accept every split proposal (compact them into the accepted set) instead of returning them for per-step confirmation.'
+            },
+            conjunctions: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'When action is decompose, override the conjunction tokens used to detect multi-action steps (defaults to the built-in set).'
             },
             expectedRevision: { type: 'number', minimum: 0 }
         }
@@ -52,8 +62,12 @@ export class TodoTool implements AgentTool {
             throw new Error('Invalid todo input: todos must be an array.');
         }
 
-        if (input.action === 'validate' || input.action === 'decompose') {
+        if (input.action === 'validate') {
             return this.validateOnly(input.todos);
+        }
+
+        if (input.action === 'decompose') {
+            return this.decomposeOnly(input.todos, Boolean(input.acceptAll), input.conjunctions);
         }
 
         if (input.action === 'schedule') {
@@ -121,5 +135,20 @@ export class TodoTool implements AgentTool {
             owner: t?.owner
         }));
         return resolveSchedule(normalized);
+    }
+
+    private decomposeOnly(todos: any[], acceptAll: boolean, conjunctions?: string[]): PlanCompileResult {
+        const normalized = todos.map((t: any) => ({
+            id: String(t?.id ?? ''),
+            content: String(t?.content ?? ''),
+            status: String(t?.status ?? 'pending') as any,
+            parentId: t?.parentId,
+            kind: t?.kind,
+            acceptance: t?.acceptance,
+            dependsOn: t?.dependsOn,
+            estimate: t?.estimate,
+            owner: t?.owner
+        }));
+        return compilePlan(normalized, { acceptAll, conjunctions });
     }
 }
