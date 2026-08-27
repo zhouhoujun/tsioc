@@ -512,6 +512,10 @@
   - 建立 tool receipt / LSP / verify / review evidence 到 plan step 的确定性关联；只有满足 acceptance 的证据才能自动 completed，失败证据转 failed/blocked 并记录 cause/next action。
   - 生成可消费的 step summary，下一 turn 注入未解决步骤和最近失败原因，而非完整 Todo 文本。
   - 验收：测试通过/失败、无关工具、并行工具、review rejected、人工 override、重放一致性。
+  - **已完成（2026-08-27，evidence→step 确定性 reconciler + step summary）**：
+    - `agent/src/harness/EvidenceLedger.ts`：`ToolEvidenceEntry` 新增可选 `stepId` 字段（确定性 evidence→step 关联），`record` 透传；`ToolEvidenceInput` 自动携带。
+    - 新增 `agent-tools/planning/step-reconciler.ts`（纯函数、可测、重放一致）：`reconcileStepStatus` 按 `stepId`（缺失回退到 `inProgressStepId`）确定性归因证据；仅 acceptance 满足且无 falsified 的证据自动 `completed`；falsified/失败/verify 非零证据转 `failed` 或 `blocked`（gated）并记录 `cause`/`nextAction`；无关/并行工具按 stepId 各不污染；review rejected 回退已完成步骤；`manualOverrides` 人工 override 永不被覆盖；`buildStepSummary`/`renderStepSummary` 生成紧凑未解决步骤+失败原因摘要（非完整 todo 文本）。`planning/index.ts` 已导出。
+    - 测试：agent-tools 新增 `step-reconciler.spec.ts` 12 项（acceptance 通过、无关工具不动、in-progress 回退、并行工具按步归因、falsified→failed+cause/next、verify 失败→failed、gated→blocked、review rejected 回退、人工 override、重放一致性、紧凑摘要渲染）→ `431 passing`（420→431）；agent `771 passing`；两包 `tsc --noEmit` EXIT=0。
 - **P228 · Plan DAG → orchestration bridge** `platform: agent-tools + agent/src/runtime`
   - 将 `resolveSchedule()` 的 ready 集映射到 `fan_out`/`wait_all`，按 owner、toolset、cost/concurrency budget 调度 worker；支持串行屏障、可选步骤、部分失败和取消传播。
   - 聚合 worker 结果时回写每个 step 的 evidence 和 lineage，避免调用方自行拼接字符串。

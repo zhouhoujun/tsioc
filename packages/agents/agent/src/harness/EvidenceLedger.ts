@@ -19,6 +19,15 @@ export interface ToolEvidenceEntry {
     exitCode?: number;
     durationMs?: number;
     error?: string;
+    /**
+     * P227: deterministic association to a plan step. When the executing turn
+     * attributes this tool invocation to a specific plan step (e.g. the model
+     * tags its tool call with `stepId`, or the tool input carries a `stepId`),
+     * the value is carried through so the plan execution reconciler can map
+     * evidence to a step without guesswork. Absent value falls back to the
+     * session's in-progress step.
+     */
+    stepId?: string;
     /** LSP diagnostics reported for the file(s) touched by a write tool. */
     lspDiagnostics?: Array<{
         path?: string;
@@ -89,6 +98,7 @@ export class EvidenceLedger {
             exitCode: entry.exitCode,
             durationMs: entry.durationMs,
             error: entry.error,
+            stepId: entry.stepId,
             lspDiagnostics: entry.lspDiagnostics,
             falsified: entry.falsified,
             falsificationReason: entry.falsificationReason,
