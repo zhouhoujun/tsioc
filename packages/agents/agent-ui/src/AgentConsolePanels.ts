@@ -1948,7 +1948,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
         <label v-style="listStyle" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</label>
-        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">↑↓ choose · 1-9 select · Enter confirm · Esc dismiss</label>
+        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">{{pendingQuestionSelectionHint}}</label>
     </div>
     `
 })
@@ -1993,6 +1993,13 @@ export class AgentConsolePendingQuestionPanelComponent {
 
     get pendingQuestionOptionItems(): Array<{ label: string; value: string }> {
         return (this.state.pendingQuestion?.options || []).map((option, index) => ({ label: `${index + 1}. ${option}`, value: option }));
+    }
+
+    get pendingQuestionSelectionHint(): string {
+        const count = this.pendingQuestionOptionItems.length;
+        if (!count) return '';
+        const selected = Math.min(this.state.pendingQuestionSelectedIndex + 1, count);
+        return `selected ${selected}/${count} · ↑↓ choose · 1-9 select · Enter confirm · Esc dismiss`;
     }
 
     onPendingQuestionOptionClick(option: string): void {
