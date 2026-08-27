@@ -516,10 +516,12 @@
     - `agent/src/harness/EvidenceLedger.ts`：`ToolEvidenceEntry` 新增可选 `stepId` 字段（确定性 evidence→step 关联），`record` 透传；`ToolEvidenceInput` 自动携带。
     - 新增 `agent-tools/planning/step-reconciler.ts`（纯函数、可测、重放一致）：`reconcileStepStatus` 按 `stepId`（缺失回退到 `inProgressStepId`）确定性归因证据；仅 acceptance 满足且无 falsified 的证据自动 `completed`；falsified/失败/verify 非零证据转 `failed` 或 `blocked`（gated）并记录 `cause`/`nextAction`；无关/并行工具按 stepId 各不污染；review rejected 回退已完成步骤；`manualOverrides` 人工 override 永不被覆盖；`buildStepSummary`/`renderStepSummary` 生成紧凑未解决步骤+失败原因摘要（非完整 todo 文本）。`planning/index.ts` 已导出。
     - 测试：agent-tools 新增 `step-reconciler.spec.ts` 12 项（acceptance 通过、无关工具不动、in-progress 回退、并行工具按步归因、falsified→failed+cause/next、verify 失败→failed、gated→blocked、review rejected 回退、人工 override、重放一致性、紧凑摘要渲染）→ `431 passing`（420→431）；agent `771 passing`；两包 `tsc --noEmit` EXIT=0。
-- **P228 · Plan DAG → orchestration bridge** `platform: agent-tools + agent/src/runtime`
+- **P228 · Plan DAG → orchestration bridge** `platform: agent-tools + agent/src/runtime` ✅ **已完成（2026-08-27）**
   - 将 `resolveSchedule()` 的 ready 集映射到 `fan_out`/`wait_all`，按 owner、toolset、cost/concurrency budget 调度 worker；支持串行屏障、可选步骤、部分失败和取消传播。
   - 聚合 worker 结果时回写每个 step 的 evidence 和 lineage，避免调用方自行拼接字符串。
   - 验收：链/菱形 DAG、超时、预算耗尽、worker 重试、取消、部分成功与 deterministic replay。
+  - **实现**：新增 `agent-tools/planning/dag-orchestrator.ts`（纯函数、可测、重放一致）：`buildDagExecutionRounds` 把 DAG 映射为确定性执行波（首个 ready 集→逐波推进；`failed` step 取消其传递依赖但保留独立波=部分失败；含 barrier 的波以单步串行波运行=wait_all；concurrency 预算把并行波切为子波；可选步骤失败降级 skipped 非致命；cancelled 用 visited 去重收集）；`roundToWorkerTasks` 把波映射为隔离 worker spec（goal/toolsets/profile/reasoning/maxTurns，携带稳定 stepId）；`pickPrimitiveForRound` 选 wait_all（串行屏障）/map_reduce（聚合波）/fan_out（普通并行）；`aggregateStepResults` 按 step 回写 evidenceId（`step#<id>#<depth>#1`）+ lineage（DAG 父链）、缺失结果计失败、timed_out 单独成文、产出紧凑部分失败 summary。`planning/index.ts` 已导出。
+  - **测试**：agent-tools 新增 `dag-orchestrator.spec.ts` 13 项（链/菱形 DAG、串行屏障→wait_all、concurrency 子波、失败+传递取消、已完成步骤解锁依赖、worker spec 映射、evidence+lineage 回写、非可选失败、可选跳过、超时、缺失结果、map_reduce 聚合波、deterministic replay）→ `445 passing`（431→445）；`tsc --noEmit` EXIT=0。注：首轮 4 项失败为测试断言与实现口径不一致（波按字母序排序保证确定性、worker profile 需显式传 options、lineage 依赖 completed 前置、可选测试轮需只含可选步），已修正并全绿。
 
 ### 批次 III · 计划展示与用户控制
 - **P229 · Plan-first transcript renderer** `platform: agent-ui/src（跨平台）`
