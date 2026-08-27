@@ -7,6 +7,16 @@ export * from './env-loader';
 export * from './nested-agent-runner';
 export * from './lightweight-agent-runner';
 export * from './background-task-manager';
+export {
+    BackgroundTaskHistoryStore,
+    BackgroundTaskHistoryListener,
+    BackgroundTaskPage,
+    BackgroundTaskPageOptions,
+    BackgroundTaskCursor,
+    encodeBackgroundTaskCursor,
+    decodeBackgroundTaskCursor,
+    cloneBackgroundTaskRecord
+} from './background-task-store';
 export * from './delegation/crypto';
 export * from './sandbox-policy';
 export * from './location-adapter';

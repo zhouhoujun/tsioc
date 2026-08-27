@@ -5,8 +5,14 @@ import {
     AgentBackgroundTaskFailedEvent,
     AgentBackgroundTaskStartedEvent
 } from '@tsdi/agent';
+import {
+    BACKGROUND_TASK_HISTORY_STORE,
+    BackgroundTaskHistoryStore,
+    BackgroundTaskRecord
+} from './background-task-store';
 
-export type BackgroundTaskStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type { BackgroundTaskRecord, BackgroundTaskStatus } from './background-task-store';
+export { BACKGROUND_TASK_HISTORY_STORE, InMemoryBackgroundTaskHistoryStore } from './background-task-store';
 
 export interface BackgroundTaskReport {
     summary?: string;
@@ -49,17 +55,6 @@ export interface BackgroundTaskRunner {
     run(request: BackgroundTaskRunRequest): Promise<BackgroundTaskRunResult>;
 }
 
-export interface BackgroundTaskRecord {
-    id: string;
-    sessionId: string;
-    status: BackgroundTaskStatus;
-    goal: string;
-    startedAt: number;
-    finishedAt?: number;
-    result?: BackgroundTaskRunResult;
-    error?: string;
-}
-
 /**
  * DI token for the nested-agent runner used by background tasks. Registered
  * with `useExisting: NestedAgentRunner` by the tools provider; a separate
@@ -89,7 +84,8 @@ export class BackgroundTaskManager {
     constructor(
         private uuid: UuidGenerator,
         @Optional() @Inject(BACKGROUND_TASK_RUNNER) private runner?: BackgroundTaskRunner | null,
-        @Optional() private app?: ApplicationContext | null
+        @Optional() private app?: ApplicationContext | null,
+        @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private historyStore?: BackgroundTaskHistoryStore | null
     ) {
     }
 
@@ -103,10 +99,14 @@ export class BackgroundTaskManager {
             sessionId: ownerSessionId,
             status: 'running',
             goal: truncateGoal(request.prompt),
-            startedAt: Date.now()
+            startedAt: Date.now(),
+            updatedAt: Date.now(),
+            retryCount: 0,
+            progress: 0
         };
         this.tasks.set(id, record);
         this.notify(record);
+        this.persist(record);
         this.publish(new AgentBackgroundTaskStartedEvent(this, ownerSessionId, id, record.goal));
         void this.runner.run(request).then(
             result => this.finish(id, result),
@@ -151,7 +151,9 @@ export class BackgroundTaskManager {
         }
         record.status = 'cancelled';
         record.finishedAt = Date.now();
+        record.updatedAt = Date.now();
         this.notify(record);
+        this.persist(record);
         return true;
     }
 
@@ -176,8 +178,14 @@ export class BackgroundTaskManager {
         }
         record.status = 'completed';
         record.finishedAt = Date.now();
+        record.updatedAt = Date.now();
         record.result = result;
+        record.progress = 1;
+        if (result.usage) {
+            record.usage = { ...result.usage };
+        }
         this.notify(record);
+        this.persist(record);
         this.publish(new AgentBackgroundTaskCompletedEvent(this, record.sessionId, taskId, result.report?.summary ?? this.truncate(result.content)));
     }
 
@@ -188,9 +196,23 @@ export class BackgroundTaskManager {
         }
         record.status = 'failed';
         record.finishedAt = Date.now();
+        record.updatedAt = Date.now();
         record.error = error.message;
+        record.cause = { kind: 'error', detail: error.message };
         this.notify(record);
+        this.persist(record);
         this.publish(new AgentBackgroundTaskFailedEvent(this, record.sessionId, taskId, error));
+    }
+
+    /** Write the record snapshot through to the durable history store (fire-and-forget). */
+    private persist(record: BackgroundTaskRecord): void {
+        if (!this.historyStore) {
+            return;
+        }
+        const snapshot = this.clone(record);
+        void this.historyStore.put(snapshot).catch(() => {
+            return;
+        });
     }
 
     private notify(record: BackgroundTaskRecord): void {
@@ -227,7 +249,9 @@ export class BackgroundTaskManager {
     private clone(record: BackgroundTaskRecord): BackgroundTaskRecord {
         return {
             ...record,
-            ...(record.result ? { result: { ...record.result } } : {})
+            ...(record.result ? { result: { ...record.result } } : {}),
+            ...(record.usage ? { usage: { ...record.usage } } : {}),
+            ...(record.cause ? { cause: { ...record.cause } } : {})
         };
     }
 }

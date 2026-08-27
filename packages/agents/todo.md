@@ -555,6 +555,12 @@
   - 持久化 background task 历史和状态事件，暴露 cursor 分页/订阅/取消批量 action；补 progress、elapsed、retry、usage 与失败 cause，跨重启/远端 host 一致。
   - 将 project→session→thread→delegation 作为单一查询投影，支持命名、迁移、归档和显式 workspace override。
   - 验收：重启、权限隔离、SSE 断线补拉、跨 workspace、fork、迁移及索引一致性。
+  - **已完成（2026-08-27，part A：durable 任务历史核心；part B 投影 RPC 顺延到后续增量）**：
+    - 新增 `agent-tools/src/background-task-store.ts`：`BackgroundTaskRecord` 扩充 `progress?`（0..1）、`retryCount?`、`usage?`、`cause?`（`{kind, detail}`）、`updatedAt?`；`BackgroundTaskHistoryStore` 抽象契约（`put/get/pageAll/pageBySession/batchCancel/subscribe`）+ `InMemoryBackgroundTaskHistoryStore` 默认实现，cursor 分页为 `startedAt desc + id asc` 稳定排序（`encode/decodeBackgroundTaskCursor`，limit 默认 50 上限 500，未知 cursor 回退从头取），`put` 按 id 幂等覆盖并广播订阅快照，`batchCancel` 仅取消 `running` 并返回实际取消的 id 列表。
+    - `BackgroundTaskManager` 增加可选第 4 参注入 `@Inject(BACKGROUND_TASK_HISTORY_STORE)`；`start/finish/fail/cancel` 写穿到 store（fire-and-forget，吞错不阻塞运行链路），并补 `updatedAt/retryCount/progress`（start 置 0，finish 置 1）+ 完成时 `usage`、失败时 `cause`。`fetch`/完成后持久化 `clone` 深拷贝 `usage/cause`。
+    - `provider.ts` 注册 `{ provide: BACKGROUND_TASK_HISTORY_STORE, useClass: InMemoryBackgroundTaskHistoryStore }`；`index.ts` 显式再导出 store 非重叠符号（`BackgroundTaskHistoryStore`/`Page`/`PageOptions`/`Cursor`/`Listener`/`encode`/`decode`/`clone`），`BackgroundTaskRecord/Status/BACKGROUND_TASK_HISTORY_STORE/InMemoryBackgroundTaskHistoryStore` 经 manager 再导出以避开 `export *` 重名歧义。
+    - **顺延（part B，下个增量）**：project→session→thread→delegation 单一查询投影 + naming/migration/archive/workspace override 未在本增量实现；`BatchCancel` 网关 RPC 与 TypeOrm durable 后端未加（本增量落地 store 契约 + InMemory + manager 写穿，供后续 TypeOrm/SSE/网关复用）。
+    - 测试：agent-tools 新增 `test/background-task-store.spec.ts` 9 项（put/get 富记录往返、put 幂等覆盖、cursor 分页无跳/重（同时间戳 6 记录两页）、pageBySession 过滤、batchCancel 仅 running、subscribe/退订生命周期、cursor 编解码、manager 写穿富记录、manager 失败 cause）→ `454 passing`（445→454）；`tsc --noEmit` EXIT=0、下游 agent-ui `tsc --noEmit` EXIT=0。
 
 ### 批次 V · 验收与度量
 - **P232 · Plan quality and UX evaluation harness** `platform: agent-tools tests + agent-ui acceptance`
