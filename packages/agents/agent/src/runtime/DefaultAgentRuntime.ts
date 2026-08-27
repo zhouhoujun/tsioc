@@ -8,6 +8,7 @@ import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
+import { findProjectRoot } from '../project/agents-doc';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
@@ -500,7 +501,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected resolveWorkspace(): string | undefined {
         const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
         const workspace = String(consoleOptions?.workspace || this.appArgs?.cwd || '').trim();
-        return workspace || undefined;
+        if (!workspace) {
+            return undefined;
+        }
+        const adapter = this.fileAdapter as (FileAdapter & { existsSync?: (path: string) => boolean }) | null | undefined;
+        if (adapter && typeof adapter.existsSync === 'function' && adapter.existsSync(workspace)) {
+            const root = findProjectRoot(workspace, {
+                stopAtHome: false,
+                exists: path => adapter.existsSync!(path)
+            });
+            if (root) {
+                return root;
+            }
+        }
+        return workspace;
     }
 
     async putMemory(sessionId: string, key: string, value: string, scope: 'session' | 'global' = 'session'): Promise<AgentMemoryRecord> {
