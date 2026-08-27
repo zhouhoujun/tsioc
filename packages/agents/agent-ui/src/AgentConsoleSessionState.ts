@@ -884,6 +884,7 @@ export class AgentConsoleSessionState {
             && !this.approvalsFocused
             && !this.reviewOpen
             && !this.messagesFocused
+            && !this.pendingQuestion
             && !this.timelineEventInspectorOpen
             && !this.hasMessageDetailFocus()
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
@@ -926,7 +927,8 @@ export class AgentConsoleSessionState {
     }
 
     isAnyFocusActive(): boolean {
-        return this.hasBlockingSelectMenu()
+        return !!this.pendingQuestion
+            || this.hasBlockingSelectMenu()
             || this.hasSessionFocus()
             || this.hasTaskFocus()
             || this.hasScheduledJobFocus()
@@ -962,6 +964,7 @@ export class AgentConsoleSessionState {
             && !this.hasSessionFocus()
             && !this.hasMessageFocus()
             && !this.hasMessageDetailFocus()
+            && !this.pendingQuestion
             && !this.inputLocked
             && !this.modalPromptActive
             && !hasActiveTextPrompt;
@@ -2333,6 +2336,7 @@ export class AgentConsoleSessionState {
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
         this.pendingQuestion = question;
         this.pendingQuestionSelectedIndex = 0;
+        this.syncDerivedInputFocus();
     }
 
     movePendingQuestionSelection(delta: number): void {
