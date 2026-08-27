@@ -1707,6 +1707,9 @@ export class AgentConsoleTuiRendererTest {
         expect(panel.pendingQuestionTitle).toEqual('[high] ? Which database should we use?');
         expect(panel.pendingQuestionContext).toEqual('affects schema migrations');
         expect(panel.pendingQuestionOptionItems.map(item => item.label)).toEqual(['1. postgres', '2. sqlite']);
+        expect(panel.pendingQuestionSelectionHint).toContain('selected 1/2');
+        await ref.instance.sessionState.handleFocusKey('down');
+        expect(panel.pendingQuestionSelectionHint).toContain('selected 2/2');
 
         panel.onPendingQuestionOptionClick('sqlite');
         expect(ref.instance.sessionState.input).toEqual('sqlite');
