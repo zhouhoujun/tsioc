@@ -32,7 +32,8 @@ export class TodoTool implements AgentTool {
                 type: 'string',
                 enum: ['validate', 'decompose', 'schedule'],
                 description: 'validate: check quality without persisting. decompose: validate plan quality and return suggestions without persisting. schedule: resolve DAG and return execution schedule without persisting.'
-            }
+            },
+            expectedRevision: { type: 'number', minimum: 0 }
         }
     };
     toolset = 'planning';
@@ -59,7 +60,14 @@ export class TodoTool implements AgentTool {
             return this.scheduleOnly(input.todos);
         }
 
-        if (input.merge) {
+        if (input.expectedRevision !== undefined) {
+            const result = input.merge
+                ? await this.store.mergeAtRevision(sessionId, input.todos, Number(input.expectedRevision))
+                : await this.store.replaceAtRevision(sessionId, input.todos, Number(input.expectedRevision));
+            if (result && !Array.isArray(result) && (result as any).conflict) {
+                return result;
+            }
+        } else if (input.merge) {
             await this.store.merge(sessionId, input.todos);
         } else {
             await this.store.replace(sessionId, input.todos);
@@ -68,11 +76,18 @@ export class TodoTool implements AgentTool {
     }
 
     private async buildResult(sessionId: string): Promise<any> {
-        const todos = await this.store.read(sessionId);
+        const plan = await this.store.readPlan(sessionId);
         const summary = await this.store.summarize(sessionId);
-        const validation = validateTodos(todos);
-        const quality = validatePlanQuality(todos);
-        return { todos, summary, validation, quality };
+        const validation = validateTodos(plan.todos);
+        const quality = validatePlanQuality(plan.todos);
+        return {
+            planId: plan.planId,
+            revision: plan.revision,
+            todos: plan.todos,
+            summary,
+            validation,
+            quality
+        };
     }
 
     private validateOnly(todos: any[]): { quality: PlanQualityResult; validation: ReturnType<typeof validateTodos> } {

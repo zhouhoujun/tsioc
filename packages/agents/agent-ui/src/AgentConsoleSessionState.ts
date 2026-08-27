@@ -513,6 +513,8 @@ export class AgentConsoleSessionState {
     planTodoFilter: 'all' | 'active' | 'blocked' | 'failed' = 'all';
     selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
+    planId = '';
+    planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
@@ -2085,7 +2087,7 @@ export class AgentConsoleSessionState {
         );
     }
 
-    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread', sequence?: number): void {
+    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread', sequence?: number, revision?: number, planId?: string): void {
         if (sequence !== undefined && sequence <= this.planEventSequence) {
             return;
         }
@@ -2098,6 +2100,12 @@ export class AgentConsoleSessionState {
         }
         this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
         this.planScope = scope || '';
+        if (revision !== undefined && revision >= 0) {
+            this.planRevision = revision;
+        }
+        if (planId) {
+            this.planId = String(planId);
+        }
         this.planMessage = this.buildPlanMessage();
     }
 

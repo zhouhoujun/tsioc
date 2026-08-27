@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
+import { InMemoryMemoryStore } from '@tsdi/agent';
 
 function createSessionContext(opts: { sessionId?: string } = {}): any {
     return { sessionId: opts.sessionId || 'test-session' };
@@ -426,6 +427,99 @@ export class PlanQualityGateTest {
         expect(result.quality).toBeDefined();
         expect(result.quality.valid).toBe(true);
         expect(result.todos.length).toBe(1);
+    }
+
+    @Test('plan snapshots advance revisions and reject stale replace/merge writes')
+    async planRevisionRejectsStaleWrites() {
+        const store = new TodoStore();
+        const first = await store.readPlan('rev1');
+        expect(first.revision).toBe(0);
+        await store.replace('rev1', [item('a')]);
+        const current = await store.readPlan('rev1');
+        expect(current.revision).toBe(1);
+        const stale = await store.replaceAtRevision('rev1', [item('b')], 0);
+        expect((stale as any).conflict).toBe(true);
+        const merged = await store.mergeAtRevision('rev1', [item('b')], current.revision);
+        expect(Array.isArray(merged)).toBe(true);
+        const tool = new TodoTool(store);
+        const conflict = await tool.invoke({ todos: [item('c')], expectedRevision: 1 }, createSessionContext({ sessionId: 'rev1' }));
+        expect(conflict.conflict).toBe(true);
+    }
+
+    @Test('todo tool result exposes planId and revision for revision-aware consumers')
+    async todoToolExposesPlanRevision() {
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
+        await tool.invoke({ todos: [item('r1')] }, createSessionContext({ sessionId: 'rev2' }));
+        const result = await tool.invoke({}, createSessionContext({ sessionId: 'rev2' }));
+        expect(result.planId).toBe('plan:rev2');
+        expect(result.revision).toBe(1);
+        expect(result.todos.length).toBe(1);
+    }
+
+    @Test('expectedRevision write advances revision after success')
+    async expectedRevisionWriteAdvances() {
+        const store = new TodoStore();
+        await store.replace('rev3', [item('a')]);
+        let current = await store.readPlan('rev3');
+        expect(current.revision).toBe(1);
+        const ok = await store.replaceAtRevision('rev3', [item('a'), item('b')], 1);
+        expect(Array.isArray(ok)).toBe(true);
+        current = await store.readPlan('rev3');
+        expect(current.revision).toBe(2);
+    }
+
+    @Test('revision wrap without conflict guard still advances (non-revision callers)')
+    async nonRevisionCallersStillAdvance() {
+        const store = new TodoStore();
+        await store.replace('rev4', [item('a')]);
+        await store.replace('rev4', [item('b')]);
+        const current = await store.readPlan('rev4');
+        expect(current.revision).toBe(2);
+        const ok = await store.replaceAtRevision('rev4', [item('c')], undefined);
+        expect(Array.isArray(ok)).toBe(true);
+    }
+}
+
+@Suite('todo store revision migration v3 (P225)')
+export class TodoStoreRevisionMigrationTest {
+
+    @Test('legacy array payload migrates to version 3 on next persist and reads with revision')
+    async legacyArrayPayloadMigrates() {
+        const memory = new InMemoryMemoryStore();
+        const legacy = [
+            { id: 'a', content: 'legacy a', status: 'completed' },
+            { id: 'b', content: 'legacy b', status: 'pending' }
+        ];
+        await memory.put({
+            id: 'agent-todo:mig1',
+            sessionId: 'mig1',
+            key: 'agent.todo.plan',
+            value: JSON.stringify(legacy),
+            scope: 'session',
+            namespace: 'agent',
+            category: 'conversation',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        });
+        const store = new TodoStore(memory as any);
+        const plan = await store.readPlan('mig1');
+        expect(plan.todos.length).toBe(2);
+        expect(plan.planId).toBe('plan:mig1');
+        expect(plan.revision).toBe(1);
+    }
+
+    @Test('revision survives re-read from persisted store after writes')
+    async revisionSurvivesPersist() {
+        const memory = new InMemoryMemoryStore();
+        const store = new TodoStore(memory as any);
+        await store.replace('mig2', [item('a')]);
+        let plan = await store.readPlan('mig2');
+        expect(plan.revision).toBe(1);
+        await store.merge('mig2', [item('b')]);
+        plan = await store.readPlan('mig2');
+        expect(plan.revision).toBe(2);
+        expect(plan.todos.length).toBe(2);
     }
 }
 

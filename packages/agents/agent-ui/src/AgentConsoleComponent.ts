@@ -2057,7 +2057,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get retrySelectedPlanTodoActionHandler(): (todo: AgentConsolePlanTodoItem) => Promise<void> {
         return async (todo: AgentConsolePlanTodoItem) => {
-            const instruction = `Retry plan step: ${todo.content}`;
+            const rev = this.state.planRevision > 0 ? ` at revision ${this.state.planRevision}` : '';
+            const instruction = `Retry plan step${rev}: ${todo.content}`;
             this.state.setInput(instruction, instruction.length);
             this.state.setInputFocused(true);
             this.notify('Plan step reopened. Press Enter to continue it.');

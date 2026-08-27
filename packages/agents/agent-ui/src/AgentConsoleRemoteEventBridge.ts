@@ -135,7 +135,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
         case 'tool_completed':
             state.clearRunningTool(String(data.toolName || ''));
             if (data.toolName === 'todo' && data.output?.todos) {
-                state.setPlanTodos(normalizePlanTodos(data.output.todos));
+                state.setPlanTodos(normalizePlanTodos(data.output.todos), undefined, undefined, undefined, Number(data.output.revision), String(data.output.planId || ''));
             }
             if (data.toolName === 'ask_user' && data.output?.kind === 'ask_user') {
                 state.setPendingQuestion(normalizePendingQuestion(data.output));
@@ -210,7 +210,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             const steps = Array.isArray(data.steps) ? data.steps : [];
             const normalized = normalizePlanTodos(steps);
             const seq = Number(data.sequence) || 0;
-            state.setPlanTodos(normalized, undefined, undefined, seq);
+            state.setPlanTodos(normalized, undefined, undefined, seq, Number(data.revision) || undefined, String(data.planId || ''));
             state.pushActivity('plan', `Plan created: ${normalized.length} step${normalized.length === 1 ? '' : 's'}`);
             projectRemotePlanTimeline(state, data, 'plan_created', 'success', `Plan created (${normalized.length} steps)`);
             break;

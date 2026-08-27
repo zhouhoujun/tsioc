@@ -111,6 +111,30 @@ export class RemoteEventBridgeMappingTest {
         expect(state.planTodos).toEqual([{ id: 't1', content: 'Step one', status: 'in_progress' }]);
     }
 
+    @Test('tool_completed with todo output tracks planId and revision')
+    toolCompletedTodoTracksRevision() {
+        const state = makeState();
+        applyRemoteEvent(state, { type: 'tool_completed', sessionId: 's1', data: {
+            sessionId: 's1',
+            toolName: 'todo',
+            output: { planId: 'plan:s1', revision: 3, todos: [{ id: 't1', content: 'Step one', status: 'in_progress' }] }
+        } });
+        expect(state.planRevision).toEqual(3);
+        expect(state.planId).toEqual('plan:s1');
+        expect(state.planTodos.length).toEqual(1);
+    }
+
+    @Test('plan_created tracks planId and revision when present')
+    planCreatedTracksRevision() {
+        const state = makeState();
+        applyRemoteEvent(state, { type: 'plan_created', sessionId: 's1', data: {
+            sessionId: 's1', sequence: 1, planId: 'plan:s1', revision: 2,
+            steps: [{ id: 's1', content: 'Step one', status: 'pending' }]
+        } });
+        expect(state.planRevision).toEqual(2);
+        expect(state.planId).toEqual('plan:s1');
+    }
+
     @Test('remote tool lifecycle projects one timeline event with execution identity')
     remoteToolLifecycleProjectsStableTimelineEvent() {
         const state = makeState();

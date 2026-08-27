@@ -35,6 +35,18 @@ export interface TodoSummary {
     cancelled: number;
 }
 
+export interface TodoPlanSnapshot {
+    planId: string;
+    revision: number;
+    todos: TodoItem[];
+}
+
+export interface TodoPlanConflict {
+    conflict: true;
+    expectedRevision: number;
+    current: TodoPlanSnapshot;
+}
+
 export interface TodoValidationResult {
     valid: boolean;
     errors: string[];
@@ -450,6 +462,7 @@ export class TodoStore {
     protected static readonly TODO_MEMORY_ID_PREFIX = 'agent-todo';
     protected static readonly TODO_MEMORY_KEY = 'agent.todo.plan';
     private sessions = new Map<string, TodoItem[]>();
+    private revisions = new Map<string, { planId: string; revision: number }>();
 
     constructor(@Optional() @Inject(MemoryStore) private memoryStore?: MemoryStore | null) {
     }
@@ -469,10 +482,38 @@ export class TodoStore {
         }
         try {
             const parsed = JSON.parse(String(record.value || '[]'));
-            return Array.isArray(parsed) ? parsed.map(item => normalizeItem(item)) : [];
+            const todos = Array.isArray(parsed) ? parsed : parsed?.todos;
+            if (parsed && !Array.isArray(parsed) && typeof parsed === 'object') {
+                this.revisions.set(sessionId, { planId: String(parsed.planId || this.resolvePlanId(sessionId)), revision: Number(parsed.revision) || 1 });
+            }
+            return Array.isArray(todos) ? todos.map(item => normalizeItem(item)) : [];
         } catch {
             return [];
         }
+    }
+
+    async readPlan(sessionId: string): Promise<TodoPlanSnapshot> {
+        const todos = await this.read(sessionId);
+        const meta = this.revisions.get(sessionId) || { planId: this.resolvePlanId(sessionId), revision: todos.length ? 1 : 0 };
+        this.revisions.set(sessionId, meta);
+        return { planId: meta.planId, revision: meta.revision, todos };
+    }
+
+    async replaceAtRevision(sessionId: string, todos: any[], expectedRevision?: number): Promise<TodoItem[] | TodoPlanConflict> {
+        const current = await this.readPlan(sessionId);
+        if (expectedRevision !== undefined && expectedRevision !== current.revision) {
+            return { conflict: true, expectedRevision, current };
+        }
+        const result = await this.replace(sessionId, todos);
+        return result;
+    }
+
+    async mergeAtRevision(sessionId: string, todos: any[], expectedRevision?: number): Promise<TodoItem[] | TodoPlanConflict> {
+        const current = await this.readPlan(sessionId);
+        if (expectedRevision !== undefined && expectedRevision !== current.revision) {
+            return { conflict: true, expectedRevision, current };
+        }
+        return this.merge(sessionId, todos);
     }
 
     async replace(sessionId: string, todos: any[]): Promise<TodoItem[]> {
@@ -542,6 +583,9 @@ export class TodoStore {
     }
 
     protected async persist(sessionId: string, todos: TodoItem[]): Promise<void> {
+        const current = this.revisions.get(sessionId) || { planId: this.resolvePlanId(sessionId), revision: 0 };
+        const nextMeta = { planId: current.planId, revision: current.revision + 1 };
+        this.revisions.set(sessionId, nextMeta);
         if (!this.memoryStore) {
             this.sessions.set(sessionId, todos.map(item => ({ ...item })));
             return;
@@ -556,7 +600,7 @@ export class TodoStore {
             id: recordId,
             sessionId,
             key: TodoStore.TODO_MEMORY_KEY,
-            value: JSON.stringify(todos),
+            value: JSON.stringify({ version: 3, ...nextMeta, todos }),
             scope: 'session',
             namespace: 'agent',
             category: 'conversation',
@@ -568,5 +612,9 @@ export class TodoStore {
 
     protected resolveRecordId(sessionId: string): string {
         return `${TodoStore.TODO_MEMORY_ID_PREFIX}:${String(sessionId || '').trim()}`;
+    }
+
+    protected resolvePlanId(sessionId: string): string {
+        return `plan:${String(sessionId || '').trim()}`;
     }
 }

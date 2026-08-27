@@ -160,7 +160,8 @@ export class AgentConsoleEventBridge {
             if (event.sessionId !== this.state.sessionId) return;
                 this.state.clearRunningTool(event.toolName);
                 if (event.toolName === 'todo') {
-                    this.state.setPlanTodos(this.normalizePlanTodos(event.output));
+                    const output = event.output && typeof event.output === 'object' ? event.output as any : {};
+                    this.state.setPlanTodos(this.normalizePlanTodos(output.todos ?? output), undefined, undefined, undefined, Number(output.revision), String(output.planId || ''));
                 }
                 if (event.toolName === 'ask_user') {
                     this.state.setPendingQuestion(this.normalizePendingQuestion(event.output));

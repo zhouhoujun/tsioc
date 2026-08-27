@@ -428,6 +428,13 @@
 - 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
 
+### P225 收尾复核（2026-08-27，Plan revision / 乐观并发）
+
+- agent-tools：`TodoStore` 引入 `planId`/`revision` 追踪 + `readPlan`/`replaceAtRevision`/`mergeAtRevision` + `TodoPlanConflict` rebase payload + `version:3` 持久化与旧 payload 迁移；`TodoTool` 增 `expectedRevision` 入参并在结果暴露 `planId`/`revision`。新增 5 项测试（revision 推进、stale replace/merge 拒绝、tool 输出暴露 revision、expectedRevision 成功推进、非 revision 调用不回退冲突、旧数组 payload 迁移、persisted revision 存活）→ `406 passing`，`tsc --noEmit` EXIT=0。
+- agent-ui：local/remote 事件桥从 `todo` tool 输出与 `plan_created` 事件提取 `planId`/`revision` 写入 `sessionState.planId`/`planRevision`；`setPlanTodos` 增可选 `revision`/`planId`；失败步骤 retry 生成携带当前 revision 的结构化指令。新增 2 项测试 → `763 passing`，`tsc --noEmit` EXIT=0，`build:web` EXIT=0（3.5MB）。
+- agent：`771 passing`（未改动，回归基线）。
+- 静态边界复核：`agent-ui/src` 无 `@tsdi/components/console` 或 `node:` 直接 import（仅 `console-ports.ts` 规则注释与 `Record<string, any>` 类型）。
+
 ## 深入差距分析：五个领域（2026-08-26 核验，已由 P203–P212 覆盖，保留历史）
 
 > 下列“当前状态”以仓库代码为准；早期盘点中标为“完全没有”的项目，若已由 P67–P202 补齐，统一归入已完成能力，不再重复立项。
@@ -481,8 +488,14 @@
 ### 批次 I · 计划分解质量与持久化
 - **P225 · Plan revision / optimistic concurrency contract** `platform: agent-tools + agent RPC + agent-ui/src`
   - 为 TodoStore 引入 `planId`、`revision`、事件 cursor；replace/merge/retry 必须携带预期 revision，冲突返回结构化 rebase payload，禁止旧 UI 或重连 replay 覆盖新计划。
-  - 将当前失败步骤的 retry 从 composer 草稿升级为显式、可确认的 `todo` mutation；保留“发送 retry prompt”作为无权限 host 的降级路径。
+  - 将当前失败步骤的 retry 从 composer 草稿升级为显式、可确认的 `todo` mutation；保留"发送 retry prompt"作为无权限 host 的降级路径。
   - 验收：双客户端竞争、乱序事件、fork/restore、retry/cancel 幂等和旧 schema 迁移。
+  - **已完成（2026-08-27，Store + tool 契约 + UI revision 感知）**：
+    - `TodoStore` 引入 `planId`/`revision` 追踪：`readPlan()` 返回 `{planId, revision, todos}`；`replaceAtRevision`/`mergeAtRevision` 携带 `expectedRevision`，不匹配返回 `TodoPlanConflict`（`conflict/expectedRevision/current` rebase payload）；持久化升级为 `version:3 {version, planId, revision, todos}`，旧数组/`v2` payload 读取时自动迁移（`revision` 解析为 1）。
+    - `TodoTool` 增加可选 `expectedRevision` 入参；`buildResult` 结果新增 `planId`/`revision` 字段供 revision-aware 消费者识别当前版本。
+    - `agent-ui` 两端事件桥（local `AgentConsoleEventBridge` + remote `AgentConsoleRemoteEventBridge`）从 `todo` tool 输出/`plan_created` 事件提取 `planId`/`revision` 写入 `sessionState.planId`/`planRevision`；`setPlanTodos` 支持 `revision`/`planId` 可选参数。
+    - 失败步骤 retry 生成结构化指令时携带当前 `revision`（`Retry plan step at revision N: ...`），为后续 model 调 `todo` 传 `expectedRevision` 提供确认链；composer 发送作为无权限 host 的降级路径保留。
+    - 测试：agent-tools 新增 5 项（revision 推进、stale write 拒绝、tool 输出暴露 revision、expectedRevision 成功推进、非 revision 调用不回退冲突、旧数组 payload 迁移、跨 persisted store revision 存活）→ `406 passing`；agent-ui 新增 2 项（todo output 追踪 revision、plan_created 追踪 revision）→ `763 passing`。agent `771 passing`。agent-tools/agent-ui `tsc --noEmit` EXIT=0，`build:web` EXIT=0（3.5MB）。
 - **P226 · Evidence-aware plan compiler** `platform: agent/src/prompt + agent-tools`
   - 在现有质量门之上建立分解编译器：每项必须映射到 acceptance、依赖、预期证据类型（test/diff/diagnostic/review）和风险；将模糊/多动作项拆为提案，要求模型确认或工具自动规范化。
   - 提示词要求复杂 coding task 先 `decompose`，再按 accepted plan 执行；单轮问答豁免，避免过度规划。
