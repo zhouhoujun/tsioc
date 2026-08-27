@@ -2055,6 +2055,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    get retrySelectedPlanTodoActionHandler(): (todo: AgentConsolePlanTodoItem) => Promise<void> {
+        return async (todo: AgentConsolePlanTodoItem) => {
+            const instruction = `Retry plan step: ${todo.content}`;
+            this.state.setInput(instruction, instruction.length);
+            this.state.setInputFocused(true);
+            this.notify('Plan step reopened. Press Enter to continue it.');
+        };
+    }
+
     get rollbackSelectedTaskActionHandler(): (taskId: string) => Promise<void> {
         return async (taskId: string) => {
             if (!taskId) {
@@ -2170,6 +2179,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
         this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
         this.state.retrySelectedTaskAction = this.retrySelectedTaskActionHandler;
+        this.state.retrySelectedPlanTodoAction = this.retrySelectedPlanTodoActionHandler;
         this.state.rollbackSelectedTaskAction = this.rollbackSelectedTaskActionHandler;
         this.state.toggleSelectedScheduledTaskAction = this.toggleSelectedScheduledTaskActionHandler;
         this.state.cancelSelectedScheduledTaskAction = this.cancelSelectedScheduledTaskActionHandler;
@@ -2230,6 +2240,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.openSelectedTaskAction = undefined;
         this.state.cancelSelectedTaskAction = undefined;
         this.state.retrySelectedTaskAction = undefined;
+        this.state.retrySelectedPlanTodoAction = undefined;
         this.state.rollbackSelectedTaskAction = undefined;
         this.state.toggleSelectedScheduledTaskAction = undefined;
         this.state.cancelSelectedScheduledTaskAction = undefined;

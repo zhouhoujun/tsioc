@@ -602,6 +602,7 @@ export class AgentConsoleSessionState {
     openSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     retrySelectedTaskAction?: (taskId: string) => void | Promise<void>;
+    retrySelectedPlanTodoAction?: (todo: AgentConsolePlanTodoItem) => void | Promise<void>;
     rollbackSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     toggleSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
@@ -2353,13 +2354,14 @@ export class AgentConsoleSessionState {
         return true;
     }
 
-    retrySelectedPlanTodo(): boolean {
+    async retrySelectedPlanTodo(): Promise<boolean> {
         const item = this.selectedPlanTodo;
         if (!item || item.status !== 'failed') return false;
         this.planTodos = this.planTodos.map(todo => todo.id === item.id
             ? { ...todo, status: 'pending', error: undefined, blockedBy: undefined, elapsedMs: undefined }
             : todo);
         this.planMessage = this.buildPlanMessage();
+        await this.retrySelectedPlanTodoAction?.(item);
         return true;
     }
 

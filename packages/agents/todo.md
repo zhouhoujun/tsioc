@@ -672,7 +672,7 @@ Turn: Fix session restore                                      running  01:42
 
 - `pending-question-panel` 已支持 TUI/browser 共用的键盘选择：↑/↓ 循环选项、1–9 直选、Enter 确认填入 composer、Esc 取消并恢复输入焦点；保留既有点击路径。
 - `/ps` 优先读取 SessionState 的统一后台任务 feed，与 Tasks 面板共享同一数据源；旧宿主仍回退 manager 查询。
-- 计划面板失败步骤支持 `r` 快捷键重置为 pending，清理错误/阻塞/耗时信息后可继续执行。
+- 计划面板失败步骤支持 `r` 快捷键重置为 pending，清理错误/阻塞/耗时信息并生成可确认的 `Retry plan step` 草稿；用户按 Enter 后走既有 agent/tool 事件链持久化。
 
 ## 代码质量审计（2026-08-17）
 
