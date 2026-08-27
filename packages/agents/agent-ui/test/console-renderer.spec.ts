@@ -1580,6 +1580,22 @@ export class AgentConsoleTuiRendererTest {
         expect(planMessage!.content).toContain('plan 1/3 ');
     }
 
+    @Test('failed plan step can be reset with retry shortcut')
+    async failedPlanStepRetriesFromTasksFocus() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const state = ref.instance.sessionState;
+        state.setPlanTodos([
+            { id: 'p1', content: 'Broken step', status: 'failed', error: 'test failed', blockedBy: ['p0'], elapsedMs: 1200 },
+            { id: 'p2', content: 'Next step', status: 'pending' }
+        ] as any);
+        state.setTasksFocused(true);
+        state.selectedPlanTodoIndex = 0;
+        expect(await state.handleFocusKey('r')).toEqual(true);
+        expect(state.planTodos[0].status).toEqual('pending');
+        expect(state.planTodos[0].error).toBeUndefined();
+        expect(state.planTodos[0].blockedBy).toBeUndefined();
+    }
+
     @Test('collapses long inline plans and expands them with Enter')
     async longInlinePlanTogglesWithEnter() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
