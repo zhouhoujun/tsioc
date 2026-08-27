@@ -5239,9 +5239,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
         const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
-        const allTasks = typeof manager.listAll === 'function'
-            ? manager.listAll()
-            : manager.list(this.state.sessionId);
+        const allTasks = this.state.backgroundTaskFeed.length
+            ? this.state.backgroundTaskFeed
+            : typeof manager.listAll === 'function'
+                ? manager.listAll()
+                : manager.list(this.state.sessionId);
         const tasks = allTasks.filter(task =>
             (filter === 'all' || filter === 'current' ? filter === 'all' || task.sessionId === this.state.sessionId : true)
             && (['running', 'completed', 'failed', 'cancelled'].includes(filter) ? task.status === filter : true)
