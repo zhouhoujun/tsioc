@@ -674,6 +674,13 @@ Turn: Fix session restore                                      running  01:42
 - `/ps` 优先读取 SessionState 的统一后台任务 feed，与 Tasks 面板共享同一数据源；旧宿主仍回退 manager 查询。
 - 计划面板失败步骤支持 `r` 快捷键重置为 pending，清理错误/阻塞/耗时信息并生成可确认的 `Retry plan step` 草稿；用户按 Enter 后走既有 agent/tool 事件链持久化。
 
+### P211/P212 与互动收尾复核（2026-08-27）
+
+- 验证通过：agent-ui 761、agent 771、agent-cli 73；agent、agent-tools、agent-cli、agent-ui 均 `tsc --noEmit` 通过，agent-ui `build:web` 通过（3.5MB bundle）。
+- agent-tools 全量测试在当前 sandbox 因 LSP/MCP 集成用例无法绑定 `127.0.0.1`（`EPERM`）退出；为既有环境限制，BackgroundTaskManager 相关用例已通过。
+- 跨平台边界复核：agent-ui `src/` 没有 `@tsdi/components/console` 或 `node:` 直接 import；扫描命中均为已有 `globalThis` 环境守卫或约束注释。
+- 修正全量回归发现的共享 fixture 状态泄漏：plan retry 测试在结束时释放 tasks focus/plan；数字键选择同步选中索引，保证后续 Enter 的目标一致。
+
 ## 代码质量审计（2026-08-17）
 
 ### 类型抑制（src 文件 `as any`）

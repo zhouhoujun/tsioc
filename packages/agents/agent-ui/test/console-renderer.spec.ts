@@ -1594,6 +1594,8 @@ export class AgentConsoleTuiRendererTest {
         expect(state.planTodos[0].status).toEqual('pending');
         expect(state.planTodos[0].error).toBeUndefined();
         expect(state.planTodos[0].blockedBy).toBeUndefined();
+        state.setTasksFocused(false);
+        state.clearPlanTodos();
     }
 
     @Test('collapses long inline plans and expands them with Enter')

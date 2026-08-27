@@ -2349,6 +2349,7 @@ export class AgentConsoleSessionState {
     choosePendingQuestion(index = this.pendingQuestionSelectedIndex): boolean {
         const option = this.pendingQuestion?.options[index];
         if (!option) return false;
+        this.pendingQuestionSelectedIndex = index;
         this.setInput(option, option.length);
         this.setInputFocused(true);
         return true;
