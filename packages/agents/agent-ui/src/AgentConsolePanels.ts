@@ -1948,7 +1948,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
         <label v-style="listStyle" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</label>
-        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">select an option to fill the input</label>
+        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">↑↓ choose · 1-9 select · Enter confirm · Esc dismiss</label>
     </div>
     `
 })

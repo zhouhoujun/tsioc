@@ -516,6 +516,7 @@ export class AgentConsoleSessionState {
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
+    pendingQuestionSelectedIndex = 0;
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
@@ -2331,6 +2332,21 @@ export class AgentConsoleSessionState {
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
         this.pendingQuestion = question;
+        this.pendingQuestionSelectedIndex = 0;
+    }
+
+    movePendingQuestionSelection(delta: number): void {
+        const count = this.pendingQuestion?.options.length || 0;
+        if (!count) return;
+        this.pendingQuestionSelectedIndex = (this.pendingQuestionSelectedIndex + delta + count) % count;
+    }
+
+    choosePendingQuestion(index = this.pendingQuestionSelectedIndex): boolean {
+        const option = this.pendingQuestion?.options[index];
+        if (!option) return false;
+        this.setInput(option, option.length);
+        this.setInputFocused(true);
+        return true;
     }
 
     setTasksFocused(focused: boolean): void {
@@ -4545,6 +4561,11 @@ export class AgentConsoleSessionState {
     }
 
     async handleEscapeKey(): Promise<boolean> {
+        if (this.pendingQuestion) {
+            this.setPendingQuestion(null);
+            this.setInputFocused(true);
+            return true;
+        }
         if (this.selectMenu) {
             const currentMenu = this.selectMenu;
             const parentMenu = currentMenu.parentMenu;
@@ -4610,6 +4631,27 @@ export class AgentConsoleSessionState {
         const normalized = String(key || '').trim().toLowerCase();
         if (!normalized) {
             return false;
+        }
+        if (this.pendingQuestion) {
+            if (this.isDismissKey(normalized)) {
+                this.setPendingQuestion(null);
+                this.setInputFocused(true);
+                return true;
+            }
+            if (normalized === 'up') {
+                this.movePendingQuestionSelection(-1);
+                return true;
+            }
+            if (normalized === 'down') {
+                this.movePendingQuestionSelection(1);
+                return true;
+            }
+            if (normalized === 'return' || normalized === 'enter') {
+                return this.choosePendingQuestion();
+            }
+            if (/^[1-9]$/.test(normalized)) {
+                return this.choosePendingQuestion(parseInt(normalized, 10) - 1);
+            }
         }
         if (this.textOverlay) {
             if (this.isDismissKey(normalized)) {
@@ -5365,7 +5407,7 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'menuBlocked' };
         }
 
-        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus()) {
+        if (this.pendingQuestion || this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
                 const consumed = await this.handleFocusKey(focusKey);

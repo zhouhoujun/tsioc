@@ -668,6 +668,10 @@ Turn: Fix session restore                                      running  01:42
 
 ---
 
+## UI 互动专项进展（2026-08-27）
+
+- `pending-question-panel` 已支持 TUI/browser 共用的键盘选择：↑/↓ 循环选项、1–9 直选、Enter 确认填入 composer、Esc 取消并恢复输入焦点；保留既有点击路径。
+
 ## 代码质量审计（2026-08-17）
 
 ### 类型抑制（src 文件 `as any`）
