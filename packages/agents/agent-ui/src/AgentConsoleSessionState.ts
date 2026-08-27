@@ -272,6 +272,17 @@ export interface AgentConsolePlanTodoItem {
     reviewSummary?: string;
 }
 
+export type AgentConsolePlanActionKind = 'complete' | 'retry' | 'block' | 'unblock' | 'assign';
+
+export interface AgentConsolePlanActionPrompt {
+    action: AgentConsolePlanActionKind;
+    stepId: string;
+    label: string;
+    confirmLabel: string;
+    denyLabel: string;
+    payload?: Record<string, unknown>;
+}
+
 export interface AgentConsoleGoalSummary {
     id: string;
     title: string;
@@ -613,6 +624,9 @@ export class AgentConsoleSessionState {
     cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     retrySelectedTaskAction?: (taskId: string) => void | Promise<void>;
     retrySelectedPlanTodoAction?: (todo: AgentConsolePlanTodoItem) => void | Promise<void>;
+    planActionPrompt: AgentConsolePlanActionPrompt | null = null;
+    planActionBus?: (action: AgentConsolePlanActionKind, stepId: string, payload?: Record<string, unknown>) => Promise<boolean>;
+    planActionApplying = false;
     rollbackSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     toggleSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
@@ -2535,6 +2549,145 @@ export class AgentConsoleSessionState {
             : todo);
         this.planMessage = this.buildPlanMessage();
         await this.retrySelectedPlanTodoAction?.(item);
+        return true;
+    }
+
+    isPlanActionApplicable(action: AgentConsolePlanActionKind, item: AgentConsolePlanTodoItem): boolean {
+        switch (action) {
+            case 'complete':
+                return item.status === 'pending' || item.status === 'in_progress';
+            case 'retry':
+                return item.status === 'failed' || item.status === 'cancelled';
+            case 'block':
+                return item.status !== 'completed' && item.status !== 'cancelled'
+                    && !(item.blockedBy && item.blockedBy.length > 0);
+            case 'unblock':
+                return !!(item.blockedBy && item.blockedBy.length > 0) || !!item.blockedReason;
+            case 'assign':
+                return item.status !== 'completed' && item.status !== 'cancelled';
+            default:
+                return false;
+        }
+    }
+
+    requestPlanAction(action: AgentConsolePlanActionKind, stepId: string, payload?: Record<string, unknown>): boolean {
+        const item = this.planTodos.find(todo => todo.id === stepId);
+        if (!item || !this.isPlanActionApplicable(action, item)) {
+            return false;
+        }
+        if (action === 'retry') {
+            const previous = this.applyPlanActionOptimistically(action, item, payload);
+            void this.dispatchPlanAction(action, stepId, payload)
+                .then(ok => { if (!ok) this.rollbackPlanAction(stepId, previous); })
+                .catch(() => this.rollbackPlanAction(stepId, previous));
+            return true;
+        }
+        this.planActionPrompt = {
+            action,
+            stepId,
+            label: this.planActionPromptLabel(action, item),
+            confirmLabel: action === 'block' ? 'Block' : action === 'unblock' ? 'Unblock' : action === 'assign' ? 'Assign' : 'Complete',
+            denyLabel: 'Cancel',
+            payload
+        };
+        return true;
+    }
+
+    protected planActionPromptLabel(action: AgentConsolePlanActionKind, item: AgentConsolePlanTodoItem): string {
+        const whom = item.content ? `'${String(item.content).slice(0, 40)}'` : `step ${item.id}`;
+        switch (action) {
+            case 'complete': return `Mark ${whom} as complete?`;
+            case 'block': return `Block ${whom}?`;
+            case 'unblock': return `Unblock ${whom}?`;
+            case 'assign': return `Assign ${whom}?`;
+            default: return `Apply action to ${whom}?`;
+        }
+    }
+
+    dismissPlanAction(): void {
+        this.planActionPrompt = null;
+    }
+
+    confirmPlanAction(): boolean {
+        const prompt = this.planActionPrompt;
+        if (!prompt) return false;
+        const item = this.planTodos.find(todo => todo.id === prompt.stepId);
+        if (!item) {
+            this.planActionPrompt = null;
+            return false;
+        }
+        const previous = this.applyPlanActionOptimistically(prompt.action, item, prompt.payload);
+        this.planActionPrompt = null;
+        void this.dispatchPlanAction(prompt.action, prompt.stepId, prompt.payload)
+            .then(ok => { if (!ok) this.rollbackPlanAction(prompt.stepId, previous); })
+            .catch(() => this.rollbackPlanAction(prompt.stepId, previous));
+        return true;
+    }
+
+    protected applyPlanActionOptimistically(
+        action: AgentConsolePlanActionKind,
+        item: AgentConsolePlanTodoItem,
+        payload?: Record<string, unknown>
+    ): AgentConsolePlanTodoItem {
+        this.planActionApplying = true;
+        const next: AgentConsolePlanTodoItem = { ...item, updatedAt: Date.now() };
+        switch (action) {
+            case 'complete':
+                next.status = 'completed';
+                break;
+            case 'retry':
+                next.status = 'pending';
+                next.error = undefined;
+                next.blockedBy = undefined;
+                next.blockedReason = undefined;
+                next.elapsedMs = undefined;
+                break;
+            case 'block': {
+                const reason = typeof payload?.reason === 'string' ? payload.reason : 'blocked by user';
+                next.status = next.status === 'failed' ? 'pending' : next.status;
+                next.blockedReason = reason;
+                next.blockedBy = [...(next.blockedBy ?? []), next.id];
+                break;
+            }
+            case 'unblock':
+                next.blockedBy = undefined;
+                next.blockedReason = undefined;
+                break;
+            case 'assign':
+                next.owner = typeof payload?.owner === 'string' ? payload.owner : next.owner;
+                break;
+            default:
+                break;
+        }
+        this.planTodos = this.planTodos.map(todo => todo.id === item.id ? next : todo);
+        this.planMessage = this.buildPlanMessage();
+        return item;
+    }
+
+    rollbackPlanAction(stepId: string, previous: AgentConsolePlanTodoItem | null): void {
+        this.planActionApplying = false;
+        if (!previous) return;
+        this.planTodos = this.planTodos.map(todo => todo.id === stepId ? previous : todo);
+        this.planMessage = this.buildPlanMessage();
+    }
+
+    protected async dispatchPlanAction(action: AgentConsolePlanActionKind, stepId: string, payload?: Record<string, unknown>): Promise<boolean> {
+        if (this.planActionBus) {
+            const ok = await this.planActionBus(action, stepId, payload);
+            if (ok) {
+                this.planActionApplying = false;
+            }
+            return ok;
+        }
+        if (action === 'retry') {
+            const item = this.planTodos.find(todo => todo.id === stepId);
+            if (item) {
+                await this.retrySelectedPlanTodoAction?.(item);
+            }
+            this.planActionApplying = false;
+            return true;
+        }
+        this.planActionApplying = false;
         return true;
     }
 

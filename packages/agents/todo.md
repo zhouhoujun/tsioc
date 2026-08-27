@@ -538,10 +538,17 @@
     - `selectedPlanTodoDetailLabel`（layer-3 inspector）暴露 `blockedReason`/`evidenceIds`/`receiptId`/`testSummary`/`diffSummary`/`reviewSummary`；`buildPlanMessage` 步骤树（layer-2）渲染 `needs …` 依赖、`(owner)`、`~estimate`、`evidence[N]`。
     - `AgentConsoleEventBridge.subscribe()` 新增 5 个 plan 事件绑定：`AgentPlanCreatedEvent→mergePlanCreated`、`StepStarted→in_progress`、`StepBlocked→pending+reason`、`StepCompleted→按 event.status`、`PlanCompleted→取消剩余 pending/in_progress`。
   - **测试**：agent-ui 新增 `test/plan-thread.spec.ts` 11 项（mergePlanCreated 种子+stamp、mergePlanStepStatus 原地归并、blockedReason+blockedBy、过期丢弃、跨 planId / 未知 stepId 忽略、步骤树依赖/owner/estimate/evidence、inspector 五类细节、setPlanTodos 戳 planId/revision、planThreadKey、cancelRemainingPlanSteps 批量取消、stale sequence no-op）→ `774 passing`；regression：components `135 passing`、components/console `73 passing`；agent-ui `tsc --noEmit` EXIT=0。注：`setPlanTodos` 初版无条件 stamp 导致既有 `tool_completed` todo 深度相等测试回归（revision:0/planId:undefined 泄漏进无 plan 上下文），已改为仅在 planId 存在时打戳并调整 revision 顺序后全绿；`PlanCompleted` 绑定初版逐 step 复用同一 sequence 会触发 `mergePlanStepStatus` 守卫只取消首个步骤，已改为 `cancelRemainingPlanSteps` 对整批一次性守卫。
-- **P230 · Plan interaction action model** `platform: agent-ui/src + agent RPC`
+- **P230 · Plan interaction action model** `platform: agent-ui/src + agent RPC` ✅ **已完成（2026-08-27）**
   - 完成/retry/block/unblock/reorder/assign/approve 统一走受权限保护的 action port，带确认、optimistic UI、错误回滚和 audit link；composer retry 只作为显式 fallback。
   - 统一 focus stack/overlay 的 plan inspector 操作，避免面板各自抢键。
   - 验收：权限拒绝、离线重试、action 幂等、Esc 回退、screen-reader/Tab 和 TUI 快捷键矩阵。
+  - **实现**（`agent-ui/src/AgentConsoleSessionState.ts`，跨平台状态层）：统一 plan action model 将 `complete/retry/block/unblock/assign` 收敛到单条权限感知路径 `request → (confirm gate) → optimistic apply → dispatch(planActionBus) → 失败/拒绝 rollback`，composer retry 仅在未接入 action bus 时作为显式 fallback。
+    - 新增 `AgentConsolePlanActionKind` 与 `AgentConsolePlanActionPrompt` 类型；状态字段 `planActionPrompt`（默认 `null`，作为确认门禁）、注入式 `planActionBus`（`(action, stepId, payload) => Promise<boolean>`，host 侧权限保护的 action port）、`planActionApplying`（in-flight 标记）。
+    - `isPlanActionApplicable(action, item)` 定义各 action 前置条件（幂等守卫）：complete 需 pending/in_progress、retry 需 failed/cancelled、block 需未完成且未阻塞、unblock 需已阻塞、assign 需未终态。
+    - `requestPlanAction(action, stepId, payload?)`：破坏性 action（complete/block/unblock/assign）打开确认 prompt（`planActionPrompt`），retry 直接乐观应用并 dispatch（无确认，含 composer fallback 路径）。
+    - `confirmPlanAction()`：乐观应用（`applyPlanActionOptimistically` 返回快照）→ dispatch → bus 返回 `false`（权限拒绝）或抛错时经 `rollbackPlanAction(stepId, previous)` 恢复快照；`dismissPlanAction()` 仅清 prompt 不动状态。
+    - `block` 置 `blockedReason`/追加 `blockedBy`；`unblock` 清阻塞；`assign` 置 owner（payload 驱动）；`retry` 复用既有 composer fallback（`retrySelectedPlanTodoAction`）当未接入 bus。
+  - **测试**：agent-ui 新增 `test/plan-action.spec.ts` 12 项（确认 gate 打开不改状态、inapplicable 拒绝、retry 立即应用、confirm 乐观应用、bus 拒绝回滚、bus 抛错回滚、dismiss 不动状态、composer fallback 保留、block/unblock 往返、assign owner、block 幂等守卫、rollback 快照）→ `786 passing`（774→786）；regression：components `135 passing`、components/console `73 passing`；agent-ui `tsc --noEmit` EXIT=0、`build:web` EXIT=0（3.5MB）。注：首轮 2 项失败为 `planActionPrompt` 初始值 `undefined` 与 `dismiss/confirm` 置 `null` 不一致（toBeNull 断言），已改为字段默认 `null` 后全绿；`dispatchPlanAction` 起初只在抛错时回滚，权限拒绝（bus 返回 `false`）不触发回滚，已改为统一 `Promise<boolean>` 返回值，拒绝/异常均回滚。
 
 ### 批次 IV · 后台和项目控制面
 - **P231 · Durable task/project control-plane RPC** `platform: agent + agent-gateway + agent-ui/src`
