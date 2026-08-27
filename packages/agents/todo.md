@@ -524,10 +524,20 @@
   - **测试**：agent-tools 新增 `dag-orchestrator.spec.ts` 13 项（链/菱形 DAG、串行屏障→wait_all、concurrency 子波、失败+传递取消、已完成步骤解锁依赖、worker spec 映射、evidence+lineage 回写、非可选失败、可选跳过、超时、缺失结果、map_reduce 聚合波、deterministic replay）→ `445 passing`（431→445）；`tsc --noEmit` EXIT=0。注：首轮 4 项失败为测试断言与实现口径不一致（波按字母序排序保证确定性、worker profile 需显式传 options、lineage 依赖 completed 前置、可选测试轮需只含可选步），已修正并全绿。
 
 ### 批次 III · 计划展示与用户控制
-- **P229 · Plan-first transcript renderer** `platform: agent-ui/src（跨平台）`
+- **P229 · Plan-first transcript renderer** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-27）**
   - 用稳定 `planId/revision/stepId` 渲染一个 plan thread item，步骤事件原地归并；同一执行不再同时分散在 plan 卡、timeline 和工具摘要。
   - 设计三层披露：紧凑进度（当前/异常）、步骤树（依赖/owner/evidence）、inspector（receipt/diff/test/review）；TUI 与 browser 共用 renderer，不加 timer。
   - 验收：80/120 列、mobile、CJK/超长路径、100+ step、重连/版本冲突、无鼠标键盘可达。
+  - **实现**（`agent-ui/src/AgentConsoleSessionState.ts` + `AgentConsoleEventBridge.ts`，跨平台状态/事件层落地）：
+    - `AgentConsolePlanTodoItem` 新增可选字段：`planId?`、`revision?`、`blockedReason?`、`evidenceIds?`、`receiptId?`、`testSummary?`、`diffSummary?`、`reviewSummary?`。
+    - `planThreadKey` getter = `${planId}#r${revision}`（无 planId 返回 `''`），作为稳定 thread 标识。
+    - `mergePlanCreated(steps, planId?, revision?, sequence?, sourceSessionId?, scope?)` 从 plan_created 步骤种子 `planTodos`，携带稳定 planId/revision，sequence 守卫，重建 planMessage。
+    - `mergePlanStepStatus(planId, stepId, status, {sequence?, owner?, reason?, error?, elapsedMs?})` 按 stepId 原地归并步骤事件，sequence 丢弃过期事件，跨 planId/未知 stepId 忽略，reason 置 `blockedReason` 并追加 `blockedBy`。
+    - `cancelRemainingPlanSteps(planId?, sequence?)` 批量取消剩余 pending/in_progress 步骤，sequence 对**整批**一次性守卫（而非逐 step），避免单个 PlanCompleted 事件 sequence 复用导致只取消首个步骤。
+    - `setPlanTodos` 仅在存在 planId 上下文中为 todo 打 `planId/revision` 戳（保持无 plan 上下文下 todo 形状不变，避免回归）。
+    - `selectedPlanTodoDetailLabel`（layer-3 inspector）暴露 `blockedReason`/`evidenceIds`/`receiptId`/`testSummary`/`diffSummary`/`reviewSummary`；`buildPlanMessage` 步骤树（layer-2）渲染 `needs …` 依赖、`(owner)`、`~estimate`、`evidence[N]`。
+    - `AgentConsoleEventBridge.subscribe()` 新增 5 个 plan 事件绑定：`AgentPlanCreatedEvent→mergePlanCreated`、`StepStarted→in_progress`、`StepBlocked→pending+reason`、`StepCompleted→按 event.status`、`PlanCompleted→取消剩余 pending/in_progress`。
+  - **测试**：agent-ui 新增 `test/plan-thread.spec.ts` 11 项（mergePlanCreated 种子+stamp、mergePlanStepStatus 原地归并、blockedReason+blockedBy、过期丢弃、跨 planId / 未知 stepId 忽略、步骤树依赖/owner/estimate/evidence、inspector 五类细节、setPlanTodos 戳 planId/revision、planThreadKey、cancelRemainingPlanSteps 批量取消、stale sequence no-op）→ `774 passing`；regression：components `135 passing`、components/console `73 passing`；agent-ui `tsc --noEmit` EXIT=0。注：`setPlanTodos` 初版无条件 stamp 导致既有 `tool_completed` todo 深度相等测试回归（revision:0/planId:undefined 泄漏进无 plan 上下文），已改为仅在 planId 存在时打戳并调整 revision 顺序后全绿；`PlanCompleted` 绑定初版逐 step 复用同一 sequence 会触发 `mergePlanStepStatus` 守卫只取消首个步骤，已改为 `cancelRemainingPlanSteps` 对整批一次性守卫。
 - **P230 · Plan interaction action model** `platform: agent-ui/src + agent RPC`
   - 完成/retry/block/unblock/reorder/assign/approve 统一走受权限保护的 action port，带确认、optimistic UI、错误回滚和 audit link；composer retry 只作为显式 fallback。
   - 统一 focus stack/overlay 的 plan inspector 操作，避免面板各自抢键。

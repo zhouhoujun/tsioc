@@ -14,6 +14,11 @@ import {
     AgentConsoleAppRpc,
     AgentErrorEvent,
     AgentModelCompletedEvent,
+    AgentPlanCompletedEvent,
+    AgentPlanCreatedEvent,
+    AgentPlanStepBlockedEvent,
+    AgentPlanStepCompletedEvent,
+    AgentPlanStepStartedEvent,
     AgentStreamChunkEvent,
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
@@ -24,7 +29,7 @@ import {
 } from '@tsdi/agent';
 import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
-import { AgentConsolePendingQuestion, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 
 @Injectable()
@@ -195,6 +200,44 @@ export class AgentConsoleEventBridge {
                     });
                 }
             await this.refreshTools();
+        });
+
+        bind(AgentPlanCreatedEvent, (event: AgentPlanCreatedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.mergePlanCreated(
+                event.steps as Array<Partial<AgentConsolePlanTodoItem> & { id: string; content: string }>,
+                event.planId,
+                undefined,
+                event.sequence
+            );
+        });
+
+        bind(AgentPlanStepStartedEvent, (event: AgentPlanStepStartedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.mergePlanStepStatus(event.planId, event.stepId, 'in_progress', {
+                sequence: event.sequence,
+                owner: event.owner
+            });
+        });
+
+        bind(AgentPlanStepBlockedEvent, (event: AgentPlanStepBlockedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.mergePlanStepStatus(event.planId, event.stepId, 'pending', {
+                sequence: event.sequence,
+                reason: event.reason
+            });
+        });
+
+        bind(AgentPlanStepCompletedEvent, (event: AgentPlanStepCompletedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.mergePlanStepStatus(event.planId, event.stepId, event.status, {
+                sequence: event.sequence
+            });
+        });
+
+        bind(AgentPlanCompletedEvent, (event: AgentPlanCompletedEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            this.state.cancelRemainingPlanSteps(event.planId, event.sequence);
         });
 
         bind(AgentToolFailedEvent, (event: AgentToolFailedEvent) => {

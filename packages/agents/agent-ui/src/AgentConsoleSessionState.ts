@@ -262,6 +262,14 @@ export interface AgentConsolePlanTodoItem {
     error?: string;
     elapsedMs?: number;
     updatedAt?: number;
+    planId?: string;
+    revision?: number;
+    blockedReason?: string;
+    evidenceIds?: string[];
+    receiptId?: string;
+    testSummary?: string;
+    diffSummary?: string;
+    reviewSummary?: string;
 }
 
 export interface AgentConsoleGoalSummary {
@@ -2094,19 +2102,163 @@ export class AgentConsoleSessionState {
         if (sequence !== undefined) {
             this.planEventSequence = sequence;
         }
-        this.planTodos = todos.slice();
-        if (this.planTodos.length <= 7) {
-            this.planTodoExpanded = false;
-        }
-        this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
-        this.planScope = scope || '';
         if (revision !== undefined && revision >= 0) {
             this.planRevision = revision;
         }
         if (planId) {
             this.planId = String(planId);
         }
+        this.planTodos = todos.map(todo => {
+            const pid = this.planId || (planId ? String(planId) : undefined);
+            if (!pid) {
+                return { ...todo };
+            }
+            return {
+                ...todo,
+                planId: pid,
+                revision: this.planRevision
+            };
+        });
+        if (this.planTodos.length <= 7) {
+            this.planTodoExpanded = false;
+        }
+        this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
+        this.planScope = scope || '';
         this.planMessage = this.buildPlanMessage();
+    }
+
+    get planThreadKey(): string {
+        return this.planId ? `${this.planId}#r${this.planRevision}` : '';
+    }
+
+    mergePlanCreated(
+        steps: Array<Partial<AgentConsolePlanTodoItem> & { id: string; content: string }>,
+        planId?: string,
+        revision?: number,
+        sequence?: number,
+        sourceSessionId?: string,
+        scope?: 'project' | 'thread'
+    ): void {
+        if (sequence !== undefined && sequence <= this.planEventSequence) {
+            return;
+        }
+        if (sequence !== undefined) {
+            this.planEventSequence = sequence;
+        }
+        this.planTodos = steps.map((step, index) => ({
+            id: String(step.id || '').trim() || `step-${index}`,
+            content: String(step.content || '').trim(),
+            status: (step.status === 'cancelled' || step.status === 'failed' || step.status === 'in_progress' || step.status === 'completed' ? step.status : 'pending'),
+            parentId: step.parentId,
+            kind: step.kind,
+            acceptance: step.acceptance,
+            dependsOn: Array.isArray(step.dependsOn) ? step.dependsOn.slice() : undefined,
+            blockedBy: Array.isArray(step.blockedBy) ? step.blockedBy.slice() : undefined,
+            estimate: step.estimate,
+            owner: step.owner,
+            evidenceIds: Array.isArray(step.evidenceIds) ? step.evidenceIds.slice() : undefined,
+            receiptId: step.receiptId,
+            testSummary: step.testSummary,
+            diffSummary: step.diffSummary,
+            reviewSummary: step.reviewSummary,
+            error: step.error,
+            elapsedMs: step.elapsedMs,
+            planId: planId ? String(planId) : this.planId,
+            revision: revision !== undefined && revision >= 0 ? revision : this.planRevision,
+            updatedAt: Date.now()
+        }));
+        if (this.planTodos.length <= 7) {
+            this.planTodoExpanded = false;
+        }
+        if (sourceSessionId !== undefined) {
+            this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
+        }
+        if (scope !== undefined) {
+            this.planScope = scope || '';
+        }
+        if (planId) {
+            this.planId = String(planId);
+        }
+        if (revision !== undefined && revision >= 0) {
+            this.planRevision = revision;
+        }
+        this.planMessage = this.buildPlanMessage();
+    }
+
+    mergePlanStepStatus(
+        planId: string,
+        stepId: string,
+        status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed',
+        opts: { sequence?: number; owner?: string; reason?: string; error?: string; elapsedMs?: number } = {}
+    ): boolean {
+        const currentPlanId = String(planId || '').trim();
+        if (currentPlanId && this.planId && currentPlanId !== this.planId) {
+            return false;
+        }
+        if (opts.sequence !== undefined && opts.sequence <= this.planEventSequence) {
+            return false;
+        }
+        const index = this.planTodos.findIndex(todo => todo.id === stepId);
+        if (index < 0) {
+            return false;
+        }
+        if (opts.sequence !== undefined) {
+            this.planEventSequence = opts.sequence;
+        }
+        const current = this.planTodos[index];
+        const next: AgentConsolePlanTodoItem = {
+            ...current,
+            status,
+            planId: this.planId || currentPlanId,
+            updatedAt: Date.now()
+        };
+        if (opts.owner !== undefined) {
+            next.owner = opts.owner;
+        }
+        if (opts.reason !== undefined) {
+            next.blockedReason = opts.reason;
+            if (!next.blockedBy) {
+                next.blockedBy = [];
+            }
+            if (!next.blockedBy.includes(stepId)) {
+                next.blockedBy = [...next.blockedBy, stepId];
+            }
+        }
+        if (opts.error !== undefined) {
+            next.error = opts.error;
+        }
+        if (opts.elapsedMs !== undefined) {
+            next.elapsedMs = opts.elapsedMs;
+        }
+        this.planTodos = [
+            ...this.planTodos.slice(0, index),
+            next,
+            ...this.planTodos.slice(index + 1)
+        ];
+        this.planMessage = this.buildPlanMessage();
+        return true;
+    }
+
+    // Cancel all remaining pending/in-progress steps. Sequence-guarded ONCE for the
+    // whole bulk (not per step), so a single reused event sequence cannot drop later steps.
+    cancelRemainingPlanSteps(planId?: string, sequence?: number): void {
+        if (sequence !== undefined && sequence <= this.planEventSequence) {
+            return;
+        }
+        if (sequence !== undefined) {
+            this.planEventSequence = sequence;
+        }
+        let changed = false;
+        this.planTodos = this.planTodos.map(todo => {
+            if (todo.status === 'pending' || todo.status === 'in_progress') {
+                changed = true;
+                return { ...todo, status: 'cancelled' as const, planId: this.planId || (planId ? String(planId) : todo.planId), updatedAt: Date.now() };
+            }
+            return todo;
+        });
+        if (changed) {
+            this.planMessage = this.buildPlanMessage();
+        }
     }
 
     setGoalSummary(goal: AgentConsoleGoalSummary | null | undefined): void {
@@ -2153,10 +2305,13 @@ export class AgentConsoleSessionState {
             const marker = this.selectedPlanTodoIndex === index ? '›' : ' ';
             const hierarchy = item.parentId ? '  ' : '';
             const blocked = item.blockedBy?.length ? ` ← blocked by ${item.blockedBy.join(',')}` : '';
+            const depends = item.dependsOn?.length ? ` needs ${item.dependsOn.join(',')}` : '';
             const owner = item.owner ? ` (${item.owner})` : '';
+            const estimate = item.estimate ? ` ~${item.estimate}` : '';
             const elapsed = item.elapsedMs ? ` ${this.formatElapsed(item.elapsedMs)}` : '';
             const error = item.status === 'failed' && item.error ? ` err: ${item.error}` : '';
-            return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${elapsed}${blocked}${error}`;
+            const evidence = item.evidenceIds?.length ? ` evidence[${item.evidenceIds.length}]` : '';
+            return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
         });
         const summaryHeader = `plan ${doneCount}/${total} ${bar}${filterLabel} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}`;
         const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
@@ -2178,7 +2333,10 @@ export class AgentConsoleSessionState {
                 planCollapsed: collapsible && !this.planTodoExpanded,
                 planTodoExpanded: this.planTodoExpanded,
                 planTodoFilter: this.planTodoFilter,
-                selectedPlanTodoIndex: this.selectedPlanTodoIndex
+                selectedPlanTodoIndex: this.selectedPlanTodoIndex,
+                planId: this.planId,
+                planRevision: this.planRevision,
+                planThreadKey: this.planThreadKey
             }
         };
     }
@@ -2335,9 +2493,15 @@ export class AgentConsoleSessionState {
             item.estimate ? `estimate ${item.estimate}` : '',
             item.dependsOn?.length ? `depends on ${item.dependsOn.join(', ')}` : '',
             item.blockedBy?.length ? `blocked by ${item.blockedBy.join(', ')}` : '',
+            item.blockedReason ? `reason: ${item.blockedReason}` : '',
             item.acceptance ? `acceptance: ${item.acceptance}` : '',
             item.error ? `error: ${item.error}` : '',
-            item.elapsedMs ? `elapsed ${item.elapsedMs}ms` : ''
+            item.elapsedMs ? `elapsed ${item.elapsedMs}ms` : '',
+            item.evidenceIds?.length ? `evidence ${item.evidenceIds.join(', ')}` : '',
+            item.receiptId ? `receipt ${item.receiptId}` : '',
+            item.testSummary ? `test: ${item.testSummary}` : '',
+            item.diffSummary ? `diff: ${item.diffSummary}` : '',
+            item.reviewSummary ? `review: ${item.reviewSummary}` : ''
         ];
         return parts.filter(Boolean).join('\n');
     }
