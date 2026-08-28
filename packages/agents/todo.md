@@ -767,6 +767,10 @@ Turn: Fix session restore                                      running  01:42
 
 ### P234 · Pending question request/response 生命周期 `platform: agent + agent-ui/src + agent RPC`
 
+**Part A 已完成（2026-08-28）**：`ask_user` 支持稳定 `questionId`（兼容旧 payload 的生成式 fallback）；跨平台 UI 归一化 `sessionId`、时间戳及 `pending/submitting/answered` 状态。选择问题时通过 `questionAction` 调用 gateway `question.answer`，成功后清理、失败保留草稿和错误；gateway 按 session/questionId 幂等记录并提供 `question.list`。剩余：多问询队列、过期语义与断线补拉/运行时挂起恢复。
+
+**Part A 收尾复核（2026-08-28）**：全量测试 agent-gateway 247、agent-ui 791、agent-tools 463、agent 771、components 135、components/console 73，均 EXIT=0；agent-tools / agent-gateway / agent / agent-ui `tsc --noEmit` EXIT=0；agent-ui `build:web` 3.5MB EXIT=0。静态边界：`agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接 import（扫描仅命中 `console-ports.ts` 规则注释与既有 globalThis `runtimeBuffer`/`Record<string, any>` 守卫）。顺带修正既存 `retentionRate` 字段被提交进 `AgentContextManager` 后 gateway 测试断言未同步（`gateway-server.spec.ts` 两处 `AgentContextPreparedEvent` 补齐 `retentionRate`）。已独立提交。
+
 - 为 question 增加稳定 `questionId`、`sessionId`、`createdAt`、`status: pending|answered|dismissed|expired` 和 `answer`；桥接层按 id 去重并拒绝过期回复。
 - UI 将选择、自由输入、确认、取消统一为 `questionAction`，Enter 直接提交 RPC；提交中显示不可重复提交状态，失败保留草稿并提供 retry。
 - 支持多问询队列（当前项/总数）、断线重连补拉与 turn 结束自动清理；保留无 questionId 旧 payload 的生成式兼容 id。

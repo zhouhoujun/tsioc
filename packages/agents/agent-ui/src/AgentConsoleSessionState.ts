@@ -444,11 +444,17 @@ export interface AgentConsoleTextOverlayState {
 }
 
 export interface AgentConsolePendingQuestion {
+    questionId?: string;
+    sessionId?: string;
     question: string;
     options: string[];
     context?: string;
     severity: 'low' | 'medium' | 'high';
+    createdAt?: number;
     updatedAt: number;
+    status?: 'pending' | 'submitting' | 'answered' | 'dismissed' | 'expired';
+    answer?: string;
+    error?: string;
 }
 
 /** Cross-platform focus layers. The stack is the single keyboard-routing projection. */
@@ -560,6 +566,7 @@ export class AgentConsoleSessionState {
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
     pendingQuestionSelectedIndex = 0;
+    questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
@@ -2599,6 +2606,9 @@ export class AgentConsoleSessionState {
     }
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
+        if (question && question.sessionId && question.sessionId !== this.sessionId) return;
+        const previous = this.pendingQuestion;
+        if (question && previous && previous.questionId === question.questionId && (previous.updatedAt || 0) > (question.updatedAt || 0)) return;
         this.pendingQuestion = question;
         this.pendingQuestionSelectedIndex = 0;
         this.syncDerivedInputFocus();
@@ -2610,13 +2620,40 @@ export class AgentConsoleSessionState {
         this.pendingQuestionSelectedIndex = (this.pendingQuestionSelectedIndex + delta + count) % count;
     }
 
-    choosePendingQuestion(index = this.pendingQuestionSelectedIndex): boolean {
+    async choosePendingQuestion(index = this.pendingQuestionSelectedIndex): Promise<boolean> {
         const option = this.pendingQuestion?.options[index];
         if (!option) return false;
         this.pendingQuestionSelectedIndex = index;
         this.setInput(option, option.length);
-        this.setInputFocused(true);
+        const question = this.pendingQuestion;
+        if (!question) return false;
+        // Standalone/legacy hosts retain the previous compose-only behavior.
+        if (!this.questionAction) {
+            this.setInputFocused(true);
+            return true;
+        }
+        question.status = 'submitting';
+        question.error = undefined;
+        try {
+            await this.questionAction({
+                questionId: question.questionId || this.buildLegacyQuestionId(question),
+                sessionId: question.sessionId || this.sessionId,
+                action: 'answer',
+                answer: option
+            });
+            question.status = 'answered';
+            question.answer = option;
+            this.setPendingQuestion(null);
+            this.setInputFocused(true);
+        } catch (error: any) {
+            question.status = 'pending';
+            question.error = error?.message || String(error || 'Question response failed');
+        }
         return true;
+    }
+
+    protected buildLegacyQuestionId(question: AgentConsolePendingQuestion): string {
+        return `legacy-question-${question.question}`;
     }
 
     async retrySelectedPlanTodo(): Promise<boolean> {

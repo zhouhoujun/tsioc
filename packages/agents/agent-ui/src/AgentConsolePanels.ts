@@ -2002,9 +2002,11 @@ export class AgentConsolePendingQuestionPanelComponent {
         return `selected ${selected}/${count} · ↑↓ choose · 1-9 select · Enter confirm · Esc dismiss`;
     }
 
-    onPendingQuestionOptionClick(option: string): void {
-        this.state.setInput(option, option.length);
-        this.state.setInputFocused(true);
+    async onPendingQuestionOptionClick(option: string): Promise<void> {
+        const index = this.state.pendingQuestion?.options.indexOf(option) ?? -1;
+        if (index >= 0) {
+            await this.state.choosePendingQuestion(index);
+        }
     }
 }
 

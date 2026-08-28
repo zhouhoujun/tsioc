@@ -1697,10 +1697,11 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.showPendingQuestionPanel).toEqual(false);
 
         ref.instance.sessionState.setPendingQuestion({
+            questionId: 'renderer-question', sessionId: ref.instance.sessionState.sessionId,
             question: 'Which database should we use?',
             options: ['postgres', 'sqlite'],
             context: 'affects schema migrations',
-            severity: 'high',
+            severity: 'high', createdAt: Date.now(), status: 'pending',
             updatedAt: Date.now()
         });
         expect(ref.instance.showPendingQuestionPanel).toEqual(true);
@@ -1725,7 +1726,7 @@ export class AgentConsoleTuiRendererTest {
     async pendingQuestionKeyboardSelection() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const state = ref.instance.sessionState;
-        state.setPendingQuestion({ question: 'Pick one', options: ['alpha', 'beta', 'gamma'], severity: 'medium', updatedAt: Date.now() });
+        state.setPendingQuestion({ questionId: 'keyboard-question', sessionId: state.sessionId, question: 'Pick one', options: ['alpha', 'beta', 'gamma'], severity: 'medium', createdAt: Date.now(), updatedAt: Date.now(), status: 'pending' });
         await state.handleFocusKey('down');
         expect(state.pendingQuestionSelectedIndex).toEqual(1);
         await state.handleFocusKey('1');

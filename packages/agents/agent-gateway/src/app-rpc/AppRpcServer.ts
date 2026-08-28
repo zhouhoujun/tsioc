@@ -42,6 +42,7 @@ export class AppRpcServer {
     }
 
     protected readonly audioStatesBySession = new Map<string, AudioSessionState>();
+    protected readonly questionResponses = new Map<string, { questionId: string; sessionId: string; status: 'answered' | 'dismissed'; answer?: string; updatedAt: number }>();
 
     async handlePayload(payload: AppRpcRequest | AppRpcRequest[], context: AppRpcRequestContext = {}): Promise<AppRpcResponse | AppRpcResponse[] | null> {
         if (Array.isArray(payload)) {
@@ -361,6 +362,10 @@ export class AppRpcServer {
                 return this.runTurn(params, context);
             case 'run.cancel':
                 return this.cancelTurn(params, context);
+            case 'question.answer':
+                return this.answerQuestion(params, context);
+            case 'question.list':
+                return this.listQuestionResponses(params, context);
             case 'cloud.task.submit':
                 return this.submitCloudTask(params, context);
             case 'cloud.task.list':
@@ -1057,6 +1062,28 @@ export class AppRpcServer {
             turn,
             message: messages[messages.length - 1] ?? null
         };
+    }
+
+    private async answerQuestion(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const questionId = String(params?.questionId || '').trim();
+        if (!questionId) throw new AppRpcError(-32602, 'questionId is required');
+        const action = params?.action === 'dismiss' ? 'dismiss' : 'answer';
+        const answer = typeof params?.answer === 'string' ? params.answer.trim() : '';
+        if (action === 'answer' && !answer) throw new AppRpcError(-32602, 'answer is required');
+        const key = `${sessionId}:${questionId}`;
+        const existing = this.questionResponses.get(key);
+        if (existing) return { ...existing, duplicate: true };
+        const result = { questionId, sessionId, status: action === 'answer' ? 'answered' as const : 'dismissed' as const, ...(answer ? { answer } : {}), updatedAt: Date.now() };
+        this.questionResponses.set(key, result);
+        return { ...result, duplicate: false };
+    }
+
+    private async listQuestionResponses(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return Array.from(this.questionResponses.values()).filter(item => item.sessionId === sessionId);
     }
 
     private async compactSession(params: any, context: AppRpcRequestContext): Promise<any> {

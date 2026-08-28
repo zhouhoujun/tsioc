@@ -3094,6 +3094,24 @@ export class PairingStoreTest {
 
 @Suite('AppRpcServer')
 export class AppRpcServerTest {
+    @Test('records question answers idempotently per session')
+    async recordsQuestionAnswersIdempotently() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+        await store.get('question-s1');
+        await owners.create('question-s1', 'user-1');
+        const request = { jsonrpc: '2.0' as const, id: 1, method: 'question.answer', params: { sessionId: 'question-s1', questionId: 'q1', action: 'answer', answer: 'postgres' } };
+        const first = await rpc.handle(request, { principalId: 'user-1' }) as any;
+        const second = await rpc.handle(request, { principalId: 'user-1' }) as any;
+        expect(first.result).toMatchObject({ questionId: 'q1', status: 'answered', answer: 'postgres', duplicate: false });
+        expect(second.result).toMatchObject({ questionId: 'q1', duplicate: true });
+        const list = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'question.list', params: { sessionId: 'question-s1' } }, { principalId: 'user-1' }) as any;
+        expect(list.result).toHaveLength(1);
+    }
+
     @Test('runs turns through shared json-rpc session flow')
     async runsTurnsThroughJsonRpc() {
         const store = new InMemorySessionStore();
@@ -6138,6 +6156,7 @@ export class AppRpcHandlerTest {
                     prunedMessageCount: 5,
                     toolMessagesCompacted: 0,
                     compressionRatio: 38,
+                    retentionRate: 75,
                     cumulativeTokenSavings: 3000,
                     replayed: false
                 }));
@@ -6502,6 +6521,7 @@ export class StdioAppRpcServerTest {
             prunedMessageCount: 0,
             toolMessagesCompacted: 8,
             compressionRatio: 67,
+            retentionRate: 40,
             cumulativeTokenSavings: 9000,
             replayed: false
         }));

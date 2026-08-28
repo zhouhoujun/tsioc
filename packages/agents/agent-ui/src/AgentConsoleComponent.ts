@@ -2173,6 +2173,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     async onInit(): Promise<void> {
         this.state.submitAction = this.submitActionHandler;
+        this.state.questionAction = this.appRpc
+            ? async input => { await this.appRpc!.request('question.answer', input); }
+            : undefined;
         this.state.queueDraftAction = () => this.queueDraft();
         this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;

@@ -9,7 +9,7 @@ export class FocusStackTest {
         const state = new AgentConsoleSessionState();
         state.setMessagesFocused(true);
         state.setTasksFocused(true);
-        state.setPendingQuestion({ question: 'choose', options: ['a'], severity: 'low', updatedAt: 1 });
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'], severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending' });
         expect(state.focusLayers).toEqual(['messages', 'plan', 'question']);
         expect(state.activeFocusLayer).toEqual('question');
         expect(state.inputFocused).toEqual(false);
@@ -33,7 +33,7 @@ export class FocusStackTest {
     async escapePopsQuestionBeforePanel() {
         const state = new AgentConsoleSessionState();
         state.setTasksFocused(true);
-        state.setPendingQuestion({ question: 'choose', options: ['a'], severity: 'low', updatedAt: 1 });
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'], severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending' });
         expect(await state.handleFocusKey('escape')).toEqual(true);
         expect(state.pendingQuestion).toEqual(null);
         expect(state.tasksFocused).toEqual(true);
