@@ -112,6 +112,7 @@ export * from './memory/InMemorySessionStore';
 export * from './memory/DefaultMemoryStore';
 export * from './memory/DefaultSessionStore';
 export * from './memory/timeline-projection';
+export * from './memory/nav';
 export * from './memory/TypeOrmMemoryStore';
 export * from './memory/TypeOrmSessionStore';
 export * from './memory/SimpleSessionSummarizer';
