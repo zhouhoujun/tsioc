@@ -283,14 +283,23 @@ export function buildNavTree(
         }
     }
 
-    const flatSessions = Array.from(sessionNodes.values())
-        .sort((left, right) => {
-            const delta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-            if (delta !== 0) {
-                return delta;
-            }
-            return left.id.localeCompare(right.id);
-        });
+    const flatSessions = Array.from(sessionNodes.values());
+    // Index-less sessions must stay visible per the DTO contract (see module doc).
+    for (const source of sessions || []) {
+        const id = String(source?.id || '').trim();
+        if (id && !sessionNodes.has(id)) {
+            const node = makeSessionNode(source);
+            sessionNodes.set(id, node);
+            flatSessions.push(node);
+        }
+    }
+    flatSessions.sort((left, right) => {
+        const delta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+        if (delta !== 0) {
+            return delta;
+        }
+        return left.id.localeCompare(right.id);
+    });
 
     return {
         projects: projectNodes,

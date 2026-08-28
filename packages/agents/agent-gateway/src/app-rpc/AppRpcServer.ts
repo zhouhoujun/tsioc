@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -155,6 +155,7 @@ export class AppRpcServer {
                         'session.list',
                         'session.list_projects',
                         'session.list_threads',
+                        'nav.query',
                         'session.messages',
                         'session.search',
                         'session.delete',
@@ -285,6 +286,8 @@ export class AppRpcServer {
                 return this.listSessionProjects(params, context);
             case 'session.list_threads':
                 return this.listSessionThreads(params, context);
+            case 'nav.query':
+                return this.queryNav(params, context);
             case 'session.messages':
                 return this.getSessionMessages(params, context);
             case 'session.search':
@@ -644,6 +647,38 @@ export class AppRpcServer {
 
     private async listSessionThreads(params: any, context: AppRpcRequestContext): Promise<any[]> {
         return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true));
+    }
+
+    private async queryNav(params: any, context: AppRpcRequestContext): Promise<any> {
+        const infos = await this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true, params?.includeAutomation === true);
+        const ownedIds = new Set(infos.map(info => info.id));
+        const sessions: NavSessionSource[] = infos.map(info => ({
+            id: info.id,
+            workspace: info.workspace,
+            projectId: info.projectId,
+            primaryThreadId: info.primaryThreadId,
+            sessionRole: info.sessionRole,
+            status: info.threadStatus,
+            title: info.title,
+            summary: info.summary,
+            messageCount: info.messageCount,
+            pinned: info.pinned,
+            archived: info.archived,
+            lastActiveAt: info.lastActiveAt,
+            createdAt: info.createdAt
+        }));
+        const [projects, threads] = await Promise.all([
+            this.sessions.listProjects(),
+            this.sessions.listThreads()
+        ]);
+        const ownedProjects = projects
+            .filter(project => project.sessionIds.some(id => ownedIds.has(id)))
+            .map(project => ({ ...project, sessionIds: project.sessionIds.filter(id => ownedIds.has(id)) }));
+        const ownedThreads = threads
+            .filter(thread => thread.sessionIds.some(id => ownedIds.has(id)))
+            .map(thread => ({ ...thread, sessionIds: thread.sessionIds.filter(id => ownedIds.has(id)) }));
+        const filter = params?.filter && typeof params.filter === 'object' ? params.filter as NavFilter : undefined;
+        return applyNavFilter(buildNavTree(ownedProjects, ownedThreads, sessions, Date.now()), filter);
     }
 
     private async getSessionMessages(params: any, context: AppRpcRequestContext): Promise<any> {

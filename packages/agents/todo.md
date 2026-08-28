@@ -799,6 +799,14 @@ Turn: Fix session restore                                      running  01:42
 - 验收：进程重启、多窗口 cursor 不跳不重、跨项目隔离、权限拒绝回滚、批量部分失败、旧 host 降级。
 - 收尾：agent/agent-gateway/agent-ui 及存储实现全量测试，`tsc --noEmit`/构建，更新 todo，独立提交。
 
+### P236 项目导航投影（2026-08-28 完成查询 DTO + agent-ui 共用 selection/filter store 切片）
+
+- agent `src/memory/nav.ts` 落地单一查询 DTO：`NavTree`/`NavNode`/`NavFilter`/`NavSelection`，`buildNavTree` 折叠 project→thread→session 并表面化无索引孤儿会话（`tree.sessions` + `totalSessions`），`applyNavFilter`/`flattenNav`/`navigateCursor`/`resolveNavSelection` 提供过滤、扁平序、光标移动与跨刷新存活解析。
+- agent-gateway `nav.query` RPC（能力列表 + 分发 + `queryNav`）：按 `context.principalId` 做 session 归属过滤（跨项目隔离），`listSessionInfos` 投影 `NavSessionSource`，树构建后应用 `params.filter`；`includeArchived`/`includeAutomation` 透传。
+- agent-ui `AgentConsoleSessionState` 增加共用 selection/filter store：`navFilter`/`navSelection`/`navViewScroll` + `seedNavTree`/`setNavFilter`/`setNavSelection`/`navigateNav`（cursor 在过滤后树上移动）/`resolveNavSelectionTarget`/`setNavViewScroll`/`getNavViewScroll`；`configure()` 不重置 nav 状态，视图切换后滚动位置与筛选条件恢复。
+- agent-ui `AgentConsoleRemoteEventBridge` 首次连接时以 `nav.query` 播种导航树（`seedFromNav`，失败静默降级）。
+- 验证通过：agent 787、agent-gateway 249（含 `nav.query` @Test）、agent-ui 802（含 P236 nav state suite）；三包 `tsc --noEmit` 通过；跨平台边界扫描 agent-ui `src/` 无 `@tsdi/components/console`/`node:` 直接 import（仅约束注释命中）。
+
 ### P237 · Timeline/Plan 信息密度与可访问性基线 `platform: agent-ui/src（跨平台）`
 
 - 统一 event row 的摘要字段（intent、target、outcome、duration、status），长 stdout/diff 只进入 inspector；失败、审批、blocked 默认展开且提供 action label。

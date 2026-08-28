@@ -408,6 +408,7 @@ export class AgentConsoleRemoteEventBridge {
         }
         if (!this.hasConnected) {
             await this.seedFromTimeline();
+            await this.seedFromNav();
         }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
@@ -463,6 +464,20 @@ export class AgentConsoleRemoteEventBridge {
             const entries = Array.isArray(result?.entries) ? result.entries : [];
             if (entries.length) {
                 this.state.seedTimeline(entries);
+            }
+        } catch {
+            return;
+        }
+    }
+
+    protected async seedFromNav(): Promise<void> {
+        if (!this.rpc) {
+            return;
+        }
+        try {
+            const tree = await this.rpc.request('nav.query', {});
+            if (tree && Array.isArray(tree.sessions)) {
+                this.state.seedNavTree(tree);
             }
         } catch {
             return;

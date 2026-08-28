@@ -3154,6 +3154,68 @@ export class AppRpcServerTest {
         expect((forbidden as any).error).toBeDefined();
     }
 
+    @Test('nav.query returns a principal-scoped session tree and applies filters through json-rpc')
+    async queriesNavTreeThroughJsonRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+
+        await store.get('nav-s1');
+        await owners.create('nav-s1', 'user-1');
+        await store.setProjectMetadata('nav-s1', { projectId: 'alpha', primaryThreadId: 'thread-1', sessionRole: 'main', rootRequest: 'Build widget' });
+        await store.setWorkspace('nav-s1', '/w1');
+        await store.setTitle('nav-s1', 'Widget session');
+        await store.setPinned('nav-s1', true);
+
+        await store.get('nav-s2');
+        await owners.create('nav-s2', 'user-1');
+        await store.setProjectMetadata('nav-s2', { projectId: 'alpha', primaryThreadId: 'thread-2', sessionRole: 'worker', rootRequest: 'Review widget' });
+        await store.setWorkspace('nav-s2', '/w1');
+        await store.setTitle('nav-s2', 'Widget review');
+
+        await store.get('nav-other');
+        await owners.create('nav-other', 'user-2');
+        await store.setProjectMetadata('nav-other', { projectId: 'secret', primaryThreadId: 'thread-x', sessionRole: 'main' });
+        await store.setWorkspace('nav-other', '/w2');
+
+        const query1 = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'nav.query', params: {} }, { principalId: 'user-1' }) as any;
+        expect(query1.result.totalSessions).toEqual(2);
+        expect(query1.result.totalProjects).toEqual(1);
+        expect(query1.result.totalThreads).toEqual(2);
+        expect(query1.result.sessions.map((node: any) => node.id).sort()).toEqual(['nav-s1', 'nav-s2']);
+        expect(query1.result.sessions.some((node: any) => node.projectId === 'secret')).toBe(false);
+        const project = query1.result.projects.find((node: any) => node.id === 'project:alpha');
+        expect(project).toBeDefined();
+        expect(project.children.map((child: any) => child.id).sort()).toEqual(['nav-s1', 'nav-s2']);
+        expect(query1.result.threads.map((node: any) => node.id)).toEqual(expect.arrayContaining(['thread-1', 'thread-2']));
+
+        const pinned = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'nav.query', params: { filter: { pinnedOnly: true } } }, { principalId: 'user-1' }) as any;
+        expect(pinned.result.totalSessions).toEqual(1);
+        expect(pinned.result.sessions[0].id).toEqual('nav-s1');
+
+        const byProject = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'nav.query', params: { filter: { projectId: 'alpha' } } }, { principalId: 'user-1' }) as any;
+        expect(byProject.result.sessions.map((node: any) => node.id).sort()).toEqual(['nav-s1', 'nav-s2']);
+
+        const byText = await rpc.handle({ jsonrpc: '2.0', id: 4, method: 'nav.query', params: { filter: { text: 'review' } } }, { principalId: 'user-1' }) as any;
+        expect(byText.result.totalSessions).toEqual(1);
+        expect(byText.result.sessions[0].id).toEqual('nav-s2');
+
+        await store.setArchived('nav-s2', true);
+        const defaultQuery = await rpc.handle({ jsonrpc: '2.0', id: 5, method: 'nav.query', params: {} }, { principalId: 'user-1' }) as any;
+        expect(defaultQuery.result.sessions.map((node: any) => node.id)).toEqual(['nav-s1']);
+        const withArchived = await rpc.handle({ jsonrpc: '2.0', id: 6, method: 'nav.query', params: { includeArchived: true } }, { principalId: 'user-1' }) as any;
+        expect(withArchived.result.sessions.map((node: any) => node.id).sort()).toEqual(['nav-s1', 'nav-s2']);
+
+        const other = await rpc.handle({ jsonrpc: '2.0', id: 7, method: 'nav.query', params: {} }, { principalId: 'user-2' }) as any;
+        expect(other.result.totalSessions).toEqual(1);
+        expect(other.result.sessions[0].id).toEqual('nav-other');
+
+        const caps = await rpc.handle({ jsonrpc: '2.0', id: 8, method: 'app.capabilities', params: {} }, { principalId: 'user-1' }) as any;
+        expect((caps.result.methods as string[])).toContain('nav.query');
+    }
+
     @Test('runs turns through shared json-rpc session flow')
     async runsTurnsThroughJsonRpc() {
         const store = new InMemorySessionStore();

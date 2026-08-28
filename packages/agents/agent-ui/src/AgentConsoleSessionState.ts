@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -634,6 +634,11 @@ export class AgentConsoleSessionState {
     timelineStale = false;
     timelineSeedCount = 0;
     timelineTailSeq = -1;
+    navTree: NavTree | null = null;
+    navSeedCount = 0;
+    navFilter: NavFilter = {};
+    navSelection?: NavSelection;
+    navViewScroll: Record<string, number> = {};
     planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
@@ -1290,6 +1295,91 @@ export class AgentConsoleSessionState {
     markTimelineReconnecting(reconnecting: boolean): void {
         this.timelineReconnecting = reconnecting;
         this.timelineStale = reconnecting;
+    }
+
+    seedNavTree(tree: NavTree | null | undefined): void {
+        if (!tree || !Array.isArray(tree.sessions)) {
+            return;
+        }
+        this.navTree = tree;
+        this.navSeedCount = tree.totalSessions ?? tree.sessions.length;
+    }
+
+    setNavFilter(filter?: NavFilter): void {
+        if (!filter) {
+            this.navFilter = {};
+        } else {
+            const next: NavFilter = {};
+            if (filter.text) {
+                next.text = String(filter.text).trim();
+            }
+            if (filter.status) {
+                next.status = filter.status;
+            }
+            if (filter.stage) {
+                next.stage = filter.stage;
+            }
+            if (filter.workspace) {
+                next.workspace = String(filter.workspace).trim();
+            }
+            if (filter.projectId) {
+                next.projectId = String(filter.projectId).trim();
+            }
+            if (filter.threadId) {
+                next.threadId = String(filter.threadId).trim();
+            }
+            if (filter.pinnedOnly) {
+                next.pinnedOnly = true;
+            }
+            this.navFilter = next;
+        }
+        this.navSelection = this.resolveNavSelectionTarget();
+    }
+
+    setNavSelection(selection?: NavSelection): void {
+        if (!selection) {
+            this.navSelection = undefined;
+            return;
+        }
+        this.navSelection = { type: selection.type || 'session', id: selection.id, index: selection.index };
+    }
+
+    navigateNav(direction: 'up' | 'down', type?: NavEntityType): NavSelection | undefined {
+        if (!this.navTree) {
+            return undefined;
+        }
+        const next = navigateCursor(this.navSelection, applyNavFilter(this.navTree, this.navFilter), direction, type);
+        if (next) {
+            this.navSelection = next;
+        }
+        return next;
+    }
+
+    resolveNavSelectionTarget(): NavSelection | undefined {
+        if (!this.navTree) {
+            return undefined;
+        }
+        const node = resolveNavSelection(this.navSelection, applyNavFilter(this.navTree, this.navFilter));
+        if (!node) {
+            return undefined;
+        }
+        return { type: node.type, id: node.id, index: this.navSelection?.index ?? -1 };
+    }
+
+    setNavViewScroll(viewId: string, scroll: number): void {
+        const key = String(viewId || '').trim();
+        if (!key) {
+            return;
+        }
+        this.navViewScroll = { ...this.navViewScroll, [key]: Math.max(0, Math.floor(Number(scroll) || 0)) };
+    }
+
+    getNavViewScroll(viewId: string): number {
+        const key = String(viewId || '').trim();
+        if (!key) {
+            return 0;
+        }
+        return this.navViewScroll[key] ?? 0;
     }
 
     appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void {
