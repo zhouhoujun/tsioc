@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
 """Fake OpenAI-compatible chat server for PTY acceptance runs.
 
-Scripted turn sequence (one entry per chat-completions request):
-  1. long reply ending with a tail question          -> scenario 1 (tail visibility)
-  2. tool_call  {todo: pending item}                 -> scenario 3 setup
-  3. tool_call  {todo: same item completed}          -> scenario 3 checkbox flip
-  4. short closing text                              -> scenario 3 settle
+Scripted turn sequences, selected by FAKE_SCENARIO:
+
+  default (tail/todo, P200):
+    1. long reply ending with a tail question          -> scenario 1 (tail visibility)
+    2. tool_call  {todo: pending item}                 -> scenario 3 setup
+    3. tool_call  {todo: same item completed}          -> scenario 3 checkbox flip
+    4. short closing text                              -> scenario 3 settle
+
+  plan-lifecycle (P232 part B):
+    1. text plans + tool_call creates parallel steps   -> plan creation
+    2. tool_call sets two independent steps in_progress -> parallel execution
+    3. tool_call marks step-1 failed + retry question  -> failure + confirm--retry prompt
+    4. tool_call retries step-1 (in_progress)          -> confirmed retry
+    5. tool_call marks steps 1/2 completed             -> recovery (deps satisfied)
+    6. tool_call marks step-3 in_progress              -> review gate
+    7. short closing text                              -> completion
 
 Env knobs:
   FAKE_PORT            port to bind (default: 0 = ephemeral, printed on ready line)
   FAKE_TODO_CONTENT    plan item label (default: 计划项 A)
+  FAKE_SCENARIO        'plan-lifecycle' selects the P232 plan-lifecycle script
 Stdout line "FAKE-MODEL-READY port=<port>" signals readiness.
 Stdlib only; no external dependencies.
 """
@@ -21,10 +33,77 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get('FAKE_PORT', '0'))
 TODO_CONTENT = os.environ.get('FAKE_TODO_CONTENT', '计划项 A')
+SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
+
+PLAN_STEPS = [
+    {'id': 'pl-1', 'content': '步骤 1：解析需求', 'dependsOn': []},
+    {'id': 'pl-2', 'content': '步骤 2：设计接口', 'dependsOn': []},
+    {'id': 'pl-3', 'content': '步骤 3：实现功能', 'dependsOn': ['pl-1', 'pl-2']},
+    {'id': 'pl-4', 'content': '步骤 4：验证发布', 'dependsOn': ['pl-3']},
+]
+RETRY_QUESTION = '步骤 1 失败，请输入 y 确认重试。'
+REVIEW_GATE = '进入 review 门禁，确认后继续发布。'
+
+
+def _todo_call(call_id, todos):
+    return {
+        'role': 'assistant',
+        'content': None,
+        'tool_calls': [{
+            'id': call_id,
+            'type': 'function',
+            'function': {
+                'name': 'todo',
+                'arguments': json.dumps({'todos': todos}, ensure_ascii=False),
+            },
+        }],
+    }
+
+
+def _text(text):
+    return {'role': 'assistant', 'content': text}
+
+
+def _plan_turn(i):
+    """Scripted plan-lifecycle turns for request number i (1-based)."""
+    if i == 1:
+        todos = [dict(s, status='pending') for s in PLAN_STEPS]
+        return _todo_call('call_pl_1', todos)
+    if i == 2:
+        return _todo_call('call_pl_2', [
+            {'id': 'pl-1', 'content': PLAN_STEPS[0]['content'], 'status': 'in_progress'},
+            {'id': 'pl-2', 'content': PLAN_STEPS[1]['content'], 'status': 'in_progress'},
+        ])
+    if i == 3:
+        return _todo_call('call_pl_3', [
+            {'id': 'pl-1', 'content': PLAN_STEPS[0]['content'], 'status': 'failed'},
+        ])
+    if i == 4:
+        return _text(RETRY_QUESTION)
+    if i == 5:
+        return _todo_call('call_pl_5', [
+            {'id': 'pl-1', 'content': PLAN_STEPS[0]['content'], 'status': 'in_progress'},
+        ])
+    if i == 6:
+        return _todo_call('call_pl_6', [
+            {'id': 'pl-1', 'content': PLAN_STEPS[0]['content'], 'status': 'completed'},
+            {'id': 'pl-2', 'content': PLAN_STEPS[1]['content'], 'status': 'completed'},
+            {'id': 'pl-3', 'content': PLAN_STEPS[2]['content'], 'status': 'in_progress'},
+        ])
+    if i == 7:
+        return _text(REVIEW_GATE)
+    if i == 8:
+        return _todo_call('call_pl_8', [
+            {'id': 'pl-3', 'content': PLAN_STEPS[2]['content'], 'status': 'completed'},
+            {'id': 'pl-4', 'content': PLAN_STEPS[3]['content'], 'status': 'completed'},
+        ])
+    return _text('计划已全部完成。')
 
 
 def _turn(i):
     """Return the scripted assistant message dict for request number i (1-based)."""
+    if SCENARIO == 'plan-lifecycle':
+        return _plan_turn(i)
     if i == 1:
         lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
                  for n in range(1, 121)]

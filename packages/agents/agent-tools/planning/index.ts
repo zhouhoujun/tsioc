@@ -5,3 +5,4 @@ export * from './plan-compiler';
 export * from './step-reconciler';
 export * from './dag-orchestrator';
 export * from './plan-eval';
+export * from './plan-eval-bench';

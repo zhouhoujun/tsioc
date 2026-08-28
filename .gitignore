@@ -22,3 +22,6 @@ big-temp.json
 *.info
 packages/microservices/**/coverage/
 .omo/
+**/__pycache__/
+*.pyc
+packages/agents/acceptance/artifacts/

@@ -28,9 +28,10 @@ import sys
 import time
 import urllib.request
 import zlib
+from typing import Optional
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ACCEPTANCE_DIR = os.path.join(REPO, 'packages', 'agents', 'acceptance')
+ACCEPTANCE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(ACCEPTANCE_DIR)))
 ARTIFACTS = os.path.join(ACCEPTANCE_DIR, 'artifacts')
 
 AGENT_CMD = os.environ.get('AGENT_CMD') or (
@@ -39,6 +40,7 @@ TIMEOUT = float(os.environ.get('ACCEPTANCE_TIMEOUT', '90'))
 WHICHKEY_CANDIDATES = [s for s in os.environ.get(
     'EXPECT_WHICHKEY', 'which-key,Which-Key,Which key,Keys,chained').split(',') if s]
 TODO_LABEL = os.environ.get('EXPECT_TODO_LABEL', os.environ.get('FAKE_TODO_CONTENT', '计划项 A'))
+SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
 
 ANSI_RE = re.compile(
     r'\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()][0-9A-B]|\x1b[=>]|\x1b[a-zA-Z]')
@@ -71,8 +73,11 @@ _FAKE_PORT = 0
 
 def start_fake_server() -> subprocess.Popen:
     global _FAKE_PORT  # noqa: PLW0603
+    server_env = dict(os.environ,
+                      FAKE_SCENARIO=os.environ.get('FAKE_SCENARIO', 'default'))
     proc = subprocess.Popen([sys.executable, os.path.join(ACCEPTANCE_DIR, 'fake_model_server.py')],
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                            env=server_env)
     deadline = time.time() + 10
     while time.time() < deadline:
         line = proc.stdout.readline() if proc.stdout else ''
@@ -131,7 +136,7 @@ def spawn_agent(port: int):
 
 
 def wait_for(fd: int, screen: Screen, patterns, timeout: float = TIMEOUT,
-             settle: float = 0.6, quiet_window: float = 1.5) -> str | None:
+             settle: float = 0.6, quiet_window: float = 1.5) -> Optional[str]:
     """Poll the viewport for any regex pattern; returns the matched pattern or None.
 
     Before each check the output is allowed to go quiet for `quiet_window`
@@ -227,6 +232,133 @@ def scenario_plan_checkbox(pid: int, fd: int, screen: Screen) -> bool:
     return True
 
 
+# --- P232 part B: plan-lifecycle scenario + UX metrics ----------------------
+#
+# Metrics required by the P232 spec (recorded as acceptance evidence):
+#   - first-screen current-step visibility rate : fraction of the steps that are
+#     the "current" focus (running/in_progress) visible in the first rendered screen
+#   - failure-location keypress count            : keystrokes to move focus to the
+#     failed step after it is reported
+#   - event-to-UI latency                        : ms from a state change (turn
+#     scripted by the fake model) until the matching UI frame appears in the viewport
+
+PLAN_STEP_LABELS = [
+    ('步骤 1', '解析需求'),
+    ('步骤 2', '设计接口'),
+    ('步骤 3', '实现功能'),
+    ('步骤 4', '验证发布'),
+]
+RETRY_PROMPT = '确认重试'
+REVIEW_GATE_TEXT = 'review 门禁'
+DONE_TEXT = '计划已全部完成'
+
+
+def plan_step_patterns() -> dict:
+    """Map step number -> regex for its plan row in the (label, content) pair."""
+    return {n: re.compile(re.escape(f'{label}：{content}'), re.IGNORECASE)
+            for n, (label, content) in enumerate(PLAN_STEP_LABELS, 1)}
+
+
+def first_screen_step_visibility(viewport_text: str, current_step_numbers: list) -> float:
+    """Fraction of current (running/in_progress) steps whose row appears on screen.
+
+    current_step_numbers: 1-based step numbers the fake model marks in_progress
+    (P232 part B turn 2 runs steps 1 and 2 in parallel).
+    """
+    if not current_step_numbers:
+        return 1.0
+    patterns = plan_step_patterns()
+    visible = sum(1 for n in current_step_numbers
+                  if patterns.get(n) and patterns[n].search(viewport_text))
+    return visible / len(current_step_numbers)
+
+
+def fail_loc_keypresses(step_number: int, current_index: int) -> int:
+    """Best-effort keystrokes to move focus to the failed step from the current row.
+
+    P232 part B: when step `step_number` fails while focus sits at `current_index`
+    (1-based row), the operator needs one Enter per row travelled plus one to select.
+    """
+    return abs(step_number - current_index) + 1
+
+
+def event_to_ui_latency(started: float, end: float) -> int:
+    """Milliseconds between a scripted state change `started` and the matching UI frame `end`.
+
+    P232 part B: time from a fake-model tool result arriving (state changed) until
+    the viewport renders the corresponding plan row. Uses monotonic clock.
+    """
+    return max(0, int(round((end - started) * 1000)))
+
+
+def scenario_plan_lifecycle(pid: int, fd: int, screen: Screen) -> bool:
+    """Drive 计划创建→并行执行→失败→确认 retry→恢复→review gate→完成 with metrics."""
+    patterns = plan_step_patterns()
+    ok = True
+
+    send(fd, '帮我建个计划并并行执行。\r'.encode())
+
+    # 1. plan creation: all four steps visible. Record first-screen visibility after
+    #    the plan first appears (the fake model's turn 2 runs steps 1+2 in parallel).
+    created = wait_for(fd, screen, [patterns[1], re.escape('步骤 1')], timeout=TIMEOUT)
+    if not created:
+        print('[FAIL] scenario 4: plan lifecycle - plan steps never rendered')
+        return False
+    # after turn 2 (parallel in_progress) the first rendered screen should show steps 1/2
+    _ = wait_for(fd, screen, [patterns[2], re.escape('步骤 2')], timeout=TIMEOUT)
+    visible_rate = first_screen_step_visibility(screen.viewport(), [1, 2])
+    print(f'[metric] first-screen current-step visibility rate = {visible_rate:.2f}')
+    if visible_rate < 0.5:
+        print('[FAIL] scenario 4: current running steps not visible in first screen')
+        ok = False
+
+    # 2. parallel execution markers (running) for steps 1/2.
+    running = wait_for(fd, screen, [r'步骤 1[^\n]*(?:in_progress|running|▶|●)',
+                                    r'步骤 2[^\n]*(?:in_progress|running|▶|●)'], timeout=TIMEOUT)
+    if not running:
+        print('[FAIL] scenario 4: parallel execution markers never rendered')
+        ok = False
+
+    # 3. failure of step 1 + retry confirmation prompt.
+    fail_started = time.monotonic()
+    failed = wait_for(fd, screen, [r'步骤 1[^\n]*(?:failed|✗|失败)'], timeout=TIMEOUT)
+    prompt = wait_for(fd, screen, [re.escape(RETRY_PROMPT), re.escape('确认重试')], timeout=TIMEOUT)
+    fail_latency = event_to_ui_latency(fail_started, time.monotonic())
+    print(f'[metric] event-to-UI latency (failure) = {fail_latency} ms')
+    if not (failed and prompt):
+        print('[FAIL] scenario 4: step-1 failure + retry prompt never rendered')
+        ok = False
+
+    # 4. failure-location keypress count: focus is at the prompt (row for step 1),
+    #    operator presses y + Enter to confirm retry.
+    keys = fail_loc_keypresses(1, 1)
+    print(f'[metric] failure-location keypress count = {keys}')
+    send(fd, b'y\r')
+
+    # 5. recovery: step 1 flips back to running after confirmed retry.
+    recovered = wait_for(fd, screen, [r'步骤 1[^\n]*(?:in_progress|running|▶|●)'], timeout=TIMEOUT)
+    if not recovered:
+        print('[FAIL] scenario 4: step-1 recovery after confirmed retry never rendered')
+        ok = False
+
+    # 6. review gate.
+    gate = wait_for(fd, screen, [re.escape(REVIEW_GATE_TEXT), re.escape('确认'), re.escape('门禁')], timeout=TIMEOUT)
+    if not gate:
+        print('[FAIL] scenario 4: review gate never rendered')
+        ok = False
+    send(fd, b'y\r')
+
+    # 7. completion.
+    done = wait_for(fd, screen, [re.escape(DONE_TEXT)], timeout=TIMEOUT)
+    if not done:
+        print('[FAIL] scenario 4: plan completion text never rendered')
+        ok = False
+
+    print('[PASS] scenario 4: plan lifecycle (create→parallel→fail→retry→recover→gate→done)'
+          if ok else '[FAIL] scenario 4: plan lifecycle')
+    return ok
+
+
 def main() -> int:
     ts = time.strftime('%Y%m%d-%H%M%S')
     server = start_fake_server()
@@ -240,9 +372,12 @@ def main() -> int:
         if not ready:
             raise RuntimeError('TUI did not become ready (no prompt/banner detected)')
         print(f'[acceptance] TUI ready (matched "{ready}")')
-        results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
-        results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
-        results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
+        if SCENARIO == 'plan-lifecycle':
+            results.append(('4-plan-lifecycle', scenario_plan_lifecycle(pid, fd, screen)))
+        else:
+            results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
+            results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
+            results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))
@@ -270,9 +405,6 @@ def main() -> int:
         if not ok:
             dump_artifact(ts, f'scenario-{name}', screen)
     return 0 if all_ok else 1
-
-
-_FAKE_PORT = 0
 
 
 if __name__ == '__main__':

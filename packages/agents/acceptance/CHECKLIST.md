@@ -10,6 +10,7 @@
 | 1 | 长回复尾部问询可见 | 120 行长回复，结尾"是否继续？" | 流式结束后问询出现在视口底部附近 |
 | 2 | keymap overlay | 按键 `Ctrl+Alt+K`（which-key-toggle） | overlay 文案出现（候选词可用 env 调整） |
 | 3 | plan 实时勾选 | 两次 `todo` 工具调用：pending → completed | `[ ] 计划项 A` 出现后翻转为 `[x]` |
+| 4 | plan 全生命周期（P232B） | `todo` 脚本：建计划(4 步并行)→运行→失败→确认 retry→恢复→review gate→完成 | 创建→并行→失败→恢复→门禁→完成各阶段依次出现；记录首屏步骤可见率/失败定位按键数/event-to-UI 延迟 |
 
 ## 运行
 
@@ -17,8 +18,11 @@
 # 前置：agent-cli 已构建（bin/tsdi-agent.js 存在）
 cd packages/agents/agent-cli && npm run build   # 如未构建
 
-# 全量三场景
+# 全量三场景（P200 默认）
 python3 packages/agents/acceptance/run_acceptance.py
+
+# P232 part B 计划全生命周期场景（假模型与该驾驶员均切到 plan-lifecycle）
+FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.py
 ```
 
 脚本自动完成：启动假模型 → 以 env 注入 `AGENT_PROVIDER/AGENT_MODEL/AGENT_API_KEY/AGENT_BASE_URL`
@@ -35,8 +39,18 @@ python3 packages/agents/acceptance/run_acceptance.py
 | `EXPECT_WHICHKEY` | `which-key,Which-Key,…` | 场景 2 overlay 文案候选（逗号分隔） |
 | `EXPECT_TODO_LABEL` | `计划项 A` | 场景 3 计划项文案（需与 `FAKE_TODO_CONTENT` 一致） |
 | `FAKE_TODO_CONTENT` | `计划项 A` | 假模型侧计划项文案 |
+| `FAKE_SCENARIO` | `default` | `plan-lifecycle` 时假模型回放 P232 全生命周期脚本，驾驶员只跑场景 4 |
 
-依赖：Python 3 标准库（pty/http.server），Linux/macOS 可用；Windows 不支持。
+依赖：Python 3（`run_acceptance.py` 需 3.8+，`|` 联合类型写法已改为 `Optional`），
+标准库（pty/http.server），Linux/macOS 可用；Windows 不支持。
+
+## P232 part B 度量（场景 4 自动输出 `[metric]` 行）
+
+- **首屏当前步骤可见率**：plan 首次渲染后，当前 `in_progress`（并行运行）步骤中可见的比例。
+- **失败定位按键数**：从当前焦点到失败步骤所需按键数（模拟确认输入的 `y\r`）。
+- **event-to-UI 延迟**：假模型状态变更事件到界面出现该行的毫秒数（monotonic 时钟）。
+
+度量阈值由人工在真实终端验收时设定并回填；自动断言仅检查阶段是否出现在视口与可见率 ≥ 0.5。
 
 ## 人工验收清单（自动化之外仍需目检）
 
@@ -52,3 +66,8 @@ python3 packages/agents/acceptance/run_acceptance.py
 - 场景 3 依赖 `@tsdi/agent-tools` 的 `todo` 工具（`planning/todo.tool.ts`，入参
   `{todos:[{id,content,status}]}`）；若 schema 变更，同步修改 `fake_model_server.py::_turn`。
 - 假模型按请求序号回放脚本（长文 → pending → completed → 收尾语），新增场景请扩展 `_turn`。
+- 场景 4（plan-lifecycle）使用 `TodoStatus`（`pending|in_progress|completed|cancelled|failed`）
+  与 `dependsOn` 构造并行/失败/恢复/门禁剧本；假模型与驾驶员都需 `FAKE_SCENARIO=plan-lifecycle`，
+  否则默认仍走 P200 三场景。
+- 完整 PTY 端到端运行对终端与时序敏感，推荐在真实终端执行；自动化可验证假模型脚本、
+  度量纯函数与 plan-eval 基线回归（agent-tools `test/plan-eval-bench.spec.ts`）。
