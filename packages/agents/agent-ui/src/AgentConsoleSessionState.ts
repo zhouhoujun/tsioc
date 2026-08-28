@@ -451,6 +451,26 @@ export interface AgentConsolePendingQuestion {
     updatedAt: number;
 }
 
+/** Cross-platform focus layers. The stack is the single keyboard-routing projection. */
+export type AgentConsoleFocusLayer =
+    | 'composer'
+    | 'messages'
+    | 'plan'
+    | 'review'
+    | 'tool'
+    | 'tool-runs'
+    | 'approval'
+    | 'question'
+    | 'overlay'
+    | 'select'
+    | 'sessions'
+    | 'projects'
+    | 'threads'
+    | 'jobs'
+    | 'message-detail'
+    | 'timeline-inspector'
+    | 'git-snapshot';
+
 @Injectable()
 export class AgentConsoleSessionState {
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
@@ -459,6 +479,8 @@ export class AgentConsoleSessionState {
     input = '';
     inputCursor = 0;
     inputFocused = true;
+    /** Serializable focus projection shared by TUI and browser adapters. */
+    focusStack: AgentConsoleFocusLayer[] = [];
     title = '';
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
@@ -899,6 +921,7 @@ export class AgentConsoleSessionState {
     }
 
     protected syncDerivedInputFocus(): void {
+        this.rebuildFocusStack();
         this.inputFocused = !this.sessionsFocused
             && !this.toolRunsFocused
             && !this.projectsFocused
@@ -913,6 +936,61 @@ export class AgentConsoleSessionState {
             && !this.timelineEventInspectorOpen
             && !this.hasMessageDetailFocus()
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
+    }
+
+    protected rebuildFocusStack(): void {
+        const layers: AgentConsoleFocusLayer[] = [];
+        if (this.messagesFocused) layers.push('messages');
+        if (this.threadsFocused) layers.push('threads');
+        if (this.projectsFocused) layers.push('projects');
+        if (this.sessionsFocused) layers.push('sessions');
+        if (this.toolRunsFocused) layers.push('tool-runs');
+        if (this.toolsFocused) layers.push('tool');
+        if (this.jobsFocused) layers.push('jobs');
+        if (this.tasksFocused) layers.push('plan');
+        if (this.approvalsFocused) layers.push('approval');
+        if (this.pendingQuestion) layers.push('question');
+        if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) layers.push('select');
+        if (this.textOverlay) layers.push('overlay');
+        if (this.messageDetailOpen && this.messageDetailTakesFocus) layers.push('message-detail');
+        if (this.timelineEventInspectorOpen) layers.push('timeline-inspector');
+        if (this.reviewOpen) layers.push('review');
+        if (this.gitSnapshotOpen) layers.push('git-snapshot');
+        this.focusStack = layers;
+    }
+
+    get activeFocusLayer(): AgentConsoleFocusLayer | undefined {
+        return this.focusStack[this.focusStack.length - 1];
+    }
+
+    get focusLayers(): readonly AgentConsoleFocusLayer[] {
+        return this.focusStack.slice();
+    }
+
+    pushFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
+        const next = this.focusStack.filter(item => item !== layer);
+        next.push(layer);
+        this.focusStack = next;
+        return this.focusLayers;
+    }
+
+    popFocusLayer(): AgentConsoleFocusLayer | undefined {
+        const layer = this.focusStack.pop();
+        this.focusStack = this.focusStack.slice();
+        return layer;
+    }
+
+    replaceFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
+        this.focusStack = this.focusStack.length
+            ? [...this.focusStack.slice(0, -1), layer]
+            : [layer];
+        return this.focusLayers;
+    }
+
+    consumeFocusLayer(layer: AgentConsoleFocusLayer): boolean {
+        if (this.activeFocusLayer !== layer) return false;
+        this.popFocusLayer();
+        return true;
     }
 
     hasBlockingSelectMenu(): boolean {
@@ -4977,7 +5055,7 @@ export class AgentConsoleSessionState {
         if (this.pendingQuestion) {
             if (this.isDismissKey(normalized)) {
                 this.setPendingQuestion(null);
-                this.setInputFocused(true);
+                this.syncDerivedInputFocus();
                 return true;
             }
             if (normalized === 'up') {
