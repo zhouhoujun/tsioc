@@ -14,7 +14,7 @@ import type {
     AgentConsoleSessionItem
 } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import type { SessionSearchMatch } from '@tsdi/agent';
+import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 
 // ── Command handler context ──────────────────────────────────────────────────
 
@@ -70,6 +70,9 @@ export interface CommandHandlerContext {
         setProjects(projects: Array<{ key: string; label: string; sessionCount: number; lastActive?: number }>): void;
         setThreads(threads: any[]): void;
         setProjectContext(): void;
+        setNavFilter(filter?: NavFilter): void;
+        setNavSelection(selection?: NavSelection): void;
+        setNavViewScroll(viewId: string, scroll: number): void;
     };
 
     // ── UI primitives ──
@@ -888,6 +891,12 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
             ctx.state.consoleOptions.selectHint
         );
         if (!sessionId) return true;
+        // P236: share selection/filter store with /sessions for restore on switch.
+        const canonicalProjectId = String(projectSessions.find(s => String(s.projectId || '').trim())?.projectId || '').trim();
+        const projectIndex = Math.max(0, projectSessions.findIndex(s => s.id === sessionId));
+        ctx.state.setNavFilter({ projectId: canonicalProjectId || project });
+        ctx.state.setNavViewScroll('sessions', projectIndex);
+        ctx.state.setNavSelection({ type: 'session', id: sessionId, index: projectIndex });
         await ctx.openSession(sessionId);
     }
     return true;

@@ -982,7 +982,7 @@ export class AgentConsoleSessionsPanelComponent {
     }
 
     get sessions(): AgentConsoleSessionItem[] {
-        return this.state.sessions;
+        return this.state.navFilteredSessions;
     }
 
     get shellStyle() {

@@ -805,6 +805,8 @@ Turn: Fix session restore                                      running  01:42
 - agent-gateway `nav.query` RPC（能力列表 + 分发 + `queryNav`）：按 `context.principalId` 做 session 归属过滤（跨项目隔离），`listSessionInfos` 投影 `NavSessionSource`，树构建后应用 `params.filter`；`includeArchived`/`includeAutomation` 透传。
 - agent-ui `AgentConsoleSessionState` 增加共用 selection/filter store：`navFilter`/`navSelection`/`navViewScroll` + `seedNavTree`/`setNavFilter`/`setNavSelection`/`navigateNav`（cursor 在过滤后树上移动）/`resolveNavSelectionTarget`/`setNavViewScroll`/`getNavViewScroll`；`configure()` 不重置 nav 状态，视图切换后滚动位置与筛选条件恢复。
 - agent-ui `AgentConsoleRemoteEventBridge` 首次连接时以 `nav.query` 播种导航树（`seedFromNav`，失败静默降级）。
+- P236 part B：`AgentConsoleSessionState` 光标/面板列表改走 `navFilteredSessions`（`navFilter` 的 text/workspace/projectId(projectId OR projectKey)/threadId/pinnedOnly 过滤，空过滤返回全量）；`setSessions` 经 `clampSessionSelectionToFilter` 在过滤后列表内重钳选择；`setSessionsFocused(true)` 按 `getNavViewScroll('sessions')` 恢复选择并同步 `navSelection`，`(false)` 回写滚动位置；`/projects` 选中会话后写 `navFilter({projectId})`+`navViewScroll`+`navSelection`（canonicalProjectId 优先会话 projectId，缺失回退 project key），切回 `/sessions` 即恢复项目过滤与会话滚动位置。
+- 验证通过（part B）：agent-ui 829（新增 `test/p236-nav-sessions.spec.ts` 27 项：过滤列表/光标/焦点往返/重钳/configure 存活/`/projects` 接线）；三包 `tsc --noEmit` 通过；边界扫描干净。
 - 验证通过：agent 787、agent-gateway 249（含 `nav.query` @Test）、agent-ui 802（含 P236 nav state suite）；三包 `tsc --noEmit` 通过；跨平台边界扫描 agent-ui `src/` 无 `@tsdi/components/console`/`node:` 直接 import（仅约束注释命中）。
 
 ### P237 · Timeline/Plan 信息密度与可访问性基线 `platform: agent-ui/src（跨平台）`

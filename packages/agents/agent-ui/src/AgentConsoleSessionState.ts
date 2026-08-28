@@ -2107,21 +2107,95 @@ export class AgentConsoleSessionState {
 
     setSessions(sessions: AgentConsoleSessionItem[]): void {
         this.sessions = sessions.slice();
-        if (!this.sessions.length) {
+        this.clampSessionSelectionToFilter();
+    }
+
+    get navFilteredSessions(): AgentConsoleSessionItem[] {
+        const filter = this.navFilter;
+        if (!filter || (!filter.text && !filter.workspace && !filter.projectId && !filter.threadId && !filter.pinnedOnly)) {
+            return this.sessions;
+        }
+        const text = String(filter.text || '').trim().toLowerCase();
+        const workspace = String(filter.workspace || '').trim();
+        const projectId = String(filter.projectId || '').trim();
+        const threadId = String(filter.threadId || '').trim();
+        return this.sessions.filter(session => {
+            if (text) {
+                const haystack = [
+                    session.id,
+                    session.title,
+                    session.summary,
+                    session.workspace,
+                    session.projectKey,
+                    session.projectId,
+                    session.primaryThreadId
+                ].filter(Boolean).map(value => String(value).toLowerCase()).join(' ');
+                if (!haystack.includes(text)) {
+                    return false;
+                }
+            }
+            if (workspace && String(session.workspace || '') !== workspace) {
+                return false;
+            }
+            if (projectId && session.projectId !== projectId && session.projectKey !== projectId) {
+                return false;
+            }
+            if (threadId && session.primaryThreadId !== threadId) {
+                return false;
+            }
+            if (filter.pinnedOnly && session.pinned !== true) {
+                return false;
+            }
+            return true;
+        });
+    }
+
+    protected clampSessionSelectionToFilter(): void {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
             this.selectedSessionId = '';
-        } else if (this.selectedSessionId && this.sessions.some(item => item.id === this.selectedSessionId)) {
+        } else if (this.selectedSessionId && list.some(item => item.id === this.selectedSessionId)) {
             // Preserve explicit selection when the session list refreshes.
         } else {
-            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+            this.selectedSessionId = list.find(item => item.current)?.id || list[0].id;
         }
     }
 
     setSessionsFocused(focused: boolean): void {
         this.sessionsFocused = focused;
-        if (focused && !this.selectedSessionId && this.sessions.length) {
-            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+        if (focused) {
+            this.restoreSessionsViewState();
+        } else {
+            this.persistSessionsViewState();
         }
         this.syncDerivedInputFocus();
+    }
+
+    protected restoreSessionsViewState(): void {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
+            this.selectedSessionId = '';
+            return;
+        }
+        const savedScroll = this.getNavViewScroll('sessions');
+        if (savedScroll > 0 && savedScroll < list.length) {
+            this.selectedSessionId = list[savedScroll].id;
+        } else if (!this.selectedSessionId || !list.some(item => item.id === this.selectedSessionId)) {
+            this.selectedSessionId = list.find(item => item.current)?.id || list[0].id;
+        }
+        const index = list.findIndex(item => item.id === this.selectedSessionId);
+        if (index >= 0) {
+            this.setNavSelection({ type: 'session', id: this.selectedSessionId, index });
+        }
+    }
+
+    protected persistSessionsViewState(): void {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
+            return;
+        }
+        const index = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
+        this.setNavViewScroll('sessions', index);
     }
 
     setProjects(projects: AgentConsoleProjectItem[]): void {
@@ -2154,47 +2228,51 @@ export class AgentConsoleSessionState {
     }
 
     setSelectedSessionId(sessionId: string): void {
-        if (!sessionId || !this.sessions.some(item => item.id === sessionId)) {
+        if (!sessionId || !this.navFilteredSessions.some(item => item.id === sessionId)) {
             return;
         }
         this.selectedSessionId = sessionId;
     }
 
     moveSessionSelection(delta: number): void {
-        if (!this.sessions.length) {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
-        const nextIndex = (currentIndex + delta + this.sessions.length) % this.sessions.length;
-        this.selectedSessionId = this.sessions[nextIndex].id;
+        const currentIndex = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
+        const nextIndex = (currentIndex + delta + list.length) % list.length;
+        this.selectedSessionId = list[nextIndex].id;
     }
 
     moveSessionSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.sessions.length) {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
+        const currentIndex = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
         const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(this.sessions.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedSessionId = this.sessions[nextIndex].id;
+        const nextIndex = Math.max(0, Math.min(list.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedSessionId = list[nextIndex].id;
     }
 
     selectFirstSession(): void {
-        if (!this.sessions.length) {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
             return;
         }
-        this.selectedSessionId = this.sessions[0].id;
+        this.selectedSessionId = list[0].id;
     }
 
     selectLastSession(): void {
-        if (!this.sessions.length) {
+        const list = this.navFilteredSessions;
+        if (!list.length) {
             return;
         }
-        this.selectedSessionId = this.sessions[this.sessions.length - 1].id;
+        this.selectedSessionId = list[list.length - 1].id;
     }
 
     get selectedSession(): AgentConsoleSessionItem | undefined {
-        return this.sessions.find(item => item.id === this.selectedSessionId);
+        return this.navFilteredSessions.find(item => item.id === this.selectedSessionId);
     }
 
     protected formatSessionWorkspaceLabel(workspace?: string): string {
