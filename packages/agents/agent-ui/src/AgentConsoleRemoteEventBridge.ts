@@ -301,11 +301,15 @@ function normalizePendingQuestion(output: any): AgentConsolePendingQuestion | nu
         return null;
     }
     return {
+        questionId: String(output?.questionId || '').trim() || `legacy-question-${String(output?.sessionId || '')}-${question}`,
+        sessionId: String(output?.sessionId || '').trim() || undefined as any,
         question,
         options: Array.isArray(output?.options) ? output.options.map((item: any) => String(item || '').trim()).filter(Boolean) : [],
         context: typeof output?.context === 'string' && output.context.trim() ? output.context.trim() : undefined,
         severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
-        updatedAt: Date.now()
+        createdAt: Number(output?.createdAt) || Date.now(),
+        updatedAt: Number(output?.updatedAt) || Date.now(),
+        status: 'pending'
     };
 }
 
@@ -399,6 +403,12 @@ export class AgentConsoleRemoteEventBridge {
         if (!this.active) {
             return;
         }
+        if (this.hasConnected) {
+            this.state.markTimelineReconnecting(true);
+        }
+        if (!this.hasConnected) {
+            await this.seedFromTimeline();
+        }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
         if (this.options.token) {
@@ -440,7 +450,23 @@ export class AgentConsoleRemoteEventBridge {
             this.options.onReconnected?.();
         }
         this.hasConnected = true;
+        this.state.markTimelineReconnecting(false);
         this.scheduleReconnect();
+    }
+
+    protected async seedFromTimeline(): Promise<void> {
+        if (!this.rpc || !this.sessionId) {
+            return;
+        }
+        try {
+            const result = await this.rpc.request('timeline.query', { sessionId: this.sessionId, limit: 500 });
+            const entries = Array.isArray(result?.entries) ? result.entries : [];
+            if (entries.length) {
+                this.state.seedTimeline(entries);
+            }
+        } catch {
+            return;
+        }
     }
 
     protected scheduleReconnect(): void {

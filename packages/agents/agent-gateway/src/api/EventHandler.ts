@@ -1,7 +1,7 @@
 import * as http from 'http';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentPlanCompletedEvent, AgentPlanCreatedEvent, AgentPlanStepBlockedEvent, AgentPlanStepCompletedEvent, AgentPlanStepStartedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent, TimelineEventRecord, TimelineHistoryStore, TimelineEventType } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -26,7 +26,14 @@ export class EventHandler {
     private listeners = new Map<string, Set<(record: GatewayEventRecord) => void>>();
     private history: GatewayEventRecord[] = [];
 
-    constructor(private owners: SessionOwnerStore) {
+    constructor(
+        private owners: SessionOwnerStore,
+        @Optional() private timeline?: TimelineHistoryStore | null
+    ) {
+    }
+
+    private capture(type: TimelineEventType, event: Omit<TimelineEventRecord, 'seq'>): void {
+        this.timeline?.append({ ...event, type }).catch(() => undefined);
     }
 
     private sseHandler: RouteHandler = async (req, res) => {
@@ -62,6 +69,14 @@ export class EventHandler {
     @OnEvent(AgentTurnStartedEvent)
     onTurnStarted(event: AgentTurnStartedEvent): void {
         this.publish('turn_started', { sessionId: event.sessionId, input: event.input });
+        this.capture('turn_started', {
+            id: `turn-${event.sessionId}-${Date.now()}-s`,
+            type: 'turn_started',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            turnId: event.sessionId,
+            summary: event.input
+        });
     }
 
     @OnEvent(AgentStreamChunkEvent)
@@ -83,6 +98,19 @@ export class EventHandler {
             hasInput: event.hasInput,
             inputSummary: event.inputSummary
         });
+        this.capture('tool_invoked', {
+            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            type: 'tool_invoked',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            toolName: event.toolName,
+            toolCallId: event.receipt?.toolCallId,
+            receiptId: event.receipt?.receiptId,
+            attempt: event.receipt?.attemptCount,
+            status: event.receipt?.status,
+            summary: event.inputSummary,
+            detail: event.inputSummary
+        });
     }
 
     @OnEvent(AgentToolCompletedEvent)
@@ -92,6 +120,20 @@ export class EventHandler {
             toolName: event.toolName,
             output: this.summarizeValue(event.output),
             receipt: event.receipt
+        });
+        this.capture('tool_completed', {
+            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            type: 'tool_completed',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            toolName: event.toolName,
+            toolCallId: event.receipt?.toolCallId,
+            receiptId: event.receipt?.receiptId,
+            attempt: event.receipt?.attemptCount,
+            status: event.receipt?.status,
+            summary: event.receipt?.outputSummary,
+            detail: event.receipt?.outputSummary,
+            durationMs: event.receipt?.durationMs
         });
     }
 
@@ -103,6 +145,19 @@ export class EventHandler {
             error: event.error.message,
             receipt: event.receipt
         });
+        this.capture('tool_failed', {
+            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            type: 'tool_failed',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            toolName: event.toolName,
+            toolCallId: event.receipt?.toolCallId,
+            receiptId: event.receipt?.receiptId,
+            attempt: event.receipt?.attemptCount,
+            status: event.receipt?.status,
+            detail: event.error.message,
+            durationMs: event.receipt?.durationMs
+        });
     }
 
     @OnEvent(AgentToolSkippedEvent)
@@ -113,6 +168,18 @@ export class EventHandler {
             reason: event.reason,
             receipt: event.receipt
         });
+        this.capture('tool_skipped', {
+            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            type: 'tool_skipped',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            toolName: event.toolName,
+            toolCallId: event.receipt?.toolCallId,
+            receiptId: event.receipt?.receiptId,
+            attempt: event.receipt?.attemptCount,
+            status: event.receipt?.status,
+            detail: event.reason
+        });
     }
 
     @OnEvent(AgentTurnCompletedEvent)
@@ -121,12 +188,129 @@ export class EventHandler {
             sessionId: event.sessionId,
             message: event.message
         });
+        this.capture('turn_completed', {
+            id: `turn-${event.sessionId}-${Date.now()}-c`,
+            type: 'turn_completed',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            turnId: event.sessionId
+        });
     }
 
     @OnEvent(AgentTurnCancelledEvent)
     onTurnCancelled(event: AgentTurnCancelledEvent): void {
         this.publish('turn_cancelled', {
             sessionId: event.sessionId
+        });
+        this.capture('turn_cancelled', {
+            id: `turn-${event.sessionId}-${Date.now()}-x`,
+            type: 'turn_cancelled',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            turnId: event.sessionId
+        });
+    }
+
+    @OnEvent(AgentPlanCreatedEvent)
+    onPlanCreated(event: AgentPlanCreatedEvent): void {
+        this.publish('plan_created', {
+            sessionId: event.sessionId,
+            planId: event.planId,
+            stepCount: event.steps.length
+        });
+        event.steps.forEach(step => {
+            this.capture('plan_created', {
+                id: `plan-${event.planId}-${event.sessionId}-${Date.now()}-${step.id}`,
+                type: 'plan_created',
+                sessionId: event.sessionId,
+                timestamp: Date.now(),
+                planId: event.planId,
+                stepId: step.id,
+                sequence: event.sequence,
+                summary: step.content,
+                detail: step.content
+            });
+        });
+    }
+
+    @OnEvent(AgentPlanStepStartedEvent)
+    onPlanStepStarted(event: AgentPlanStepStartedEvent): void {
+        this.publish('step_started', {
+            sessionId: event.sessionId,
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence
+        });
+        this.capture('step_started', {
+            id: `step-${event.planId}-${event.stepId}-${event.sessionId}-${Date.now()}`,
+            type: 'step_started',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence,
+            summary: event.stepId
+        });
+    }
+
+    @OnEvent(AgentPlanStepBlockedEvent)
+    onPlanStepBlocked(event: AgentPlanStepBlockedEvent): void {
+        this.publish('step_blocked', {
+            sessionId: event.sessionId,
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence,
+            reason: event.reason
+        });
+        this.capture('step_blocked', {
+            id: `step-${event.planId}-${event.stepId}-${event.sessionId}-${Date.now()}-b`,
+            type: 'step_blocked',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence,
+            detail: event.reason
+        });
+    }
+
+    @OnEvent(AgentPlanStepCompletedEvent)
+    onPlanStepCompleted(event: AgentPlanStepCompletedEvent): void {
+        this.publish('step_completed', {
+            sessionId: event.sessionId,
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence,
+            status: event.status
+        });
+        this.capture('step_completed', {
+            id: `step-${event.planId}-${event.stepId}-${event.sessionId}-${Date.now()}-c`,
+            type: 'step_completed',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            planId: event.planId,
+            stepId: event.stepId,
+            sequence: event.sequence,
+            status: event.status
+        });
+    }
+
+    @OnEvent(AgentPlanCompletedEvent)
+    onPlanCompleted(event: AgentPlanCompletedEvent): void {
+        this.publish('plan_completed', {
+            sessionId: event.sessionId,
+            planId: event.planId,
+            sequence: event.sequence,
+            summary: event.summary
+        });
+        this.capture('plan_completed', {
+            id: `plan-${event.planId}-${event.sessionId}-${Date.now()}-c`,
+            type: 'plan_completed',
+            sessionId: event.sessionId,
+            timestamp: Date.now(),
+            planId: event.planId,
+            sequence: event.sequence,
+            detail: event.planId
         });
     }
 

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -37,11 +37,13 @@ export class AppRpcServer {
         @Optional() private audio?: AudioSessionHandler | null,
         @Optional() private shares?: SessionShareStore | null,
         @Optional() private cloudTasks?: CloudTaskQueue | null,
-        @Optional() private projectMemory?: ProjectMemoryService | null
+        @Optional() private projectMemory?: ProjectMemoryService | null,
+        @Optional() private timeline?: TimelineHistoryStore | null
     ) {
     }
 
     protected readonly audioStatesBySession = new Map<string, AudioSessionState>();
+    protected readonly questionResponses = new Map<string, { questionId: string; sessionId: string; status: 'answered' | 'dismissed'; answer?: string; updatedAt: number }>();
 
     async handlePayload(payload: AppRpcRequest | AppRpcRequest[], context: AppRpcRequestContext = {}): Promise<AppRpcResponse | AppRpcResponse[] | null> {
         if (Array.isArray(payload)) {
@@ -211,6 +213,8 @@ export class AppRpcServer {
                         'project_memory.add',
                         'project_memory.remove',
                         'events.history',
+                        'timeline.query',
+                        'timeline.replay',
                         'audit.list',
                         'todo.get',
                         'coding_task.list',
@@ -361,6 +365,10 @@ export class AppRpcServer {
                 return this.runTurn(params, context);
             case 'run.cancel':
                 return this.cancelTurn(params, context);
+            case 'question.answer':
+                return this.answerQuestion(params, context);
+            case 'question.list':
+                return this.listQuestionResponses(params, context);
             case 'cloud.task.submit':
                 return this.submitCloudTask(params, context);
             case 'cloud.task.list':
@@ -401,6 +409,10 @@ export class AppRpcServer {
                 return this.removeProjectMemory(params, context);
             case 'events.history':
                 return this.getEventHistory(this.requireSessionId(params), context);
+            case 'timeline.query':
+                return this.queryTimeline(params, context);
+            case 'timeline.replay':
+                return this.replayTimeline(params, context);
             case 'audit.list':
                 return this.listAudit(params, context);
             case 'todo.get':
@@ -1057,6 +1069,28 @@ export class AppRpcServer {
             turn,
             message: messages[messages.length - 1] ?? null
         };
+    }
+
+    private async answerQuestion(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const questionId = String(params?.questionId || '').trim();
+        if (!questionId) throw new AppRpcError(-32602, 'questionId is required');
+        const action = params?.action === 'dismiss' ? 'dismiss' : 'answer';
+        const answer = typeof params?.answer === 'string' ? params.answer.trim() : '';
+        if (action === 'answer' && !answer) throw new AppRpcError(-32602, 'answer is required');
+        const key = `${sessionId}:${questionId}`;
+        const existing = this.questionResponses.get(key);
+        if (existing) return { ...existing, duplicate: true };
+        const result = { questionId, sessionId, status: action === 'answer' ? 'answered' as const : 'dismissed' as const, ...(answer ? { answer } : {}), updatedAt: Date.now() };
+        this.questionResponses.set(key, result);
+        return { ...result, duplicate: false };
+    }
+
+    private async listQuestionResponses(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        return Array.from(this.questionResponses.values()).filter(item => item.sessionId === sessionId);
     }
 
     private async compactSession(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -1792,6 +1826,35 @@ export class AppRpcServer {
     private async getEventHistory(sessionId: string, context: AppRpcRequestContext): Promise<any> {
         await this.ensureSessionAccess(sessionId, context);
         return this.events.getHistory(sessionId);
+    }
+
+    private async queryTimeline(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.timeline) {
+            return { sessionId, entries: [], hasMore: false };
+        }
+        const cursor = typeof params?.cursor === 'string' && params.cursor.trim() ? params.cursor.trim() : undefined;
+        const limit = typeof params?.limit === 'number' ? params.limit : undefined;
+        const page = await this.timeline.query(sessionId, { cursor, limit });
+        return {
+            sessionId,
+            entries: page.entries,
+            ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+            hasMore: page.hasMore
+        };
+    }
+
+    private async replayTimeline(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.timeline) {
+            return { sessionId, events: [] };
+        }
+        const sinceSeqRaw = Number(params?.sinceSeq);
+        const sinceSeq = Number.isFinite(sinceSeqRaw) ? sinceSeqRaw : undefined;
+        const events = await this.timeline.replay(sessionId, sinceSeq);
+        return { sessionId, sinceSeq: sinceSeq ?? -1, events };
     }
 
     private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {

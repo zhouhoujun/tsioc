@@ -60,6 +60,14 @@
 - 任务与恢复：coding task 具备 worker、lineage、retry、rollback、checkpoint、diff summary；会话切换恢复 plan mode、todo、goal 与任务聚合。
 - 工程收尾：AgentConsoleComponent 已按域拆分，类型抑制治理完成；PTY 验收脚手架、全量测试、构建和跨平台边界检查已落地。
 
+### 交互与时间线能力归并（P203–P224，已完成）
+
+- 计划控制面：Todo revision/冲突重放、分解/依赖校验、step evidence/receipt、DAG 执行波、统一 action（complete/retry/block/unblock/assign）及失败回滚已落地。
+- 对话内计划与执行反馈：计划卡片固定 ID、步骤树/inspector、当前步骤与失败原因、retry/approve 入口、tool event 稳定聚合和 timeline Turn→Step→Event 分组已落地。
+- 时间线可读性：compact/steps/verbose 三模式、异常优先与历史折叠、长输出 inspector、断线事件去重/序列保护、窄终端/CJK 断言已落地。
+- 交互基础：pending question 支持点击与 ↑↓/1–9/Enter/Esc，计划操作具备确认、乐观更新、拒绝/异常回滚；后台任务已有 InMemory durable feed 与项目/session 聚合基础。
+- 以上条目的详细实现记录保留在 P203–P224 段落，仅用于审计；后续不得重复立项，未完成的端到端验收按 P238 执行。
+
 ---
 
 ## 差距分析：Codex vs 本项目——计划/任务/代码修改展示
@@ -594,6 +602,8 @@
 
 ### UI 互动改进批次（P213–P218）
 
+> 归并说明（2026-08-28）：P213 的问询键盘闭环已在 `UI 互动专项进展` 验证；P215/P216 的计划 inspector、action 与事件序列已分别归入 P229/P230/P219；P214、P217、P218 尚未完整实现，后续执行项已重编号为 P233、P237、P238，旧条目仅保留历史映射。
+
 > 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新 `todo.md` 验证记录 → 单独提交。
 
 - **P213 · Pending question 键盘交互与提交闭环** `platform: agent-ui/src（跨平台）`
@@ -736,6 +746,73 @@ Turn: Fix session restore                                      running  01:42
 ---
 
 ## UI 互动专项进展（2026-08-27）
+
+## 深入差距分析与改进计划 v13（2026-08-28，Codex/opencode 对标复核）
+
+本节只记录当前仍可复现、且未被 P203–P224 覆盖的缺口。对照 Codex 的 thread-item 原地更新/单一线性 transcript，以及 opencode 的可恢复 question、permission、task block 和统一 TUI focus 后，当前优先级如下：
+
+| 领域 | 代码证据 | 用户影响 | 优先级 |
+|---|---|---|---|
+| 统一焦点与返回 | `AgentConsoleSessionState` 仍维护 `messagesFocused`、`tasksFocused`、`approvalsFocused`、`textOverlay` 等独立状态；`syncDerivedInputFocus`/`handleEscapeKey` 依赖分支顺序 | 新增面板可能抢 Esc/Enter，键盘用户无法预测返回路径；browser Tab 顺序与 TUI 不一致 | P0 |
+| 问询提交语义 | pending question 目前只把选项写入 composer；没有 question id、提交/拒绝结果、重复事件去重或超时状态 | 用户按 Enter 后仍需再次发送，断线/重复回复可能造成二次回答 | P0 |
+| 计划/工具线性投影 | plan 已内联，但旧 `tool_invoked`/`tool_completed` 兼容事件仍可能产生重复行；聚合键缺少跨 turn 的持久投影查询 | 长任务 transcript 仍噪声大，刷新/重连后运行态与终态可能分裂 | P1 |
+| 任务与审批可恢复性 | `BackgroundTaskManager` 的 durable store 目前以 InMemory 为主；任务面板缺少分页 cursor、批量结果反馈与失败定位链接 | 重启/多窗口后看不到完整任务历史，批量操作不可审计 | P1 |
+| 项目导航一致性 | project→session→thread→delegation 尚无单一查询投影；项目列表与 `/sessions`、`/tasks` 的筛选状态分离 | 用户在项目、线程、任务之间切换会丢失上下文和筛选条件 | P1 |
+| 跨端验收与可访问性 | 现有测试以 view-model 为主；PTY/browser 尚未覆盖 focus trap、ARIA、鼠标禁用、窄屏分页和断线恢复全链路 | 回归可能只在真实终端或浏览器键盘操作时暴露 | P1 |
+
+### P233 · FocusStack 与跨端键盘契约 `platform: agent-ui/src（跨平台）`
+
+✅ **已完成（2026-08-28）**：`AgentConsoleSessionState` 新增可序列化 `focusStack`/`activeFocusLayer` 投影及 `push/pop/replace/consume` 操作，统一映射现有面板、问询、overlay、详情与 review 焦点；Esc 关闭顶层问询后按底层焦点重新派生输入状态。新增 3 项 focus-stack 回归测试，agent-ui 全量 789 passing，`tsc --noEmit` 通过；`build:web` 受 sandbox `spawnSync /bin/sh EPERM` 限制未能执行。跨平台边界扫描无直接 console/node import（仅 globalThis 守卫与约束注释命中）。
+
+- 将布尔 focus 字段映射为可序列化 `FocusLayer`（`composer|messages|plan|review|tool|approval|question|overlay|select`），提供 `push/pop/replace/consume`；旧 setter 保留为兼容适配器。
+- 明确路由优先级：modal/select/question → inspector/overlay → panel list → transcript → composer；Esc 只弹出一层，Enter/方向键由当前 layer 声明 capability 后消费。
+- browser 输出 `tabIndex`、`aria-activedescendant`、focus-visible 状态；TUI 使用同一 action 名称和 keymap，不在平台层复制业务逻辑。
+- 验收：焦点状态序列可重放；连续 Esc 恢复 composer；会话切换/turn 完成清理 stale layer；键盘无鼠标完成计划、审批、问询和 inspector 操作。
+- 收尾：检查 `git diff` 与边界扫描 → agent-ui、components、components/console 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果与测试数字 → 独立提交。
+
+### P234 · Pending question request/response 生命周期 `platform: agent + agent-ui/src + agent RPC`
+
+**Part A 已完成（2026-08-28）**：`ask_user` 支持稳定 `questionId`（兼容旧 payload 的生成式 fallback）；跨平台 UI 归一化 `sessionId`、时间戳及 `pending/submitting/answered` 状态。选择问题时通过 `questionAction` 调用 gateway `question.answer`，成功后清理、失败保留草稿和错误；gateway 按 session/questionId 幂等记录并提供 `question.list`。剩余：多问询队列、过期语义与断线补拉/运行时挂起恢复。
+
+**Part A 收尾复核（2026-08-28）**：全量测试 agent-gateway 247、agent-ui 791、agent-tools 463、agent 771、components 135、components/console 73，均 EXIT=0；agent-tools / agent-gateway / agent / agent-ui `tsc --noEmit` EXIT=0；agent-ui `build:web` 3.5MB EXIT=0。静态边界：`agent-ui/src` 无 `@tsdi/components/console` 或 Node API 直接 import（扫描仅命中 `console-ports.ts` 规则注释与既有 globalThis `runtimeBuffer`/`Record<string, any>` 守卫）。顺带修正既存 `retentionRate` 字段被提交进 `AgentContextManager` 后 gateway 测试断言未同步（`gateway-server.spec.ts` 两处 `AgentContextPreparedEvent` 补齐 `retentionRate`）。已独立提交。
+
+- 为 question 增加稳定 `questionId`、`sessionId`、`createdAt`、`status: pending|answered|dismissed|expired` 和 `answer`；桥接层按 id 去重并拒绝过期回复。
+- UI 将选择、自由输入、确认、取消统一为 `questionAction`，Enter 直接提交 RPC；提交中显示不可重复提交状态，失败保留草稿并提供 retry。
+- 支持多问询队列（当前项/总数）、断线重连补拉与 turn 结束自动清理；保留无 questionId 旧 payload 的生成式兼容 id。
+- 验收：重复/乱序/跨 session 事件、超时、RPC 拒绝、断线恢复、TUI 1–9/↑↓/Enter/Esc 与 browser Tab/ARIA。
+- 收尾：按 P233 同一检查、全量测试、构建、todo 更新、独立提交门禁执行。
+
+### P235 · 单一 Timeline projection 与刷新恢复 `platform: agent + agent-gateway + agent-ui/src`
+
+- 以 `turnId/planId/stepId/toolCallId/attemptId` 建立持久 projection；start/update/completed/failed/retry 合并为一条可重放记录，原始事件仍写 audit ledger。
+- gateway 提供按 session 的 cursor 查询与 last-seen replay；UI 对重复、乱序、旧 sequence 显示 reconnect/stale 标记，不再把兼容事件直接追加 transcript。
+- compact/steps/verbose 三模式都读取同一 projection；export/raw 保持完整原始事件，避免展示优化破坏审计。
+- 验收：刷新、双窗口、网络抖动、重试 lineage、并行 step、旧事件兼容；同一 toolCall 在 transcript 始终一行。
+- 收尾：受影响包全量测试、类型检查/构建、更新 todo、独立提交。
+- **Part A 已完成（2026-08-28）**：agent 新增纯 `memory/timeline-projection.ts`（`TimelineEventRecord`/`TimelineEntry`/`TimelineEventType`、纯 reducer `applyTimelineEvent`/`reduceTimelineEvents`/`mergeTimelineEvent`/`sortTimelineEntries`、cursor `encodeTimelineCursor`/`decodeTimelineCursor`、抽象 `TimelineHistoryStore` 契约 + `InMemoryTimelineHistoryStore` + `TIMELINE_HISTORY_STORE` token，按 cat 注册 provider 并导出）。gateway 的 `EventHandler` 注入 `@Optional()` timeline store 并捕获 tool/turn/plan 原始事件（含新增 plan 系列 handler），`AppRpcServer` 新增 `timeline.query`（cursor 分页投影）与 `timeline.replay`（sinceSeq last-seen）RPC。agent-ui 的 `AgentConsoleSessionState` 新增 `timelineReconnecting`/`timelineStale`/`timelineSeedCount`/`timelineTailSeq` 字段与 `seedTimeline`/`markTimelineReconnecting` 方法（用同一投影键原地 upsert，重开/刷新从 `timeline.query` 种子、live 事件继续增量归并）；`AgentConsoleRemoteEventBridge` 在首次连接 `timeline.query` 种子、重连置 reconnect/stale 标记。新增 agent `timeline-projection.spec.ts`（8 例：聚合/陈旧拒绝/plan step/游标/分页/replay 幂等）与 agent-ui `p235-timeline-projection.spec.ts`（4 例：种子 upsert/重复幂等/重连标记/种子+live 合并）、gateway `gateway-server.spec.ts` timeline RPC 例。全量：agent 779、agent-gateway 248、agent-ui 795、components/console 73 通过；agent/gateway/agent-ui `tsc --noEmit` EXIT=0；agent-ui `build:web` 3.5MB；静态边界干净。TypeOrm 持久后端与 PTY 端到端验收顺延 Part B。
+
+### P236 · Durable task feed 与项目导航投影 `platform: agent + agent-gateway + agent-ui/src`
+
+- 将 BackgroundTaskHistoryStore 抽象为可替换持久化实现（TypeORM/SQLite 等），定义 cursor 分页、幂等写入、批量 cancel/retry、审计 receipt 和错误 cause 契约。
+- 增加 project→session→thread→delegation 单一查询 DTO；`/projects`、`/sessions`、`/tasks` 共用 selection/filter store，切换后恢复滚动位置与筛选条件。
+- 任务详情提供关联 plan step、tool receipt、diff/test/review 链接；批量操作显示成功/失败明细并支持撤销窗口。
+- 验收：进程重启、多窗口 cursor 不跳不重、跨项目隔离、权限拒绝回滚、批量部分失败、旧 host 降级。
+- 收尾：agent/agent-gateway/agent-ui 及存储实现全量测试，`tsc --noEmit`/构建，更新 todo，独立提交。
+
+### P237 · Timeline/Plan 信息密度与可访问性基线 `platform: agent-ui/src（跨平台）`
+
+- 统一 event row 的摘要字段（intent、target、outcome、duration、status），长 stdout/diff 只进入 inspector；失败、审批、blocked 默认展开且提供 action label。
+- 为 CJK、超长路径、80/120 列、browser mobile 增加稳定宽度和折行规则；禁止依赖颜色表达状态，补 glyph/text/ARIA label。
+- 增加 `/timeline`、`/plan`、`/tasks` 的筛选与搜索状态持久化，显示当前过滤条件和结果计数，避免隐式空列表。
+- 验收：snapshot + Playwright 多 viewport、screen-reader tree、键盘 only、内存/渲染延迟基线；设定同一 toolCall 行数、首屏当前 step 可见率和失败定位按键数阈值。
+- 收尾：agent-ui/components/console 全量测试、类型检查/构建、todo 更新、独立提交。
+
+### P238 · 真实终端与浏览器端到端验收 `platform: agent acceptance + agent-ui acceptance`
+
+- 扩展 PTY/browser harness：创建计划→并行任务→问询→审批→失败→retry→断线→恢复→review→完成；覆盖鼠标不可用、窄终端、CJK、长输出和多窗口。
+- 记录并持久化基线：首屏当前步骤可见率、question 完成按键数、失败定位按键数、event-to-UI 延迟、重复 toolCall 行数、焦点回退成功率。
+- 将阈值与失败现场（ANSI 脱色 transcript、DOM/ARIA 快照、事件 cursor）纳入 CI 报告；任何阈值回退阻止计划标记完成。
+- 收尾：执行受影响包全量测试与构建，静态跨平台边界检查，更新本文件写明通过/环境限制，最后独立提交。
 
 - `pending-question-panel` 已支持 TUI/browser 共用的键盘选择：↑/↓ 循环选项、1–9 直选、Enter 确认填入 composer、Esc 取消并恢复输入焦点；保留既有点击路径。
 - `/ps` 优先读取 SessionState 的统一后台任务 feed，与 Tasks 面板共享同一数据源；旧宿主仍回退 manager 查询。

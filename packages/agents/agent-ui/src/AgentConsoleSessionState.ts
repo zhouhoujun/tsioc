@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -444,12 +444,38 @@ export interface AgentConsoleTextOverlayState {
 }
 
 export interface AgentConsolePendingQuestion {
+    questionId?: string;
+    sessionId?: string;
     question: string;
     options: string[];
     context?: string;
     severity: 'low' | 'medium' | 'high';
+    createdAt?: number;
     updatedAt: number;
+    status?: 'pending' | 'submitting' | 'answered' | 'dismissed' | 'expired';
+    answer?: string;
+    error?: string;
 }
+
+/** Cross-platform focus layers. The stack is the single keyboard-routing projection. */
+export type AgentConsoleFocusLayer =
+    | 'composer'
+    | 'messages'
+    | 'plan'
+    | 'review'
+    | 'tool'
+    | 'tool-runs'
+    | 'approval'
+    | 'question'
+    | 'overlay'
+    | 'select'
+    | 'sessions'
+    | 'projects'
+    | 'threads'
+    | 'jobs'
+    | 'message-detail'
+    | 'timeline-inspector'
+    | 'git-snapshot';
 
 @Injectable()
 export class AgentConsoleSessionState {
@@ -459,6 +485,8 @@ export class AgentConsoleSessionState {
     input = '';
     inputCursor = 0;
     inputFocused = true;
+    /** Serializable focus projection shared by TUI and browser adapters. */
+    focusStack: AgentConsoleFocusLayer[] = [];
     title = '';
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
@@ -538,6 +566,7 @@ export class AgentConsoleSessionState {
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
     pendingQuestionSelectedIndex = 0;
+    questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
     protected planMessage: AgentMessage | null = null;
     protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
@@ -601,6 +630,10 @@ export class AgentConsoleSessionState {
     get timelineMode(): boolean {
         return this.timelineViewMode !== 'off';
     }
+    timelineReconnecting = false;
+    timelineStale = false;
+    timelineSeedCount = 0;
+    timelineTailSeq = -1;
     planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
@@ -899,6 +932,7 @@ export class AgentConsoleSessionState {
     }
 
     protected syncDerivedInputFocus(): void {
+        this.rebuildFocusStack();
         this.inputFocused = !this.sessionsFocused
             && !this.toolRunsFocused
             && !this.projectsFocused
@@ -913,6 +947,61 @@ export class AgentConsoleSessionState {
             && !this.timelineEventInspectorOpen
             && !this.hasMessageDetailFocus()
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
+    }
+
+    protected rebuildFocusStack(): void {
+        const layers: AgentConsoleFocusLayer[] = [];
+        if (this.messagesFocused) layers.push('messages');
+        if (this.threadsFocused) layers.push('threads');
+        if (this.projectsFocused) layers.push('projects');
+        if (this.sessionsFocused) layers.push('sessions');
+        if (this.toolRunsFocused) layers.push('tool-runs');
+        if (this.toolsFocused) layers.push('tool');
+        if (this.jobsFocused) layers.push('jobs');
+        if (this.tasksFocused) layers.push('plan');
+        if (this.approvalsFocused) layers.push('approval');
+        if (this.pendingQuestion) layers.push('question');
+        if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) layers.push('select');
+        if (this.textOverlay) layers.push('overlay');
+        if (this.messageDetailOpen && this.messageDetailTakesFocus) layers.push('message-detail');
+        if (this.timelineEventInspectorOpen) layers.push('timeline-inspector');
+        if (this.reviewOpen) layers.push('review');
+        if (this.gitSnapshotOpen) layers.push('git-snapshot');
+        this.focusStack = layers;
+    }
+
+    get activeFocusLayer(): AgentConsoleFocusLayer | undefined {
+        return this.focusStack[this.focusStack.length - 1];
+    }
+
+    get focusLayers(): readonly AgentConsoleFocusLayer[] {
+        return this.focusStack.slice();
+    }
+
+    pushFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
+        const next = this.focusStack.filter(item => item !== layer);
+        next.push(layer);
+        this.focusStack = next;
+        return this.focusLayers;
+    }
+
+    popFocusLayer(): AgentConsoleFocusLayer | undefined {
+        const layer = this.focusStack.pop();
+        this.focusStack = this.focusStack.slice();
+        return layer;
+    }
+
+    replaceFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
+        this.focusStack = this.focusStack.length
+            ? [...this.focusStack.slice(0, -1), layer]
+            : [layer];
+        return this.focusLayers;
+    }
+
+    consumeFocusLayer(layer: AgentConsoleFocusLayer): boolean {
+        if (this.activeFocusLayer !== layer) return false;
+        this.popFocusLayer();
+        return true;
     }
 
     hasBlockingSelectMenu(): boolean {
@@ -1167,6 +1256,40 @@ export class AgentConsoleSessionState {
             return;
         }
         this.setMessages(filtered);
+    }
+
+    seedTimeline(entries: TimelineEntry[]): void {
+        let seedCount = 0;
+        for (const entry of sortTimelineEntries(entries)) {
+            const key = this.qualifyUiEventKey(projectTimelineKey(entry));
+            if (!key) {
+                continue;
+            }
+            this.upsertUiEventMessage(key, projectTimelineContent(entry), {
+                eventType: entry.kind,
+                label: entry.kind,
+                status: entry.status === 'failed' ? 'error' : entry.status === 'running' ? 'running' : 'success',
+                eventKey: key,
+                durationMs: entry.durationMs,
+                toolCallId: entry.toolCallId,
+                receiptId: entry.receiptId,
+                attempt: entry.attempt,
+                source: 'remote',
+                sequence: entry.sequence
+            });
+            seedCount += 1;
+        }
+        if (seedCount > 0) {
+            this.timelineSeedCount = seedCount;
+        }
+        if (entries.length) {
+            this.timelineTailSeq = Math.max(...entries.map(entry => entry.lastSeq ?? -1));
+        }
+    }
+
+    markTimelineReconnecting(reconnecting: boolean): void {
+        this.timelineReconnecting = reconnecting;
+        this.timelineStale = reconnecting;
     }
 
     appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void {
@@ -2521,6 +2644,9 @@ export class AgentConsoleSessionState {
     }
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
+        if (question && question.sessionId && question.sessionId !== this.sessionId) return;
+        const previous = this.pendingQuestion;
+        if (question && previous && previous.questionId === question.questionId && (previous.updatedAt || 0) > (question.updatedAt || 0)) return;
         this.pendingQuestion = question;
         this.pendingQuestionSelectedIndex = 0;
         this.syncDerivedInputFocus();
@@ -2532,13 +2658,40 @@ export class AgentConsoleSessionState {
         this.pendingQuestionSelectedIndex = (this.pendingQuestionSelectedIndex + delta + count) % count;
     }
 
-    choosePendingQuestion(index = this.pendingQuestionSelectedIndex): boolean {
+    async choosePendingQuestion(index = this.pendingQuestionSelectedIndex): Promise<boolean> {
         const option = this.pendingQuestion?.options[index];
         if (!option) return false;
         this.pendingQuestionSelectedIndex = index;
         this.setInput(option, option.length);
-        this.setInputFocused(true);
+        const question = this.pendingQuestion;
+        if (!question) return false;
+        // Standalone/legacy hosts retain the previous compose-only behavior.
+        if (!this.questionAction) {
+            this.setInputFocused(true);
+            return true;
+        }
+        question.status = 'submitting';
+        question.error = undefined;
+        try {
+            await this.questionAction({
+                questionId: question.questionId || this.buildLegacyQuestionId(question),
+                sessionId: question.sessionId || this.sessionId,
+                action: 'answer',
+                answer: option
+            });
+            question.status = 'answered';
+            question.answer = option;
+            this.setPendingQuestion(null);
+            this.setInputFocused(true);
+        } catch (error: any) {
+            question.status = 'pending';
+            question.error = error?.message || String(error || 'Question response failed');
+        }
         return true;
+    }
+
+    protected buildLegacyQuestionId(question: AgentConsolePendingQuestion): string {
+        return `legacy-question-${question.question}`;
     }
 
     async retrySelectedPlanTodo(): Promise<boolean> {
@@ -4977,7 +5130,7 @@ export class AgentConsoleSessionState {
         if (this.pendingQuestion) {
             if (this.isDismissKey(normalized)) {
                 this.setPendingQuestion(null);
-                this.setInputFocused(true);
+                this.syncDerivedInputFocus();
                 return true;
             }
             if (normalized === 'up') {
@@ -5866,4 +6019,43 @@ export class AgentConsoleSessionState {
         this.inputCursor = this.clampCursor(this.input, next.cursor);
         return next;
     }
+}
+
+function projectTimelineKey(entry: TimelineEntry): string {
+    return entry.key || `${entry.kind}:${entry.label}`;
+}
+
+function projectTimelineContent(entry: TimelineEntry): string {
+    const label = entry.label || entry.kind;
+    if (entry.kind === 'tool') {
+        if (entry.status === 'running') {
+            return `Running ${label.replace(/[._-]+/g, ' ')}`;
+        }
+        if (entry.status === 'failed') {
+            return `${label.replace(/[._-]+/g, ' ')} failed: ${entry.error || entry.summary || 'unknown error'}`;
+        }
+        const duration = typeof entry.durationMs === 'number' ? ` · ${entry.durationMs}ms` : '';
+        return `${label.replace(/[._-]+/g, ' ')} completed${duration}`;
+    }
+    if (entry.kind === 'step') {
+        const verb = entry.status === 'running' ? 'started' : entry.status === 'blocked' ? 'blocked' : entry.status === 'failed' ? 'failed' : entry.status === 'cancelled' ? 'cancelled' : 'completed';
+        const reason = entry.status === 'blocked' && entry.detail ? ` (${entry.detail})` : '';
+        return `Step ${verb}: ${label}${reason}`;
+    }
+    if (entry.kind === 'plan') {
+        if (entry.status === 'completed') {
+            return `Plan completed: ${entry.label}`;
+        }
+        return `Plan ${entry.status === 'pending' ? 'created' : entry.status}: ${entry.label}`;
+    }
+    if (entry.kind === 'turn') {
+        if (entry.status === 'completed') {
+            return 'Turn completed';
+        }
+        if (entry.status === 'cancelled') {
+            return 'Turn cancelled';
+        }
+        return 'Turn started';
+    }
+    return `${entry.kind}: ${label}`;
 }

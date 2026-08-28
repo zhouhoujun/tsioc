@@ -417,12 +417,21 @@ export class AgentConsoleEventBridge {
             return null;
         }
         return {
+            questionId: this.resolveQuestionId(output, question),
+            sessionId: String(output?.sessionId || this.state.sessionId),
             question,
             options: Array.isArray(output?.options) ? output.options.map((item: any) => String(item || '').trim()).filter(Boolean) : [],
             context: typeof output?.context === 'string' && output.context.trim() ? output.context.trim() : undefined,
             severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
-            updatedAt: Date.now()
+            createdAt: Number(output?.createdAt) || Date.now(),
+            updatedAt: Number(output?.updatedAt) || Date.now(),
+            status: 'pending'
         };
+    }
+
+    protected resolveQuestionId(output: any, question: string): string {
+        const explicit = String(output?.questionId || '').trim();
+        return explicit || `legacy-question-${String(output?.sessionId || this.state.sessionId)}-${question}`;
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {

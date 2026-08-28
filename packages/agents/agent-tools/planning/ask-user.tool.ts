@@ -12,6 +12,7 @@ export class AskUserTool implements AgentTool {
         type: 'object',
         properties: {
             question: { type: 'string' },
+            questionId: { type: 'string' },
             options: { type: 'array', items: { type: 'string' } },
             context: { type: 'string' },
             severity: { type: 'string', enum: [...ALLOWED_SEVERITIES] }
@@ -27,6 +28,7 @@ export class AskUserTool implements AgentTool {
             requested: true,
             kind: 'ask_user',
             sessionId: context.sessionId,
+            questionId: this.resolveQuestionId(context.sessionId, input),
             question: this.requireQuestion(input?.question),
             options: this.resolveOptions(input?.options),
             context: this.optionalString(input?.context),
@@ -63,5 +65,16 @@ export class AskUserTool implements AgentTool {
             throw new Error('Invalid ask_user input: severity must be low, medium, or high.');
         }
         return value as AskSeverity;
+    }
+
+    private resolveQuestionId(sessionId: string, input: any): string {
+        const explicit = this.optionalString(input?.questionId);
+        if (explicit) return explicit;
+        const source = `${sessionId}\u0000${this.requireQuestion(input?.question)}\u0000${(this.resolveOptions(input?.options)).join('\u0000')}`;
+        let hash = 2166136261;
+        for (let index = 0; index < source.length; index++) {
+            hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
+        }
+        return `question-${(hash >>> 0).toString(36)}`;
     }
 }

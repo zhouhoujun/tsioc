@@ -22,7 +22,7 @@ import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { UsageHandler } from '../src/api/UsageHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, InMemoryTimelineHistoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -3094,6 +3094,66 @@ export class PairingStoreTest {
 
 @Suite('AppRpcServer')
 export class AppRpcServerTest {
+    @Test('records question answers idempotently per session')
+    async recordsQuestionAnswersIdempotently() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+        await store.get('question-s1');
+        await owners.create('question-s1', 'user-1');
+        const request = { jsonrpc: '2.0' as const, id: 1, method: 'question.answer', params: { sessionId: 'question-s1', questionId: 'q1', action: 'answer', answer: 'postgres' } };
+        const first = await rpc.handle(request, { principalId: 'user-1' }) as any;
+        const second = await rpc.handle(request, { principalId: 'user-1' }) as any;
+        expect(first.result).toMatchObject({ questionId: 'q1', status: 'answered', answer: 'postgres', duplicate: false });
+        expect(second.result).toMatchObject({ questionId: 'q1', duplicate: true });
+        const list = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'question.list', params: { sessionId: 'question-s1' } }, { principalId: 'user-1' }) as any;
+        expect(list.result).toHaveLength(1);
+    }
+
+    @Test('timeline.query projects aggregated entries and timeline.replay pages raw events idempotently')
+    async queriesAndReplaysTimeline() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const timeline = new InMemoryTimelineHistoryStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const events = new EventHandler(owners, timeline);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), events, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, timeline);
+        await owners.create('timeline-s1', 'user-1');
+        const sid = 'timeline-s1';
+        events.onToolInvoked(new AgentToolInvokedEvent({}, sid, 'bash', { cmd: 'ls' }, {
+            receiptId: 'rc1', toolCallId: 'tc1', toolName: 'bash', executionMode: 'sequential', status: 'running'
+        }));
+        events.onToolCompleted(new AgentToolCompletedEvent({}, sid, 'bash', 'ok', {
+            receiptId: 'rc1', toolCallId: 'tc1', toolName: 'bash', executionMode: 'sequential', status: 'success', durationMs: 12, outputSummary: 'ok'
+        }));
+        events.onTurnStarted(new AgentTurnStartedEvent({}, sid, 'hello'));
+
+        const query1 = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'timeline.query', params: { sessionId: sid } }, { principalId: 'user-1' }) as any;
+        const entries = query1.result.entries;
+        expect(query1.result.hasMore).toBe(false);
+        const toolEntries = entries.filter((entry: any) => entry.kind === 'tool');
+        expect(toolEntries.length).toEqual(1);
+        expect(toolEntries[0].key).toEqual('tool:tc1');
+        expect(toolEntries[0].status).toEqual('success');
+        expect(toolEntries[0].durationMs).toEqual(12);
+
+        const replay1 = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'timeline.replay', params: { sessionId: sid, sinceSeq: 0 } }, { principalId: 'user-1' }) as any;
+        const replay2 = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'timeline.replay', params: { sessionId: sid, sinceSeq: 0 } }, { principalId: 'user-1' }) as any;
+        expect(replay1.result.events).toEqual(replay2.result.events);
+        expect(replay1.result.events.length).toBeGreaterThan(0);
+
+        const paged = await rpc.handle({ jsonrpc: '2.0', id: 4, method: 'timeline.query', params: { sessionId: sid, limit: 1 } }, { principalId: 'user-1' }) as any;
+        expect(paged.result.entries.length).toEqual(1);
+        expect(paged.result.hasMore).toBe(true);
+        expect(paged.result.nextCursor).toBeDefined();
+
+        const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 5, method: 'timeline.query', params: { sessionId: sid } }, { principalId: 'other' });
+        expect((forbidden as any).error).toBeDefined();
+    }
+
     @Test('runs turns through shared json-rpc session flow')
     async runsTurnsThroughJsonRpc() {
         const store = new InMemorySessionStore();
@@ -6138,6 +6198,7 @@ export class AppRpcHandlerTest {
                     prunedMessageCount: 5,
                     toolMessagesCompacted: 0,
                     compressionRatio: 38,
+                    retentionRate: 75,
                     cumulativeTokenSavings: 3000,
                     replayed: false
                 }));
@@ -6502,6 +6563,7 @@ export class StdioAppRpcServerTest {
             prunedMessageCount: 0,
             toolMessagesCompacted: 8,
             compressionRatio: 67,
+            retentionRate: 40,
             cumulativeTokenSavings: 9000,
             replayed: false
         }));
