@@ -403,6 +403,12 @@ export class AgentConsoleRemoteEventBridge {
         if (!this.active) {
             return;
         }
+        if (this.hasConnected) {
+            this.state.markTimelineReconnecting(true);
+        }
+        if (!this.hasConnected) {
+            await this.seedFromTimeline();
+        }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
         if (this.options.token) {
@@ -444,7 +450,23 @@ export class AgentConsoleRemoteEventBridge {
             this.options.onReconnected?.();
         }
         this.hasConnected = true;
+        this.state.markTimelineReconnecting(false);
         this.scheduleReconnect();
+    }
+
+    protected async seedFromTimeline(): Promise<void> {
+        if (!this.rpc || !this.sessionId) {
+            return;
+        }
+        try {
+            const result = await this.rpc.request('timeline.query', { sessionId: this.sessionId, limit: 500 });
+            const entries = Array.isArray(result?.entries) ? result.entries : [];
+            if (entries.length) {
+                this.state.seedTimeline(entries);
+            }
+        } catch {
+            return;
+        }
     }
 
     protected scheduleReconnect(): void {

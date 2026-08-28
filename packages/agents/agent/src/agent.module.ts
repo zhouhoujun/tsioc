@@ -17,6 +17,7 @@ import { EchoTool, ExperienceSynthesizeTool, MemoryPutTool, MemorySearchTool, Ti
 import { SessionStore } from './memory/SessionStore';
 import { InMemorySessionStore } from './memory/InMemorySessionStore';
 import { DefaultSessionStore } from './memory/DefaultSessionStore';
+import { InMemoryTimelineHistoryStore, TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
 import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
@@ -143,6 +144,8 @@ import { createAgentProviders } from './provider';
         InMemoryGoalStore,
         DefaultSessionStore,
         { provide: SessionStore, useExisting: DefaultSessionStore },
+        InMemoryTimelineHistoryStore,
+        { provide: TIMELINE_HISTORY_STORE, useClass: InMemoryTimelineHistoryStore },
         InMemoryMemoryStore,
         DefaultMemoryStore,
         ProjectMemoryService,

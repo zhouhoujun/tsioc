@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -630,6 +630,10 @@ export class AgentConsoleSessionState {
     get timelineMode(): boolean {
         return this.timelineViewMode !== 'off';
     }
+    timelineReconnecting = false;
+    timelineStale = false;
+    timelineSeedCount = 0;
+    timelineTailSeq = -1;
     planNudgesEnabled = true;
     whichKeyVisible = false;
     whichKeyBindings: Array<{ key: string; action: string }> = [];
@@ -1252,6 +1256,40 @@ export class AgentConsoleSessionState {
             return;
         }
         this.setMessages(filtered);
+    }
+
+    seedTimeline(entries: TimelineEntry[]): void {
+        let seedCount = 0;
+        for (const entry of sortTimelineEntries(entries)) {
+            const key = this.qualifyUiEventKey(projectTimelineKey(entry));
+            if (!key) {
+                continue;
+            }
+            this.upsertUiEventMessage(key, projectTimelineContent(entry), {
+                eventType: entry.kind,
+                label: entry.kind,
+                status: entry.status === 'failed' ? 'error' : entry.status === 'running' ? 'running' : 'success',
+                eventKey: key,
+                durationMs: entry.durationMs,
+                toolCallId: entry.toolCallId,
+                receiptId: entry.receiptId,
+                attempt: entry.attempt,
+                source: 'remote',
+                sequence: entry.sequence
+            });
+            seedCount += 1;
+        }
+        if (seedCount > 0) {
+            this.timelineSeedCount = seedCount;
+        }
+        if (entries.length) {
+            this.timelineTailSeq = Math.max(...entries.map(entry => entry.lastSeq ?? -1));
+        }
+    }
+
+    markTimelineReconnecting(reconnecting: boolean): void {
+        this.timelineReconnecting = reconnecting;
+        this.timelineStale = reconnecting;
     }
 
     appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void {
@@ -5981,4 +6019,43 @@ export class AgentConsoleSessionState {
         this.inputCursor = this.clampCursor(this.input, next.cursor);
         return next;
     }
+}
+
+function projectTimelineKey(entry: TimelineEntry): string {
+    return entry.key || `${entry.kind}:${entry.label}`;
+}
+
+function projectTimelineContent(entry: TimelineEntry): string {
+    const label = entry.label || entry.kind;
+    if (entry.kind === 'tool') {
+        if (entry.status === 'running') {
+            return `Running ${label.replace(/[._-]+/g, ' ')}`;
+        }
+        if (entry.status === 'failed') {
+            return `${label.replace(/[._-]+/g, ' ')} failed: ${entry.error || entry.summary || 'unknown error'}`;
+        }
+        const duration = typeof entry.durationMs === 'number' ? ` · ${entry.durationMs}ms` : '';
+        return `${label.replace(/[._-]+/g, ' ')} completed${duration}`;
+    }
+    if (entry.kind === 'step') {
+        const verb = entry.status === 'running' ? 'started' : entry.status === 'blocked' ? 'blocked' : entry.status === 'failed' ? 'failed' : entry.status === 'cancelled' ? 'cancelled' : 'completed';
+        const reason = entry.status === 'blocked' && entry.detail ? ` (${entry.detail})` : '';
+        return `Step ${verb}: ${label}${reason}`;
+    }
+    if (entry.kind === 'plan') {
+        if (entry.status === 'completed') {
+            return `Plan completed: ${entry.label}`;
+        }
+        return `Plan ${entry.status === 'pending' ? 'created' : entry.status}: ${entry.label}`;
+    }
+    if (entry.kind === 'turn') {
+        if (entry.status === 'completed') {
+            return 'Turn completed';
+        }
+        if (entry.status === 'cancelled') {
+            return 'Turn cancelled';
+        }
+        return 'Turn started';
+    }
+    return `${entry.kind}: ${label}`;
 }
