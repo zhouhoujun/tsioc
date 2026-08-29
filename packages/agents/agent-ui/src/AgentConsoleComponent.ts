@@ -2192,7 +2192,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
-        this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
+this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
         this.state.onReviewConclusionsWriteBack = (conclusions) => this.writeReviewConclusionsToMemory(conclusions);
         this.state.onSessionReconnected = () => this.restoreReviewAnnotationsCacheFromDisk();
         this.restoreReviewAnnotationsCacheFromDisk();
@@ -4353,6 +4353,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         if (typeof persisted.yoloMode === 'boolean') {
             await this.setYoloMode(persisted.yoloMode, false);
+        }
+        // restore task & plan filter state
+        if (persisted.taskFilter) {
+            this.state.selectedTaskFilter = persisted.taskFilter;
+            this.state.selectedTaskLineageRootId = persisted.taskLineageRootId || '';
+        }
+        if (persisted.planTodoFilter) {
+            this.state.planTodoFilter = persisted.planTodoFilter;
         }
     }
 

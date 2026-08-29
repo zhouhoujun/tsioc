@@ -12,6 +12,9 @@ export interface AgentConsoleSettingsData {
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
     thinkingLevel?: 'low' | 'medium' | 'high';
     yoloMode?: boolean;
+    taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
+    taskLineageRootId?: string;
+    planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
 }
 
 @Injectable()
@@ -35,7 +38,10 @@ export class AgentConsoleSettingsStore {
                 thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
                     ? parsed.thinkingLevel
                     : undefined,
-                yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined
+                yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
+                taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
+                taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
+                planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
             };
         } catch {
             return {};
@@ -57,7 +63,10 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
-            ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {})
+            ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {}),
+            ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
+            ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
+            ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {})
         }, null, 2));
     }
 

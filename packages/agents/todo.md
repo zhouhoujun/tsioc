@@ -862,9 +862,95 @@ Turn: Fix session restore                                      running  01:42
 - 跨平台边界复核：agent-ui `src/` 没有 `@tsdi/components/console` 或 `node:` 直接 import；扫描命中均为已有 `globalThis` 环境守卫或约束注释。
 - 修正全量回归发现的共享 fixture 状态泄漏：plan retry 测试在结束时释放 tasks focus/plan；数字键选择同步选中索引，保证后续 Enter 的目标一致。
 
-## 代码质量审计（2026-08-17）
+### 计划/任务/代码修改展示改进（Codex/opencode 对标）
 
-### 类型抑制（src 文件 `as any`）
+> 参考 opencode 的 TodoListItem thread item 展示与 Codex 的内联消息块模式，提升 plan、task、code modification 的即时性与认知负担。每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。
+
+- **P239 · Plan items 作为 thread item 内联展示（高）** `platform: agent-ui/src（跨平台）`
+  - 目标：`AgentConsolePlanTodoItem[]` 为对话流中的稳定 thread item（固定 ID `__plan_todo_inline__`），展示为 checkbox 清单（`- [ ] / - [x] / - [-]` 风格），用户无需切换面板即可看到计划进展。
+  - 方案：
+    - 在 `AgentConsoleMessageRenderers` 中新增 `planTodoRenderer`，将 plan items 渲染为对话流中的 checkbox 清单。
+    - plan 更新时在对话流中原地替换（而非新增消息），保持计划清单连续性。
+    - 内联 plan 清单与 TasksPanel 双向同步：面板操作反映到内联，内联视觉状态反映到面板。
+    - TUI 端用 checkbox 字符，browser 端用 styled checkbox。
+  - 锚点：`AgentConsoleMessageRenderers.ts`（新增 renderer）、`AgentConsoleComponent.ts`（plan 消息插入逻辑）、`AgentConsoleSessionState.ts`（plan 内联状态）。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P240 · 文件变更概要作为 thread item 内联展示（高）** `platform: agent-ui/src（跨平台）`
+  - 目标：coding_task 的 file changes 与 git diff 文件变更列表作为对话流中的特殊消息块内联展示，用户在对话中即可感知"改了哪些文件"。
+  - 方案：
+    - 在 `AgentConsoleMessageRenderers` 中新增 `fileChangeSummaryRenderer`，渲染 `FileUpdateChange[]` 或 `ReviewDiffResult.files` 为内联文件变更清单。
+    - 格式：`📄 3 files changed: + src/foo.ts (update), + src/bar.ts (add), - src/old.ts (delete)`。
+    - TUI 用 emoji/符号前缀，browser 用 styled badge。
+    - 文件变更概要点击/Enter 可展开为完整 diff（复用既有 review 面板）。
+  - 锚点：`AgentConsoleMessageRenderers.ts`（新增 renderer）、`AgentConsoleComponent.ts`（file change 消息插入）。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P241 · tool result 输出内联增强（中）** `platform: agent-ui/src（跨平台）`
+  - 目标：CommandExecution 的输出更完整地内联在对话流中，减少摘要截断，参考 opencode 完整保留 stdout/stderr 展示方式。
+  - 方案：
+    - `toolRunSummaryMaxLength` 默认值显著提升（从 200 提升至 400+），或对 command execution 类型用更大阈值。
+    - 对话流中的 tool result 消息增加"展开"交互：默认显示 summary，Enter 展开完整输出。
+    - `AgentConsoleMessageRenderers` 中 tool result renderer 增加展开/折叠 toggle。
+    - 摘要显示关键信息（退出码、主要输出片段），完整输出通过 overlay/详情面板访问。
+  - 锚点：`AgentConsoleMessageRenderers.ts`（tool result renderer 增强）、`AgentConsoleSessionState.ts`（tool output 展开状态）。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P242 · 对话流进度分隔符与线性感知（中）** `platform: agent-ui/src（跨平台）`
+  - 目标：在对话流中提供线性的"思考→执行→执行→结果→下一步"进度感知，减少用户在面板间切换的认知负担。
+  - 方案：
+    - 在对话流中插入轻量级进度分隔符（如 `── step 3/7 ──`），标记当前 plan step 的边界。
+    - 每个 step 内的 tool calls 保持内联，step 完成后插入分隔符。
+    - `/display timeline` 控制是否显示这些分隔符。
+    - 当前 step 高亮显示，已完成 step 标记为已勾选。
+  - 锚点：`AgentConsoleComponent.ts`（step boundary 插入逻辑）、`AgentConsoleSessionState.ts`（timeline 显示控制）。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### P243 · Harness多代理协作展示（中）** `platform: agent + agent-tools + agent-ui/src`**
+
+> 对照 opencode 的 multi-agent 会话可视化与 Codex 的 delegation dashboard：当前项目的后台任务与委派线程已有基础设施（`BackgroundTaskManager`、`DelegationGraphStore`、`/ps`、`/delegation` 命令），但缺少跨会话的实时协作展示。用户无法直观看到委派链路、worker 状态与任务进度的实时投影。
+
+- **目标**：在对话流或 dedicated 面板中展示实时的 multi-agent 协作状态，包括委派链路、worker 运行态、任务进度与交互历史。
+- **方案**：
+  - 新增 `harness-projection.ts`：纯函数，基于 `DelegationGraphStore` 构建实时委派树投影，包含 `planId`/`stepId` 联合键，支持 `tree()`/`list()`/`ancestors()` 投影。
+  - `AgentConsoleSessionState` 新增 `harnessState` 字段：`{ delegations: Map<string, DelegationInfo>, activeWorkers: Map<string, WorkerStatus>, taskAggregates: Map<string, TaskAggregate> }`。
+  - `AgentConsoleComponent` 新增 `/harness` 命令：文本列出当前会话的委派树（`/harness tree`）与任务概览（`/harness list`），支持 `/harness stop <id>` 取消指定任务。
+  - 跨平台一致性：TUI 与 browser 共用同一 projection 数据，仅渲染差异（TUI 用树状结构，browser 用带搜索/过滤的面板）。
+- **锚点**：`DelegationGraphStore`（已有 tree/list/ancestors 方法）、`BackgroundTaskManager`（已有 list/cancel/get）、`AgentConsoleComponent`（command handling 框架）。
+- **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P244 · /command 支持完善（中）** `platform: agent-ui/src + agent RPC`
+  - **目标**：显著提升 `/command` 列表的实用性，目前多数子命令要么未实现、要么只在特定上下文生效，用户期望获得类似 Codex 的统一命令面板体验。
+  - **方案**：
+    - 重新设计 `CommandHandlerContext` 与 `CommandHandler` 接口，引入 `command` 元数据：`description`、`platform`、`contextRequirements`（如 `planActive`、`toolRunning`、`readOnly`）与 `aliases`。
+    - 新增/完善以下常用 `/command`：`/ps`（已落地，进一步补充 batch stop details）、**/model**（补充 provider/model 切换的快捷键冲突检测）、**/skills**（补充技能市场浏览与搜索）、**/toggle**（统一开关切换：which-key、模型、提示框）、**/profile**（快速切换 model profile）。
+    - 统一 `runKeymapCommand` 行为：优先走既有 handler，未实现时弹出带原因的 notice（非静默失败），并记录至 `/command` 历史。
+    - TUI 与 browser 共用同一 command metadata，仅渲染差异（TUI 用列表 + shortcut标记，browser 用带描述的面板）。
+  - **锚点**：`AgentConsoleComponent` `runKeymapCommand`、`AgentConsoleSessionState` commandHints、`AgentConsoleKeymap` effectiveBindings。
+- **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P245 · 信息展示重构：保尾策略与结构化 inline（高）** `platform: agent-ui/src（跨平台）`
+  - **目标**：解决" assistant/user 长回复尾部问询被折叠吞掉" 与"关键设计plan信息隐藏在折叠中的"问题，改用"保尾 + 结构化 inline" 的混合展示策略，确保尾部永远可见关键交互信息，同时保留折叠获取完整内容的能力。
+  - **方案**：
+    - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + `… N more lines` + 尾 2 行" 保尾策略，确保尾部永远可见（包括 `ask_user` 问句、plan step 完成语、关键提示）。
+    - reasoning/tool/system 保持现有 8 行/4 行 折叠不变。
+    - 关键消息标记：引入 `criticalFlag` 字段，当 `templateKind` 为 `planTodo`/`ask_user`/`fileChange` 时自动置 `true`，强制不进入折叠（或最多折叠 1 行，尾部永远可见 3 行）。
+    - `/display critical` 命令：切换是否对所有消息应用关键标记策略，便于调试与验收。
+    - browser 与 TUI 共用同一 truncate logic，仅渲染差异（TUI 用行号标记，browser 用 ellipsis + "show more"）。
+  - **锚点**：`AgentConsolePanels.ts` `renderedMessageItems`、`truncateMessageItem`、`COLLAPSED_MESSAGE_PREVIEW_LINES`。
+- **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+- **P246 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
+  - **目标**：解决"系统提示明确抑制：`Do not call todo … unless the user explicitly asks`" 与"plan 卡片被 push 到消息流末尾并吃 8 行折叠" 两个问题，改为主动引导模型先建立计划，随后每步完成即实时更新，且关键plan信息优先在对话流中可见。
+  - **方案**：
+    - 调整 `IdentitySection`/`ToolsSection`：将"复杂多步任务开始前必须调用 `todo`"的指引保留，但删掉"unless the user explicitly asks"这种把默认变成"从不"的表述；改为"建议在复杂任务开始时主动调用 `todo`，单轮问答/闲聊可省略"。
+    - `displayMessages`：planMessage 插入到"当前 turn 根用户消息之后（时间线位置）"且"不参与 visibleMessages 窗口挤出逻辑（plan 活跃时固定占位）"，避免被折叠挤出视野。
+    - plan卡片豁免通用8行折叠：plan 卡片有自己的 >7 项摘要折叠，避免双重折叠。
+    - 在对话流中直接渲染 plan 关键信息：plan 标题、当前 step、完成率（`plan 3/7 steps (2 done)`），以及失败/阻塞步骤的标记，确保关键信息永远在视线范围内。
+  - **锚点**：`AgentConsoleSessionState.ts` `displayMessages`、`buildPlanMessage`、`AgentConsoleMessageRenderers.ts` planTodo renderer。
+- **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### 代码质量审计（2026-08-17）
 | 包 | 主要文件 | 数量 | 性质 |
 |---|---|---|---|
 | agent | TypeOrmSessionStore.ts | 33 | TypeORM 查询构建器泛型擦除（结构性） |
