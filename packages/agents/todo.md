@@ -251,6 +251,49 @@
 ### 批次 IV · 验证与回归（P178）
 
 - **P178 · G101 · 全量验证与真实终端验收** `platform: 验证（跨平台）`
+
+### 批次 V · 关键信息优先展示（P179–P181，Codex 对标）
+
+- **P179 · G113 · /command 支持完善（高）** `platform: src/ + agent-ui/src`
+  - 目标：实现 /command 关键信息实时展开，用户无需进入面板即可感知命令执行状态、plan 进度与关键文件变更。
+  - 方案：
+    - /command 结果增加"展开"交互：默认显示关键信息（plan step、主要 file changes、tool 执行状态），Enter 展开完整输出。
+    - 在对话流中固定 ID 的 command summary 渲染，与 planTodoRenderer 双向同步。
+    - /help 与 /tools 结果支持搜索过滤和键位高亮。
+  - 锚点：`AgentConsoleMessageRenderers.ts` command renderer、`AgentConsoleComponent.ts` handleCommand 分支。
+  - **已规划**：待 P239-P246 基础设施确认无误后启动。
+
+- **P180 · G114 · 折叠策略重构：尾部永不吞（中）** `platform: src/`
+  - 非 focused 默认模式：assistant/user 消息不做 head 截断；采用"头 N−2 行 + `… N more lines` + 尾 2 行"保尾策略，确保结尾问询永远可见。
+  - reasoning 维持 4 行、tool/system 维持 8 行折叠，但尾部始终保留关键上下文行。
+  - focused 模式保留原有 8 行预览机制。
+  - 锚点：`AgentConsolePanels.ts` truncateMessageItem，补 console-renderer.spec 用例（长回复尾行必须包含用户问询）。
+
+- **P181 · G115 · plan 卡片免折叠豁免（中）** `platform: src/`
+  - planTodo 类型的消息豁免通用 8 行折叠规则（即使用>7项摘要折叠，plan卡片自身仍保持展开或仅执行自身折叠）。
+  - 避免双重折叠：plan卡片不再被普通消息折叠机制双重吃行。
+  - 渲染强化：checkbox 字形（`☐/▸/☒/⊘`）、进度条（`plan 3/7 ▓▓▓░░░░░`）、in_progress 项高亮；TUI/browser 共用同一渲染函数。
+  - 锚点：`AgentConsoleSessionState.ts` displayMessages/buildPlanMessage 豁免标记、`AgentConsoleMessageRenderers.ts` planTodo renderer。
+
+### 批次 VI · /command 交互化与关键信息展示（P182–P184）
+
+- **P182 · G116 · /command 交互化：问题选择控件（中-高）** `platform: src/`
+  - /command 结果弹出带编号选项的选择控件：问题文本 + 编号选项列表 + ↑↓/数字键选择 + Enter 确认 + Esc 转自由输入。
+  - 选择结果自动填入 composer 并发送（走既有 queue/steer 通道）；turn 内阻塞等待为 stretch 目标，首期允许非阻塞注入。
+  - 视觉语言与既有 approval pending 队列统一。
+  - 锚点：`AgentConsoleComponent.ts` runKeymapCommand/handleCommand、「/command」绑定、`AgentConsoleSessionState.ts`（pendingCommand 状态）。
+
+- **P183 · G117 · 关键信息优先展示（高）** `platform: src/`
+  - 在回复末尾优先展示：plan 进度（如 `plan 3/7 steps`）、关键 file changes（新增/修改的文件计数 + 简短摘要）、工具执行状态（成功/失败/进行中）。
+  - 次要信息（完整 reasoning、完整工具输出）进入折叠状态，Enter 展开，但尾部始终保留关键上下文行不被折叠掉。
+  - 遵循 Codex 行为：assistant 最终回复全文可见，永不自动截断关键信息；折叠仅用于非关键辅助内容。
+  - 锚点：`AgentConsolePanels.ts` renderedMessageItems、truncateMessageItem 策略重构。
+
+- **P184 · G118 · /help /tools 可搜索 overlay（中）** `platform: src/`
+  - /help 与 /tools 结果默认打开带搜索框的列表 overlay：标题 + 可滚动列表 + `/` 过滤 + PgUp/PgDn + Esc 关闭。
+  - 列表数据源直接读 `AgentConsoleKeymap.effectiveBindings(context)` 与 vim bindings，按 context（全局/terminal/command）分组展示。
+  - 带参数的写操作（set/unset/reset/record）保持 notify 反馈不变。
+  - 锚点：`AgentConsoleComponent.ts` runKeymapCommand/handleCommand、`AgentConsoleSessionState.ts`（overlay 状态）、`AgentConsolePanels.ts`（新组件）。
   - 自动测试：受影响包全量测试 + `tsc --noEmit` + `build:web`。
   - Console 专项：真实 PTY 验收 plan 内联显示、文件变更概要内联、进度分隔符。
   - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 应为空。
