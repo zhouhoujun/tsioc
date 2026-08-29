@@ -18,6 +18,7 @@ import { SessionStore } from './memory/SessionStore';
 import { InMemorySessionStore } from './memory/InMemorySessionStore';
 import { DefaultSessionStore } from './memory/DefaultSessionStore';
 import { InMemoryTimelineHistoryStore, TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
+import { DefaultTimelineHistoryStore } from './memory/DefaultTimelineHistoryStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
@@ -145,7 +146,8 @@ import { createAgentProviders } from './provider';
         DefaultSessionStore,
         { provide: SessionStore, useExisting: DefaultSessionStore },
         InMemoryTimelineHistoryStore,
-        { provide: TIMELINE_HISTORY_STORE, useClass: InMemoryTimelineHistoryStore },
+        DefaultTimelineHistoryStore,
+        { provide: TIMELINE_HISTORY_STORE, useExisting: DefaultTimelineHistoryStore },
         InMemoryMemoryStore,
         DefaultMemoryStore,
         ProjectMemoryService,

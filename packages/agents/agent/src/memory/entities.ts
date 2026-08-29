@@ -444,6 +444,63 @@ export class AgentDelegationEdgeEntity {
 }
 
 @Entity()
+export class AgentTimelineEventEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column()
+    eventId!: string;
+
+    @Column({ type: 'int' })
+    seq!: number;
+
+    @Column({ type: 'varchar' })
+    type!: string;
+
+    @Column({ type: 'bigint' })
+    timestamp!: number;
+
+    @Column({ type: 'varchar', nullable: true })
+    turnId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    planId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    stepId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    toolCallId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    receiptId!: string | null;
+
+    @Column({ type: 'int', nullable: true })
+    attempt!: number | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    toolName!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    status!: string | null;
+
+    @Column({ type: 'int', nullable: true })
+    sequence!: number | null;
+
+    @Column({ type: 'text', nullable: true })
+    summary!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    detail!: string | null;
+
+    @Column({ type: 'bigint', nullable: true })
+    durationMs!: number | null;
+}
+
+@Entity()
 export class AgentSummaryQualityEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;

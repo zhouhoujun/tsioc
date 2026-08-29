@@ -5,6 +5,7 @@ import { SummaryQualityStore } from './harness/SummaryQualityStore';
 import { DelegationGraphStore } from './harness/DelegationGraphStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { SessionStore } from './memory/SessionStore';
+import { TimelineHistoryStore } from './memory/timeline-projection';
 import { GoalStore } from './goal/GoalStore';
 
 /**
@@ -96,6 +97,7 @@ export interface LazyTypeOrmAdapters {
     getTypeOrmMemoryStore(adapter: TypeOrmAdapterLike): MemoryStore;
     getTypeOrmSessionStore(adapter: TypeOrmAdapterLike): SessionStore;
     getTypeOrmGoalStore(adapter: TypeOrmAdapterLike): GoalStore;
+    getTypeOrmTimelineHistoryStore(adapter: TypeOrmAdapterLike): TimelineHistoryStore;
 }
 
 export const lazyTypeOrmAdapters: LazyTypeOrmAdapters = {
@@ -130,5 +132,9 @@ export const lazyTypeOrmAdapters: LazyTypeOrmAdapters = {
     getTypeOrmGoalStore(adapter: TypeOrmAdapterLike): GoalStore {
         const mod = requireLazy('./goal/TypeOrmGoalStore') as typeof import('./goal/TypeOrmGoalStore');
         return new mod.TypeOrmGoalStore(adapter as any);
+    },
+    getTypeOrmTimelineHistoryStore(adapter: TypeOrmAdapterLike): TimelineHistoryStore {
+        const mod = requireLazy('./memory/TypeOrmTimelineHistoryStore') as typeof import('./memory/TypeOrmTimelineHistoryStore');
+        return new mod.TypeOrmTimelineHistoryStore(adapter as any);
     }
 };

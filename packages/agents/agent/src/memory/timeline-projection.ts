@@ -373,6 +373,24 @@ export function compareTimelineEventsAsc(left: TimelineEventRecord, right: Timel
     return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
 }
 
+/**
+ * Cursor-page projected entries shared by every TimelineHistoryStore backend
+ * (in-memory, TypeOrm, ...). `cursor` points at the last entry seen; the next
+ * page starts strictly after it. `limit` is normalized to [1, ABSOLUTE_MAX_LIMIT].
+ */
+export function pageTimelineEntries(entries: TimelineEntry[], options?: TimelinePageOptions): TimelineNoncePage {
+    const anchor = options?.cursor ? decodeTimelineCursor(options.cursor) : undefined;
+    const pageSize = normalizeLimit(options?.limit);
+    const startIndex = anchor ? entries.findIndex(entry => (entry.lastSeq ?? entry.startedAt ?? 0) === anchor.seq) : -1;
+    const begin = anchor ? (startIndex >= 0 ? startIndex + 1 : 0) : 0;
+    const items = entries.slice(begin, begin + pageSize);
+    const endIndex = begin + items.length;
+    const hasMore = endIndex < entries.length;
+    const last = items[items.length - 1];
+    const nextCursor = hasMore && last ? encodeTimelineCursor({ seq: last.lastSeq, id: last.key }) : undefined;
+    return { entries: items, ...(nextCursor ? { nextCursor } : {}), hasMore };
+}
+
 /* ------------------------------------------------------------------ *
  * Durable store contract
  * ------------------------------------------------------------------ */
@@ -449,16 +467,6 @@ export class InMemoryTimelineHistoryStore extends TimelineHistoryStore {
 
     async query(sessionId: string, options?: TimelinePageOptions): Promise<TimelineNoncePage> {
         const raw = await this.get(sessionId);
-        const entries = sortTimelineEntries(reduceTimelineEvents(raw).values());
-        const anchor = options?.cursor ? decodeTimelineCursor(options.cursor) : undefined;
-        const pageSize = normalizeLimit(options?.limit);
-        const startIndex = anchor ? entries.findIndex(entry => (entry.lastSeq ?? entry.startedAt ?? 0) === anchor.seq) : -1;
-        const begin = anchor ? (startIndex >= 0 ? startIndex + 1 : 0) : 0;
-        const items = entries.slice(begin, begin + pageSize);
-        const endIndex = begin + items.length;
-        const hasMore = endIndex < entries.length;
-        const last = items[items.length - 1];
-        const nextCursor = hasMore && last ? encodeTimelineCursor({ seq: last.lastSeq, id: last.key }) : undefined;
-        return { entries: items, ...(nextCursor ? { nextCursor } : {}), hasMore };
+        return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options);
     }
 }
