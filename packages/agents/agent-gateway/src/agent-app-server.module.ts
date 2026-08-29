@@ -10,6 +10,7 @@ import { AppRpcHandler } from './api/AppRpcHandler';
 import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
 import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
+import { QuestionStore } from './app-rpc/QuestionStore';
 
 @Module({
     imports: [AgentModule],
@@ -21,6 +22,7 @@ import { CloudTaskQueue } from './cloud/CloudTaskQueue';
         EventHandler,
         CloudTaskQueue,
         AppRpcServer,
+        QuestionStore,
         {
             provide: AGENT_CONSOLE_APP_RPC,
             useFactory: (rpc: AppRpcServer) => ({
@@ -92,7 +94,8 @@ import { CloudTaskQueue } from './cloud/CloudTaskQueue';
         CloudTaskQueue,
         AppRpcServer,
         AppRpcHandler,
-        StdioAppRpcServer
+        StdioAppRpcServer,
+        QuestionStore
     ]
 })
 export class AgentAppServerModule {

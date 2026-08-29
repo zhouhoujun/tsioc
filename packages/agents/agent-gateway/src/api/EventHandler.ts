@@ -5,6 +5,7 @@ import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalReq
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
+import { QuestionStore } from '../app-rpc/QuestionStore';
 
 /**
  * SSE (Server-Sent Events) endpoint — GET /api/events.
@@ -28,7 +29,8 @@ export class EventHandler {
 
     constructor(
         private owners: SessionOwnerStore,
-        @Optional() private timeline?: TimelineHistoryStore | null
+        @Optional() private timeline?: TimelineHistoryStore | null,
+        @Optional() private questionStore?: QuestionStore | null
     ) {
     }
 
@@ -121,6 +123,9 @@ export class EventHandler {
             output: this.summarizeValue(event.output),
             receipt: event.receipt
         });
+        if (event.toolName === 'ask_user') {
+            this.registerQuestion(event.sessionId, event.output);
+        }
         this.capture('tool_completed', {
             id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
             type: 'tool_completed',
@@ -134,6 +139,28 @@ export class EventHandler {
             summary: event.receipt?.outputSummary,
             detail: event.receipt?.outputSummary,
             durationMs: event.receipt?.durationMs
+        });
+    }
+
+    private registerQuestion(sessionId: string, output: any): void {
+        if (!this.questionStore || !output || typeof output !== 'object') {
+            return;
+        }
+        const question = String(output?.question || '').trim();
+        if (!question) {
+            return;
+        }
+        const createdAt = Number(output?.createdAt);
+        const timeoutMs = Number(output?.timeoutMs);
+        this.questionStore.register({
+            sessionId,
+            question,
+            questionId: String(output?.questionId || '').trim(),
+            options: Array.isArray(output?.options) ? output.options.map((item: any) => String(item || '').trim()).filter(Boolean) : [],
+            context: typeof output?.context === 'string' && output.context.trim() ? output.context.trim() : undefined,
+            severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
+            ...(Number.isFinite(createdAt) ? { createdAt } : {}),
+            ...(Number.isFinite(timeoutMs) ? { timeoutMs } : {})
         });
     }
 

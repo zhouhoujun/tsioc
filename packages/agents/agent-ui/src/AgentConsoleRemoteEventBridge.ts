@@ -409,6 +409,7 @@ export class AgentConsoleRemoteEventBridge {
         if (!this.hasConnected) {
             await this.seedFromTimeline();
             await this.seedFromNav();
+            await this.seedFromQuestions();
         }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
@@ -478,6 +479,33 @@ export class AgentConsoleRemoteEventBridge {
             const tree = await this.rpc.request('nav.query', {});
             if (tree && Array.isArray(tree.sessions)) {
                 this.state.seedNavTree(tree);
+            }
+        } catch {
+            return;
+        }
+    }
+
+    protected async seedFromQuestions(): Promise<void> {
+        if (!this.rpc || !this.sessionId) {
+            return;
+        }
+        try {
+            const result = await this.rpc.request('question.list', { sessionId: this.sessionId });
+            const items = Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
+            const pending = items.filter((item: any) => item?.status === 'pending' || item?.status == null);
+            if (!pending.length) {
+                return;
+            }
+            for (const item of pending) {
+                const question = normalizePendingQuestion({
+                    ...(item || {}),
+                    sessionId: item?.sessionId || this.sessionId,
+                    questionId: item?.questionId,
+                    status: 'pending'
+                });
+                if (question) {
+                    this.state.setPendingQuestion(question);
+                }
             }
         } catch {
             return;

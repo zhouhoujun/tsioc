@@ -10,6 +10,7 @@ import { summarizeUsageForSessions } from '../usage/UsageStats';
 import { AudioSessionHandler, AudioSessionState } from '../audio';
 import { SessionShareStore } from '../share/SessionShareStore';
 import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
+import { QuestionStore } from './QuestionStore';
 
 @Injectable()
 export class AppRpcServer {
@@ -38,7 +39,9 @@ export class AppRpcServer {
         @Optional() private shares?: SessionShareStore | null,
         @Optional() private cloudTasks?: CloudTaskQueue | null,
         @Optional() private projectMemory?: ProjectMemoryService | null,
-        @Optional() private timeline?: TimelineHistoryStore | null
+        @Optional() private timeline?: TimelineHistoryStore | null,
+        @Optional() private questionStore?: QuestionStore | null,
+        @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null
     ) {
     }
 
@@ -1114,18 +1117,53 @@ export class AppRpcServer {
         const action = params?.action === 'dismiss' ? 'dismiss' : 'answer';
         const answer = typeof params?.answer === 'string' ? params.answer.trim() : '';
         if (action === 'answer' && !answer) throw new AppRpcError(-32602, 'answer is required');
+        if (this.questionStore) {
+            const outcome = action === 'dismiss'
+                ? this.questionStore.dismiss(questionId, sessionId)
+                : this.questionStore.answer(questionId, sessionId, answer);
+            if (outcome.expired) {
+                throw new AppRpcError(-32603, 'Question expired');
+            }
+            const result = this.toQuestionView(outcome.result);
+            if (!outcome.expired && this.onQuestionAnswered) {
+                await this.onQuestionAnswered(questionId, sessionId, action === 'answer' ? answer : undefined, action === 'dismiss');
+            }
+            return { ...result, duplicate: outcome.duplicate };
+        }
         const key = `${sessionId}:${questionId}`;
         const existing = this.questionResponses.get(key);
         if (existing) return { ...existing, duplicate: true };
         const result = { questionId, sessionId, status: action === 'answer' ? 'answered' as const : 'dismissed' as const, ...(answer ? { answer } : {}), updatedAt: Date.now() };
         this.questionResponses.set(key, result);
+        if (this.onQuestionAnswered) {
+            await this.onQuestionAnswered(questionId, sessionId, action === 'answer' ? answer : undefined, action === 'dismiss');
+        }
         return { ...result, duplicate: false };
     }
 
     private async listQuestionResponses(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
+        if (this.questionStore) {
+            return this.questionStore.list(sessionId).map(item => this.toQuestionView(item));
+        }
         return Array.from(this.questionResponses.values()).filter(item => item.sessionId === sessionId);
+    }
+
+    private toQuestionView(item: any): any {
+        return {
+            questionId: item.questionId,
+            sessionId: item.sessionId,
+            status: item.status,
+            question: item.question,
+            options: item.options,
+            context: item.context,
+            severity: item.severity,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+            expiresAt: item.expiresAt,
+            ...(item.answer ? { answer: item.answer } : {})
+        };
     }
 
     private async compactSession(params: any, context: AppRpcRequestContext): Promise<any> {

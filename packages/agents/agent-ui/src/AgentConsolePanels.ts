@@ -1984,7 +1984,9 @@ export class AgentConsolePendingQuestionPanelComponent {
             return '';
         }
         const severity = question.severity === 'high' ? '[high] ' : '';
-        return `${severity}? ${question.question}`;
+        const total = this.state.pendingQuestionTotal;
+        const position = total > 1 ? ` [${1}/${total}]` : '';
+        return `${severity}? ${question.question}${position}`;
     }
 
     get pendingQuestionContext(): string {

@@ -565,6 +565,8 @@ export class AgentConsoleSessionState {
     goalSummary: AgentConsoleGoalSummary | null = null;
     planScope: 'project' | 'thread' | '' = '';
     pendingQuestion: AgentConsolePendingQuestion | null = null;
+    /** Ordered multi-question queue. `pendingQuestion` projects the active (front) item. */
+    pendingQuestionQueue: AgentConsolePendingQuestion[] = [];
     pendingQuestionSelectedIndex = 0;
     questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
     protected planMessage: AgentMessage | null = null;
@@ -2813,11 +2815,50 @@ export class AgentConsoleSessionState {
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
         if (question && question.sessionId && question.sessionId !== this.sessionId) return;
-        const previous = this.pendingQuestion;
-        if (question && previous && previous.questionId === question.questionId && (previous.updatedAt || 0) > (question.updatedAt || 0)) return;
-        this.pendingQuestion = question;
+        if (!question) {
+            this.pendingQuestionQueue = [];
+            this.pendingQuestion = null;
+            this.pendingQuestionSelectedIndex = 0;
+            this.syncDerivedInputFocus();
+            return;
+        }
+        const existingIndex = this.pendingQuestionQueue.findIndex(item => item.questionId === question.questionId);
+        if (existingIndex >= 0) {
+            const existing = this.pendingQuestionQueue[existingIndex];
+            if ((existing.updatedAt || 0) > (question.updatedAt || 0)) return;
+            if (existing.status === 'answered' || existing.status === 'dismissed') return;
+            this.pendingQuestionQueue[existingIndex] = { ...existing, ...question };
+        } else {
+            this.pendingQuestionQueue.push(question);
+        }
+        this.pendingQuestion = this.pendingQuestionQueue[0] ?? null;
         this.pendingQuestionSelectedIndex = 0;
         this.syncDerivedInputFocus();
+    }
+
+    /**
+     * Pop the front question after it is answered/dismissed/expired and advance
+     * the active item to the next in the queue. Returns the removed question.
+     */
+    finishPendingQuestion(): AgentConsolePendingQuestion | null {
+        const finished = this.pendingQuestionQueue.shift() ?? null;
+        this.pendingQuestion = this.pendingQuestionQueue[0] ?? null;
+        this.pendingQuestionSelectedIndex = 0;
+        this.syncDerivedInputFocus();
+        return finished;
+    }
+
+    /** Queue count exposed for `current/total` UI projection. */
+    get pendingQuestionTotal(): number {
+        return this.pendingQuestionQueue.length;
+    }
+
+    markPendingQuestionExpired(questionId?: string): void {
+        const target = questionId
+            ? this.pendingQuestionQueue.find(item => item.questionId === questionId)
+            : this.pendingQuestionQueue[0];
+        if (!target) return;
+        target.status = 'expired';
     }
 
     movePendingQuestionSelection(delta: number): void {
@@ -2849,11 +2890,18 @@ export class AgentConsoleSessionState {
             });
             question.status = 'answered';
             question.answer = option;
-            this.setPendingQuestion(null);
+            this.finishPendingQuestion();
             this.setInputFocused(true);
         } catch (error: any) {
-            question.status = 'pending';
-            question.error = error?.message || String(error || 'Question response failed');
+            const message = error?.message || String(error || 'Question response failed');
+            if (/expired/i.test(message)) {
+                question.status = 'expired';
+                question.error = undefined;
+                this.finishPendingQuestion();
+            } else {
+                question.status = 'pending';
+                question.error = message;
+            }
         }
         return true;
     }

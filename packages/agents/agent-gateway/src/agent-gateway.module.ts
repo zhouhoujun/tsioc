@@ -36,6 +36,7 @@ import { GatewayConfig } from './contracts/GatewayConfig';
 import { createAgentGatewayProviders } from './provider';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 import { MdnsServiceDiscovery } from './discovery/MdnsServiceDiscovery';
+import { QuestionStore } from './app-rpc/QuestionStore';
 
 @Module({
     imports: [AgentModule],
@@ -73,7 +74,8 @@ import { MdnsServiceDiscovery } from './discovery/MdnsServiceDiscovery';
         StdioAppRpcServer,
         ChatWebSocket,
         AudioSessionHandler,
-        AudioFrameQuota
+        AudioFrameQuota,
+        QuestionStore
     ],
     exports: [
         GatewayServer,
@@ -104,7 +106,8 @@ import { MdnsServiceDiscovery } from './discovery/MdnsServiceDiscovery';
         StdioAppRpcServer,
         ChatWebSocket,
         AudioSessionHandler,
-        AudioFrameQuota
+        AudioFrameQuota,
+        QuestionStore
     ]
 })
 export class AgentGatewayModule {
