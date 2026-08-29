@@ -267,7 +267,8 @@ export class P126CommandClusterTest {
         expect(state.notice).not.toContain('other-session');
 
         await (component as any).handleCommand('/ps stop bg-x');
-        expect(state.notice).toContain('No running background task bg-x');
+        expect(state.notice).toContain('Cancelled 0/1 background task(s)');
+        expect(state.notice).toContain('✗ bg-x - not running');
     }
 
     @Test('/ps reports when the manager is unavailable')

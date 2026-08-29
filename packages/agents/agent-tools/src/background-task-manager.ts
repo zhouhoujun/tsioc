@@ -55,6 +55,18 @@ export interface BackgroundTaskRunner {
     run(request: BackgroundTaskRunRequest): Promise<BackgroundTaskRunResult>;
 }
 
+export interface BackgroundTaskCancelOutcome {
+    id: string;
+    cancelled: boolean;
+    reason?: 'not-found' | 'not-running';
+}
+
+export interface BackgroundTaskRestoreOutcome {
+    id: string;
+    restored: boolean;
+    reason?: 'not-found' | 'not-cancelled' | 'already-finished';
+}
+
 /**
  * DI token for the nested-agent runner used by background tasks. Registered
  * with `useExisting: NestedAgentRunner` by the tools provider; a separate
@@ -80,6 +92,10 @@ export class BackgroundTaskManager {
     private tasks = new Map<string, BackgroundTaskRecord>();
     private waiters = new Set<(record: BackgroundTaskRecord) => void>();
     private listeners = new Set<(record: BackgroundTaskRecord) => void>();
+    /** ids whose underlying runner promise is still in flight (unsettled). */
+    private pending = new Set<string>();
+    /** undo buffer: snapshot of records captured at (batch) cancel time, keyed by task id. */
+    private undoBuffer = new Map<string, BackgroundTaskRecord>();
 
     constructor(
         private uuid: UuidGenerator,
@@ -108,6 +124,7 @@ export class BackgroundTaskManager {
         this.notify(record);
         this.persist(record);
         this.publish(new AgentBackgroundTaskStartedEvent(this, ownerSessionId, id, record.goal));
+        this.pending.add(id);
         void this.runner.run(request).then(
             result => this.finish(id, result),
             err => this.fail(id, err instanceof Error ? err : new Error(String(err)))
@@ -141,20 +158,53 @@ export class BackgroundTaskManager {
     }
 
     cancelMany(taskIds: string[]): number {
-        return Array.from(new Set(taskIds)).reduce((count, taskId) => count + (this.cancel(taskId) ? 1 : 0), 0);
+        return this.cancelBatch(taskIds).filter(outcome => outcome.cancelled).length;
+    }
+
+    cancelBatch(taskIds: string[]): BackgroundTaskCancelOutcome[] {
+        return Array.from(new Set(taskIds)).map(taskId => {
+            const record = this.tasks.get(taskId);
+            if (!record) {
+                return { id: taskId, cancelled: false, reason: 'not-found' as const };
+            }
+            if (record.status !== 'running') {
+                return { id: taskId, cancelled: false, reason: 'not-running' as const };
+            }
+            this.undoBuffer.set(taskId, this.clone(record));
+            record.status = 'cancelled';
+            record.finishedAt = Date.now();
+            record.updatedAt = Date.now();
+            this.notify(record);
+            this.persist(record);
+            return { id: taskId, cancelled: true };
+        });
+    }
+
+    restoreBatch(taskIds: string[]): BackgroundTaskRestoreOutcome[] {
+        const ids = taskIds && taskIds.length ? Array.from(new Set(taskIds)) : Array.from(this.undoBuffer.keys());
+        return ids.map(taskId => {
+            const record = this.tasks.get(taskId);
+            if (!record) {
+                return { id: taskId, restored: false, reason: 'not-found' as const };
+            }
+            if (record.status !== 'cancelled') {
+                return { id: taskId, restored: false, reason: 'not-cancelled' as const };
+            }
+            if (!this.pending.has(taskId)) {
+                return { id: taskId, restored: false, reason: 'already-finished' as const };
+            }
+            record.status = 'running';
+            record.finishedAt = undefined;
+            record.updatedAt = Date.now();
+            this.undoBuffer.delete(taskId);
+            this.notify(record);
+            this.persist(record);
+            return { id: taskId, restored: true };
+        });
     }
 
     cancel(taskId: string): boolean {
-        const record = this.tasks.get(taskId);
-        if (!record || record.status !== 'running') {
-            return false;
-        }
-        record.status = 'cancelled';
-        record.finishedAt = Date.now();
-        record.updatedAt = Date.now();
-        this.notify(record);
-        this.persist(record);
-        return true;
+        return this.cancelBatch([taskId])[0]?.cancelled ?? false;
     }
 
     async wait(taskId: string, timeoutMs?: number): Promise<BackgroundTaskRecord> {
@@ -172,6 +222,7 @@ export class BackgroundTaskManager {
     }
 
     private finish(taskId: string, result: BackgroundTaskRunResult): void {
+        this.pending.delete(taskId);
         const record = this.tasks.get(taskId);
         if (!record || record.status !== 'running') {
             return;
@@ -190,6 +241,7 @@ export class BackgroundTaskManager {
     }
 
     private fail(taskId: string, error: Error): void {
+        this.pending.delete(taskId);
         const record = this.tasks.get(taskId);
         if (!record || record.status !== 'running') {
             return;

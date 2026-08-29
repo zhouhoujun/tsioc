@@ -115,4 +115,86 @@ export class BackgroundTaskManagerTest {
         const timedOut = await manager.wait(record.id, 50);
         expect(timedOut.status).toEqual('running');
     }
+
+    @Test('cancelBatch reports per-task success and failure detail')
+    async cancelBatchOutcomes() {
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => new Promise(() => { })),
+            undefined as any
+        );
+        const a = manager.start({ prompt: 'task a' }, 'session');
+        const b = manager.start({ prompt: 'task b' }, 'session');
+        expect(manager.cancel(b.id)).toEqual(true);
+        const outcomes = manager.cancelBatch([a.id, b.id, 'missing']);
+        const byId = Object.fromEntries(outcomes.map(o => [o.id, o]));
+        expect(byId[a.id]).toEqual({ id: a.id, cancelled: true });
+        expect(byId[b.id]).toEqual({ id: b.id, cancelled: false, reason: 'not-running' });
+        expect(byId['missing']).toEqual({ id: 'missing', cancelled: false, reason: 'not-found' });
+        expect(manager.cancelMany([a.id])).toEqual(0);
+    }
+
+    @Test('restoreBatch restores a live cancelled task back to running')
+    async restoreLive() {
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => new Promise(() => { })),
+            undefined as any
+        );
+        const t = manager.start({ prompt: 'live task' }, 'session');
+        expect(manager.cancel(t.id)).toEqual(true);
+        const outcomes = manager.restoreBatch([t.id]);
+        expect(outcomes).toEqual([{ id: t.id, restored: true }]);
+        const restored = await manager.wait(t.id, 1000);
+        expect(restored.status).toEqual('running');
+        expect(restored.finishedAt).toBeUndefined();
+    }
+
+    @Test('restoreBatch with no ids undoes the last cancel batch')
+    async restoreUndoWindow() {
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => new Promise(() => { })),
+            undefined as any
+        );
+        const a = manager.start({ prompt: 'task a' }, 'session');
+        const b = manager.start({ prompt: 'task b' }, 'session');
+        manager.cancelBatch([a.id, b.id]);
+        const undo = manager.restoreBatch([]);
+        expect(undo.map(o => o.id).sort()).toEqual([a.id, b.id].sort());
+        expect(undo.every(o => o.restored)).toEqual(true);
+        expect((await manager.wait(a.id, 1000)).status).toEqual('running');
+        expect((await manager.wait(b.id, 1000)).status).toEqual('running');
+    }
+
+    @Test('restoreBatch reports non-restorable tasks')
+    async restoreFailures() {
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => new Promise(() => { })),
+            undefined as any
+        );
+        const t = manager.start({ prompt: 'task' }, 'session');
+        const outcomes = manager.restoreBatch([t.id, 'missing']);
+        expect(outcomes).toContainEqual({ id: t.id, restored: false, reason: 'not-cancelled' });
+        expect(outcomes).toContainEqual({ id: 'missing', restored: false, reason: 'not-found' });
+    }
+
+    @Test('restoreBatch refuses to restore a task whose run already finished')
+    async restoreSettled() {
+        const events: any[] = [];
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => {
+                await new Promise(resolve => setTimeout(resolve, 20));
+                return { content: 'done', sessionId: 'w', turnCount: 1, toolCalls: 0 };
+            }),
+            createApp(events) as any
+        );
+        const t = manager.start({ prompt: 'settled task' }, 'session');
+        expect(manager.cancel(t.id)).toEqual(true);
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const outcomes = manager.restoreBatch([t.id]);
+        expect(outcomes).toEqual([{ id: t.id, restored: false, reason: 'already-finished' }]);
+    }
 }

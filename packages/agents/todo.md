@@ -825,6 +825,13 @@ Turn: Fix session restore                                      running  01:42
 - 验证通过（part B）：agent-ui 829（新增 `test/p236-nav-sessions.spec.ts` 27 项：过滤列表/光标/焦点往返/重钳/configure 存活/`/projects` 接线）；三包 `tsc --noEmit` 通过；边界扫描干净。
 - 验证通过：agent 787、agent-gateway 249（含 `nav.query` @Test）、agent-ui 802（含 P236 nav state suite）；三包 `tsc --noEmit` 通过；跨平台边界扫描 agent-ui `src/` 无 `@tsdi/components/console`/`node:` 直接 import（仅约束注释命中）。
 
+### P236 任务详情与批量操作撤销（2026-08-29 完成任务详情链接 + 批量成功/失败明细 + 撤销窗口）
+
+- `agent-tools/background-task-manager.ts` 新增 `BackgroundTaskCancelOutcome`/`BackgroundTaskRestoreOutcome` 类型与 `cancelBatch(taskIds)`（逐任务返回 `cancelled`/`not-found`/`not-running`）、`restoreBatch(taskIds)`（撤销；无参时撤销 undo buffer 中最近一次批量取消，逐任务返回 `restored`/`not-found`/`not-cancelled`/`already-finished`）；manager 新增 `pending` 集合（跟踪底层 runner promise 未 settle 的 id）与 `undoBuffer`（取消时快照），`restore` 仅对仍 in-flight 的已取消任务恢复为 `running`（否则 `already-finished`，避免僵尸 running）；`finish`/`fail` settle 时清 `pending`。`cancelMany` 改为委托 `cancelBatch`，`cancel` 委托 `cancelBatch([id])`，行为向后兼容。
+- `agent-ui/AgentConsoleComponent` `/ps` 升级：`/ps show <taskId>` 详情（status/session/goal/started/duration/retries/progress/usage/error/cause + `result.report` 的 summary/completed/diff/artifacts/nextSteps/risks —— 即任务详情关联 diff/test/review 内容）；`/ps stop <id1> ...` 批量取消逐条打印成功(✓)/失败(✗ 逐因) 明细并提示 `/ps undo`；`/ps undo [id...]` 撤销（无参撤销最近批量），逐条打印恢复/失败明细、`already-finished` 说明底层 run 已结束不可恢复。无 `cancelBatch`/`restoreBatch` 的旧 manager 降级（stop 走单 `cancel`，undo 提示不支持）。
+- 测试：`agent-tools/test/background-task.spec.ts` 新增 5 例（cancelBatch 逐任务成败明细 / restore 仅恢复 in-flight 已取消任务 / 无参 undo 撤销最近批量 / 非可恢复任务原因 / run 已结束拒绝恢复）。`agent-ui/test/p126-commands.spec.ts` `/ps stop` 断言更新为批量明细格式。
+- 验证通过：agent 797、agent-tools 476（471+5）、agent-gateway 255、agent-ui 834、components 135、components/console 73 均 EXIT=0；agent-tools/agent-ui `tsc --noEmit` EXIT=0；agent-ui `build:web` 3.6mb EXIT=0；跨平台边界扫描干净（agent-ui `/ps` 仍在通用层，未破坏响应式契约）。已独立提交。
+
 ### P237 · Timeline/Plan 信息密度与可访问性基线 `platform: agent-ui/src（跨平台）`
 
 - 统一 event row 的摘要字段（intent、target、outcome、duration、status），长 stdout/diff 只进入 inspector；失败、审批、blocked 默认展开且提供 action label。

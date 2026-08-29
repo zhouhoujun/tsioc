@@ -186,7 +186,7 @@ import {
     isAgentConsoleThreadNavigationAction
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
-import type { BackgroundTaskManager, BackgroundTaskRecord } from '@tsdi/agent-tools';
+import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -5241,19 +5241,73 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify('Background task manager not available in this environment.');
             return true;
         }
-        if (parts.length && parts[0].toLowerCase() === 'stop') {
+        const sub = (parts[0] || '').toLowerCase();
+        if (sub === 'show') {
             const taskId = parts[1];
             if (!taskId) {
-                this.notify('Usage: /ps stop <taskId>');
+                this.notify('Usage: /ps show <taskId>');
                 return true;
             }
-            this.notify(this.backgroundTasks.cancel(taskId) ? `Background task ${taskId} cancelled.` : `No running background task ${taskId}.`);
+            const task = this.findBackgroundTask(taskId);
+            if (!task) {
+                this.notify(`No background task ${taskId}.`);
+                return true;
+            }
+            this.notify(this.formatBackgroundTaskDetail(task));
+            return true;
+        }
+        if (sub === 'stop') {
+            const taskIds = parts.slice(1);
+            if (!taskIds.length) {
+                this.notify('Usage: /ps stop <taskId> [<taskId> ...]');
+                return true;
+            }
+            const manager = this.backgroundTasks as BackgroundTaskManager & { cancelBatch?: (ids: string[]) => BackgroundTaskCancelOutcome[] };
+            const outcomes = typeof manager.cancelBatch === 'function'
+                ? manager.cancelBatch(taskIds)
+                : taskIds.map(id => {
+                      const ok = manager.cancel(id);
+                      return { id, cancelled: ok, reason: ok ? undefined : ('not-running' as const) };
+                  });
+            const cancelled = outcomes.filter(o => o.cancelled);
+            const lines = [`Cancelled ${cancelled.length}/${outcomes.length} background task(s).`];
+            for (const o of outcomes) {
+                lines.push(
+                    o.cancelled
+                        ? `  \u2713 ${o.id}`
+                        : `  \u2717 ${o.id} - ${o.reason === 'not-found' ? 'not found' : 'not running'}`
+                );
+            }
+            if (cancelled.length) {
+                lines.push('Undo: /ps undo');
+            }
+            this.notify(lines.join('\n'));
+            return true;
+        }
+        if (sub === 'undo') {
+            const taskIds = parts.slice(1);
+            const manager = this.backgroundTasks as BackgroundTaskManager & { restoreBatch?: (ids: string[]) => BackgroundTaskRestoreOutcome[] };
+            if (typeof manager.restoreBatch !== 'function') {
+                this.notify('Undo is not supported by this background task manager.');
+                return true;
+            }
+            const outcomes = manager.restoreBatch(taskIds);
+            const restored = outcomes.filter(o => o.restored);
+            const lines = [`Restored ${restored.length}/${outcomes.length} background task(s).`];
+            for (const o of outcomes) {
+                lines.push(
+                    o.restored
+                        ? `  \u2713 ${o.id}`
+                        : `  \u2717 ${o.id} - ${this.describeRestoreFailure(o.reason)}`
+                );
+            }
+            this.notify(lines.join('\n'));
             return true;
         }
         const filter = (parts[0] || 'current').toLowerCase();
         const allowed = new Set(['current', 'all', 'running', 'completed', 'failed', 'cancelled']);
         if (!allowed.has(filter)) {
-            this.notify('Usage: /ps [all|running|completed|failed|cancelled] or /ps stop <taskId>');
+            this.notify('Usage: /ps [all|running|completed|failed|cancelled] | /ps show <taskId> | /ps stop <taskId> [...] | /ps undo [...]');
             return true;
         }
         const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
@@ -5277,6 +5331,80 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
         this.notify(`Background tasks (${filter}):\n${lines.join('\n')}`);
         return true;
+    }
+
+    private findBackgroundTask(taskId: string): BackgroundTaskRecord | undefined {
+        const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
+        if (this.state.backgroundTaskFeed.length) {
+            return this.state.backgroundTaskFeed.find(task => task.id === taskId);
+        }
+        const records = typeof manager.listAll === 'function' ? manager.listAll() : [];
+        return records.find(task => task.id === taskId);
+    }
+
+    private describeRestoreFailure(reason?: 'not-found' | 'not-cancelled' | 'already-finished'): string {
+        if (reason === 'not-found') {
+            return 'not found';
+        }
+        if (reason === 'not-cancelled') {
+            return 'not cancelled';
+        }
+        return 'run already finished';
+    }
+
+    private formatBackgroundTaskDetail(task: BackgroundTaskRecord): string {
+        const lines = [
+            `Background task ${task.id}`,
+            `  status:    ${task.status}`,
+            `  session:   ${task.sessionId}`,
+            `  goal:      ${task.goal}`
+        ];
+        const duration = task.startedAt
+            ? `${Math.round(((task.finishedAt ?? Date.now()) - task.startedAt) / 1000)}s`
+            : 'n/a';
+        lines.push(`  started:   ${task.startedAt ? new Date(task.startedAt).toLocaleString() : 'n/a'}`);
+        lines.push(`  duration:  ${duration}`);
+        if (task.retryCount != null && task.retryCount > 0) {
+            lines.push(`  retries:   ${task.retryCount}`);
+        }
+        if (task.progress != null) {
+            lines.push(`  progress:  ${Math.round(task.progress * 100)}%`);
+        }
+        if (task.usage) {
+            lines.push(`  usage:     ${JSON.stringify(task.usage)}`);
+        }
+        if (task.error) {
+            lines.push(`  error:     ${typeof task.error === 'string' ? task.error : JSON.stringify(task.error)}`);
+        }
+        if (task.cause) {
+            const cause = task.cause as { kind?: string; detail?: string };
+            lines.push(`  cause:     ${cause.kind || 'unknown'}${cause.detail ? ` - ${cause.detail}` : ''}`);
+        }
+        const result = task.result as { report?: { summary?: string; diff?: unknown; completed?: unknown; nextSteps?: unknown; risks?: unknown; artifacts?: unknown } } | undefined;
+        const report = result?.report;
+        if (report) {
+            if (report.summary) {
+                lines.push(`\n  summary:\n${String(report.summary).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+            if (report.completed) {
+                lines.push(`\n  completed:\n${JSON.stringify(report.completed, null, 2).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+            if (report.diff !== undefined) {
+                lines.push(`\n  diff:\n${JSON.stringify(report.diff, null, 2).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+            if (report.artifacts !== undefined) {
+                lines.push(`\n  artifacts:\n${JSON.stringify(report.artifacts, null, 2).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+            if (report.nextSteps !== undefined) {
+                lines.push(`\n  next steps:\n${JSON.stringify(report.nextSteps, null, 2).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+            if (report.risks !== undefined) {
+                lines.push(`\n  risks:\n${JSON.stringify(report.risks, null, 2).split('\n').map(l => `    ${l}`).join('\n')}`);
+            }
+        } else if (task.status === 'running') {
+            lines.push('\n  (running - no report yet)');
+        }
+        return lines.join('\n');
     }
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
