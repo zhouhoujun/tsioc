@@ -7,6 +7,7 @@ import {
     renderAgentConsoleMarkdownLines
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
+import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary';
@@ -21,6 +22,8 @@ export interface AgentConsoleRenderedLine {
     toggleContent?: string;
     statusKind?: AgentConsoleMessageStatus;
     statusLabel?: string;
+    /** Screen-reader label for the row: status + prefix + content + meta (depends only on text, never color). */
+    ariaLabel?: string;
     status?: string;
     statusStyle?: Record<string, string>;
     role?: string;
@@ -264,7 +267,9 @@ export function renderAgentConsoleMessageItem(
         : roleLabel;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
-    const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
+    const statusSymbol = context.statusSymbol
+        || ((timelineEvent || context.timelineMode) ? resolveDefaultStatusGlyph(statusKind) : '');
+    const status = formatAgentConsoleMessageStatus(statusKind, statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const hideToolOutput = templateKind === 'tool' && context.showToolOutput === false;
     const displayContent = hideToolOutput
@@ -318,6 +323,12 @@ export function renderAgentConsoleMessageItem(
             roleStyle: isFirst ? rendered.roleStyle : {},
             meta: isFirst ? timelineMeta : '',
             metaStyle: isFirst ? resolveTimelineMetaStyle(theme, rowSelected, templateKind) : {},
+            ariaLabel: [
+                isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
+                isFirst ? timelineMeta : '',
+                rendered.prefix,
+                rendered.content
+            ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
             itemStyle: {
                 ...itemStyle,
                 padding: `${isFirst ? '1em' : '0'} 1ch ${isLast ? '1em' : '0'} 1ch`
@@ -679,7 +690,8 @@ function resolveTimelineMeta(
 export const TIMELINE_EVENT_ROW_CONTENT_MAX = 200;
 
 // Long stdout/diff bodies belong to the event inspector; rows keep a bounded
-// summary. Failed/error rows stay expanded by default so the cause is visible.
+// summary. CJK/emoji count as 2 columns so the row stays within a stable
+// display width. Failed/error rows stay expanded by default so the cause is visible.
 export function truncateTimelineEventRowContent(
     content: string,
     statusKind?: AgentConsoleMessageStatus
@@ -688,10 +700,10 @@ export function truncateTimelineEventRowContent(
     if (statusKind === 'failed' || statusKind === 'error') {
         return text;
     }
-    if (text.length <= TIMELINE_EVENT_ROW_CONTENT_MAX) {
+    if (getDisplayWidth(text) <= TIMELINE_EVENT_ROW_CONTENT_MAX) {
         return text;
     }
-    return `${text.slice(0, TIMELINE_EVENT_ROW_CONTENT_MAX).replace(/\s+$/, '')}…`;
+    return `${sliceByDisplayWidth(text, TIMELINE_EVENT_ROW_CONTENT_MAX).replace(/\s+$/, '')}…`;
 }
 
 export function resolveTimelineEventActionLabel(
@@ -722,6 +734,20 @@ function formatTimelineDuration(durationMs: number): string {
     }
     const seconds = durationMs / 1000;
     return `${seconds >= 10 ? Math.round(seconds) : seconds.toFixed(1).replace(/\.0$/, '')}s`;
+}
+
+function resolveDefaultStatusGlyph(status?: AgentConsoleMessageStatus): string {
+    switch (status) {
+        case 'running':
+            return '●';
+        case 'success':
+            return '✓';
+        case 'failed':
+        case 'error':
+            return '✕';
+        default:
+            return '';
+    }
 }
 
 function resolveTimelineMetaStyle(

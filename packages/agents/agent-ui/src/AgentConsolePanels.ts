@@ -2187,7 +2187,7 @@ export class AgentConsoleMessageTokensComponent {
     selector: 'agent-console-message-line',
     imports: [AgentConsoleMessageTokensComponent],
     template: `
-    <label class="message-line" v-style="itemStyle">
+    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}">
         <span v-style="statusStyle">{{status}}</span>
         <span v-style="roleStyle" v-show="role">{{role}}</span>
         <span v-style="metaStyle" v-show="meta">{{meta}}</span>
@@ -2232,6 +2232,10 @@ export class AgentConsoleMessageLineComponent {
 
     get meta(): string {
         return this.line?.meta || '';
+    }
+
+    get ariaLabel(): string {
+        return this.line?.ariaLabel || '';
     }
 
     get metaStyle(): Record<string, string> {
@@ -2350,7 +2354,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="line in renderedLines">
-            <label class="message-line" v-style="line.itemStyle">
+            <label class="message-line" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
                 <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>

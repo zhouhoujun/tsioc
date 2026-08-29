@@ -11,6 +11,7 @@ export * from './HttpAgentConsoleAppRpc';
 export * from './AgentConsoleInputHistoryStore';
 export * from './AgentConsoleMarkdown';
 export * from './AgentConsoleMessageRenderers';
+export * from './AgentConsoleTextWidth';
 export * from './AgentConsoleSuggestions';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleStatusline';
