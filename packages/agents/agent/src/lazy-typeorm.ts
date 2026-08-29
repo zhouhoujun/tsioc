@@ -7,6 +7,7 @@ import { MemoryStore } from './memory/MemoryStore';
 import { SessionStore } from './memory/SessionStore';
 import { TimelineHistoryStore } from './memory/timeline-projection';
 import { GoalStore } from './goal/GoalStore';
+import { BackgroundTaskHistoryStore } from './memory/background-task-store';
 
 /**
  * Lazy TypeOrm-backed store factories.
@@ -98,6 +99,7 @@ export interface LazyTypeOrmAdapters {
     getTypeOrmSessionStore(adapter: TypeOrmAdapterLike): SessionStore;
     getTypeOrmGoalStore(adapter: TypeOrmAdapterLike): GoalStore;
     getTypeOrmTimelineHistoryStore(adapter: TypeOrmAdapterLike): TimelineHistoryStore;
+    getTypeOrmBackgroundTaskStore(adapter: TypeOrmAdapterLike): BackgroundTaskHistoryStore;
 }
 
 export const lazyTypeOrmAdapters: LazyTypeOrmAdapters = {
@@ -136,5 +138,9 @@ export const lazyTypeOrmAdapters: LazyTypeOrmAdapters = {
     getTypeOrmTimelineHistoryStore(adapter: TypeOrmAdapterLike): TimelineHistoryStore {
         const mod = requireLazy('./memory/TypeOrmTimelineHistoryStore') as typeof import('./memory/TypeOrmTimelineHistoryStore');
         return new mod.TypeOrmTimelineHistoryStore(adapter as any);
+    },
+    getTypeOrmBackgroundTaskStore(adapter: TypeOrmAdapterLike): BackgroundTaskHistoryStore {
+        const mod = requireLazy('./memory/TypeOrmBackgroundTaskStore') as typeof import('./memory/TypeOrmBackgroundTaskStore');
+        return new mod.TypeOrmBackgroundTaskStore(adapter as any);
     }
 };

@@ -804,6 +804,17 @@ Turn: Fix session restore                                      running  01:42
 - 验收：进程重启、多窗口 cursor 不跳不重、跨项目隔离、权限拒绝回滚、批量部分失败、旧 host 降级。
 - 收尾：agent/agent-gateway/agent-ui 及存储实现全量测试，`tsc --noEmit`/构建，更新 todo，独立提交。
 
+### P236 Durable task feed 持久化（2026-08-29 完成 BackgroundTaskHistoryStore 可替换持久化实现）
+
+- 契约迁移到 `@tsdi/agent`（避免 `agent → agent-tools` 循环依赖）：`BackgroundTaskHistoryStore` 抽象 + `BACKGROUND_TASK_HISTORY_STORE` token + cursor 编解码/克隆 helper + `InMemoryBackgroundTaskHistoryStore` 从 `agent-tools/src/background-task-store.ts` 原样迁入 `agent/src/memory/background-task-store.ts`；定义 cursor 分页、幂等写入（按 id 替换）、批量 cancel（仅 running）、subscribe 与错误 cause 契约。`agent-tools/src/background-task-store.ts` 改为 `@tsdi/agent` 重导出 shim（含新增 Default/TypeOrm store），既有 `./background-task-store` 导入全部保持可用。
+- 提取共享分页 helper `pageBackgroundTaskRecords(sorted, options)`，InMemory 与 TypeOrm 后端共用同一 reduce→sort→page 链路（未知 cursor 稳定回退到开头）。
+- 新增 `AgentBackgroundTaskEntity`（uuid rowId + taskId/sessionId/status/goal/startedAt 必填 + finishedAt/updatedAt/result/error/progress/retryCount/usage/cause 可空列），并在 orm.module.ts 三处注册。
+- 新增 `TypeOrmBackgroundTaskStore`（注入 `TypeormAdapter`，put 幂等 upsert、get、pageAll/pageBySession 委托 `pageBackgroundTaskRecords`、batchCancel 置 cancelled + finishedAt、subscribe 本地监听）与 `DefaultBackgroundTaskStore`（DefaultGoalStore 同型 wrapper：adapter 存在走 TypeOrm、否则 InMemory 回退）；`lazy-typeorm.ts` 增 `getTypeOrmBackgroundTaskStore` 懒加载工厂；agent.module.ts `{ provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: DefaultBackgroundTaskStore }`；agent index.ts 导出三个新 store。
+- `agent-tools/src/provider.ts` 的 `provideAgentTools` 由 `useClass: InMemoryBackgroundTaskHistoryStore` 改为 `InMemoryBackgroundTaskHistoryStore + DefaultBackgroundTaskStore + { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: DefaultBackgroundTaskStore }`，使 agent-tools 的 `BackgroundTaskManager` 在检测到 TypeormAdapter 时透明切换到持久后端（无 adapter 时回退 InMemory，零行为变化）。
+- 新增 `agent/test/persistent-background-task.spec.ts`（5 例：put/get 幂等替换 / 游标分页 hasMore+nextCursor 跨 reload / 按 session 过滤隔离 / batchCancel 仅 running 且持久化 cancelled / subscribe 通知与退订）。
+- 验证通过：agent 797（792+5 新增）、agent-tools 471、agent-gateway 255、agent-ui 834、components 135、components/console 73 均 EXIT=0；agent/agent-tools `tsc --noEmit` EXIT=0；agent-ui `build:web` 3.6mb EXIT=0；跨平台边界扫描干净（未触碰 agent-ui/src）。已独立提交。
+
+
 ### P236 项目导航投影（2026-08-28 完成查询 DTO + agent-ui 共用 selection/filter store 切片）
 
 - agent `src/memory/nav.ts` 落地单一查询 DTO：`NavTree`/`NavNode`/`NavFilter`/`NavSelection`，`buildNavTree` 折叠 project→thread→session 并表面化无索引孤儿会话（`tree.sessions` + `totalSessions`），`applyNavFilter`/`flattenNav`/`navigateCursor`/`resolveNavSelection` 提供过滤、扁平序、光标移动与跨刷新存活解析。

@@ -2,7 +2,7 @@ import { importProvidersFrom, Module, ModuleWithProviders, Provider } from '@tsd
 import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
-import { AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
+import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
 
 interface AgentOrmNodeRuntime {
     join(...paths: string[]): string;
@@ -69,7 +69,7 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
             synchronize: true,
-            entities: [AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity]
+            entities: [AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity]
         } as TypeormOptions)
     ]
 })
@@ -117,7 +117,7 @@ function resolveAgentOrmStorageLocation(root: string, fileName: string): string 
 
 function createAgentOrmProviders(options: TypeormOptions): Provider[] {
     options.entities ??= [];
-    options.entities.push(AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity);
+    options.entities.push(AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity);
     return provideTypeOrm(options);
 }
 

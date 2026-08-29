@@ -19,6 +19,8 @@ import { InMemorySessionStore } from './memory/InMemorySessionStore';
 import { DefaultSessionStore } from './memory/DefaultSessionStore';
 import { InMemoryTimelineHistoryStore, TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
 import { DefaultTimelineHistoryStore } from './memory/DefaultTimelineHistoryStore';
+import { BACKGROUND_TASK_HISTORY_STORE, InMemoryBackgroundTaskHistoryStore } from './memory/background-task-store';
+import { DefaultBackgroundTaskStore } from './memory/DefaultBackgroundTaskStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
@@ -148,6 +150,9 @@ import { createAgentProviders } from './provider';
         InMemoryTimelineHistoryStore,
         DefaultTimelineHistoryStore,
         { provide: TIMELINE_HISTORY_STORE, useExisting: DefaultTimelineHistoryStore },
+        InMemoryBackgroundTaskHistoryStore,
+        DefaultBackgroundTaskStore,
+        { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: DefaultBackgroundTaskStore },
         InMemoryMemoryStore,
         DefaultMemoryStore,
         ProjectMemoryService,

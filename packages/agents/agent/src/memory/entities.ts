@@ -538,3 +538,48 @@ export class AgentSummaryQualityEntity {
     @Column({ type: 'simple-json', nullable: true })
     metadata!: Record<string, any> | null;
 }
+
+@Entity()
+export class AgentBackgroundTaskEntity {
+    @PrimaryGeneratedColumn('uuid')
+    rowId!: string;
+
+    @Column()
+    taskId!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column({ type: 'varchar' })
+    status!: string;
+
+    @Column({ type: 'text' })
+    goal!: string;
+
+    @Column({ type: 'bigint' })
+    startedAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    finishedAt!: number | null;
+
+    @Column({ type: 'bigint', nullable: true })
+    updatedAt!: number | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    result!: Record<string, any> | null;
+
+    @Column({ type: 'text', nullable: true })
+    error!: string | null;
+
+    @Column({ type: 'float', nullable: true })
+    progress!: number | null;
+
+    @Column({ type: 'int', nullable: true })
+    retryCount!: number | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    usage!: Record<string, any> | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    cause!: Record<string, any> | null;
+}
