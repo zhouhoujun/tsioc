@@ -840,6 +840,8 @@ Turn: Fix session restore                                      running  01:42
 - 验收：snapshot + Playwright 多 viewport、screen-reader tree、键盘 only、内存/渲染延迟基线；设定同一 toolCall 行数、首屏当前 step 可见率和失败定位按键数阈值。
 - 收尾：agent-ui/components/console 全量测试、类型检查/构建、todo 更新、独立提交。
 
+- P237 B1 完成（统一 event row 摘要 + 默认展开/action label）：`resolveTimelineMeta` 事件行 meta 稳定为 `duration · 状态（· action）` —— 状态文本化（不再仅靠颜色）；新增 `TIMELINE_EVENT_ROW_CONTENT_MAX`(200) 与 `truncateTimelineEventRowContent`（长 stdout/diff 只保留在完整 event content，行级截断加 `…`；failed/error 行默认展开不截断）；`resolveTimelineEventActionLabel` 输出 `retry`（tool 失败）/`重试`（plan step 失败/blocked）/`审批`（approval）并写入事件行 meta；`isTimelineEventMessage` 扩展接受 `plan_step_failed`/`plan_step_blocked`/`approval`/`approval_request`，失败/blocked/审批事件可打开 inspector。审批/blocked 桥接层仍只 pushActivity（不上时间线），端到端补齐留 P238 验收阶段。新增 `test/p237-event-row-summary.spec.ts` 6 例。验证：agent-ui 840（834+6）EXIT=0、`tsc --noEmit` EXIT=0、`build:web` 3.6mb EXIT=0、边界扫描干净。已独立提交。
+
 ### P238 · 真实终端与浏览器端到端验收 `platform: agent acceptance + agent-ui acceptance`
 
 - 扩展 PTY/browser harness：创建计划→并行任务→问询→审批→失败→retry→断线→恢复→review→完成；覆盖鼠标不可用、窄终端、CJK、长输出和多窗口。

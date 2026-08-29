@@ -1636,8 +1636,16 @@ export class AgentConsoleSessionState {
             return false;
         }
         const metadata = message.metadata || {};
-        return metadata.uiKind === 'event'
-            && (metadata.uiEventType === 'tool_invoked' || metadata.uiEventType === 'tool_completed' || metadata.uiEventType === 'tool_failed');
+        if (metadata.uiKind !== 'event') {
+            return false;
+        }
+        return metadata.uiEventType === 'tool_invoked'
+            || metadata.uiEventType === 'tool_completed'
+            || metadata.uiEventType === 'tool_failed'
+            || metadata.uiEventType === 'plan_step_failed'
+            || metadata.uiEventType === 'plan_step_blocked'
+            || metadata.uiEventType === 'approval'
+            || metadata.uiEventType === 'approval_request';
     }
 
     openTimelineEventInspector(eventMessage?: AgentMessage): void {

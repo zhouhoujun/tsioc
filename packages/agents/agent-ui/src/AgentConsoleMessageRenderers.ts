@@ -270,17 +270,20 @@ export function renderAgentConsoleMessageItem(
     const displayContent = hideToolOutput
         ? ''
         : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
+    const eventRowContent = timelineEvent
+        ? truncateTimelineEventRowContent(displayContent, statusKind)
+        : displayContent;
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
     const markdownLines = hideToolOutput
         ? []
         : context.rawMode || templateKind === 'planTodo'
-            ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: false })
+            ? renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
-                    ? resolveMarkdownLines(displayContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
-                    : renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
-                : resolveMarkdownLines(displayContent, { compactBlankLines: true }, context.markdownBridge);
+                    ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
+                    : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
+                : resolveMarkdownLines(eventRowContent, { compactBlankLines: true }, context.markdownBridge);
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps);
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
@@ -661,10 +664,56 @@ function resolveTimelineMeta(
             parts.push(label);
         }
     }
-    if (statusLabel && templateKind !== 'assistant') {
+    if (statusLabel && (templateKind !== 'assistant' || uiKind === 'event')) {
         parts.push(statusLabel);
     }
+    if (uiKind === 'event') {
+        const actionLabel = resolveTimelineEventActionLabel(message, resolveAgentConsoleMessageStatus(message, templateKind));
+        if (actionLabel) {
+            parts.push(actionLabel);
+        }
+    }
     return parts.join(' · ');
+}
+
+export const TIMELINE_EVENT_ROW_CONTENT_MAX = 200;
+
+// Long stdout/diff bodies belong to the event inspector; rows keep a bounded
+// summary. Failed/error rows stay expanded by default so the cause is visible.
+export function truncateTimelineEventRowContent(
+    content: string,
+    statusKind?: AgentConsoleMessageStatus
+): string {
+    const text = String(content || '');
+    if (statusKind === 'failed' || statusKind === 'error') {
+        return text;
+    }
+    if (text.length <= TIMELINE_EVENT_ROW_CONTENT_MAX) {
+        return text;
+    }
+    return `${text.slice(0, TIMELINE_EVENT_ROW_CONTENT_MAX).replace(/\s+$/, '')}…`;
+}
+
+export function resolveTimelineEventActionLabel(
+    message?: AgentMessage | null,
+    statusKind?: AgentConsoleMessageStatus
+): string {
+    const metadata = message?.metadata || {};
+    if (metadata.uiKind !== 'event') {
+        return '';
+    }
+    const eventType = String(metadata.uiEventType || '').trim();
+    const failed = statusKind === 'failed' || statusKind === 'error';
+    if ((eventType.startsWith('tool_') || eventType === 'tool_call') && failed) {
+        return 'retry';
+    }
+    if (eventType.startsWith('plan_step_') && (failed || String(metadata.status || '') === 'blocked')) {
+        return '重试';
+    }
+    if (eventType === 'approval' || eventType === 'approval_request') {
+        return '审批';
+    }
+    return '';
 }
 
 function formatTimelineDuration(durationMs: number): string {
