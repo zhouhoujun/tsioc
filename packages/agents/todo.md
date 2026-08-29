@@ -993,7 +993,79 @@ Turn: Fix session restore                                      running  01:42
   - **锚点**：`AgentConsoleSessionState.ts` `displayMessages`、`buildPlanMessage`、`AgentConsoleMessageRenderers.ts` planTodo renderer。
 - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 
-### 代码质量审计（2026-08-17）
+---
+
+## 改进计划 v11（P247–P251，Codex/opencode 深度对标——UI Agent 交互细节展示）
+
+> 基准更新（2026-08-29 深度调研）：Codex v0.149.0 / opencode v1.18.21。
+> 重点对标 opencode 的 `/command` 交互范式与信息展示策略。
+> 核心问题：
+> 1. `/command` 大部分子命令不支持，用户无法获得统一命令面板体验；
+> 2. 设计方案未将关键信息和 plan 关键信息展示出来，而是全部返回成一个回复并折叠起来；
+> 3. assistant 长回复尾部问询被折叠吞掉；
+> 4. plan/todo 从不出现或位置错误、被折叠双重吃行。
+> 参考 opencode 行为：`/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入；关键信息优先展示，尾部永不吞。
+
+### 批次 I · /command 支持完善（P247）
+
+- **P247 · /command 支持完善（高）** `platform: agent-ui/src + agent RPC`
+  - **目标**：显著提升 `/command` 列表的实用性，目前多数子命令要么未实现、要么只在特定上下文生效，用户期望获得类似 opencode 的统一命令面板体验。
+  - **方案**：
+    - 重新设计 `CommandHandlerContext` 与 `CommandHandler` 接口，引入 `command` 元数据：`description`、`platform`、`contextRequirements`（如 `planActive`、`toolRunning`、`readOnly`）与 `aliases`。
+    - 新增/完善以下常用 `/command`：`/ps`（已落地，进一步补充 batch stop details）、**`/model`**（补充 provider/model 切换的快捷键冲突检测）、**`/skills`**（补充技能市场浏览与搜索）、**`/toggle`**（统一开关切换：which-key、模型、提示框）、**`/profile`**（快速切换 model profile）。
+    - 统一 `runKeymapCommand` 行为：优先走既有 handler，未实现时弹出带原因的 notice（非静默失败），并记录至 `/command` 历史。
+    - TUI 与 browser 共用同一 command metadata，仅渲染差异（TUI 用列表 + shortcut 标记，browser 用带描述的面板）。
+  - **锚点**：`AgentConsoleComponent` `runKeymapCommand`、`AgentConsoleSessionState` commandHints、`AgentConsoleKeymap` effectiveBindings。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### 批次 II · 折叠策略重构：尾部永不吞（P248）
+
+- **P248 · 折叠策略重构：尾部永不吞（中）** `platform: agent-ui/src（跨平台）`
+  - **目标**：解决"assistant/user 长回复尾部问询被折叠吞掉"的问题，改用"保尾"策略，确保尾部永远可见关键交互信息。
+  - **方案**：
+    - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + `… N more lines` + 尾 2 行" 保尾策略，确保尾部永远可见（包括 `ask_user` 问句、plan step 完成语、关键提示）。
+    - reasoning/tool/system 保持现有 8 行/4 行 折叠不变。
+    - `/display critical` 命令：切换是否对所有消息应用关键标记策略，便于调试与验收。
+    - browser 与 TUI 共用同一 truncate logic，仅渲染差异（TUI 用行号标记，browser 用 ellipsis + "show more"）。
+  - **锚点**：`AgentConsolePanels.ts` `renderedMessageItems`、`truncateMessageItem`、`COLLAPSED_MESSAGE_PREVIEW_LINES`。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### 批次 III · 信息展示重构：保尾 + 结构化 inline（P249）
+
+- **P249 · 信息展示重构：保尾策略与结构化 inline（高）** `platform: agent-ui/src（跨平台）`
+  - **目标**：解决"关键设计plan信息隐藏在折叠中"的问题，改用"保尾 + 结构化 inline" 的混合展示策略，确保尾部永远可见关键交互信息，同时保留折叠获取完整内容的能力。
+  - **方案**：
+    - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + `… N more lines` + 尾 2 行" 保尾策略，确保尾部永远可见（包括 `ask_user` 问句、plan step 完成语、关键提示）。
+    - reasoning/tool/system 保持现有 8 行/4 行 折叠不变。
+    - 关键消息标记：引入 `criticalFlag` 字段，当 `templateKind` 为 `planTodo`/`ask_user`/`fileChange` 时自动置 `true`，强制不进入折叠（或最多折叠 1 行，尾部永远可见 3 行）。
+    - `/display critical` 命令：切换是否对所有消息应用关键标记策略，便于调试与验收。
+    - browser 与 TUI 共用同一 truncate logic，仅渲染差异（TUI 用行号标记，browser 用 ellipsis + "show more"）。
+  - **锚点**：`AgentConsolePanels.ts` `renderedMessageItems`、`truncateMessageItem`、`COLLAPSED_MESSAGE_PREVIEW_LINES`。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### 批次 IV · 设计计划关键信息优先展示（P250）
+
+- **P250 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
+  - **目标**：解决"系统提示明确抑制：`Do not call todo … unless the user explicitly asks`" 与"plan 卡片被 push 到消息流末尾并吃 8 行折叠" 两个问题，改为主动引导模型先建立计划，随后每步完成即实时更新，且关键plan信息优先在对话流中可见。
+  - **方案**：
+    - 调整 `IdentitySection`/`ToolsSection`：将"复杂多步任务开始前必须调用 `todo`"的指引保留，但删掉"unless the user explicitly asks"这种把默认变成"从不"的表述；改为"建议在复杂任务开始时主动调用 `todo`，单轮问答/闲聊可省略"。
+    - `displayMessages`：planMessage 插入到"当前 turn 根用户消息之后（时间线位置）"且"不参与 visibleMessages 窗口挤出逻辑（plan 活跃时固定占位）"，避免被折叠挤出视野。
+    - plan卡片豁免通用8行折叠：plan 卡片有自己的 >7 项摘要折叠，避免双重折叠。
+    - 在对话流中直接渲染 plan 关键信息：plan 标题、当前 step、完成率（`plan 3/7 steps (2 done)`），以及失败/阻塞步骤的标记，确保关键信息永远在视线范围内。
+  - **锚点**：`AgentConsoleSessionState.ts` `displayMessages`、`buildPlanMessage`、`AgentConsoleMessageRenderers.ts` planTodo renderer。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
+
+### 批次 V · /command 交互化：问题选择控件（P251）
+
+- **P251 · /command 交互化：问题选择控件（中-高）** `platform: agent-ui/src`
+  - **目标**：实现 `/command` 结果的交互式选择控件，参考 opencode 行为：`/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入。
+  - **方案**：
+    - `/command` 结果弹出带编号选项的选择控件：问题文本 + 编号选项列表 + ↑↓/数字键选择 + Enter 确认 + Esc 转自由输入。
+    - 选择结果自动填入 composer 并发送（走既有 queue/steer 通道）；turn 内阻塞等待为 stretch 目标，首期允许非阻塞注入。
+    - 视觉语言与既有 approval pending 队列统一。
+    - 支持 `/command` 历史记录与快速重放。
+  - **锚点**：`AgentConsoleComponent.ts` `runKeymapCommand`/`handleCommand`、`AgentConsoleSessionState.ts`（pendingCommand 状态）、`AgentConsolePanels.ts`（选择控件渲染）。
+  - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 | 包 | 主要文件 | 数量 | 性质 |
 |---|---|---|---|
 | agent | TypeOrmSessionStore.ts | 33 | TypeORM 查询构建器泛型擦除（结构性） |
@@ -1047,3 +1119,274 @@ Turn: Fix session restore                                      running  01:42
 | agent-ssh | ✅ 新建 | ✅ |
 | agent-desktop | ✅ 2.3KB | ✅ |
 | agent-vscode | ✅ 扩充 | ✅ |
+
+---
+
+## 深度对比：Codex/opencode vs 本项目——UI Agent 交互细节展示（v12，2026-08-29）
+
+> 基准：Codex v0.149.0（Rust TUI + TypeScript SDK）+ opencode v1.18.21。
+> 重点对标 opencode 的 `/command` 交互范式与信息展示策略。
+> 核心问题（用户实测反馈）：
+> 1. `/command` 大部分子命令不支持交互式操作——结果全部以 `notify()` 塞入顶部 notice 条一闪而过，或走 `ctx.select()` 单次 picker 消失即灭，没有持久化、可搜索、可键盘导航的交互面板；
+> 2. 设计方案未将关键信息和 plan 关键信息展示出来，而是全部返回成一个回复并折叠起来——plan/todo、文件变更、工具结果、ask_user 问询全部挤在 assistant 消息里，折叠后关键信息被吞；
+> 3. assistant 长回复尾部问询被折叠吞掉；
+> 4. plan/todo 从不出现或位置错误、被折叠双重吃行。
+> 参考 opencode 行为：`/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入；关键信息优先展示，尾部永不吞；plan 作为 thread item 内联实时勾选。
+
+### 一、/command 交互现状与差距
+
+#### 1.1 当前实现（代码证据）
+
+| 命令 | 当前交互方式 | 代码锚点 | 问题 |
+|---|---|---|---|
+| `/help` | `ctx.select('Help', [...], 0, hint)` 单次 picker | `AgentConsoleCommandHandlers.ts:241-333` | 选择后消失，无历史、无搜索、无键盘导航 |
+| `/keymap` | `ctx.openTextOverlay('keymap', entries)` 文本列表 | `AgentConsoleComponent.ts:6447` | 只读列表，无搜索过滤，无序号选择，无高亮 |
+| `/tools` | `ctx.state.setToolsFocused(true)` 切到面板 | `AgentConsoleCommandHandlers.ts:379-395` | 切面板而非内联，工具列表不可搜索 |
+| `/skills` | `ctx.select(...)` 单次 picker 或切面板 | `AgentConsoleCommandHandlers.ts` | 无浏览/搜索/详情 |
+| `/mcp` | 同上 | 同上 | 无状态持久化 |
+| `/plugins` | 同上 | 同上 | 无交互 |
+| `/apps` | `ctx.select(...)` 单次 picker | 同上 | 无浏览器式交互 |
+| `/model` | `ctx.openModelSwitcher()` 或 `ctx.activateModelProfile()` | `AgentConsoleCommandHandlers.ts:335-356` | 切换器不持久 |
+| `/goal` | `ctx.select(...)` 单次 picker | 同上 | 无进度条/可视化 |
+| `/usage` | `this.notify(this.formatUsage(...).join(' \| '))` 状态条 | `AgentConsoleComponent.ts:490` | 长内容挤状态条 |
+| `/quality` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:478` | 同上 |
+| `/compactions` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/diagnostics` | `ctx.select(...)` picker | 同上 | 同上 |
+| `/delegation` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:785` | 同上 |
+| `/hooks` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4527` | 同上 |
+| `/memories` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4548` | 同上 |
+| `/personality` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4637` | 同上 |
+| `/experimental` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/feedback` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/ide` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/editor` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/share` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/title` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4415` | 同上 |
+| `/statusline` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4476` | 同上 |
+| `/theme` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4296` | 同上 |
+| `/thinking` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4189` | 同上 |
+| `/raw` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4208` | 同上 |
+| `/stash` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4279` | 同上 |
+| `/init` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/snapshot` | `this.notify(...)` 状态条 | `AgentConsoleComponent.ts:4266` | 同上 |
+| `/snapshots` | `ctx.select(...)` picker | `AgentConsoleCommandHandlers.ts:670-712` | 同上 |
+| `/git-snapshots` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/review` | `ctx.openCodingTaskReview(...)` 切面板 | 同上 | 同上 |
+| `/diff` | `ctx.openGitDiffReview(...)` 切面板 | 同上 | 同上 |
+| `/approve` | `ctx.select(...)` picker + `ctx.applyApprovalDecision()` | `AgentConsoleCommandHandlers.ts:407-450` | 部分交互但无确认门禁 |
+| `/retry` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/rollback` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/ps` | `this.notify(...)` 状态条 | 同上 | 同上 |
+| `/voice` | `this.notify(...)` 状态条 | 同上 | 同上 |
+
+**根因**：90%+ 的 `/command` 结果走 `notify()`（瞬态 notice 条）或 `ctx.select()`（一次性 picker），没有持久化、可搜索、可键盘导航的交互面板。opencode 的 `/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入——本项目尚未实现这一范式。
+
+#### 1.2 Codex/opencode 参照行为
+
+| 原则 | opencode 参照 | 本项目采用方式 |
+|---|---|---|
+| 命令结果持久化 | `/command` 结果在 overlay 中持久显示，可搜索过滤 | 全部瞬态（notify/select），消失即灭 |
+| 交互式选择 | 带编号选项 + ↑↓/数字键选择 + Enter 确认 + Esc 转自由输入 | 仅 `ctx.select()` 一次选择，无键盘导航 |
+| 搜索过滤 | `/command` 列表支持 `/` 过滤 | 无 |
+| 历史与重放 | `/command` 历史记录，可快速重放 | 无 |
+| 状态持久 | 命令状态在 UI 中持久可见 | 命令执行完即消失 |
+
+#### 1.3 改进方案
+
+**P252 · /command 交互化：统一命令面板（高）** `platform: agent-ui/src（跨平台）`
+- 目标：所有 `/command` 结果在统一的交互式命令面板中展示，支持搜索过滤、键盘导航、序号选择、Enter 确认、Ecs 转自由输入。
+- 方案：
+  - 新增 `AgentConsoleCommandPanelComponent`：命令列表 overlay，支持 `/` 过滤、↑↓ 导航、Enter 确认、Esc 收起。
+  - 所有 `/command` 结果统一走命令面板：`notify()` 和 `ctx.select()` 改为打开命令面板。
+  - 命令面板数据源为 `AgentConsoleKeymap.effectiveBindings(context)` 与 command handlers 注册表，按 context（global/composer/list/approval/pager）分组展示。
+  - 带参数的写操作（set/unset/reset/record）保持 notify 反馈不变。
+  - TUI 与 browser 共用同一面板组件，仅渲染差异。
+- 锚点：`AgentConsoleComponent.ts` `runKeymapCommand`/`handleCommand`、`AgentConsoleSessionState.ts`（overlay 状态）、`AgentConsolePanels.ts`（新组件）。
+- 自动测试：受影响包全量测试 + `tsc --noEmit` + `build:web`。
+- Console 专项：真实 PTY 验收命令面板搜索/过滤/导航。
+- 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 应为空。
+
+---
+
+### 二、Plan/Design 关键信息展示差距
+
+#### 2.1 当前实现（代码证据）
+
+**已修复的问题（通过 P172–P238 前期计划）**
+
+| 维度 | 代码证据 | 状态 |
+|---|---|---|
+| Plan 位置 | `AgentConsoleSessionState.ts:1140-1153` `displayMessages` 已将 `planMessage` 插入到当前 turn 根用户消息之后（时间线位置），不再 push 到末尾 | ✅ 已修复（P187/P233） |
+| Plan 折叠 | `AgentConsolePanels.ts` plan 卡片已豁免通用 8 行折叠；`AgentConsoleMessageRenderers.ts:139-157` `resolvePlanTodoContent` 渲染 checkbox 清单 | ✅ 已修复（P187/P233） |
+| Ask_user 交互 | `AgentConsoleSessionState.ts:567-571` `pendingQuestion`/`pendingQuestionQueue`/`questionAction` 已实现；`AgentConsolePanels.ts:1944-1951` `pending-question-panel` 已渲染选择控件 | ✅ 已修复（P189/P234） |
+| 文件变更内联 | `AgentConsoleMessageRenderers.ts:208` `fileChange` templateKind 已有专用 renderer；`AgentConsoleSessionState.ts` 已支持文件变更概要 | ✅ 已修复（P174） |
+
+**仍待解决的问题**
+
+| 维度 | 代码证据 | 问题 |
+|---|---|---|
+| /command 无交互面板 | `AgentConsoleCommandHandlers.ts` 90%+ 命令走 `notify()` 或 `ctx.select()` | 结果消失即灭，无搜索/过滤/键盘导航 |
+| 尾部问询被折叠 | `AgentConsolePanels.ts:2668` `truncateMessageItem` 默认 `COLLAPSED_MESSAGE_PREVIEW_LINES=8`，对所有消息做 head 截断 | 问句在长回复末尾必然被截掉 |
+| "Click to expand" 误导 | `AgentConsoleComponent.ts:241` `shouldEnableTerminalMouseTracking()` 返回 false，TUI 禁用鼠标 | click 文案不可达 |
+| 工具输出截断过多 | `AgentConsoleSettingsStore.ts:409` `toolRunSummaryMaxLength: 96` | 摘要可能丢失关键信息 |
+| 系统提示抑制 todo | `agent/src/prompt/sections/ToolsSection.ts:37-41` 已改为主动规划口径，但 `IdentitySection.ts:67` 仍含 "unless the user explicitly asks"（针对 project_intel，非 todo） | 部分残留抑制措辞 |
+
+#### 2.2 Codex/opencode 参照行为
+
+| 原则 | Codex 参照 | opencode 参照 | 本项目采用方式 |
+|---|---|---|---|
+| 计划内联 | `TodoListItem` thread item 内联，对话中 checkbox 逐步勾选 | task block 承载运行/输出/错误/耗时 | plan 卡片插入根用户消息之后，时间线位置 |
+| 文件变更内联 | `FileChangeItem` thread item，文件名+变更类型 | diff 摘要内联 | 文件变更概要内联，点击展开 |
+| 工具输出内联 | `CommandExecutionItem` 完整保留 stdout/stderr | tool block 可折叠 | 工具结果默认摘要，Enter 展开 |
+| 异常优先 | 失败/审批在流中显著 | 错误保留 retry 上下文 | failed/blocked/approval 固定展开 |
+| 尾部永不吞 | assistant 最终回复全文可见 | 折叠只用于工具输出/reasoning | 保尾策略：头 N-2 + … + 尾 2 行 |
+| 追问交互 | 编号选项 + 键盘选择 + 高亮框 | question block 可交互 | ask_user 交互化选择控件 |
+
+#### 2.3 改进方案
+
+**P252 · /command 交互化：统一命令面板（高）** `platform: agent-ui/src（跨平台）`
+- 见 1.3 节。
+
+**P253 · 保尾折叠：assistant/user 消息不吞尾部（高）** `platform: agent-ui/src（跨平台）`
+- 目标：解决"assistant/user 长回复尾部问询被折叠吞掉"的问题。
+- 方案：
+  - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + `… N more lines` + 尾 2 行"保尾策略，确保尾部永远可见（包括 `ask_user` 问句、plan step 完成语、关键提示）。
+  - reasoning/tool/system 保持现有 8 行/4 行折叠不变。
+  - `/display critical` 命令：切换是否对所有消息应用关键标记策略。
+  - TUI 端去掉 "Click to expand" 文案（不可达），改为 "enter 展开"。
+- 锚点：`AgentConsolePanels.ts` `renderedMessageItems`/`truncateMessageItem`、`AgentConsoleComponent.ts` `shouldEnableTerminalMouseTracking`。
+
+**P254 · Plan 卡片固定位置 + 免折叠 + 渲染强化（高）** `platform: agent-ui/src（跨平台）`
+- 目标：解决"plan/todo 从不出现或位置错误、被折叠双重吃行"。
+- 方案：
+  - `displayMessages` 不再把 `planMessage` push 到末尾：插入到当前 turn 根用户消息之后（时间线位置），且不参与 `visibleMessages` 窗口挤出逻辑（plan 活跃时固定占位）。
+  - plan 卡片豁免通用 8 行折叠（它有自己的 >7 项摘要折叠），避免双重折叠。
+  - 渲染强化：checkbox 字形（`☐/▸/☒/⊘`）、进度条（`plan 3/7 ▓▓▓░░░░░`）、in_progress 项高亮；TUI/browser 共用同一渲染函数。
+- 锚点：`AgentConsoleSessionState.ts` `displayMessages`/`buildPlanMessage`、`AgentConsoleMessageRenderers.ts` planTodo renderer。
+
+**P255 · 文件变更概要内联（高）** `platform: agent-ui/src（跨平台）`
+- 目标：coding_task 的 file changes 与 git diff 文件变更列表作为对话流中的特殊消息块内联展示。
+- 方案：
+  - 新增 `fileChangeSummaryRenderer`，渲染 `FileUpdateChange[]` 为内联文件变更清单：`📄 3 files changed: + src/foo.ts (update), + src/bar.ts (add), - src/old.ts (delete)`。
+  - 文件变更概要点击/Enter 可展开为完整 diff（复用既有 review 面板）。
+- 锚点：`AgentConsoleMessageRenderers.ts`（新增 renderer）、`AgentConsoleComponent.ts`（file change 消息插入）。
+
+**P256 · Ask_user 交互化：问题选择控件（中-高）** `platform: agent-ui/src（跨平台）`
+- 目标：`ask_user` 不再是纯文本埋在正文里，而是交互式选择控件。
+- 方案：
+  - EventBridge 监听 `ask_user` 完成事件 → `state.pendingQuestion { question, options, severity }` → composer 上方渲染选择框：编号选项 + ↑↓/数字键选择 + Enter 确认 + Esc 转自由输入。
+  - 选择结果自动填入 composer 并发送（走既有 queue/steer 通道）。
+  - 视觉语言与既有 approval pending 队列统一。
+- 锚点：`AgentConsoleEventBridge.ts`/`AgentConsoleRemoteEventBridge.ts`（新增 ask_user 绑定）、`AgentConsoleSessionState.ts`（pendingQuestion 状态）。
+
+**P257 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
+- 目标：解决"系统提示明确抑制 `Do not call todo … unless the user explicitly asks`"与"plan 卡片被 push 到消息流末尾并吃 8 行折叠"。
+- 方案：
+  - `IdentitySection`/`ToolsSection`：改为 Codex 式主动规划口径——复杂多步任务开始前必须调用 `todo`，单轮问答/闲聊可省略。
+  - `displayMessages`：planMessage 插入到当前 turn 根用户消息之后，不参与 visibleMessages 窗口挤出。
+  - plan 卡片豁免通用 8 行折叠。
+  - 在对话流中直接渲染 plan 关键信息：plan 标题、当前 step、完成率、失败/阻塞步骤标记。
+- 锚点：`agent/src/prompt/sections/IdentitySection.ts:58-62`、`ToolsSection.ts:37-53`；`AgentConsoleSessionState.ts` `displayMessages`。
+
+**P258 · 工具执行输出内联增强（中）** `platform: agent-ui/src（跨平台）`
+- 目标：CommandExecution 的输出更完整地内联在对话流中。
+- 方案：
+  - `toolRunSummaryMaxLength` 默认值从 200 提升至 400+。
+  - 对话流中的 tool result 消息增加"展开"交互：默认显示 summary，Enter 展开完整输出。
+  - `AgentConsoleMessageRenderers` 中 tool result renderer 增加展开/折叠 toggle。
+- 锚点：`AgentConsoleMessageRenderers.ts`（tool result renderer 增强）、`AgentConsoleSessionState.ts`（tool output 展开状态）。
+
+---
+
+### 三、实施批次
+
+#### 批次 I · /command 交互化（P252）
+- **P252 · /command 交互化：统一命令面板（高）** `platform: agent-ui/src（跨平台）`
+  - 新增 `AgentConsoleCommandPanelComponent`：命令列表 overlay，支持 `/` 过滤、↑↓ 导航、Enter 确认、Esc 收起。
+  - 所有 `/command` 结果统一走命令面板。
+  - 命令面板数据源为 `AgentConsoleKeymap.effectiveBindings(context)` 与 command handlers 注册表。
+  - 自动测试：受影响包全量测试 + `tsc --noEmit` + `build:web`。
+  - Console 专项：真实 PTY 验收命令面板搜索/过滤/导航。
+  - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 应为空。
+  - 回归基线：确保 P0–P251 已有测试不回归。
+
+#### 批次 II · 折叠策略重构（P253）
+- **P253 · 保尾折叠：assistant/user 消息不吞尾部（高）** `platform: agent-ui/src（跨平台）`
+  - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + … + 尾 2 行"保尾策略。
+  - reasoning/tool/system 保持现有折叠不变。
+  - TUI 端去掉 "Click to expand" 文案，改为 "enter 展开"。
+  - 自动测试 + `tsc --noEmit` + `build:web` + 真实终端验收。
+
+#### 批次 III · Plan 卡片修复（P254）✅ 已完成
+- **P254 · Plan 卡片固定位置 + 免折叠 + 渲染强化（高）** `platform: agent-ui/src（跨平台）`
+  - `displayMessages`：planMessage 插入到当前 turn 根用户消息之后，不参与 visibleMessages 挤出。
+  - plan 卡片豁免通用 8 行折叠。
+  - 渲染强化：checkbox 字形、进度条、in_progress 高亮。
+  - ✅ 已实现：通过 P187/P233 完成。
+
+#### 批次 IV · 文件变更 + Ask_user + 输出内联（P255-P256, P258）
+- **P255 · 文件变更概要内联（高）** `platform: agent-ui/src（跨平台）` ✅ 已完成
+  - ✅ 已实现：通过 P174 完成。
+- **P256 · Ask_user 交互化（中-高）** `platform: agent-ui/src（跨平台）` ✅ 已完成
+  - ✅ 已实现：通过 P189/P234 完成（pendingQuestion/pendingQuestionQueue/questionAction 已存在）。
+- **P258 · 工具执行输出内联增强（中）** `platform: agent-ui/src（跨平台）` ❌ 待实现
+  - `toolRunSummaryMaxLength` 从 96 提升至 400+。
+  - tool result 增加展开/折叠 toggle。
+  - 自动测试 + `tsc --noEmit` + `build:web`。
+
+#### 批次 V · 设计计划关键信息优先展示（P257）✅ 已完成
+- **P257 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
+  - `IdentitySection`/`ToolsSection` 改为主动规划口径。
+  - `displayMessages`：planMessage 插入到当前 turn 根用户消息之后。
+  - plan 卡片豁免通用 8 行折叠。
+  - ✅ 已实现：ToolsSection.ts 已含主动规划口径。
+
+#### 批次 VI · 验证与回归（P259）
+- **P259 · 全量验证与真实终端验收** `platform: 验证（跨平台）`
+  - 自动测试：agent-ui 全套 + components / components/console / components/html 回归 + agent 包 prompt 相关测试 + `tsc --noEmit` + `build:web`。
+  - PTY 实测四场景：① 长回复尾部问询在默认模式可见；② `/command` 弹出统一命令面板且可搜索/过滤/导航；③ 多步任务中模型主动调 `todo`，plan 卡片出现在根请求之后并实时勾选；④ `ask_user` 弹出交互式选择控件。
+  - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 为空；新代码无 node API 直接引用。
+  - 回归基线：P0–P258 既有测试不回归。
+
+---
+
+### 四、差距总结
+
+| 差距 | 优先级 | 描述 | 状态 |
+|---|---|---|---|
+| /command 无交互式面板 | **高** | 90%+ 命令结果走 notify/select，消失即灭；需统一命令面板支持搜索/过滤/键盘导航 | ❌ P252 待实现 |
+| Plan 卡片位置错误+折叠 | **高** | planMessage push 到末尾被挤出可视窗口，且被 8 行折叠双重吃行 | ✅ P254 已修复 |
+| 尾部问询被折叠吞掉 | **高** | truncateMessageItem 对所有消息做 head 截断，尾部问询必然被截 | ❌ P253 待实现 |
+| Ask_user 无交互 | **高** | 仅纯文本埋在正文，无选择控件 | ✅ P256 已修复 |
+| 文件变更不直观 | **中** | 变更信息散落 tool result，无内联可视化 | ✅ P255 已修复 |
+| 工具输出截断过多 | **中** | toolRunSummaryMaxLength=96，摘要可能丢失关键信息 | ❌ P258 待实现 |
+| 系统提示抑制 todo | **中** | "unless the user explicitly asks" 把默认变成"从不" | ⚠️ 非 v12 范围 |
+
+---
+
+### 五、本项目优势（保持并强化）
+
+1. **循证验证螺旋**：evidence-ledger / verification-gate / weakness-miner / harness-profile + falsify-rate 路由 + LSP 诊断证据 + AGENTS 规则草案——codex/opencode 均无系统化闭环。
+2. **多代理编排深度**：delegation graph tree/lineage 持久化、worker 自动分类、thread 终态回写、coding_task 结构化编排。
+3. **上下文压缩严谨性**：anchor 保留 + 五字段 summary schema + 质量评分 + 压缩历史观测 + overflow replay。
+4. **审批流 + 补偿/回滚完备性**：granular 类别 + expiry/FIFO + 审计落库 + LIFO 补偿 + Git step 快照 revert/unrevert。
+5. **可观测性覆盖**：turn diagnostics / summary quality / compaction history / delegation / audit 全部持久化并暴露 HTTP + RPC + UI 三层。
+6. **覆盖面**：40+ 工具组、MCP 三形态 + OAuth + server、skills 本地 + 远程市场 + 插件（1.0.0 标准）、hooks 双形态、gateway 多协议 + OpenAPI。
+7. **跨平台响应式 UI 架构**：TUI/浏览器/VS Code/Electron 四端共用响应式渲染层（数据驱动、无定时器、时间派生动画）。
+8. **TUI 功能密度**：~70 命令 / ~20 面板 / vim / which-key / 5 上下文分域键位 / 模型收藏/最近/变体循环。
+9. **代码审查能力**（vs Codex）：hunk 级别导航、file annotations（approved/rejected）、side-by-side 模式、列滚动——Codex 的 file change 只有 add/delete/update 概要，无 hunk 级审查。
+10. **Durable 任务历史**（vs opencode）：BackgroundTaskHistoryStore 支持 cursor 分页、batch cancel、subscribe、failure cause 追溯——opencode 无等价持久化任务历史。
+11. **Plan revision/乐观并发**（vs Codex）：planId/revision 追踪 + expectedRevision 冲突检测 + rebase payload——Codex 无 plan 版本控制。
+12. **证据感知计划编译器**（vs opencode）：compilePlan 自动推导 acceptance/evidence/risk + decompose action——opencode 无等价计划质量编译器。
+13. **Plan execution reconciler**（vs Codex）：tool receipt/LSP/verify/review evidence 确定性关联到 plan step——Codex 无等价 evidence→step 关联。
+14. **DAG orchestration bridge**（vs opencode）：resolveSchedule 映射到 fan_out/wait_all + worker 调度 + 部分失败传播——opencode 无等价 DAG 调度。
+
+---
+
+## 改进计划 v12：Slash Command 交互化与关键信息优先展示（P252–P259）
+
+> 对照 opencode 的 `/command` 交互范式与 Codex 的内联消息块模式，解决三个核心体验断点：
+> 1. `/command` 大部分子命令不支持交互式操作——结果全部以 `notify()` 塞入顶部 notice 条一闪而过，或走 `ctx.select()` 单次 picker 消失即灭；
+> 2. 设计方案未将关键信息和 plan 关键信息展示出来，而是全部返回成一个回复并折叠起来；
+> 3. assistant 长回复尾部问询被折叠吞掉。
+> 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。
