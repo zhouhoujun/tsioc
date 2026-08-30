@@ -11,6 +11,7 @@
 | 2 | keymap overlay | 按键 `Ctrl+Alt+K`（which-key-toggle） | overlay 文案出现（候选词可用 env 调整） |
 | 3 | plan 实时勾选 | 两次 `todo` 工具调用：pending → completed | `[ ] 计划项 A` 出现后翻转为 `[x]` |
 | 4 | plan 全生命周期（P232B） | `todo` 脚本：建计划(4 步并行)→运行→失败→确认 retry→恢复→review gate→完成 | 创建→并行→失败→恢复→门禁→完成各阶段依次出现；记录首屏步骤可见率/失败定位按键数/event-to-UI 延迟 |
+| 5 | 命令结果回看（P262） | `/usage` → `Ctrl+O` 打开 outputs 面板 → `Esc` 收起 | `/usage` 摘要出现；面板标题 `command outputs` + `/usage` 条目可见；Esc 后面板关闭 |
 
 ## 运行
 

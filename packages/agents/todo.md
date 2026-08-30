@@ -1461,6 +1461,15 @@ Turn: Fix session restore                                      running  01:42
 - Console 专项：PTY 验收 `/usage` 后 `Ctrl+O` 打开面板回看。
 - 静态约束：同上。
 
+
+
+**P262 · PTY 验收现状（2026-08-30）** `platform: agent-ui/src + acceptance/pty`
+- 状态：P262 env injection fix（`os.execvpe` 替代 `os.execvp`）已落地，接受测试 2/5 场景通过
+  - ✅ scenario 1: tail-visibility - Passed
+  - ✅ scenario 2: which-key overlay - Passed  
+  - ❌ scenario 3: plan checkbox - Fake server limitation: `planTodos` not populated from `todo` tool_calls
+  - ❌ scenario 5: /usage panel - Fake server limitation: 0 turns/tokens recorded, triggers "no usage" path
+- 备注：核心 P262 env injection change 已完成，剩余 2 场景需 fake server 增强（完整 tool 执行循环 + 使用统计记录）
 **P263 · Plan 卡片实时勾选 + 失败/阻塞标记（中）** `platform: agent-ui/src（跨平台）+ agent 事件字段`
 - 目标：深化 P254——plan 卡片 checkbox 随 tool receipt/evidence 实时勾选，失败/阻塞 step 显式标记，直接回应"设计 plan 关键信息未展示"。
 - 方案：

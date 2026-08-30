@@ -38,7 +38,7 @@ AGENT_CMD = os.environ.get('AGENT_CMD') or (
     'npm run --silent chat --prefix ' + os.path.join(REPO, 'packages', 'agents', 'agent-cli'))
 TIMEOUT = float(os.environ.get('ACCEPTANCE_TIMEOUT', '90'))
 WHICHKEY_CANDIDATES = [s for s in os.environ.get(
-    'EXPECT_WHICHKEY', 'which-key,Which-Key,Which key,Keys,chained').split(',') if s]
+    'EXPECT_WHICHKEY', 'which-key,Which-Key,Which key,Keys,chained,Keymap').split(',') if s]
 TODO_LABEL = os.environ.get('EXPECT_TODO_LABEL', os.environ.get('FAKE_TODO_CONTENT', '计划项 A'))
 SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
 
@@ -127,7 +127,7 @@ def spawn_agent(port: int):
     pid, fd = pty.fork()
     if pid == 0:
         try:
-            os.execvp('/bin/sh', ['/bin/sh', '-c', AGENT_CMD])
+            os.execvpe('/bin/sh', ['/bin/sh', '-c', AGENT_CMD], env)
         finally:
             os._exit(127)
     import fcntl, termios, struct
@@ -229,6 +229,42 @@ def scenario_plan_checkbox(pid: int, fd: int, screen: Screen) -> bool:
         print(f'[FAIL] scenario 3: plan item "{TODO_LABEL}" never flipped to completed')
         return False
     print(f'[PASS] scenario 3: plan item "{TODO_LABEL}" flipped [ ] -> [x] live')
+    return True
+
+
+def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
+    """P262: /usage pushes a transient result into the outputs ring, Ctrl+O opens
+    the command-outputs panel, Esc closes it.
+
+    Runs after the default plan scenario so turn diagnostics exist and `/usage`
+    produces a real summary (turns/tokens), which is what gets pushed to the ring.
+    """
+    # ensure the previous turn has settled before issuing a slash command
+    send(fd, '\r'.encode())
+    time.sleep(0.5)
+    drain(fd, screen)
+
+    send(fd, '/usage\r'.encode())
+    # /usage pushes to the command-outputs ring (post-P262); give agent time to
+    # process the command before opening the panel.
+    time.sleep(0.5)
+    send(fd, b'\x0f')  # Ctrl+O -> command-outputs toggle
+    opened = wait_for(fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')], timeout=20)
+    if not opened:
+        print('[FAIL] scenario 5 (P262): outputs panel not detected after Ctrl+O')
+        return False
+    view = screen.viewport()
+    if '/usage' not in view:
+        print('[FAIL] scenario 5 (P262): /usage entry missing from panel:\n' + view)
+        return False
+
+    send(fd, b'\x1b')  # Esc closes the panel
+    time.sleep(0.8)
+    drain(fd, screen)
+    if re.search(re.escape('command outputs'), screen.viewport()):
+        print('[FAIL] scenario 5 (P262): panel did not close on Esc')
+        return False
+    print('[PASS] scenario 5 (P262): /usage output reviewable via Ctrl+O panel and Esc-closable')
     return True
 
 
@@ -378,6 +414,7 @@ def main() -> int:
             results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
             results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
+            results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))

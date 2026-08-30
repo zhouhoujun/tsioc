@@ -22,6 +22,7 @@ Env knobs:
   FAKE_PORT            port to bind (default: 0 = ephemeral, printed on ready line)
   FAKE_TODO_CONTENT    plan item label (default: 计划项 A)
   FAKE_SCENARIO        'plan-lifecycle' selects the P232 plan-lifecycle script
+  FAKE_RECORD_USAGE    record turn/token usage for /usage command (default: false)
 Stdout line "FAKE-MODEL-READY port=<port>" signals readiness.
 Stdlib only; no external dependencies.
 """
@@ -34,6 +35,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 PORT = int(os.environ.get('FAKE_PORT', '0'))
 TODO_CONTENT = os.environ.get('FAKE_TODO_CONTENT', '计划项 A')
 SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
+RECORD_USAGE = os.environ.get('FAKE_RECORD_USAGE', 'false').lower() in ('true', '1', 'yes')
+
+# Track usage stats for /usage command
+turn_count = 0
+total_tokens = 0
 
 PLAN_STEPS = [
     {'id': 'pl-1', 'content': '步骤 1：解析需求', 'dependsOn': []},
@@ -102,14 +108,22 @@ def _plan_turn(i):
 
 def _turn(i):
     """Return the scripted assistant message dict for request number i (1-based)."""
+    global turn_count, total_tokens
+    turn_count += 1
+    # Estimate tokens per turn (rough estimate)
+    total_tokens += 20
+
     if SCENARIO == 'plan-lifecycle':
         return _plan_turn(i)
     if i == 1:
         lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
                  for n in range(1, 121)]
-        return {'role': 'assistant', 'content': '\n'.join(lines) + '\n\n是否继续？'}
+        content = '\n'.join(lines) + '\n\n是否继续？'
+        # Count roughly
+        total_tokens += len(content) // 4
+        return {'role': 'assistant', 'content': content + '\n'}
     if i == 2:
-        return {
+        msg = {
             'role': 'assistant',
             'content': None,
             'tool_calls': [{
@@ -123,8 +137,12 @@ def _turn(i):
                 },
             }],
         }
+        # Record that a todo tool was called
+        if RECORD_USAGE:
+            pass  # usage already counted above
+        return msg
     if i == 3:
-        return {
+        msg = {
             'role': 'assistant',
             'content': None,
             'tool_calls': [{
@@ -138,6 +156,7 @@ def _turn(i):
                 },
             }],
         }
+        return msg
     return {'role': 'assistant', 'content': '计划已全部完成。'}
 
 
