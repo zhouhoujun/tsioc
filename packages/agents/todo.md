@@ -1390,3 +1390,101 @@ Turn: Fix session restore                                      running  01:42
 > 2. 设计方案未将关键信息和 plan 关键信息展示出来，而是全部返回成一个回复并折叠起来；
 > 3. assistant 长回复尾部问询被折叠吞掉。
 > 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。
+
+---
+
+## 深度对比 v13：/command 与 Plan 交互再审视（2026-08-30）
+
+> 在 v12（P252–P259）基础上，对本项目已落地代码做逐条证据复核，并对照 opencode 2026-08 实际行为补充新差距。
+> **复核结论先行**：P253（保尾折叠）实际已在全部渲染分支落地，v12 的 ❌ 标记过时；P254/P255/P256/P257 确认已落地；P252 部分实现（可搜索命令总表已存在，缺描述/分组/持久输出）；P258 仍待实现。
+> 参考：opencode.ai/docs/tui（2026-08-28 快照）、cheatsheets.zip/opencode（2026-04-03）。
+
+### 一、v12 遗留项复核（代码证据）
+
+| 项 | v12 标记 | 当前代码证据 | 复核结论 |
+|---|---|---|---|
+| P252 命令面板 | ❌ 待实现 | `AgentConsoleComponent.ts:6060` `openCommandPalette` 已存在（全局 action `command-palette` → `:5790`），`fuzzyMatchAgentConsoleCommand`（`AgentConsoleKeymap.ts:126`）过滤，逐字输入重开 selectMenu；但仍是 selectMenu 一次性控件，且 `:6064` `description: 'command'` 硬编码无信息量 | 已承接：描述/分组经 P260（registry）覆盖、fuzzy 一致性经 P261 覆盖；剩余**持久输出** → P262 |
+| P253 保尾折叠 | ❌ 待实现 | `AgentConsolePanels.ts:2604-2655` 三个分支全部带保尾：focused 非 reasoning `preserveTail=true`（`:2621`）、default 分支 `truncateMessageItem(item, 8, true)`（`:2654`）；`truncateMessageItem` `:2676-2685` 用 `trailingQuestionLineCount`+`QUESTION_TAIL_VISIBLE_BUDGET` 保尾 2 行；`:2727-2741` enter/click 双文案按 `messageToggleInteraction` 切换 | ✅ **已落地（v12 标记过时，回填更新）**。TUI 默认 `messageToggleInteraction === 'enter'` 已确认（`console-platform.spec.ts:22` + `run-agent-console.ts:116`）；`/display critical` 已实现 → P264 ✅ |
+| P254 Plan 卡片位置/免折叠 | ✅ P187/P233 | `displayMessages` 插入当前 turn 根用户消息后；plan item 豁免折叠（`Panels.ts:2614/2652` `isPlanTodoMessageItem`）；`AgentConsoleMessageRenderers.ts:139-157` `resolvePlanTodoContent` checkbox 渲染 | ✅ 确认；缺失败/阻塞标记与实时勾选联动 → P263 |
+| P255 文件变更内联 | ✅ P174 | — | ✅ |
+| P256 Ask_user | ✅ P189/P234 | `AgentConsoleSessionState.ts:567-571` `pendingQuestion`；`Panels.ts:1944-1951` 面板 | ✅ |
+| P257 提示主动规划 | ✅ | `agent/src/prompt/sections/ToolsSection.ts:37-41` | ✅ |
+| P258 工具输出内联 | ❌ 待实现 | `AgentConsoleSettingsStore.ts:409` `toolRunSummaryMaxLength: 96` | 保持 ❌，按 v12 批次 IV 执行 |
+
+### 二、opencode 2026-08 参照行为 → 本项目差距（新增）
+
+| opencode 行为 | opencode 细节 | 本项目现状 | 差距 |
+|---|---|---|---|
+| Slash 补全显示描述 | 输入 `/` 弹下拉、逐字客户端过滤；每条命令显示 `description`（官网原话 "This is shown as the description in the TUI when you type in the command"） | composer `/` 补全只显示裸命令名（`AgentConsoleSuggestions.ts:53-56`，label=value=命令名）；palette `description:'command'` 硬编码（`AgentConsoleComponent.ts:6064`） | 全链路无命令描述数据源 → P260 |
+| 智慧运行（smart run） | 选中 `$ARGUMENTS` 模板命令 → 插入 `/name ` 等待参数；无参命令 → 选中即执行 | 选中任何命令都只注入文本（`AgentConsoleSessionState.ts:4627-4636`），必须再按一次 Enter | 无 smart-run → P261 |
+| 过滤一致性 | 补全与 palette 同一过滤基准 | palette 用 subsequence fuzzy（`AgentConsoleKeymap.ts:126`），composer 补全用 `startsWith`（`AgentConsoleSuggestions.ts:51`） | 行为不一致 → P261 |
+| 命令定义结构 | name/description/aliases/keybind/agent/model/subtask；`.opencode/commands/*.md` 用户可扩展 | `commandHints` 是扁平 string[]（`AgentConsoleSessionState.ts:678`），`COMMAND_HANDLERS` 是 `Record<string, fn>`（`AgentConsoleCommandHandlers.ts:1358`） | 无 structured registry → P260 |
+| 命令结果持久 | 命令结果在 overlay 持久显示 | 90%+ 命令结果走 notify() 瞬态 / ctx.select() 一次性（v12 1.1 表 37 行证据） | → P262 |
+| Plan 内联实时勾选 | plan 作为 thread item 内联，checkbox 步步勾选 | plan 卡片已定位 + 豁免折叠，但无失败/阻塞标记、无 tool receipt 实测联动 | → P263 |
+
+### 三、新增改进项（v13，P260 起）
+
+**P260 · 命令元数据注册表 CommandDefinition（高）** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-30）**
+- 状态：新增 `AgentConsoleCommandRegistry.ts`（88 定义、8 组、`/help` 索引 0、10 条 needsArgs、别名 `/q` `/x`）；`commandHints` 改派生 getter + `injectedCommandHints` 注入合并；palette/补全/`/help` 三路消费 description+group（`openCommandPalette` 取 label/description/group，Suggestions `/` 分支 fuzzy + 描述 + hint，`buildAgentConsoleHelpOptions` 按组渲染）。`test/command-registry.spec.ts` 10 项单元全绿（完整性/组计数/别名唯一/needsArgs/hints 合并/描述格式/help 分组/smart-run 分流/外部 hint 提交）。agent-ui 全量 862 passing，`tsc --noEmit` 通过，`build:web` 成功。
+- 目标：为所有 `/command` 提供单一事实源（name/description/aliases/group/needsArgs/contexts），根治"补全与面板无描述、/help 无分组"的结构性缺陷。
+- 方案：
+  - 新增 `AgentConsoleCommandRegistry` 导出 `AgentConsoleCommandDefinition[]`；`COMMAND_HANDLERS` 迁移为 `Record<string, CommandHandler>` 仍按名索引，定义项按名关联。
+  - 删除 `AgentConsoleSessionState.ts:678` 硬编码 `commandHints` 数组，改为派生只读 getter（= registry 条目）；setter `:4142` 仅保留外部注入合并（去重）。
+  - 命令按 group 归类（核心/会话/显示/输入/审查/钩子/委托/系统），description 中文短句 + 参数示例。
+  - 三路消费：palette（`AgentConsoleComponent.ts:6060` 取 label/description/group，废弃 `description:'command'` 硬编码）、composer 补全（`AgentConsoleSuggestions.ts`）、`/help`（`AgentConsoleCommandHandlers.ts:241-333` 改按 group 分组渲染）。
+- 锚点：`AgentConsoleSessionState.ts:678/4142`、`AgentConsoleCommandHandlers.ts:1358`、`AgentConsoleComponent.ts:6060-6070`、`AgentConsoleSuggestions.ts:39-79`。
+- 自动测试：单元（registry 完整性：commandHints ⊆ registry、无孤儿命令、别名唯一、needsArgs 一致性）+ agent-ui 全量 + `tsc --noEmit` + `build:web`。
+- Console 专项：PTY 验收 palette/补全/help 三路显示 description+group 一致。
+- 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 为空。
+
+**P261 · composer `/` 补全升级：描述行 + fuzzy 一致 + 智慧运行（高）** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-30）**
+- 状态：`resolveAgentConsoleInputSuggestions` `/` 分支改用 `fuzzyMatchAgentConsoleCommand` + option 附 `description`（registry 消费）+ hint 更新；`selectMenuAction` 按 registry `needsArgs` 分流（无参加载注入 → smart-run 直接执行 `handleCommand(value)`，带参保留注入 `/name `）；`handleCommand` 完成命令名 canonicalization。`command-registry.spec.ts` 覆盖无参/带参 smart-run 分流与外部 hint 合并提交，与 palette 过滤一致。
+- 目标：对齐 opencode——补全项带描述、过滤与 palette 同一 fuzzy、无参命令选中即执行、带参命令注入 `/name ` 等待。
+- 方案：
+  - `resolveAgentConsoleInputSuggestions`（`AgentConsoleSuggestions.ts:39-79`）`/` 分支过滤从 `startsWith` 改为复用 `fuzzyMatchAgentConsoleCommand`（`AgentConsoleKeymap.ts:126`）；option 附 `description`（来自 P260 registry，回退"命令行参数示例"）。
+  - `selectMenuAction`（`AgentConsoleSessionState.ts:4627-4636`）按 registry `needsArgs` 分流：无参 → 直接 `handleCommand(value)` 并清空输入（smart-run）；带参 → 保留现注入行为 `applyAgentConsoleSuggestion`（`/name ` 待参数）。
+  - 补全 hint 更新为 `enter 执行   tab 补全   up/down 选择`。
+- 锚点：`AgentConsoleSuggestions.ts`、`AgentConsoleSessionState.ts:4595-4639`、`AgentConsoleKeymap.ts:126`。
+- 自动测试：单元（无参/带参/多 token/光标中段/fuzzy 命中）+ agent-ui 全量 + `tsc --noEmit` + `build:web`。
+- Console 专项：PTY 验收选中 `/help` 二次回车消失（直接执行）与 `/model ` 注入等待。
+- 静态约束：同上。
+
+**P262 · 命令结果历史回看面板（中）** `platform: agent-ui/src（跨平台）`
+- 目标：notify 瞬态命令结果（/usage /quality /compactions /diagnostics /delegation /hooks /memories /personality /retry /rollback /ps /voice /ide /editor /share /title /statusline /theme /thinking /raw /stash /init /snapshot /git-snapshots 等 ~25 项）可回看，不再"消失即灭"。
+- 方案：
+  - 新增 `state.commandOutputs: { id; command; text; ts; kind }[]`（环形上限 20 条）；新增 `ctx.pushCommandOutput(command, text)` 并迁移上述命令的结果写入（notify 保留用于非命令提示）。
+  - 新增 `CommandOutputsPanel`（`AgentConsolePanels.ts`）：`/outputs` 命令 + 全局键位（建议 Ctrl+O）打开，↑↓/j/k 翻页、Esc 收起、`/` 过滤、Enter 复制原文。
+  - 面板状态入 overlay 体系，TUI/browser 共用渲染。
+- 锚点：`AgentConsoleCommandHandlers.ts`（上述命令处理器，坐标见 v12 1.1 表）、`AgentConsoleComponent.ts` notify 调用点、`AgentConsolePanels.ts`（新面板）、`AgentConsoleKeymap.ts`（新全局 action + 键位）。
+- 自动测试：单元（环形上限、过滤、空态、复制）+ agent-ui 全量 + `tsc --noEmit` + `build:web`。
+- Console 专项：PTY 验收 `/usage` 后 `Ctrl+O` 打开面板回看。
+- 静态约束：同上。
+
+**P263 · Plan 卡片实时勾选 + 失败/阻塞标记（中）** `platform: agent-ui/src（跨平台）+ agent 事件字段`
+- 目标：深化 P254——plan 卡片 checkbox 随 tool receipt/evidence 实时勾选，失败/阻塞 step 显式标记，直接回应"设计 plan 关键信息未展示"。
+- 方案：
+  - agent 侧确认 evidence→step reconciler 的输出字段经事件到达 UI（plan 事件负载含 step status 快照）；agent-ui 消费 step status（pending/in_progress/done/failed/blocked）渲染 `☐/▸/☑/✗/⏸` 字形映射，failed/blocked 加 tone 高亮 + 原因摘要行。
+  - 进度条与 in_progress 高亮（P254 已实现）保持，仅补 status 映射与失败/阻塞分支。
+  - 确认 default 模式 plan 卡片同样豁免折叠（`Panels.ts:2652` 已豁免）且不被 visibleMessages 挤出。
+- 锚点：`AgentConsoleMessageRenderers.ts:139-157` `resolvePlanTodoContent`、`AgentConsoleSessionState.ts` plan 状态字段、agent 侧 reconciler 输出。
+- 自动测试：渲染单元（四种 step status 字形/高亮 + 失败原因行）+ agent-ui 全量 + `tsc --noEmit` + `build:web`。
+- Console 专项：PTY 验收 v12 四场景③变体（多步任务含一步失败：plan 卡片实时勾选并显式标记失败项）。
+- 静态约束：同上。
+
+**P264 · /display critical 与 TUI 交互文案确认（低）** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-30）**
+- 状态：`/display critical` 子命令切换 `state.showCriticalMarks`（`SessionState.ts` 新字段 + `setShowCriticalMarks`），开启时全部消息角色标签加 `★ ` 前缀且渲染豁免折叠（`Panels.ts renderedMessageItems` rawMode||showCriticalMarks），registry `/display` 描述更新为 `/display [on|off|critical]`。TUI 默认 `messageToggleInteraction === 'enter'` 已确认（`console-platform.spec.ts:22` 断言 + `run-agent-console.ts:116` 显式设置），无需改默认分支。新增 `displayCommandCriticalMarking` 单元测试，agent-ui 全量 862 passing，`tsc --noEmit` 通过。
+- `/display critical` 子命令：切换"全部消息关键标记优先展示"（v12 P253 遗留子项）。
+- 确认 TUI 默认 `messageToggleInteraction === 'enter'`（`AgentConsolePanels.ts:2727-2741`），否则 default 分支改为 enter 文案（v12 P253 子项"去掉 Click to expand"）。
+- 锚点：`AgentConsoleCommandHandlers.ts:276`（/display 现有 option 列表）、`AgentConsolePanels.ts:2727`。
+- 自动测试：单元（/display critical 切换状态）+ agent-ui 全量 + `tsc --noEmit`。
+
+### 四、批次编排（v13）
+
+| 批次 | 内容 | 验收 |
+|---|---|---|
+| VII | P260 注册表（先建结构 + 三路消费接线） | ✅ registry 单元绿（10 项）；palette/补全/help 显示 description+group |
+| VIII | P261 补全升级 + P264 | ✅ smart-run 单元绿（无参执行/带参注入）；补全与 palette 同一 fuzzy；`/display critical` 单测绿 |
+| IX | P262 输出回看 | `/outputs` 面板 PTY 过（/usage → Ctrl+O 回看） |
+| X | P263 实时勾选 + 完成判定回填 | v12 四场景全绿；v12 表回填：P252→P260-262 承接、P253→✅、P258→按批次 IV 执行 |
+
+> 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。

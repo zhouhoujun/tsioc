@@ -2285,6 +2285,7 @@ const messageItemsCache = new WeakMap<object, {
     visibleItems: number;
     rawMode: boolean;
     showTimestamps: boolean;
+    showCriticalMarks: boolean;
     showToolOutput: boolean;
     showUsername: boolean;
     timelineMode: boolean;
@@ -2501,6 +2502,7 @@ export class AgentConsoleMessagesPanelComponent {
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
         const showTimestamps = this.state.consoleOptions.showMessageTimestamps && this.state.showTimestamps;
+        const showCriticalMarks = this.state.showCriticalMarks;
         const showToolOutput = this.state.showToolOutput;
         const showUsername = this.state.showUsername;
         const timelineMode = this.state.timelineMode;
@@ -2516,6 +2518,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.visibleItems === visibleItems
             && cached.rawMode === rawMode
             && cached.showTimestamps === showTimestamps
+            && cached.showCriticalMarks === showCriticalMarks
             && cached.showToolOutput === showToolOutput
             && cached.showUsername === showUsername
             && cached.timelineMode === timelineMode
@@ -2532,6 +2535,7 @@ export class AgentConsoleMessagesPanelComponent {
             statusSymbol: this.state.consoleOptions.messageStatusSymbol,
             rawMode,
             showTimestamps,
+            showCriticalMarks,
             showToolOutput,
             showUsername,
             username: this.state.consoleOptions.username,
@@ -2546,6 +2550,7 @@ export class AgentConsoleMessagesPanelComponent {
             visibleItems,
             rawMode,
             showTimestamps,
+            showCriticalMarks,
             showToolOutput,
             showUsername,
             timelineMode,
@@ -2602,7 +2607,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
-        if (this.state.rawMode) {
+        if (this.state.rawMode || this.state.showCriticalMarks) {
             return this.messageItems;
         }
         if (this.state.messagesFocused) {

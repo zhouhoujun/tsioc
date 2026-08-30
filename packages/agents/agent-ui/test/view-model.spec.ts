@@ -2592,7 +2592,9 @@ export class AgentConsoleComponentTest {
 
         state.setInput('/');
         expect(state.selectMenu?.title).toEqual('Suggestions');
-        expect(state.selectMenu?.options.map(option => option.value)).toEqual(['/help', '/hello']);
+        const slashValues = state.selectMenu?.options.map(option => option.value) ?? [];
+        expect(slashValues).toContain('/help');
+        expect(slashValues).toContain('/hello');
 
         await state.confirmSelectMenu('/hello');
         expect(state.input).toEqual('/hello ');
@@ -5822,8 +5824,9 @@ export class AgentConsoleComponentTest {
         await panel.onKeydown({ key: 'ArrowDown', preventDefault() {} } as KeyboardEvent);
         expect(state.selectMenu?.selectedIndex).toEqual(1);
 
+        const secondValue = state.selectMenu?.options[1]?.value ?? '/status';
         await panel.onKeydown({ key: 'Tab', preventDefault() {} } as KeyboardEvent);
-        expect(state.input).toEqual('/hello ');
+        expect(state.input).toEqual(`${secondValue} `);
         expect(state.selectMenu).toEqual(undefined);
 
         state.submitAction = async () => {
@@ -9828,6 +9831,29 @@ export class AgentConsoleComponentTest {
             await (component as any).handleCommand('/display');
             expect(component.sessionState.showTimestamps).toEqual(true);
             expect((await store.load(workspace)).showTimestamps).toEqual(true);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('display command critical subcommand toggles critical marking state')
+    async displayCommandCriticalMarking() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-display-critical-'));
+        try {
+            const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+            component.configure({ workspace });
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            (component as any).settingsStore = store;
+            await component.onInit();
+            expect(component.sessionState.showCriticalMarks).toEqual(false);
+
+            await (component as any).handleCommand('/display critical');
+            expect(component.sessionState.showCriticalMarks).toEqual(true);
+            expect(component.notice).toContain('Critical marking enabled');
+
+            await (component as any).handleCommand('/display critical');
+            expect(component.sessionState.showCriticalMarks).toEqual(false);
+            expect(component.notice).toContain('Critical marking disabled');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

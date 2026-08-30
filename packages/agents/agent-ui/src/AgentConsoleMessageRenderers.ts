@@ -77,6 +77,8 @@ export interface AgentConsoleMessageRenderContext {
     showUsername?: boolean;
     username?: string;
     timelineMode?: boolean;
+    /** When true, all messages carry the critical mark (★) and render uncollapsed. */
+    showCriticalMarks?: boolean;
     /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
     markdownBridge?: MarkdownWorkerBridge;
 }
@@ -262,9 +264,10 @@ export function renderAgentConsoleMessageItem(
         : baseRoleLabel;
     const timelineEvent = message?.metadata?.uiKind === 'event';
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
-    const effectiveRoleLabel = context.timelineMode && timelineEvent
-        ? (timelineEventType.startsWith('tool_') || timelineEventType === 'tool_call' ? '  ├─ ' : '  · ')
-        : roleLabel;
+    const criticalMark = context.showCriticalMarks ? '★ ' : '';
+    const effectiveRoleLabel = (context.timelineMode && timelineEvent)
+        ? `  ${criticalMark}${timelineEventType.startsWith('tool_') || timelineEventType === 'tool_call' ? '├─ ' : '· '}`
+        : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const statusSymbol = context.statusSymbol

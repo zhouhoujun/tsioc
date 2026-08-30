@@ -49,6 +49,10 @@ import {
     processCommonTextInputChunk,
     shouldSkipCommonHistoryEntry
 } from '@tsdi/components/common';
+import {
+    agentConsoleCommandHints,
+    getAgentConsoleCommandDefinition
+} from './AgentConsoleCommandRegistry';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -626,6 +630,7 @@ export class AgentConsoleSessionState {
     queuedPromptCount = 0;
     showThinking = true;
     showTimestamps = true;
+    showCriticalMarks = false;
     showToolOutput = true;
     showUsername = false;
     timelineViewMode: 'off' | 'compact' | 'steps' | 'verbose' = 'off';
@@ -675,7 +680,11 @@ export class AgentConsoleSessionState {
     revertGitSnapshotFromDetailAction?: () => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
-    commandHints = ['/help', '/goal', '/tools', '/skills', '/mcp', '/plugins', '/apps', '/ssh', '/jobs', '/tasks', '/review', '/diff', '/theme', '/thinking', '/display', '/timeline', '/raw', '/stash', '/statusline', '/hooks', '/memories', '/fast', '/personality', '/debug-config', '/settings', '/yolo', '/experimental', '/feedback', '/ide', '/editor', '/ps', '/resume', '/archive', '/fork', '/side', '/retry', '/rollback', '/model', '/plan', '/archetype', '/permissions', '/status', '/cd', '/pwd', '/init', '/undo', '/redo', '/export', '/attach', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/delegation', '/harness', '/voice', '/vim', '/keymap', '/copy', '/share', '/unshare', '/quit', '/exit', '/threadplan', '/threadreview', '/title', '/pin', '/unpin', '/snapshot', '/snapshots', '/git-snapshots', '/sections'];
+    protected injectedCommandHints: string[] = [];
+
+    get commandHints(): string[] {
+        return agentConsoleCommandHints(this.injectedCommandHints);
+    }
 
     protected activeToolSet = new Set<string>();
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
@@ -4139,7 +4148,7 @@ export class AgentConsoleSessionState {
     }
 
     setCommandHints(commands: string[]): void {
-        this.commandHints = Array.from(new Set(commands.filter(Boolean)));
+        this.injectedCommandHints = Array.from(new Set(commands.filter(Boolean)));
         this.refreshInputSuggestions();
     }
 
@@ -4163,6 +4172,10 @@ export class AgentConsoleSessionState {
 
     setShowTimestamps(value: boolean): void {
         this.showTimestamps = !!value;
+    }
+
+    setShowCriticalMarks(value: boolean): void {
+        this.showCriticalMarks = !!value;
     }
 
     setShowToolOutput(value: boolean): void {
@@ -4492,7 +4505,8 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (resolved.startsWith('/')) {
-            return true;
+            const def = getAgentConsoleCommandDefinition(resolved);
+            return !def || !def.needsArgs;
         }
         if (!isAgentConsoleSuggestionMenu(menu) || !resolved.startsWith('@')) {
             return false;

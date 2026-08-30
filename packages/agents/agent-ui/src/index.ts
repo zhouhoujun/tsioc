@@ -13,6 +13,7 @@ export * from './AgentConsoleMarkdown';
 export * from './AgentConsoleMessageRenderers';
 export * from './AgentConsoleTextWidth';
 export * from './AgentConsoleSuggestions';
+export * from './AgentConsoleCommandRegistry';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleStatusline';
 export * from './AgentIdeBridge';

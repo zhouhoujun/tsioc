@@ -1,7 +1,9 @@
 import { AgentConsoleSelectOption, AgentConsoleToolItem } from './AgentConsoleSessionState';
+import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
+import { resolveAgentConsoleCommandDescription } from './AgentConsoleCommandRegistry';
 
 export const AGENT_CONSOLE_SUGGESTIONS_TITLE = 'Suggestions';
-export const AGENT_CONSOLE_SUGGESTIONS_HINT = 'tab/enter accept   up/down move';
+export const AGENT_CONSOLE_SUGGESTIONS_HINT = 'enter 执行   tab 补全   up/down 选择';
 
 export interface AgentConsoleInputTokenRange {
     start: number;
@@ -48,11 +50,12 @@ export function resolveAgentConsoleInputSuggestions(
         return [];
     }
     if (active.token.startsWith('/')) {
-        const matches = commands.filter(item => item.startsWith(active.token));
+        const matches = commands.filter(item => fuzzyMatchAgentConsoleCommand(item, active.token));
         const options = (matches.length ? matches : commands).filter(Boolean);
         return options.map(item => ({
             label: item,
-            value: item
+            value: item,
+            description: resolveAgentConsoleCommandDescription(item)
         }));
     }
     if (active.token.startsWith('@')) {

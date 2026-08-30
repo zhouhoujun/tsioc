@@ -190,6 +190,7 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
+import { getAgentConsoleCommandName, resolveAgentConsoleCommandDescription } from './AgentConsoleCommandRegistry';
 
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
@@ -2937,15 +2938,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return false;
         }
         const resolved = this.resolveUniqueCommandPrefix(parsed.command);
-        if (!this.state.commandHints.includes(resolved.command)) {
+        const canonical = getAgentConsoleCommandName(resolved.command);
+        if (!this.state.commandHints.includes(canonical)) {
             this.notify(resolved.matches.length
                 ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
                 : `Unknown command: ${parsed.command}`);
             return true;
         }
-        const handler = COMMAND_HANDLERS[resolved.command];
+        const handler = COMMAND_HANDLERS[canonical];
         if (handler) {
-            return handler(this.buildCommandContext(), String(parsed.args || '').trim(), resolved);
+            return handler(this.buildCommandContext(), String(parsed.args || '').trim(), { command: canonical, matches: resolved.matches });
         }
         return false;
     }
@@ -4863,6 +4865,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runDisplayCommand(args?: string): Promise<boolean> {
         const requested = String(args || '').trim().toLowerCase();
+        if (requested === 'critical') {
+            this.state.setShowCriticalMarks(!this.state.showCriticalMarks);
+            this.notify(this.state.showCriticalMarks
+                ? 'Critical marking enabled: all messages marked and shown with priority.'
+                : 'Critical marking disabled.');
+            return true;
+        }
         const current = this.state.showTimestamps;
         if (requested === 'on' || requested === 'show') {
             this.state.setShowTimestamps(true);
@@ -6061,7 +6070,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.commandPaletteQuery = query;
         const commands = this.state.commandHints
             .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
-            .map(command => ({ label: command, value: command, description: 'command' }));
+            .map(command => ({ label: command, value: command, description: resolveAgentConsoleCommandDescription(command) || 'command' }));
         this.state.openSelectMenu(query ? `Command palette: ${query}` : 'Command palette', commands, 0, 'type to filter   enter execute');
         this.state.selectMenuAction = async value => {
             this.commandPaletteQuery = '';
