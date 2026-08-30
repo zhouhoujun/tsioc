@@ -9,6 +9,7 @@
 
 import type {
     AgentConsoleApprovalRequest,
+    AgentConsoleCommandOutputEntry,
     AgentConsolePendingAttachment,
     AgentConsoleSelectOption,
     AgentConsoleSessionItem
@@ -59,6 +60,7 @@ export interface CommandHandlerContext {
         closeReview(): void;
         closeGitSnapshotDetail(): void;
         openTextOverlay(kind: string, lines: string[]): void;
+        toggleCommandOutputs(): void;
         setPendingApprovals(pending: AgentConsoleApprovalRequest[]): void;
         getReviewAnnotationSummary(): string[];
         approveAllReviewFiles(): void;
@@ -78,6 +80,7 @@ export interface CommandHandlerContext {
 
     // ── UI primitives ──
     notify(message: string, duration?: number): void;
+    pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void;
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
 
     // ── turn state ──
@@ -558,7 +561,7 @@ async function handleTitle(ctx: CommandHandlerContext, args: string, _resolved: 
     await ctx.refreshSessions();
     ctx.state.setTitle(title);
     ctx.updateTerminalTitle();
-    ctx.notify(title ? `Session titled "${title}".` : 'Session title cleared.');
+    ctx.pushCommandOutput('/title', title ? `Session titled "${title}".` : 'Session title cleared.');
     return true;
 }
 
@@ -573,7 +576,7 @@ async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolve
     const label = String(args || '').trim() || undefined;
     const snapshotId = await ctx.sessionService.createSessionSnapshot(snapshotSessionId, label);
     if (snapshotId) {
-        ctx.notify(`Snapshot created: ${snapshotId}`);
+        ctx.pushCommandOutput('/snapshot', `Snapshot created: ${snapshotId}`);
     } else {
         ctx.notify('Snapshot creation failed.');
     }
@@ -1268,6 +1271,13 @@ async function handleGitSnapshots(ctx: CommandHandlerContext, args: string, _res
     return true;
 }
 
+// ── /outputs ─────────────────────────────────────────────────────────────────
+
+async function handleOutputs(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    ctx.state.toggleCommandOutputs();
+    return true;
+}
+
 // ── Dispatch table ───────────────────────────────────────────────────────────
 
 export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
@@ -1302,6 +1312,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/theme': (ctx, args) => ctx.runThemeCommand(args),
     '/thinking': (ctx, args) => ctx.runThinkingCommand(args),
     '/display': (ctx, args) => ctx.runDisplayCommand(args),
+    '/outputs': handleOutputs,
     '/timeline': (ctx, args) => ctx.runTimelineModeCommand(args),
     '/raw': (ctx, args) => ctx.runRawModeCommand(args),
     '/stash': (ctx, args) => ctx.runStashCommand(args),

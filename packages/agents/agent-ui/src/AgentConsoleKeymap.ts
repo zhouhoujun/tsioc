@@ -46,7 +46,8 @@ export type AgentConsoleGlobalAction =
     | 'which-key-layout-toggle'
     | 'which-key-pending-toggle'
     | 'status-health'
-    | 'timeline-mode';
+    | 'timeline-mode'
+    | 'command-outputs';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -54,7 +55,7 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
-    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode'
+    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs'
 ];
 
 export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -100,7 +101,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+t': 'model-variant-cycle',
     'ctrl+alt+k': 'which-key-toggle',
     'ctrl+x h': 'status-health',
-    'ctrl+x g': 'timeline-mode'
+    'ctrl+x g': 'timeline-mode',
+    'ctrl+o': 'command-outputs'
 };
 export function normalizeAgentConsoleKeySequence(value: string): string {
     return String(value || '').trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');

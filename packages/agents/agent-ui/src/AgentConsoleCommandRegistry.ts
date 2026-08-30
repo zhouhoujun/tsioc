@@ -120,6 +120,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display' },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display' },
     { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display' },
+    { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },
     { name: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]', group: 'display' },
     { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display' },
 

@@ -1,4 +1,4 @@
-import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import type { AgentConsoleCommandOutputEntry, AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import {
     formatSummaryQualityAggregate,
     formatUsageSummary,
@@ -37,6 +37,7 @@ export interface DiagnosticsHandlerContext {
         getSummaryQualityTrend(options: { provider?: string; bucketSize?: number; maxBuckets?: number }): Promise<any[]>;
     };
     notify: (msg: string, duration?: number) => void;
+    pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => void;
     select: (title: string, options: AgentConsoleSelectOption[], footer?: string) => Promise<string | undefined>;
 }
 
@@ -60,7 +61,8 @@ export async function openCompactionHistory(
         ctx.notify(`No compaction history recorded for session '${sessionId}'.`);
         return true;
     }
-    ctx.notify(
+    ctx.pushCommandOutput(
+        '/compactions',
         records
             .map(record => formatCompactionHistoryRecord(record))
             .join(' | ')
@@ -87,7 +89,7 @@ export async function openCompactionHistoryTrend(
         return true;
     }
     const lines = formatCompactionHistoryTrend(trend);
-    ctx.notify(lines.join('\n'));
+    ctx.pushCommandOutput('/compactions trend', lines.join('\n'));
     return true;
 }
 
@@ -110,7 +112,7 @@ export async function openTurnDiagnostics(
         );
         return true;
     }
-    ctx.notify(formatTurnDiagnosticsAggregate(aggregate, sessionId));
+    ctx.pushCommandOutput('/diagnostics', formatTurnDiagnosticsAggregate(aggregate, sessionId));
     return true;
 }
 
@@ -139,15 +141,18 @@ export async function openTurnDiagnosticsList(
     }
     const record = records.find(r => String(r.id ?? '') === selected || `${r.sessionId}:${r.totalTurns}` === selected);
     if (record) {
-        ctx.notify([
-            `Record: ${record.id ?? '-'}`,
-            `Session: ${record.sessionId ?? 'unknown'}`,
-            `Turns: ${record.totalTurns ?? 0}`,
-            `Empty response rate: ${Number(record.emptyResponseRate ?? 0).toFixed(1)}%`,
-            `Repeated question rate: ${Number(record.repeatedQuestionRate ?? 0).toFixed(1)}%`,
-            `Token savings: ${record.totalTokenSavings ?? 0}`,
-            record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
-        ].filter(Boolean).join('\n'));
+        ctx.pushCommandOutput(
+            '/diagnostics list',
+            [
+                `Record: ${record.id ?? '-'}`,
+                `Session: ${record.sessionId ?? 'unknown'}`,
+                `Turns: ${record.totalTurns ?? 0}`,
+                `Empty response rate: ${Number(record.emptyResponseRate ?? 0).toFixed(1)}%`,
+                `Repeated question rate: ${Number(record.repeatedQuestionRate ?? 0).toFixed(1)}%`,
+                `Token savings: ${record.totalTokenSavings ?? 0}`,
+                record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
+            ].filter(Boolean).join('\n')
+        );
     }
     return true;
 }
@@ -167,7 +172,7 @@ export async function openTurnDiagnosticsTrend(
         return true;
     }
     const lines = formatTurnDiagnosticsTrend(trend);
-    ctx.notify(lines.join('\n'));
+    ctx.pushCommandOutput('/diagnostics trend', lines.join('\n'));
     return true;
 }
 
@@ -197,7 +202,7 @@ export async function openUsage(
         );
         return true;
     }
-    ctx.notify(formatUsageSummary(usage));
+    ctx.pushCommandOutput('/usage', formatUsageSummary(usage));
     return true;
 }
 
@@ -237,7 +242,7 @@ export async function openHarnessAudit(
     for (const suggestion of report.suggestions ?? []) {
         lines.push(`suggest[${suggestion.kind}]${suggestion.toolName ? ` ${suggestion.toolName}` : ''} · ${suggestion.message}`);
     }
-    ctx.notify(lines.join('\n'));
+    ctx.pushCommandOutput('/harness audit', lines.join('\n'));
     return true;
 }
 
@@ -261,7 +266,7 @@ export async function openHarnessProfile(
                 : '';
             lines.push(`profile ${profile.name} · v${profile.version}${profile.maxRepairRounds !== undefined ? ` · repair ${profile.maxRepairRounds}` : ''}${profile.maxLoopRecoveries !== undefined ? ` · loop-recover ${profile.maxLoopRecoveries}` : ''}${profile.sandbox?.mode ? ` · sandbox ${profile.sandbox.mode}` : ''}${granular}`);
         }
-        ctx.notify(lines.join('\n'));
+        ctx.pushCommandOutput('/harness profile list', lines.join('\n'));
         return true;
     }
     if (arg === 'current') {
@@ -285,7 +290,7 @@ export async function openHarnessProfile(
         if (profile.maxLoopRecoveries !== undefined) {
             lines.push(`maxLoopRecoveries ${profile.maxLoopRecoveries}`);
         }
-        ctx.notify(lines.join('\n'));
+        ctx.pushCommandOutput('/harness profile current', lines.join('\n'));
         return true;
     }
     if (arg.startsWith('diff')) {
@@ -304,7 +309,7 @@ export async function openHarnessProfile(
         const diffLines = (result.diff ?? []).length
             ? (result.diff ?? []).map((line: string) => `  ${line}`)
             : ['  (no differences)'];
-        ctx.notify(`harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
+        ctx.pushCommandOutput('/harness profile diff', `harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
         return true;
     }
     ctx.notify('Usage: /harness profile [list|current|diff <from> <to>]');
@@ -338,20 +343,23 @@ export async function openSummaryQualityRecords(
     }
     const record = records.find(r => String(r.id ?? '') === selected);
     if (record) {
-        ctx.notify([
-            `Record: ${record.id ?? '-'}`,
-            `Provider: ${record.provider ?? 'unknown'}`,
-            `Model: ${record.model ?? 'unknown'}`,
-            `Total: ${record.total ?? 0}`,
-            `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
-            `Annotation: ${Number(record.annotationQuality ?? 0)}`,
-            `Length: ${Number(record.lengthBalance ?? 0)}`,
-            `Truncation: ${Number(record.truncationScore ?? 0)}`,
-            record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-            `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
-            `Summary length: ${record.summaryLength ?? 0}`,
-            record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
-        ].filter(Boolean).join('\n'));
+        ctx.pushCommandOutput(
+            '/quality list',
+            [
+                `Record: ${record.id ?? '-'}`,
+                `Provider: ${record.provider ?? 'unknown'}`,
+                `Model: ${record.model ?? 'unknown'}`,
+                `Total: ${record.total ?? 0}`,
+                `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
+                `Annotation: ${Number(record.annotationQuality ?? 0)}`,
+                `Length: ${Number(record.lengthBalance ?? 0)}`,
+                `Truncation: ${Number(record.truncationScore ?? 0)}`,
+                record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
+                `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
+                `Summary length: ${record.summaryLength ?? 0}`,
+                record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
+            ].filter(Boolean).join('\n')
+        );
     }
     return true;
 }
@@ -391,6 +399,6 @@ export async function openSummaryQualityTrend(
         ctx.notify('No summary quality records found.');
         return true;
     }
-    ctx.notify(formatSummaryQualityAggregate(aggregate));
+    ctx.pushCommandOutput('/quality trend', formatSummaryQualityAggregate(aggregate));
     return true;
 }

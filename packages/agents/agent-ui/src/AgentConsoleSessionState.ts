@@ -479,7 +479,18 @@ export type AgentConsoleFocusLayer =
     | 'jobs'
     | 'message-detail'
     | 'timeline-inspector'
-    | 'git-snapshot';
+    | 'git-snapshot'
+    | 'command-outputs';
+
+export interface AgentConsoleCommandOutputEntry {
+    id: string;
+    command: string;
+    text: string;
+    ts: number;
+    kind: 'result' | 'error' | 'notice';
+}
+
+export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 
 @Injectable()
 export class AgentConsoleSessionState {
@@ -542,6 +553,11 @@ export class AgentConsoleSessionState {
     approvalsFocused = false;
     selectedApprovalId = '';
     textOverlay: AgentConsoleTextOverlayState | null = null;
+    commandOutputs: AgentConsoleCommandOutputEntry[] = [];
+    commandOutputsOpen = false;
+    commandOutputsFilter = '';
+    commandOutputsFilterMode = false;
+    commandOutputsSelectedIndex = 0;
     reviewOpen = false;
     gitSnapshotOpen = false;
     gitSnapshotCurrentRef = '';
@@ -564,6 +580,7 @@ export class AgentConsoleSessionState {
     planTodoFilter: 'all' | 'active' | 'blocked' | 'failed' = 'all';
     selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
+    protected commandOutputSequence = 0;
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -962,6 +979,7 @@ export class AgentConsoleSessionState {
             && !this.pendingQuestion
             && !this.timelineEventInspectorOpen
             && !this.hasMessageDetailFocus()
+            && !this.commandOutputsOpen
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
     }
 
@@ -983,6 +1001,7 @@ export class AgentConsoleSessionState {
         if (this.timelineEventInspectorOpen) layers.push('timeline-inspector');
         if (this.reviewOpen) layers.push('review');
         if (this.gitSnapshotOpen) layers.push('git-snapshot');
+        if (this.commandOutputsOpen) layers.push('command-outputs');
         this.focusStack = layers;
     }
 
@@ -1068,7 +1087,8 @@ export class AgentConsoleSessionState {
             || this.hasMessageFocus()
             || this.hasTimelineEventInspectorFocus
             || this.hasMessageDetailFocus()
-            || this.hasTextOverlayFocus();
+            || this.hasTextOverlayFocus()
+            || this.hasCommandOutputsFocus();
     }
 
     shouldRenderTerminalCursor(): boolean {
@@ -4114,6 +4134,112 @@ export class AgentConsoleSessionState {
         return !!this.textOverlay;
     }
 
+    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): void {
+        const body = String(text ?? '').trim();
+        if (!body || !String(command ?? '').trim()) {
+            return;
+        }
+        const entry: AgentConsoleCommandOutputEntry = {
+            id: `output-${++this.commandOutputSequence}`,
+            command: String(command).trim(),
+            text: body,
+            ts: Date.now(),
+            kind
+        };
+        this.commandOutputs = [entry, ...this.commandOutputs].slice(0, AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP);
+        if (this.commandOutputsSelectedIndex >= this.visibleCommandOutputs.length) {
+            this.commandOutputsSelectedIndex = Math.max(0, this.visibleCommandOutputs.length - 1);
+        }
+    }
+
+    openCommandOutputs(): void {
+        this.commandOutputsOpen = true;
+        this.commandOutputsFilter = '';
+        this.commandOutputsFilterMode = false;
+        this.commandOutputsSelectedIndex = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    closeCommandOutputs(): void {
+        if (!this.commandOutputsOpen) {
+            return;
+        }
+        this.commandOutputsOpen = false;
+        this.commandOutputsFilter = '';
+        this.commandOutputsFilterMode = false;
+        this.commandOutputsSelectedIndex = 0;
+        this.syncDerivedInputFocus();
+    }
+
+    toggleCommandOutputs(): void {
+        if (this.commandOutputsOpen) {
+            this.closeCommandOutputs();
+        } else {
+            this.openCommandOutputs();
+        }
+    }
+
+    hasCommandOutputsFocus(): boolean {
+        return this.commandOutputsOpen;
+    }
+
+    get visibleCommandOutputs(): AgentConsoleCommandOutputEntry[] {
+        const needle = this.commandOutputsFilter.trim().toLowerCase();
+        if (!needle) {
+            return this.commandOutputs;
+        }
+        return this.commandOutputs.filter(entry =>
+            entry.command.toLowerCase().includes(needle) || entry.text.toLowerCase().includes(needle)
+        );
+    }
+
+    setCommandOutputsFilter(filter: string): void {
+        this.commandOutputsFilter = String(filter ?? '').slice(0, 64);
+        this.commandOutputsSelectedIndex = 0;
+    }
+
+    moveCommandOutputSelection(delta: number): void {
+        const count = this.visibleCommandOutputs.length;
+        if (!count) {
+            this.commandOutputsSelectedIndex = 0;
+            return;
+        }
+        this.commandOutputsSelectedIndex = Math.max(0, Math.min(count - 1, this.commandOutputsSelectedIndex + delta));
+    }
+
+    copySelectedCommandOutput(): Promise<boolean> {
+        const selected = this.visibleCommandOutputs[this.commandOutputsSelectedIndex];
+        if (!selected || !this.copyFocusedTextAction) {
+            return Promise.resolve(false);
+        }
+        Promise.resolve(this.copyFocusedTextAction(
+            selected.text,
+            `command ${selected.command} output`
+        )).catch(() => {
+            return;
+        });
+        return Promise.resolve(true);
+    }
+
+    scrollCommandOutputsToEdge(position: 'start' | 'end'): void {
+        const count = this.visibleCommandOutputs.length;
+        if (!count) {
+            this.commandOutputsSelectedIndex = 0;
+            return;
+        }
+        this.commandOutputsSelectedIndex = position === 'start' ? 0 : count - 1;
+    }
+
+    scrollCommandOutputsPage(delta: number, pageSize?: number): void {
+        const count = this.visibleCommandOutputs.length;
+        if (!count) {
+            this.commandOutputsSelectedIndex = 0;
+            return;
+        }
+        const resolvedPageSize = Math.max(1, pageSize ?? this.consoleOptions.reviewDetailPageSize);
+        this.moveCommandOutputSelection(delta * resolvedPageSize);
+    }
+
     get textOverlayVisibleLines(): string[] {
         if (!this.textOverlay) {
             return [];
@@ -4401,6 +4527,10 @@ export class AgentConsoleSessionState {
     }
 
     async dismissFocusLayer(): Promise<boolean> {
+        if (this.commandOutputsOpen) {
+            this.closeCommandOutputs();
+            return true;
+        }
         if (this.textOverlay) {
             this.closeTextOverlay();
             return true;
@@ -5386,6 +5516,53 @@ export class AgentConsoleSessionState {
                 return this.choosePendingQuestion(parseInt(normalized, 10) - 1);
             }
         }
+        if (this.commandOutputsOpen) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'up':
+                case 'k':
+                    this.moveCommandOutputSelection(-1);
+                    return true;
+                case 'down':
+                case 'j':
+                    this.moveCommandOutputSelection(1);
+                    return true;
+                case 'pageup':
+                    this.scrollCommandOutputsPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollCommandOutputsPage(1);
+                    return true;
+                case 'home':
+                    this.scrollCommandOutputsToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollCommandOutputsToEdge('end');
+                    return true;
+                case '/':
+                    this.commandOutputsFilterMode = true;
+                    this.setCommandOutputsFilter('');
+                    return true;
+                case 'return':
+                case 'enter':
+                    return this.copySelectedCommandOutput();
+                case 'backspace':
+                    if (this.commandOutputsFilterMode) {
+                        this.setCommandOutputsFilter(this.commandOutputsFilter.slice(0, -1));
+                        return true;
+                    }
+                    return false;
+                default:
+                    if (this.commandOutputsFilterMode && normalized && normalized.length === 1) {
+                        this.setCommandOutputsFilter(`${this.commandOutputsFilter}${normalized}`);
+                        return true;
+                    }
+                    return false;
+            }
+        }
         if (this.textOverlay) {
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
@@ -6142,7 +6319,25 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'menuBlocked' };
         }
 
-        if (this.pendingQuestion || this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus()) {
+        // Filter-mode typing must bypass resolveFocusShortcutKey (which remaps
+        // a/d/y/q to approve/deny/copy/q) so command names filter literally.
+        if (this.commandOutputsOpen && this.commandOutputsFilterMode) {
+            if (controlKey === 'backspace' || rawText === '\u007f' || rawText === '\b') {
+                this.setCommandOutputsFilter(this.commandOutputsFilter.slice(0, -1));
+                return { handled: true, action: 'outputsFilter' };
+            }
+            if (!controlKey && rawText === '/') {
+                this.commandOutputsFilterMode = false;
+                this.setCommandOutputsFilter('');
+                return { handled: true, action: 'outputsFilter' };
+            }
+            if (!controlKey && rawText && rawText.length === 1 && !/[\r\n]/.test(rawText)) {
+                this.setCommandOutputsFilter(`${this.commandOutputsFilter}${rawText}`);
+                return { handled: true, action: 'outputsFilter' };
+            }
+        }
+
+        if (this.pendingQuestion || this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus() || this.hasCommandOutputsFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
                 const consumed = await this.handleFocusKey(focusKey);

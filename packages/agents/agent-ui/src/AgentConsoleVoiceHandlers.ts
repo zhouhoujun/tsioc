@@ -7,6 +7,7 @@
  * component and is reached through getter/setter hooks.
  */
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat } from '@tsdi/common';
+import type { AgentConsoleCommandOutputEntry } from './AgentConsoleSessionState';
 
 // ── Voice handler context ────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ export interface VoiceHandlerContext {
     audioCapture: AudioCaptureAdapter | null | undefined;
     audioPlayback: AudioPlaybackAdapter | null | undefined;
     notify(message: string, duration?: number): void;
+    pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void;
     getCaptureSessionId(): string;
     setCaptureSessionId(value: string): void;
     getCaptureFeed(): Promise<void>;
@@ -171,7 +173,7 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
             const result = await ctx.sessionService.endVoiceSession(sessionId);
             if (result?.ok && result.transcribed) {
                 const playbackError = await playVoiceReply(ctx, result);
-                ctx.notify(`Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
+                ctx.pushCommandOutput('/voice stop', `Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
             } else {
                 ctx.notify(result?.error || (result?.transcribed ? `Transcribed: ${result.transcribed}` : 'Voice session produced no transcription.'));
             }
@@ -194,7 +196,7 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
                 ? ` (missing ${status.missing.join(', ')})`
                 : '';
             const active = status?.active ? 'active' : 'inactive';
-            ctx.notify(`voice ${available}${missing} · session ${active}${Number(status?.bufferedBytes ?? 0) > 0 ? ` · buffered ${status.bufferedBytes} bytes` : ''}\nUsage: /voice start|stop|cancel|status`);
+            ctx.pushCommandOutput('/voice status', `voice ${available}${missing} · session ${active}${Number(status?.bufferedBytes ?? 0) > 0 ? ` · buffered ${status.bufferedBytes} bytes` : ''}\nUsage: /voice start|stop|cancel|status`);
             return true;
         }
     }

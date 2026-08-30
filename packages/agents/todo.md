@@ -1449,7 +1449,8 @@ Turn: Fix session restore                                      running  01:42
 - Console 专项：PTY 验收选中 `/help` 二次回车消失（直接执行）与 `/model ` 注入等待。
 - 静态约束：同上。
 
-**P262 · 命令结果历史回看面板（中）** `platform: agent-ui/src（跨平台）`
+**P262 · 命令结果历史回看面板（中）** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-30）**
+- 状态：`state.commandOutputs` 环形上限 20 条 + `pushCommandOutput(command, text, kind)`（trim 空值丢弃、kind 默认 'result'）；新增 `AgentConsoleCommandOutputsPanelComponent`（`/outputs` 命令 + Ctrl+O 全局键位，`↑↓/j/k` 翻页、pageup/down、home/end、Esc 收起、`/` 过滤、Enter 复制、backspace 退格），面板状态入 overlay 体系（focus 层、`hasCommandOutputsFocus`、browser 路由 `handleBrowserGlobalKeyInput`）。迁移 ~38 处命令结果写入到 `ctx.pushCommandOutput`（DiagnosticsHandlers 12 处：/compactions /diagnostics /usage /harness audit·profile·diff /quality·list·trend；Component 23 处：/quality trend /diagnostics trend /delegation tree·lineage·list /hooks /memories /personality /debug-config /skills /mcp /plugins /ps /ide /title list /statusline list /stash list /status /init；VoiceHandlers 2 处：/voice stop、/voice status；CommandHandlers 1 处：/snapshot）；桥接 `this.pushCommandOutput()` 内部仍 `notify(text)`（瞬态体验保留，notice 测试不受影响）；kind 参数类型化为 `AgentConsoleCommandOutputEntry['kind']`（去掉 `as any`）。`/git-snapshots` diff 走 overlay（`openGitSnapshotDetail`）无需迁移。新增 8 项单元测试（环形上限、trim 空值丢弃、command/text 过滤、过滤串 64 上限、开关重置、选中钳制、复制、空态），agent-ui 全量 870 passing（基线 862），`tsc --noEmit` 通过，`build:web` 通过。
 - 目标：notify 瞬态命令结果（/usage /quality /compactions /diagnostics /delegation /hooks /memories /personality /retry /rollback /ps /voice /ide /editor /share /title /statusline /theme /thinking /raw /stash /init /snapshot /git-snapshots 等 ~25 项）可回看，不再"消失即灭"。
 - 方案：
   - 新增 `state.commandOutputs: { id; command; text; ts; kind }[]`（环形上限 20 条）；新增 `ctx.pushCommandOutput(command, text)` 并迁移上述命令的结果写入（notify 保留用于非命令提示）。
@@ -1484,7 +1485,7 @@ Turn: Fix session restore                                      running  01:42
 |---|---|---|
 | VII | P260 注册表（先建结构 + 三路消费接线） | ✅ registry 单元绿（10 项）；palette/补全/help 显示 description+group |
 | VIII | P261 补全升级 + P264 | ✅ smart-run 单元绿（无参执行/带参注入）；补全与 palette 同一 fuzzy；`/display critical` 单测绿 |
-| IX | P262 输出回看 | `/outputs` 面板 PTY 过（/usage → Ctrl+O 回看） |
+| IX | P262 输出回看 | ✅ 单元 8 项绿（环形上限/过滤/空态/复制）+ agent-ui 全量 870 passing + tsc + build:web；PTY（/usage → Ctrl+O）待控制台会话验收 |
 | X | P263 实时勾选 + 完成判定回填 | v12 四场景全绿；v12 表回填：P252→P260-262 承接、P253→✅、P258→按批次 IV 执行 |
 
 > 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。

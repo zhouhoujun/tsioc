@@ -121,6 +121,7 @@ import {
 } from './AgentConsoleCodingTaskHandlers';
 import {
     AgentConsoleApprovalRequest,
+    AgentConsoleCommandOutputEntry,
     AgentConsoleHealthItem,
     AgentConsolePendingAttachment,
     AgentConsolePlanTodoItem,
@@ -223,6 +224,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
         <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
         <agent-console-text-overlay-panel v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
+        <agent-console-outputs-panel v-show="showCommandOutputsPanel"></agent-console-outputs-panel>
     </div>
     `
 })
@@ -420,6 +422,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
     }
 
+    protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void {
+        this.state.pushCommandOutput(command, text, kind);
+        this.notify(text);
+    }
+
     protected notifyBusyState(message = 'Wait for the current turn to finish.'): void {
         this.notify(message);
     }
@@ -488,7 +495,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             );
             return true;
         }
-        this.notify(this.formatSummaryQualityTrend(trend).join(' | '));
+        this.pushCommandOutput('/quality trend', this.formatSummaryQualityTrend(trend).join(' | '));
         return true;
     }
 
@@ -624,6 +631,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             state: this.state,
             sessionService: this.sessionService!,
             notify: (msg: string) => this.notify(msg),
+            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind),
             select: (title: string, options: any[], footer?: string) => this.select(title, options, 0, footer),
         };
     }
@@ -639,6 +647,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             audioCapture: this.audioCapture,
             audioPlayback: this.audioPlayback,
             notify: (message, duration) => this.notify(message, duration),
+            pushCommandOutput: (command, text, kind) => this.pushCommandOutput(command, text, kind),
             getCaptureSessionId: () => this.voiceCaptureSessionId,
             setCaptureSessionId: value => { this.voiceCaptureSessionId = value; },
             getCaptureFeed: () => this.voiceCaptureFeed,
@@ -754,7 +763,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             );
             return true;
         }
-        this.notify(this.formatTurnDiagnosticsTrend(trend).join(' | '));
+        this.pushCommandOutput('/diagnostics trend', this.formatTurnDiagnosticsTrend(trend).join(' | '));
         return true;
     }
 
@@ -783,7 +792,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
             return true;
         }
-        this.notify(lines.join(' | '));
+        this.pushCommandOutput('/delegation tree', lines.join(' | '));
         return true;
     }
 
@@ -806,7 +815,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(`No parent delegation edges recorded for session '${resolvedSessionId}'.`);
             return true;
         }
-        this.notify(lineage.map(edge => this.formatDelegationEdge(edge)).join(' → '));
+        this.pushCommandOutput('/delegation lineage', lineage.map(edge => this.formatDelegationEdge(edge)).join(' → '));
         return true;
     }
 
@@ -908,7 +917,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             );
             return true;
         }
-        this.notify(edges.map(edge => this.formatDelegationEdge(edge)).join(' | '));
+        this.pushCommandOutput('/delegation list', edges.map(edge => this.formatDelegationEdge(edge)).join(' | '));
         return true;
     }
 
@@ -1870,6 +1879,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.state.hasTextOverlayFocus();
     }
 
+    get showCommandOutputsPanel(): boolean {
+        return this.state.commandOutputsOpen;
+    }
+
     get showPendingQuestionPanel(): boolean {
         return !!this.state.pendingQuestion;
     }
@@ -2806,6 +2819,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 closeReview: () => self.state.closeReview(),
                 closeGitSnapshotDetail: () => self.state.closeGitSnapshotDetail(),
                 openTextOverlay: (k, l) => self.state.openTextOverlay(k, l),
+                toggleCommandOutputs: () => self.state.toggleCommandOutputs(),
                 setPendingApprovals: (p) => self.state.setPendingApprovals(p),
                 getReviewAnnotationSummary: () => self.state.getReviewAnnotationSummary(),
                 approveAllReviewFiles: () => self.state.approveAllReviewFiles(),
@@ -2823,6 +2837,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 setNavViewScroll: (viewId, scroll) => self.state.setNavViewScroll(viewId, scroll),
             },
             notify: (m, d) => self.notify(m, d),
+            pushCommandOutput: (c, t, k) => self.pushCommandOutput(c, t, k),
             select: (t, o, i, h) => self.select(t, o, i, h),
             isTurnInProgress: () => self.isTurnInProgress(),
             notifyBusyState: () => self.notifyBusyState(),
@@ -4220,7 +4235,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.notify('No stashed drafts. Use /stash push <name> to save the current draft.');
                 return true;
             }
-            this.notify(`Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
+            this.pushCommandOutput('/stash list', `Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
             return true;
         }
         const [verb, ...rest] = parsed.split(/\s+/);
@@ -4376,7 +4391,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const parsed = String(args || '').trim();
         if (!parsed || parsed.toLowerCase() === 'list') {
             const current = this.state.titleFields;
-            this.notify(`Window title: ${current.join(', ')}. Use /title set field1,field2 or unset field.`);
+            this.pushCommandOutput('/title list', `Window title: ${current.join(', ')}. Use /title set field1,field2 or unset field.`);
             return true;
         }
         const [verb, ...rest] = parsed.split(/\s+/);
@@ -4438,7 +4453,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const parsed = String(args || '').trim();
         if (!parsed || parsed.toLowerCase() === 'list') {
             const current = this.state.statusline;
-            this.notify(`Statusline: ${current.join(', ')}. Use /statusline set field1,field2 or unset field.`);
+            this.pushCommandOutput('/statusline list', `Statusline: ${current.join(', ')}. Use /statusline set field1,field2 or unset field.`);
             return true;
         }
         const [verb, ...rest] = parsed.split(/\s+/);
@@ -4526,7 +4541,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
             return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
         });
-        this.notify(`Registered hooks:\n${lines.join('\n')}`);
+        this.pushCommandOutput('/hooks', `Registered hooks:\n${lines.join('\n')}`);
         return true;
     }
 
@@ -4547,7 +4562,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.notify(projectId ? 'No project memories.' : 'Project memory requires a project or workspace.');
                 return true;
             }
-            this.notify(`Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
+            this.pushCommandOutput('/memories list', `Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
             return true;
         }
         if (parsed.startsWith('add ')) {
@@ -4618,7 +4633,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (verb === 'list') {
             const lines = names.map(name => `${name === this.options.ui?.personality ? '*' : ' '} ${name}`);
-            this.notify(`Personality presets:\n${lines.join('\n')}`);
+            this.pushCommandOutput('/personality list', `Personality presets:\n${lines.join('\n')}`);
             return true;
         }
         if (verb === 'set') {
@@ -4658,7 +4673,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${enabled ? 'on' : 'off'}`).join(', ') : '(none)'}`,
             `session: ${this.state.sessionId} · workspace: ${this.workspace || '(none)'}`
         ];
-        this.notify(`Debug config:\n${lines.join('\n')}`);
+        this.pushCommandOutput('/debug-config', `Debug config:\n${lines.join('\n')}`);
         return true;
     }
 
@@ -4938,7 +4953,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return true;
         }
         if (query) {
-            this.notify(skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
+            this.pushCommandOutput(`/skills ${query}`, skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
             return true;
         }
         const selected = await this.select('Skills', skills.map((skill: any) => ({
@@ -4954,7 +4969,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         })), 0, 'enter detail   esc close');
         if (!selected) return true;
         const detail = await this.invokeTool('read_skill', { id: selected }).catch(() => undefined);
-        this.notify(detail?.skill
+        this.pushCommandOutput(`/skills ${selected}`, detail?.skill
             ? this.formatSkillDetail(detail.skill)
             : skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
         return true;
@@ -5002,7 +5017,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 ? `${summary}\n${entry.tools.map(name => `  ${name}`).join('\n')}`
                 : summary;
         });
-        this.notify(lines.join('\n'));
+        this.pushCommandOutput('/mcp', lines.join('\n'));
         return true;
     }
 
@@ -5017,10 +5032,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return true;
         }
         if (requested) {
-            this.notify(plugins.map((plugin: any) => this.formatPluginDetail(plugin, result?.contributions)).join('\n'));
+            this.pushCommandOutput(`/plugins ${requested}`, plugins.map((plugin: any) => this.formatPluginDetail(plugin, result?.contributions)).join('\n'));
             return true;
         }
-        this.notify(plugins.map((plugin: any) => this.formatPluginLine(plugin)).join('\n'));
+        this.pushCommandOutput('/plugins', plugins.map((plugin: any) => this.formatPluginLine(plugin)).join('\n'));
         return true;
     }
 
@@ -5270,7 +5285,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.notify(`No background task ${taskId}.`);
                 return true;
             }
-            this.notify(this.formatBackgroundTaskDetail(task));
+            this.pushCommandOutput(`/ps show ${taskId}`, this.formatBackgroundTaskDetail(task));
             return true;
         }
         if (sub === 'stop') {
@@ -5298,7 +5313,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (cancelled.length) {
                 lines.push('Undo: /ps undo');
             }
-            this.notify(lines.join('\n'));
+            this.pushCommandOutput('/ps stop', lines.join('\n'));
             return true;
         }
         if (sub === 'undo') {
@@ -5318,7 +5333,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                         : `  \u2717 ${o.id} - ${this.describeRestoreFailure(o.reason)}`
                 );
             }
-            this.notify(lines.join('\n'));
+            this.pushCommandOutput('/ps undo', lines.join('\n'));
             return true;
         }
         const filter = (parts[0] || 'current').toLowerCase();
@@ -5346,7 +5361,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
             return `${status}${meta} ${task.id} [session ${task.sessionId}] - ${task.goal}`;
         });
-        this.notify(`Background tasks (${filter}):\n${lines.join('\n')}`);
+        this.pushCommandOutput(`/ps ${filter}`, `Background tasks (${filter}):\n${lines.join('\n')}`);
         return true;
     }
 
@@ -5443,7 +5458,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             const selection = context.selection
                 ? ` lines ${context.selection.startLine}-${context.selection.endLine}`
                 : '';
-            this.notify(`IDE context: ${context.activeFile}${selection}${context.platform ? ` (${context.platform})` : ''}`);
+            this.pushCommandOutput('/ide', `IDE context: ${context.activeFile}${selection}${context.platform ? ` (${context.platform})` : ''}`);
         } catch (error: any) {
             this.notify(error?.message || 'Failed to read IDE context.');
         }
@@ -5669,6 +5684,33 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 }
             }
             return true;
+        }
+        if (this.state.hasCommandOutputsFocus()) {
+            if (this.state.commandOutputsFilterMode) {
+                if (!ctrlKey && normalizedKey === 'backspace') {
+                    this.state.setCommandOutputsFilter(this.state.commandOutputsFilter.slice(0, -1));
+                    return true;
+                }
+                if (!ctrlKey && normalizedKey === '/') {
+                    this.state.commandOutputsFilterMode = false;
+                    this.state.setCommandOutputsFilter('');
+                    return true;
+                }
+                if (!ctrlKey && key.length === 1 && !/[\r\n]/.test(key)) {
+                    this.state.setCommandOutputsFilter(`${this.state.commandOutputsFilter}${key}`);
+                    return true;
+                }
+            }
+            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
+                this.state.commandOutputsFilterMode = false;
+                await this.state.dismissFocusLayer();
+                return true;
+            }
+            if (!ctrlKey && mappedKey) {
+                if (await this.state.handleFocusKey(mappedKey)) return true;
+                if (key.length === 1) return true;
+                return false;
+            }
         }
         if (this.state.selectMenu?.title?.startsWith('Command palette')) {
             if (normalizedKey === 'ctrl+p') return this.handleGlobalKeySequence(normalizedKey);
@@ -5920,7 +5962,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             model: '/model',
             archetypes: '/archetype',
             status: '/status',
-            copy: '/copy'
+            copy: '/copy',
+            'command-outputs': '/outputs'
         };
         await this.handleCommand(commands[action]);
         return true;
@@ -6322,9 +6365,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace, fileAdapter: this.resolveFileAdapter() ?? undefined });
             if (result.created) {
-                this.notify(`Created ${result.file}`);
+                this.pushCommandOutput('/init', `Created ${result.file}`);
             } else {
-                this.notify(`AGENTS.md ${result.reason}`);
+                this.pushCommandOutput('/init', `AGENTS.md ${result.reason}`);
             }
         } catch (error) {
             this.notify(`Failed to create AGENTS.md: ${error instanceof Error ? error.message : String(error)}`);
@@ -6794,7 +6837,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             }
         }
         const model = this.state.modelProfile || this.state.model || 'default';
-        this.notify(`session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
+        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
     }
 
     protected async runGoalCommand(args: string): Promise<void> {

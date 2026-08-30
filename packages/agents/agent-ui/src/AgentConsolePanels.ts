@@ -17,7 +17,8 @@ import {
     AgentConsoleSessionState,
     AgentConsoleTokenUsage,
     AgentConsoleToolItem,
-    AgentConsoleToolRun
+    AgentConsoleToolRun,
+    AgentConsoleCommandOutputEntry
 } from './AgentConsoleSessionState';
 import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
 import {
@@ -1938,6 +1939,92 @@ export class AgentConsoleTextOverlayPanelComponent {
 
     get hintLabel(): string {
         return this.state.hasTextOverlayFocus() ? 'Esc close · ↑↓ scroll' : '';
+    }
+}
+
+@Component({
+    selector: 'agent-console-outputs-panel',
+    template: `
+    <div class="console-panel console-command-outputs-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{panelTitle}}</label>
+        <label v-style="metaStyle" v-show="filterLabel">{{filterLabel}}</label>
+        <label v-style="item.style" v-for="item in entryItems">{{item.label}}</label>
+        <label v-style="metaStyle" v-show="emptyLabel">{{emptyLabel}}</label>
+        <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
+    </div>
+    `
+})
+export class AgentConsoleCommandOutputsPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get shellStyle() {
+        return this.state.hasCommandOutputsFocus() ? this.activeThemeStyles.toolRunsShell : {};
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolRunsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get panelTitle(): string {
+        const entries = this.state.visibleCommandOutputs;
+        const total = this.state.commandOutputs.length;
+        const selected = this.state.commandOutputsSelectedIndex;
+        const visible = this.state.consoleOptions.reviewDetailVisibleLines;
+        const range = entries.length
+            ? `${selected + 1}-${Math.min(entries.length, selected + visible)}`
+            : '0-0';
+        return entries.length !== total
+            ? `command outputs ${entries.length}/${total} · ${range}`
+            : `command outputs ${total} · ${range}`;
+    }
+
+    get filterLabel(): string {
+        return this.state.commandOutputsFilterMode
+            ? `filter: ${this.state.commandOutputsFilter}`
+            : '';
+    }
+
+    get entryItems(): Array<{ label: string; style: Record<string, string> }> {
+        const base = this.activeThemeStyles.statusValue;
+        const selected = this.activeThemeStyles.messagesSelected || this.activeThemeStyles.sessionsSelected;
+        return this.state.visibleCommandOutputs.map((entry, index) => {
+            const preview = String(entry.text || '').replace(/\s+/g, ' ').trim();
+            const text = preview.length > 160 ? `${preview.slice(0, 160)}…` : preview;
+            const marker = entry.kind === 'error' ? '✗ ' : entry.kind === 'notice' ? '• ' : '';
+            return {
+                label: `${marker}${entry.command}  ${text}`,
+                style: index === this.state.commandOutputsSelectedIndex
+                    ? { ...base, ...selected }
+                    : base
+            };
+        });
+    }
+
+    get emptyLabel(): string {
+        if (this.state.commandOutputs.length === 0) {
+            return 'No command outputs yet.';
+        }
+        if (this.state.visibleCommandOutputs.length === 0) {
+            return 'No matching command outputs.';
+        }
+        return '';
+    }
+
+    get hintLabel(): string {
+        return this.state.hasCommandOutputsFocus()
+            ? 'Esc close · ↑↓/jk move · / filter · Enter copy'
+            : '';
     }
 }
 
