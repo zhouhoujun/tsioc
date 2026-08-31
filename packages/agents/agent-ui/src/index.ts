@@ -15,6 +15,7 @@ export * from './AgentConsoleTextWidth';
 export * from './AgentConsoleSuggestions';
 export * from './AgentConsoleCommandRegistry';
 export * from './AgentConsoleCommandExecution';
+export * from './AgentConsoleOverlay';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleStatusline';
 export * from './AgentIdeBridge';

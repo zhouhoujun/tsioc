@@ -1541,10 +1541,13 @@ Turn: Fix session restore                                      running  01:42
 - 验证：新增 reducer + 状态方法单测 8 项（begin/complete/fail/终态不可变/link/ring cap/session 隔离/configure 重置）；agent-ui 全量 **880 passing** EXIT=0；`tsc --noEmit` EXIT=0；`build:web` EXIT=0（3.6MB）；跨平台边界 rg 扫描 CLEAN（仅 globalThis 守卫的 `Buffer`，无 `node:`/`@tsdi/components/console` 直引）。
 - 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
 
-**P266 · 统一 CommandPalette / SelectMenu 模式（高）** `platform: agent-ui/src（跨平台）`
+**P266 · 统一 CommandPalette / SelectMenu 模式（高·进行中）** `platform: agent-ui/src（跨平台）`
 
 - 目标：消除 `selectMenu` 多语义分支，统一 option model（label、description、group、value、mode=`execute|insert|submenu`、disabledReason、shortcut）。
 - 方案：抽取 `AgentConsoleOverlayController`，集中处理 ↑↓/Home/End/Page、数字直选、Enter/Esc、父菜单回退和焦点恢复；suggestions、palette、approval、pending question 仅提供 adapter 数据。
+- 进度 ①：`AgentConsoleSelectOption`/`AgentConsoleSelectMenu` 已扩展 group/mode/disabledReason/shortcut（向后兼容）；新建纯控制器 `src/AgentConsoleOverlay.ts`（`AgentConsoleOverlayController`：`clampIndex`/`moveIndex`/`isDismissKey`/`resolveDigitIndex`/`isSelectOptionDisabled`/`existsEnabledOption`/`resolveKey`/`resolveMenuKey`），`AgentConsoleSessionState.handleSelectKey`/`handleMenuInput`/`setSelectMenuIndex`/`moveSelectMenu`/`isDismissKey` 改为委托 controller（行为逐字节等价，含 handleSelectKey 越界数字返回 false、handleMenuInput 越界数字返回 true 的区别语义）。新增 7 项 controller 单测；agent-ui 全量 **887 passing**；`tsc --noEmit`/`build:web` EXIT=0；跨平台边界扫描 CLEAN。
+- 待续 ②：把 suggestions/palette/approval/pending question 键盘矩阵与焦点栈迁移到 overlay adapter，补 Home/End/Page 与焦点恢复快照、disabled 可访问原因（TUI/browser）。
+
 - 验收：每类 overlay 的键盘矩阵（TUI/browser）与焦点栈快照；Esc 后焦点回到触发控件；disabled option 不可执行且有可访问原因。
 
 **P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC`

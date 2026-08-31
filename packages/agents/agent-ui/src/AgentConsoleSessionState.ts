@@ -28,6 +28,7 @@ import {
     createLinkCommandOutputAction,
     reduceAgentConsoleCommandExecution
 } from './AgentConsoleCommandExecution';
+import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
 import {
     AgentConsoleTitleField,
     composeAgentConsoleTerminalTitle,
@@ -321,11 +322,17 @@ export interface AgentConsolePendingAttachment {
     dataUrl?: string;
 }
 
+export type AgentConsoleOverlayOptionMode = 'execute' | 'insert' | 'submenu';
+
 export interface AgentConsoleSelectOption {
     label: string;
     value: string;
     description?: string;
     detail?: string | Record<string, any> | any[];
+    group?: string;
+    mode?: AgentConsoleOverlayOptionMode;
+    disabledReason?: string;
+    shortcut?: string;
 }
 
 export interface AgentConsoleSelectMenu {
@@ -719,6 +726,7 @@ export class AgentConsoleSessionState {
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
+    protected overlayController = new AgentConsoleOverlayController();
 
     configure(meta: AgentConsoleSessionMeta): this {
         const nextSessionId = String(meta.sessionId || '').trim();
@@ -4506,45 +4514,27 @@ export class AgentConsoleSessionState {
     handleSelectKey(key: string): boolean {
         const normalized = String(key || '').trim().toLowerCase();
         if (!this.selectMenu || !this.selectMenu.options.length) { return false; }
-        switch (normalized) {
-            case 'arrowup':
-            case 'up':
-                this.moveSelectMenu(-1);
+        const decision = this.overlayController.resolveKey(normalized, this.selectMenu.options.length);
+        switch (decision.action) {
+            case 'move':
+                this.moveSelectMenu(decision.delta);
                 return true;
-            case 'arrowdown':
-            case 'down':
-                this.moveSelectMenu(1);
-                return true;
-            case 'enter':
-            case 'tab':
-            case 'return':
+            case 'confirm':
                 void this.confirmSelectMenu();
                 return true;
+            case 'escape':
+                void this.handleEscapeKey();
+                return true;
+            case 'choose':
+                void this.chooseSelectMenuIndex(decision.index);
+                return true;
             default:
-                if (this.isDismissKey(normalized)) {
-                    void this.handleEscapeKey();
-                    return true;
-                }
-                if (/^[1-9]$/.test(normalized)) {
-                    const idx = parseInt(normalized, 10) - 1;
-                    if (idx < this.selectMenu.options.length) {
-                        void this.chooseSelectMenuIndex(idx);
-                        return true;
-                    }
-                }
                 return false;
         }
     }
 
     protected isDismissKey(key: string): boolean {
-        switch (String(key || '').trim().toLowerCase()) {
-            case 'esc':
-            case 'escape':
-            case 'q':
-                return true;
-            default:
-                return false;
-        }
+        return this.overlayController.isDismissKey(key);
     }
 
     protected resolveFocusShortcutKey(rawText: string, controlKey?: string): string {
@@ -4656,15 +4646,18 @@ export class AgentConsoleSessionState {
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
-        this.selectMenu.selectedIndex = Math.max(0, Math.min(this.selectMenu.options.length - 1, index));
+        this.selectMenu.selectedIndex = this.overlayController.clampIndex(index, this.selectMenu.options.length);
     }
 
     moveSelectMenu(delta: number): void {
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
-        const next = (this.selectMenu.selectedIndex + delta + this.selectMenu.options.length) % this.selectMenu.options.length;
-        this.selectMenu.selectedIndex = next;
+        this.selectMenu.selectedIndex = this.overlayController.moveIndex(
+            this.selectMenu.selectedIndex,
+            delta,
+            this.selectMenu.options.length
+        );
     }
 
     get selectedSelectMenuOption(): AgentConsoleSelectOption | undefined {
@@ -5505,37 +5498,30 @@ export class AgentConsoleSessionState {
         if (!this.selectMenu) {
             return false;
         }
-        const keyName = key || text;
-        if (keyName === 'down') {
-            this.moveSelectMenu(1);
-            return true;
-        }
-        if (keyName === 'up') {
-            this.moveSelectMenu(-1);
-            return true;
-        }
-        if (keyName === 'return' || keyName === 'tab') {
-            void this.acceptSelectMenu();
-            return true;
-        }
-        if (keyName === 'left' || keyName === 'right') {
-            this.suppressSuggestionMenu = true;
-            void this.cancelSelectMenu();
-            return false;
-        }
-        if (keyName === 'escape' || keyName === 'esc' || keyName === 'q') {
-            void this.handleEscapeKey();
-            return true;
-        }
-        if (/^[1-9]$/.test(keyName)) {
-            const index = parseInt(keyName, 10) - 1;
-            if (index >= 0 && index < this.selectMenu.options.length) {
-                this.setSelectMenuIndex(index);
+        const decision = this.overlayController.resolveMenuKey(key, text, this.selectMenu.options.length);
+        switch (decision.action) {
+            case 'move':
+                this.moveSelectMenu(decision.delta);
+                return true;
+            case 'accept':
                 void this.acceptSelectMenu();
-            }
-            return true;
+                return true;
+            case 'choose':
+                this.setSelectMenuIndex(decision.index);
+                void this.acceptSelectMenu();
+                return true;
+            case 'digit-consume':
+                return true;
+            case 'cancel':
+                this.suppressSuggestionMenu = true;
+                void this.cancelSelectMenu();
+                return false;
+            case 'escape':
+                void this.handleEscapeKey();
+                return true;
+            default:
+                return false;
         }
-        return false;
     }
 
     async handleFocusKey(key: string): Promise<boolean> {
