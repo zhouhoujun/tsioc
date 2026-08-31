@@ -1546,7 +1546,8 @@ Turn: Fix session restore                                      running  01:42
 - 目标：消除 `selectMenu` 多语义分支，统一 option model（label、description、group、value、mode=`execute|insert|submenu`、disabledReason、shortcut）。
 - 方案：抽取 `AgentConsoleOverlayController`，集中处理 ↑↓/Home/End/Page、数字直选、Enter/Esc、父菜单回退和焦点恢复；suggestions、palette、approval、pending question 仅提供 adapter 数据。
 - 进度 ①：`AgentConsoleSelectOption`/`AgentConsoleSelectMenu` 已扩展 group/mode/disabledReason/shortcut（向后兼容）；新建纯控制器 `src/AgentConsoleOverlay.ts`（`AgentConsoleOverlayController`：`clampIndex`/`moveIndex`/`isDismissKey`/`resolveDigitIndex`/`isSelectOptionDisabled`/`existsEnabledOption`/`resolveKey`/`resolveMenuKey`），`AgentConsoleSessionState.handleSelectKey`/`handleMenuInput`/`setSelectMenuIndex`/`moveSelectMenu`/`isDismissKey` 改为委托 controller（行为逐字节等价，含 handleSelectKey 越界数字返回 false、handleMenuInput 越界数字返回 true 的区别语义）。新增 7 项 controller 单测；agent-ui 全量 **887 passing**；`tsc --noEmit`/`build:web` EXIT=0；跨平台边界扫描 CLEAN。
-- 待续 ②：把 suggestions/palette/approval/pending question 键盘矩阵与焦点栈迁移到 overlay adapter，补 Home/End/Page 与焦点恢复快照、disabled 可访问原因（TUI/browser）。
+- 进度 ②：控制器新增 `homeIndex`/`endIndex`/`pageIndex`（`PAGE_SIZE=10`），`resolveKey`/`resolveMenuKey` 映射 home/end/pageup/pagedown → `moveSelectMenuToEdge`/`moveSelectMenuPage`（纯增量：这些键此前未被处理返回 false，无行为回归）。Controller/state 两级测试覆盖；agent-ui 全量 **890 passing**；tsc/build 通过；边界扫描 CLEAN。
+- 待续 ③：把 suggestions/palette/approval 键盘矩阵与焦点栈迁移到 overlay adapter，Home/End/Page 统一贯穿、disabled 可访问原因（TUI/browser）。
 
 - 验收：每类 overlay 的键盘矩阵（TUI/browser）与焦点栈快照；Esc 后焦点回到触发控件；disabled option 不可执行且有可访问原因。
 
