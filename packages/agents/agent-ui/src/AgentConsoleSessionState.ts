@@ -4519,6 +4519,15 @@ export class AgentConsoleSessionState {
             case 'move':
                 this.moveSelectMenu(decision.delta);
                 return true;
+            case 'home':
+                this.moveSelectMenuToEdge('start');
+                return true;
+            case 'end':
+                this.moveSelectMenuToEdge('end');
+                return true;
+            case 'page':
+                this.moveSelectMenuPage(decision.direction);
+                return true;
             case 'confirm':
                 void this.confirmSelectMenu();
                 return true;
@@ -4656,6 +4665,26 @@ export class AgentConsoleSessionState {
         this.selectMenu.selectedIndex = this.overlayController.moveIndex(
             this.selectMenu.selectedIndex,
             delta,
+            this.selectMenu.options.length
+        );
+    }
+
+    moveSelectMenuToEdge(edge: 'start' | 'end'): void {
+        if (!this.selectMenu || !this.selectMenu.options.length) {
+            return;
+        }
+        this.selectMenu.selectedIndex = edge === 'start'
+            ? this.overlayController.homeIndex(this.selectMenu.options.length)
+            : this.overlayController.endIndex(this.selectMenu.options.length);
+    }
+
+    moveSelectMenuPage(direction: 1 | -1): void {
+        if (!this.selectMenu || !this.selectMenu.options.length) {
+            return;
+        }
+        this.selectMenu.selectedIndex = this.overlayController.pageIndex(
+            this.selectMenu.selectedIndex,
+            direction,
             this.selectMenu.options.length
         );
     }
@@ -5502,6 +5531,15 @@ export class AgentConsoleSessionState {
         switch (decision.action) {
             case 'move':
                 this.moveSelectMenu(decision.delta);
+                return true;
+            case 'home':
+                this.moveSelectMenuToEdge('start');
+                return true;
+            case 'end':
+                this.moveSelectMenuToEdge('end');
+                return true;
+            case 'page':
+                this.moveSelectMenuPage(decision.direction);
                 return true;
             case 'accept':
                 void this.acceptSelectMenu();

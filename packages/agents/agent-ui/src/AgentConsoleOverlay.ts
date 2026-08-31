@@ -9,6 +9,9 @@ import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 
 export type AgentConsoleOverlayKeyDecision =
     | { action: 'move'; delta: number }
+    | { action: 'home' }
+    | { action: 'end' }
+    | { action: 'page'; direction: 1 | -1 }
     | { action: 'confirm' }
     | { action: 'accept' }
     | { action: 'choose'; index: number }
@@ -18,6 +21,8 @@ export type AgentConsoleOverlayKeyDecision =
     | { action: 'none' };
 
 export class AgentConsoleOverlayController {
+    static readonly PAGE_SIZE = 10;
+
     clampIndex(index: number, optionCount: number): number {
         if (optionCount <= 0) {
             return 0;
@@ -30,6 +35,21 @@ export class AgentConsoleOverlayController {
             return 0;
         }
         return (current + delta + optionCount) % optionCount;
+    }
+
+    homeIndex(optionCount: number): number {
+        return optionCount > 0 ? 0 : 0;
+    }
+
+    endIndex(optionCount: number): number {
+        return optionCount > 0 ? optionCount - 1 : 0;
+    }
+
+    pageIndex(current: number, direction: 1 | -1, optionCount: number, pageSize = AgentConsoleOverlayController.PAGE_SIZE): number {
+        if (optionCount <= 0) {
+            return 0;
+        }
+        return this.clampIndex(current + direction * pageSize, optionCount);
     }
 
     isDismissKey(key: string): boolean {
@@ -81,6 +101,14 @@ export class AgentConsoleOverlayController {
             case 'tab':
             case 'return':
                 return { action: 'confirm' };
+            case 'home':
+                return { action: 'home' };
+            case 'end':
+                return { action: 'end' };
+            case 'pageup':
+                return { action: 'page', direction: -1 };
+            case 'pagedown':
+                return { action: 'page', direction: 1 };
             default:
                 if (this.isDismissKey(normalized)) {
                     return { action: 'escape' };
@@ -103,6 +131,18 @@ export class AgentConsoleOverlayController {
         }
         if (keyName === 'return' || keyName === 'tab') {
             return { action: 'accept' };
+        }
+        if (keyName === 'home') {
+            return { action: 'home' };
+        }
+        if (keyName === 'end') {
+            return { action: 'end' };
+        }
+        if (keyName === 'pageup') {
+            return { action: 'page', direction: -1 };
+        }
+        if (keyName === 'pagedown') {
+            return { action: 'page', direction: 1 };
         }
         if (keyName === 'left' || keyName === 'right') {
             return { action: 'cancel' };

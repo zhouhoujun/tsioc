@@ -8687,6 +8687,56 @@ export class AgentConsoleComponentTest {
         expect(state.handleSelectKey('x')).toBe(false);
     }
 
+    @Test('handleSelectKey moves to edge and by page (P266)')
+    handleSelectKeyMovesToEdgeAndPage() {
+        const state = new AgentConsoleSessionState();
+        state.openSelectMenu('Test', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+            { label: 'C', value: 'c' },
+            { label: 'D', value: 'd' }
+        ]);
+        state.setSelectMenuIndex(2);
+
+        // Page down clamps to last
+        expect(state.handleSelectKey('pagedown')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(3);
+        // Home jumps to first
+        expect(state.handleSelectKey('home')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+        // Page up clamps to first
+        expect(state.handleSelectKey('pageup')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+        // End jumps to last
+        state.setSelectMenuIndex(0);
+        expect(state.handleSelectKey('end')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(3);
+        // No menu -> keys unhandled
+        state.handleSelectKey('escape');
+        expect(state.handleSelectKey('home')).toBe(false);
+    }
+
+    @Test('handleMenuInput moves to edge and by page (P266)')
+    handleMenuInputMovesToEdgeAndPage() {
+        const state = new AgentConsoleSessionState();
+        state.openSelectMenu('Test', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+            { label: 'C', value: 'c' },
+            { label: 'D', value: 'd' }
+        ]);
+        state.setSelectMenuIndex(1);
+
+        expect(state.handleMenuInput('end', '')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(3);
+        expect(state.handleMenuInput('home', '')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+        expect(state.handleMenuInput('pagedown', '')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(3);
+        expect(state.handleMenuInput('pageup', '')).toBe(true);
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+    }
+
 
 
 

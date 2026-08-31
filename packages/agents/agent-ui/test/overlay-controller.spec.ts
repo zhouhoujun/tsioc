@@ -29,6 +29,18 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.moveIndex(0, 0, 0)).toEqual(0);
     }
 
+    @Test('homeIndex endIndex and pageIndex move to edges and clamp pages')
+    async edgeAndPageIndexes() {
+        expect(controller.homeIndex(5)).toEqual(0);
+        expect(controller.endIndex(5)).toEqual(4);
+        expect(controller.homeIndex(0)).toEqual(0);
+        expect(controller.endIndex(0)).toEqual(0);
+        expect(controller.pageIndex(0, 1, 25)).toEqual(10);
+        expect(controller.pageIndex(20, 1, 25)).toEqual(24);
+        expect(controller.pageIndex(4, -1, 25)).toEqual(0);
+        expect(controller.pageIndex(0, 1, 0)).toEqual(0);
+    }
+
     @Test('isDismissKey matches esc escape and q case-insensitively')
     async isDismissKeyMatches() {
         expect(controller.isDismissKey('esc')).toEqual(true);
@@ -50,6 +62,10 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveKey('2', 3)).toEqual({ action: 'choose', index: 1 });
         expect(controller.resolveKey('esc', 3)).toEqual({ action: 'escape' });
         expect(controller.resolveKey('q', 3)).toEqual({ action: 'escape' });
+        expect(controller.resolveKey('home', 3)).toEqual({ action: 'home' });
+        expect(controller.resolveKey('end', 3)).toEqual({ action: 'end' });
+        expect(controller.resolveKey('pageup', 3)).toEqual({ action: 'page', direction: -1 });
+        expect(controller.resolveKey('pagedown', 3)).toEqual({ action: 'page', direction: 1 });
     }
 
     @Test('resolveKey returns none for out-of-range digits and unknown keys')
@@ -69,6 +85,10 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveMenuKey('right', '', 3)).toEqual({ action: 'cancel' });
         expect(controller.resolveMenuKey('esc', '', 3)).toEqual({ action: 'escape' });
         expect(controller.resolveMenuKey('q', '', 3)).toEqual({ action: 'escape' });
+        expect(controller.resolveMenuKey('home', '', 3)).toEqual({ action: 'home' });
+        expect(controller.resolveMenuKey('end', '', 3)).toEqual({ action: 'end' });
+        expect(controller.resolveMenuKey('pageup', '', 3)).toEqual({ action: 'page', direction: -1 });
+        expect(controller.resolveMenuKey('pagedown', '', 3)).toEqual({ action: 'page', direction: 1 });
         expect(controller.resolveMenuKey('2', '', 3)).toEqual({ action: 'choose', index: 1 });
         expect(controller.resolveMenuKey('9', '', 3)).toEqual({ action: 'digit-consume' });
         expect(controller.resolveMenuKey('x', '', 3)).toEqual({ action: 'none' });
