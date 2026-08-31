@@ -133,6 +133,10 @@ function resolvePlanTodoStatusMark(status: string): string {
             return '-';
         case 'in_progress':
             return '>';
+        case 'failed':
+            return '✗';
+        case 'blocked':
+            return '⏸';
         default:
             return ' ';
     }
@@ -153,9 +157,17 @@ export function resolvePlanTodoContent(message: AgentMessage, compact = false): 
         const activeIndex = items.indexOf(active);
         return `plan ${items.length} · current ${activeIndex + 1}. [${resolvePlanTodoStatusMark(active.status)}] ${active.content}`;
     }
-    return items.map((item: any, index: number) =>
-        `${index + 1}. [${resolvePlanTodoStatusMark(item.status)}] ${item.content}`
-    ).join('\n');
+    return items.map((item: any, index: number) => {
+        const status = item.status === 'pending' && Array.isArray(item.blockedBy) && item.blockedBy.length
+            ? 'blocked'
+            : item.status;
+        const reason = status === 'failed' && item.error
+            ? ` · failed: ${item.error}`
+            : status === 'blocked' && (item.blockedReason || item.blockedBy?.length)
+                ? ` · blocked: ${item.blockedReason || item.blockedBy.join(', ')}`
+                : '';
+        return `${index + 1}. [${resolvePlanTodoStatusMark(status)}] ${item.content}${reason}`;
+    }).join('\n');
 }
 
 const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
@@ -546,6 +558,9 @@ function resolveMessageDisplayContent(
     rawMode = false
 ): string {
     const content = String(message?.content || '');
+    if (templateKind === 'planTodo') {
+        return content.trim() ? content : resolvePlanTodoContent(message);
+    }
     const imageParts = getAgentMessageImageParts(message);
     const attachmentSummary = imageParts.length
         ? imageParts.map(part => part.name ? `[Image: ${part.name}]` : '[Image attached]').join('\n')

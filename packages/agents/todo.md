@@ -1470,7 +1470,8 @@ Turn: Fix session restore                                      running  01:42
   - ❌ scenario 3: plan checkbox - acceptance fake server does not populate `planTodos` from `todo` tool calls
   - ❌ scenario 5: /usage panel - acceptance fake server records no turns/tokens, so the CLI takes the "no usage" path
 - 备注：核心 P262 实现与单元测试已完成；剩余失败属于 acceptance fake server/PTY 驱动覆盖不足，不影响产品跨平台代码。该脚本使用 Python 标准库 `pty`，仅支持 Linux/macOS，不作为运行时依赖；Windows 端应使用原生终端手工验收或另行实现 ConPTY 驱动。
-**P263 · Plan 卡片实时勾选 + 失败/阻塞标记（中）** `platform: agent-ui/src（跨平台）+ agent 事件字段`
+**P263 · Plan 卡片实时勾选 + 失败/阻塞标记（中）** `platform: agent-ui/src（跨平台）+ agent 事件字段` ✅ **已完成（2026-08-31）**
+- 状态：plan event 与 `todo` 更新已通过 `setPlanTodos`/`mergePlanStepStatus` 原地更新同一条 inline message；消息 renderer 现从结构化 `planItems` 生成空内容的 plan 行，`failed` 显示 `[✗]` + `failed: <error>`，带 `blockedBy` 的 pending 项显示 `[⏸]` + `blocked: <reason>`。非空的 SessionState 预构建内容仍优先保留，兼容进度条/折叠/完成摘要。新增 renderer 回归覆盖失败与阻塞原因。agent-ui 871 passing，`tsc --noEmit` 与 `build:web` 通过；跨平台边界扫描仅命中既有 `globalThis` 守卫与约束注释，无 console/node 直接 import。
 - 目标：深化 P254——plan 卡片 checkbox 随 tool receipt/evidence 实时勾选，失败/阻塞 step 显式标记，直接回应"设计 plan 关键信息未展示"。
 - 方案：
   - agent 侧确认 evidence→step reconciler 的输出字段经事件到达 UI（plan 事件负载含 step status 快照）；agent-ui 消费 step status（pending/in_progress/done/failed/blocked）渲染 `☐/▸/☑/✗/⏸` 字形映射，failed/blocked 加 tone 高亮 + 原因摘要行。
@@ -1495,7 +1496,7 @@ Turn: Fix session restore                                      running  01:42
 | VII | P260 注册表（先建结构 + 三路消费接线） | ✅ registry 单元绿（10 项）；palette/补全/help 显示 description+group |
 | VIII | P261 补全升级 + P264 | ✅ smart-run 单元绿（无参执行/带参注入）；补全与 palette 同一 fuzzy；`/display critical` 单测绿 |
 | IX | P262 输出回看 | ✅ 单元 8 项绿（环形上限/过滤/空态/复制）+ agent-ui 全量 870 passing + tsc + build:web；PTY 场景 5 受 fake server 无 usage 数据限制 |
-| X | P263 实时勾选 + 完成判定回填 | v12 四场景全绿；v12 表回填：P252→P260-262 承接、P253→✅、P258→按批次 IV 执行 |
+| X | P263 实时勾选 + 完成判定回填 | ✅ inline plan 原地状态更新；失败/阻塞字形与原因行回归通过；agent-ui 871 + tsc + build:web |
 
 > 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。
 

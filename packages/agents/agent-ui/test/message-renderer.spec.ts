@@ -302,6 +302,27 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(message.content).toEqual(content);
     }
 
+    @Test('renders failed and blocked plan items with explicit status and reason')
+    renderPlanFailureAndBlockReasons() {
+        const items = renderAgentConsoleMessageItems([{
+            id: '__plan_todo_inline__',
+            role: 'assistant',
+            content: '',
+            createdAt: 1,
+            metadata: {
+                uiKind: 'plan-todo',
+                planItems: [
+                    { id: 'failed', content: 'Run verification', status: 'failed', error: 'test command failed' },
+                    { id: 'blocked', content: 'Deploy', status: 'pending', blockedBy: ['failed'], blockedReason: 'awaiting verification' }
+                ]
+            }
+        }] as any);
+
+        const content = items[0].lines.map(line => line.content).join('\n');
+        expect(content).toContain('[✗] Run verification · failed: test command failed');
+        expect(content).toContain('[⏸] Deploy · blocked: awaiting verification');
+    }
+
     @Test('shows the username label when showUsername is enabled')
     renderUsernameLabels() {
         const items = renderAgentConsoleMessageItems([
