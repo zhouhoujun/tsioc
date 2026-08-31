@@ -889,6 +889,7 @@ Turn: Fix session restore                                      running  01:42
 
 ### P238 · 真实终端与浏览器端到端验收 `platform: agent acceptance + agent-ui acceptance`
 
+- **当前状态（2026-08-31）**：未标记完成。PTY 验收脚本可在 Linux/macOS 运行但仍有场景 3/5 的 fake-model/driver 时序限制；browser 侧仓库仅有 Playwright 依赖，未提供独立 E2E runner，且当前环境缺少 Chromium 浏览器二进制（`chromium.executablePath()` 指向缓存但文件不存在）。需在具备浏览器缓存和可复现 gateway/mock harness 的 CI 或人工终端环境中继续，不影响跨平台产品构建。
 - 扩展 PTY/browser harness：创建计划→并行任务→问询→审批→失败→retry→断线→恢复→review→完成；覆盖鼠标不可用、窄终端、CJK、长输出和多窗口。
 - 记录并持久化基线：首屏当前步骤可见率、question 完成按键数、失败定位按键数、event-to-UI 延迟、重复 toolCall 行数、焦点回退成功率。
 - 将阈值与失败现场（ANSI 脱色 transcript、DOM/ARIA 快照、事件 cursor）纳入 CI 报告；任何阈值回退阻止计划标记完成。
