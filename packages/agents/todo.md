@@ -1502,12 +1502,16 @@ Turn: Fix session restore                                      running  01:42
 
 > 每个批次收尾固定执行：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件 → 独立提交。
 
-### 2026-08-31 全量收尾验证
+### 2026-08-31 全量收尾验证（v13 正式关闭）
 
-- agents 包测试：agent-tools 476、agent-gateway 255、agent-cli 73、agent-channels 59、agent-providers 13、agent-desktop 20、agent-vscode 7、agent-ssh 8、agent-ui 870，全部通过。
+- agents 包测试：agent 797、agent-tools 476、agent-gateway 255、agent-cli 73、agent-channels 59、agent-providers 13、agent-desktop 20、agent-vscode 7、agent-ssh 8、agent-ui 872，全部通过。
 - 共享渲染层：components 135、components/console 73、components/html 117，全部通过。
+- agent-ui 构建：`tsc --noEmit` EXIT=0；`build:web` EXIT=0（web/dist/agent-console.js 3.6MB）。
+- 跨平台边界：`src/` 无 `@tsdi/components/console` 直接 import，无 node API（`process`/`Buffer`/`fs`/`node:*`）直接引用（仅既有 `globalThis` 守卫与约束注释）。
 - PTY acceptance：scenario 1/2 通过；scenario 3/5 受 fake server 数据注入限制失败（详见 P262），不是产品断言失败。
 - Python 仅限 `acceptance/run_acceptance.py` 的 Linux/macOS PTY 验收脚本；agents 与 agent-ui 的跨平台运行时未引入 Python 或 Node 专属依赖。
+
+> **v13（P260–P264）已全部落地并独立提交**；`896abb1e7 docs: add UI command interaction roadmap` 已并入 v14 路线。本批次计划收敛，后续工作转入 v14（P265–P272）。
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
