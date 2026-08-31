@@ -1342,6 +1342,8 @@ Turn: Fix session restore                                      running  01:42
 
 #### 批次 VI · 验证与回归（P259）
 - **P259 · 全量验证与真实终端验收** `platform: 验证（跨平台）`
+  - **自动回归完成（2026-08-31）**：agent 797、agent-ui 872、components 135、components/console 73、components/html 117 均通过；agent-ui `tsc --noEmit`/`build:web` 通过，`src/` 无 `@tsdi/components/console` 或 `node:` 直接 import。
+  - **端到端限制**：Playwright 已作为工具依赖安装，但当前没有 agent-ui browser E2E runner；PTY 脚本限 Linux/macOS，场景 1/2 已通过，场景 3/5 仍受 fake model/driver 时序限制（见 P262）。这些限制需由独立的 P238 harness 工作承接。
   - 自动测试：agent-ui 全套 + components / components/console / components/html 回归 + agent 包 prompt 相关测试 + `tsc --noEmit` + `build:web`。
   - PTY 实测四场景：① 长回复尾部问询在默认模式可见；② `/command` 弹出统一命令面板且可搜索/过滤/导航；③ 多步任务中模型主动调 `todo`，plan 卡片出现在根请求之后并实时勾选；④ `ask_user` 弹出交互式选择控件。
   - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 为空；新代码无 node API 直接引用。
