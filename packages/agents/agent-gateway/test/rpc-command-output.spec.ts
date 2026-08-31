@@ -32,8 +32,7 @@ export class CommandOutputRpcTest {
             },
             async searchMemory() {
                 return [];
-            },
-            ...runtimeOverrides
+            }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);

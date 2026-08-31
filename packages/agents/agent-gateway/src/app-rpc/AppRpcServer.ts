@@ -535,11 +535,25 @@ export class AppRpcServer {
         this.sessionHandler.track(requested);
         await this.setSessionWorkspace(requested);
         const state = await this.sessions.get(requested);
+        // Create a MemoryCommandOutputStore recordId for this session, keyed by
+        // workspace:principal:session. The scheme matches the command_output.* handlers
+        // so that the browser (or any host) can create a matching
+        // MemoryCommandOutputStore and persist history that survives session restarts
+        // and cross-session access.
+        const workspace = state.workspace || this.resolveWorkspace();
+        const principalId = this.resolveHistoryPrincipalId(context);
+        const sessionRecordId = this.createCommandOutputRecordId(workspace, principalId, requested);
+        // Store the recordId on the session state so downstream consumers can create
+        // a matching store; the gateway also retains it in case it needs to persist
+        // records through the RPC handlers.
+        // @ts-ignore — property will be set dynamically
+        state.commandOutputRecordId = sessionRecordId;
         return {
             sessionId: requested,
             createdAt: state.createdAt,
             updatedAt: state.updatedAt,
-            workspace: state.workspace
+            workspace: state.workspace,
+            commandOutputRecordId: sessionRecordId
         };
     }
 
