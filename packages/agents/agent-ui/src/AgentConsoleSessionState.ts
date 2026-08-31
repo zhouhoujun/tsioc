@@ -410,7 +410,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     activityVisibleItems: 3,
     activityHistoryLimit: 30,
     summaryMaxLength: 80,
-    toolRunSummaryMaxLength: 96,
+    toolRunSummaryMaxLength: 400,
     sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',

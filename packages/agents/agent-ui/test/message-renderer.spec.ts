@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
+    defaultAgentConsoleOptions,
     renderAgentConsoleMessageItems,
     resolveAgentConsoleMessageStatus,
     resolveAgentConsoleMessageStatusLabel,
@@ -9,6 +10,11 @@ import {
 
 @Suite('Agent console message renderers')
 export class AgentConsoleMessageRendererDispatchTest {
+    @Test('uses the same 400-character preview budget for tool runs and inline tool messages')
+    useConsistentToolPreviewBudget() {
+        expect(defaultAgentConsoleOptions.toolRunSummaryMaxLength).toEqual(400);
+    }
+
     @Test('dispatches message template kinds by role and metadata')
     renderTemplateKinds() {
         const messages = [

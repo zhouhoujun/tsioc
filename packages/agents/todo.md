@@ -1329,10 +1329,9 @@ Turn: Fix session restore                                      running  01:42
   - ✅ 已实现：通过 P174 完成。
 - **P256 · Ask_user 交互化（中-高）** `platform: agent-ui/src（跨平台）` ✅ 已完成
   - ✅ 已实现：通过 P189/P234 完成（pendingQuestion/pendingQuestionQueue/questionAction 已存在）。
-- **P258 · 工具执行输出内联增强（中）** `platform: agent-ui/src（跨平台）` ❌ 待实现
-  - `toolRunSummaryMaxLength` 从 96 提升至 400+。
-  - tool result 增加展开/折叠 toggle。
-  - 自动测试 + `tsc --noEmit` + `build:web`。
+- **P258 · 工具执行输出内联增强（中）** `platform: agent-ui/src（跨平台）` ✅ **已完成（2026-08-31）**
+  - 工具运行面板摘要默认值从 96 提升至 400，与 `summarizeToolDisplayText` 的对话流预览一致；完整原文仍经既有 Enter 消息详情面板分页查看。
+  - 新增默认预览预算回归；agent-ui 872 passing，`tsc --noEmit` 与 `build:web` 通过。
 
 #### 批次 V · 设计计划关键信息优先展示（P257）✅ 已完成
 - **P257 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
