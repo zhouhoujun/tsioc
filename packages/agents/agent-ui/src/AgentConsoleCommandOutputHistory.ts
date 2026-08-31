@@ -76,13 +76,15 @@ function matchesSession(entry: AgentConsoleCommandOutputHistoryEntry, sessionId:
 }
 
 /**
- * In-memory, newest-first, bounded command-output store.
+ * Shared, newest-first bounded command-output store.
  *
- * `append` evicts the oldest record beyond `cap`. `list` filters by filter/session
- * and paginates with an opaque base64 cursor (an offset into the filtered list).
- * `clear` with `all` drops every record; otherwise only the session's records.
+ * Owns the filtering / session-matching / cursor-pagination / cap-eviction logic
+ * and the in-memory `entries` array so every concrete store (in-memory, file,
+ * RPC) reuses one implementation instead of duplicating it. Subclasses only
+ * supply the persistence seam (constructor loading + post-mutation persist) and
+ * otherwise inherit `list`/`get`/`append`/`clear`.
  */
-export class InMemoryCommandOutputStore implements CommandOutputStore {
+export abstract class AbstractCommandOutputStore implements CommandOutputStore {
     protected entries: AgentConsoleCommandOutputHistoryEntry[] = [];
 
     constructor(protected readonly cap: number = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP) {}
@@ -143,6 +145,14 @@ export class InMemoryCommandOutputStore implements CommandOutputStore {
         }
     }
 }
+
+/**
+ * In-memory, newest-first, bounded command-output store.
+ *
+ * The default used when no host injects a durable store; also the reference
+ * implementation for tests.
+ */
+export class InMemoryCommandOutputStore extends AbstractCommandOutputStore {}
 
 const SECRET_KEY = /(api[-_]?key|token|secret|password|authorization|cookie)/i;
 const SECRET_VALUE = /(Bearer\s+)[A-Za-z0-9._-]+|\b(sk-[A-Za-z0-9_-]{8,})\b/gi;

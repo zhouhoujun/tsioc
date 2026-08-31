@@ -9,78 +9,42 @@
  * implementation. Each mutation rewrites the file, keeping at most `cap`
  * newest records, so results survive page/terminal restart.
  *
+ * All filtering / session-matching / cursor-pagination / cap-eviction logic is
+ * inherited from `AbstractCommandOutputStore`; this class only supplies the
+ * file persistence seam (`load` / `persist`) and re-persists on mutation.
+ *
  * Cross-platform: this module must NOT import node APIs.
  */
 import { FileAdapter } from '@tsdi/common';
+import { Injectable } from '@tsdi/ioc';
 import {
+    AbstractCommandOutputStore,
     AgentConsoleCommandOutputHistoryEntry,
-    CommandOutputPage,
-    CommandOutputQuery,
-    CommandOutputStore,
-    AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP,
-    AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE
+    AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP
 } from './AgentConsoleCommandOutputHistory';
 
-export interface BoundedFileCommandOutputStoreOptions {
-    fileAdapter: FileAdapter;
-    /** Root directory the durable file lives in (e.g. workspace or config dir). */
-    directory: string;
-    cap?: number;
-}
-
-function normalizeFilter(filter: string | undefined): string {
-    return String(filter || '').trim().toLowerCase();
-}
-
-function matchesFilter(entry: AgentConsoleCommandOutputHistoryEntry, needle: string): boolean {
-    if (!needle) {
-        return true;
-    }
-    return entry.command.toLowerCase().includes(needle) || entry.text.toLowerCase().includes(needle);
-}
-
-function matchesSession(entry: AgentConsoleCommandOutputHistoryEntry, sessionId: string | undefined): boolean {
-    if (!sessionId) {
-        return true;
-    }
-    return entry.sessionId === sessionId || (!entry.sessionId && sessionId === 'console');
-}
-
-function encodeCursor(offset: number): string {
-    const raw = `o:${offset}`;
-    if (typeof btoa === 'function') {
-        return btoa(raw);
-    }
-    return raw;
-}
-
-function decodeCursor(cursor: string | undefined): number {
-    if (!cursor) {
-        return 0;
-    }
-    try {
-        const raw = typeof atob === 'function' ? atob(cursor) : cursor;
-        const match = /^o:(\d+)$/.exec(raw);
-        return match ? Number(match[1]) : 0;
-    } catch {
-        return 0;
-    }
-}
-
-export class BoundedFileCommandOutputStore implements CommandOutputStore {
+@Injectable()
+export class BoundedFileCommandOutputStore extends AbstractCommandOutputStore {
     protected readonly fileAdapter: FileAdapter;
     protected readonly filePath: string;
-    protected readonly cap: number;
-    protected entries: AgentConsoleCommandOutputHistoryEntry[] = [];
 
-    constructor(options: BoundedFileCommandOutputStoreOptions) {
-        if (!options.fileAdapter || !options.directory) {
-            throw new Error('BoundedFileCommandOutputStore requires a fileAdapter and directory');
-        }
-        this.fileAdapter = options.fileAdapter;
-        this.filePath = this.fileAdapter.join(String(options.directory), '.tsdi-agent', 'command-output-history.json');
-        this.cap = Math.max(1, Math.floor(options.cap ?? AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP));
+    /** `fileAdapter` always exists for a durable store; the host supplies it. */
+    constructor(fileAdapter: FileAdapter, directory = '', cap = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP) {
+        super(Math.max(1, Math.floor(cap ?? AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP)));
+        this.fileAdapter = fileAdapter;
+        this.filePath = this.fileAdapter.join(String(directory), '.tsdi-agent', 'command-output-history.json');
         this.load();
+    }
+
+    override async append(entry: AgentConsoleCommandOutputHistoryEntry): Promise<void> {
+        await super.append(entry);
+        this.persist();
+    }
+
+    override async clear(sessionId?: string, opts: { all?: boolean } = {}): Promise<number> {
+        const removed = await super.clear(sessionId, opts);
+        this.persist();
+        return removed;
     }
 
     protected load(): void {
@@ -108,45 +72,5 @@ export class BoundedFileCommandOutputStore implements CommandOutputStore {
         } catch {
             // best-effort: never throw on persistence failure
         }
-    }
-
-    async list(query: CommandOutputQuery = {}): Promise<CommandOutputPage> {
-        const needle = normalizeFilter(query.filter);
-        const filtered = this.entries.filter(
-            entry => matchesSession(entry, query.sessionId) && matchesFilter(entry, needle)
-        );
-        const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE)));
-        const start = decodeCursor(query.cursor);
-        const items = filtered.slice(start, start + limit);
-        const total = filtered.length;
-        const nextCursor = start + items.length < total ? encodeCursor(start + items.length) : undefined;
-        return { items, nextCursor, total };
-    }
-
-    async get(id: string, sessionId?: string): Promise<AgentConsoleCommandOutputHistoryEntry | undefined> {
-        return this.entries.find(entry => entry.id === id && matchesSession(entry, sessionId));
-    }
-
-    async append(entry: AgentConsoleCommandOutputHistoryEntry): Promise<void> {
-        if (!entry || !entry.id) {
-            return;
-        }
-        const withoutDup = this.entries.filter(existing => existing.id !== entry.id);
-        this.entries = [entry, ...withoutDup].slice(0, this.cap);
-        this.persist();
-    }
-
-    async clear(sessionId?: string, opts: { all?: boolean } = {}): Promise<number> {
-        if (opts.all || !sessionId) {
-            const removed = this.entries.length;
-            this.entries = [];
-            this.persist();
-            return removed;
-        }
-        const before = this.entries.length;
-        this.entries = this.entries.filter(entry => !matchesSession(entry, sessionId));
-        const removed = before - this.entries.length;
-        this.persist();
-        return removed;
     }
 }

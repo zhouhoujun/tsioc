@@ -154,7 +154,7 @@ export class AgentConsoleCommandOutputHistoryTest {
     @Test('BoundedFileCommandOutputStore persists through FileAdapter')
     async boundedFileStore() {
         const fake = new FakeFileAdapter();
-        const store = new BoundedFileCommandOutputStore({ fileAdapter: fake, directory: '/tmp' });
+        const store = new BoundedFileCommandOutputStore(fake, '/tmp');
         await store.append(makeEntry({ id: 'output-1', command: '/status', sessionId: 'ses-x' }));
         await store.append(makeEntry({ id: 'output-2', command: '/theme', sessionId: 'ses-x' }));
         const page = await store.list({ sessionId: 'ses-x', limit: AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE });
