@@ -126,6 +126,7 @@ export * from './memory/AgentSummaryAgent';
 export * from './memory/DeterministicAgentSummaryAgent';
 export * from './memory/LLMAgentSummaryAgent';
 export * from './memory/entities';
+export * from './memory/MemoryStoreCommandOutputStore';
 
 export * from './scheduler/AgentScheduler';
 export * from './scheduler/ScheduleSpec';
@@ -142,3 +143,4 @@ export * from './channels/LocalAgentClient';
 export * from './channels/PubSubAgentChannel';
 
 export * from './ui/AgentConsoleAppRpc';
+export * from './ui/CommandOutputHistory';

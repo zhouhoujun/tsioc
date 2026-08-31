@@ -175,10 +175,10 @@
 3. `resolvePlanTodoContent`、`resolvePlanTodoStatusMark` 等纯函数放在 `src/AgentConsoleMessageRenderers.ts`（跨平台）；涉及 `Buffer`/终端光标的操作放在 `console/ConsoleAgentConsoleSessionState.ts`。
 4. 每个批次（P172–P181）实施前需声明：**新代码落在哪个入口点？是否需要跨平台？**
 
-**P267 新增架构规则（2026-08-31 用户确认，后续 P268–P272 必须遵守）**：
-1. **通用功能走抽象类，禁止各平台各实现一遍**：跨平台共享能力一律基于既有抽象承接——如持久化统一走 `@tsdi/common` 的 `FileAdapter`（`AgentConsoleSettingsStore`/`AgentConsoleStash`/`AgentConsoleTheme` 同款），不要在 TUI node-fs 与 browser storage 各写一份。需要环境差异时，把差异收敛到最小 seam（如 `FileAdapter` 注入），共享逻辑只实现一次。
-2. **优先 IoC 依赖倒置，方便扩展与性能优化**：跨平台能力通过 DI port（接口/抽象类）注入，`src/` 定义 port，各平台提供实现（与规则 2 一致）。例如命令输出持久化：`AgentConsoleSessionState.setCommandOutputStore(store)` 接收 `CommandOutputStore` 端口，运行时/CLI 注入 `BoundedFileCommandOutputStore`（FileAdapter 实现），browser 注入 RPC store——状态对象只依赖端口，不依赖任何平台实现。禁止在共享状态里直接 new 平台类或静态引用平台全局。
-3. **共享逻辑覆盖优先于重复实现**：新增能力前先确认既有抽象是否已提供（`FileAdapter`、`AGENT_CONSOLE_APP_RPC`、`FileAdapter`-based stores）；确实需要新端口时，先 `src/` 定义接口 + 默认实现，再由平台注入具体实现。
+**通用架构规则（2026-08-31 用户确认，适用于 `packages/agents/` 下所有子项目：`agent`、`agent-ui`、`agent-gateway`、`agent-cli`、`agent-channels`、`agent-tools`、`agent-providers` 等，及本 todo 全部后续批次）**：
+1. **通用功能走抽象类，禁止各实现各写一遍**：跨项目/跨平台共享能力一律基于既有抽象承接——如持久化统一走 `@tsdi/common` 的 `FileAdapter`（`AgentConsoleSettingsStore`/`AgentConsoleStash`/`AgentConsoleTheme` 同款），不要在 TUI node-fs、browser storage、gateway MemoryStore 各写一份。需要环境差异时，把差异收敛到最小 seam（如 `FileAdapter` 注入、`CommandOutputStore` 端口），共享逻辑只实现一次。
+2. **优先 IoC 依赖倒置，方便扩展与性能优化**：通用能力通过 DI port（接口/抽象类）注入，定义方持有 port，各平台/各子项目提供实现。状态/服务对象只依赖 port，不依赖任何平台或具体实现，禁止直接 new 平台类或静态引用平台全局。例：`AgentConsoleSessionState.setCommandOutputStore(store)` 接收 `CommandOutputStore` 端口，TUI/CLI 注入 `BoundedFileCommandOutputStore`（FileAdapter 实现），browser/gateway 注入 RPC store；共享的过滤/分页/淘汰逻辑全部落在 `AbstractCommandOutputStore` 抽象基类里，具体 store 只覆写各自的持久化 seam。
+3. **共享逻辑覆盖优先于重复实现**：新增能力前先确认既有抽象是否已提供（`FileAdapter`、`MemoryStore` 键值抽象、`AbstractCommandOutputStore`、`CommandOutputStore` 端口、`AGENT_CONSOLE_APP_RPC` 等）；确实需要新端口时，先定义接口/抽象基类 + 默认实现，再由各子项目/平台注入具体实现。
 
 ---
 
@@ -1520,7 +1520,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B（agent-ui durable history）已完成，C/D（RPC/replay）待实施；P268–P272 待实施。
+> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C 完成，C/D（RPC/replay）待实施；P268–P272 待实施。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1557,14 +1557,14 @@ Turn: Fix session restore                                      running  01:42
 
 - 验收：每类 overlay 的键盘矩阵（TUI/browser）与焦点栈快照；Esc 后焦点回到触发控件；disabled option 不可执行且有可访问原因。
 
-**P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC` ✅ A+B 完成（2026-08-31）
+**P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC` ✅ A+B+C 完成（2026-08-31）
 
 - 目标：命令结果从内存 ring 升级为 session/workspace 可恢复历史，支持分页、过滤、复制、重放和清理策略。
 - 方案：新增 `command_output.list/get/replay/clear` RPC 与 agent-ui storage adapter；本地无 RPC 时使用 bounded file adapter；结果记录 requestId、参数摘要、状态、耗时和原文引用，敏感字段脱敏。
 - 架构（遵守 P267 新增规则）：`CommandOutputStore` 端口（`list/get/append/clear`，含 cursor 分页/过滤/session 隔离/上限 500）；`InMemoryCommandOutputStore` 为默认/测试实现；`BoundedFileCommandOutputStore` 复用 `@tsdi/common` 的 `FileAdapter`（与 SettingsStore/Stash/Theme 同款抽象，**不**为 browser 另写一份 storage 实现——`BrowserFileAdapter` 不可写，browser 持久化走 Slice C 的 RPC store）。状态经 `setCommandOutputStore` IoC 注入。
 - 实现（Slice A+B）：新建 `src/AgentConsoleCommandOutputHistory.ts`（类型 + 端口 + `InMemoryCommandOutputStore` + `redactCommandOutputSecret` 脱敏，规则与 `RedactionFilter` 一致）与 `src/AgentConsoleBoundedFileCommandOutputStore.ts`（FileAdapter 后端，文件 `<dir>/.tsdi-agent/command-output-history.json`）；`AgentConsoleSessionState` 增 `commandOutputStore` 字段与 `setCommandOutputStore`/`loadCommandOutputHistory`，`pushCommandOutput` 在保持 20 条 ring 与返回值不变的前提下异步持久化（写时脱敏、携带 requestId/argsSummary/sessionId），`configure()` session 切换时清 ring + 重灌 durable 历史。
 - 验证：新增 7 项单测（append newest-first/cap eviction/filter/cursor 分页/session 隔离+clear/redaction/FileAdapter 持久化）；agent-ui 全量 **900 passing** EXIT=0（基线 893）；`tsc --noEmit` EXIT=0；`build:web` EXIT=0；跨平台边界扫描 CLEAN（新 src 文件无 node import）。
-- 待办（Slice C/D）：gateway 增 `command_output.*` RPC（ownership 隔离 + 边界脱敏 + capabilities）；browser 经 RPC 注入 store；replay/cleanup 与跨 principal 隔离测试；运行时/CLI 注入 `BoundedFileCommandOutputStore`。
+- 待办（Slice D）：gateway 增 \`command_output.*\` RPC（ownership 隔离 + 边界脱敏 + capabilities）；browser 经 RPC 注入 store；replay/cleanup 与跨 principal 隔离测试；运行时/CLI 注入 \`BoundedFileCommandOutputStore\`。
 
 **P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）`
 

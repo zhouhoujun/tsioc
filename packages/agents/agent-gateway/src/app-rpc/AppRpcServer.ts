@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -16,6 +16,7 @@ import { QuestionStore } from './QuestionStore';
 export class AppRpcServer {
     protected static readonly CONSOLE_INPUT_HISTORY_KEY = 'agent-ui.console.input-history';
     protected static readonly REVIEW_ANNOTATIONS_CACHE_KEY = 'agent-ui.review.annotations-cache';
+    protected static readonly commandOutputRedactor = new RedactionFilter();
 
     constructor(
         private runtime: AgentRuntime,
@@ -153,6 +154,10 @@ export class AppRpcServer {
                         'app.state',
                         'app.inputHistory.get',
                         'app.inputHistory.put',
+                        'command_output.list',
+                        'command_output.get',
+                        'command_output.replay',
+                        'command_output.clear',
                         'session.create',
                         'session.fork',
                         'session.list',
@@ -279,6 +284,14 @@ export class AppRpcServer {
                 return this.getInputHistory(params, context);
             case 'app.inputHistory.put':
                 return this.putInputHistory(params, context);
+            case 'command_output.list':
+                return this.listCommandOutput(params, context);
+            case 'command_output.get':
+                return this.getCommandOutput(params, context);
+            case 'command_output.replay':
+                return this.replayCommandOutput(params, context);
+            case 'command_output.clear':
+                return this.clearCommandOutput(params, context);
             case 'session.create':
                 return this.createSession(params, context);
             case 'session.fork':
@@ -638,6 +651,80 @@ export class AppRpcServer {
             updatedAt: Date.now()
         });
         return { workspace, entries };
+    }
+
+    private createCommandOutputRecordId(workspace: string, principalId: string, sessionId: string): string {
+        return `agent-ui:console-command-output:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(sessionId)}`;
+    }
+
+    private createCommandOutputStore(params: any, context: AppRpcRequestContext, sessionId: string): MemoryCommandOutputStore {
+        const workspace = this.resolveHistoryRequestWorkspace(params);
+        const principalId = this.resolveHistoryPrincipalId(context);
+        return new MemoryCommandOutputStore(this.memory, this.createCommandOutputRecordId(workspace, principalId, sessionId));
+    }
+
+    private redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry {
+        const redactedText = AppRpcServer.commandOutputRedactor.redactText(entry.text);
+        const redactedCommand = AppRpcServer.commandOutputRedactor.redactText(entry.command);
+        const argsSummary = entry.argsSummary
+            ? AppRpcServer.commandOutputRedactor.redactText(entry.argsSummary)
+            : entry.argsSummary;
+        return { ...entry, text: redactedText, command: redactedCommand, argsSummary };
+    }
+
+    private async listCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const store = this.createCommandOutputStore(params, context, sessionId);
+        const query: CommandOutputQuery = {
+            sessionId,
+            filter: typeof params?.filter === 'string' && params.filter.trim() ? params.filter.trim() : undefined,
+            cursor: typeof params?.cursor === 'string' && params.cursor ? params.cursor : undefined,
+            limit: typeof params?.limit === 'number' && Number.isFinite(params.limit) ? params.limit : undefined
+        };
+        const page = await store.list(query);
+        return {
+            items: page.items.map(entry => this.redactCommandOutputEntry(entry)),
+            nextCursor: page.nextCursor,
+            total: page.total
+        };
+    }
+
+    private async getCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const id = this.requireString(params?.id, 'id');
+        const store = this.createCommandOutputStore(params, context, sessionId);
+        const entry = await store.get(id, sessionId);
+        return entry ? this.redactCommandOutputEntry(entry) : null;
+    }
+
+    private async clearCommandOutput(params: any, context: AppRpcRequestContext): Promise<{ removed: number }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const store = this.createCommandOutputStore(params, context, sessionId);
+        const removed = await store.clear(sessionId, { all: params?.all === true });
+        return { removed };
+    }
+
+    private async replayCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const id = this.requireString(params?.id, 'id');
+        const store = this.createCommandOutputStore(params, context, sessionId);
+        const entry = await store.get(id, sessionId);
+        if (!entry || !String(entry.command || '').trim()) {
+            throw new AppRpcError(-32602, `command_output.replay: entry '${id}' has no command to replay`);
+        }
+        await this.setSessionWorkspace(sessionId);
+        this.sessionHandler.track(sessionId);
+        const turn = await this.runtime.runTurn(sessionId, entry.command.trim(), context.principalId, undefined, undefined, undefined);
+        const messages = await this.runtime.getMessages(sessionId);
+        return {
+            sessionId,
+            runId: turn.message?.id ?? null,
+            message: messages[messages.length - 1] ?? null
+        };
     }
 
     private async listSessions(params: any, context: AppRpcRequestContext): Promise<any[]> {
