@@ -610,7 +610,7 @@
     - 新增 `agent-tools/src/background-task-store.ts`：`BackgroundTaskRecord` 扩充 `progress?`（0..1）、`retryCount?`、`usage?`、`cause?`（`{kind, detail}`）、`updatedAt?`；`BackgroundTaskHistoryStore` 抽象契约（`put/get/pageAll/pageBySession/batchCancel/subscribe`）+ `InMemoryBackgroundTaskHistoryStore` 默认实现，cursor 分页为 `startedAt desc + id asc` 稳定排序（`encode/decodeBackgroundTaskCursor`，limit 默认 50 上限 500，未知 cursor 回退从头取），`put` 按 id 幂等覆盖并广播订阅快照，`batchCancel` 仅取消 `running` 并返回实际取消的 id 列表。
     - `BackgroundTaskManager` 增加可选第 4 参注入 `@Inject(BACKGROUND_TASK_HISTORY_STORE)`；`start/finish/fail/cancel` 写穿到 store（fire-and-forget，吞错不阻塞运行链路），并补 `updatedAt/retryCount/progress`（start 置 0，finish 置 1）+ 完成时 `usage`、失败时 `cause`。`fetch`/完成后持久化 `clone` 深拷贝 `usage/cause`。
     - `provider.ts` 注册 `{ provide: BACKGROUND_TASK_HISTORY_STORE, useClass: InMemoryBackgroundTaskHistoryStore }`；`index.ts` 显式再导出 store 非重叠符号（`BackgroundTaskHistoryStore`/`Page`/`PageOptions`/`Cursor`/`Listener`/`encode`/`decode`/`clone`），`BackgroundTaskRecord/Status/BACKGROUND_TASK_HISTORY_STORE/InMemoryBackgroundTaskHistoryStore` 经 manager 再导出以避开 `export *` 重名歧义。
-    - **历史顺延项已部分落地**：project→session→thread 导航投影与批量取消已在后续 P236 增量实现；delegation 级聚合、TypeOrm durable task backend 与网关批量 RPC 仍需独立增量。
+    - **历史顺延项已部分落地**：project→session→thread 导航投影与批量取消已在后续 P236 增量实现；`TypeOrmBackgroundTaskStore` 及默认惰性持久化选择已落地并有回归测试。delegation 级聚合与 gateway 层批量任务 RPC 仍需独立增量。
     - 测试：agent-tools 新增 `test/background-task-store.spec.ts` 9 项（put/get 富记录往返、put 幂等覆盖、cursor 分页无跳/重（同时间戳 6 记录两页）、pageBySession 过滤、batchCancel 仅 running、subscribe/退订生命周期、cursor 编解码、manager 写穿富记录、manager 失败 cause）→ `454 passing`（445→454）；`tsc --noEmit` EXIT=0、下游 agent-ui `tsc --noEmit` EXIT=0。
 
 ### 批次 V · 验收与度量
