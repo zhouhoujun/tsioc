@@ -37,7 +37,14 @@ import {
     AgentConsoleSettingsStore,
     AgentConsoleThemeStore,
     agentConsoleThemes,
-    AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP
+    AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP,
+    AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP,
+    reduceAgentConsoleCommandExecution,
+    createBeginCommandExecutionAction,
+    createCompleteCommandExecutionAction,
+    createFailCommandExecutionAction,
+    createLinkCommandOutputAction,
+    AgentConsoleCommandExecution
 } from '../src';
 
 class TestFileAdapter extends FileAdapter {
@@ -10941,5 +10948,104 @@ export class AgentConsoleCommandOutputsTest {
         state.copyFocusedTextAction = () => { return; };
         state.pushCommandOutput('/usage', 'tokens 100');
         expect(await state.copySelectedCommandOutput()).toEqual(true);
+    }
+}
+
+@Suite('Agent console command executions ring (P265)')
+export class AgentConsoleCommandExecutionTest {
+
+    @Test('reducer begin transitions to running and records canonical command, args, and sessionId')
+    async reducerBegin() {
+        let state: AgentConsoleCommandExecution[] = [];
+        state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction('cmd-1', '/usage', '', 'session-A'));
+        expect(state.length).toEqual(1);
+        expect(state[0].requestId).toEqual('cmd-1');
+        expect(state[0].command).toEqual('/usage');
+        expect(state[0].status).toEqual('running');
+        expect(state[0].sessionId).toEqual('session-A');
+        expect(state[0].startedAt).toBeGreaterThan(0);
+    }
+
+    @Test('reducer complete transitions running to succeeded and stamps finishedAt')
+    async reducerComplete() {
+        let state: AgentConsoleCommandExecution[] = [];
+        state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction('cmd-1', '/usage', '', 'session-A'));
+        state = reduceAgentConsoleCommandExecution(state, createCompleteCommandExecutionAction('cmd-1', 'succeeded'));
+        expect(state[0].status).toEqual('succeeded');
+        expect(state[0].finishedAt).toBeGreaterThanOrEqual(state[0].startedAt);
+    }
+
+    @Test('reducer fail records retryable with an error message')
+    async reducerFail() {
+        let state: AgentConsoleCommandExecution[] = [];
+        state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction('cmd-1', '/status', '', 'session-A'));
+        state = reduceAgentConsoleCommandExecution(state, createFailCommandExecutionAction('cmd-1', 'boom', true));
+        expect(state[0].status).toEqual('failed');
+        expect(state[0].retryable).toEqual(true);
+        expect(state[0].error).toEqual('boom');
+    }
+
+    @Test('reducer ignores transitions that target a non-running terminal execution')
+    async reducerIgnoresChangesAfterTerminal() {
+        let state: AgentConsoleCommandExecution[] = [];
+        state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction('cmd-1', '/usage', '', 'session-A'));
+        state = reduceAgentConsoleCommandExecution(state, createCompleteCommandExecutionAction('cmd-1', 'succeeded'));
+        const terminal = state[0];
+        state = reduceAgentConsoleCommandExecution(state, createFailCommandExecutionAction('cmd-1', 'late', true));
+        expect(state[0]).toBe(terminal);
+        expect(state[0].status).toEqual('succeeded');
+        expect(state[0].error).toBeUndefined();
+    }
+
+    @Test('reducer linkOutput appends an output id and no-ops for an unknown request')
+    async reducerLinkOutput() {
+        let state: AgentConsoleCommandExecution[] = [];
+        state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction('cmd-1', '/usage', '', 'session-A'));
+        state = reduceAgentConsoleCommandExecution(state, createLinkCommandOutputAction('cmd-1', 'output-1'));
+        state = reduceAgentConsoleCommandExecution(state, createLinkCommandOutputAction('cmd-1', 'output-2'));
+        expect(state[0].outputIds).toEqual(['output-1', 'output-2']);
+        state = reduceAgentConsoleCommandExecution(state, createLinkCommandOutputAction('cmd-nope', 'output-3'));
+        expect(state[0].outputIds).toEqual(['output-1', 'output-2']);
+    }
+
+    @Test('reducer keeps the most recent executions and caps the ring at AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP')
+    async reducerRingCap() {
+        let state: AgentConsoleCommandExecution[] = [];
+        for (let i = 0; i < AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP + 5; i++) {
+            state = reduceAgentConsoleCommandExecution(state, createBeginCommandExecutionAction(`cmd-${i}`, '/usage', '', 'session-A'));
+        }
+        expect(state.length).toEqual(AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP);
+        expect(state[0].requestId).toEqual(`cmd-${AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP + 4}`);
+        expect(state[state.length - 1].requestId).toEqual(`cmd-${5}`);
+    }
+
+    @Test('state begin/complete/fail/link methods route through the reducer and expose latest')
+    async stateMethodsRouteThroughReducer() {
+        const state = new AgentConsoleSessionState();
+        const requestId = state.beginCommandExecution('/usage', '');
+        expect(state.commandExecutions.length).toEqual(1);
+        expect(state.latestCommandExecution?.status).toEqual('running');
+        state.completeCommandExecution(requestId, 'succeeded');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.latestCommandExecution?.requestId).toEqual(requestId);
+
+        const requestId2 = state.beginCommandExecution('/status', '');
+        expect(state.latestCommandExecution?.requestId).toEqual(requestId2);
+        const outputId = state.pushCommandOutput('/usage', 'tokens 100');
+        state.linkCommandOutputToExecution(requestId2, outputId);
+        expect(state.latestCommandExecution?.outputIds).toContain(outputId);
+    }
+
+    @Test('state configure with a new sessionId clears executions and resets the sequence')
+    async stateConfigureClearsOnSessionSwitch() {
+        const state = new AgentConsoleSessionState();
+        state.beginCommandExecution('/usage', '');
+        expect(state.commandExecutions.length).toEqual(1);
+        state.configure({ sessionId: 'session-B' } as any);
+        expect(state.commandExecutions.length).toEqual(0);
+        const after = state.beginCommandExecution('/status', '');
+        expect(state.commandExecutions.length).toEqual(1);
+        expect(state.latestCommandExecution?.command).toEqual('/status');
+        expect(after).toEqual('cmd-1');
     }
 }

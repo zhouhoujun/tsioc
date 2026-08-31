@@ -20,6 +20,15 @@ import {
     defaultAgentConsoleStatusline
 } from './AgentConsoleStatusline';
 import {
+    AgentConsoleCommandExecution,
+    AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP,
+    createBeginCommandExecutionAction,
+    createCompleteCommandExecutionAction,
+    createFailCommandExecutionAction,
+    createLinkCommandOutputAction,
+    reduceAgentConsoleCommandExecution
+} from './AgentConsoleCommandExecution';
+import {
     AgentConsoleTitleField,
     composeAgentConsoleTerminalTitle,
     defaultAgentConsoleTitle
@@ -558,6 +567,7 @@ export class AgentConsoleSessionState {
     commandOutputsFilter = '';
     commandOutputsFilterMode = false;
     commandOutputsSelectedIndex = 0;
+    commandExecutions: AgentConsoleCommandExecution[] = [];
     reviewOpen = false;
     gitSnapshotOpen = false;
     gitSnapshotCurrentRef = '';
@@ -581,6 +591,7 @@ export class AgentConsoleSessionState {
     selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
     protected commandOutputSequence = 0;
+    protected commandExecutionSequence = 0;
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -718,6 +729,8 @@ export class AgentConsoleSessionState {
             this.projectSummary = '';
             this.projectSessionCount = 0;
             this.contextPreparation = null;
+            this.commandExecutions = [];
+            this.commandExecutionSequence = 0;
         }
         if (meta.provider !== undefined) {
             this.provider = meta.provider;
@@ -4134,10 +4147,10 @@ export class AgentConsoleSessionState {
         return !!this.textOverlay;
     }
 
-    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): void {
+    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): string {
         const body = String(text ?? '').trim();
         if (!body || !String(command ?? '').trim()) {
-            return;
+            return '';
         }
         const entry: AgentConsoleCommandOutputEntry = {
             id: `output-${++this.commandOutputSequence}`,
@@ -4150,6 +4163,41 @@ export class AgentConsoleSessionState {
         if (this.commandOutputsSelectedIndex >= this.visibleCommandOutputs.length) {
             this.commandOutputsSelectedIndex = Math.max(0, this.visibleCommandOutputs.length - 1);
         }
+        return entry.id;
+    }
+
+    beginCommandExecution(command: string, args: string): string {
+        const requestId = `cmd-${++this.commandExecutionSequence}`;
+        this.commandExecutions = reduceAgentConsoleCommandExecution(
+            this.commandExecutions,
+            createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId)
+        );
+        return requestId;
+    }
+
+    completeCommandExecution(requestId: string, status: 'succeeded' | 'cancelled'): void {
+        this.commandExecutions = reduceAgentConsoleCommandExecution(
+            this.commandExecutions,
+            createCompleteCommandExecutionAction(requestId, status)
+        );
+    }
+
+    failCommandExecution(requestId: string, error: string, retryable: boolean): void {
+        this.commandExecutions = reduceAgentConsoleCommandExecution(
+            this.commandExecutions,
+            createFailCommandExecutionAction(requestId, String(error || ''), !!retryable)
+        );
+    }
+
+    linkCommandOutputToExecution(requestId: string, outputId: string): void {
+        this.commandExecutions = reduceAgentConsoleCommandExecution(
+            this.commandExecutions,
+            createLinkCommandOutputAction(requestId, outputId)
+        );
+    }
+
+    get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
+        return this.commandExecutions[0];
     }
 
     openCommandOutputs(): void {

@@ -262,6 +262,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected openSessionRequestId = 0;
     protected openReviewRequestId = 0;
     protected activateModelRequestId = 0;
+    protected pendingCommandRequestId = '';
     protected taskViewContextVersion = 0;
     protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
@@ -423,7 +424,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void {
-        this.state.pushCommandOutput(command, text, kind);
+        const outputId = this.state.pushCommandOutput(command, text, kind);
+        if (outputId && this.pendingCommandRequestId) {
+            this.state.linkCommandOutputToExecution(this.pendingCommandRequestId, outputId);
+        }
         this.notify(text);
     }
 
@@ -2954,16 +2958,35 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         const resolved = this.resolveUniqueCommandPrefix(parsed.command);
         const canonical = getAgentConsoleCommandName(resolved.command);
+        const args = String(parsed.args || '').trim();
+        const previousRequestId = this.pendingCommandRequestId;
+        this.pendingCommandRequestId = this.state.beginCommandExecution(canonical, args);
         if (!this.state.commandHints.includes(canonical)) {
-            this.notify(resolved.matches.length
+            const reason = resolved.matches.length
                 ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
-                : `Unknown command: ${parsed.command}`);
+                : `Unknown command: ${parsed.command}`;
+            this.state.failCommandExecution(this.pendingCommandRequestId, reason, false);
+            this.notify(reason);
+            this.pendingCommandRequestId = previousRequestId;
             return true;
         }
         const handler = COMMAND_HANDLERS[canonical];
         if (handler) {
-            return handler(this.buildCommandContext(), String(parsed.args || '').trim(), { command: canonical, matches: resolved.matches });
+            try {
+                const handled = await handler(this.buildCommandContext(), args, { command: canonical, matches: resolved.matches });
+                this.state.completeCommandExecution(this.pendingCommandRequestId, 'succeeded');
+                this.pendingCommandRequestId = previousRequestId;
+                return handled;
+            } catch (error) {
+                const reason = error instanceof Error ? error.message : String(error);
+                this.state.failCommandExecution(this.pendingCommandRequestId, reason, true);
+                this.notify(reason);
+                this.pendingCommandRequestId = previousRequestId;
+                return true;
+            }
         }
+        this.state.failCommandExecution(this.pendingCommandRequestId, `Unknown command: ${parsed.command}`, false);
+        this.pendingCommandRequestId = previousRequestId;
         return false;
     }
 

@@ -1515,6 +1515,8 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
+> **v14 进度**：P265 已落地并独立提交（见下）；剩余 P266–P272 待实施。
+
 ### 当前不足（2026-08-31 代码证据）
 
 | 领域 | 当前实现 | 交互风险 | 对照启发 |
@@ -1531,10 +1533,12 @@ Turn: Fix session restore                                      running  01:42
 
 > 每个批次固定门禁：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件（测试数字、环境限制、回滚说明）→ 独立提交。实现必须保持 TUI/browser 共用 SessionState 与 renderer，禁止 timer 驱动刷新。
 
-**P265 · Command interaction contract（高）** `platform: agent-ui/src（跨平台）`
+**P265 · Command interaction contract（高）** `platform: agent-ui/src（跨平台）` ✅ 2026-08 完成
 
 - 目标：定义统一的命令请求/响应生命周期：`idle → running → succeeded|failed|cancelled`，每次执行携带 `requestId`、canonical command、sessionId、startedAt、finishedAt、error/retryable`。
 - 方案：新增跨平台 `AgentConsoleCommandExecution` 类型与 reducer；`handleCommand`、palette smart-run、queued slash command、`pushCommandOutput` 全部通过 reducer 写入；旧 `notify` 仅保留短提示。
+- 实现：新建 `src/AgentConsoleCommandExecution.ts`（`AgentConsoleCommandExecution` 接口、`AgentConsoleCommandStatus`、action 联合 `begin/complete/fail/linkOutput`、纯 reducer `reduceAgentConsoleCommandExecution`、ring cap=20、终态不可再变）；`AgentConsoleSessionState` 增 `commandExecutions`/`commandExecutionSequence` 字段与 `beginCommandExecution`/`completeCommandExecution`/`failCommandExecution`/`linkCommandOutputToExecution`/`latestCommandExecution`，`configure()` session 切换时清 ring + 重置序列（会话隔离）；`AgentConsoleComponent.handleCommand` 统一 begin→try/catch dispatch→complete/fail（未知/歧义→failed retryable=false，handler 异常→failed retryable=true），`pushCommandOutput` 返回值并 link 到当前 execution。
+- 验证：新增 reducer + 状态方法单测 8 项（begin/complete/fail/终态不可变/link/ring cap/session 隔离/configure 重置）；agent-ui 全量 **880 passing** EXIT=0；`tsc --noEmit` EXIT=0；`build:web` EXIT=0（3.6MB）；跨平台边界 rg 扫描 CLEAN（仅 globalThis 守卫的 `Buffer`，无 `node:`/`@tsdi/components/console` 直引）。
 - 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
 
 **P266 · 统一 CommandPalette / SelectMenu 模式（高）** `platform: agent-ui/src（跨平台）`
