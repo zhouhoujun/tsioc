@@ -1508,3 +1508,69 @@ Turn: Fix session restore                                      running  01:42
 - 共享渲染层：components 135、components/console 73、components/html 117，全部通过。
 - PTY acceptance：scenario 1/2 通过；scenario 3/5 受 fake server 数据注入限制失败（详见 P262），不是产品断言失败。
 - Python 仅限 `acceptance/run_acceptance.py` 的 Linux/macOS PTY 验收脚本；agents 与 agent-ui 的跨平台运行时未引入 Python 或 Node 专属依赖。
+
+## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
+
+### 当前不足（2026-08-31 代码证据）
+
+| 领域 | 当前实现 | 交互风险 | 对照启发 |
+|---|---|---|---|
+| 命令入口 | `AgentConsoleCommandRegistry` 已提供 89 条定义；palette、`/` 补全、`/help` 已消费描述/分组 | 三个入口的选中态、参数提示和执行反馈仍由不同组件拼接，容易出现文案/过滤/快捷键漂移 | Codex 将 command、tool、todo 都作为统一 thread item；opencode 的 command palette 具备稳定描述、参数模板和可回看结果 |
+| 选择控件 | `AgentConsoleSessionState.selectMenu` 同时服务 suggestions、command palette、approval、projects、sessions 等 | modal 语义混用；Esc、Enter、数字键和父菜单回退规则依赖调用方，焦点恢复容易不一致 | opencode 使用统一 dialog/focus stack；Codex 选择后明确区分“执行”与“插入草稿” |
+| 结果交换 | `notify()` 仍是大量 handler 的默认反馈；P262 仅将部分结果写入内存 `commandOutputs` ring | 结果消失即灭；异步命令完成/失败没有统一状态行、重试和复制入口；刷新/重启丢失历史 | Codex thread item 保留 command execution；opencode command output 可持续展开并支持重放 |
+| 参数与执行 | `needsArgs` 已支持 smart-run；带参数命令插入 `/name `，无参命令直接执行 | 参数 schema 仍是字符串级，缺少必填/可选/默认值校验；执行中再次触发同命令缺少幂等/取消约束 | 参考 opencode command template + Codex command execution status 生命周期 |
+| 异步一致性 | 组件中已有 stale-result 防护，但各 handler 自行处理 Promise/notice | session 切换、重复打开面板、网络断线时可能把旧结果写入新焦点 | 采用 requestId/sessionEpoch/cancellation 的统一响应 envelope |
+| 可访问性 | message 行已有 `ariaLabel`；select/pending question 部分有键盘路径 | palette、outputs、approval、plan inspector 的 role/label/active-descendant 未统一，screen-reader 无法获知执行状态 | Codex thread item 状态文本化；opencode overlay 使用可预测焦点和状态朗读 |
+| 跨端验收 | agent-ui 单测和 HTML/TUI renderer 测试充分；P238 browser runner 缺失，PTY 仅 Linux/macOS | browser mobile、窄终端、断线恢复缺少同一套断言；无法将 UI 交互回归纳入 CI | 建立 Node/Playwright browser smoke + 可替换 gateway mock；PTY 继续作为平台专项 |
+
+### 可执行批次
+
+> 每个批次固定门禁：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本文件（测试数字、环境限制、回滚说明）→ 独立提交。实现必须保持 TUI/browser 共用 SessionState 与 renderer，禁止 timer 驱动刷新。
+
+**P265 · Command interaction contract（高）** `platform: agent-ui/src（跨平台）`
+
+- 目标：定义统一的命令请求/响应生命周期：`idle → running → succeeded|failed|cancelled`，每次执行携带 `requestId`、canonical command、sessionId、startedAt、finishedAt、error/retryable`。
+- 方案：新增跨平台 `AgentConsoleCommandExecution` 类型与 reducer；`handleCommand`、palette smart-run、queued slash command、`pushCommandOutput` 全部通过 reducer 写入；旧 `notify` 仅保留短提示。
+- 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
+
+**P266 · 统一 CommandPalette / SelectMenu 模式（高）** `platform: agent-ui/src（跨平台）`
+
+- 目标：消除 `selectMenu` 多语义分支，统一 option model（label、description、group、value、mode=`execute|insert|submenu`、disabledReason、shortcut）。
+- 方案：抽取 `AgentConsoleOverlayController`，集中处理 ↑↓/Home/End/Page、数字直选、Enter/Esc、父菜单回退和焦点恢复；suggestions、palette、approval、pending question 仅提供 adapter 数据。
+- 验收：每类 overlay 的键盘矩阵（TUI/browser）与焦点栈快照；Esc 后焦点回到触发控件；disabled option 不可执行且有可访问原因。
+
+**P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC`
+
+- 目标：命令结果从内存 ring 升级为 session/workspace 可恢复历史，支持分页、过滤、复制、重放和清理策略。
+- 方案：新增 `command_output.list/get/replay/clear` RPC 与 agent-ui storage adapter；本地无 RPC 时使用 bounded file adapter；结果记录 requestId、参数摘要、状态、耗时和原文引用，敏感字段脱敏。
+- 验收：刷新/重开会话后结果可恢复；20 条环形上限、分页 cursor、过滤和复制回归；权限隔离测试；gateway/agent-ui 全量 + tsc/build。
+
+**P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）`
+
+- 目标：让带参命令在执行前显示参数契约，缺参、非法值、默认值和剩余参数得到一致反馈。
+- 方案：扩展 registry definition 的 `args` schema（类型、required、default、variadic）；补全/ palette 显示模板；统一 parser 返回结构化 diagnostics；执行失败保留可重试命令草稿。
+- 验收：`/model`、`/review`、`/snapshot`、`/search` 等代表命令覆盖缺参/非法/默认/多余参数；smart-run 与 queued command 行为一致；单测 + agent-ui 全量。
+
+**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC`
+
+- 目标：所有异步命令共享取消、超时、session epoch 和重连重放协议。
+- 方案：为 command execution 注入 `AbortSignal`/epoch；session 切换自动取消旧请求；RPC 响应带 requestId，旧响应只能进入历史不能改当前 overlay；失败结果提供 retry action。
+- 验收：慢 RPC + 快速切会话、断线重连、重复执行、Esc 取消四类时序测试；无旧结果污染、无未处理 Promise rejection。
+
+**P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）`
+
+- 目标：统一 palette/outputs/approval/plan inspector/pending question 的 ARIA role、label、active option 和状态朗读。
+- 方案：定义 `aria-haspopup/listbox/option/dialog` 映射与 active-descendant；执行中/成功/失败/取消状态文本化；TUI 保持符号，browser 提供属性，不依赖颜色。
+- 验收：DOM 快照 + 键盘 only + screen-reader tree 断言；CJK/窄宽度下 label 不截断关键状态；HTML/TUI renderer 全量。
+
+**P271 · Thread-item projection for commands/tools/plans（高）** `platform: agent-ui/src + agent`
+
+- 目标：将 command execution、tool result、plan update、file change 统一投影为稳定 ID 的 transcript item，减少“面板有、对话没有”的上下文跳转。
+- 方案：定义 `uiKind`/稳定 key/sequence/attempt/receipt 映射；同一执行原地 upsert，失败/重试保留 attempt 链；面板仅作为 transcript item 的 inspector。
+- 验收：turn→command→tool→plan→file change 顺序快照；断线 replay 不重复；/timeline 三种模式过滤一致；agent/agent-ui/gateway 相关全量。
+
+**P272 · Cross-platform interaction harness（中）** `platform: agent acceptance + agent-ui acceptance`
+
+- 目标：建立可在 CI 运行的 browser smoke 与平台专项 PTY 验收，覆盖 desktop/mobile、窄终端、CJK、长输出、断线恢复和焦点回退。
+- 方案：新增 Node/Playwright runner（可注入 mock gateway/fetch，浏览器二进制由 CI 缓存提供）；保留 Linux/macOS PTY 驱动，Windows 使用 ConPTY/浏览器路径；输出 DOM/ARIA/ANSI 快照与指标。
+- 验收：首屏步骤可见率、event-to-UI 延迟、重复 toolCall 行数、question 完成按键数、焦点回退成功率纳入门禁；缺少浏览器/PTY 环境时明确 skip，不伪造通过。
