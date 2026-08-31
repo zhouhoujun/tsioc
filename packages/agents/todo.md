@@ -610,7 +610,7 @@
     - 新增 `agent-tools/src/background-task-store.ts`：`BackgroundTaskRecord` 扩充 `progress?`（0..1）、`retryCount?`、`usage?`、`cause?`（`{kind, detail}`）、`updatedAt?`；`BackgroundTaskHistoryStore` 抽象契约（`put/get/pageAll/pageBySession/batchCancel/subscribe`）+ `InMemoryBackgroundTaskHistoryStore` 默认实现，cursor 分页为 `startedAt desc + id asc` 稳定排序（`encode/decodeBackgroundTaskCursor`，limit 默认 50 上限 500，未知 cursor 回退从头取），`put` 按 id 幂等覆盖并广播订阅快照，`batchCancel` 仅取消 `running` 并返回实际取消的 id 列表。
     - `BackgroundTaskManager` 增加可选第 4 参注入 `@Inject(BACKGROUND_TASK_HISTORY_STORE)`；`start/finish/fail/cancel` 写穿到 store（fire-and-forget，吞错不阻塞运行链路），并补 `updatedAt/retryCount/progress`（start 置 0，finish 置 1）+ 完成时 `usage`、失败时 `cause`。`fetch`/完成后持久化 `clone` 深拷贝 `usage/cause`。
     - `provider.ts` 注册 `{ provide: BACKGROUND_TASK_HISTORY_STORE, useClass: InMemoryBackgroundTaskHistoryStore }`；`index.ts` 显式再导出 store 非重叠符号（`BackgroundTaskHistoryStore`/`Page`/`PageOptions`/`Cursor`/`Listener`/`encode`/`decode`/`clone`），`BackgroundTaskRecord/Status/BACKGROUND_TASK_HISTORY_STORE/InMemoryBackgroundTaskHistoryStore` 经 manager 再导出以避开 `export *` 重名歧义。
-    - **顺延（part B，下个增量）**：project→session→thread→delegation 单一查询投影 + naming/migration/archive/workspace override 未在本增量实现；`BatchCancel` 网关 RPC 与 TypeOrm durable 后端未加（本增量落地 store 契约 + InMemory + manager 写穿，供后续 TypeOrm/SSE/网关复用）。
+    - **历史顺延项已部分落地**：project→session→thread 导航投影与批量取消已在后续 P236 增量实现；delegation 级聚合、TypeOrm durable task backend 与网关批量 RPC 仍需独立增量。
     - 测试：agent-tools 新增 `test/background-task-store.spec.ts` 9 项（put/get 富记录往返、put 幂等覆盖、cursor 分页无跳/重（同时间戳 6 记录两页）、pageBySession 过滤、batchCancel 仅 running、subscribe/退订生命周期、cursor 编解码、manager 写穿富记录、manager 失败 cause）→ `454 passing`（445→454）；`tsc --noEmit` EXIT=0、下游 agent-ui `tsc --noEmit` EXIT=0。
 
 ### 批次 V · 验收与度量
@@ -1356,12 +1356,12 @@ Turn: Fix session restore                                      running  01:42
 
 | 差距 | 优先级 | 描述 | 状态 |
 |---|---|---|---|
-| /command 无交互式面板 | **高** | 90%+ 命令结果走 notify/select，消失即灭；需统一命令面板支持搜索/过滤/键盘导航 | ❌ P252 待实现 |
+| /command 无交互式面板 | **高** | 统一命令注册表、fuzzy 搜索、持久输出回看已落地 | ✅ P260–P262 |
 | Plan 卡片位置错误+折叠 | **高** | planMessage push 到末尾被挤出可视窗口，且被 8 行折叠双重吃行 | ✅ P254 已修复 |
-| 尾部问询被折叠吞掉 | **高** | truncateMessageItem 对所有消息做 head 截断，尾部问询必然被截 | ❌ P253 待实现 |
+| 尾部问询被折叠吞掉 | **高** | 保尾折叠与关键消息豁免已落地 | ✅ P253/P264 |
 | Ask_user 无交互 | **高** | 仅纯文本埋在正文，无选择控件 | ✅ P256 已修复 |
 | 文件变更不直观 | **中** | 变更信息散落 tool result，无内联可视化 | ✅ P255 已修复 |
-| 工具输出截断过多 | **中** | toolRunSummaryMaxLength=96，摘要可能丢失关键信息 | ❌ P258 待实现 |
+| 工具输出截断过多 | **中** | 工具预览预算已统一为 400，详情面板保留完整原文 | ✅ P258 |
 | 系统提示抑制 todo | **中** | "unless the user explicitly asks" 把默认变成"从不" | ⚠️ 非 v12 范围 |
 
 ---
@@ -1405,13 +1405,13 @@ Turn: Fix session restore                                      running  01:42
 
 | 项 | v12 标记 | 当前代码证据 | 复核结论 |
 |---|---|---|---|
-| P252 命令面板 | ❌ 待实现 | `AgentConsoleComponent.ts:6060` `openCommandPalette` 已存在（全局 action `command-palette` → `:5790`），`fuzzyMatchAgentConsoleCommand`（`AgentConsoleKeymap.ts:126`）过滤，逐字输入重开 selectMenu；但仍是 selectMenu 一次性控件，且 `:6064` `description: 'command'` 硬编码无信息量 | 已承接：描述/分组经 P260（registry）覆盖、fuzzy 一致性经 P261 覆盖；剩余**持久输出** → P262 |
+| P252 命令面板 | ✅ 已完成 | 命令元数据、fuzzy 过滤与持久输出已由 P260–P262 承接完成 | P260–P262 |
 | P253 保尾折叠 | ❌ 待实现 | `AgentConsolePanels.ts:2604-2655` 三个分支全部带保尾：focused 非 reasoning `preserveTail=true`（`:2621`）、default 分支 `truncateMessageItem(item, 8, true)`（`:2654`）；`truncateMessageItem` `:2676-2685` 用 `trailingQuestionLineCount`+`QUESTION_TAIL_VISIBLE_BUDGET` 保尾 2 行；`:2727-2741` enter/click 双文案按 `messageToggleInteraction` 切换 | ✅ **已落地（v12 标记过时，回填更新）**。TUI 默认 `messageToggleInteraction === 'enter'` 已确认（`console-platform.spec.ts:22` + `run-agent-console.ts:116`）；`/display critical` 已实现 → P264 ✅ |
 | P254 Plan 卡片位置/免折叠 | ✅ P187/P233 | `displayMessages` 插入当前 turn 根用户消息后；plan item 豁免折叠（`Panels.ts:2614/2652` `isPlanTodoMessageItem`）；`AgentConsoleMessageRenderers.ts:139-157` `resolvePlanTodoContent` checkbox 渲染 | ✅ 确认；缺失败/阻塞标记与实时勾选联动 → P263 |
 | P255 文件变更内联 | ✅ P174 | — | ✅ |
 | P256 Ask_user | ✅ P189/P234 | `AgentConsoleSessionState.ts:567-571` `pendingQuestion`；`Panels.ts:1944-1951` 面板 | ✅ |
 | P257 提示主动规划 | ✅ | `agent/src/prompt/sections/ToolsSection.ts:37-41` | ✅ |
-| P258 工具输出内联 | ❌ 待实现 | `AgentConsoleSettingsStore.ts:409` `toolRunSummaryMaxLength: 96` | 保持 ❌，按 v12 批次 IV 执行 |
+| P258 工具输出内联 | ✅ 已完成 | `toolRunSummaryMaxLength: 400`，完整原文可从详情面板查看 | P258（2026-08-31） |
 
 ### 二、opencode 2026-08 参照行为 → 本项目差距（新增）
 
