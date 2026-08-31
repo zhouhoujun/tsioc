@@ -2925,6 +2925,24 @@ export class AgentConsoleSessionState {
         this.pendingQuestionSelectedIndex = (this.pendingQuestionSelectedIndex + delta + count) % count;
     }
 
+    movePendingQuestionSelectionToEdge(edge: 'start' | 'end'): void {
+        const count = this.pendingQuestion?.options.length || 0;
+        if (!count) return;
+        this.pendingQuestionSelectedIndex = edge === 'start'
+            ? this.overlayController.homeIndex(count)
+            : this.overlayController.endIndex(count);
+    }
+
+    movePendingQuestionSelectionPage(direction: 1 | -1): void {
+        const count = this.pendingQuestion?.options.length || 0;
+        if (!count) return;
+        this.pendingQuestionSelectedIndex = this.overlayController.pageIndex(
+            this.pendingQuestionSelectedIndex,
+            direction,
+            count
+        );
+    }
+
     async choosePendingQuestion(index = this.pendingQuestionSelectedIndex): Promise<boolean> {
         const option = this.pendingQuestion?.options[index];
         if (!option) return false;
@@ -5568,24 +5586,33 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (this.pendingQuestion) {
-            if (this.isDismissKey(normalized)) {
-                this.setPendingQuestion(null);
-                this.syncDerivedInputFocus();
-                return true;
-            }
-            if (normalized === 'up') {
-                this.movePendingQuestionSelection(-1);
-                return true;
-            }
-            if (normalized === 'down') {
-                this.movePendingQuestionSelection(1);
-                return true;
-            }
-            if (normalized === 'return' || normalized === 'enter') {
-                return this.choosePendingQuestion();
-            }
-            if (/^[1-9]$/.test(normalized)) {
-                return this.choosePendingQuestion(parseInt(normalized, 10) - 1);
+            const decision = this.overlayController.resolveKey(normalized, this.pendingQuestion.options.length);
+            switch (decision.action) {
+                case 'move':
+                    this.movePendingQuestionSelection(decision.delta);
+                    return true;
+                case 'home':
+                    this.movePendingQuestionSelectionToEdge('start');
+                    return true;
+                case 'end':
+                    this.movePendingQuestionSelectionToEdge('end');
+                    return true;
+                case 'page':
+                    this.movePendingQuestionSelectionPage(decision.direction);
+                    return true;
+                case 'confirm':
+                    return this.choosePendingQuestion();
+                case 'choose':
+                    return this.choosePendingQuestion(decision.index);
+                case 'escape':
+                    this.setPendingQuestion(null);
+                    this.syncDerivedInputFocus();
+                    return true;
+                default:
+                    if (this.overlayController.isDigitKey(normalized)) {
+                        return false;
+                    }
+                    break;
             }
         }
         if (this.commandOutputsOpen) {
@@ -5929,9 +5956,25 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.approvalsFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
+            const decision = this.overlayController.resolveListKey(normalized);
+            switch (decision.action) {
+                case 'move':
+                    this.moveApprovalSelection(decision.delta);
+                    return true;
+                case 'home':
+                    this.selectFirstApproval();
+                    return true;
+                case 'end':
+                    this.selectLastApproval();
+                    return true;
+                case 'page':
+                    this.moveApprovalSelectionPage(decision.direction);
+                    return true;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    break;
             }
             switch (normalized) {
                 case 'copy':
@@ -5949,24 +5992,6 @@ export class AgentConsoleSessionState {
                         return true;
                     }
                     return false;
-                case 'down':
-                    this.moveApprovalSelection(1);
-                    return true;
-                case 'up':
-                    this.moveApprovalSelection(-1);
-                    return true;
-                case 'pageup':
-                    this.moveApprovalSelectionPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.moveApprovalSelectionPage(1);
-                    return true;
-                case 'home':
-                    this.selectFirstApproval();
-                    return true;
-                case 'end':
-                    this.selectLastApproval();
-                    return true;
                 default:
                     return false;
             }

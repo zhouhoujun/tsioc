@@ -8737,6 +8737,69 @@ export class AgentConsoleComponentTest {
         expect(state.selectMenu?.selectedIndex).toEqual(0);
     }
 
+    @Test('handleFocusKey pendingQuestion navigates edge and page (P266)')
+    async handleFocusKeyPendingQuestionNavigatesEdgeAndPage() {
+        const state = new AgentConsoleSessionState();
+        state.pendingQuestion = {
+            questionId: 'q1',
+            question: 'pick one',
+            options: ['a', 'b', 'c', 'd'],
+            severity: 'low',
+            updatedAt: 1,
+            status: 'pending'
+        };
+        state.pendingQuestionQueue = [state.pendingQuestion];
+        state.pendingQuestionSelectedIndex = 2;
+
+        expect(await state.handleFocusKey('pagedown')).toEqual(true);
+        expect(state.pendingQuestionSelectedIndex).toEqual(3);
+        expect(await state.handleFocusKey('home')).toEqual(true);
+        expect(state.pendingQuestionSelectedIndex).toEqual(0);
+        expect(await state.handleFocusKey('pageup')).toEqual(true);
+        expect(state.pendingQuestionSelectedIndex).toEqual(0);
+        expect(await state.handleFocusKey('end')).toEqual(true);
+        expect(state.pendingQuestionSelectedIndex).toEqual(3);
+        expect(await state.handleFocusKey('up')).toEqual(true);
+        expect(state.pendingQuestionSelectedIndex).toEqual(2);
+
+        // out-of-range digit returns false (previously hard false)
+        expect(await state.handleFocusKey('9')).toEqual(false);
+    }
+
+    @Test('handleFocusKey approval navigation routes through controller (P266)')
+    async handleFocusKeyApprovalRoutesThroughController() {
+        const state = new AgentConsoleSessionState();
+        state.setPendingApprovals([
+            { id: 'a1', toolName: 't1', sessionId: 's', reason: 'r1', summary: 's1', hasInput: false, createdAt: 1, timeoutMs: 1000, expiresAt: 2 },
+            { id: 'a2', toolName: 't2', sessionId: 's', reason: 'r2', summary: 's2', hasInput: false, createdAt: 1, timeoutMs: 1000, expiresAt: 2 },
+            { id: 'a3', toolName: 't3', sessionId: 's', reason: 'r3', summary: 's3', hasInput: false, createdAt: 1, timeoutMs: 1000, expiresAt: 2 }
+        ] as any);
+        state.setApprovalsFocused(true);
+        expect(state.selectedApprovalId).toEqual('a1');
+
+        await state.handleFocusKey('down');
+        expect(state.selectedApprovalId).toEqual('a2');
+        await state.handleFocusKey('end');
+        expect(state.selectedApprovalId).toEqual('a3');
+        await state.handleFocusKey('home');
+        expect(state.selectedApprovalId).toEqual('a1');
+        await state.handleFocusKey('pagedown');
+        expect(state.selectedApprovalId).toEqual('a3');
+        await state.handleFocusKey('pageup');
+        expect(state.selectedApprovalId).toEqual('a1');
+
+        // approve/deny still fire through their own actions
+        const resolved: Array<{ action: string; id: string }> = [];
+        state.resolveApprovalAction = async (action, id) => { resolved.push({ action, id }); };
+        await state.handleFocusKey('approve');
+        expect(resolved).toEqual([{ action: 'approve', id: 'a1' }]);
+        await state.handleFocusKey('deny');
+        expect(resolved).toEqual([
+            { action: 'approve', id: 'a1' },
+            { action: 'deny', id: 'a1' }
+        ]);
+    }
+
 
 
 

@@ -121,6 +121,28 @@ export class AgentConsoleOverlayController {
         }
     }
 
+    resolveListKey(key: string): AgentConsoleOverlayKeyDecision {
+        const normalized = String(key || '').trim().toLowerCase();
+        switch (normalized) {
+            case 'up':
+            case 'arrowup':
+                return { action: 'move', delta: -1 };
+            case 'down':
+            case 'arrowdown':
+                return { action: 'move', delta: 1 };
+            case 'home':
+                return { action: 'home' };
+            case 'end':
+                return { action: 'end' };
+            case 'pageup':
+                return { action: 'page', direction: -1 };
+            case 'pagedown':
+                return { action: 'page', direction: 1 };
+            default:
+                return this.isDismissKey(normalized) ? { action: 'escape' } : { action: 'none' };
+        }
+    }
+
     resolveMenuKey(key: string, text: string, optionCount: number): AgentConsoleOverlayKeyDecision {
         const keyName = String(key || text || '');
         if (keyName === 'down') {

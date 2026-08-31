@@ -75,6 +75,22 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveKey('', 3)).toEqual({ action: 'none' });
     }
 
+    @Test('resolveListKey maps list navigation and dismiss keys')
+    async resolveListKeyMaps() {
+        expect(controller.resolveListKey('up')).toEqual({ action: 'move', delta: -1 });
+        expect(controller.resolveListKey('arrowup')).toEqual({ action: 'move', delta: -1 });
+        expect(controller.resolveListKey('down')).toEqual({ action: 'move', delta: 1 });
+        expect(controller.resolveListKey('arrowdown')).toEqual({ action: 'move', delta: 1 });
+        expect(controller.resolveListKey('home')).toEqual({ action: 'home' });
+        expect(controller.resolveListKey('end')).toEqual({ action: 'end' });
+        expect(controller.resolveListKey('pageup')).toEqual({ action: 'page', direction: -1 });
+        expect(controller.resolveListKey('pagedown')).toEqual({ action: 'page', direction: 1 });
+        expect(controller.resolveListKey('esc')).toEqual({ action: 'escape' });
+        expect(controller.resolveListKey('q')).toEqual({ action: 'escape' });
+        expect(controller.resolveListKey('approve')).toEqual({ action: 'none' });
+        expect(controller.resolveListKey('copy')).toEqual({ action: 'none' });
+    }
+
     @Test('resolveMenuKey maps menu keys and consumes out-of-range digits')
     async resolveMenuKeyMaps() {
         expect(controller.resolveMenuKey('down', '', 3)).toEqual({ action: 'move', delta: 1 });
