@@ -28,6 +28,12 @@ import {
     createLinkCommandOutputAction,
     reduceAgentConsoleCommandExecution
 } from './AgentConsoleCommandExecution';
+import {
+    AgentConsoleCommandOutputHistoryEntry,
+    CommandOutputStore,
+    InMemoryCommandOutputStore,
+    redactCommandOutputSecret
+} from './AgentConsoleCommandOutputHistory';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
 import {
     AgentConsoleTitleField,
@@ -575,6 +581,7 @@ export class AgentConsoleSessionState {
     commandOutputsFilterMode = false;
     commandOutputsSelectedIndex = 0;
     commandExecutions: AgentConsoleCommandExecution[] = [];
+    protected commandOutputStore: CommandOutputStore | undefined;
     reviewOpen = false;
     gitSnapshotOpen = false;
     gitSnapshotCurrentRef = '';
@@ -739,6 +746,8 @@ export class AgentConsoleSessionState {
             this.contextPreparation = null;
             this.commandExecutions = [];
             this.commandExecutionSequence = 0;
+            this.commandOutputs = [];
+            void this.loadCommandOutputHistory();
         }
         if (meta.provider !== undefined) {
             this.provider = meta.provider;
@@ -4189,7 +4198,53 @@ export class AgentConsoleSessionState {
         if (this.commandOutputsSelectedIndex >= this.visibleCommandOutputs.length) {
             this.commandOutputsSelectedIndex = Math.max(0, this.visibleCommandOutputs.length - 1);
         }
+        this.persistCommandOutput(entry);
         return entry.id;
+    }
+
+    /**
+     * Persists a command output to the durable store when one is configured.
+     * Never throws: persistence is best-effort and must not break the live ring.
+     */
+    protected persistCommandOutput(entry: AgentConsoleCommandOutputEntry): Promise<void> {
+        const store = this.commandOutputStore;
+        if (!store) {
+            return Promise.resolve();
+        }
+        const execution = this.latestCommandExecution;
+        const historyEntry: AgentConsoleCommandOutputHistoryEntry = {
+            ...entry,
+            text: redactCommandOutputSecret(entry.text),
+            argsSummary: execution && execution.command === entry.command ? execution.args : undefined,
+            requestId: execution && execution.status === 'running' ? execution.requestId : undefined,
+            status: entry.kind === 'error' ? 'failed' : undefined,
+            sessionId: this.sessionId || undefined,
+            source: 'local'
+        };
+        return store.append(historyEntry) as Promise<void>;
+    }
+
+    /**
+     * Injects a durable command-output store. When provided, results are
+     * persisted and can be rehydrated via `loadCommandOutputHistory`.
+     */
+    setCommandOutputStore(store: CommandOutputStore | undefined): void {
+        this.commandOutputStore = store;
+    }
+
+    /**
+     * Hydrates the in-memory command-output ring from the durable store
+     * (newest-first, capped at the ring cap). Used on configure/session switch.
+     */
+    async loadCommandOutputHistory(): Promise<void> {
+        const store = this.commandOutputStore;
+        if (!store) {
+            return;
+        }
+        const page = await store.list({ sessionId: this.sessionId, limit: AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP });
+        if (page.items.length) {
+            this.commandOutputs = page.items.slice(0, AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP) as unknown as AgentConsoleCommandOutputEntry[];
+        }
     }
 
     beginCommandExecution(command: string, args: string): string {
