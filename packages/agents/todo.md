@@ -1406,7 +1406,7 @@ Turn: Fix session restore                                      running  01:42
 | 项 | v12 标记 | 当前代码证据 | 复核结论 |
 |---|---|---|---|
 | P252 命令面板 | ✅ 已完成 | 命令元数据、fuzzy 过滤与持久输出已由 P260–P262 承接完成 | P260–P262 |
-| P253 保尾折叠 | ❌ 待实现 | `AgentConsolePanels.ts:2604-2655` 三个分支全部带保尾：focused 非 reasoning `preserveTail=true`（`:2621`）、default 分支 `truncateMessageItem(item, 8, true)`（`:2654`）；`truncateMessageItem` `:2676-2685` 用 `trailingQuestionLineCount`+`QUESTION_TAIL_VISIBLE_BUDGET` 保尾 2 行；`:2727-2741` enter/click 双文案按 `messageToggleInteraction` 切换 | ✅ **已落地（v12 标记过时，回填更新）**。TUI 默认 `messageToggleInteraction === 'enter'` 已确认（`console-platform.spec.ts:22` + `run-agent-console.ts:116`）；`/display critical` 已实现 → P264 ✅ |
+| P253 保尾折叠 | ✅ 已完成 | `AgentConsolePanels.ts:2604-2655` 三个分支全部带保尾；`truncateMessageItem` 使用 `trailingQuestionLineCount` + `QUESTION_TAIL_VISIBLE_BUDGET` 保留问询尾部；TUI 默认交互为 Enter，`/display critical` 由 P264 补齐 | P253/P264 |
 | P254 Plan 卡片位置/免折叠 | ✅ P187/P233 | `displayMessages` 插入当前 turn 根用户消息后；plan item 豁免折叠（`Panels.ts:2614/2652` `isPlanTodoMessageItem`）；`AgentConsoleMessageRenderers.ts:139-157` `resolvePlanTodoContent` checkbox 渲染 | ✅ 确认；缺失败/阻塞标记与实时勾选联动 → P263 |
 | P255 文件变更内联 | ✅ P174 | — | ✅ |
 | P256 Ask_user | ✅ P189/P234 | `AgentConsoleSessionState.ts:567-571` `pendingQuestion`；`Panels.ts:1944-1951` 面板 | ✅ |
