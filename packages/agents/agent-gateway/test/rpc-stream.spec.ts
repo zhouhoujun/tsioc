@@ -101,7 +101,8 @@ export class AppRpcStreamTest {
             jsonrpc: '2.0',
             id: 7,
             method: 'run.turn_stream',
-            params: { sessionId: 'stream-s1', input: 'hello' }
+            params: { sessionId: 'stream-s1', input: 'hello' },
+            meta: { requestId: 'stream-request-7', sessionEpoch: 4 }
         });
 
         const messages = chunks.map(chunk => JSON.parse(chunk));
@@ -109,12 +110,14 @@ export class AppRpcStreamTest {
         expect(chunkMessages.length).toBeGreaterThanOrEqual(2);
         expect(chunkMessages[0].params.chunkType).toEqual('event');
         expect(chunkMessages[0].params.eventType).toEqual('turn_started');
+        expect(chunkMessages[0].meta).toEqual({ requestId: 'stream-request-7', sessionEpoch: 4 });
         const contentChunk = chunkMessages.find(message => message.params.chunkType === 'content');
         expect(contentChunk.params.content).toEqual('chunk-hello');
 
         const doneMessage = messages.find(message => message.id === 7 && 'result' in message);
         expect(doneMessage).toBeTruthy();
         expect(doneMessage.result.sessionId).toEqual('stream-s1');
+        expect(doneMessage.meta).toEqual({ requestId: 'stream-request-7', sessionEpoch: 4 });
     }
 
     @Test('unknown method yields NDJSON error line')

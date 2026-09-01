@@ -1,4 +1,4 @@
-import { AgentConsoleAppRpc } from '@tsdi/agent';
+import { AgentConsoleAppRpc, AgentRpcRequestMeta } from '@tsdi/agent';
 
 export interface HttpAgentConsoleAppRpcOptions {
     baseUrl: string;
@@ -14,6 +14,7 @@ interface RpcEnvelope {
     params?: any;
     result?: any;
     error?: { code: number; message: string; data?: any };
+    meta?: AgentRpcRequestMeta;
 }
 
 const DEFAULT_TIMEOUT_MS = 300_000;
@@ -112,7 +113,8 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     jsonrpc: '2.0',
                     id: this.nextRequestId(),
                     method,
-                    params: params ?? {}
+                    params: params ?? {},
+                    meta: context?.requestId || context?.sessionEpoch !== undefined ? { requestId: context.requestId, sessionEpoch: context.sessionEpoch } : undefined
                 }),
                 signal: timeoutCtl.signal
             });
@@ -145,7 +147,8 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     jsonrpc: '2.0',
                     id: this.nextRequestId(),
                     method,
-                    params: params ?? {}
+                    params: params ?? {},
+                    meta: context?.requestId || context?.sessionEpoch !== undefined ? { requestId: context.requestId, sessionEpoch: context.sessionEpoch } : undefined
                 }),
                 signal: timeoutCtl.signal
             });
@@ -194,14 +197,18 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                             eventType: p.eventType,
                             label: p.label,
                             status: p.status,
-                            toolName: p.toolName
+                            toolName: p.toolName,
+                            requestId: message.meta?.requestId ?? p.requestId,
+                            sessionEpoch: message.meta?.sessionEpoch ?? p.sessionEpoch
                         };
                         continue;
                     }
                     if ('result' in message) {
                         yield {
                             type: 'done',
-                            ...message.result
+                            ...message.result,
+                            requestId: message.meta?.requestId,
+                            sessionEpoch: message.meta?.sessionEpoch
                         };
                     }
                 }
@@ -217,7 +224,9 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                 if (message && 'result' in message) {
                     yield {
                         type: 'done',
-                        ...message.result
+                        ...message.result,
+                        requestId: message.meta?.requestId,
+                        sessionEpoch: message.meta?.sessionEpoch
                     };
                 }
             }

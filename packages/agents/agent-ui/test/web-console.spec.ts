@@ -118,6 +118,17 @@ export class AgentWebConsoleTest {
         expect(typeof rpc.stream).toEqual('function');
     }
 
+    @Test('HttpAgentConsoleAppRpc forwards request correlation metadata')
+    async rpcForwardsRequestMeta() {
+        let body: any;
+        const rpc = new HttpAgentConsoleAppRpc({ baseUrl: 'http://gateway', fetchImpl: async (_url, init) => {
+            body = JSON.parse(String(init?.body));
+            return new Response(JSON.stringify({ jsonrpc: '2.0', id: body.id, result: { ok: true } }), { status: 200 });
+        } });
+        await rpc.request('app.ping', {}, { requestId: 'req-1', sessionEpoch: 2 });
+        expect(body.meta).toEqual({ requestId: 'req-1', sessionEpoch: 2 });
+    }
+
     @Test('AgentConsoleRemoteEventBridge applies SSE records to state')
     async remoteBridgeAppliesEvents() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

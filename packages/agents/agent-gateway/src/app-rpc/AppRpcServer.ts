@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -82,14 +82,16 @@ export class AppRpcServer {
         const method = request.method.trim();
 
         try {
-            const result = await this.dispatch(method, request.params ?? {}, context);
+            const requestContext = { ...context, requestMeta: normalizeAgentRpcRequestMeta(request.meta) };
+            const result = await this.dispatch(method, request.params ?? {}, requestContext);
             if (request.id === undefined) {
                 return null;
             }
             return {
                 jsonrpc: '2.0',
                 id,
-                result
+                result,
+                ...(requestContext.requestMeta ? { meta: requestContext.requestMeta } : {})
             };
         } catch (error: any) {
             const rpcError = error instanceof AppRpcError
@@ -112,12 +114,14 @@ export class AppRpcServer {
 
     async *streamPayload(payload: AppRpcRequest, context: AppRpcRequestContext = {}): AsyncGenerator<AppRpcTransportMessage, void, void> {
         const request = payload;
+        const requestMeta = normalizeAgentRpcRequestMeta(request?.meta);
+        const requestContext = { ...context, requestMeta };
         if (!request || request.jsonrpc !== '2.0' || typeof request.method !== 'string' || !request.method.trim()) {
             yield this.createErrorResponse(request?.id, new AppRpcError(-32600, 'Invalid Request'));
             return;
         }
         if (request.method.trim() !== 'run.turn_stream') {
-            const response = await this.handle(request, context);
+            const response = await this.handle(request, requestContext);
             if (response) {
                 yield response;
             }
@@ -125,14 +129,17 @@ export class AppRpcServer {
         }
 
         try {
-            yield* this.streamTurn(request, context);
+            for await (const message of this.streamTurn(request, requestContext)) {
+                yield requestMeta ? { ...message, meta: requestMeta } : message;
+            }
         } catch (error: any) {
             if (request.id === undefined) {
                 return;
             }
-            yield this.createErrorResponse(request.id, error instanceof AppRpcError
+            const response = this.createErrorResponse(request.id, error instanceof AppRpcError
                 ? error
                 : new AppRpcError(-32603, error?.message ?? 'Internal error'));
+            yield requestMeta ? { ...response, meta: requestMeta } : response;
         }
     }
 

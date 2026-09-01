@@ -1,14 +1,18 @@
+import { AgentRpcRequestMeta } from '@tsdi/agent';
+
 export interface AppRpcRequest {
     jsonrpc?: '2.0' | string;
     id?: string | number | null;
     method?: string;
     params?: any;
+    meta?: AgentRpcRequestMeta;
 }
 
 export interface AppRpcSuccessResponse {
     jsonrpc: '2.0';
     id: string | number | null;
     result: any;
+    meta?: AgentRpcRequestMeta;
 }
 
 export interface AppRpcErrorObject {
@@ -21,6 +25,7 @@ export interface AppRpcErrorResponse {
     jsonrpc: '2.0';
     id: string | number | null;
     error: AppRpcErrorObject;
+    meta?: AgentRpcRequestMeta;
 }
 
 export interface AppRpcNotification {
@@ -34,6 +39,7 @@ export type AppRpcTransportMessage = AppRpcResponse | AppRpcNotification;
 
 export interface AppRpcRequestContext {
     principalId?: string;
+    requestMeta?: AgentRpcRequestMeta;
 }
 
 export class AppRpcError extends Error {

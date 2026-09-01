@@ -60,6 +60,13 @@ export class CommandOutputRpcTest {
         }
     }
 
+    @Test('RPC response preserves request correlation metadata')
+    async preservesRequestMeta() {
+        const { rpc } = this.createHarness();
+        const response = await rpc.handle({ jsonrpc: '2.0', id: 7, method: 'app.ping', params: {}, meta: { requestId: 'req-7', sessionEpoch: 3 } }, { principalId: 'user-1' });
+        expect((response as any).meta).toEqual({ requestId: 'req-7', sessionEpoch: 3 });
+    }
+
     @Test('command_output.append enforces session ownership and redacts stored output')
     async appendStoresRedactedEntry() {
         const harness = this.createHarness();
