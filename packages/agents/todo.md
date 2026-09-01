@@ -1521,7 +1521,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度（2026-09-01）**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 已完成（gateway append、ownership/脱敏、browser RPC store 已接入），运行时/CLI 专用文件 store 注入与更完整 capability 门禁仍待后续；P268、P270 已完成。P269、P271 的共享层前置重构已完成，但 RPC requestId/epoch、gateway thread-item replay 尚未完成，继续保持未完成态；P272 待实施。
+> **v14 进度（2026-09-01）**：P265、P266、P268、P270 已完成；P267 的持久化、gateway append 与 browser RPC store 已完成，运行时/CLI 注入与完整 capability 门禁仍待后续。P269 已完成核心 context 透传切片，但非核心 handler 注入与 replay 拒绝策略未完成；P271 仍缺 gateway durable replay；P272 仍缺 CI browser/PTY runner。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1547,7 +1547,7 @@ Turn: Fix session restore                                      running  01:42
 - 验证：新增 reducer + 状态方法单测 8 项（begin/complete/fail/终态不可变/link/ring cap/session 隔离/configure 重置）；agent-ui 全量 **880 passing** EXIT=0；`tsc --noEmit` EXIT=0；`build:web` EXIT=0（3.6MB）；跨平台边界 rg 扫描 CLEAN（仅 globalThis 守卫的 `Buffer`，无 `node:`/`@tsdi/components/console` 直引）。
 - 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
 
-**P266 · 统一 CommandPalette / SelectMenu 模式（高·进行中）** `platform: agent-ui/src（跨平台）`
+**P266 · 统一 CommandPalette / SelectMenu 模式（高）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
 - 目标：消除 `selectMenu` 多语义分支，统一 option model（label、description、group、value、mode=`execute|insert|submenu`、disabledReason、shortcut）。
 - 方案：抽取 `AgentConsoleOverlayController`，集中处理 ↑↓/Home/End/Page、数字直选、Enter/Esc、父菜单回退和焦点恢复；suggestions、palette、approval、pending question 仅提供 adapter 数据。
@@ -1626,3 +1626,67 @@ Turn: Fix session restore                                      running  01:42
 
 - **P273 · agent-ui storage fallback IoC 收敛** `platform: agent-ui/src（TUI/browser 跨端）`：当前 `AgentConsoleComponent` 在 `onInit` 中对 keymap/theme/statusline/title/raw-mode/stash/model/settings 仍保留 `new` fallback，虽不驱动刷新但违反“宿主实现由 IoC 注入”规则。后续需先定义共享 storage port 与宿主 provider，再删除组件内 fallback；验收要求 TUI/browser 使用同一 SessionState、无直接构造、全量 agent-ui + 类型检查。
 - P273 进度（2026-09-01）：已删除上述 8 个 storage fallback 及 workspace mention provider 的组件内构造；真实模块由 IoC providers 注入，测试 fixture 改为显式 provider。`AgentConsoleComponent` 保留的 `AgentConsoleKeymap` fallback 仅是无平台依赖的纯内存逻辑模型（用于无容器手动构造），不属于宿主能力注入范围。
+
+## 已完成能力归档（合并 P265–P270）
+
+以下能力以功能边界维护，后续计划只引用缺口，不重复立项：
+
+- 命令执行：统一 `idle → running → succeeded|failed|cancelled` 生命周期，具备 request id、失败可重试标记、输出关联、会话隔离与取消控制。
+- 命令入口与参数：palette、补全、help、smart-run 共用命令定义；位置参数支持 required/default/enum/variadic、引用感知 tokenizer 与结构化诊断。
+- 选择与焦点：palette/suggestions/pending/approval 共享 overlay controller，统一上下页、数字直选、Esc/Enter 和 focus-stack 回退。
+- 输出历史：内存 ring、FileAdapter 与 gateway RPC store 具备 session 隔离、分页、过滤、脱敏、复制及基础 replay/clear。
+- 可访问性：plan/tasks/approval/text detail/outputs/pending/select 具备跨端 role、label、active-descendant 与状态文本投影。
+- 响应式与跨端：组件层无 timer 驱动刷新；浏览器与 TUI 共用 SessionState/renderer，平台能力通过 IoC 注入。
+
+## 深入缺口分析与后续执行计划（v15）
+
+### 关键不足（代码证据）
+
+| 领域 | 当前不足 | 用户可感知风险 | 优化原则 |
+|---|---|---|---|
+| UI 交互细节 | overlay 虽共享控制器，但不同面板仍各自拼装标题、空态、快捷键提示；移动端触摸/窄终端布局缺少统一断言 | 同一操作在不同面板反馈不一致，焦点回退或文案溢出 | 复用共享 presenter；状态来自响应式 getter，禁止定时刷新 |
+| 命令处理 | schema 校验已覆盖代表命令，仍有 handler 绕过统一 parser；别名、子命令和剩余参数的错误建议不一致 | 用户需要反复试错，失败后草稿/重试语义漂移 | registry 作为唯一解析入口，错误携带 token 位置与可修复建议 |
+| 命令↔UI 交换 | command execution 与 outputs/thread item 仍是两套投影；部分 handler 只 `notify()`，异步结果无法展开/复制/重放 | 结果短暂消失，用户无法定位哪个命令产生了结果 | 所有结果先写共享事件 envelope，再由 SessionState 投影到 transcript 与 inspector |
+| 异步一致性 | requestId/sessionEpoch 尚未覆盖全部 RPC；断线 replay 未做 epoch 拒绝；旧响应可能更新新 overlay | 切会话或重连后出现过期结果、错误面板和幽灵通知 | 每个异步调用绑定 execution context，响应先验 epoch 再入状态 |
+| 计划/工具时间线 | gateway 尚未持久化 ThreadItemEvent，重连后 plan/tool/command 可能重复或缺失 | 对话流与面板进度不一致，无法审计一次执行 | durable sequence + stable key + attempt/receipt 去重 |
+| 验收与可观测性 | 现有 PTY 脚本依赖 fake server 时序，browser runner/移动视口矩阵缺失 | 回归只能在单一 Linux 环境发现，CI 无法门禁 | Playwright + PTY 共用场景数据与指标，缺环境明确 skip |
+
+### 可执行计划
+
+> 每个 plan 完成后必须执行：检查实现与 `git diff` → 受影响包全量测试 → `tsc --noEmit` 与必要构建 → 更新本文件（结果/限制/回滚点）→ 独立提交。实现必须跨浏览器/TUI 共用层，禁止 agent-ui 直接引用 console/node API，禁止 timer 驱动渲染。
+
+**P274 · Overlay interaction presenter（高）**
+
+- 目标：统一所有 overlay 的标题、空态、快捷键、选中态和 focus 回退，补齐窄终端/CJK/移动触摸语义。
+- 步骤：抽取共享 `OverlayPresenter` 数据模型；为 palette、approval、pending、outputs、plan inspector 接入同一 presenter；补齐 pointer/keyboard 同 action 映射与 aria 状态。
+- 验收：每类 overlay 的 open→navigate→confirm→Esc 矩阵，320px/80 列/CJK 快照，browser DOM 与 TUI ANSI 输出一致。
+
+**P275 · Command parser completeness（高）**
+
+- 目标：所有 89 条命令及子命令走统一 schema parser，错误可定位、可修复、可重试。
+- 步骤：清点绕过 `parseAgentConsoleCommandArguments` 的 handler；补齐 enum/default/variadic 与剩余 token 规则；统一 alias canonicalization 和草稿恢复。
+- 验收：命令 registry 与 handler 覆盖率 100%；缺参/非法/多余/引号/CJK 输入矩阵；smart-run、palette、queued command 结果一致。
+
+**P276 · Command/UI exchange envelope（高）**
+
+- 目标：将 notify、command execution、tool result、output history、thread item 统一为可追踪事件。
+- 步骤：扩展共享事件 envelope（sequence/attempt/receipt/requestId/sessionEpoch）；所有 handler 结果先 `projectThreadItem` 再派生短通知；outputs/inspector/transcript 复用同一记录。
+- 验收：turn→command→tool→output→plan 顺序快照、复制/replay 链路、失败重试 attempt 链、无重复 item。
+
+**P277 · Async RPC stale-result hardening（高）**
+
+- 目标：所有异步 RPC 自动绑定 AbortSignal、requestId、sessionEpoch，旧响应只能进入历史，不能修改当前 UI。
+- 步骤：为剩余 handler 注入 `rpcRequestContext`；gateway 校验并回显 meta；remote event bridge/replay 先做 epoch 与 sequence 检查；补充取消和 Promise rejection 收敛。
+- 验收：慢 RPC→切会话、断线重连、重复执行、Esc 取消四类时序测试；browser/TUI 状态无污染。
+
+**P278 · Durable thread-item replay（中-高）**
+
+- 目标：gateway 持久化并按 stable key/sequence 重放 command/tool/plan/file-change item，跨 principal 隔离。
+- 步骤：新增 durable store 与分页 replay RPC；实现去重、乱序修复、attempt 链和清理策略；agent-ui 从 replay 恢复统一 projection。
+- 验收：重启/断线恢复不重复不丢失；权限、脱敏、分页 cursor；agent、agent-ui、agent-gateway 全量测试。
+
+**P279 · Cross-platform interaction gate（中）**
+
+- 目标：建立可在 CI 执行的 Playwright browser smoke 与 PTY/ConPTY 场景矩阵。
+- 步骤：抽取共享 fake gateway 场景；覆盖 desktop/mobile、窄终端、CJK、长输出、断线、焦点回退；记录首屏可见率、事件延迟、重复 item、按键数。
+- 验收：有浏览器/PTY 时纳入门禁；缺环境只输出明确 skip；禁止通过修改断言掩盖产品失败。
