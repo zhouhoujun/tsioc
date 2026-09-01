@@ -1705,7 +1705,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         try {
             let planMode = false;
             if (this.appRpc) {
-                const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
+                const result = await this.appRpc.request('session.plan_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
                 planMode = result?.enabled === true;
             } else {
                 planMode = this.runtime.isPlanMode(sessionId);
@@ -2291,7 +2291,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (!ctx.appRpc) return;
         const sessionId = ctx.state.sessionId;
         if (!sessionId) return;
-        await ctx.appRpc.request('review.conclusions.write', { sessionId, conclusions });
+        await ctx.appRpc.request('review.conclusions.write', { sessionId, conclusions }, this.rpcRequestContext());
     }
 
     protected async restoreReviewAnnotationsCacheFromDisk(): Promise<void> {
@@ -2523,7 +2523,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (!this.appRpc) {
             return;
         }
-        const meta = await this.appRpc.request('app.state');
+        const meta = await this.appRpc.request('app.state', undefined, this.rpcRequestContext());
         if (!meta || typeof meta !== 'object') {
             return;
         }
@@ -4512,7 +4512,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         let summary: Array<{ stage: string; commands: string[]; functions: string[] }> = [];
         if (this.appRpc) {
             try {
-                const result = await this.appRpc.request('hooks.list', {});
+                const result = await this.appRpc.request('hooks.list', {}, this.rpcRequestContext());
                 if (Array.isArray(result)) {
                     summary = result;
                 }
@@ -4548,7 +4548,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (parsed === 'list' || parsed === 'injected') {
             const projectId = this.resolveProjectMemoryId();
             const records: Array<{ key: string; value: string }> = this.appRpc
-                ? await this.appRpc.request('project_memory.list', { sessionId: this.state.sessionId }).catch(() => [])
+                ? await this.appRpc.request('project_memory.list', { sessionId: this.state.sessionId }, this.rpcRequestContext()).catch(() => [])
                 : (projectId && this.projectMemory ? await this.projectMemory.list(projectId) : []);
             if (!records.length) {
                 this.notify(projectId ? 'No project memories.' : 'Project memory requires a project or workspace.');
@@ -4567,7 +4567,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             }
             const input = { sessionId: this.state.sessionId, projectId, key: body.slice(0, separator).trim(), value: body.slice(separator + 1).trim(), conflict: 'replace' as const };
             const record = this.appRpc
-                ? await this.appRpc.request('project_memory.add', input)
+                ? await this.appRpc.request('project_memory.add', input, this.rpcRequestContext())
                 : await this.projectMemory!.add(input);
             this.notify(`Project memory saved: ${record.key}`);
             return true;
@@ -4576,7 +4576,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             const projectId = this.resolveProjectMemoryId();
             const target = raw.slice(raw.indexOf(' ') + 1).trim();
             const result = this.appRpc
-                ? await this.appRpc.request('project_memory.remove', { sessionId: this.state.sessionId, target }).catch(() => ({ removed: 0 }))
+                ? await this.appRpc.request('project_memory.remove', { sessionId: this.state.sessionId, target }, this.rpcRequestContext()).catch(() => ({ removed: 0 }))
                 : { removed: projectId && this.projectMemory ? await this.projectMemory.remove(projectId, target) : 0 };
             const removed = Number(result?.removed || 0);
             this.notify(removed ? `Removed ${removed} project memory record${removed === 1 ? '' : 's'}.` : `Project memory not found: ${target || '-'}`);
@@ -5117,7 +5117,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const sessionId = this.state.sessionId;
         if (this.appRpc) {
             try {
-                const share = await this.appRpc.request('session.share.create', { sessionId });
+                const share = await this.appRpc.request('session.share.create', { sessionId }, this.rpcRequestContext());
                 const token = String(share?.token || '').trim();
                 if (!token) {
                     this.notify('Sharing is not available in this gateway.');
@@ -5142,7 +5142,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return true;
         }
         if (!token) {
-            const shares = await this.appRpc.request('session.share.list', { sessionId: this.state.sessionId }).catch(() => []);
+            const shares = await this.appRpc.request('session.share.list', { sessionId: this.state.sessionId }, this.rpcRequestContext()).catch(() => []);
             if (!Array.isArray(shares) || !shares.length) {
                 this.notify('No active shares for this session. Usage: /unshare <token>');
                 return true;
@@ -5196,7 +5196,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.notify('Auto-review retry requires a gateway (app RPC).');
             return true;
         }
-        const result = await this.appRpc.request('harness.rejected_actions', { sessionId: this.state.sessionId })
+        const result = await this.appRpc.request('harness.rejected_actions', { sessionId: this.state.sessionId }, this.rpcRequestContext())
             .catch(() => null);
         const actions = Array.isArray(result?.actions) ? result.actions : [];
         if (!actions.length) {
@@ -5215,7 +5215,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 sessionId: this.state.sessionId,
                 evidenceId: selected,
                 toolName: action.toolName
-            });
+            }, this.rpcRequestContext());
             this.notify(`Retried ${action.toolName} once after auto-review rejection.`);
         } catch (error: any) {
             this.notify(`Retry failed: ${error?.message || String(error)}`);
@@ -5994,7 +5994,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const items: AgentConsoleHealthItem[] = [];
         if (this.appRpc) {
             try {
-                await this.appRpc.request('app.state');
+                await this.appRpc.request('app.state', undefined, this.rpcRequestContext());
                 items.push({ id: 'gateway', label: 'Gateway', status: 'ok', detail: 'connected' });
             } catch {
                 items.push({ id: 'gateway', label: 'Gateway', status: 'error', detail: 'unreachable' });
@@ -6312,7 +6312,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {
         if (this.appRpc) {
-            const tools = await this.appRpc.request('tools.list', { sessionId });
+            const tools = await this.appRpc.request('tools.list', { sessionId }, this.rpcRequestContext());
             return Array.isArray(tools) ? tools : [];
         }
         if (!this.toolRegistry) {
@@ -6386,7 +6386,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         try {
             if (this.appRpc) {
-                await this.appRpc.request('session.plan_mode.set', { sessionId, enabled });
+                await this.appRpc.request('session.plan_mode.set', { sessionId, enabled }, this.rpcRequestContext());
             } else {
                 this.runtime.setPlanMode(sessionId, enabled);
             }
@@ -6408,7 +6408,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 return;
             }
             if (this.appRpc) {
-                await this.appRpc.request('session.archetype.set', { sessionId, archetype: name });
+                await this.appRpc.request('session.archetype.set', { sessionId, archetype: name }, this.rpcRequestContext());
             } else {
                 this.runtime.setSessionArchetype(sessionId, name);
             }
@@ -6426,7 +6426,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (!mode || mode === 'default') {
                 if (mode === 'default') {
                     if (this.appRpc) {
-                        await this.appRpc.request('session.delegation_mode.set', { sessionId, mode: 'default' });
+                        await this.appRpc.request('session.delegation_mode.set', { sessionId, mode: 'default' }, this.rpcRequestContext());
                     } else {
                         this.runtime.setSessionDelegationMode(sessionId, null);
                     }
@@ -6442,7 +6442,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 return;
             }
             if (this.appRpc) {
-                await this.appRpc.request('session.delegation_mode.set', { sessionId, mode });
+                await this.appRpc.request('session.delegation_mode.set', { sessionId, mode }, this.rpcRequestContext());
             } else {
                 this.runtime.setSessionDelegationMode(sessionId, mode as import('@tsdi/agent').AgentDelegationMode);
             }
@@ -6828,9 +6828,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         let delegationMode = await this.getSessionDelegationMode(sessionId).catch(() => 'explicit');
         let archetype = (this.runtime as any).getSessionArchetype?.(sessionId) ?? 'build';
         if (this.appRpc) {
-            const result = await this.appRpc.request('session.plan_mode.get', { sessionId }).catch(() => null);
+            const result = await this.appRpc.request('session.plan_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
             planMode = result?.enabled === true;
-            const archetypeResult = await this.appRpc.request('session.archetype.get', { sessionId }).catch(() => null);
+            const archetypeResult = await this.appRpc.request('session.archetype.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
             if (archetypeResult?.archetype) {
                 archetype = String(archetypeResult.archetype);
             }
@@ -6847,27 +6847,27 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 const parts = rest.join(' ').split('|').map(item => item.trim());
                 if (parts.length < 2 || !parts[0] || !parts[1]) { this.notify('Usage: /goal create <title> | <objective> | criterion 1; criterion 2'); return; }
                 const input = { title: parts[0], objective: parts[1], successCriteria: (parts[2] || '').split(';').map(item => item.trim()).filter(Boolean) };
-                const goal = this.appRpc ? await this.appRpc.request('goal.create', { sessionId, ...input }) : await this.runtime.createGoal(input, sessionId);
+                const goal = this.appRpc ? await this.appRpc.request('goal.create', { sessionId, ...input }, this.rpcRequestContext()) : await this.runtime.createGoal(input, sessionId);
                 this.notify(`Goal ${goal.id} created: ${goal.title}`); return;
             }
             if (command === 'list') {
-                const goals = this.appRpc ? await this.appRpc.request('goal.list', {}) : await this.runtime.listGoals();
+                const goals = this.appRpc ? await this.appRpc.request('goal.list', {}, this.rpcRequestContext()) : await this.runtime.listGoals();
                 this.notify(goals.length ? goals.map((goal: any) => `${goal.id} [${goal.status}] ${goal.title}`).join('\n') : 'No goals.'); return;
             }
             if (command === 'link') {
                 const goalId = rest[0]; if (!goalId) { this.notify('Usage: /goal link <goalId>'); return; }
-                if (this.appRpc) await this.appRpc.request('goal.link', { sessionId, goalId }); else await this.runtime.linkSessionGoal(sessionId, goalId);
+                if (this.appRpc) await this.appRpc.request('goal.link', { sessionId, goalId }, this.rpcRequestContext()); else await this.runtime.linkSessionGoal(sessionId, goalId);
                 this.notify(`Goal ${goalId} linked.`); return;
             }
             if (command === 'complete' || command === 'reopen') {
-                const goal = this.appRpc ? await this.appRpc.request(`goal.${command}`, { sessionId, goalId: rest[0] }) : await (async () => {
+                const goal = this.appRpc ? await this.appRpc.request(`goal.${command}`, { sessionId, goalId: rest[0] }, this.rpcRequestContext()) : await (async () => {
                     const linked = rest[0] ? await this.runtime.getGoal(rest[0]) : await this.runtime.getSessionGoal(sessionId);
                     if (!linked) throw new Error('No goal linked to this session.');
                     return this.runtime.updateGoal(linked.id, { status: command === 'complete' ? 'completed' : 'active' });
                 })();
                 this.notify(`Goal ${goal.id} is ${goal.status}.`); return;
             }
-            const goal = this.appRpc ? await this.appRpc.request('goal.get', { sessionId, goalId: command === 'show' ? rest[0] : command }) : await (command === 'show' ? (rest[0] ? this.runtime.getGoal(rest[0]) : this.runtime.getSessionGoal(sessionId)) : this.runtime.getGoal(command));
+            const goal = this.appRpc ? await this.appRpc.request('goal.get', { sessionId, goalId: command === 'show' ? rest[0] : command }, this.rpcRequestContext()) : await (command === 'show' ? (rest[0] ? this.runtime.getGoal(rest[0]) : this.runtime.getSessionGoal(sessionId)) : this.runtime.getGoal(command));
             this.notify(goal ? `${goal.id} [${goal.status}] ${goal.title}\n${goal.objective}\n${goal.successCriteria.map((item: string) => `- ${item}`).join('\n')}` : 'No goal linked to this session.');
         } catch (error) { this.notify(`Goal command failed: ${error instanceof Error ? error.message : String(error)}`); }
     }
@@ -6877,7 +6877,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         mode: import('@tsdi/agent').SandboxMode | null
     ): Promise<void> {
         if (this.appRpc) {
-            await this.appRpc.request('session.sandbox_mode.set', { sessionId, mode: mode ?? 'default' });
+            await this.appRpc.request('session.sandbox_mode.set', { sessionId, mode: mode ?? 'default' }, this.rpcRequestContext());
             return;
         }
         this.runtime.setSessionSandboxMode(sessionId, mode);
@@ -6885,7 +6885,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async getSessionSandboxMode(sessionId: string): Promise<string> {
         if (this.appRpc) {
-            const result = await this.appRpc.request('session.sandbox_mode.get', { sessionId }).catch(() => null);
+            const result = await this.appRpc.request('session.sandbox_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
             return String(result?.mode || 'default');
         }
         return this.runtime.getSessionSandboxMode(sessionId) ?? 'default';
@@ -6893,7 +6893,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async getSessionDelegationMode(sessionId: string): Promise<string> {
         if (this.appRpc) {
-            const result = await this.appRpc.request('session.delegation_mode.get', { sessionId }).catch(() => null);
+            const result = await this.appRpc.request('session.delegation_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
             return String(result?.mode || 'explicit');
         }
         return this.runtime.getSessionDelegationMode(sessionId) ?? 'explicit';
@@ -6911,7 +6911,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const sessionId = this.state.sessionId;
         try {
             const result = this.appRpc
-                ? await this.appRpc.request(direction === 'undo' ? 'session.undo_file' : 'session.redo_file', { sessionId })
+                ? await this.appRpc.request(direction === 'undo' ? 'session.undo_file' : 'session.redo_file', { sessionId }, this.rpcRequestContext())
                 : direction === 'undo'
                     ? await this.runtime.undoFileChange(sessionId)
                     : await this.runtime.redoFileChange(sessionId);
@@ -7151,7 +7151,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async activateToolForSession(name: string, sessionId: string): Promise<boolean> {
         if (this.appRpc) {
-            const result = await this.appRpc.request('tools.activate', { sessionId, name });
+            const result = await this.appRpc.request('tools.activate', { sessionId, name }, this.rpcRequestContext());
             return result?.activated !== false;
         }
         if (!this.toolRegistry || typeof this.toolRegistry.activateTool !== 'function') {

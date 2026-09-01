@@ -7,8 +7,11 @@
 import { AGENT_CONSOLE_APP_RPC, AgentHookCommandExecutor } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
+import { FileAdapter } from '@tsdi/common';
 import {
+    AgentConsoleSessionState,
     AgentUiConfigService,
+    BoundedFileCommandOutputStore,
     HttpAgentConsoleAppRpc
 } from '@tsdi/agent-ui';
 import {
@@ -92,7 +95,7 @@ export async function runAgentConsole(
         provide: AGENT_CONSOLE_APP_RPC,
         useValue: new HttpAgentConsoleAppRpc({ baseUrl: gatewayUrl, token: (options as AgentAttachOptions).token })
     }] : [];
-    await runAgentTUI(ui.entry, {
+    const ctx = await runAgentTUI(ui.entry, {
         consoleModule: ui.consoleModule,
         agentOptions: runtimeAgentOptions,
         deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
@@ -111,4 +114,18 @@ export async function runAgentConsole(
             ...extraProviders
         ]
     });
+
+    // P267: wire the durable command-output store from the app context so
+    // command results survive restarts. The CLI bootstrap already ran
+    // session configure() without a store, so rehydrate explicitly.
+    try {
+        const sessionState = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
+        const fileAdapter = ctx?.get ? ctx.get(FileAdapter) : undefined;
+        if (sessionState && fileAdapter) {
+            sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(fileAdapter, resolved.root));
+            await sessionState.loadCommandOutputHistory();
+        }
+    } catch {
+        // Command-output persistence is best-effort; never break TUI startup.
+    }
 }

@@ -404,6 +404,13 @@ export class AgentConsoleRemoteEventBridge {
         if (!this.active) {
             return;
         }
+        // A UI session switch does not re-subscribe this bridge. Re-anchor to
+        // the active session before (re)connecting; each sessionId change bumps
+        // the remote epoch, so the session-level match is the replay rejection.
+        if (this.state.sessionId && this.state.sessionId !== this.sessionId) {
+            this.sessionId = this.state.sessionId;
+            this.parserBuffer = '';
+        }
         if (this.hasConnected) {
             this.state.markTimelineReconnecting(true);
         }
@@ -431,6 +438,12 @@ export class AgentConsoleRemoteEventBridge {
         const reader = body.getReader();
         const decoder = new TextDecoder();
         for (;;) {
+            // A UI session switch does not re-subscribe this bridge; when the
+            // stream is bound to a session the UI has left, drop it so the
+            // reconnect re-anchors to the active session.
+            if (this.state.sessionId && this.state.sessionId !== this.sessionId) {
+                break;
+            }
             const { done, value } = await reader.read();
             if (done) {
                 break;
@@ -440,7 +453,7 @@ export class AgentConsoleRemoteEventBridge {
             this.parserBuffer = rest;
             for (const frame of frames) {
                 const event = decodeSseFrame(frame);
-                if (!event || !event.sessionId || event.sessionId !== this.sessionId) {
+                if (!event || !event.sessionId || event.sessionId !== this.state.sessionId) {
                     continue;
                 }
                 applyRemoteEvent(this.state, event);

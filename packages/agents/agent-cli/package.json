@@ -34,6 +34,7 @@
     "@tsdi/agent-gateway": "6.0.31",
     "@tsdi/agent-tools": "6.0.31",
     "@tsdi/agent-ui": "6.0.31",
+    "@tsdi/common": "6.0.31",
     "@tsdi/components/console": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31",

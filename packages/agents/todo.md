@@ -1521,7 +1521,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度（2026-09-01）**：P265、P266、P268、P270 已完成；P267 的持久化、gateway append 与 browser RPC store 已完成，运行时/CLI 注入与完整 capability 门禁仍待后续。P269 已完成核心 context 透传切片，但非核心 handler 注入与 replay 拒绝策略未完成；P271 仍缺 gateway durable replay；P272 仍缺 CI browser/PTY runner。
+> **v14 进度（2026-09-01）**：P265、P266、P267、P268、P269、P270 已完成；P271 仍缺 gateway durable envelope 与 replay；P272 仍缺 CI browser/PTY runner。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1558,7 +1558,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 验收：每类 overlay 的键盘矩阵（TUI/browser）与焦点栈快照；Esc 后焦点回到触发控件；disabled option 不可执行且有可访问原因。
 
-**P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC` ✅ A+B+C 完成（2026-08-31）
+**P267 · Command output durable history（中-高）** `platform: agent-ui/src + agent RPC` ✅ 完成（2026-08-31 核心 + gateway/browser slice、2026-09-01 CLI 运行时注入）
 
 - 目标：命令结果从内存 ring 升级为 session/workspace 可恢复历史，支持分页、过滤、复制、重放和清理策略。
 - 方案：新增 `command_output.list/get/replay/clear` RPC 与 agent-ui storage adapter；本地无 RPC 时使用 bounded file adapter；结果记录 requestId、参数摘要、状态、耗时和原文引用，敏感字段脱敏。
@@ -1566,6 +1566,7 @@ Turn: Fix session restore                                      running  01:42
 - 实现（Slice A+B）：新建 `src/AgentConsoleCommandOutputHistory.ts`（类型 + 端口 + `InMemoryCommandOutputStore` + `redactCommandOutputSecret` 脱敏，规则与 `RedactionFilter` 一致）与 `src/AgentConsoleBoundedFileCommandOutputStore.ts`（FileAdapter 后端，文件 `<dir>/.tsdi-agent/command-output-history.json`）；`AgentConsoleSessionState` 增 `commandOutputStore` 字段与 `setCommandOutputStore`/`loadCommandOutputHistory`，`pushCommandOutput` 在保持 20 条 ring 与返回值不变的前提下异步持久化（写时脱敏、携带 requestId/argsSummary/sessionId），`configure()` session 切换时清 ring + 重灌 durable 历史。
 - 验证：新增 7 项单测（append newest-first/cap eviction/filter/cursor 分页/session 隔离+clear/redaction/FileAdapter 持久化）；agent-ui 全量 **900 passing** EXIT=0（基线 893）；`tsc --noEmit` EXIT=0；`build:web` EXIT=0；跨平台边界扫描 CLEAN（新 src 文件无 node import）。
 - Slice D 进度（2026-09-01）：已补齐 gateway `command_output.append`（ownership 校验、边界脱敏、capability）与 agent-ui `RpcCommandOutputStore`，browser composition root 注入 RPC store；新增 append 跨 principal/脱敏测试。`replay/cleanup` 已有基础 RPC，运行时/CLI 注入 `BoundedFileCommandOutputStore` 与更完整 capability 门禁仍待后续。
+- Slice D 收尾（2026-09-01）：`agent-cli/src/run-console.ts` 经 `runAgentTUI` 取得 context 后，`AgentConsoleSessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(fileAdapter, resolved.root))` 并显式 `await loadCommandOutputHistory()` 重灌（CLI 引导期 `configure()` 在无 store 时已跑过）；`agent-cli/package.json` 增加 `@tsdi/common` 依赖（agent-ui 与 components/console 之间的共享 FileAdapter 层）。新增 agent-cli 用例覆盖注入与持久化，agent-cli 全量 73 passing EXIT=0。
 
 **P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
@@ -1575,7 +1576,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 实现（2026-09-01）：`AgentConsoleCommandRegistry` 将字符串提示升级为可选的结构化位置参数 schema（required/default/variadic/enum），提供跨平台的引用感知 tokenizer、模板 formatter 与结构化 diagnostics。`/model`、`/search`、`/snapshot`、`/review`、`/diff` 已接入契约；palette 与 `/` 补全显示参数模板；统一 dispatch 在 handler 前校验，失败写入 command execution 并保留原始 composer 草稿供修正后重试。测试覆盖 quoted token、缺参、额外参数、variadic、模板展示和错误草稿。
 
-**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC` `UI local slice only`
+**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC` `UI local slice only` ✅ 完成（2026-09-01，UI 侧全量；connection-state epoch 拒绝随 P271 持久化推进）
 
 - 目标：所有异步命令共享取消、超时、session epoch 和重连重放协议。
 - 方案：为 command execution 注入 `AbortSignal`/epoch；session 切换自动取消旧请求；RPC 响应带 requestId，旧响应只能进入历史不能改当前 overlay；失败结果提供 retry action。
@@ -1585,6 +1586,7 @@ Turn: Fix session restore                                      running  01:42
 - RPC envelope 增量（2026-09-01）：共享 `AgentRpcRequestMeta` 定义 `requestId/sessionEpoch`，HTTP、gateway 与 stdio/in-process transport 兼容透传；普通 response、stream chunk/done 与 error 均回显同一 meta。现有 command handler 尚未把每个本地 execution 的 meta 注入全部 RPC 调用，断线 replay 的 epoch 拒绝策略也未完成，故 P269 继续保持未完成态。
 - 组件定时刷新清理（2026-09-01）：`AgentConsoleComponent` 的流式 assistant 更新改为每个真实 chunk 立即驱动状态，移除 stream flush/pending notice/input-history restore 的 `setTimeout` 主动刷新路径；等待状态由响应式 turn status 表示。组件层不再使用 `setTimeout/setInterval`。
 - 规则扫描补充（2026-09-01）：复核 `agent-ui/src` 后确认仅 `HttpAgentConsoleAppRpc` 的请求超时与 `AgentConsoleRemoteEventBridge` 的断线重连保留定时器；二者属于 transport 生命周期，不驱动组件渲染。`AgentConsoleComponent` 已无定时器刷新。
+- 全量 handler 注入与 replay 拒绝收尾（2026-09-01）：`AgentConsoleComponent` 33 处 `appRpc.request(...)` 全部透传 `this.rpcRequestContext()`（含 `run.turn`/`tools.invoke` 与全部 review/coding-task/model/parallel 侧 handler）；`AgentConsoleReviewHandlers`/`AgentConsoleCodingTaskHandlers`/`AgentConsoleModelHandlers` 的结构化 `appRpc` 类型补上 `context?: any` 第三参数以对齐 `AgentConsoleAppRpc` 规范签名。`AgentConsoleRemoteEventBridge` 增加断线 replay 拒绝：`connectOnce` 在 state.sessionId 与新连接 sessionId 分歧时 re-anchor 并清 parserBuffer，帧循环顶部对分歧 session break，帧过滤由 `event.sessionId !== this.sessionId` 改为 `!== this.state.sessionId`（跨组件状态经代理广播，持 state 引用）。新增 `dropsStaleReplayFrames` 用例：stale 会话 `turn_started` 被拒（status 保持 idle）而当前会话 `tool_invoked` 照常应用（runningTools 生效），同时保留既有 `ignoresOtherSessions` 拒绝路径。agent-ui 全量 909→**910 passing** EXIT=0、`tsc --noEmit` EXIT=0、`build:web` EXIT=0、P170 边界扫描 CLEAN。
 
 **P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
@@ -1621,6 +1623,7 @@ Turn: Fix session restore                                      running  01:42
 - P269 增量（2026-09-01）：`AgentConsoleComponent` 增加单调 `sessionEpoch`，会话切换自动递增；`run.turn` 与核心 `tools.invoke` 远程调用统一透传 `{requestId, sessionEpoch}`，本地 runtime 路径不变。`agent-ui` 全量 909 passing、`tsc --noEmit` 通过；其余异步 handler 注入与 replay 拒绝策略仍待后续。
 - P269 验证补记（2026-09-01）：现有 `web-console.spec.ts` correlation metadata 测试与 agent-ui 全量回归确认 transport context 兼容；本轮未发现新增失败，剩余工作仍限于非核心 handler 和断线 replay 拒绝。
 - 全量复核（2026-09-01）：agent 797 passing、agent-ui 909 passing；agent-gateway 259 passing，8 项本地监听测试因 sandbox `listen EPERM` 失败；三包 `tsc --noEmit` 全部通过，结果与既有基线一致。
+- P267/P269 收尾全量（2026-09-01）：agent-ui **910 passing** EXIT=0（基线 909 + `dropsStaleReplayFrames`）；agent-cli 73 passing EXIT=0；agent-gateway 267 passing EXIT=0；agent 797 passing EXIT=0；agent-tools 476 passing EXIT=0。`agent-ui tsc --noEmit` EXIT=0、`build:web` EXIT=0（3.6 MB bundle）；P170 边界扫描（`from '@tsdi/components/console'`/`from 'node:'` import）CLEAN。
 
 ### 后续架构批次登记（2026-09-01）
 

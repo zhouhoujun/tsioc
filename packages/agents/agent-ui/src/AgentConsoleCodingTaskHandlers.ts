@@ -43,7 +43,7 @@ export interface CodingTaskHandlerState {
 
 export interface CodingTaskHandlerContext {
     state: CodingTaskHandlerState;
-    appRpc: { request(method: string, payload?: Record<string, any>): Promise<any> } | null | undefined;
+    appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     scheduler: AgentScheduler | null;
     notify(message: string, duration?: number): void;
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;

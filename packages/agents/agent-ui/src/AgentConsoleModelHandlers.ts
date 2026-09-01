@@ -24,7 +24,7 @@ export interface ModelHandlerContext {
         setModel(value: string): unknown;
         setOneShotModelProfile(value: string): unknown;
     };
-    appRpc: { request(method: string, payload?: Record<string, any>): Promise<any> } | null | undefined;
+    appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     options(): AgentOptions;
     modelStore: {
         load(workspace: string): Promise<{ favorites?: string[]; recents?: string[] } | undefined>;

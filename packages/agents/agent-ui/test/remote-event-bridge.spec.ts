@@ -262,6 +262,36 @@ export class RemoteEventBridgeConnectionTest {
         expect(state.status).toEqual('idle');
     }
 
+    @Test('drops stale-session replay frames and re-anchors to the active session')
+    async dropsStaleReplayFrames() {
+        const state = makeState();
+        state.configure({ sessionId: 's2' });
+        const events: string[] = [
+            'event: turn_started\ndata: {"sessionId":"s1"}\n\n',
+            'event: tool_invoked\ndata: {"sessionId":"s2","toolName":"echo"}\n\n'
+        ];
+        const fetchImpl = async () => {
+            const stream = new ReadableStream<Uint8Array>({
+                start(controller) {
+                    for (const event of events) {
+                        controller.enqueue(new TextEncoder().encode(event));
+                    }
+                    controller.close();
+                }
+            });
+            return new Response(stream, { status: 200 });
+        };
+        const bridge = new AgentConsoleRemoteEventBridge(state, {
+            baseUrl: 'http://localhost:8080',
+            fetchImpl: fetchImpl as any,
+            reconnectDelayMs: 100_000
+        });
+        const dispose = await bridge.subscribe('s1');
+        dispose();
+        expect(state.status).toEqual('idle');
+        expect(state.runningTools).toEqual(['echo']);
+    }
+
     @Test('connectOnce throws on non-ok response')
     async connectOnceThrowsOnHttpError() {
         const state = makeState();

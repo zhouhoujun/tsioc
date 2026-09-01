@@ -30,7 +30,7 @@ export interface ReviewHandlerState {
 
 export interface ReviewHandlerContext {
     state: ReviewHandlerState;
-    appRpc: { request(method: string, payload?: Record<string, any>): Promise<any> } | null | undefined;
+    appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     notify(message: string, duration?: number): void;
     activateToolForSession(toolName: string, sessionId: string): Promise<unknown>;
     getOpenReviewRequestId(): number;
