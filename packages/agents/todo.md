@@ -1614,3 +1614,7 @@ Turn: Fix session restore                                      running  01:42
 - `agent` 全量：797 passing；`agent-ui` 全量：909 passing；`agent-gateway` 全量：267 passing。
 - 三包 `tsc --noEmit` 与 `git diff --check` 通过；gateway 监听类测试在提升权限后通过。
 - P272 的 Playwright/PTY CI runner 尚未建立，当前不标记为完成；现有 Python PTY 验收继续按平台可用性显式 skip。
+
+### 后续架构批次登记（2026-09-01）
+
+- **P273 · agent-ui storage fallback IoC 收敛** `platform: agent-ui/src（TUI/browser 跨端）`：当前 `AgentConsoleComponent` 在 `onInit` 中对 keymap/theme/statusline/title/raw-mode/stash/model/settings 仍保留 `new` fallback，虽不驱动刷新但违反“宿主实现由 IoC 注入”规则。后续需先定义共享 storage port 与宿主 provider，再删除组件内 fallback；验收要求 TUI/browser 使用同一 SessionState、无直接构造、全量 agent-ui + 类型检查。
