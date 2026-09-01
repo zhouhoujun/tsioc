@@ -1618,4 +1618,4 @@ Turn: Fix session restore                                      running  01:42
 ### 后续架构批次登记（2026-09-01）
 
 - **P273 · agent-ui storage fallback IoC 收敛** `platform: agent-ui/src（TUI/browser 跨端）`：当前 `AgentConsoleComponent` 在 `onInit` 中对 keymap/theme/statusline/title/raw-mode/stash/model/settings 仍保留 `new` fallback，虽不驱动刷新但违反“宿主实现由 IoC 注入”规则。后续需先定义共享 storage port 与宿主 provider，再删除组件内 fallback；验收要求 TUI/browser 使用同一 SessionState、无直接构造、全量 agent-ui + 类型检查。
-- P273 进度（2026-09-01）：已删除上述 8 个 storage fallback 及 workspace mention provider 的组件内构造；真实模块由 IoC providers 注入，测试 fixture 改为显式 provider。`AgentConsoleComponent` 仍保留纯内存 `AgentConsoleKeymap` fallback 以支持无容器手动构造，后续可在统一 fixture contract 后移除。
+- P273 进度（2026-09-01）：已删除上述 8 个 storage fallback 及 workspace mention provider 的组件内构造；真实模块由 IoC providers 注入，测试 fixture 改为显式 provider。`AgentConsoleComponent` 保留的 `AgentConsoleKeymap` fallback 仅是无平台依赖的纯内存逻辑模型（用于无容器手动构造），不属于宿主能力注入范围。
