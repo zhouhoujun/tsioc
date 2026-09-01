@@ -1618,6 +1618,7 @@ Turn: Fix session restore                                      running  01:42
 - 收尾复核（2026-09-01）：`agent` 797 passing、`agent-ui` 909 passing；`agent-gateway` 259 passing，另有 8 项监听/静态服务测试因 sandbox `listen EPERM` 失败；三包 `tsc --noEmit` 均通过。gateway 受限项与既有基线一致，未发现新增回归。
 - 下一切片边界（2026-09-01）：`AgentRpcRequestMeta` 已在 transport envelope 往返，但 `AgentConsoleComponent` 各异步 handler 尚未统一注入当前 command execution 的 `requestId/sessionEpoch`；在补齐注入与断线 replay 拒绝策略前，不提升 P269/P271 完成度。
 - 最终构建复核（2026-09-01）：`agent-ui npm run build:web` 成功，生成 3.6 MB console bundle 与 markdown worker；未引入额外工作区变更。
+- P269 增量（2026-09-01）：`AgentConsoleComponent` 增加单调 `sessionEpoch`，会话切换自动递增；`run.turn` 与核心 `tools.invoke` 远程调用统一透传 `{requestId, sessionEpoch}`，本地 runtime 路径不变。`agent-ui` 全量 909 passing、`tsc --noEmit` 通过；其余异步 handler 注入与 replay 拒绝策略仍待后续。
 
 ### 后续架构批次登记（2026-09-01）
 
