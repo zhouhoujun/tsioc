@@ -1521,7 +1521,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 完成，C/D（RPC/replay）待实施；P268、P270 已完成。P269、P271 的 UI 本地切片已实现但其 agent RPC/跨 host 契约尚未完成，继续前必须先按本节架构规则重构，禁止标记完成；P272 待实施。
+> **v14 进度（2026-09-01）**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 已完成（gateway append、ownership/脱敏、browser RPC store 已接入），运行时/CLI 专用文件 store 注入与更完整 capability 门禁仍待后续；P268、P270 已完成。P269、P271 的共享层前置重构已完成，但 RPC requestId/epoch、gateway thread-item replay 尚未完成，继续保持未完成态；P272 待实施。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1605,3 +1605,9 @@ Turn: Fix session restore                                      running  01:42
 - 目标：建立可在 CI 运行的 browser smoke 与平台专项 PTY 验收，覆盖 desktop/mobile、窄终端、CJK、长输出、断线恢复和焦点回退。
 - 方案：新增 Node/Playwright runner（可注入 mock gateway/fetch，浏览器二进制由 CI 缓存提供）；保留 Linux/macOS PTY 驱动，Windows 使用 ConPTY/浏览器路径；输出 DOM/ARIA/ANSI 快照与指标。
 - 验收：首屏步骤可见率、event-to-UI 延迟、重复 toolCall 行数、question 完成按键数、焦点回退成功率纳入门禁；缺少浏览器/PTY 环境时明确 skip，不伪造通过。
+
+### 收尾验证（2026-09-01）
+
+- `agent` 全量：797 passing；`agent-ui` 全量：908 passing；`agent-gateway` 全量：266 passing。
+- 三包 `tsc --noEmit` 与 `git diff --check` 通过；gateway 监听类测试在提升权限后通过。
+- P272 的 Playwright/PTY CI runner 尚未建立，当前不标记为完成；现有 Python PTY 验收继续按平台可用性显式 skip。
