@@ -663,4 +663,109 @@ export class RemoteEventBridgeReconnectTest {
         expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc1')).toHaveLength(1);
         expect(state.messages.filter(m => m.metadata?.uiEventKey === 'plan:p1')).toHaveLength(1);
     }
+
+    @Test('switching sessions resets the timeline tail so replay never uses the previous session cursor')
+    switchingSessionResetsTimelineTail() {
+        const state = makeState();
+        state.configure({ sessionId: 's1' });
+        state.seedTimeline([
+            { key: 'tool:tc1', kind: 'tool', sessionId: 's1', label: 'bash', status: 'running', lastSeq: 5, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+        ]);
+        expect(state.timelineTailSeq).toEqual(5);
+        state.markTimelineReconnecting(true);
+        state.configure({ sessionId: 's2' });
+        expect(state.timelineTailSeq).toEqual(-1);
+        expect(state.timelineSeedCount).toEqual(0);
+        expect(state.timelineReconnecting).toBe(false);
+        expect(state.timelineStale).toBe(false);
+    }
+
+    @Test('seedFromTimeline drops pages when the session switches mid-seed')
+    async seedDroppedWhenSessionSwitchedMidSeed() {
+        const state = makeState();
+        state.configure({ sessionId: 's1' });
+        let resolveQuery!: (value: any) => void;
+        const { rpc } = makeRpc((method) => {
+            if (method === 'timeline.query') {
+                return new Promise(resolve => {
+                    resolveQuery = resolve;
+                });
+            }
+            if (method === 'nav.query') {
+                return { sessions: [] };
+            }
+            if (method === 'question.list') {
+                return [];
+            }
+            return {};
+        });
+        const bridge = new AgentConsoleRemoteEventBridge(state, {
+            baseUrl: 'http://localhost:8080',
+            rpc: rpc as any,
+            fetchImpl: emptySseFetch(),
+            reconnectDelayMs: 100000
+        });
+        const connecting = bridge.subscribe('s1');
+        state.configure({ sessionId: 's2' });
+        resolveQuery({
+            sessionId: 's1',
+            entries: [
+                { key: 'tool:tc1', kind: 'tool', sessionId: 's1', label: 'bash', status: 'running', lastSeq: 1, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+            ],
+            hasMore: false
+        });
+        await connecting;
+        bridge.dispose();
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc1')).toHaveLength(0);
+        expect(state.timelineTailSeq).toEqual(-1);
+    }
+
+    @Test('replayFromTimeline drops events when the session switches mid-replay')
+    async replayDroppedWhenSessionSwitchedMidReplay() {
+        const state = makeState();
+        state.configure({ sessionId: 's1' });
+        let resolveReplay!: (value: any) => void;
+        const { rpc } = makeRpc((method) => {
+            if (method === 'timeline.query') {
+                return {
+                    sessionId: 's1',
+                    entries: [
+                        { key: 'tool:tc1', kind: 'tool', sessionId: 's1', label: 'bash', status: 'running', lastSeq: 1, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+                    ],
+                    hasMore: false
+                };
+            }
+            if (method === 'timeline.replay') {
+                return new Promise(resolve => {
+                    resolveReplay = resolve;
+                });
+            }
+            if (method === 'nav.query') {
+                return { sessions: [] };
+            }
+            if (method === 'question.list') {
+                return [];
+            }
+            return {};
+        });
+        const bridge = new AgentConsoleRemoteEventBridge(state, {
+            baseUrl: 'http://localhost:8080',
+            rpc: rpc as any,
+            fetchImpl: emptySseFetch(),
+            reconnectDelayMs: 100000
+        });
+        await bridge.subscribe('s1');
+        const reconnecting = bridge.connectOnce();
+        state.configure({ sessionId: 's2' });
+        resolveReplay({
+            sessionId: 's1',
+            events: [
+                { seq: 2, id: 'evt2', type: 'tool_invoked', sessionId: 's1', timestamp: 100, toolName: 'bash', toolCallId: 'tc2', receiptId: 'rc2', attempt: 1, status: 'running' }
+            ]
+        });
+        await reconnecting;
+        bridge.dispose();
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc2')).toHaveLength(0);
+        expect(state.timelineTailSeq).toEqual(-1);
+    }
 }

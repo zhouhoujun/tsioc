@@ -389,6 +389,10 @@ export class AgentConsoleRemoteEventBridge {
         this.rpc = options.rpc ?? null;
     }
 
+    protected isDriftedFromActiveSession(): boolean {
+        return Boolean(this.state.sessionId) && this.state.sessionId !== this.sessionId;
+    }
+
     get connected(): boolean {
         return this.active;
     }
@@ -474,18 +478,22 @@ export class AgentConsoleRemoteEventBridge {
     }
 
     protected async seedFromTimeline(): Promise<void> {
-        if (!this.rpc || !this.sessionId) {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
             return;
         }
+        const requestedSessionId = this.sessionId;
         try {
             const all: TimelineEntry[] = [];
             let cursor: string | undefined;
             for (let page = 0; page < 20; page += 1) {
-                const params: Record<string, unknown> = { sessionId: this.sessionId, limit: 500 };
+                const params: Record<string, unknown> = { sessionId: requestedSessionId, limit: 500 };
                 if (cursor) {
                     params.cursor = cursor;
                 }
                 const result = await this.rpc.request('timeline.query', params);
+                if (this.isDriftedFromActiveSession()) {
+                    return;
+                }
                 const entries = Array.isArray(result?.entries) ? result.entries : [];
                 all.push(...entries);
                 if (!result?.hasMore || !result?.nextCursor) {
@@ -502,16 +510,23 @@ export class AgentConsoleRemoteEventBridge {
     }
 
     protected async replayFromTimeline(): Promise<void> {
-        if (!this.rpc || !this.sessionId) {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
             return;
         }
+        const requestedSessionId = this.sessionId;
         try {
             const result = await this.rpc.request('timeline.replay', {
-                sessionId: this.sessionId,
+                sessionId: requestedSessionId,
                 sinceSeq: this.state.timelineTailSeq
             });
+            if (this.isDriftedFromActiveSession()) {
+                return;
+            }
             const rawEvents = Array.isArray(result?.events) ? result.events : [];
             if (!rawEvents.length) {
+                return;
+            }
+            if (rawEvents.some((event: TimelineEventRecord) => event.sessionId && event.sessionId !== this.state.sessionId)) {
                 return;
             }
             const entries = [...reduceTimelineEvents(rawEvents).values()];
@@ -538,11 +553,15 @@ export class AgentConsoleRemoteEventBridge {
     }
 
     protected async seedFromQuestions(): Promise<void> {
-        if (!this.rpc || !this.sessionId) {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
             return;
         }
+        const requestedSessionId = this.sessionId;
         try {
-            const result = await this.rpc.request('question.list', { sessionId: this.sessionId });
+            const result = await this.rpc.request('question.list', { sessionId: requestedSessionId });
+            if (this.isDriftedFromActiveSession()) {
+                return;
+            }
             const items = Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
             const pending = items.filter((item: any) => item?.status === 'pending' || item?.status == null);
             if (!pending.length) {
@@ -551,7 +570,7 @@ export class AgentConsoleRemoteEventBridge {
             for (const item of pending) {
                 const question = normalizePendingQuestion({
                     ...(item || {}),
-                    sessionId: item?.sessionId || this.sessionId,
+                    sessionId: item?.sessionId || requestedSessionId,
                     questionId: item?.questionId,
                     status: 'pending'
                 });
@@ -578,11 +597,14 @@ export class AgentConsoleRemoteEventBridge {
     }
 
     protected async refreshTools(): Promise<void> {
-        if (!this.rpc) {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
             return;
         }
         try {
             const definitions = await this.rpc.request('tools.list', { sessionId: this.sessionId });
+            if (this.isDriftedFromActiveSession()) {
+                return;
+            }
             const tools = Array.isArray(definitions)
                 ? definitions.map((def: any) => this.state.toToolItem(def, def?.activation?.activated ?? true))
                 : [];

@@ -753,6 +753,14 @@ export class AgentConsoleSessionState {
             this.commandExecutions = [];
             this.commandExecutionMessages = [];
             this.commandOutputs = [];
+            // P269/P271: per-session monotonic seq — a stale tail from the
+            // previous session would skip the new session's low-seq events on
+            // reconnect replay, so reset the timeline cursor with the switch.
+            this.timelineTailSeq = -1;
+            this.timelineSeedCount = 0;
+            this.timelineReconnecting = false;
+            this.timelineStale = false;
+            this.activeTurnEventScope = '';
             void this.loadCommandOutputHistory();
         }
         if (meta.provider !== undefined) {
