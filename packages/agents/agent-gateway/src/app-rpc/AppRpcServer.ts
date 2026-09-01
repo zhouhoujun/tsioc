@@ -155,6 +155,7 @@ export class AppRpcServer {
                         'app.inputHistory.get',
                         'app.inputHistory.put',
                         'command_output.list',
+                        'command_output.append',
                         'command_output.get',
                         'command_output.replay',
                         'command_output.clear',
@@ -286,6 +287,8 @@ export class AppRpcServer {
                 return this.putInputHistory(params, context);
             case 'command_output.list':
                 return this.listCommandOutput(params, context);
+            case 'command_output.append':
+                return this.appendCommandOutput(params, context);
             case 'command_output.get':
                 return this.getCommandOutput(params, context);
             case 'command_output.replay':
@@ -702,6 +705,30 @@ export class AppRpcServer {
             nextCursor: page.nextCursor,
             total: page.total
         };
+    }
+
+    private async appendCommandOutput(params: any, context: AppRpcRequestContext): Promise<{ id: string }> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        const raw = params?.entry;
+        if (!raw || typeof raw !== 'object') throw new AppRpcError(-32602, 'command_output.append: entry is required');
+        const id = this.requireString(raw.id, 'entry.id');
+        const command = this.requireString(raw.command, 'entry.command');
+        const entry: AgentConsoleCommandOutputHistoryEntry = this.redactCommandOutputEntry({
+            id,
+            command,
+            text: String(raw.text || ''),
+            ts: Number(raw.ts) || Date.now(),
+            kind: raw.kind === 'error' || raw.kind === 'notice' ? raw.kind : 'result',
+            requestId: raw.requestId ? String(raw.requestId) : undefined,
+            argsSummary: raw.argsSummary ? String(raw.argsSummary) : undefined,
+            status: raw.status,
+            durationMs: Number.isFinite(raw.durationMs) ? Number(raw.durationMs) : undefined,
+            sessionId,
+            source: 'rpc'
+        });
+        await this.createCommandOutputStore(params, context, sessionId).append(entry);
+        return { id };
     }
 
     private async getCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {

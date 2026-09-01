@@ -17,6 +17,7 @@ export * from './AgentConsoleCommandRegistry';
 export * from './AgentConsoleCommandExecution';
 export * from './AgentConsoleCommandOutputHistory';
 export * from './AgentConsoleBoundedFileCommandOutputStore';
+export * from './AgentConsoleRpcCommandOutputStore';
 export * from './AgentConsoleOverlay';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleStatusline';

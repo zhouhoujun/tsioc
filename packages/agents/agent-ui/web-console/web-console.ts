@@ -11,6 +11,7 @@ import {
     AgentConsoleSessionState,
     AgentUiModule,
     HttpAgentConsoleAppRpc,
+    RpcCommandOutputStore,
     VscodeIdeBridge
 } from '@tsdi/agent-ui';
 
@@ -124,6 +125,7 @@ export async function mountAgentWebConsole(
     if (config.state) {
         state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL) as CommandExecutionControlPort);
     }
+    state.setCommandOutputStore(new RpcCommandOutputStore(rpc, () => state.sessionId));
 
     state.configure({
         sessionId: config.sessionId || state.sessionId || 'console',

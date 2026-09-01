@@ -1565,7 +1565,7 @@ Turn: Fix session restore                                      running  01:42
 - 架构（遵守 P267 新增规则）：`CommandOutputStore` 端口（`list/get/append/clear`，含 cursor 分页/过滤/session 隔离/上限 500）；`InMemoryCommandOutputStore` 为默认/测试实现；`BoundedFileCommandOutputStore` 复用 `@tsdi/common` 的 `FileAdapter`（与 SettingsStore/Stash/Theme 同款抽象，**不**为 browser 另写一份 storage 实现——`BrowserFileAdapter` 不可写，browser 持久化走 Slice C 的 RPC store）。状态经 `setCommandOutputStore` IoC 注入。
 - 实现（Slice A+B）：新建 `src/AgentConsoleCommandOutputHistory.ts`（类型 + 端口 + `InMemoryCommandOutputStore` + `redactCommandOutputSecret` 脱敏，规则与 `RedactionFilter` 一致）与 `src/AgentConsoleBoundedFileCommandOutputStore.ts`（FileAdapter 后端，文件 `<dir>/.tsdi-agent/command-output-history.json`）；`AgentConsoleSessionState` 增 `commandOutputStore` 字段与 `setCommandOutputStore`/`loadCommandOutputHistory`，`pushCommandOutput` 在保持 20 条 ring 与返回值不变的前提下异步持久化（写时脱敏、携带 requestId/argsSummary/sessionId），`configure()` session 切换时清 ring + 重灌 durable 历史。
 - 验证：新增 7 项单测（append newest-first/cap eviction/filter/cursor 分页/session 隔离+clear/redaction/FileAdapter 持久化）；agent-ui 全量 **900 passing** EXIT=0（基线 893）；`tsc --noEmit` EXIT=0；`build:web` EXIT=0；跨平台边界扫描 CLEAN（新 src 文件无 node import）。
-- 待办（Slice D）：gateway 增 \`command_output.*\` RPC（ownership 隔离 + 边界脱敏 + capabilities）；browser 经 RPC 注入 store；replay/cleanup 与跨 principal 隔离测试；运行时/CLI 注入 \`BoundedFileCommandOutputStore\`。
+- Slice D 进度（2026-09-01）：已补齐 gateway `command_output.append`（ownership 校验、边界脱敏、capability）与 agent-ui `RpcCommandOutputStore`，browser composition root 注入 RPC store；新增 append 跨 principal/脱敏测试。`replay/cleanup` 已有基础 RPC，运行时/CLI 注入 `BoundedFileCommandOutputStore` 与更完整 capability 门禁仍待后续。
 
 **P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 

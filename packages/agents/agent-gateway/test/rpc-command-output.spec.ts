@@ -55,9 +55,25 @@ export class CommandOutputRpcTest {
         const { rpc } = this.createHarness();
         const response = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'app.capabilities', params: {} }, { principalId: 'user-1' });
         const methods: string[] = (response as any).result?.methods ?? [];
-        for (const method of ['command_output.list', 'command_output.get', 'command_output.replay', 'command_output.clear']) {
+        for (const method of ['command_output.list', 'command_output.append', 'command_output.get', 'command_output.replay', 'command_output.clear']) {
             expect(methods).toContain(method);
         }
+    }
+
+    @Test('command_output.append enforces session ownership and redacts stored output')
+    async appendStoresRedactedEntry() {
+        const harness = this.createHarness();
+        await harness.owners.create('co-append', 'user-1');
+        const response = await this.call(harness.rpc, 'command_output.append', {
+            sessionId: 'co-append',
+            workspace: WORKSPACE,
+            entry: { id: 'a1', command: 'echo $TOKEN', text: 'Authorization: Bearer secret-value', ts: 10, kind: 'result' }
+        });
+        expect((response as any).error).toBeUndefined();
+        const found = await this.call(harness.rpc, 'command_output.get', { sessionId: 'co-append', workspace: WORKSPACE, id: 'a1' });
+        expect((found as any).result.text).toContain('[REDACTED]');
+        const denied = await this.call(harness.rpc, 'command_output.append', { sessionId: 'co-append', workspace: WORKSPACE, entry: { id: 'a2', command: 'x', text: 'y', kind: 'result' } }, 'user-2');
+        expect((denied as any).error).toBeDefined();
     }
 
     @Test('command_output.list returns seeded durable entries newest-first with totals')
