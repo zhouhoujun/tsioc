@@ -27,7 +27,7 @@ import {
     createFailCommandExecutionAction,
     createLinkCommandOutputAction,
     reduceAgentConsoleCommandExecution
-} from './AgentConsoleCommandExecution';
+} from '@tsdi/agent';
 import {
     AgentConsoleCommandOutputHistoryEntry,
     CommandOutputStore,

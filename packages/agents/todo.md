@@ -1520,7 +1520,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 完成，C/D（RPC/replay）待实施；P268–P271 于 2026-09-01 完成并完成 agent-ui 全量回归（907 passing）、`tsc --noEmit` 与 `build:web`；P272 待实施。
+> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 完成，C/D（RPC/replay）待实施；P268、P270 已完成。P269、P271 的 UI 本地切片已实现但其 agent RPC/跨 host 契约尚未完成，继续前必须先按本节架构规则重构，禁止标记完成；P272 待实施。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1542,7 +1542,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 目标：定义统一的命令请求/响应生命周期：`idle → running → succeeded|failed|cancelled`，每次执行携带 `requestId`、canonical command、sessionId、startedAt、finishedAt、error/retryable`。
 - 方案：新增跨平台 `AgentConsoleCommandExecution` 类型与 reducer；`handleCommand`、palette smart-run、queued slash command、`pushCommandOutput` 全部通过 reducer 写入；旧 `notify` 仅保留短提示。
-- 实现：新建 `src/AgentConsoleCommandExecution.ts`（`AgentConsoleCommandExecution` 接口、`AgentConsoleCommandStatus`、action 联合 `begin/complete/fail/linkOutput`、纯 reducer `reduceAgentConsoleCommandExecution`、ring cap=20、终态不可再变）；`AgentConsoleSessionState` 增 `commandExecutions`/`commandExecutionSequence` 字段与 `beginCommandExecution`/`completeCommandExecution`/`failCommandExecution`/`linkCommandOutputToExecution`/`latestCommandExecution`，`configure()` session 切换时清 ring + 重置序列（会话隔离）；`AgentConsoleComponent.handleCommand` 统一 begin→try/catch dispatch→complete/fail（未知/歧义→failed retryable=false，handler 异常→failed retryable=true），`pushCommandOutput` 返回值并 link 到当前 execution。
+- 实现：共享 `agent/src/ui/CommandExecution.ts` 定义 `AgentConsoleCommandExecution`、`AgentConsoleCommandStatus`、action 联合 `begin/complete/fail/linkOutput` 与纯 reducer `reduceAgentConsoleCommandExecution`（ring cap=20、终态不可再变）；`agent-ui/src/AgentConsoleCommandExecution.ts` 仅作兼容再导出，避免 UI/gateway/CLI 重复实现。`AgentConsoleSessionState` 增 `commandExecutions`/`commandExecutionSequence` 字段与 `beginCommandExecution`/`completeCommandExecution`/`failCommandExecution`/`linkCommandOutputToExecution`/`latestCommandExecution`，`configure()` session 切换时清 ring + 重置序列（会话隔离）；`AgentConsoleComponent.handleCommand` 统一 begin→try/catch dispatch→complete/fail（未知/歧义→failed retryable=false，handler 异常→failed retryable=true），`pushCommandOutput` 返回值并 link 到当前 execution。
 - 验证：新增 reducer + 状态方法单测 8 项（begin/complete/fail/终态不可变/link/ring cap/session 隔离/configure 重置）；agent-ui 全量 **880 passing** EXIT=0；`tsc --noEmit` EXIT=0；`build:web` EXIT=0（3.6MB）；跨平台边界 rg 扫描 CLEAN（仅 globalThis 守卫的 `Buffer`，无 `node:`/`@tsdi/components/console` 直引）。
 - 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
 
@@ -1574,13 +1574,13 @@ Turn: Fix session restore                                      running  01:42
 
 - 实现（2026-09-01）：`AgentConsoleCommandRegistry` 将字符串提示升级为可选的结构化位置参数 schema（required/default/variadic/enum），提供跨平台的引用感知 tokenizer、模板 formatter 与结构化 diagnostics。`/model`、`/search`、`/snapshot`、`/review`、`/diff` 已接入契约；palette 与 `/` 补全显示参数模板；统一 dispatch 在 handler 前校验，失败写入 command execution 并保留原始 composer 草稿供修正后重试。测试覆盖 quoted token、缺参、额外参数、variadic、模板展示和错误草稿。
 
-**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC` ✅ 2026-09-01
+**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC` `UI local slice only`
 
 - 目标：所有异步命令共享取消、超时、session epoch 和重连重放协议。
 - 方案：为 command execution 注入 `AbortSignal`/epoch；session 切换自动取消旧请求；RPC 响应带 requestId，旧响应只能进入历史不能改当前 overlay；失败结果提供 retry action。
 - 验收：慢 RPC + 快速切会话、断线重连、重复执行、Esc 取消四类时序测试；无旧结果污染、无未处理 Promise rejection。
 
-- 实现（2026-09-01）：SessionState 为每个 command request 记录 session epoch 与 AbortController；session 切换取消仍在运行的 request，并使其后的 completion/failure 成为 no-op。handler context 接收 request-scoped `AbortSignal`，Component 始终以 request-local id 完成或失败执行，避免嵌套/并发 command 误写当前 execution。测试覆盖 abort signal、会话切换后的取消和 stale completion 隔离。
+- 已有本地切片（2026-09-01）：SessionState 具备 request-scoped abort、epoch 与 stale completion 防护；但尚未抽成可由 browser/TUI/gateway 注入的 cancellation port，RPC response 也未携带 requestId/epoch。因此不得作为跨 host 完成态，后续需先建立共享控制 port 与 RPC envelope，再接入本地实现。
 
 **P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
@@ -1590,13 +1590,13 @@ Turn: Fix session restore                                      running  01:42
 
 - 实现（2026-09-01）：共享面板为 plan/tasks、approval、text detail、command outputs、pending question 与 select menu 补齐跨端语义投影。浏览器使用 `region`/`dialog`、`listbox`/`option`、`aria-label`、`aria-selected` 与 `aria-activedescendant`；原生 select 保留其原生选择语义。所有 label 从 SessionState 派生当前数量、选中项、活动 plan step 或可见行范围，状态不再只依赖颜色或 TUI glyph。新增 `p270-overlay-accessibility.spec.ts` 覆盖选择、选中项、dialog 文本与 plan step。定向验证：`npx ts-node --transpile-only -r tsconfig-paths/register -e "require('@tsdi/unit').runTest('./test/p270-overlay-accessibility.spec.ts', { baseURL: process.cwd() }).then(() => process.exit(0)).catch((error) => { console.error(error); process.exit(1); })"`，4 passing（14.242ms）；`git diff --check` 通过。
 
-**P271 · Thread-item projection for commands/tools/plans（高）** `platform: agent-ui/src + agent`
+**P271 · Thread-item projection for commands/tools/plans（高）** `platform: agent-ui/src + agent` `UI local slice only`
 
 - 目标：将 command execution、tool result、plan update、file change 统一投影为稳定 ID 的 transcript item，减少“面板有、对话没有”的上下文跳转。
 - 方案：定义 `uiKind`/稳定 key/sequence/attempt/receipt 映射；同一执行原地 upsert，失败/重试保留 attempt 链；面板仅作为 transcript item 的 inspector。
 - 验收：turn→command→tool→plan→file change 顺序快照；断线 replay 不重复；/timeline 三种模式过滤一致；agent/agent-ui/gateway 相关全量。
 
-- 实现（2026-09-01）：已有 tool（toolCallId/receiptId）与 plan（planId/revision/stepId）投影继续使用稳定 key 原地 upsert；command execution 现以 `__command_execution_<requestId>__` 作为稳定 transcript item，由 running/complete/fail/link-output 生命周期原地替换，并携带 requestId、状态、attempt、输出引用与 retry 信息。三个渲染端均消费同一 SessionState message projection，不增加 timer 或平台依赖；状态 reducer 回归覆盖 command item 原地更新。
+- 已有本地切片（2026-09-01）：tool 与 plan 已按稳定 key 原地 upsert，command execution 已有 UI 侧派生投影；但它尚未由 agent/gateway 事件协议供给或 replay，不能作为统一 thread-item projection 完成态。后续先定义共享 `uiKind/key/sequence/attempt/receipt` 事件 envelope 和 UI projection port，再删除 UI 自行拼装的平行投影。
 
 **P272 · Cross-platform interaction harness（中）** `platform: agent acceptance + agent-ui acceptance`
 
