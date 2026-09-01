@@ -1616,6 +1616,7 @@ Turn: Fix session restore                                      running  01:42
 - P272 的 Playwright/PTY CI runner 尚未建立，当前不标记为完成；现有 Python PTY 验收继续按平台可用性显式 skip。
 - 现有 PTY 脚本复验（2026-09-01）：场景 1/2 通过；场景 3 计划项未进入 viewport，场景 5 `/usage` 在无 usage 数据时仅显示通知、未写入 outputs ring，故均失败。脚本已补充跨场景继续提示清理并兼容当前计划 glyph；失败 artifact 保留于 `acceptance/artifacts/20260901-161623/`，待建立稳定 mock usage 与 thread-item replay 后再纳入门禁，P272 继续保持未完成态。
 - 收尾复核（2026-09-01）：`agent` 797 passing、`agent-ui` 909 passing；`agent-gateway` 259 passing，另有 8 项监听/静态服务测试因 sandbox `listen EPERM` 失败；三包 `tsc --noEmit` 均通过。gateway 受限项与既有基线一致，未发现新增回归。
+- 下一切片边界（2026-09-01）：`AgentRpcRequestMeta` 已在 transport envelope 往返，但 `AgentConsoleComponent` 各异步 handler 尚未统一注入当前 command execution 的 `requestId/sessionEpoch`；在补齐注入与断线 replay 拒绝策略前，不提升 P269/P271 完成度。
 
 ### 后续架构批次登记（2026-09-01）
 
