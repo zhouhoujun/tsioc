@@ -1584,6 +1584,7 @@ Turn: Fix session restore                                      running  01:42
 - 本地 IoC 重构（2026-09-01）：共享 `agent/src/ui/CommandExecutionControl.ts` 定义 `CommandExecutionControlPort` 与 `COMMAND_EXECUTION_CONTROL` token，`AgentModule` 绑定 `InMemoryCommandExecutionControl` 默认实现，remote host 可覆写；SessionState 仅构造注入 port，既不直接保存 `AbortController`/Map，也不在字段/default setter 中 `new` 具体实现。browser composition root 从 context 取得 state；外部传入 state 时显式回填 injector 的 port。request id 跨 session 不复用。定向状态回归覆盖 injected port、取消与 stale completion。RPC response 尚未携带 requestId/epoch，remote host replacement 仍是后续切片，故不得标记为跨 host 完成态。
 - RPC envelope 增量（2026-09-01）：共享 `AgentRpcRequestMeta` 定义 `requestId/sessionEpoch`，HTTP、gateway 与 stdio/in-process transport 兼容透传；普通 response、stream chunk/done 与 error 均回显同一 meta。现有 command handler 尚未把每个本地 execution 的 meta 注入全部 RPC 调用，断线 replay 的 epoch 拒绝策略也未完成，故 P269 继续保持未完成态。
 - 组件定时刷新清理（2026-09-01）：`AgentConsoleComponent` 的流式 assistant 更新改为每个真实 chunk 立即驱动状态，移除 stream flush/pending notice/input-history restore 的 `setTimeout` 主动刷新路径；等待状态由响应式 turn status 表示。组件层不再使用 `setTimeout/setInterval`。
+- 规则扫描补充（2026-09-01）：复核 `agent-ui/src` 后确认仅 `HttpAgentConsoleAppRpc` 的请求超时与 `AgentConsoleRemoteEventBridge` 的断线重连保留定时器；二者属于 transport 生命周期，不驱动组件渲染。`AgentConsoleComponent` 已无定时器刷新。
 
 **P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
