@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -99,7 +100,7 @@ function createKeymapConsoleParts(
     rpc?: any,
     modelStore?: AgentConsoleModelStore
 ): { state: AgentConsoleSessionState; component: AgentConsoleComponent } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1', ...(workspace ? { workspace } : {}) } as any);
     const runtime = new RuntimeStub() as any;
     const appRpc = rpc || new FakeAppRpc();

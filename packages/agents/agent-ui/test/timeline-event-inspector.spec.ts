@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -51,7 +52,7 @@ export class TimelineEventInspectorTest {
 
     @Test('openTimelineEventInspector sets open + selectedTimelineEventId')
     async openSetsState() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -66,7 +67,7 @@ export class TimelineEventInspectorTest {
 
     @Test('openTimelineEventInspector with explicit event argument')
     async openWithExplicitArg() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt1 = toolEvent('evt-1');
         const evt2 = toolEvent('evt-2');
@@ -80,7 +81,7 @@ export class TimelineEventInspectorTest {
 
     @Test('openTimelineEventInspector rejects non-event messages')
     async openRejectsNonEvent() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const msg = userMsg('u1');
         state.setMessages([msg]);
@@ -94,7 +95,7 @@ export class TimelineEventInspectorTest {
 
     @Test('closeTimelineEventInspector resets state')
     async closeResetsState() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -109,7 +110,7 @@ export class TimelineEventInspectorTest {
 
     @Test('closeTimelineEventInspector is no-op when already closed')
     async closeNoOp() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         state.timelineEventInspectorOpen = false;
 
@@ -120,7 +121,7 @@ export class TimelineEventInspectorTest {
 
     @Test('timelineEventDetailLines includes inspector header, metadata, content, keybindings')
     async detailLinesContent() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -147,7 +148,7 @@ export class TimelineEventInspectorTest {
 
     @Test('timelineEventDetailLines empty when no event selected')
     async detailLinesEmpty() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
 
         expect(state.timelineEventDetailLines).toEqual([]);
@@ -155,7 +156,7 @@ export class TimelineEventInspectorTest {
 
     @Test('hasTimelineEventInspectorFocus mirrors open state')
     async focusMirrorsOpen() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
 
         expect(state.hasTimelineEventInspectorFocus).toEqual(false);
@@ -167,7 +168,7 @@ export class TimelineEventInspectorTest {
 
     @Test('isAnyFocusActive includes timelineEventInspector')
     async isAnyFocusIncludesInspector() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -179,7 +180,7 @@ export class TimelineEventInspectorTest {
 
     @Test('scrollTimelineEventDetail clamps within bounds')
     async scrollDetailClamps() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -195,7 +196,7 @@ export class TimelineEventInspectorTest {
 
     @Test('scrollTimelineEventDetailPage scrolls by visible lines')
     async scrollPage() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -208,7 +209,7 @@ export class TimelineEventInspectorTest {
 
     @Test('scrollTimelineEventDetailToEdge jumps to start/end')
     async scrollToEdge() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -223,7 +224,7 @@ export class TimelineEventInspectorTest {
 
     @Test('scrollTimelineEventDetailColumns clamps')
     async scrollColumnsClamps() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -239,7 +240,7 @@ export class TimelineEventInspectorTest {
 
     @Test('canRetryTimelineEvent returns true for failed events')
     async retryAllowed() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = failedToolEvent('evt-fail');
         state.setMessages([userMsg('u1'), evt]);
@@ -250,7 +251,7 @@ export class TimelineEventInspectorTest {
 
     @Test('canRetryTimelineEvent returns false for success events')
     async retryDenied() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-ok');
         state.setMessages([userMsg('u1'), evt]);
@@ -261,7 +262,7 @@ export class TimelineEventInspectorTest {
 
     @Test('canRetryTimelineEvent returns false when inspector closed')
     async retryDeniedWhenClosed() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = failedToolEvent('evt-fail');
         state.setMessages([userMsg('u1'), evt]);
@@ -273,7 +274,7 @@ export class TimelineEventInspectorTest {
 
     @Test('buildTimelineEventRetryPayload returns correct payload')
     async retryPayload() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = failedToolEvent('evt-fail');
         state.setMessages([userMsg('u1'), evt]);
@@ -289,7 +290,7 @@ export class TimelineEventInspectorTest {
 
     @Test('buildTimelineEventRetryPayload returns null when no event selected')
     async retryPayloadNull() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
 
         const payload = (state as any).buildTimelineEventRetryPayload();
@@ -298,7 +299,7 @@ export class TimelineEventInspectorTest {
 
     @Test('openTimelineEventInspector resets scroll to 0')
     async openResetsScroll() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -313,7 +314,7 @@ export class TimelineEventInspectorTest {
 
     @Test('closeTimelineEventInspector clears scroll')
     async closeResetsScroll() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -327,7 +328,7 @@ export class TimelineEventInspectorTest {
 
     @Test('setMessagesFocused(false) closes timeline event inspector')
     async unfocusClosesInspector() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -340,14 +341,14 @@ export class TimelineEventInspectorTest {
 
     @Test('isTimelineEventMessage identifies tool events')
     async isTimelineEventMessagePositive() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const evt = toolEvent('e1');
         expect((state as any).isTimelineEventMessage(evt)).toEqual(true);
     }
 
     @Test('isTimelineEventMessage rejects non-event messages')
     async isTimelineEventMessageNegative() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect((state as any).isTimelineEventMessage(userMsg('u1'))).toEqual(false);
         expect((state as any).isTimelineEventMessage(null)).toEqual(false);
         expect((state as any).isTimelineEventMessage(undefined)).toEqual(false);
@@ -355,14 +356,14 @@ export class TimelineEventInspectorTest {
 
     @Test('isTimelineEventMessage rejects non-tool event types')
     async isTimelineEventMessageRejectsState() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const msg = { id: 'x', role: 'assistant', metadata: { uiKind: 'event', uiEventType: 'state' } } as any;
         expect((state as any).isTimelineEventMessage(msg)).toEqual(false);
     }
 
     @Test('timelineEventDetailLines shows attempt only when > 1')
     async attemptShownOnlyWhenMultiple() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt1 = toolEvent('evt-1');  // attempt: 1
         state.setMessages([userMsg('u1'), evt1]);
@@ -381,7 +382,7 @@ export class TimelineEventInspectorTest {
 
     @Test('handleFocusKey with enter/esc closes inspector')
     async focusKeyEscape() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
@@ -393,7 +394,7 @@ export class TimelineEventInspectorTest {
 
     @Test('handleEscapeKey closes timeline event inspector')
     async escapeKeyCloses() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);

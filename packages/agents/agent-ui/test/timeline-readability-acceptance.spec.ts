@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -48,7 +49,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('compact mode: active scope + errors are present')
     testCompactShowsActiveAndErrors() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 5 });
         state.setTimelineMode('compact');
         state.setMessages([
@@ -66,7 +67,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('compact mode: error events always visible')
     testCompactErrorAlwaysVisible() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 3 });
         state.setTimelineMode('compact');
         state.setMessages([
@@ -81,7 +82,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('steps mode: all events present in displayMessages')
     testStepsDisplayMessages() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 3 });
         state.setTimelineMode('steps');
         const events = Array.from({ length: 10 }, (_, i) =>
@@ -95,7 +96,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('verbose mode: all events returned without filtering')
     testVerboseAllEvents() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 3 });
         state.setTimelineMode('verbose');
         const events = Array.from({ length: 10 }, (_, i) =>
@@ -109,7 +110,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('multi-step parallel: concurrent tool calls in same scope are all present')
     testMultiStepParallel() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 20 });
         state.setTimelineMode('compact');
         state.beginTurnEventScope('scope');
@@ -130,7 +131,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('retry failure: failed + retry both visible in compact')
     testRetryFailureVisible() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 5 });
         state.setTimelineMode('compact');
         state.setMessages([
@@ -154,7 +155,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('long tool output: content is preserved in message list')
     testLongToolOutputPreserved() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 5 });
         state.setTimelineMode('verbose');
         state.setMessages([
@@ -169,7 +170,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('narrow terminal: CJK content does not crash')
     testCjkContentSafe() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 5 });
         state.setTimelineMode('compact');
         state.setMessages([
@@ -183,7 +184,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('first-screen visibility: active scope events present')
     testCurrentStepVisible() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 3 });
         state.setTimelineMode('steps');
         state.beginTurnEventScope('scope');
@@ -200,7 +201,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('80-column: event IDs are short')
     test80ColumnIdsShort() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 10 });
         state.setTimelineMode('compact');
         state.setMessages([
@@ -216,7 +217,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('disconnected replay: events from different sources coexist')
     testDisconnectedReplay() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setConsoleOptions({ messagesVisibleItems: 10 });
         state.setTimelineMode('steps');
         state.setMessages([
@@ -242,7 +243,7 @@ export class TimelineReadabilityAcceptanceTest {
 
     @Test('timelineViewMode change is synchronous')
     testSyncModeChange() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.timelineViewMode).toBe('off');
         state.setTimelineMode('steps');
         expect(state.timelineViewMode).toBe('steps');

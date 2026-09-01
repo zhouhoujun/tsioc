@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { EventEmitter } from 'events';
 import { Suite, Test } from '@tsdi/unit';
@@ -147,7 +148,7 @@ function createSshConsole(
     sshManager?: FakeSshManager | null,
     surface?: FakeSurfaceAccessor | null
 ): { state: AgentConsoleSessionState; component: AgentConsoleComponent; surface: FakeSurfaceAccessor } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     const runtime = new RuntimeStub() as any;
     const bridge = new AgentConsoleEventBridge(state, runtime, null, null, null);
     const surfaceAccessor = surface ?? new FakeSurfaceAccessor();

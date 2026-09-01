@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -60,7 +61,7 @@ function createStashConsole(ui?: any, stashValue?: Record<string, string>): {
     component: AgentConsoleComponent;
     store: MemoryStashStore;
 } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1' } as any);
     const runtime = new RuntimeStub() as any;
     const rpc = new FakeAppRpc();

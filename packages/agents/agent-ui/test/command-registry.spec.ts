@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -139,7 +140,7 @@ export class AgentConsoleCommandRegistryTest {
 
     @Test('smart-run: needsArgs command injects and waits, no-arg command submits')
     async smartRunRespectsNeedsArgs() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         let submitCount = 0;
         state.submitAction = async () => {
             submitCount += 1;
@@ -160,7 +161,7 @@ export class AgentConsoleCommandRegistryTest {
 
     @Test('smart-run: external injected hints keep legacy submit behavior')
     async smartRunKeepsExternalHintSubmit() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         let submitCount = 0;
         state.submitAction = async () => {
             submitCount += 1;

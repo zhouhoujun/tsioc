@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState, AgentConsoleSessionItem, AgentConsoleSelectOption } from '../src';
@@ -46,7 +47,7 @@ function sessionsFixture(): AgentConsoleSessionItem[] {
 }
 
 function newState(): AgentConsoleSessionState {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 's1' });
     return state;
 }

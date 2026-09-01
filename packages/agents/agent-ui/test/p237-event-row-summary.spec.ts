@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -106,7 +107,7 @@ export class P237EventRowSummaryTest {
 
     @Test('inspector opens for failure, blocked-step and approval timeline events')
     inspectorAcceptsFailedBlockedApproval() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
 
         const failed = upsertEvent(state, 'evt-fail', 'tool_failed', 'error');

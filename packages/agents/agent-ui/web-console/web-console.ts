@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
 import {
@@ -93,13 +93,12 @@ export async function mountAgentWebConsole(
         timeoutMs: config.timeoutMs,
         ...(config.fetchImpl ? { fetchImpl: config.fetchImpl } : {})
     });
-    const state = config.state ?? new AgentConsoleSessionState();
-
     const ctx = await Application.run(AgentConsoleComponent, {
         deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
         providers: [
             { provide: DOCUMENT, useValue: doc },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
+            ...(config.state ? [{ provide: AgentConsoleSessionState, useValue: config.state }] : []),
             { provide: AGENT_IDE_BRIDGE, useValue: new VscodeIdeBridge(doc.defaultView ?? globalThis) },
             {
                 provide: AGENT_OPTIONS,
@@ -118,6 +117,13 @@ export async function mountAgentWebConsole(
             }
         ]
     });
+
+    const state = (config.state ?? ctx.get(AgentConsoleSessionState)) as AgentConsoleSessionState;
+    // An externally supplied state bypasses constructor injection, so wire its
+    // cross-platform control port from this host's injector explicitly.
+    if (config.state) {
+        state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL) as CommandExecutionControlPort);
+    }
 
     state.configure({
         sessionId: config.sessionId || state.sessionId || 'console',

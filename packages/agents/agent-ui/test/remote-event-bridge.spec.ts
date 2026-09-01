@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -9,7 +10,7 @@ import {
 } from '../src';
 
 function makeState(): AgentConsoleSessionState {
-    return new AgentConsoleSessionState();
+    return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
 }
 
 @Suite('AgentConsoleRemoteEventBridge parsing')

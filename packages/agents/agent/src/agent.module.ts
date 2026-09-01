@@ -74,6 +74,7 @@ import { DefaultGoalStore } from './goal/DefaultGoalStore';
 import { GoalStore } from './goal/GoalStore';
 import { InMemoryGoalStore } from './goal/InMemoryGoalStore';
 import { createAgentProviders } from './provider';
+import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
 
 @Module({
     imports: [
@@ -82,6 +83,7 @@ import { createAgentProviders } from './provider';
     bootstrap: [AgentRuntime],
     providers: [
         { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
+        { provide: COMMAND_EXECUTION_CONTROL, useClass: InMemoryCommandExecutionControl, asDefault: true },
         {
             provide: ModelAdapter,
             useFactory: (options: AgentOptions) => new RoutedModelAdapter(options.model ?? defaultAgentOptions.model!),

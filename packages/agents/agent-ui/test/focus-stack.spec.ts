@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -6,7 +7,7 @@ import { AgentConsoleSessionState } from '../src';
 export class FocusStackTest {
     @Test('projects focused state as ordered layers with modal priority')
     focusProjectionUsesStablePriority() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessagesFocused(true);
         state.setTasksFocused(true);
         state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'], severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending' });
@@ -17,7 +18,7 @@ export class FocusStackTest {
 
     @Test('push/pop/replace/consume are deterministic and serializable')
     focusStackOperations() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.pushFocusLayer('overlay')).toEqual(['overlay']);
         expect(state.pushFocusLayer('review')).toEqual(['overlay', 'review']);
         expect(state.pushFocusLayer('overlay')).toEqual(['review', 'overlay']);
@@ -31,7 +32,7 @@ export class FocusStackTest {
 
     @Test('clearing the top modal restores the underlying layer')
     async escapePopsQuestionBeforePanel() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setTasksFocused(true);
         state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'], severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending' });
         expect(await state.handleFocusKey('escape')).toEqual(true);

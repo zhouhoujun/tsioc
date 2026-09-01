@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
@@ -5,7 +6,7 @@ import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
 @Suite('P229 plan-first thread renderer')
 export class PlanThreadSuite {
     protected createState(): AgentConsoleSessionState {
-        return new AgentConsoleSessionState();
+        return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     }
 
     @Test('mergePlanCreated seeds the plan thread and stamps stable planId/revision on each step')

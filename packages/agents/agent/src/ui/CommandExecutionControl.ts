@@ -1,3 +1,5 @@
+import { token } from '@tsdi/ioc';
+
 /**
  * Host-neutral cancellation/staleness seam for command execution.
  *
@@ -13,6 +15,8 @@ export interface CommandExecutionControlPort {
     cancel(requestId: string): void;
     cancelSession(sessionId: string): void;
 }
+
+export const COMMAND_EXECUTION_CONTROL = token<CommandExecutionControlPort>('COMMAND_EXECUTION_CONTROL');
 
 interface CommandExecutionLease {
     sessionId: string;

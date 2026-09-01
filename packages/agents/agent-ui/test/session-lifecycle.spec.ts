@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionService, AgentConsoleSessionState } from '../src';
+import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 
 class RuntimeStub {
     messages: any[] = [];
@@ -67,7 +68,7 @@ function createLifecycleConsole(): {
     component: AgentConsoleComponent;
     rpc: FakeAppRpc;
 } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1' } as any);
     const runtime = new RuntimeStub() as any;
     const rpc = new FakeAppRpc();

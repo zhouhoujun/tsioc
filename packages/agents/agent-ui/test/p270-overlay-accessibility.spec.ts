@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -14,7 +15,7 @@ import {
 export class P270OverlayAccessibilityTest {
     @Test('select menu exposes title, count, and active option as text')
     async selectMenuLabel() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Command palette', [
             { label: '/help', value: '/help' },
             { label: '/model', value: '/model' }
@@ -25,7 +26,7 @@ export class P270OverlayAccessibilityTest {
 
     @Test('question and output options expose a selected text projection')
     async questionAndOutputsSelection() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setPendingQuestion({ question: 'Continue?', options: ['Yes', 'No'], severity: 'medium', updatedAt: 1 });
         state.pendingQuestionSelectedIndex = 1;
         const question = new AgentConsolePendingQuestionPanelComponent(state);
@@ -42,7 +43,7 @@ export class P270OverlayAccessibilityTest {
 
     @Test('dialogs describe their current subject without relying on visual state')
     async dialogLabelsDescribeSubject() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openTextOverlay('Plan details', ['one', 'two']);
         expect(new AgentConsoleTextOverlayPanelComponent(state).accessibilityLabel).toContain('Plan details. 2 lines.');
 
@@ -55,7 +56,7 @@ export class P270OverlayAccessibilityTest {
 
     @Test('plan region states the active step in text')
     async planRegionLabelsActiveStep() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setPlanTodos([
             { id: 'one', content: 'Inspect implementation', status: 'in_progress' },
             { id: 'two', content: 'Run tests', status: 'pending' }

@@ -17,6 +17,7 @@ import {
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
     AgentToolInvokedEvent,
+    InMemoryCommandExecutionControl,
     normalizeAgentWorkspaceIdentity
 } from '@tsdi/agent';
 import {
@@ -1539,7 +1540,7 @@ function createConsoleParts(
     audioCapture?: AudioCaptureAdapter,
     audioPlayback?: AudioPlaybackAdapter
 ) {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, appRpc as any, app as any);
     const sessions = sessionService || new SessionServiceStub(runtime);
     if (sessions instanceof SessionServiceStub) {
@@ -2548,7 +2549,7 @@ export class AgentConsoleComponentTest {
 
     @Test('shared select menu actions resolve, choose, and cancel through session state')
     async sharedSelectMenuActionsResolveThroughSessionState() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const resolved: Array<string | undefined> = [];
 
         state.openSelectMenu('Model providers', [
@@ -2591,7 +2592,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state resolves slash and mention suggestions from input cursor')
     async sessionStateResolvesSlashAndMentionSuggestions() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setCommandHints(['/help', '/hello']);
         state.setTools([
             { name: 'read_file', active: false },
@@ -2621,7 +2622,7 @@ export class AgentConsoleComponentTest {
     async sessionStateResolvesWorkspaceMentionSuggestions() {
         const workspace = createWorkspaceFixture();
         try {
-            const state = new AgentConsoleSessionState();
+            const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
             state.setWorkspace(workspace);
             state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
 
@@ -2648,7 +2649,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state groups skill and plugin mentions with canonical insertion values')
     async sessionStateGroupsSkillAndPluginMentions() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setWorkspaceMentionResolver(new AgentConsoleWorkspaceMentionsProvider());
         state.setMentionCatalog([
             { kind: 'skill', id: 'implement', title: 'Implement', description: 'Make code changes' },
@@ -2704,7 +2705,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state processes raw enter chunks through shared console input rules')
     async sessionStateProcessesRawEnterChunks() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         let submitCount = 0;
         state.submitAction = async () => {
             submitCount += 1;
@@ -2740,7 +2741,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state tracks input history and skips slash commands')
     async sessionStateTracksInputHistory() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushInputHistory('first');
         state.pushInputHistory('/help');
         state.pushInputHistory('second');
@@ -2760,7 +2761,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state starts submit without waiting for model turn completion')
     async sessionStateStartsSubmitWithoutWaitingForTurnCompletion() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         let releaseSubmit!: () => void;
         let completed = false;
         state.submitAction = async () => {
@@ -5799,7 +5800,7 @@ export class AgentConsoleComponentTest {
 
     @Test('component handleCommand returns true for known commands')
     async componentHandleCommandReturnsTrue() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([]);
         expect(state.messages.length).toEqual(0);
     }
@@ -5824,7 +5825,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel routes suggestion keys through shared session state')
     async inputPanelRoutesSuggestionKeysThroughSharedState() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setCommandHints(['/help', '/hello']);
         state.setInput('/');
         const panel = new AgentConsoleInputPanelComponent(state);
@@ -5865,7 +5866,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel confirms normal select menus with enter')
     async inputPanelConfirmsNormalSelectMenusWithEnter() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const resolved: Array<string | undefined> = [];
         state.openSelectMenu('Help', [
             { label: '/model', value: '/model' },
@@ -6007,7 +6008,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel closes normal select menus with q and escape')
     async inputPanelClosesNormalSelectMenusWithQAndEscape() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const panel = new AgentConsoleInputPanelComponent(state);
 
         state.openSelectMenu('Help', [
@@ -6027,7 +6028,7 @@ export class AgentConsoleComponentTest {
 
     @Test('select panel closes menus with q and esc aliases')
     async selectPanelClosesMenusWithDismissKeys() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const panel = new AgentConsoleSelectPanelComponent(state);
 
         state.openSelectMenu('Help', [
@@ -6047,7 +6048,7 @@ export class AgentConsoleComponentTest {
 
     @Test('escape dismisses focused layers back to input focus')
     async escapeDismissesFocusedLayersBackToInputFocus() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any
         ]);
@@ -6088,7 +6089,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleFocusKey treats q like escape for focused panels')
     async handleFocusKeyTreatsQAsDismissAcrossFocusedPanels() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setSessions([
             { id: 'default', current: true, messageCount: 1, updatedAt: 1 } as any
         ]);
@@ -6112,7 +6113,7 @@ export class AgentConsoleComponentTest {
 
     @Test('focused tool panel activates selected tool on enter')
     async focusedToolPanelActivatesSelectedToolOnEnter() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const activated: string[] = [];
         state.setTools([
             { name: 'read_file', toolset: 'filesystem', active: false, activationKind: 'deferred' }
@@ -6138,7 +6139,7 @@ export class AgentConsoleComponentTest {
 
     @Test('focused approval panel accepts letter shortcuts from terminal input')
     async focusedApprovalPanelAcceptsLetterShortcuts() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const resolved: Array<{ decision: 'approve' | 'deny'; requestId: string }> = [];
         state.setPendingApprovals([
             {
@@ -6459,7 +6460,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports focused session list navigation')
     sessionStateSupportsFocusedSessionListNavigation() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setSessions([
             { id: 'chat-1', current: true, messageCount: 4, updatedAt: 4 },
             { id: 'chat-2', current: false, messageCount: 2, updatedAt: 2 }
@@ -6483,7 +6484,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports focused tool list navigation')
     sessionStateSupportsFocusedToolListNavigation() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setTools([
             { name: 'read_file', toolset: 'filesystem', active: true, activationKind: 'always' },
             { name: 'write_file', toolset: 'filesystem', active: false, activationKind: 'approval' }
@@ -6506,7 +6507,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports focused approval list navigation')
     sessionStateSupportsFocusedApprovalListNavigation() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setPendingApprovals([
             {
                 id: 'approval-1',
@@ -6547,7 +6548,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports coding task review focus, file navigation, and scroll')
     async sessionStateSupportsCodingTaskReviewFocusFileNavigationAndScroll() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const reviewTask = createReviewTask();
         (reviewTask as any).metadata = {
             ...(reviewTask.metadata || {}),
@@ -6678,7 +6679,7 @@ export class AgentConsoleComponentTest {
 
     @Test('review detail flags risks for failed tasks without rollback')
     reviewDetailFlagsRisksForFailedTasksWithoutRollback() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const failedTask = {
             ...createReviewTask(),
             status: 'failed',
@@ -6726,7 +6727,7 @@ export class AgentConsoleComponentTest {
 
     @Test('review detail folds and expands hunks with the f key')
     async reviewDetailFoldsAndExpandsHunks() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openReview(createReviewTask() as any, {
             executionMode: 'parallel',
             diff: {
@@ -6794,7 +6795,7 @@ export class AgentConsoleComponentTest {
 
     @Test('review detail toggles side-by-side patch rendering with the s key')
     async reviewDetailTogglesSideBySide() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openReview(createReviewTask() as any, {
             executionMode: 'parallel',
             diff: {
@@ -6854,7 +6855,7 @@ export class AgentConsoleComponentTest {
 
     @Test('review detail keeps large diffs scoped to the selected file')
     reviewDetailKeepsLargeDiffsScopedToSelectedFile() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const fileCount = 24;
         const diffLines: string[] = [];
         for (let index = 0; index < fileCount; index++) {
@@ -6892,7 +6893,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports paged session navigation and edges')
     sessionStateSupportsPagedSessionNavigationAndEdges() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setSessions([
             { id: 'chat-1', current: true } as any,
             { id: 'chat-2', current: false } as any,
@@ -7714,7 +7715,7 @@ export class AgentConsoleComponentTest {
 
     @Test('git snapshot state opens and closes the detail panel with scroll state')
     async gitSnapshotStateOpensAndClosesDetailPanel() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openGitSnapshotDetail('git snapshot msg-1', ['line 1', 'line 2', 'line 3', 'line 4', 'line 5', 'line 6', 'line 7', 'line 8', 'line 9', 'line 10'], 'files 1');
 
         expect(state.gitSnapshotOpen).toEqual(true);
@@ -8271,7 +8272,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state isolates review annotations for duplicate task ids across sessions')
     sessionStateIsolatesReviewAnnotationsForDuplicateTaskIdsAcrossSessions() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const taskA = { id: 'task-1', title: 'Task A', sourceSessionId: 'chat-a', status: 'running' };
         const taskB = { id: 'task-1', title: 'Task B', sourceSessionId: 'chat-b', status: 'running' };
 
@@ -8309,7 +8310,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports focused message list navigation')
     sessionStateSupportsFocusedMessageListNavigation() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
             { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any
@@ -8333,7 +8334,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state follows the latest message when not browsing messages')
     sessionStateFollowsLatestMessageWhenNotBrowsing() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
             { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any
@@ -8362,7 +8363,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state hides tool messages and blank assistant placeholders from visible navigation')
     sessionStateHidesToolMessagesFromVisibleNavigation() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'u1', role: 'user', content: '查天气', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '', createdAt: 2, metadata: { toolCalls: [{ id: 'tc1', name: 'weather' }] } } as any,
@@ -8381,7 +8382,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state hides reasoning messages when showThinking is disabled')
     sessionStateHidesReasoningMessagesWhenThinkingHidden() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.upsertUiEventMessage(state.qualifyUiEventKey('reasoning'), 'Reasoning about implementation', {
             eventType: 'reasoning',
             label: 'think',
@@ -8403,7 +8404,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state dedupes identical ui event upserts')
     sessionStateDedupesIdenticalUiEventUpserts() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
 
         state.upsertUiEventMessage('turn-start', 'Analyzing request', {
             eventType: 'turn_started',
@@ -8427,7 +8428,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports message detail open and scroll')
     sessionStateSupportsMessageDetailOpenAndScroll() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             {
                 id: 'm1',
@@ -8452,7 +8453,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state opens message detail on enter when messages are focused')
     async sessionStateOpensMessageDetailOnEnterWhenMessagesFocused() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             {
                 id: 'm1',
@@ -8471,7 +8472,7 @@ export class AgentConsoleComponentTest {
 
     @Test('page up entry focuses the latest long message without a command')
     pageUpEntryFocusesLatestLongMessage() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'long', role: 'assistant', content: Array.from({ length: 12 }, (_value, index) => `line ${index}`).join('\n'), createdAt: 1 },
             { id: 'short', role: 'assistant', content: 'done', createdAt: 2 }
@@ -8484,7 +8485,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state copies selected message content when messages are focused')
     async sessionStateCopiesSelectedMessageContentWhenMessagesFocused() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const copied: Array<{ text: string; label: string }> = [];
         state.copyFocusedTextAction = async (text, label) => {
             copied.push({ text, label });
@@ -8505,7 +8506,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state copies selected message content from message detail')
     async sessionStateCopiesSelectedMessageContentFromMessageDetail() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const copied: Array<{ text: string; label: string }> = [];
         state.copyFocusedTextAction = async (text, label) => {
             copied.push({ text, label });
@@ -8527,7 +8528,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports paged message navigation and detail edges')
     sessionStateSupportsPagedMessageNavigationAndDetailEdges() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
             { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
@@ -8558,7 +8559,7 @@ export class AgentConsoleComponentTest {
 
     @Test('session state supports message detail horizontal scrolling with tab expansion')
     sessionStateSupportsMessageDetailHorizontalScrollingWithTabExpansion() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             {
                 id: 'm1',
@@ -8586,7 +8587,7 @@ export class AgentConsoleComponentTest {
     }
     @Test('handleSelectKey navigates and confirms select menu')
     handleSelectKeyNavigatesSelectMenu() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Test', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' },
@@ -8613,7 +8614,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleSelectKey treats q like escape for select menus')
     handleSelectKeyTreatsQAsEscapeForSelectMenus() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Test', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
@@ -8626,7 +8627,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleSelectKey returns to parent menu before closing root menu')
     async handleSelectKeyReturnsToParentMenuBeforeClosingRootMenu() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Parent', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
@@ -8646,7 +8647,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleMenuInput returns to parent menu before closing root menu')
     async handleMenuInputReturnsToParentMenuBeforeClosingRootMenu() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Parent', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
@@ -8665,7 +8666,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleSelectKey selects by number and returns true on handled keys')
     handleSelectKeyReturnsTrueOnHandledKeys() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Test', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
@@ -8689,7 +8690,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleSelectKey moves to edge and by page (P266)')
     handleSelectKeyMovesToEdgeAndPage() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Test', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' },
@@ -8718,7 +8719,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleMenuInput moves to edge and by page (P266)')
     handleMenuInputMovesToEdgeAndPage() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Test', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' },
@@ -8739,7 +8740,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleFocusKey pendingQuestion navigates edge and page (P266)')
     async handleFocusKeyPendingQuestionNavigatesEdgeAndPage() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pendingQuestion = {
             questionId: 'q1',
             question: 'pick one',
@@ -8768,7 +8769,7 @@ export class AgentConsoleComponentTest {
 
     @Test('handleFocusKey approval navigation routes through controller (P266)')
     async handleFocusKeyApprovalRoutesThroughController() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setPendingApprovals([
             { id: 'a1', toolName: 't1', sessionId: 's', reason: 'r1', summary: 's1', hasInput: false, createdAt: 1, timeoutMs: 1000, expiresAt: 2 },
             { id: 'a2', toolName: 't2', sessionId: 's', reason: 'r2', summary: 's2', hasInput: false, createdAt: 1, timeoutMs: 1000, expiresAt: 2 },
@@ -8807,7 +8808,7 @@ export class AgentConsoleComponentTest {
     async leftArrowAfterWorkspaceSuggestionMovesCursorCorrectly() {
         const workspace = createWorkspaceFixture();
         try {
-            const state = new AgentConsoleSessionState();
+            const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
             let submitCalled = false;
             state.submitAction = async () => {
                 submitCalled = true;
@@ -8915,7 +8916,7 @@ export class AgentConsoleComponentTest {
     async processRawChunkWithWorkspaceSuggestionDoesNotSubmit() {
         const workspace = createWorkspaceFixture();
         try {
-            const state = new AgentConsoleSessionState();
+            const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
             let submitCount = 0;
             state.submitAction = async () => { submitCount++; };
             state.setWorkspace(workspace);
@@ -9130,7 +9131,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel prompt shows a plan-mode badge when enabled')
     async inputPromptShowsPlanBadge() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.inputPrompt = '>';
         const panel = new AgentConsoleInputPanelComponent(state);
         expect(panel.inputPrompt).toEqual('>');
@@ -9144,7 +9145,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel nudges explicit planning drafts toward plan mode')
     async inputPanelNudgesPlanningDrafts() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const panel = new AgentConsoleInputPanelComponent(state);
 
         state.setInput('Please design the architecture before changing any files.');
@@ -9160,7 +9161,7 @@ export class AgentConsoleComponentTest {
 
     @Test('plan nudge is hidden in plan mode and when disabled')
     async planNudgeRespectsModeAndConfiguration() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setInput('Plan the implementation carefully before making edits.');
         expect(state.planNudgeLabel).toContain('/plan');
 
@@ -9285,7 +9286,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim mode is disabled by default and does not intercept keys')
     async vimModeDisabledByDefault() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.vimMode).toEqual(false);
         expect(state.inputMode).toEqual('insert');
         expect(state.handleVimKey('h')).toEqual(false);
@@ -9294,7 +9295,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim normal mode executes cursor and edit actions')
     async vimNormalModeExecutesCursorAndEditActions() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
         state.setInput('abc');
@@ -9316,7 +9317,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim dd pending sequence deletes the input line')
     async vimDdPendingSequenceDeletesLine() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
         state.setInput('abc');
@@ -9333,7 +9334,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim broken pending sequence resets without acting')
     async vimBrokenPendingSequenceResets() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
         state.setInput('abc', 1);
@@ -9347,7 +9348,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim normal mode navigates input history with k and j')
     async vimNormalModeNavigatesHistory() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
         state.pushInputHistory('first');
@@ -9363,7 +9364,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim insert mode passes keys through and exit returns to normal')
     async vimInsertModePassesThrough() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         expect(state.inputMode).toEqual('insert');
         expect(state.handleVimKey('h')).toEqual(false);
@@ -9382,7 +9383,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim insert actions reposition the cursor before entering insert mode')
     async vimInsertActionsRepositionCursor() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
         state.setInput('abc');
@@ -9411,7 +9412,7 @@ export class AgentConsoleComponentTest {
 
     @Test('terminal escape in vim insert mode returns to normal mode')
     async terminalEscapeReturnsToNormalMode() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         expect(state.inputMode).toEqual('insert');
 
@@ -9431,7 +9432,7 @@ export class AgentConsoleComponentTest {
 
     @Test('terminal escape without vim keeps existing escape behavior')
     async terminalEscapeWithoutVimKeepsEscapeBehavior() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setInputMode('normal');
         expect(state.inputMode).toEqual('insert');
 
@@ -9451,7 +9452,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel prompt shows a vim mode badge with the current mode')
     async inputPromptShowsVimBadge() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.inputPrompt = '>';
         const panel = new AgentConsoleInputPanelComponent(state);
         expect(panel.inputPrompt).toEqual('>');
@@ -9468,7 +9469,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim custom keymap overrides, unsets, and resets bindings')
     async vimCustomKeymapOverrideUnsetReset() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
 
         expect(state.effectiveVimBindings.h).toEqual('cursor-left');
@@ -9489,7 +9490,7 @@ export class AgentConsoleComponentTest {
 
     @Test('vim binding setter rejects unknown actions')
     async vimBindingSetterRejectsUnknownActions() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.setVimBinding('q', 'bogus-action')).toEqual(false);
         expect(state.setVimBinding('', 'delete-line')).toEqual(false);
         expect(state.effectiveVimBindings.q).toEqual(undefined);
@@ -10349,7 +10350,7 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel routes browser global keys through shared resolver')
     async inputPanelRoutesBrowserGlobalKeys() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const panel = new AgentConsoleInputPanelComponent(state);
         const calls: Array<{ key: string; ctrlKey?: boolean }> = [];
         state.globalKeyInputAction = async (key, modifiers) => {
@@ -10780,7 +10781,7 @@ export class AgentConsoleSessionSectionsTest {
 
     @Test('mergeMessagesPage appends fresh messages and dedupes by id')
     async mergeMessagesPageAppendsAndDedupes() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'a', role: 'user', content: 'A', createdAt: 1 } as any,
             { id: 'b', role: 'assistant', content: 'B', createdAt: 2 } as any
@@ -10796,7 +10797,7 @@ export class AgentConsoleSessionSectionsTest {
 
     @Test('mergeMessagesPage prepend places older page before existing tail')
     async mergeMessagesPagePrependsOlderMessages() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'c', role: 'user', content: 'C', createdAt: 3 } as any
         ]);
@@ -10812,7 +10813,7 @@ export class AgentConsoleSessionSectionsTest {
 
     @Test('mergeMessagesPage replaces sections and keeps messages unchanged on empty page')
     async mergeMessagesPageReplacesSections() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([{ id: 'a', role: 'user', content: 'A', createdAt: 1 } as any]);
         state.setSections([{ id: 's1', label: 'old', createdAt: 1 }]);
         state.mergeMessagesPage({
@@ -10957,7 +10958,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('pushCommandOutput prepends entries and caps the ring at AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP')
     async pushCommandOutputCapsRing() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         for (let i = 0; i < AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP + 5; i++) {
             state.pushCommandOutput(`/cmd-${i}`, `output ${i}`);
         }
@@ -10969,7 +10970,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('pushCommandOutput trims text and drops entries with empty command or body')
     async pushCommandOutputTrimsAndDropsEmpty() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushCommandOutput('/usage', '  tokens 100  ');
         expect(state.commandOutputs.length).toEqual(1);
         expect(state.commandOutputs[0].text).toEqual('tokens 100');
@@ -10981,7 +10982,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('visibleCommandOutputs filters by command and text, case-insensitive')
     async visibleCommandOutputsFilters() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushCommandOutput('/usage', 'tokens 100');
         state.pushCommandOutput('/quality', 'summary 92');
         state.pushCommandOutput('/hooks', 'beforeTurn');
@@ -10995,7 +10996,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('setCommandOutputsFilter caps the filter string and resets selection')
     async setCommandOutputsFilterCapsAndResets() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushCommandOutput('/usage', 'tokens 100');
         state.moveCommandOutputSelection(1);
         state.setCommandOutputsFilter('x'.repeat(100));
@@ -11005,7 +11006,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('open/close/toggleCommandOutputs manage focus and reset filter and selection')
     async commandOutputsOpenCloseToggle() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.hasCommandOutputsFocus()).toEqual(false);
         state.openCommandOutputs();
         expect(state.commandOutputsOpen).toEqual(true);
@@ -11024,7 +11025,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('moveCommandOutputSelection clamps to the visible entry count')
     async moveCommandOutputSelectionClamps() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushCommandOutput('/usage', 'tokens 100');
         state.pushCommandOutput('/quality', 'summary 92');
         state.moveCommandOutputSelection(-10);
@@ -11040,7 +11041,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('copySelectedCommandOutput copies the selected entry text through copyFocusedTextAction')
     async copySelectedCommandOutputCopies() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.pushCommandOutput('/usage', 'tokens 100');
         state.openCommandOutputs();
         const copies: Array<{ text: string; label: string }> = [];
@@ -11054,7 +11055,7 @@ export class AgentConsoleCommandOutputsTest {
 
     @Test('copySelectedCommandOutput returns false on an empty ring or missing action')
     async copySelectedCommandOutputEmptyRing() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openCommandOutputs();
         const okMissingAction = await state.copySelectedCommandOutput();
         expect(okMissingAction).toEqual(false);
@@ -11066,6 +11067,9 @@ export class AgentConsoleCommandOutputsTest {
 
 @Suite('Agent console command executions ring (P265)')
 export class AgentConsoleCommandExecutionTest {
+    protected createState(): AgentConsoleSessionState {
+        return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+    }
 
     @Test('reducer begin transitions to running and records canonical command, args, and sessionId')
     async reducerBegin() {
@@ -11134,7 +11138,7 @@ export class AgentConsoleCommandExecutionTest {
 
     @Test('state begin/complete/fail/link methods route through the reducer and expose latest')
     async stateMethodsRouteThroughReducer() {
-        const state = new AgentConsoleSessionState();
+        const state = this.createState();
         const requestId = state.beginCommandExecution('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.status).toEqual('running');
@@ -11154,7 +11158,7 @@ export class AgentConsoleCommandExecutionTest {
 
     @Test('state configure with a new sessionId clears executions without reusing request ids')
     async stateConfigureClearsOnSessionSwitch() {
-        const state = new AgentConsoleSessionState();
+        const state = this.createState();
         state.beginCommandExecution('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         state.configure({ sessionId: 'session-B' } as any);
@@ -11167,7 +11171,7 @@ export class AgentConsoleCommandExecutionTest {
 
     @Test('session switch cancels active command execution and rejects its stale completion')
     async sessionSwitchRejectsStaleCommandResult() {
-        const state = new AgentConsoleSessionState();
+        const state = this.createState();
         state.configure({ sessionId: 'session-A' } as any);
         const staleRequest = state.beginCommandExecution('/search', 'old');
         expect(state.isCommandExecutionCurrent(staleRequest)).toEqual(true);
@@ -11185,7 +11189,7 @@ export class AgentConsoleCommandExecutionTest {
 
     @Test('state delegates command cancellation and staleness to the injected control port')
     async stateUsesInjectedCommandExecutionControl() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const calls: string[] = [];
         const signal = { aborted: false } as AbortSignal;
         state.setCommandExecutionControl({

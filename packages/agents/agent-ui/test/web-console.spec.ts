@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test, Before, After } from '@tsdi/unit';
 import { JSDOM } from 'jsdom';
@@ -119,7 +120,7 @@ export class AgentWebConsoleTest {
 
     @Test('AgentConsoleRemoteEventBridge applies SSE records to state')
     async remoteBridgeAppliesEvents() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 'w1' });
         const events = [
             'event: turn_started\ndata: {"sessionId":"w1"}\n\n',

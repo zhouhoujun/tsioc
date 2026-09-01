@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionState } from '../src';
@@ -90,7 +91,7 @@ function createShellConsole(toolRegistry?: FakeToolRegistry | null, appRpc?: Fak
     toolRegistry: FakeToolRegistry | null;
     appRpc: FakeAppRpc | null;
 } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     const runtime = new RuntimeStub() as any;
     const bridge = new AgentConsoleEventBridge(state, runtime, toolRegistry as any, appRpc as any, null);
     const component = new AgentConsoleComponent(
@@ -293,7 +294,7 @@ export class ShellBangCommandTest {
     async bangDoesNotRunTurn() {
         const runtime = new RuntimeStub();
         const registry = new FakeToolRegistry();
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         const bridge = new AgentConsoleEventBridge(state, runtime as any, registry as any, null, null);
         const component = new AgentConsoleComponent(
             state,

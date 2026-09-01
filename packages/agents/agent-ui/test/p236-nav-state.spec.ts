@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -94,7 +95,7 @@ export class NavStateSeedTest {
 
     @Test('seedNavTree stores the tree and counts sessions')
     testSeeds() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedNavTree(navFixture());
         expect(state.navTree).not.toBeNull();
@@ -105,7 +106,7 @@ export class NavStateSeedTest {
 
     @Test('seedNavTree ignores invalid payloads')
     testSeedInvalid() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.seedNavTree(null);
         expect(state.navTree).toBeNull();
         expect(state.navSeedCount).toEqual(0);
@@ -117,7 +118,7 @@ export class NavStateSeedTest {
 
     @Test('setNavFilter drops a selection that no longer resolves under the filter')
     testFilterDropsStaleSelection() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedNavTree(navFixture());
         state.setNavSelection({ type: 'session', id: 'a1', index: 0 });
@@ -128,7 +129,7 @@ export class NavStateSeedTest {
 
     @Test('setNavFilter keeps a selection that still resolves under the filter')
     testFilterKeepsSurvivingSelection() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedNavTree(navFixture());
         state.setNavSelection({ type: 'session', id: 'b1', index: 0 });
@@ -139,7 +140,7 @@ export class NavStateSeedTest {
 
     @Test('navigateNav moves the cursor over the flattened session list and stops at bounds')
     testNavigate() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedNavTree(navFixture());
         const first = state.navigateNav('down', 'session');
@@ -158,7 +159,7 @@ export class NavStateSeedTest {
 
     @Test('nav filter, selection and per-view scroll survive configure (shared store)')
     testStateSurvivesConfigure() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedNavTree(navFixture());
         state.setNavSelection({ type: 'session', id: 'b1', index: 2 });
@@ -172,7 +173,7 @@ export class NavStateSeedTest {
 
     @Test('per-view scroll positions restore independently and clamp invalid values')
     testViewScroll() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setNavViewScroll('projects', 42);
         expect(state.getNavViewScroll('projects')).toEqual(42);
         expect(state.getNavViewScroll('sessions')).toEqual(0);

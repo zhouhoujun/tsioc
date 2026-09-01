@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionService, AgentConsoleSessionState } from '../src';
@@ -82,7 +83,7 @@ function createEditConsole(messages: any[]): {
     component: AgentConsoleComponent;
     service: RecordingSessionService;
 } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1' } as any);
     state.setMessages(messages as any);
     const runtime = new RuntimeStub() as any;

@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
@@ -5,7 +6,7 @@ import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
 @Suite('P230 plan interaction action model')
 export class PlanActionSuite {
     protected createState(): AgentConsoleSessionState {
-        return new AgentConsoleSessionState();
+        return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     }
 
     @Test('requestPlanAction for a destructive action opens a confirmation prompt and does not apply yet')

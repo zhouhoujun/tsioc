@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -19,7 +20,7 @@ export class TimelineProjectionSeedTest {
 
     @Test('seedTimeline upserts ui-event messages keyed by stable timeline key')
     testSeeds() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         const entryList: TimelineEntry[] = [
             entry({ key: 'tool:tc1', kind: 'tool', label: 'bash', status: 'running', lastSeq: 0, toolCallId: 'tc1' }),
@@ -38,7 +39,7 @@ export class TimelineProjectionSeedTest {
 
     @Test('re-seeding with an updated entry is idempotent (upsert, not duplicate)')
     testReseedIdempotent() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         const first: TimelineEntry[] = [
             entry({ key: 'tool:tc1', kind: 'tool', label: 'bash', status: 'running', lastSeq: 0, toolCallId: 'tc1' })
@@ -55,7 +56,7 @@ export class TimelineProjectionSeedTest {
 
     @Test('markTimelineReconnecting toggles reconnecting and stale flags')
     testReconnectFlags() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.timelineReconnecting).toBe(false);
         expect(state.timelineStale).toBe(false);
         state.markTimelineReconnecting(true);
@@ -68,7 +69,7 @@ export class TimelineProjectionSeedTest {
 
     @Test('seed then live upsert merge onto same key')
     testSeedThenLiveMerge() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' });
         state.seedTimeline([entry({ key: 'tool:tc1', kind: 'tool', label: 'bash', status: 'running', lastSeq: 0, toolCallId: 'tc1' })]);
         state.upsertUiEventMessage('tool:tc1', 'bash completed', {

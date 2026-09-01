@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
@@ -39,14 +40,14 @@ export class TimelineViewModeTest {
 
     @Test('default timelineViewMode is off')
     testDefaultOff() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.timelineViewMode).toBe('off');
         expect(state.timelineMode).toBe(false);
     }
 
     @Test('setTimelineMode(true) sets compact')
     testSetTrue() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setTimelineMode(true);
         expect(state.timelineViewMode).toBe('compact');
         expect(state.timelineMode).toBe(true);
@@ -54,7 +55,7 @@ export class TimelineViewModeTest {
 
     @Test('setTimelineMode(false) sets off')
     testSetFalse() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setTimelineMode(false);
         expect(state.timelineViewMode).toBe('off');
         expect(state.timelineMode).toBe(false);
@@ -62,7 +63,7 @@ export class TimelineViewModeTest {
 
     @Test('setTimelineMode accepts string modes')
     testSetString() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setTimelineMode('compact');
         expect(state.timelineViewMode).toBe('compact');
         expect(state.timelineMode).toBe(true);
@@ -82,7 +83,7 @@ export class TimelineViewModeTest {
 
     @Test('timelineMode computed getter is true for compact/steps/verbose')
     testComputedGetter() {
-        const state = new AgentConsoleSessionState();
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         for (const mode of ['compact', 'steps', 'verbose'] as const) {
             state.setTimelineMode(mode);
             expect(state.timelineMode).toBe(true);

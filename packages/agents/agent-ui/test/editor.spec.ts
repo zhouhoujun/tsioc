@@ -1,3 +1,4 @@
+import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionService, AgentConsoleSessionState } from '../src';
@@ -56,7 +57,7 @@ function createEditorConsole(editor: FakeEditorBridge | null): {
     component: AgentConsoleComponent;
     editor: FakeEditorBridge | null;
 } {
-    const state = new AgentConsoleSessionState();
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1' } as any);
     const runtime = new RuntimeStub() as any;
     const rpc = new FakeAppRpc();

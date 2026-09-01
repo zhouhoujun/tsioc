@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable } from '@tsdi/ioc';
 import {
     ConsoleTextChunk,
     ConsoleTextInputChunkOptions,
@@ -21,8 +21,8 @@ import {
 } from './AgentConsoleStatusline';
 import {
     AgentConsoleCommandExecution,
+    COMMAND_EXECUTION_CONTROL,
     CommandExecutionControlPort,
-    InMemoryCommandExecutionControl,
     AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP,
     createBeginCommandExecutionAction,
     createCompleteCommandExecutionAction,
@@ -518,6 +518,7 @@ export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 
 @Injectable()
 export class AgentConsoleSessionState {
+    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     sessionId = 'console';
@@ -608,7 +609,6 @@ export class AgentConsoleSessionState {
     protected planEventSequence = 0;
     protected commandOutputSequence = 0;
     protected commandExecutionSequence = 0;
-    protected commandExecutionControl: CommandExecutionControlPort = new InMemoryCommandExecutionControl();
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -4259,8 +4259,9 @@ export class AgentConsoleSessionState {
     }
 
     beginCommandExecution(command: string, args: string): string {
+        const control = this.requireCommandExecutionControl();
         const requestId = `cmd-${++this.commandExecutionSequence}`;
-        this.commandExecutionControl.begin(requestId, this.sessionId);
+        control.begin(requestId, this.sessionId);
         this.commandExecutions = reduceAgentConsoleCommandExecution(
             this.commandExecutions,
             createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId)
@@ -4278,7 +4279,7 @@ export class AgentConsoleSessionState {
             createCompleteCommandExecutionAction(requestId, status)
         );
         this.syncCommandExecutionTranscript(requestId);
-        this.commandExecutionControl.finish(requestId);
+        this.requireCommandExecutionControl().finish(requestId);
     }
 
     failCommandExecution(requestId: string, error: string, retryable: boolean): void {
@@ -4290,7 +4291,7 @@ export class AgentConsoleSessionState {
             createFailCommandExecutionAction(requestId, String(error || ''), !!retryable)
         );
         this.syncCommandExecutionTranscript(requestId);
-        this.commandExecutionControl.finish(requestId);
+        this.requireCommandExecutionControl().finish(requestId);
     }
 
     linkCommandOutputToExecution(requestId: string, outputId: string): void {
@@ -4307,16 +4308,23 @@ export class AgentConsoleSessionState {
 
     /** True only while a request still belongs to this session generation. */
     isCommandExecutionCurrent(requestId: string): boolean {
-        return this.commandExecutionControl.isCurrent(requestId, this.sessionId)
+        return this.requireCommandExecutionControl().isCurrent(requestId, this.sessionId)
             && this.commandExecutions.some(item => item.requestId === requestId);
     }
 
     getCommandExecutionSignal(requestId: string): AbortSignal | undefined {
-        return this.commandExecutionControl.signal(requestId, this.sessionId);
+        return this.requireCommandExecutionControl().signal(requestId, this.sessionId);
     }
 
-    setCommandExecutionControl(control: CommandExecutionControlPort | undefined): void {
-        this.commandExecutionControl = control || new InMemoryCommandExecutionControl();
+    setCommandExecutionControl(control: CommandExecutionControlPort): void {
+        this.commandExecutionControl = control;
+    }
+
+    protected requireCommandExecutionControl(): CommandExecutionControlPort {
+        if (!this.commandExecutionControl) {
+            throw new Error('AgentConsoleSessionState requires COMMAND_EXECUTION_CONTROL from its host injector.');
+        }
+        return this.commandExecutionControl;
     }
 
     /** Cancels all currently running command records; late completions are ignored. */
@@ -4324,7 +4332,7 @@ export class AgentConsoleSessionState {
         this.commandExecutions
             .filter(item => item.status === 'running')
             .forEach(item => {
-                this.commandExecutionControl.cancel(item.requestId);
+                this.requireCommandExecutionControl().cancel(item.requestId);
                 this.commandExecutions = reduceAgentConsoleCommandExecution(
                     this.commandExecutions,
                     createCompleteCommandExecutionAction(item.requestId, 'cancelled')
