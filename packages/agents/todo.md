@@ -1620,6 +1620,7 @@ Turn: Fix session restore                                      running  01:42
 - 最终构建复核（2026-09-01）：`agent-ui npm run build:web` 成功，生成 3.6 MB console bundle 与 markdown worker；未引入额外工作区变更。
 - P269 增量（2026-09-01）：`AgentConsoleComponent` 增加单调 `sessionEpoch`，会话切换自动递增；`run.turn` 与核心 `tools.invoke` 远程调用统一透传 `{requestId, sessionEpoch}`，本地 runtime 路径不变。`agent-ui` 全量 909 passing、`tsc --noEmit` 通过；其余异步 handler 注入与 replay 拒绝策略仍待后续。
 - P269 验证补记（2026-09-01）：现有 `web-console.spec.ts` correlation metadata 测试与 agent-ui 全量回归确认 transport context 兼容；本轮未发现新增失败，剩余工作仍限于非核心 handler 和断线 replay 拒绝。
+- 全量复核（2026-09-01）：agent 797 passing、agent-ui 909 passing；agent-gateway 259 passing，8 项本地监听测试因 sandbox `listen EPERM` 失败；三包 `tsc --noEmit` 全部通过，结果与既有基线一致。
 
 ### 后续架构批次登记（2026-09-01）
 
