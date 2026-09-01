@@ -1614,6 +1614,7 @@ Turn: Fix session restore                                      running  01:42
 - `agent` 全量：797 passing；`agent-ui` 全量：909 passing；`agent-gateway` 全量：267 passing。
 - 三包 `tsc --noEmit` 与 `git diff --check` 通过；gateway 监听类测试在提升权限后通过。
 - P272 的 Playwright/PTY CI runner 尚未建立，当前不标记为完成；现有 Python PTY 验收继续按平台可用性显式 skip。
+- 现有 PTY 脚本复验（2026-09-01）：场景 1/2 通过；场景 3 计划项未进入 viewport，场景 5 `/usage` 在无 usage 数据时仅显示通知、未写入 outputs ring，故均失败。脚本已补充跨场景继续提示清理并兼容当前计划 glyph；失败 artifact 保留于 `acceptance/artifacts/20260901-161623/`，待建立稳定 mock usage 与 thread-item replay 后再纳入门禁，P272 继续保持未完成态。
 
 ### 后续架构批次登记（2026-09-01）
 

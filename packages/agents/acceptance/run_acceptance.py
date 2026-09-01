@@ -219,12 +219,18 @@ def scenario_keymap_overlay(pid: int, fd: int, screen: Screen) -> bool:
 
 def scenario_plan_checkbox(pid: int, fd: int, screen: Screen) -> bool:
     esc = re.escape(TODO_LABEL)
+    # Close the long-reply continuation prompt from scenario 1 before starting
+    # a new turn. Otherwise this text is consumed as the pending answer and
+    # the scripted todo tool calls are never requested from the fake model.
+    send(fd, '继续\r'.encode())
+    time.sleep(0.8)
+    drain(fd, screen)
     send(fd, '帮我建个计划并完成它。\r'.encode())
-    pending = wait_for(fd, screen, [rf'\[\s*\][^\n]*{esc}', rf'{esc}[^\n]*pending'], timeout=TIMEOUT)
+    pending = wait_for(fd, screen, [rf'(?:\[\s*\]|☐|▸)[^\n]*{esc}', rf'{esc}[^\n]*(?:pending|待处理)'], timeout=TIMEOUT)
     if not pending:
         print(f'[FAIL] scenario 3: pending plan item "{TODO_LABEL}" never rendered')
         return False
-    done = wait_for(fd, screen, [rf'\[[xX✓]\][^\n]*{esc}', rf'{esc}[^\n]*completed'], timeout=TIMEOUT)
+    done = wait_for(fd, screen, [rf'(?:\[[xX✓]\]|✓)[^\n]*{esc}', rf'{esc}[^\n]*(?:completed|完成)'], timeout=TIMEOUT)
     if not done:
         print(f'[FAIL] scenario 3: plan item "{TODO_LABEL}" never flipped to completed')
         return False
