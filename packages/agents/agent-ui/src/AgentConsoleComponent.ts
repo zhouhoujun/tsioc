@@ -2218,26 +2218,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         this.ensureWorkspaceMentionResolver();
-        this.keymapStore = this.keymapStore || new AgentConsoleKeymapStore(this.resolveFileAdapter());
         await this.restoreGlobalKeymap();
-        this.themeStore = this.themeStore || new AgentConsoleThemeStore(this.resolveFileAdapter());
         await this.restoreTheme();
-        this.statuslineStore = this.statuslineStore || new AgentConsoleStatuslineStore(this.resolveFileAdapter());
         await this.restoreStatusline();
-        this.titleStore = this.titleStore || new AgentConsoleTitleStore(this.resolveFileAdapter());
         await this.restoreTitle();
-        this.rawModeStore = this.rawModeStore || new AgentConsoleRawModeStore(this.resolveFileAdapter());
         await this.restoreRawMode();
-        this.stashStore = this.stashStore || new AgentConsoleStashStore(this.resolveFileAdapter());
-        this.modelStore = this.modelStore || new AgentConsoleModelStore(this.resolveFileAdapter());
         await this.restoreModelStore();
-        this.settingsStore = this.settingsStore || new AgentConsoleSettingsStore(this.resolveFileAdapter());
         await this.restoreSettings();
         this.updateTerminalTitle();
         await this.resolveGitBranch();
-        if (!this.inputHistoryStore) {
-            this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
-        }
         await this.bootstrapStateFromAppRpc();
         await this.initializeInputHistory();
         await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
@@ -2346,11 +2335,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.workspaceMentionsProvider = injected;
         } else {
             const fileAdapter = this.app?.get(FileAdapter, null) as FileAdapter | null;
-            if (fileAdapter) {
-                this.workspaceMentionsProvider = new AgentConsoleWorkspaceMentionsProvider(fileAdapter);
-            } else {
-                this.workspaceMentionsProvider = injected;
-            }
+            this.workspaceMentionsProvider = injected;
         }
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }

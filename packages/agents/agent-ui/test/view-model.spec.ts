@@ -2683,7 +2683,9 @@ export class AgentConsoleComponentTest {
                 runtime,
                 scheduler,
                 new ToolRegistryStub(),
-                app
+                app,
+                undefined,
+                new AgentConsoleWorkspaceMentionsProvider(new TestFileAdapter())
             );
             component.configure({
                 sessionId: 'chat-app-workspace-mentions',
