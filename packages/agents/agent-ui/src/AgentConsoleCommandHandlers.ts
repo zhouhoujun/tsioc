@@ -21,6 +21,8 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 // ── Command handler context ──────────────────────────────────────────────────
 
 export interface CommandHandlerContext {
+    /** Request-scoped cancellation signal. Handlers may forward it to async ports. */
+    readonly abortSignal?: AbortSignal;
     // ── state access ──
     readonly state: {
         readonly sessionId: string;

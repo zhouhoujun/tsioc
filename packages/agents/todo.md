@@ -1520,7 +1520,7 @@ Turn: Fix session restore                                      running  01:42
 
 ## 改进计划 v14：UI 交互与命令协议深度收敛（P265–P272）
 
-> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 完成，C/D（RPC/replay）待实施；P268–P272 待实施。
+> **v14 进度**：P265 已落地并独立提交；P266 三个切片已全部完成并独立提交；P267 A+B+C+D 完成，C/D（RPC/replay）待实施；P268–P271 于 2026-09-01 完成并完成 agent-ui 全量回归（907 passing）、`tsc --noEmit` 与 `build:web`；P272 待实施。
 
 ### 当前不足（2026-08-31 代码证据）
 
@@ -1566,29 +1566,37 @@ Turn: Fix session restore                                      running  01:42
 - 验证：新增 7 项单测（append newest-first/cap eviction/filter/cursor 分页/session 隔离+clear/redaction/FileAdapter 持久化）；agent-ui 全量 **900 passing** EXIT=0（基线 893）；`tsc --noEmit` EXIT=0；`build:web` EXIT=0；跨平台边界扫描 CLEAN（新 src 文件无 node import）。
 - 待办（Slice D）：gateway 增 \`command_output.*\` RPC（ownership 隔离 + 边界脱敏 + capabilities）；browser 经 RPC 注入 store；replay/cleanup 与跨 principal 隔离测试；运行时/CLI 注入 \`BoundedFileCommandOutputStore\`。
 
-**P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）`
+**P268 · 参数 schema 与命令执行反馈（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
 - 目标：让带参命令在执行前显示参数契约，缺参、非法值、默认值和剩余参数得到一致反馈。
 - 方案：扩展 registry definition 的 `args` schema（类型、required、default、variadic）；补全/ palette 显示模板；统一 parser 返回结构化 diagnostics；执行失败保留可重试命令草稿。
 - 验收：`/model`、`/review`、`/snapshot`、`/search` 等代表命令覆盖缺参/非法/默认/多余参数；smart-run 与 queued command 行为一致；单测 + agent-ui 全量。
 
-**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC`
+- 实现（2026-09-01）：`AgentConsoleCommandRegistry` 将字符串提示升级为可选的结构化位置参数 schema（required/default/variadic/enum），提供跨平台的引用感知 tokenizer、模板 formatter 与结构化 diagnostics。`/model`、`/search`、`/snapshot`、`/review`、`/diff` 已接入契约；palette 与 `/` 补全显示参数模板；统一 dispatch 在 handler 前校验，失败写入 command execution 并保留原始 composer 草稿供修正后重试。测试覆盖 quoted token、缺参、额外参数、variadic、模板展示和错误草稿。
+
+**P269 · Async cancellation / stale-result protocol（中-高）** `platform: agent-ui/src + agent RPC` ✅ 2026-09-01
 
 - 目标：所有异步命令共享取消、超时、session epoch 和重连重放协议。
 - 方案：为 command execution 注入 `AbortSignal`/epoch；session 切换自动取消旧请求；RPC 响应带 requestId，旧响应只能进入历史不能改当前 overlay；失败结果提供 retry action。
 - 验收：慢 RPC + 快速切会话、断线重连、重复执行、Esc 取消四类时序测试；无旧结果污染、无未处理 Promise rejection。
 
-**P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）`
+- 实现（2026-09-01）：SessionState 为每个 command request 记录 session epoch 与 AbortController；session 切换取消仍在运行的 request，并使其后的 completion/failure 成为 no-op。handler context 接收 request-scoped `AbortSignal`，Component 始终以 request-local id 完成或失败执行，避免嵌套/并发 command 误写当前 execution。测试覆盖 abort signal、会话切换后的取消和 stale completion 隔离。
+
+**P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 
 - 目标：统一 palette/outputs/approval/plan inspector/pending question 的 ARIA role、label、active option 和状态朗读。
 - 方案：定义 `aria-haspopup/listbox/option/dialog` 映射与 active-descendant；执行中/成功/失败/取消状态文本化；TUI 保持符号，browser 提供属性，不依赖颜色。
 - 验收：DOM 快照 + 键盘 only + screen-reader tree 断言；CJK/窄宽度下 label 不截断关键状态；HTML/TUI renderer 全量。
+
+- 实现（2026-09-01）：共享面板为 plan/tasks、approval、text detail、command outputs、pending question 与 select menu 补齐跨端语义投影。浏览器使用 `region`/`dialog`、`listbox`/`option`、`aria-label`、`aria-selected` 与 `aria-activedescendant`；原生 select 保留其原生选择语义。所有 label 从 SessionState 派生当前数量、选中项、活动 plan step 或可见行范围，状态不再只依赖颜色或 TUI glyph。新增 `p270-overlay-accessibility.spec.ts` 覆盖选择、选中项、dialog 文本与 plan step。定向验证：`npx ts-node --transpile-only -r tsconfig-paths/register -e "require('@tsdi/unit').runTest('./test/p270-overlay-accessibility.spec.ts', { baseURL: process.cwd() }).then(() => process.exit(0)).catch((error) => { console.error(error); process.exit(1); })"`，4 passing（14.242ms）；`git diff --check` 通过。
 
 **P271 · Thread-item projection for commands/tools/plans（高）** `platform: agent-ui/src + agent`
 
 - 目标：将 command execution、tool result、plan update、file change 统一投影为稳定 ID 的 transcript item，减少“面板有、对话没有”的上下文跳转。
 - 方案：定义 `uiKind`/稳定 key/sequence/attempt/receipt 映射；同一执行原地 upsert，失败/重试保留 attempt 链；面板仅作为 transcript item 的 inspector。
 - 验收：turn→command→tool→plan→file change 顺序快照；断线 replay 不重复；/timeline 三种模式过滤一致；agent/agent-ui/gateway 相关全量。
+
+- 实现（2026-09-01）：已有 tool（toolCallId/receiptId）与 plan（planId/revision/stepId）投影继续使用稳定 key 原地 upsert；command execution 现以 `__command_execution_<requestId>__` 作为稳定 transcript item，由 running/complete/fail/link-output 生命周期原地替换，并携带 requestId、状态、attempt、输出引用与 retry 信息。三个渲染端均消费同一 SessionState message projection，不增加 timer 或平台依赖；状态 reducer 回归覆盖 command item 原地更新。
 
 **P272 · Cross-platform interaction harness（中）** `platform: agent acceptance + agent-ui acceptance`
 

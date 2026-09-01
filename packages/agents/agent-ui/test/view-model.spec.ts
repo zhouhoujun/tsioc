@@ -11138,9 +11138,12 @@ export class AgentConsoleCommandExecutionTest {
         const requestId = state.beginCommandExecution('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.status).toEqual('running');
+        expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage running');
         state.completeCommandExecution(requestId, 'succeeded');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId);
+        expect(state.displayMessages.filter(item => item.metadata?.uiKind === 'command-execution').length).toEqual(1);
+        expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage completed');
 
         const requestId2 = state.beginCommandExecution('/status', '');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId2);
@@ -11160,5 +11163,23 @@ export class AgentConsoleCommandExecutionTest {
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.command).toEqual('/status');
         expect(after).toEqual('cmd-1');
+    }
+
+    @Test('session switch cancels active command execution and rejects its stale completion')
+    async sessionSwitchRejectsStaleCommandResult() {
+        const state = new AgentConsoleSessionState();
+        state.configure({ sessionId: 'session-A' } as any);
+        const staleRequest = state.beginCommandExecution('/search', 'old');
+        expect(state.isCommandExecutionCurrent(staleRequest)).toEqual(true);
+        const staleSignal = state.getCommandExecutionSignal(staleRequest);
+        state.configure({ sessionId: 'session-B' } as any);
+        expect(staleSignal?.aborted).toEqual(true);
+        expect(state.isCommandExecutionCurrent(staleRequest)).toEqual(false);
+        state.completeCommandExecution(staleRequest, 'succeeded');
+        expect(state.commandExecutions.length).toEqual(0);
+
+        const currentRequest = state.beginCommandExecution('/search', 'new');
+        state.completeCommandExecution(currentRequest, 'succeeded');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
     }
 }

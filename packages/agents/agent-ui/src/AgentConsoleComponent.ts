@@ -191,7 +191,13 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
-import { getAgentConsoleCommandName, resolveAgentConsoleCommandDescription } from './AgentConsoleCommandRegistry';
+import {
+    getAgentConsoleCommandDefinition,
+    getAgentConsoleCommandName,
+    formatAgentConsoleCommandArgumentTemplate,
+    parseAgentConsoleCommandArguments,
+    resolveAgentConsoleCommandDescription
+} from './AgentConsoleCommandRegistry';
 
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
@@ -2784,9 +2790,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
 
 
-    protected buildCommandContext(): CommandHandlerContext {
+    protected buildCommandContext(abortSignal?: AbortSignal): CommandHandlerContext {
         const self = this;
         return {
+            abortSignal,
             state: {
                 get sessionId() { return self.state.sessionId; },
                 get sessions() { return self.state.sessions; },
@@ -2960,12 +2967,23 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const canonical = getAgentConsoleCommandName(resolved.command);
         const args = String(parsed.args || '').trim();
         const previousRequestId = this.pendingCommandRequestId;
-        this.pendingCommandRequestId = this.state.beginCommandExecution(canonical, args);
+        const requestId = this.state.beginCommandExecution(canonical, args);
+        this.pendingCommandRequestId = requestId;
         if (!this.state.commandHints.includes(canonical)) {
             const reason = resolved.matches.length
                 ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
                 : `Unknown command: ${parsed.command}`;
-            this.state.failCommandExecution(this.pendingCommandRequestId, reason, false);
+            this.state.failCommandExecution(requestId, reason, false);
+            this.notify(reason);
+            this.pendingCommandRequestId = previousRequestId;
+            return true;
+        }
+        const diagnostics = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args).diagnostics;
+        if (diagnostics.length) {
+            const reason = diagnostics.map(item => item.message).join(' ');
+            this.state.failCommandExecution(requestId, reason, false);
+            // Preserve the exact command so the user can correct it and retry.
+            this.state.setInput(parsed.raw, parsed.raw.length);
             this.notify(reason);
             this.pendingCommandRequestId = previousRequestId;
             return true;
@@ -2973,19 +2991,27 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const handler = COMMAND_HANDLERS[canonical];
         if (handler) {
             try {
-                const handled = await handler(this.buildCommandContext(), args, { command: canonical, matches: resolved.matches });
-                this.state.completeCommandExecution(this.pendingCommandRequestId, 'succeeded');
+                const handled = await handler(this.buildCommandContext(this.state.getCommandExecutionSignal(requestId)), args, { command: canonical, matches: resolved.matches });
+                if (!this.state.isCommandExecutionCurrent(requestId)) {
+                    this.pendingCommandRequestId = previousRequestId;
+                    return true;
+                }
+                this.state.completeCommandExecution(requestId, 'succeeded');
                 this.pendingCommandRequestId = previousRequestId;
                 return handled;
             } catch (error) {
+                if (!this.state.isCommandExecutionCurrent(requestId)) {
+                    this.pendingCommandRequestId = previousRequestId;
+                    return true;
+                }
                 const reason = error instanceof Error ? error.message : String(error);
-                this.state.failCommandExecution(this.pendingCommandRequestId, reason, true);
+                this.state.failCommandExecution(requestId, reason, true);
                 this.notify(reason);
                 this.pendingCommandRequestId = previousRequestId;
                 return true;
             }
         }
-        this.state.failCommandExecution(this.pendingCommandRequestId, `Unknown command: ${parsed.command}`, false);
+        this.state.failCommandExecution(requestId, `Unknown command: ${parsed.command}`, false);
         this.pendingCommandRequestId = previousRequestId;
         return false;
     }
@@ -6136,7 +6162,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.commandPaletteQuery = query;
         const commands = this.state.commandHints
             .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
-            .map(command => ({ label: command, value: command, description: resolveAgentConsoleCommandDescription(command) || 'command' }));
+            .map(command => ({
+                label: command,
+                value: command,
+                description: [
+                    resolveAgentConsoleCommandDescription(command) || 'command',
+                    formatAgentConsoleCommandArgumentTemplate(getAgentConsoleCommandDefinition(command))
+                ].filter(Boolean).join(' ')
+            }));
         this.state.openSelectMenu(query ? `Command palette: ${query}` : 'Command palette', commands, 0, 'type to filter   enter execute');
         this.state.selectMenuAction = async value => {
             this.commandPaletteQuery = '';

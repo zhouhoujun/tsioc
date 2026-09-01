@@ -1,6 +1,10 @@
 import { AgentConsoleSelectOption, AgentConsoleToolItem } from './AgentConsoleSessionState';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
-import { resolveAgentConsoleCommandDescription } from './AgentConsoleCommandRegistry';
+import {
+    formatAgentConsoleCommandArgumentTemplate,
+    getAgentConsoleCommandDefinition,
+    resolveAgentConsoleCommandDescription
+} from './AgentConsoleCommandRegistry';
 
 export const AGENT_CONSOLE_SUGGESTIONS_TITLE = 'Suggestions';
 export const AGENT_CONSOLE_SUGGESTIONS_HINT = 'enter 执行   tab 补全   up/down 选择';
@@ -55,7 +59,10 @@ export function resolveAgentConsoleInputSuggestions(
         return options.map(item => ({
             label: item,
             value: item,
-            description: resolveAgentConsoleCommandDescription(item)
+            description: [
+                resolveAgentConsoleCommandDescription(item),
+                formatAgentConsoleCommandArgumentTemplate(getAgentConsoleCommandDefinition(item))
+            ].filter(Boolean).join(' ')
         }));
     }
     if (active.token.startsWith('@')) {

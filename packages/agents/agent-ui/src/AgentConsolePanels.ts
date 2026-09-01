@@ -1099,7 +1099,7 @@ export class AgentConsoleSessionsPanelComponent {
 @Component({
     selector: 'agent-console-tasks-panel',
     template: `
-    <div class="console-panel console-tasks-panel" v-style="shellStyle">
+    <div class="console-panel console-tasks-panel" v-style="shellStyle" role="region" aria-label="{{accessibilityLabel}}">
         <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="backgroundTaskFeedLabel">{{backgroundTaskFeedLabel}}</label>
         <label v-style="metaStyle" v-show="tasksHintLabel">{{tasksHintLabel}}</label>
@@ -1297,6 +1297,17 @@ export class AgentConsoleTasksPanelComponent {
         const selectedIndex = Math.max(0, this.tasks.findIndex(item => item.id === this.state.selectedReviewTaskId));
         const sourceSuffix = sessionCount > 1 ? ` · sessions ${sessionCount}` : '';
         return `tasks ${filteredCount}/${totalCount} · ${filterLabel} · ${selectedIndex + 1}/${filteredCount}${sourceSuffix}${projectSuffix}`;
+    }
+
+    /** Keeps plan state understandable when glyphs and color are unavailable. */
+    get accessibilityLabel(): string {
+        const summary = this.tasksSummaryLabel;
+        if (!summary) {
+            return 'Tasks and plan';
+        }
+        const active = this.planTodos.find(todo => todo.status === 'in_progress');
+        const activeText = active ? ` Current step: ${active.content}.` : '';
+        return `Tasks and plan. ${summary}.${activeText}`;
     }
 
     get tasksHintLabel(): string {
@@ -1624,7 +1635,7 @@ export class AgentConsoleJobsPanelComponent {
 @Component({
     selector: 'agent-console-approvals-panel',
     template: `
-    <div class="console-panel console-approvals-panel" v-style="shellStyle">
+    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
         <label v-style="accentStyle">{{approvalsSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="approvalsHintLabel">{{approvalsHintLabel}}</label>
         <label v-style="listStyle" v-show="approvalListLabel">{{approvalListLabel}}</label>
@@ -1719,6 +1730,16 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         return this.state.consoleOptions.approvalsHint;
+    }
+
+    get accessibilityLabel(): string {
+        if (!this.shouldShow) {
+            return 'Approvals';
+        }
+        const selected = this.state.selectedApproval;
+        return selected
+            ? `Approvals. ${this.approvals.length} pending. Selected: ${selected.toolName}.`
+            : `Approvals. ${this.approvals.length} pending.`;
     }
 
     get selectedApprovalDetailLabel(): string {
@@ -1892,7 +1913,7 @@ export class AgentConsoleToolsPanelComponent {
 @Component({
     selector: 'agent-console-text-overlay-panel',
     template: `
-    <div class="console-panel console-text-overlay-panel" v-style="shellStyle">
+    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
         <label v-style="accentStyle">{{overlayTitle}}</label>
         <label v-style="listStyle" v-for="line in visibleLines">{{line}}</label>
         <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
@@ -1940,15 +1961,25 @@ export class AgentConsoleTextOverlayPanelComponent {
     get hintLabel(): string {
         return this.state.hasTextOverlayFocus() ? 'Esc close · ↑↓ scroll' : '';
     }
+
+    get accessibilityLabel(): string {
+        const overlay = this.state.textOverlay;
+        if (!overlay) {
+            return 'Text details';
+        }
+        return `${overlay.title}. ${overlay.lines.length} lines. Showing ${overlay.scroll + 1} through ${Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines)}.`;
+    }
 }
 
 @Component({
     selector: 'agent-console-outputs-panel',
     template: `
-    <div class="console-panel console-command-outputs-panel" v-style="shellStyle">
+    <div class="console-panel console-command-outputs-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
         <label v-style="accentStyle">{{panelTitle}}</label>
         <label v-style="metaStyle" v-show="filterLabel">{{filterLabel}}</label>
-        <label v-style="item.style" v-for="item in entryItems">{{item.label}}</label>
+        <div role="listbox" aria-label="Command output history">
+            <div id="{{item.id}}" v-style="item.style" role="option" aria-selected="{{item.selected}}" v-for="item in entryItems">{{item.label}}</div>
+        </div>
         <label v-style="metaStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
     </div>
@@ -1995,7 +2026,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
             : '';
     }
 
-    get entryItems(): Array<{ label: string; style: Record<string, string> }> {
+    get entryItems(): Array<{ id: string; label: string; style: Record<string, string>; selected: string }> {
         const base = this.activeThemeStyles.statusValue;
         const selected = this.activeThemeStyles.messagesSelected || this.activeThemeStyles.sessionsSelected;
         return this.state.visibleCommandOutputs.map((entry, index) => {
@@ -2003,7 +2034,9 @@ export class AgentConsoleCommandOutputsPanelComponent {
             const text = preview.length > 160 ? `${preview.slice(0, 160)}…` : preview;
             const marker = entry.kind === 'error' ? '✗ ' : entry.kind === 'notice' ? '• ' : '';
             return {
+                id: `command-output-option-${entry.id}`,
                 label: `${marker}${entry.command}  ${text}`,
+                selected: String(index === this.state.commandOutputsSelectedIndex),
                 style: index === this.state.commandOutputsSelectedIndex
                     ? { ...base, ...selected }
                     : base
@@ -2026,15 +2059,30 @@ export class AgentConsoleCommandOutputsPanelComponent {
             ? 'Esc close · ↑↓/jk move · / filter · Enter copy'
             : '';
     }
+
+    get accessibilityLabel(): string {
+        const entries = this.state.visibleCommandOutputs;
+        if (!entries.length) {
+            return 'Command output history. No command outputs.';
+        }
+        const selected = entries[this.state.commandOutputsSelectedIndex];
+        return `Command output history. ${entries.length} entries. Selected ${this.state.commandOutputsSelectedIndex + 1} of ${entries.length}: ${selected?.command || 'none'}.`;
+    }
+
+    get activeOptionId(): string {
+        return this.entryItems[this.state.commandOutputsSelectedIndex]?.id || '';
+    }
 }
 
 @Component({
     selector: 'agent-console-pending-question-panel',
     template: `
-    <div class="console-panel console-pending-question-panel" v-style="shellStyle">
+    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
-        <label v-style="listStyle" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</label>
+        <div role="listbox" aria-label="Question options">
+            <div id="{{item.id}}" v-style="listStyle" role="option" aria-selected="{{item.selected}}" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</div>
+        </div>
         <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">{{pendingQuestionSelectionHint}}</label>
     </div>
     `
@@ -2080,8 +2128,13 @@ export class AgentConsolePendingQuestionPanelComponent {
         return this.state.pendingQuestion?.context || '';
     }
 
-    get pendingQuestionOptionItems(): Array<{ label: string; value: string }> {
-        return (this.state.pendingQuestion?.options || []).map((option, index) => ({ label: `${index + 1}. ${option}`, value: option }));
+    get pendingQuestionOptionItems(): Array<{ id: string; label: string; value: string; selected: string }> {
+        return (this.state.pendingQuestion?.options || []).map((option, index) => ({
+            id: `pending-question-option-${index}`,
+            label: `${index + 1}. ${option}`,
+            value: option,
+            selected: String(index === this.state.pendingQuestionSelectedIndex)
+        }));
     }
 
     get pendingQuestionSelectionHint(): string {
@@ -2089,6 +2142,19 @@ export class AgentConsolePendingQuestionPanelComponent {
         if (!count) return '';
         const selected = Math.min(this.state.pendingQuestionSelectedIndex + 1, count);
         return `selected ${selected}/${count} · ↑↓ choose · 1-9 select · Enter confirm · Esc dismiss`;
+    }
+
+    get accessibilityLabel(): string {
+        const question = this.state.pendingQuestion;
+        if (!question) {
+            return 'Question';
+        }
+        const count = question.options.length;
+        return `Question: ${question.question}. ${count} options. Selected ${Math.min(this.state.pendingQuestionSelectedIndex + 1, count)} of ${count}.`;
+    }
+
+    get activeOptionId(): string {
+        return this.pendingQuestionOptionItems[this.state.pendingQuestionSelectedIndex]?.id || '';
     }
 
     async onPendingQuestionOptionClick(option: string): Promise<void> {
@@ -3700,9 +3766,10 @@ export class AgentConsoleActivityPanelComponent {
 @Component({
     selector: 'agent-console-select-panel',
     template: `
-        <div class="console-panel console-select-panel">
+        <div class="console-panel console-select-panel" role="dialog" aria-label="{{accessibilityLabel}}">
             <div class="select-shell" v-style="shellStyle">
             <select class="select-core"
+                aria-label="{{accessibilityLabel}}"
                 options="{{menuOptionsJson}}"
                 selectedIndex="{{menuSelectedIndexText}}"
                 visibleCount="{{visibleOptionCountText}}"
@@ -3756,6 +3823,13 @@ export class AgentConsoleSelectPanelComponent {
 
     get visibleOptionCountText(): string {
         return String(this.state.consoleOptions.selectVisibleOptions);
+    }
+
+    get accessibilityLabel(): string {
+        if (!this.menu) {
+            return 'Selection menu';
+        }
+        return `${this.menu.title || 'Selection menu'}. ${this.menu.options.length} options. Selected ${this.menu.selectedIndex + 1} of ${this.menu.options.length}.`;
     }
 
     get visibleOptionStart(): number {

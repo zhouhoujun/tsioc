@@ -49,6 +49,31 @@ export interface AgentConsoleCommandSubcommand {
     description: string;
 }
 
+export type AgentConsoleCommandArgumentType = 'string' | 'enum';
+
+/** Positional argument contract shared by completion and command dispatch. */
+export interface AgentConsoleCommandArgument {
+    name: string;
+    type?: AgentConsoleCommandArgumentType;
+    required?: boolean;
+    default?: string;
+    variadic?: boolean;
+    values?: string[];
+}
+
+export interface AgentConsoleCommandArgumentDiagnostic {
+    code: 'missing' | 'invalid' | 'extra';
+    message: string;
+    argument?: string;
+}
+
+export interface AgentConsoleParsedCommandArguments {
+    values: string[];
+    /** Values after optional defaults have been supplied. */
+    resolved: string[];
+    diagnostics: AgentConsoleCommandArgumentDiagnostic[];
+}
+
 export interface AgentConsoleCommandDefinition {
     /** Canonical command name, e.g. '/help'. */
     name: string;
@@ -57,6 +82,8 @@ export interface AgentConsoleCommandDefinition {
     group: AgentConsoleCommandGroupKey;
     /** needsArgs: smart-run should inject '/name ' and wait for arguments instead of submitting. */
     needsArgs?: boolean;
+    /** Structured positional argument contract. `needsArgs` remains for compatibility. */
+    args?: AgentConsoleCommandArgument[];
     /** Functional aliases (registered in hints and executable via handleCommand). */
     aliases?: string[];
     /** Companion subcommand rows rendered in /help as '/name sub'. */
@@ -68,7 +95,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/help', description: 'show command help, grouped by category', group: 'core' },
 
     { name: '/status', description: 'show session status', group: 'core' },
-    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', needsArgs: true },
+    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', needsArgs: true, args: [{ name: 'profile', variadic: true }] },
     { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', needsArgs: true },
     { name: '/tools', description: 'inspect the currently enabled tools: /tools [<name>]', group: 'core' },
     { name: '/skills', description: 'browse skills: /skills [query | <id>]', group: 'core' },
@@ -105,8 +132,8 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/threadplan', description: 'thread plan todos', group: 'session' },
     { name: '/threadreview', description: 'thread coding task review', group: 'session' },
     { name: '/projects', description: 'browse sessions by project: /projects [<id>]', group: 'session' },
-    { name: '/search', description: 'search sessions: /search <query>', group: 'session', needsArgs: true },
-    { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', needsArgs: true },
+    { name: '/search', description: 'search sessions: /search <query>', group: 'session', needsArgs: true, args: [{ name: 'query', required: true, variadic: true }] },
+    { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', needsArgs: true, args: [{ name: 'label' }] },
     { name: '/snapshots', description: 'list / restore / delete session snapshots', group: 'session' },
     { name: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert', group: 'session' },
     { name: '/messages', description: 'messages', group: 'session' },
@@ -134,8 +161,9 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/clear', description: 'start a new session (clear the current conversation)', group: 'input' },
     { name: '/attach', description: 'attach an image for the next prompt', group: 'input' },
 
-    { name: '/review', description: 'coding task review', group: 'review' },
-    { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', needsArgs: true },
+    // Review owns an extensible subcommand grammar, so keep its tail variadic.
+    { name: '/review', description: 'coding task review', group: 'review', args: [{ name: 'command', variadic: true }] },
+    { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', needsArgs: true, args: [{ name: 'pathOrFlag', variadic: true }] },
     { name: '/approvals', description: 'approvals', group: 'review' },
     {
         name: '/approve',
@@ -221,6 +249,79 @@ export function getAgentConsoleCommandDefinition(nameOrAlias: string): AgentCons
 /** Resolve a command name to its canonical form (alias -> canonical name). */
 export function getAgentConsoleCommandName(nameOrAlias: string): string {
     return getAgentConsoleCommandDefinition(nameOrAlias)?.name || nameOrAlias;
+}
+
+/**
+ * Splits a command argument line without losing quoted values. This intentionally
+ * stays small and dependency-free so queued slash commands use the same parser
+ * as palette execution in both renderers.
+ */
+export function tokenizeAgentConsoleCommandArguments(input: string): string[] {
+    const tokens: string[] = [];
+    const source = String(input || '').trim();
+    let token = '';
+    let quote = '';
+    let escaped = false;
+    for (const char of source) {
+        if (escaped) {
+            token += char;
+            escaped = false;
+        } else if (char === '\\') {
+            escaped = true;
+        } else if (quote) {
+            if (char === quote) quote = '';
+            else token += char;
+        } else if (char === '"' || char === "'") {
+            quote = char;
+        } else if (/\s/.test(char)) {
+            if (token) {
+                tokens.push(token);
+                token = '';
+            }
+        } else {
+            token += char;
+        }
+    }
+    if (escaped) token += '\\';
+    if (token) tokens.push(token);
+    return tokens;
+}
+
+export function formatAgentConsoleCommandArgumentTemplate(definition: AgentConsoleCommandDefinition | undefined): string {
+    return (definition?.args || []).map(arg => {
+        const value = arg.variadic ? `${arg.name}...` : arg.name;
+        return arg.required ? `<${value}>` : `[${value}]`;
+    }).join(' ');
+}
+
+/** Validates a positional schema and returns parsed values plus actionable diagnostics. */
+export function parseAgentConsoleCommandArguments(
+    definition: AgentConsoleCommandDefinition | undefined,
+    input: string
+): AgentConsoleParsedCommandArguments {
+    const values = tokenizeAgentConsoleCommandArguments(input);
+    const schema = definition?.args || [];
+    const diagnostics: AgentConsoleCommandArgumentDiagnostic[] = [];
+    const resolved: string[] = [];
+    let valueIndex = 0;
+    for (const argument of schema) {
+        const remaining = argument.variadic ? values.slice(valueIndex) : values.slice(valueIndex, valueIndex + 1);
+        const raw = argument.variadic ? remaining.join(' ') : remaining[0];
+        if (!raw) {
+            if (argument.default !== undefined) resolved.push(argument.default);
+            else if (argument.required) diagnostics.push({ code: 'missing', argument: argument.name, message: `Missing required argument <${argument.name}>.` });
+        } else {
+            if (argument.type === 'enum' && argument.values && !argument.values.includes(raw)) {
+                diagnostics.push({ code: 'invalid', argument: argument.name, message: `Invalid ${argument.name} "${raw}". Expected: ${argument.values.join(', ')}.` });
+            }
+            resolved.push(raw);
+        }
+        valueIndex += remaining.length;
+    }
+    if (schema.length && valueIndex < values.length && !schema.some(arg => arg.variadic)) {
+        diagnostics.push({ code: 'extra', message: `Unexpected argument${values.length - valueIndex === 1 ? '' : 's'}: ${values.slice(valueIndex).join(' ')}.` });
+    }
+    return { values, resolved, diagnostics };
 }
 
 /**

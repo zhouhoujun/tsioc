@@ -5,8 +5,10 @@ import {
     AGENT_CONSOLE_COMMAND_GROUP_ORDER,
     agentConsoleCommandHints,
     buildAgentConsoleHelpOptions,
+    formatAgentConsoleCommandArgumentTemplate,
     getAgentConsoleCommandDefinition,
     getAgentConsoleCommandName,
+    parseAgentConsoleCommandArguments,
     resolveAgentConsoleCommandDescription
 } from '../src';
 import { AgentConsoleSessionState } from '../src';
@@ -170,5 +172,40 @@ export class AgentConsoleCommandRegistryTest {
         expect(result.submitted).toEqual(true);
         expect(state.input).toEqual('/custom ');
         expect(submitCount).toEqual(1);
+    }
+
+    @Test('parses structured arguments with required, defaults, variadic values, and diagnostics')
+    argumentSchemaDiagnostics() {
+        const definition = {
+            name: '/example', description: 'example', group: 'core' as const,
+            args: [
+                { name: 'mode', type: 'enum' as const, values: ['fast', 'safe'], required: true },
+                { name: 'label', default: 'current' },
+                { name: 'paths', variadic: true }
+            ]
+        };
+        const valid = parseAgentConsoleCommandArguments(definition, 'safe "release notes" src/a src/b');
+        expect(valid.diagnostics).toEqual([]);
+        expect(valid.resolved).toEqual(['safe', 'release notes', 'src/a src/b']);
+        expect(formatAgentConsoleCommandArgumentTemplate(definition)).toEqual('<mode> [label] [paths...]');
+
+        const missing = parseAgentConsoleCommandArguments(definition, '');
+        expect(missing.diagnostics[0].code).toEqual('missing');
+        expect(missing.resolved).toEqual(['current']);
+
+        const invalid = parseAgentConsoleCommandArguments(definition, 'slow');
+        expect(invalid.diagnostics[0].code).toEqual('invalid');
+
+        const single = { name: '/single', description: 'single', group: 'core' as const, args: [{ name: 'value' }] };
+        expect(parseAgentConsoleCommandArguments(single, 'one two').diagnostics[0].code).toEqual('extra');
+    }
+
+    @Test('validates representative command contracts before dispatch')
+    representativeCommandContracts() {
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/search'), '').diagnostics[0].code).toEqual('missing');
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/search'), 'quoted query terms').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/snapshot'), 'release').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/review'), 'task-7').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/diff'), '--staged src/a.ts').diagnostics).toEqual([]);
     }
 }

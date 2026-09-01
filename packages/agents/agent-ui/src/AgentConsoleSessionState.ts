@@ -606,6 +606,10 @@ export class AgentConsoleSessionState {
     protected planEventSequence = 0;
     protected commandOutputSequence = 0;
     protected commandExecutionSequence = 0;
+    /** Monotonic session generation used to reject completions from a prior session. */
+    protected commandExecutionEpoch = 0;
+    protected commandExecutionEpochByRequestId = new Map<string, number>();
+    protected commandAbortControllers = new Map<string, AbortController>();
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -616,6 +620,8 @@ export class AgentConsoleSessionState {
     pendingQuestionSelectedIndex = 0;
     questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
     protected planMessage: AgentMessage | null = null;
+    /** Ephemeral command lifecycle projections; never persisted as conversation history. */
+    protected commandExecutionMessages: AgentMessage[] = [];
     protected fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
@@ -738,6 +744,8 @@ export class AgentConsoleSessionState {
     configure(meta: AgentConsoleSessionMeta): this {
         const nextSessionId = String(meta.sessionId || '').trim();
         if (nextSessionId && nextSessionId !== this.sessionId) {
+            this.cancelRunningCommandExecutions();
+            this.commandExecutionEpoch += 1;
             this.sessionId = nextSessionId;
             this.projectKey = '';
             this.projectLabel = '';
@@ -745,7 +753,10 @@ export class AgentConsoleSessionState {
             this.projectSessionCount = 0;
             this.contextPreparation = null;
             this.commandExecutions = [];
+            this.commandExecutionMessages = [];
             this.commandExecutionSequence = 0;
+            this.commandExecutionEpochByRequestId.clear();
+            this.commandAbortControllers.clear();
             this.commandOutputs = [];
             void this.loadCommandOutputHistory();
         }
@@ -1215,6 +1226,7 @@ export class AgentConsoleSessionState {
         if (this.fileChangeMessage) {
             filtered.push(this.fileChangeMessage);
         }
+        filtered.push(...this.commandExecutionMessages);
         if (this.timelineMode) {
             const active = this.planTodos.find(todo => todo.status === 'in_progress')
                 || this.planTodos.find(todo => todo.status === 'pending');
@@ -1239,8 +1251,11 @@ export class AgentConsoleSessionState {
         return filtered;
     }
 
-    setMessages(messages: AgentMessage[]): void {
+    setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
         this.messages = messages;
+        if (!preserveCommandExecutionMessages) {
+            this.commandExecutionMessages = [];
+        }
         this.tokenUsage = this.resolveTokenUsageFromMessages(messages);
         const displayMessages = this.displayMessages;
         if (!displayMessages.length) {
@@ -1251,6 +1266,7 @@ export class AgentConsoleSessionState {
         } else {
             const selectable = displayMessages.filter(m =>
                 m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__' && m.id !== '__timeline_plan_boundary__'
+                    && m.metadata?.uiKind !== 'command-execution'
             );
             const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
             if (shouldFollowLatest || !this.selectedMessageId || !selectable.some(item => item.id === this.selectedMessageId)) {
@@ -1262,7 +1278,7 @@ export class AgentConsoleSessionState {
     }
 
     appendMessage(message: AgentMessage): void {
-        this.setMessages([...this.messages, message]);
+        this.setMessages([...this.messages, message], true);
     }
 
     setSections(sections: AgentSessionSection[]): void {
@@ -1288,7 +1304,7 @@ export class AgentConsoleSessionState {
         if (!fresh.length) {
             return;
         }
-        this.setMessages(mode === 'prepend' ? [...fresh, ...this.messages] : [...this.messages, ...fresh]);
+        this.setMessages(mode === 'prepend' ? [...fresh, ...this.messages] : [...this.messages, ...fresh], true);
     }
 
     beginTurnEventScope(scope?: string): string {
@@ -4249,25 +4265,38 @@ export class AgentConsoleSessionState {
 
     beginCommandExecution(command: string, args: string): string {
         const requestId = `cmd-${++this.commandExecutionSequence}`;
+        this.commandExecutionEpochByRequestId.set(requestId, this.commandExecutionEpoch);
+        this.commandAbortControllers.set(requestId, new AbortController());
         this.commandExecutions = reduceAgentConsoleCommandExecution(
             this.commandExecutions,
             createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId)
         );
+        this.syncCommandExecutionTranscript(requestId);
         return requestId;
     }
 
     completeCommandExecution(requestId: string, status: 'succeeded' | 'cancelled'): void {
+        if (!this.isCommandExecutionCurrent(requestId)) {
+            return;
+        }
         this.commandExecutions = reduceAgentConsoleCommandExecution(
             this.commandExecutions,
             createCompleteCommandExecutionAction(requestId, status)
         );
+        this.syncCommandExecutionTranscript(requestId);
+        this.commandAbortControllers.delete(requestId);
     }
 
     failCommandExecution(requestId: string, error: string, retryable: boolean): void {
+        if (!this.isCommandExecutionCurrent(requestId)) {
+            return;
+        }
         this.commandExecutions = reduceAgentConsoleCommandExecution(
             this.commandExecutions,
             createFailCommandExecutionAction(requestId, String(error || ''), !!retryable)
         );
+        this.syncCommandExecutionTranscript(requestId);
+        this.commandAbortControllers.delete(requestId);
     }
 
     linkCommandOutputToExecution(requestId: string, outputId: string): void {
@@ -4275,10 +4304,77 @@ export class AgentConsoleSessionState {
             this.commandExecutions,
             createLinkCommandOutputAction(requestId, outputId)
         );
+        this.syncCommandExecutionTranscript(requestId);
     }
 
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
         return this.commandExecutions[0];
+    }
+
+    /** True only while a request still belongs to this session generation. */
+    isCommandExecutionCurrent(requestId: string): boolean {
+        return this.commandExecutionEpochByRequestId.get(requestId) === this.commandExecutionEpoch
+            && this.commandExecutions.some(item => item.requestId === requestId);
+    }
+
+    getCommandExecutionSignal(requestId: string): AbortSignal | undefined {
+        return this.commandAbortControllers.get(requestId)?.signal;
+    }
+
+    /** Cancels all currently running command records; late completions are ignored. */
+    cancelRunningCommandExecutions(): void {
+        this.commandExecutions
+            .filter(item => item.status === 'running')
+            .forEach(item => {
+                this.commandAbortControllers.get(item.requestId)?.abort();
+                this.commandAbortControllers.delete(item.requestId);
+                this.commandExecutions = reduceAgentConsoleCommandExecution(
+                    this.commandExecutions,
+                    createCompleteCommandExecutionAction(item.requestId, 'cancelled')
+                );
+                this.syncCommandExecutionTranscript(item.requestId);
+            });
+    }
+
+    /** Projects one command lifecycle into the shared, stable-key transcript. */
+    protected syncCommandExecutionTranscript(requestId: string): void {
+        const execution = this.commandExecutions.find(item => item.requestId === requestId);
+        if (!execution) {
+            return;
+        }
+        const details = [execution.command, execution.args].filter(Boolean).join(' ');
+        const status = execution.status === 'running' ? 'running'
+            : execution.status === 'succeeded' ? 'completed'
+                : execution.status === 'cancelled' ? 'cancelled' : 'failed';
+        const suffix = execution.error ? `: ${execution.error}` : '';
+        const content = `${details || 'Command'} ${status}${suffix}`;
+        const id = `__command_execution_${execution.requestId}__`;
+        const existingIndex = this.commandExecutionMessages.findIndex(message => message.id === id);
+        const message: AgentMessage = {
+            id,
+            role: 'assistant',
+            content,
+            createdAt: execution.startedAt,
+            metadata: {
+                uiKind: 'command-execution',
+                uiEventKey: execution.requestId,
+                command: execution.command,
+                args: execution.args,
+                requestId: execution.requestId,
+                status: execution.status,
+                attempt: 1,
+                outputIds: execution.outputIds.slice(),
+                error: execution.error,
+                retryable: execution.retryable
+            }
+        };
+        const next = this.commandExecutionMessages.slice();
+        if (existingIndex >= 0) {
+            next[existingIndex] = message;
+        } else {
+            next.push(message);
+        }
+        this.commandExecutionMessages = next;
     }
 
     openCommandOutputs(): void {
