@@ -8,6 +8,13 @@
 
 import type { AgentScheduler } from '@tsdi/agent';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
+import {
+    formatAgentConsoleCommandArgumentTemplate,
+    getAgentConsoleCommandDefinition,
+    resolveAgentConsoleCommandDescription
+} from './AgentConsoleCommandRegistry';
+import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 
 // ── Coding task handler context ─────────────────────────────────────────────
 
@@ -482,7 +489,7 @@ export async function openCodingTaskReview(
 
 export async function openCodingTaskReviewSelector(ctx: CodingTaskHandlerContext): Promise<boolean> {
     const selectedTask = await selectCodingTask(ctx, {
-        title: 'Coding tasks',
+        title: AGENT_CONSOLE_OVERLAY_TITLES.codingTasks,
         unavailableNotice: 'Review is unavailable without app RPC.',
         emptyNotice: 'No coding tasks available.',
         selectedTaskId: String(ctx.state.reviewTask?.id || ctx.state.selectedTask?.id || '').trim() || undefined
@@ -496,7 +503,7 @@ export async function openCodingTaskReviewSelector(ctx: CodingTaskHandlerContext
 
 export async function openThreadCodingTaskReviewSelector(ctx: CodingTaskHandlerContext): Promise<boolean> {
     const selectedTask = await selectCodingTask(ctx, {
-        title: 'Coding tasks (thread)',
+        title: AGENT_CONSOLE_OVERLAY_TITLES.codingTasksThread,
         unavailableNotice: 'Review is unavailable without app RPC.',
         emptyNotice: 'No coding tasks available in this thread.',
         selectedTaskId: String(ctx.state.reviewTask?.id || ctx.state.selectedTask?.id || '').trim() || undefined,

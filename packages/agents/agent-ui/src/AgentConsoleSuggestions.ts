@@ -5,9 +5,10 @@ import {
     getAgentConsoleCommandDefinition,
     resolveAgentConsoleCommandDescription
 } from './AgentConsoleCommandRegistry';
+import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 
-export const AGENT_CONSOLE_SUGGESTIONS_TITLE = 'Suggestions';
-export const AGENT_CONSOLE_SUGGESTIONS_HINT = 'enter 执行   tab 补全   up/down 选择';
+export const AGENT_CONSOLE_SUGGESTIONS_TITLE = AGENT_CONSOLE_OVERLAY_TITLES.suggestions;
+export const AGENT_CONSOLE_SUGGESTIONS_HINT = AGENT_CONSOLE_OVERLAY_HINTS.suggestions;
 
 export interface AgentConsoleInputTokenRange {
     start: number;

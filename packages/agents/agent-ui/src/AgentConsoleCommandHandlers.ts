@@ -783,14 +783,14 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
     ctx.state.closeGitSnapshotDetail();
     {
         const project = await ctx.select(
-            'Projects',
+            AGENT_CONSOLE_OVERLAY_TITLES.projects,
             ctx.state.projects.map(p => ({
                 label: `${p.label} (${p.sessionCount})`,
                 value: p.key,
                 detail: p.lastActive ? `last active ${new Date(p.lastActive).toLocaleDateString()}` : undefined
             })),
             0,
-            ctx.state.consoleOptions.selectHint
+            AGENT_CONSOLE_OVERLAY_HINTS.select
         );
         if (!project) return true;
         const projectSessions = ctx.state.sessions.filter(
@@ -836,14 +836,14 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
             return true;
         }
         const thread = await ctx.select(
-            'Threads',
+            AGENT_CONSOLE_OVERLAY_TITLES.threads,
             ctx.state.threads.map(t => ({
                 label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${t.sections.length} sections]` : ''}`,
                 value: t.key,
                 detail: t.lastActive ? `last active ${new Date(t.lastActive).toLocaleDateString()}` : undefined
             })),
             0,
-            ctx.state.consoleOptions.selectHint
+            AGENT_CONSOLE_OVERLAY_HINTS.select
         );
         if (!thread) return true;
         const threadSessions = ctx.state.sessions.filter(

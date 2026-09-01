@@ -35,6 +35,7 @@ import {
     concatUint8Arrays,
     encodeBase64
 } from './AgentConsoleExportHandlers';
+import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import {
     formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
     formatUsageSummary as fmtUsageSummary,
@@ -6115,7 +6116,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                     formatAgentConsoleCommandArgumentTemplate(getAgentConsoleCommandDefinition(command))
                 ].filter(Boolean).join(' ')
             }));
-        this.state.openSelectMenu(query ? `Command palette: ${query}` : 'Command palette', commands, 0, 'type to filter   enter execute');
+        this.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette);
         this.state.selectMenuAction = async value => {
             this.commandPaletteQuery = '';
             if (value) await this.handleCommand(value);

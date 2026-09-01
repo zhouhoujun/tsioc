@@ -54,8 +54,12 @@ import {
     getAgentConsoleInputTokenRange,
     getAgentConsoleMentionCandidates,
     isAgentConsoleSuggestionMenu,
-    resolveAgentConsoleInputSuggestions
+    resolveAgentConsoleInputSuggestions,
 } from './AgentConsoleSuggestions';
+import {
+    AGENT_CONSOLE_OVERLAY_HINTS,
+    AGENT_CONSOLE_OVERLAY_TITLES,
+} from './AgentConsoleOverlayPresenter';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -439,11 +443,11 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     toolRunsHint: 'up/down move   pg jump   y copy   esc',
-    approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
+    approvalsHint: AGENT_CONSOLE_OVERLAY_HINTS.approvals,
     reviewDetailHint: ', . group   [ ] file   { } hunk jump   f fold hunk   s side-by-side   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   /review approve|reject|summary|approve-all|clear-all   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
-    selectHint: '1-9 select   up/down move   enter confirm   q cancel',
+    selectHint: AGENT_CONSOLE_OVERLAY_HINTS.select,
     selectCloseHint: 'up/down move   enter close   q close',
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
     brandWidth: DEFAULT_TERMINAL_COLUMNS,
