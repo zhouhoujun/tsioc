@@ -25,7 +25,8 @@ import {
     AgentToolInvokedEvent,
     AgentTurnCancelledEvent,
     AgentTurnCompletedEvent,
-    AgentTurnStartedEvent
+    AgentTurnStartedEvent,
+    threadItemKey
 } from '@tsdi/agent';
 import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
@@ -149,9 +150,11 @@ export class AgentConsoleEventBridge {
                 });
                 this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'running'));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary), {
-                        eventType: 'tool_invoked',
-                        label: 'tool',
+                    this.state.projectThreadItem({
+                        kind: 'tool',
+                        key: threadItemKey('tool', event.receipt?.toolCallId || event.receipt?.receiptId || event.toolName),
+                        sessionId: event.sessionId,
+                        content: this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary),
                         status: 'running',
                         toolCallId: event.receipt?.toolCallId,
                         receiptId: event.receipt?.receiptId,
@@ -188,9 +191,11 @@ export class AgentConsoleEventBridge {
                 });
                 this.state.pushActivity('tool', this.describeToolActivity(event.toolName, 'completed'));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
-                        eventType: 'tool_completed',
-                        label: 'tool',
+                    this.state.projectThreadItem({
+                        kind: 'tool',
+                        key: threadItemKey('tool', event.receipt?.toolCallId || event.receipt?.receiptId || event.toolName),
+                        sessionId: event.sessionId,
+                        content: this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary),
                         status: 'success',
                         durationMs: event.receipt?.durationMs,
                         toolCallId: event.receipt?.toolCallId,
@@ -266,9 +271,11 @@ export class AgentConsoleEventBridge {
                         error: event.error.message
                     }) || `${this.describeToolName(event.toolName)} failed: ${event.error.message}`));
                 if (!this.appRpc) {
-                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId, event.receipt?.receiptId)), `${event.toolName} failed: ${event.error.message}`, {
-                        eventType: 'tool_failed',
-                        label: 'tool',
+                    this.state.projectThreadItem({
+                        kind: 'tool',
+                        key: threadItemKey('tool', event.receipt?.toolCallId || event.receipt?.receiptId || event.toolName),
+                        sessionId: event.sessionId,
+                        content: `${event.toolName} failed: ${event.error.message}`,
                         status: 'error',
                         durationMs: event.receipt?.durationMs,
                         toolCallId: event.receipt?.toolCallId,

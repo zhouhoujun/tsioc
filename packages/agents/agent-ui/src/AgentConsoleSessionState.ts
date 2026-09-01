@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, normalizeThreadItemEvent } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -1494,6 +1494,51 @@ export class AgentConsoleSessionState {
             }));
         }
         this.setMessages(next);
+    }
+
+    /** Shared cross-host projection entry point for transcript thread items. */
+    projectThreadItem(event: ThreadItemEvent): void {
+        const normalized = normalizeThreadItemEvent(event);
+        if (!normalized.key || !normalized.content) return;
+        if (normalized.kind === 'command') {
+            const executionId = `__command_execution_${normalized.key}__`;
+            const message: AgentMessage = {
+                id: executionId,
+                role: 'assistant',
+                content: normalized.content,
+                createdAt: Date.now(),
+                metadata: {
+                    uiKind: 'command-execution',
+                    uiEventKey: normalized.key,
+                    command: normalized.command,
+                    args: normalized.args,
+                    requestId: normalized.key,
+                    status: normalized.status === 'success' ? 'succeeded' : normalized.status,
+                    attempt: normalized.attempt || 1,
+                    outputIds: normalized.outputIds?.slice() || [],
+                    error: normalized.error,
+                    retryable: normalized.retryable
+                }
+            };
+            const next = this.commandExecutionMessages.slice();
+            const index = next.findIndex(item => item.id === executionId);
+            if (index >= 0) next[index] = { ...message, createdAt: next[index].createdAt };
+            else next.push(message);
+            this.commandExecutionMessages = next;
+            return;
+        }
+        this.upsertUiEventMessage(this.qualifyUiEventKey(normalized.key), normalized.content, {
+            eventType: normalized.kind,
+            label: normalized.kind,
+            status: normalized.status === 'error' ? 'error' : normalized.status === 'success' ? 'success' : normalized.status === 'running' ? 'running' : undefined,
+            eventKey: normalized.key,
+            toolCallId: normalized.toolCallId,
+            receiptId: normalized.receiptId,
+            attempt: normalized.attempt,
+            durationMs: normalized.durationMs,
+            source: normalized.source === 'remote' ? 'remote' : 'local',
+            sequence: normalized.sequence
+        });
     }
 
     appendAssistantErrorMessage(message: string): void {
@@ -4353,33 +4398,19 @@ export class AgentConsoleSessionState {
                 : execution.status === 'cancelled' ? 'cancelled' : 'failed';
         const suffix = execution.error ? `: ${execution.error}` : '';
         const content = `${details || 'Command'} ${status}${suffix}`;
-        const id = `__command_execution_${execution.requestId}__`;
-        const existingIndex = this.commandExecutionMessages.findIndex(message => message.id === id);
-        const message: AgentMessage = {
-            id,
-            role: 'assistant',
+        this.projectThreadItem({
+            kind: 'command',
+            key: execution.requestId,
+            sessionId: this.sessionId,
             content,
-            createdAt: execution.startedAt,
-            metadata: {
-                uiKind: 'command-execution',
-                uiEventKey: execution.requestId,
-                command: execution.command,
-                args: execution.args,
-                requestId: execution.requestId,
-                status: execution.status,
-                attempt: 1,
-                outputIds: execution.outputIds.slice(),
-                error: execution.error,
-                retryable: execution.retryable
-            }
-        };
-        const next = this.commandExecutionMessages.slice();
-        if (existingIndex >= 0) {
-            next[existingIndex] = message;
-        } else {
-            next.push(message);
-        }
-        this.commandExecutionMessages = next;
+            status: execution.status === 'succeeded' ? 'success' : execution.status === 'failed' ? 'error' : execution.status === 'cancelled' ? 'cancelled' : execution.status === 'running' ? 'running' : undefined,
+            command: execution.command,
+            args: execution.args,
+            outputIds: execution.outputIds,
+            error: execution.error,
+            retryable: execution.retryable,
+            source: 'local'
+        });
     }
 
     openCommandOutputs(): void {

@@ -1598,6 +1598,7 @@ Turn: Fix session restore                                      running  01:42
 - 验收：turn→command→tool→plan→file change 顺序快照；断线 replay 不重复；/timeline 三种模式过滤一致；agent/agent-ui/gateway 相关全量。
 
 - 已有本地切片（2026-09-01）：tool 与 plan 已按稳定 key 原地 upsert，command execution 已有 UI 侧派生投影；但它尚未由 agent/gateway 事件协议供给或 replay，不能作为统一 thread-item projection 完成态。后续先定义共享 `uiKind/key/sequence/attempt/receipt` 事件 envelope 和 UI projection port，再删除 UI 自行拼装的平行投影。
+- 共享层重构（2026-09-01）：`agent/src/ui/ThreadItemProjection.ts` 定义 `ThreadItemEvent`、稳定 `threadItemKey()` 与 `ThreadItemProjectionPort`；SessionState 的 command、local/remote tool 与 plan 投影统一经 `projectThreadItem()`，宿主桥接只负责转换事件，不再各自拼装 UI metadata。gateway durable envelope、replay 与跨 principal 验收仍待实施，故本项继续保持 `UI local slice only`。
 
 **P272 · Cross-platform interaction harness（中）** `platform: agent acceptance + agent-ui acceptance`
 

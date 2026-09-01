@@ -1,4 +1,4 @@
-import { AgentConsoleAppRpc } from '@tsdi/agent';
+import { AgentConsoleAppRpc, threadItemKey } from '@tsdi/agent';
 import {
     AgentConsoleApprovalRequest,
     AgentConsolePendingQuestion,
@@ -331,12 +331,12 @@ function projectRemoteToolTimeline(
     const toolName = String(data?.toolName || '').trim() || 'tool';
     const toolCallId = String(data?.toolCallId || data?.receipt?.toolCallId || '').trim();
     const receiptId = String(data?.receiptId || data?.receipt?.receiptId || '').trim();
-    const key = state.qualifyUiEventKey(`tool:${toolCallId || receiptId || toolName}`);
-    state.upsertUiEventMessage(key, content, {
-        eventType,
-        label: 'tool',
+    state.projectThreadItem({
+        kind: 'tool',
+        key: threadItemKey('tool', toolCallId || receiptId || toolName),
+        sessionId: state.sessionId,
+        content,
         status,
-        durationMs: Number(data?.receipt?.durationMs) || undefined,
         toolCallId: toolCallId || undefined,
         receiptId: receiptId || undefined,
         attempt: Number(data?.receipt?.attemptCount) || undefined,
@@ -354,10 +354,11 @@ function projectRemotePlanTimeline(
 ): void {
     const planId = String(data?.planId || '').trim() || 'plan';
     const stepId = String(data?.stepId || '').trim();
-    const key = state.qualifyUiEventKey(`plan:${planId}${stepId ? `:${stepId}` : ''}`);
-    state.upsertUiEventMessage(key, content, {
-        eventType,
-        label: 'plan',
+    state.projectThreadItem({
+        kind: 'plan',
+        key: threadItemKey('plan', `${planId}${stepId ? `:${stepId}` : ''}`),
+        sessionId: state.sessionId,
+        content,
         status,
         source: 'remote',
         sequence: Number(data?.sequence) || undefined
