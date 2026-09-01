@@ -532,3 +532,135 @@ export class RemoteEventBridgePlanEventsTest {
         expect(state.planTodos[1].content).toEqual('Second');
     }
 }
+
+function emptySseFetch(): typeof fetch {
+    return (async () => ({
+        ok: true,
+        status: 200,
+        body: { getReader: () => ({ read: async () => ({ done: true } as const) }) }
+    })) as unknown as typeof fetch;
+}
+
+interface RpcCall {
+    method: string;
+    params: any;
+}
+
+function makeRpc(respond: (method: string, params: any) => any) {
+    const calls: RpcCall[] = [];
+    const rpc = {
+        async request(method: string, params: any): Promise<any> {
+            calls.push({ method, params });
+            return respond(method, params);
+        }
+    };
+    return { rpc, calls };
+}
+
+@Suite('AgentConsoleRemoteEventBridge reconnect')
+export class RemoteEventBridgeReconnectTest {
+    @Test('reconnect replays missed raw events and advances the tail seq without duplicating entries')
+    async reconnectReplaysMissedEvents() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 's1' });
+        const { rpc, calls } = makeRpc((method, params) => {
+            if (method === 'timeline.query') {
+                return {
+                    sessionId: 's1',
+                    entries: [
+                        { key: 'tool:tc1', kind: 'tool', sessionId: 's1', label: 'bash', status: 'running', lastSeq: 1, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+                    ],
+                    hasMore: false
+                };
+            }
+            if (method === 'timeline.replay') {
+                return {
+                    sessionId: 's1',
+                    events: [
+                        { seq: 2, id: 'evt2', type: 'tool_invoked', sessionId: 's1', timestamp: 100, toolName: 'bash', toolCallId: 'tc2', receiptId: 'rc2', attempt: 1, status: 'running' },
+                        { seq: 3, id: 'evt3', type: 'tool_completed', sessionId: 's1', timestamp: 200, toolName: 'bash', toolCallId: 'tc2', receiptId: 'rc2', attempt: 1, status: 'success', durationMs: 12 }
+                    ]
+                };
+            }
+            if (method === 'nav.query') {
+                return { sessions: [] };
+            }
+            if (method === 'question.list') {
+                return [];
+            }
+            return {};
+        });
+        const bridge = new AgentConsoleRemoteEventBridge(state, {
+            baseUrl: 'http://local',
+            rpc: rpc as any,
+            fetchImpl: emptySseFetch(),
+            reconnectDelayMs: 100000
+        });
+        await bridge.subscribe('s1');
+        expect(state.timelineTailSeq).toEqual(1);
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc1')).toHaveLength(1);
+
+        await bridge.connectOnce();
+        bridge.dispose();
+
+        const replayCall = calls.find(call => call.method === 'timeline.replay');
+        expect(replayCall).toBeDefined();
+        expect(replayCall!.params.sinceSeq).toEqual(1);
+        expect(state.timelineTailSeq).toEqual(3);
+        expect(state.timelineReconnecting).toBe(false);
+        expect(state.timelineStale).toBe(false);
+        const tc2 = state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc2');
+        expect(tc2).toHaveLength(1);
+        expect(tc2[0].metadata?.status).toEqual('success');
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc1')).toHaveLength(1);
+    }
+
+    @Test('seedFromTimeline pages through timeline.query with the returned cursor')
+    async seedPagingFollowsCursor() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 's1' });
+        const { rpc, calls } = makeRpc((method, params) => {
+            if (method === 'timeline.query') {
+                if (!params.cursor) {
+                    return {
+                        sessionId: 's1',
+                        entries: [
+                            { key: 'tool:tc1', kind: 'tool', sessionId: 's1', label: 'bash', status: 'running', lastSeq: 1, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+                        ],
+                        hasMore: true,
+                        nextCursor: 'c1'
+                    };
+                }
+                return {
+                    sessionId: 's1',
+                    entries: [
+                        { key: 'plan:p1', kind: 'plan', sessionId: 's1', label: 'plan p1', status: 'pending', lastSeq: 2, planId: 'p1' }
+                    ],
+                    hasMore: false
+                };
+            }
+            if (method === 'nav.query') {
+                return { sessions: [] };
+            }
+            if (method === 'question.list') {
+                return [];
+            }
+            return {};
+        });
+        const bridge = new AgentConsoleRemoteEventBridge(state, {
+            baseUrl: 'http://local',
+            rpc: rpc as any,
+            fetchImpl: emptySseFetch(),
+            reconnectDelayMs: 100000
+        });
+        await bridge.subscribe('s1');
+        bridge.dispose();
+
+        const queryCalls = calls.filter(call => call.method === 'timeline.query');
+        expect(queryCalls).toHaveLength(2);
+        expect(queryCalls[1].params.cursor).toEqual('c1');
+        expect(state.timelineTailSeq).toEqual(2);
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'tool:tc1')).toHaveLength(1);
+        expect(state.messages.filter(m => m.metadata?.uiEventKey === 'plan:p1')).toHaveLength(1);
+    }
+}

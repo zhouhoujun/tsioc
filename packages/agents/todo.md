@@ -1604,6 +1604,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 已有本地切片（2026-09-01）：tool 与 plan 已按稳定 key 原地 upsert，command execution 已有 UI 侧派生投影；但它尚未由 agent/gateway 事件协议供给或 replay，不能作为统一 thread-item projection 完成态。后续先定义共享 `uiKind/key/sequence/attempt/receipt` 事件 envelope 和 UI projection port，再删除 UI 自行拼装的平行投影。
 - 共享层重构（2026-09-01）：`agent/src/ui/ThreadItemProjection.ts` 定义 `ThreadItemEvent`、稳定 `threadItemKey()` 与 `ThreadItemProjectionPort`；SessionState 的 command、local/remote tool 与 plan 投影统一经 `projectThreadItem()`，宿主桥接只负责转换事件，不再各自拼装 UI metadata。gateway durable envelope、replay 与跨 principal 验收仍待实施，故本项继续保持 `UI local slice only`。
+- 断线 replay 切面（2026-09-01）：`AgentConsoleRemoteEventBridge` 首次连接仍走 `timeline.query` 全量 seed（`seedFromTimeline` 改 cursor 分页，≤20 页、500/页）；重连路径新增 `replayFromTimeline()` —— 以 `state.timelineTailSeq` 为 `sinceSeq` 调 `timeline.replay`（gateway 返回 `seq > sinceSeq` 的原始事件），经共享 `reduceTimelineEvents` 重投影后 `seedTimeline` 按稳定 key 幂等 upsert，断线期间错过的 tool/plan 事件补齐且不重复。跨 principal：gateway-server.spec.ts `queriesAndReplaysTimeline` 补 `timeline.replay` 拒测。agent-ui 全量 910→**912 passing**（新增重连 replay、cursor 分页两用例）EXIT=0；agent-gateway 全量 267 passing EXIT=0；`tsc --noEmit` EXIT=0。正式跨 host replay 依赖 P269 的 requestId/epoch 拒绝策略，故 P271 仍为 `UI local slice only`。
 
 **P272 · Cross-platform interaction harness（中）** `platform: agent acceptance + agent-ui acceptance`
 

@@ -1,4 +1,4 @@
-import { AgentConsoleAppRpc, threadItemKey } from '@tsdi/agent';
+import { AgentConsoleAppRpc, TimelineEntry, TimelineEventRecord, reduceTimelineEvents, threadItemKey } from '@tsdi/agent';
 import {
     AgentConsoleApprovalRequest,
     AgentConsolePendingQuestion,
@@ -418,6 +418,9 @@ export class AgentConsoleRemoteEventBridge {
             await this.seedFromTimeline();
             await this.seedFromNav();
             await this.seedFromQuestions();
+        } else {
+            // P271: replay raw events missed while SSE was down; idempotent via stable-key upsert (P235).
+            await this.replayFromTimeline();
         }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
@@ -475,8 +478,43 @@ export class AgentConsoleRemoteEventBridge {
             return;
         }
         try {
-            const result = await this.rpc.request('timeline.query', { sessionId: this.sessionId, limit: 500 });
-            const entries = Array.isArray(result?.entries) ? result.entries : [];
+            const all: TimelineEntry[] = [];
+            let cursor: string | undefined;
+            for (let page = 0; page < 20; page += 1) {
+                const params: Record<string, unknown> = { sessionId: this.sessionId, limit: 500 };
+                if (cursor) {
+                    params.cursor = cursor;
+                }
+                const result = await this.rpc.request('timeline.query', params);
+                const entries = Array.isArray(result?.entries) ? result.entries : [];
+                all.push(...entries);
+                if (!result?.hasMore || !result?.nextCursor) {
+                    break;
+                }
+                cursor = result.nextCursor;
+            }
+            if (all.length) {
+                this.state.seedTimeline(all);
+            }
+        } catch {
+            return;
+        }
+    }
+
+    protected async replayFromTimeline(): Promise<void> {
+        if (!this.rpc || !this.sessionId) {
+            return;
+        }
+        try {
+            const result = await this.rpc.request('timeline.replay', {
+                sessionId: this.sessionId,
+                sinceSeq: this.state.timelineTailSeq
+            });
+            const rawEvents = Array.isArray(result?.events) ? result.events : [];
+            if (!rawEvents.length) {
+                return;
+            }
+            const entries = [...reduceTimelineEvents(rawEvents).values()];
             if (entries.length) {
                 this.state.seedTimeline(entries);
             }

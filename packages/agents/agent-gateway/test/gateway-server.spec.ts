@@ -3152,6 +3152,9 @@ export class AppRpcServerTest {
 
         const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 5, method: 'timeline.query', params: { sessionId: sid } }, { principalId: 'other' });
         expect((forbidden as any).error).toBeDefined();
+
+        const forbiddenReplay = await rpc.handle({ jsonrpc: '2.0', id: 6, method: 'timeline.replay', params: { sessionId: sid, sinceSeq: 0 } }, { principalId: 'other' });
+        expect((forbiddenReplay as any).error).toBeDefined();
     }
 
     @Test('nav.query returns a principal-scoped session tree and applies filters through json-rpc')
