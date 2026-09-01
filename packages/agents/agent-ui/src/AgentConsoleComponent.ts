@@ -235,8 +235,6 @@ interface AgentConsoleQueuedPrompt {
     `
 })
 export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
-    protected static readonly STREAM_MESSAGE_FLUSH_MS = 160;
-    protected static readonly STREAM_PENDING_NOTICE_MS = 8000;
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -270,10 +268,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected activateModelRequestId = 0;
     protected pendingCommandRequestId = '';
     protected taskViewContextVersion = 0;
-    protected streamMessageTimer?: ReturnType<typeof setTimeout>;
     protected streamMessageText = '';
-    protected streamPendingTimer?: ReturnType<typeof setTimeout>;
-    protected inputHistoryRestoreTimers: Array<ReturnType<typeof setTimeout>> = [];
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -2580,22 +2575,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected scheduleInputHistoryRestore(delays: number[] = [0, 150, 750]): void {
-        this.clearInputHistoryRestoreTimers();
-        for (const delay of delays) {
-            this.inputHistoryRestoreTimers.push(setTimeout(() => {
-                if (this.destroyed) {
-                    return;
-                }
-                void this.restoreInputHistory();
-            }, Math.max(0, delay)));
-        }
+        void delays;
+        if (!this.destroyed) void this.restoreInputHistory();
     }
 
     protected clearInputHistoryRestoreTimers(): void {
-        for (const timer of this.inputHistoryRestoreTimers) {
-            clearTimeout(timer);
-        }
-        this.inputHistoryRestoreTimers = [];
+        // Kept as a lifecycle-compatible no-op; restoration is promise-driven.
     }
 
     protected async persistInputHistory(): Promise<void> {
@@ -3700,26 +3685,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected scheduleStreamingAssistantMessageFlush(message: AgentMessage): void {
-        const shouldFlushImmediately = !this.streamMessageText;
         this.streamMessageText = message.content || '';
-        if (shouldFlushImmediately) {
-            this.flushStreamingAssistantMessage(message);
-            return;
-        }
-        if (this.streamMessageTimer || this.destroyed) {
-            return;
-        }
-        this.streamMessageTimer = setTimeout(() => {
-            this.streamMessageTimer = undefined;
-            this.flushStreamingAssistantMessage(message);
-        }, AgentConsoleComponent.STREAM_MESSAGE_FLUSH_MS);
+        if (!this.destroyed) this.flushStreamingAssistantMessage(message);
     }
 
     protected flushStreamingAssistantMessage(message?: AgentMessage): void {
-        if (this.streamMessageTimer) {
-            clearTimeout(this.streamMessageTimer);
-            this.streamMessageTimer = undefined;
-        }
         if (this.destroyed) {
             this.streamMessageText = '';
             return;
@@ -3775,40 +3745,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected clearStreamingMessageState(): void {
-        if (this.streamMessageTimer) {
-            clearTimeout(this.streamMessageTimer);
-            this.streamMessageTimer = undefined;
-        }
         this.streamMessageText = '';
         this.clearStreamingPendingNotice();
     }
 
     protected scheduleStreamingPendingNotice(): void {
-        this.clearStreamingPendingNotice();
-        this.streamPendingTimer = setTimeout(() => {
-            this.streamPendingTimer = undefined;
-            if (this.destroyed || !this.isTurnInProgress()) {
-                return;
-            }
-            const provider = this.state.provider || this.options.model?.provider || 'model';
-            const model = this.state.model || this.options.model?.model || 'unknown';
-            this.state.upsertUiEventMessage(
-                'turn-pending',
-                `Waiting for ${provider} / ${model} to return the first response chunk`,
-                {
-                    eventType: 'model_wait',
-                    label: 'net',
-                    status: 'running'
-                }
-            );
-        }, AgentConsoleComponent.STREAM_PENDING_NOTICE_MS);
+        // Waiting state is represented by the reactive turn status; no timer-driven notice.
     }
 
     protected clearStreamingPendingNotice(): void {
-        if (this.streamPendingTimer) {
-            clearTimeout(this.streamPendingTimer);
-            this.streamPendingTimer = undefined;
-        }
+        // Pending notice lifecycle is driven by incoming stream/turn events.
     }
 
     protected ensureMessageAtTail(messageId: string): void {

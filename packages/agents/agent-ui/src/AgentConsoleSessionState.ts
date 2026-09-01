@@ -1335,6 +1335,13 @@ export class AgentConsoleSessionState {
         this.setMessages(filtered);
     }
 
+    removeUiEventMessage(eventKey: string): void {
+        const key = String(eventKey || '').trim();
+        if (!key) return;
+        const filtered = this.messages.filter(message => message?.metadata?.uiKind !== 'event' || message?.metadata?.uiEventKey !== key);
+        if (filtered.length !== this.messages.length) this.setMessages(filtered);
+    }
+
     seedTimeline(entries: TimelineEntry[]): void {
         let seedCount = 0;
         for (const entry of sortTimelineEntries(entries)) {
