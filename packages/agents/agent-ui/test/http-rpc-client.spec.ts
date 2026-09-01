@@ -145,4 +145,81 @@ export class HttpAgentConsoleAppRpcTest {
         const rpc = createHttpAgentConsoleAppRpc({ baseUrl: 'http://localhost:8080' });
         expect(typeof rpc.request).toEqual('function');
     }
+
+    @Test('request aborts when context.signal aborts mid-flight')
+    async requestAbortsOnContextSignal() {
+        const controller = new AbortController();
+        const fetchImpl = async (_url: string, init: any) => {
+            return new Promise((resolve, reject) => {
+                if (init?.signal?.aborted) {
+                    reject(init.signal.reason || new Error('aborted'));
+                    return;
+                }
+                init?.signal?.addEventListener('abort', () => reject(init.signal.reason || new Error('aborted')));
+            });
+        };
+        const rpc = new HttpAgentConsoleAppRpc({ baseUrl: 'http://localhost:8080', timeoutMs: 5000, fetchImpl: fetchImpl as any });
+        const promise = rpc.request('session.list', {}, { requestId: 'r1', sessionEpoch: 1, signal: controller.signal });
+        controller.abort();
+        let thrown: any = null;
+        try {
+            await promise;
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
+
+    @Test('request rejects immediately when context.signal is already aborted')
+    async requestRejectsOnPreAbortedSignal() {
+        const controller = new AbortController();
+        controller.abort();
+        let captured: any = null;
+        const fetchImpl = async (_url: string, init: any) => {
+            captured = { init };
+            return new Promise((resolve, reject) => {
+                if (init?.signal?.aborted) {
+                    reject(init.signal.reason || new Error('aborted'));
+                    return;
+                }
+                init?.signal?.addEventListener('abort', () => reject(init.signal.reason || new Error('aborted')));
+            });
+        };
+        const rpc = new HttpAgentConsoleAppRpc({ baseUrl: 'http://localhost:8080', timeoutMs: 5000, fetchImpl: fetchImpl as any });
+        let thrown: any = null;
+        try {
+            await rpc.request('session.list', {}, { signal: controller.signal });
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+        // The abort signal must never leak into the wire meta.
+        expect(JSON.parse(captured.init.body).meta).toBeUndefined();
+    }
+
+    @Test('stream aborts when context.signal aborts mid-stream')
+    async streamAbortsOnContextSignal() {
+        const controller = new AbortController();
+        const fetchImpl = async (_url: string, init: any) => {
+            return new Promise((resolve, reject) => {
+                if (init?.signal?.aborted) {
+                    reject(init.signal.reason || new Error('aborted'));
+                    return;
+                }
+                init?.signal?.addEventListener('abort', () => reject(init.signal.reason || new Error('aborted')));
+            });
+        };
+        const rpc = new HttpAgentConsoleAppRpc({ baseUrl: 'http://localhost:8080', timeoutMs: 5000, fetchImpl: fetchImpl as any });
+        const iterator = rpc.stream('run.turn_stream', { sessionId: 's1' }, { signal: controller.signal });
+        controller.abort();
+        let thrown: any = null;
+        try {
+            for await (const _chunk of iterator) {
+                // consume
+            }
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
 }

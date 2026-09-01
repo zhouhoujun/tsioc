@@ -59,6 +59,40 @@ function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal | undefin
     };
 }
 
+function mergeAbortSignals(...signals: Array<AbortSignal | undefined>): { signal: AbortSignal | undefined; dispose: () => void } {
+    const present = signals.filter((signal): signal is AbortSignal => !!signal);
+    if (!present.length || typeof AbortController === 'undefined') {
+        return { signal: undefined, dispose: () => undefined };
+    }
+    if (present.length === 1) {
+        return { signal: present[0], dispose: () => undefined };
+    }
+    const controller = new AbortController();
+    let cleanup: Array<() => void> = [];
+    const forward = (signal: AbortSignal) => {
+        if (signal.aborted) {
+            controller.abort(signal.reason);
+            return;
+        }
+        const listener = () => controller.abort(signal.reason);
+        signal.addEventListener('abort', listener, { once: true });
+        cleanup.push(() => signal.removeEventListener('abort', listener));
+    };
+    for (const signal of present) {
+        forward(signal);
+    }
+    return {
+        signal: controller.signal,
+        dispose: () => {
+            const current = cleanup;
+            cleanup = [];
+            for (const fn of current) {
+                fn();
+            }
+        }
+    };
+}
+
 async function parseJsonResponse(response: Response): Promise<any> {
     const text = await response.text();
     if (!text) {
@@ -105,6 +139,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
     async request(method: string, params?: any, context?: any): Promise<any> {
         const timeout = Number(this.options.timeoutMs || context?.timeoutMs || DEFAULT_TIMEOUT_MS);
         const timeoutCtl = createTimeoutSignal(timeout);
+        const merged = mergeAbortSignals(timeoutCtl.signal, context?.signal);
         try {
             const response = await this.fetchImpl(requestUrl(this.options), {
                 method: 'POST',
@@ -116,7 +151,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     params: params ?? {},
                     meta: context?.requestId || context?.sessionEpoch !== undefined ? { requestId: context.requestId, sessionEpoch: context.sessionEpoch } : undefined
                 }),
-                signal: timeoutCtl.signal
+                signal: merged.signal
             });
             if (!response.ok) {
                 const detail = await parseJsonResponse(response);
@@ -133,12 +168,14 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
             return payload?.result;
         } finally {
             timeoutCtl.cancel();
+            merged.dispose();
         }
     }
 
     async *stream(method: string, params?: any, context?: any): AsyncGenerator<any, void, void> {
         const timeout = Number(this.options.timeoutMs || context?.timeoutMs || DEFAULT_TIMEOUT_MS);
         const timeoutCtl = createTimeoutSignal(timeout);
+        const merged = mergeAbortSignals(timeoutCtl.signal, context?.signal);
         try {
             const response = await this.fetchImpl(streamUrl(this.options), {
                 method: 'POST',
@@ -150,7 +187,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     params: params ?? {},
                     meta: context?.requestId || context?.sessionEpoch !== undefined ? { requestId: context.requestId, sessionEpoch: context.sessionEpoch } : undefined
                 }),
-                signal: timeoutCtl.signal
+                signal: merged.signal
             });
             if (!response.ok) {
                 const detail = await parseJsonResponse(response);
@@ -232,6 +269,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
             }
         } finally {
             timeoutCtl.cancel();
+            merged.dispose();
         }
     }
 

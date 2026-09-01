@@ -1683,6 +1683,7 @@ Turn: Fix session restore                                      running  01:42
 - 目标：所有异步 RPC 自动绑定 AbortSignal、requestId、sessionEpoch，旧响应只能进入历史，不能修改当前 UI。
 - 步骤：为剩余 handler 注入 `rpcRequestContext`；gateway 校验并回显 meta；remote event bridge/replay 先做 epoch 与 sequence 检查；补充取消和 Promise rejection 收敛。
 - 验收：慢 RPC→切会话、断线重连、重复执行、Esc 取消四类时序测试；browser/TUI 状态无污染。
+- P277 进度（2026-09-01）：33 个 handler 已注入 `rpcRequestContext`；gateway 校验并回显 `requestId/sessionEpoch` meta；bridge/replay 已做 epoch 与 sequence 拒绝；本轮补齐取消传播与 rejection 收敛——`rpcRequestContext` 自动携带 command execution AbortSignal（`resolvedId` 存在时），`HttpAgentConsoleAppRpc.request/stream` 用 `mergeAbortSignals` 合并 timeout 与 context signal，Esc/`run.cancel` 立即中断在途 fetch；signal 绝不进入 wire `meta`。agent-ui 新增 3 项取消测试（在途 abort/预中止 reject/stream abort），全量 **918 passing** EXIT=0，`tsc --noEmit` EXIT=0。
 
 **P278 · Durable thread-item replay（中-高）**
 

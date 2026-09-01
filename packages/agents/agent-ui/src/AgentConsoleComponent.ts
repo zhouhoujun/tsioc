@@ -2195,10 +2195,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this;
     }
 
-    protected rpcRequestContext(requestId?: string): { requestId?: string; sessionEpoch: number } {
+    protected rpcRequestContext(requestId?: string): { requestId?: string; sessionEpoch: number; signal?: AbortSignal } {
+        const resolvedId = requestId || this.pendingCommandRequestId || undefined;
         return {
-            requestId: requestId || this.pendingCommandRequestId || undefined,
-            sessionEpoch: this.sessionEpoch
+            requestId: resolvedId,
+            sessionEpoch: this.sessionEpoch,
+            signal: resolvedId ? this.state.getCommandExecutionSignal(resolvedId) : undefined
         };
     }
 
