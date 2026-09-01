@@ -11152,7 +11152,7 @@ export class AgentConsoleCommandExecutionTest {
         expect(state.latestCommandExecution?.outputIds).toContain(outputId);
     }
 
-    @Test('state configure with a new sessionId clears executions and resets the sequence')
+    @Test('state configure with a new sessionId clears executions without reusing request ids')
     async stateConfigureClearsOnSessionSwitch() {
         const state = new AgentConsoleSessionState();
         state.beginCommandExecution('/usage', '');
@@ -11162,7 +11162,7 @@ export class AgentConsoleCommandExecutionTest {
         const after = state.beginCommandExecution('/status', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.command).toEqual('/status');
-        expect(after).toEqual('cmd-1');
+        expect(after).toEqual('cmd-2');
     }
 
     @Test('session switch cancels active command execution and rejects its stale completion')
@@ -11181,5 +11181,27 @@ export class AgentConsoleCommandExecutionTest {
         const currentRequest = state.beginCommandExecution('/search', 'new');
         state.completeCommandExecution(currentRequest, 'succeeded');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
+    }
+
+    @Test('state delegates command cancellation and staleness to the injected control port')
+    async stateUsesInjectedCommandExecutionControl() {
+        const state = new AgentConsoleSessionState();
+        const calls: string[] = [];
+        const signal = { aborted: false } as AbortSignal;
+        state.setCommandExecutionControl({
+            begin: (requestId) => { calls.push(`begin:${requestId}`); return signal; },
+            signal: (requestId) => { calls.push(`signal:${requestId}`); return signal; },
+            isCurrent: (requestId) => { calls.push(`current:${requestId}`); return true; },
+            finish: (requestId) => calls.push(`finish:${requestId}`),
+            cancel: (requestId) => calls.push(`cancel:${requestId}`),
+            cancelSession: (sessionId) => calls.push(`session:${sessionId}`)
+        });
+        const requestId = state.beginCommandExecution('/status', '');
+        expect(state.getCommandExecutionSignal(requestId)).toBe(signal);
+        state.completeCommandExecution(requestId, 'succeeded');
+        expect(calls).toContain(`begin:${requestId}`);
+        expect(calls).toContain(`signal:${requestId}`);
+        expect(calls).toContain(`current:${requestId}`);
+        expect(calls).toContain(`finish:${requestId}`);
     }
 }

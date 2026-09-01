@@ -179,6 +179,7 @@
 1. **通用功能走抽象类，禁止各实现各写一遍**：跨项目/跨平台共享能力一律基于既有抽象承接——如持久化统一走 `@tsdi/common` 的 `FileAdapter`（`AgentConsoleSettingsStore`/`AgentConsoleStash`/`AgentConsoleTheme` 同款），不要在 TUI node-fs、browser storage、gateway MemoryStore 各写一份。需要环境差异时，把差异收敛到最小 seam（如 `FileAdapter` 注入、`CommandOutputStore` 端口），共享逻辑只实现一次。
 2. **优先 IoC 依赖倒置，方便扩展与性能优化**：通用能力通过 DI port（接口/抽象类）注入，定义方持有 port，各平台/各子项目提供实现。状态/服务对象只依赖 port，不依赖任何平台或具体实现，禁止直接 new 平台类或静态引用平台全局。例：`AgentConsoleSessionState.setCommandOutputStore(store)` 接收 `CommandOutputStore` 端口，TUI/CLI 注入 `BoundedFileCommandOutputStore`（FileAdapter 实现），browser/gateway 注入 RPC store；共享的过滤/分页/淘汰逻辑全部落在 `AbstractCommandOutputStore` 抽象基类里，具体 store 只覆写各自的持久化 seam。
 3. **共享逻辑覆盖优先于重复实现**：新增能力前先确认既有抽象是否已提供（`FileAdapter`、`MemoryStore` 键值抽象、`AbstractCommandOutputStore`、`CommandOutputStore` 端口、`AGENT_CONSOLE_APP_RPC` 等）；确实需要新端口时，先定义接口/抽象基类 + 默认实现，再由各子项目/平台注入具体实现。
+4. **跨平台跨端先行，子项目不得单宿主定型**：`packages/agents/` 下任一子项目新增或重构功能前，必须先判定其是否需在本地 runtime、CLI/TUI、browser、gateway/remote、VS Code/Electron 等多个端运行或互通；只要存在跨端需求，就先在共同依赖层定义稳定的数据 contract、纯逻辑与 IoC port，再由各端注入 transport/存储/系统能力实现。禁止在 `agent`、`agent-ui`、`agent-gateway`、`agent-cli` 或具体宿主中各自维护协议、状态机、持久化或平台分支，之后再以同步/复制方式补齐其他端。每个计划项必须标明 `platform:`、共享层、port 所有者、各端实现和跨端验收；未具备这些信息不得标记完成。
 
 ---
 
@@ -1542,7 +1543,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 目标：定义统一的命令请求/响应生命周期：`idle → running → succeeded|failed|cancelled`，每次执行携带 `requestId`、canonical command、sessionId、startedAt、finishedAt、error/retryable`。
 - 方案：新增跨平台 `AgentConsoleCommandExecution` 类型与 reducer；`handleCommand`、palette smart-run、queued slash command、`pushCommandOutput` 全部通过 reducer 写入；旧 `notify` 仅保留短提示。
-- 实现：共享 `agent/src/ui/CommandExecution.ts` 定义 `AgentConsoleCommandExecution`、`AgentConsoleCommandStatus`、action 联合 `begin/complete/fail/linkOutput` 与纯 reducer `reduceAgentConsoleCommandExecution`（ring cap=20、终态不可再变）；`agent-ui/src/AgentConsoleCommandExecution.ts` 仅作兼容再导出，避免 UI/gateway/CLI 重复实现。`AgentConsoleSessionState` 增 `commandExecutions`/`commandExecutionSequence` 字段与 `beginCommandExecution`/`completeCommandExecution`/`failCommandExecution`/`linkCommandOutputToExecution`/`latestCommandExecution`，`configure()` session 切换时清 ring + 重置序列（会话隔离）；`AgentConsoleComponent.handleCommand` 统一 begin→try/catch dispatch→complete/fail（未知/歧义→failed retryable=false，handler 异常→failed retryable=true），`pushCommandOutput` 返回值并 link 到当前 execution。
+- 实现：共享 `agent/src/ui/CommandExecution.ts` 定义 `AgentConsoleCommandExecution`、`AgentConsoleCommandStatus`、action 联合 `begin/complete/fail/linkOutput` 与纯 reducer `reduceAgentConsoleCommandExecution`（ring cap=20、终态不可再变）；`agent-ui/src/AgentConsoleCommandExecution.ts` 仅作兼容再导出，避免 UI/gateway/CLI 重复实现。`AgentConsoleSessionState` 增 `commandExecutions`/`commandExecutionSequence` 字段与 `beginCommandExecution`/`completeCommandExecution`/`failCommandExecution`/`linkCommandOutputToExecution`/`latestCommandExecution`，切换会话清 ring 但不复用 request id（防止迟到结果命中新会话）；`AgentConsoleComponent.handleCommand` 统一 begin→try/catch dispatch→complete/fail（未知/歧义→failed retryable=false，handler 异常→failed retryable=true），`pushCommandOutput` 返回值并 link 到当前 execution。
 - 验证：新增 reducer + 状态方法单测 8 项（begin/complete/fail/终态不可变/link/ring cap/session 隔离/configure 重置）；agent-ui 全量 **880 passing** EXIT=0；`tsc --noEmit` EXIT=0；`build:web` EXIT=0（3.6MB）；跨平台边界 rg 扫描 CLEAN（仅 globalThis 守卫的 `Buffer`，无 `node:`/`@tsdi/components/console` 直引）。
 - 验收：同一命令重复触发、session 切换、取消和异常均不会污染新会话；TUI/browser 状态快照一致；新增 reducer 单测 + agent-ui 全量 + tsc/build。
 
@@ -1580,7 +1581,7 @@ Turn: Fix session restore                                      running  01:42
 - 方案：为 command execution 注入 `AbortSignal`/epoch；session 切换自动取消旧请求；RPC 响应带 requestId，旧响应只能进入历史不能改当前 overlay；失败结果提供 retry action。
 - 验收：慢 RPC + 快速切会话、断线重连、重复执行、Esc 取消四类时序测试；无旧结果污染、无未处理 Promise rejection。
 
-- 已有本地切片（2026-09-01）：SessionState 具备 request-scoped abort、epoch 与 stale completion 防护；但尚未抽成可由 browser/TUI/gateway 注入的 cancellation port，RPC response 也未携带 requestId/epoch。因此不得作为跨 host 完成态，后续需先建立共享控制 port 与 RPC envelope，再接入本地实现。
+- 本地 IoC 重构（2026-09-01）：共享 `agent/src/ui/CommandExecutionControl.ts` 定义 `CommandExecutionControlPort`，由 `InMemoryCommandExecutionControl` 作为跨端默认实现集中管理 request lease、AbortSignal、session cancellation 与 stale 判定；SessionState 仅依赖注入 port，不再直接保存 `AbortController`/Map 或重置并复用 request id。定向状态回归覆盖 injected port、取消与 stale completion。RPC response 尚未携带 requestId/epoch，remote host replacement 仍是后续切片，故不得标记为跨 host 完成态。
 
 **P270 · Overlay accessibility and focus semantics（中）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-01
 

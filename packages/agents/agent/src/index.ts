@@ -145,3 +145,4 @@ export * from './channels/PubSubAgentChannel';
 export * from './ui/AgentConsoleAppRpc';
 export * from './ui/CommandOutputHistory';
 export * from './ui/CommandExecution';
+export * from './ui/CommandExecutionControl';
