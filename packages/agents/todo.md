@@ -1719,6 +1719,16 @@ Turn: Fix session restore                                      running  01:42
 - 默认工具组及 build 模式不再自动加载外部 `ai_cli`（Codex/OpenCode 等）；显式启用时仍可使用。
 - 验证：agent-ui 全量 943 passing、agent-tools 构建与 `tsc --noEmit` 通过；agent-tools 全量受沙箱本机监听 `EPERM` 影响，LSP/MCP 相关测试需在允许监听的宿主复验。
 
+### 2026-09-02 TUI 输入交互修复与 HTML console 测试隔离（收尾）
+
+- 修复三个真实 TUI 输入缺陷（均补充了真实输入管线回归测试，避免反复出现且无法验证）：
+  1. 输入框 ↑/↓ 未加载会话输入历史：`AgentConsoleSessionState.processDecodedInput` 对 raw ESC 序列重复入栈后以「无历史」覆盖草稿。修复：原始 ESC 在非 shell 直通上下文直接短路为 `{'text':'\u001b','controlKey':'escape'}`。
+  2. `/` 命令菜单打开后 ←/→ 直接退出菜单且输入框换行出现两个并列 ` > `：`AgentConsoleOverlay.resolveMenuKey` 对 left/right 返回 `{action:'exit'}`。修复：菜单横向键改为 `{action:'none'}`（菜单纵向选择由 ↑/↓/Enter/Esc 承担）。
+  3. 任务执行中按 Esc 无法中断：未绑定 Esc 被 `handleGlobalKeyInput`/`handleBrowserGlobalKeyInput` 吞掉。修复：无 action 时返回 `false` 放行到下层键位（完整 Esc→partial-dispatch 双重触发由 `handleTerminalInput` 的 partial 守卫解决）。
+- 新增 `test/ui-input-regression.spec.ts`（8 用例）：在真实 TUI 输入管线（`ConsoleTerminalInputController` + fake stdin + Application 装配）验证 ESC 中断、↑/↓ 历史导航、`/` 菜单选择与 ←/→ 保持菜单、断电 hue 等；同步更新 `overlay-controller.spec.ts`（left/right → none）与 `view-model.spec.ts`（未绑定 Esc 的 cancel 语义）。
+- 修复 2 个既有 HTML console 测试失败（根因为测试夹具共享而非产品缺陷）：`@Before`/`@After` 在 `@tsdi/unit` 是**套件级**钩子（SuiteRunner `runBefore`/`runAfter` 对整批测试只执行一次），全部 9 个用例共享同一个 `Application` 与 `AgentConsoleSessionState`；前序用例遗留的 `selectMenu`（非建议菜单）经 `syncDerivedInputFocus` 把 `inputFocused` 钉死为 false（`clickingCollapsedMessagePreviewTogglesMessageDetail` 336 行断言失败），且该用例在后续断言处中止、`messageDetailOpen` 遗留 true，使 `visibleMessages` 返回全量消息（`expandingPinnedMessageRefreshesVisibleWindow` 362 行断言失败）。改用 `@BeforeEach`/`@AfterEach` 每用例独立启动/关闭应用后，两用例在完整套件中通过。
+- 全量验证：agent-ui **953 passing**（EXIT=0，含新增 8 用例与修复后 9 用例 HTML console）、`tsc --noEmit` 干净。
+
 ## 已完成计划归档（合并视图，2026-09-02）
 
 以下计划已完成并合并到能力项，后续只维护缺口，不重复立项：
