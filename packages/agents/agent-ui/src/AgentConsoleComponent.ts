@@ -5570,7 +5570,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 await this.interruptTurn();
                 return true;
             }
-            if (!action) return this.isTurnInProgress();
+            if (!action) return false;
             await this.executeGlobalKeyAction(action);
             return true;
         }
@@ -5739,7 +5739,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 await this.interruptTurn();
                 return true;
             }
-            if (!action) return this.isTurnInProgress();
+            if (!action) return false;
             await this.executeGlobalKeyAction(action);
             return true;
         }
@@ -6147,6 +6147,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.syncConsoleMessageDetailViewport();
         if (decoded.mouse) {
             this.dispatchTerminalMouseAt(decoded.mouse);
+            return;
+        }
+        if (decoded.partial) {
             return;
         }
         this.surfaceAccessor?.notifyNonMouseInput?.();

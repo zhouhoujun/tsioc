@@ -10661,7 +10661,7 @@ export class AgentConsoleComponentTest {
         expect(cancellations).toEqual(2);
     }
 
-    @Test('unsetting escape disables the configurable interrupt binding')
+    @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
         let cancellations = 0;
@@ -10669,8 +10669,10 @@ export class AgentConsoleComponentTest {
         await component.onInit();
         (component as any).globalKeymap.unset('escape');
         state.setStatus('running');
+        // With no keymap binding, Esc must still interrupt the running turn via
+        // the decoded-input fallback (it must not be swallowed).
         await (component as any).handleTerminalInput({ text: '\u001b', partial: false }, '\u001b');
-        expect(cancellations).toEqual(0);
+        expect(cancellations).toEqual(1);
     }
 
     @Test('terminal input intercepts vim normal mode keys before insertion')

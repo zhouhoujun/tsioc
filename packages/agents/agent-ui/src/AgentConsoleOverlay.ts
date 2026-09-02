@@ -167,7 +167,8 @@ export class AgentConsoleOverlayController {
             return { action: 'page', direction: 1 };
         }
         if (keyName === 'left' || keyName === 'right') {
-            return { action: 'cancel' };
+            // Left/right move the input cursor; they must not dismiss the menu.
+            return { action: 'none' };
         }
         if (this.isDismissKey(keyName)) {
             return { action: 'escape' };

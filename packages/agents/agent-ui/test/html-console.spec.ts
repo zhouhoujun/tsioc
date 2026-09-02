@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Before, Suite, Test, After } from '@tsdi/unit';
+import { BeforeEach, Suite, Test, AfterEach } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
@@ -49,7 +49,7 @@ class HtmlPanelTestComponent {
 export class HtmlConsoleTest {
     ctx!: ApplicationContext;
 
-    @Before()
+    @BeforeEach()
     async init() {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
@@ -370,7 +370,7 @@ export class HtmlConsoleTest {
         expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
     }
 
-    @After()
+    @AfterEach()
     async clean() {
         await this.ctx?.close();
         if (global.gc) global.gc();

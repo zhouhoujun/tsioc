@@ -97,8 +97,9 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveMenuKey('up', '', 3)).toEqual({ action: 'move', delta: -1 });
         expect(controller.resolveMenuKey('return', '', 3)).toEqual({ action: 'accept' });
         expect(controller.resolveMenuKey('tab', '', 3)).toEqual({ action: 'accept' });
-        expect(controller.resolveMenuKey('left', '', 3)).toEqual({ action: 'cancel' });
-        expect(controller.resolveMenuKey('right', '', 3)).toEqual({ action: 'cancel' });
+        // left/right move the input cursor; they must not dismiss the menu
+        expect(controller.resolveMenuKey('left', '', 3)).toEqual({ action: 'none' });
+        expect(controller.resolveMenuKey('right', '', 3)).toEqual({ action: 'none' });
         expect(controller.resolveMenuKey('esc', '', 3)).toEqual({ action: 'escape' });
         expect(controller.resolveMenuKey('q', '', 3)).toEqual({ action: 'escape' });
         expect(controller.resolveMenuKey('home', '', 3)).toEqual({ action: 'home' });

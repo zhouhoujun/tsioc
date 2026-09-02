@@ -1,0 +1,327 @@
+import expect = require('expect');
+import { Before, Suite, Test, After } from '@tsdi/unit';
+import { Application, ApplicationContext, ApplicationRunners } from '@tsdi/core';
+import { ComponentsModule } from '@tsdi/components';
+import {
+    TuiConsoleModule,
+    TerminalInputSequenceDecoder,
+    ConsoleTerminalInputHandler,
+    ConsoleTerminalSurfaceAccessor,
+    ConsoleTerminalSurfaceLifecycle,
+    ConsoleTerminalApplicationLifecycleService,
+    ConsoleTerminalInputController
+} from '@tsdi/components/console';
+import { AgentModule } from '@tsdi/agent';
+import { AgentConsoleComponent, AgentUiModule } from '../src';
+import { ConsoleTerminalSurfaceAccessor as AgentConsoleTerminalSurfaceAccessor } from '../src/console-ports';
+import { isAgentConsoleSuggestionMenu } from '../src/AgentConsoleSuggestions';
+import { AgentConsoleInputHistoryStore } from '../src/AgentConsoleInputHistoryStore';
+
+/**
+ * Real UI-interaction regression tests for the agent TUI input pipeline.
+ *
+ * These drive the ACTUAL terminal input path end-to-end:
+ *   ConsoleTerminalInputController (fake input stream + real sequence decoder)
+ *   -> AgentConsoleComponent.handleTerminalInput
+ *   -> AgentConsoleSessionState key/menu/history handling
+ * and assert on both state mutations and the composed terminal lines via
+ * ConsoleTerminalSurfaceAccessor.getLastRenderedLines().
+ *
+ * Regression coverage:
+ *  - ESC must interrupt a running agent turn (also when the keymap has no
+ *    escape binding), instead of being silently consumed.
+ *  - Left/right must NOT dismiss the `/` suggestion menu and must not leave a
+ *    stale placeholder prompt row on screen.
+ *  - Up/down must recall input history through the real pipeline, skipping
+ *    slash-command entries.
+ *  - The workspace-scoped input history store must round-trip its entries.
+ */
+@Suite('UI input interaction regression: escape interrupt, suggestion menu, input history')
+export class UiInputInteractionRegressionTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        // mirror runAgentUi wiring: handler + surface lifecycle resolve to the bootstrap component instance
+        this.ctx = await Application.run({
+            module: {
+                imports: [AgentModule, AgentUiModule, TuiConsoleModule, ComponentsModule],
+                providers: [
+                    {
+                        provide: AgentConsoleTerminalSurfaceAccessor,
+                        deps: [ConsoleTerminalSurfaceAccessor],
+                        useFactory: (surface: ConsoleTerminalSurfaceAccessor) => surface
+                    },
+                    {
+                        provide: ConsoleTerminalInputHandler,
+                        deps: [ApplicationRunners],
+                        useFactory: (runners: ApplicationRunners) => runners.getRef(AgentConsoleComponent)?.instance
+                    },
+                    {
+                        provide: ConsoleTerminalSurfaceLifecycle,
+                        deps: [ApplicationRunners],
+                        useFactory: (runners: ApplicationRunners) => runners.getRef(AgentConsoleComponent)?.instance
+                    }
+                ],
+                bootstrap: [AgentConsoleComponent, ConsoleTerminalApplicationLifecycleService]
+            }
+        });
+    }
+
+    @After()
+    async clean() {
+        await this.ctx?.close();
+        if (global.gc) global.gc();
+    }
+
+    protected async settle(): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        await Promise.resolve();
+        await Promise.resolve();
+    }
+
+    protected console(): AgentConsoleComponent {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent);
+        expect(ref).toBeDefined();
+        return ref!.instance;
+    }
+
+    /** Drives real raw-mode stdin chunks through the TerminalInputSequenceDecoder. */
+    protected async press(...chunks: string[]): Promise<void> {
+        const instance = this.console();
+        let dataHandler: ((chunk: string) => void) | undefined;
+        const controller = new ConsoleTerminalInputController({
+            input: {
+                on: (_event: string, handler: (chunk: string) => void) => { dataHandler = handler; },
+                off: () => undefined,
+                read: () => null,
+                setRawMode: () => undefined,
+                resume: () => undefined,
+                pause: () => undefined
+            },
+            onChunk: (decoded, chunk) => instance.handleTerminalInput(decoded, chunk)
+        });
+        controller.start();
+        try {
+            for (const chunk of chunks) {
+                dataHandler!(chunk);
+                await new Promise(resolve => setTimeout(resolve, 30));
+            }
+            await this.settle();
+        } finally {
+            controller.stop();
+        }
+    }
+
+    protected renderedScreen(): string {
+        return this.ctx.get(ConsoleTerminalSurfaceAccessor)!.getLastRenderedLines().join('\n');
+    }
+
+    // ------------------------------------------------------------------
+    // ESC interrupt
+    // ------------------------------------------------------------------
+
+    @Test('Esc while the agent is running cancels the current turn through the real input pipeline')
+    async escapeRunningCancelsTurnThroughPipeline() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('hello', 5);
+        state.setStatus('running');
+        const cancelCalls: string[] = [];
+        (instance as any).sessionService = {
+            cancelTurn: async (sessionId: string) => {
+                cancelCalls.push(sessionId);
+                return true;
+            }
+        };
+
+        // real stdin: bare Escape is ambiguous until the 25ms flush timer fires
+        await this.press('\u001b');
+
+        expect(cancelCalls).toEqual([state.sessionId]);
+        expect(state.status).toBe('running');
+    }
+
+    @Test('Esc cancels a running turn even when the keymap has no escape binding (custom keymap / persisted keymap)')
+    async escapeRunningCancelsTurnWithoutKeymapBinding() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('draft', 5);
+        state.setStatus('running');
+        const cancelCalls: string[] = [];
+        (instance as any).sessionService = {
+            cancelTurn: async (sessionId: string) => {
+                cancelCalls.push(sessionId);
+                return true;
+            }
+        };
+        // strip the escape binding from every keymap context (emulates a
+        // custom/persisted keymap where escape is disabled)
+        (instance as any).globalKeymap.configure({ escape: null });
+        try {
+            await this.press('\u001b');
+        } finally {
+            (instance as any).globalKeymap.reset();
+        }
+
+        // ESC must still interrupt the running turn instead of being swallowed
+        expect(cancelCalls).toEqual([state.sessionId]);
+    }
+
+    @Test('Esc while idle dismisses focus surfaces and does not cancel anything')
+    async escapeIdleDoesNotCancel() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('draft', 5);
+        state.setStatus('idle');
+        const cancelCalls: string[] = [];
+        (instance as any).sessionService = {
+            cancelTurn: async (sessionId: string) => {
+                cancelCalls.push(sessionId);
+                return true;
+            }
+        };
+        await this.press('\u001b');
+        expect(cancelCalls).toEqual([]);
+        expect(state.input).toBe('draft');
+    }
+
+    // ------------------------------------------------------------------
+    // Left/right with the `/` suggestion menu open
+    // ------------------------------------------------------------------
+
+    @Test('left/right keeps the / suggestion menu open and moves the input cursor')
+    async leftRightKeepsSuggestionMenuOpen() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('', 0);
+
+        // type '/' through the real pipeline -> command suggestion menu opens
+        await this.press('/');
+        expect(state.input).toBe('/');
+        expect(state.selectMenu).toBeTruthy();
+        expect(isAgentConsoleSuggestionMenu(state.selectMenu!)).toBe(true);
+        const menuTitleBefore = state.selectMenu?.title;
+
+        // cursor to end of '/', then press LEFT
+        state.setInputCursor(1);
+        await this.press('\u001b[D');
+
+        // menu must STILL be open, cursor must have moved
+        expect(state.selectMenu).toBeTruthy();
+        expect(isAgentConsoleSuggestionMenu(state.selectMenu!)).toBe(true);
+        expect(state.selectMenu?.title).toBe(menuTitleBefore);
+        expect((state as any).suppressSuggestionMenu).toBeFalsy();
+        expect(state.input).toBe('/');
+        expect(state.inputCursor).toBe(0);
+
+        // pressing RIGHT moves the cursor back without closing the menu
+        await this.press('\u001b[C');
+        expect(state.selectMenu).toBeTruthy();
+        expect(state.inputCursor).toBe(1);
+    }
+
+    @Test('no stale placeholder prompt row remains after typing / and pressing left/right')
+    async leftRightLeavesSingleComposerPromptLine() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('', 0);
+        await this.settle();
+
+        // composer placeholder row is rendered while the input is empty
+        const before = this.renderedScreen();
+        expect(before).toContain('Ask code or files');
+
+        // type '/' and press LEFT (menu opens, cursor moves, stay open)
+        await this.press('/', '\u001b[D');
+        await this.settle();
+
+        const after = this.renderedScreen();
+        // the stale placeholder must be gone: no 'Ask code or files' anywhere
+        expect(after).not.toContain('Ask code or files');
+        // exactly one visible composer prompt row starts with '> '
+        const promptRows = after.split('\n')
+            .map(line => line.replace(/\x1b\[[0-9;]*[A-Za-z]/g, ''))
+            .filter(line => line.trim().startsWith('> '));
+        expect(promptRows.length).toBe(1);
+        expect(promptRows[0]).toContain('/');
+    }
+
+    // ------------------------------------------------------------------
+    // Up/down input history
+    // ------------------------------------------------------------------
+
+    @Test('up/down recalls input history through the real input pipeline')
+    async upDownRecallsHistory() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInputHistoryEntries(['fix the tests', 'add logging']);
+        state.setInput('', 0);
+
+        // ArrowUp -> most recent entry
+        await this.press('\u001b[A');
+        expect(state.input).toBe('fix the tests');
+        expect(state.inputCursor).toBe('fix the tests'.length);
+
+        // ArrowUp again -> older entry
+        await this.press('\u001b[A');
+        expect(state.input).toBe('add logging');
+
+        // ArrowDown -> back to the newer entry
+        await this.press('\u001b[B');
+        expect(state.input).toBe('fix the tests');
+
+        // ArrowDown again -> back to the original draft (empty)
+        await this.press('\u001b[B');
+        expect(state.input).toBe('');
+    }
+
+    @Test('history navigation skips slash-command entries')
+    async historySkipsSlashCommands() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInputHistoryEntries(['/help', 'real prompt', '/status']);
+        state.setInput('', 0);
+
+        expect(state.navigateInputHistory(-1)).toBe(true);
+        expect(state.input).toBe('real prompt');
+        expect(state.navigateInputHistory(-1)).toBe(false); // nothing older (commands skipped)
+    }
+
+    // ------------------------------------------------------------------
+    // Workspace-scoped history store contract
+    // ------------------------------------------------------------------
+
+    @Test('input history store round-trips entries scoped to workspace + session')
+    async inputHistoryStoreRoundTrip() {
+        const records: any[] = [];
+        const memory = {
+            async getAll(_scope?: string) { return records; },
+            async get(id: string) { return records.find(record => record.id === id) ?? null; },
+            async put(record: any) {
+                const index = records.findIndex(item => item.id === record.id);
+                if (index >= 0) {
+                    records[index] = record;
+                } else {
+                    records.push(record);
+                }
+            },
+            async delete(id: string) {
+                const index = records.findIndex(item => item.id === id);
+                if (index >= 0) {
+                    records.splice(index, 1);
+                }
+            }
+        };
+        const store = new AgentConsoleInputHistoryStore(undefined as any, memory as any);
+
+        await store.save(['first prompt', 'second prompt'], '/work/demo', 'console');
+        const loaded = await store.load('/work/demo', 'console');
+
+        expect(loaded).toEqual(['first prompt', 'second prompt']);
+
+        // workspace isolation: another workspace must not see the entries
+        const other = await store.load('/work/other', 'console');
+        expect(other).toEqual([]);
+    }
+}
