@@ -1737,6 +1737,8 @@ Turn: Fix session restore                                      running  01:42
 |---|---|---|---|
 | 时间线窗口 | `resolveTimelineVisibleMessages()` 先取 tail/current/errors，再把 structural 项整体追加；结构项和 boundary 不参与统一预算 | 计划边界、file-change 或 summary 会顶掉历史事件；用户无法按时间顺序回看被挤出的内容，且重复渲染时窗口锚点漂移 | 共享 SessionState 计算窗口；结构项必须占用同一行预算；禁止脏节点缓存和 timer 刷新 |
 | 时间线视觉 | boundary 使用独立文案，event meta、status、action 由多处拼接；窄终端/CJK 没有统一快照 | 行层级、状态和时间信息密度不稳定，视觉像调试输出而非产品时间线 | 纯 renderer 输出稳定 token；TUI/browser 共用格式，颜色不能承载唯一语义 |
+| 时间线状态列 | event 行同时显示完成/错误 glyph 与 `├─`/`·` 前缀，plan boundary 内容又嵌入 `▸` | 左侧出现两个状态，完成勾选、错误 X、圆点和树线混用，用户无法判断哪个才是状态 | 左侧只允许一个状态槽；层级改用缩进/rail，不再使用第二 glyph |
+| 时间线描述语言 | event 内容、status label、action label、tool 名称和 meta 直接拼接，常出现重复主语、名词堆叠、`completed success` 类机器化表达 | 描述不自然，信息虽全但难扫读，像内部事件日志而不是用户可读的执行记录 | 先把事件归一为 actor/action/object/result，再由统一 formatter 生成自然短句 |
 | 命令处理 | registry parser 与部分 handler 仍存在二次字符串解析；错误建议、剩余参数、默认值在入口间不完全一致 | 同一命令在补全、palette、smart-run、queued 执行时行为不同，失败后草稿恢复不可靠 | registry 是唯一 parser；诊断携带 token index、期望类型、修复建议 |
 | 命令/UI 交换 | `notify()`、command execution ring、output history、thread item projection 并行维护 | 结果可能只出现于通知或面板，无法稳定展开、复制、重放，也难以审计 attempt 链 | 统一 envelope + reducer；面板只读 projection，不自行拼状态 |
 
@@ -1750,9 +1752,12 @@ Turn: Fix session restore                                      running  01:42
 
 **P281 · Timeline visual language（中-高）** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
 
-- 目标：建立专业、可扫描的时间线层级：step header、event row、status/action、duration/meta 具有固定列和语义化符号，长内容只在 inspector 展开。
-- 实施：定义共享 timeline token model 与 ANSI/DOM 两套最小样式 seam；统一 boundary、summary、tool、error 行的 prefix/meta；补齐 320px、80 列、CJK、无色终端快照。
-- 验收：同一事件序列 browser DOM 与 TUI 文本结构一致；状态不依赖颜色；行宽、折叠、选中和 Enter/Esc 行为稳定。
+- 2026-09-02 状态列切片：时间线 event 行和 plan boundary 不再在内容区重复输出 `├─/·/▸` 状态符号，左侧统一由 status slot 输出单一 glyph；已补充 renderer 回归断言。自然语言 formatter（action-first 短句）保留为本计划下一切片。
+
+- 目标：建立专业、可扫描的时间线层级：step header、event row、status/action、duration/meta 具有固定列和语义化符号，长内容只在 inspector 展开；每行左侧只出现一个状态。
+- 实施：定义共享 timeline token model 与 ANSI/DOM 两套最小样式 seam；统一 boundary、summary、tool、error 行的 prefix/meta；状态只由 status slot 输出 `✓/✕/●/○`，层级由缩进和 rail 表达，禁止再用 `├─/·/▸` 充当第二状态；补齐 320px、80 列、CJK、无色终端快照。
+- 文案模型：引入纯函数 `formatTimelineSentence({ actor, action, object, result, detail })`，事件 adapter 先提供语义字段再渲染；使用“Reading package.json”“Updated 2 files”“Tests failed: 2 assertions”这类 action-first 短句，禁止直接串联内部 event type、status 与 action label，避免 `tool completed success`、重复 tool 名和重复失败原因。
+- 验收：同一事件序列 browser DOM 与 TUI 文本结构一致；每行至多一个状态 glyph；状态不依赖颜色；中英文 action/object/result 顺序自然；不得出现连续重复词、`success completed`、`failed error`；行宽、折叠、选中和 Enter/Esc 行为稳定。
 
 **P282 · Command parser single path（高）** `platform: agent-ui/src（跨平台）`
 

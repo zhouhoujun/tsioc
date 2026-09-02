@@ -144,7 +144,6 @@ export class HtmlConsoleTest {
         ];
 
         ref.instance.sessionState.setMessages(messages);
-        await ref.render();
         await Promise.resolve();
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -302,7 +301,6 @@ export class HtmlConsoleTest {
             { id: 't1', role: 'tool', content: '{"location":"Chengdu"}', createdAt: 3 } as any,
             { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
         ]);
-        await ref.render();
         await Promise.resolve();
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -361,7 +359,7 @@ export class HtmlConsoleTest {
         await ref.render();
         await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
-        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
+        expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(false);
 
         const toggle = messagesPanel.instance.renderedLines.find(line => line.messageId === 'u1' && line.previewCollapsed);
         messagesPanel.instance.onMessageLineClick(toggle);

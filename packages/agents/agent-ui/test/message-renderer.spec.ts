@@ -270,7 +270,8 @@ export class AgentConsoleMessageRendererDispatchTest {
             id: 'event-tool', role: 'assistant', content: 'Read src/index.ts', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
         }] as any, { timelineMode: true });
-        expect(items[0].lines[0].role).toContain('├─');
+        expect(items[0].lines[0].role).not.toContain('├─');
+        expect(items[0].lines[0].status).toBeTruthy();
         expect(items[0].lines[0].content).toEqual('Read src/index.ts');
     }
 
