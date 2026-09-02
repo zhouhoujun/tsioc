@@ -325,6 +325,7 @@ export class HtmlConsoleTest {
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
+        await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
 
         const collapsedLine = messagesPanel.instance.renderedLines.find(line => line.previewCollapsed);
@@ -345,6 +346,7 @@ export class HtmlConsoleTest {
     @Test('expanding an older pinned message refreshes and restores the visible window')
     async expandingPinnedMessageRefreshesVisibleWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: Array.from({ length: 12 }, (_, index) => `request ${index + 1}`).join('\n'), createdAt: 1 },
             { id: 'a1', role: 'assistant', content: 'middle marker', createdAt: 2 },
@@ -355,6 +357,7 @@ export class HtmlConsoleTest {
                 createdAt: index + 3
             }))
         ] as any);
+        await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
 

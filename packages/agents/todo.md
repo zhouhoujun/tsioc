@@ -1706,6 +1706,12 @@ Turn: Fix session restore                                      running  01:42
 
 ### 2026-09-02 agent-ui/agent-tools 回归修复收尾
 
+### 2026-09-02 收尾复测与测试可信度修复
+
+- agent-ui 全量复测曾稳定暴露 `expanding an older pinned message refreshes visible window` 失败；根因为 HTML 夹具未设置足够小的 `messagesVisibleItems`，未真正进入 pinned 窗口分支。已补充夹具配置，避免测试假阴性/假阳性。
+- 时间线步骤边界文案统一为 `Step N of M · glyph · content`，并补充可读性回归断言。
+- agent-cli 73 passing；agent 797 passing；agent-ui 其余用例通过。agent-gateway/agent-tools 的监听类用例在当前沙箱仍受 `listen EPERM` 限制，需具备本机监听权限的宿主复验。
+
 - 修复消息 transcript 行按位置复用导致的历史消息顶替、重复绘制：消息行现在使用消息 ID、行号和稳定渲染 key。
 - 修复浏览器 composer 上下键被全局快捷键层抢占的问题；无选择菜单时上下键优先浏览输入历史。
 - `git_operations` 新增可在未初始化目录执行的 `init` 操作。

@@ -1838,7 +1838,7 @@ export class AgentConsoleTuiRendererTest {
         ] as any);
         ref.instance.sessionState.setTimelineMode(true);
         expect(ref.instance.sessionState.displayMessages.find(item => item.id === '__timeline_plan_boundary__')?.content)
-            .toEqual('-- step 2/2 ▸ Implement --');
+            .toEqual('Step 2 of 2  ·  ▸  Implement');
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 
