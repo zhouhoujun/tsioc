@@ -17,6 +17,8 @@ export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
 }
 
 export interface AgentConsoleRenderedLine {
+    /** Stable identity used by the transcript v-for across window shifts. */
+    renderKey?: string;
     messageId?: string;
     previewCollapsed?: boolean;
     toggleContent?: string;

@@ -31,7 +31,9 @@ export const ARCHETYPE_TOOL_GROUPS: Record<string, Partial<Record<AgentToolGroup
         llm: true,
         capture: true,
         lsp: true,
-        review: true
+        review: true,
+        // External coding CLIs are opt-in; build mode uses the native toolchain.
+        ai_cli: false
     },
     plan: {
         filesystem: true,

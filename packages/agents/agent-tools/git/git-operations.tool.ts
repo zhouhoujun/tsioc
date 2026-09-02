@@ -20,7 +20,7 @@ export class GitOperationsTool implements AgentTool {
             action: {
                 type: 'string',
                 enum: [
-                    'status', 'log', 'diff', 'show',
+                    'init', 'status', 'log', 'diff', 'show',
                     'branch', 'branch_create', 'branch_delete',
                     'checkout', 'commit', 'push', 'pull', 'fetch',
                     'stash', 'stash_pop', 'stash_list',
@@ -93,7 +93,9 @@ export class GitOperationsTool implements AgentTool {
         const isReadOnly = readOnlyActions.includes(action);
 
         const workdir = await this.resolveWorkdir(input?.workdir);
-        this.assertGitRepo(workdir);
+        if (action !== 'init') {
+            this.assertGitRepo(workdir);
+        }
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
         const command = this.buildArgs(action, input);

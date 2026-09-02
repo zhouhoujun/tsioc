@@ -4185,6 +4185,17 @@ export class AgentToolsPackageTest {
         expect(missingAction?.message).toContain('action');
     }
 
+    @Test('git operations initializes a workspace that is not yet a repository')
+    async gitOperationsInitializesNewWorkspace() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-init-'));
+        const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any);
+
+        const result = await tool.invoke({ action: 'init' }, createSessionContext());
+
+        expect(result.exitCode).toEqual(0);
+        expect((await fs.stat(path.join(workspace, '.git'))).isDirectory()).toEqual(true);
+    }
+
     @Test('git operations apply shared sandbox policy and workspace guard')
     async gitOperationsApplySharedSandboxPolicyAndWorkspaceGuard() {
         const workspace = process.cwd();
@@ -5184,6 +5195,7 @@ export class AgentToolsPackageTest {
         expect(names).not.toContain('verifiable_intent');
         expect(names).not.toContain('security_scan');
         expect(names).not.toContain('data_manage');
+        expect(names).not.toContain('ai_cli');
     }
 
     @Test('llm task requires adapter and returns inference result')
@@ -5629,6 +5641,28 @@ export class AgentToolsPackageTest {
         const failResult = await failTool.invoke({ prompt: 'test', cli: 'opencode' }, createSessionContext());
         expect(failResult.exitCode).toEqual(1);
         expect(failResult.stderr).toContain('CLI not found');
+    }
+
+    @Test('ai cli builds Codex exec arguments supported by the current CLI')
+    aiCliBuildsSupportedCodexExecArguments() {
+        const args = (new AiCliTool() as any).buildArgs({
+            cli: 'codex_cli',
+            prompt: 'inspect this workspace',
+            outputFormat: 'json',
+            model: 'gpt-5.4',
+            systemPrompt: 'be concise',
+            resumeSessionId: 'unsupported-by-exec'
+        }, {
+            cmd: 'codex',
+            args: ['exec', '--skip-git-repo-check'],
+            jsonFlag: '--json', modelFlag: '--model', toolsFlag: '', sessionFlag: '',
+            systemPromptFlag: '', maxTurnsFlag: '', skipPermsFlag: ''
+        });
+
+        expect(args).toEqual([
+            'exec', '--skip-git-repo-check', '--json', 'json', '--model', 'gpt-5.4', 'inspect this workspace'
+        ]);
+        expect(args).not.toContain('-q');
     }
 
     @Test('ai cli resolves working directory through shared workspace policy and blocks forbidden commands')

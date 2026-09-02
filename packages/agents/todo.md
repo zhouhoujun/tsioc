@@ -1703,3 +1703,12 @@ Turn: Fix session restore                                      running  01:42
 
 - `agent`、`agent-ui`、`agent-gateway`、`agent-cli`、`agent-tools` 已启动全量回归；agent-ui 修复后 943 项通过。gateway/agent-tools 中涉及监听本机端口或 LSP 子进程的失败为当前沙箱 `EPERM`，不是断言失败；具备网络监听权限的宿主需复验。
 - P278 核心 durable timeline/replay、分页、稳定 key 去重、跨 principal 拒绝已有实现与测试；P279 的 Playwright/PTY CI runner 仍未建立，继续保持未完成。
+
+### 2026-09-02 agent-ui/agent-tools 回归修复收尾
+
+- 修复消息 transcript 行按位置复用导致的历史消息顶替、重复绘制：消息行现在使用消息 ID、行号和稳定渲染 key。
+- 修复浏览器 composer 上下键被全局快捷键层抢占的问题；无选择菜单时上下键优先浏览输入历史。
+- `git_operations` 新增可在未初始化目录执行的 `init` 操作。
+- 更新 `ai_cli` 的 Codex 适配为当前 `codex exec --json` 入口，移除失效的 `-q`、旧系统提示和 resume 参数。
+- 默认工具组及 build 模式不再自动加载外部 `ai_cli`（Codex/OpenCode 等）；显式启用时仍可使用。
+- 验证：agent-ui 全量 943 passing、agent-tools 构建与 `tsc --noEmit` 通过；agent-tools 全量受沙箱本机监听 `EPERM` 影响，LSP/MCP 相关测试需在允许监听的宿主复验。

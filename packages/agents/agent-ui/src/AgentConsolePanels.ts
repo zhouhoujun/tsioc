@@ -476,6 +476,14 @@ export class AgentConsoleInputPanelComponent {
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
+        if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !this.state?.selectMenu) {
+            const handled = this.state?.navigateInputHistory(event.key === 'ArrowUp' ? -1 : 1);
+            if (handled) {
+                this.syncTextareaState(event.target as HTMLTextAreaElement | null);
+                event.preventDefault?.();
+                return;
+            }
+        }
         if (await this.state?.globalKeyInputAction?.(event.key, { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) {
             event.preventDefault?.();
             return;
@@ -520,14 +528,6 @@ export class AgentConsoleInputPanelComponent {
                     this.syncTextareaState(event.target as HTMLTextAreaElement | null);
                     return;
                 }
-            }
-        }
-        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-            const handled = this.state?.navigateInputHistory(event.key === 'ArrowUp' ? -1 : 1);
-            if (handled) {
-                this.syncTextareaState(event.target as HTMLTextAreaElement | null);
-                event.preventDefault?.();
-                return;
             }
         }
         if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -2507,7 +2507,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <div class="message-row" v-for="line in renderedLines">
+        <div class="message-row" v-for="line in renderedLines" trackBy="renderKey">
             <label class="message-line" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
@@ -2729,7 +2729,12 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get renderedLines(): AgentConsoleRenderedLine[] {
-        return this.renderedMessageItems.flatMap(item => item.lines);
+        return this.renderedMessageItems.flatMap((item, itemIndex) => item.lines.map((line, lineIndex) => ({
+            ...line,
+            renderKey: line.messageId
+                ? `${line.messageId}:${lineIndex}`
+                : `${item.templateKind || 'message'}:${itemIndex}:${lineIndex}`
+        })));
     }
 
     get messagesSummary(): string {

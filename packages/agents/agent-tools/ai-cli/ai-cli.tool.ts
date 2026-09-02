@@ -32,10 +32,10 @@ const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: s
         maxTurnsFlag: '', skipPermsFlag: ''
     },
     codex_cli: {
-        cmd: 'codex', args: ['-q'],
-        jsonFlag: '--output-format', modelFlag: '--model',
-        toolsFlag: '', sessionFlag: '--resume',
-        systemPromptFlag: '--instructions',
+        cmd: 'codex', args: ['exec', '--skip-git-repo-check'],
+        jsonFlag: '--json', modelFlag: '--model',
+        toolsFlag: '', sessionFlag: '',
+        systemPromptFlag: '',
         maxTurnsFlag: '', skipPermsFlag: ''
     }
 };
