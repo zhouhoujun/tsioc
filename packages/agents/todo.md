@@ -481,8 +481,8 @@
 ### P202 收尾复核（2026-08-26）
 
 - `agent-tools` P195 类型兼容修复：`AgentSkillDefinition.promptFull` 改为可选，目录摘要型 skill 可正常注册；预算过小时主动技能按当前条目超预算即时 compact。测试 `332 passing`（1 环境依赖失败）。
-- 全量回归已执行：agent 752、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 116（1 既存失败）、agent-ui 685、agent-gateway 246、agent-providers 13、agent-ssh 8 均通过；agent-tools 332 通过（1 MCP stdio 环境失败）。
-- 授权本地绑定环境复跑：`agent-gateway` 246 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
+- 全量回归已执行：agent 797、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 117（1 既存失败）、agent-ui 953、agent-gateway 267、agent-providers 13、agent-ssh 8 均通过；agent-tools 478 通过（1 环境依赖失败）。
+- 授权本地绑定环境复跑：`agent-gateway` 267 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
 
 ### P225 收尾复核（2026-08-27，Plan revision / 乐观并发）
