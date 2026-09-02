@@ -1718,3 +1718,62 @@ Turn: Fix session restore                                      running  01:42
 - 更新 `ai_cli` 的 Codex 适配为当前 `codex exec --json` 入口，移除失效的 `-q`、旧系统提示和 resume 参数。
 - 默认工具组及 build 模式不再自动加载外部 `ai_cli`（Codex/OpenCode 等）；显式启用时仍可使用。
 - 验证：agent-ui 全量 943 passing、agent-tools 构建与 `tsc --noEmit` 通过；agent-tools 全量受沙箱本机监听 `EPERM` 影响，LSP/MCP 相关测试需在允许监听的宿主复验。
+
+## 已完成计划归档（合并视图，2026-09-02）
+
+以下计划已完成并合并到能力项，后续只维护缺口，不重复立项：
+
+- 命令系统（P260/P261/P264/P265/P266/P268）：89 条命令由 registry 提供 canonical name、alias、group、description、参数 schema；palette、补全、help、smart-run、queued command 共用解析与 fuzzy 选择；execution 具备 idle/running/succeeded/failed/cancelled、requestId、重试、输出关联和取消控制。
+- 输出与审计（P262/P267）：command output 支持 ring/FileAdapter/gateway RPC 三种宿主实现，具备 session 隔离、分页、过滤、脱敏、复制、clear 和基础 replay；结果保留 command execution 状态与输出关联。
+- Overlay 与可访问性（P266/P270/P274）：select/palette/approval/pending/outputs/plan inspector 使用共享 focus stack 和跨端语义投影；browser 提供 role/label/active-descendant，TUI 保持一致的操作映射。
+- 异步一致性（P269/P277）：RPC envelope 透传 requestId/sessionEpoch；handler 注入 execution context；AbortSignal 取消、会话切换 epoch 拒绝、timeline replay sequence 拒绝已覆盖 UI 本地切片。
+- Thread item 本地投影（P271）：command/tool/plan/file-change 在 SessionState 中经稳定 key 幂等 upsert，timeline 支持 compact/steps/verbose、异常优先和详情 inspector；gateway durable envelope 仍是缺口。
+
+## 深入缺口与执行计划（v16）
+
+### 代码证据与用户风险
+
+| 领域 | 当前证据 | 用户可感知问题 | 设计约束 |
+|---|---|---|---|
+| 时间线窗口 | `resolveTimelineVisibleMessages()` 先取 tail/current/errors，再把 structural 项整体追加；结构项和 boundary 不参与统一预算 | 计划边界、file-change 或 summary 会顶掉历史事件；用户无法按时间顺序回看被挤出的内容，且重复渲染时窗口锚点漂移 | 共享 SessionState 计算窗口；结构项必须占用同一行预算；禁止脏节点缓存和 timer 刷新 |
+| 时间线视觉 | boundary 使用独立文案，event meta、status、action 由多处拼接；窄终端/CJK 没有统一快照 | 行层级、状态和时间信息密度不稳定，视觉像调试输出而非产品时间线 | 纯 renderer 输出稳定 token；TUI/browser 共用格式，颜色不能承载唯一语义 |
+| 命令处理 | registry parser 与部分 handler 仍存在二次字符串解析；错误建议、剩余参数、默认值在入口间不完全一致 | 同一命令在补全、palette、smart-run、queued 执行时行为不同，失败后草稿恢复不可靠 | registry 是唯一 parser；诊断携带 token index、期望类型、修复建议 |
+| 命令/UI 交换 | `notify()`、command execution ring、output history、thread item projection 并行维护 | 结果可能只出现于通知或面板，无法稳定展开、复制、重放，也难以审计 attempt 链 | 统一 envelope + reducer；面板只读 projection，不自行拼状态 |
+
+> 每个 plan 收尾固定执行：检查实现与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/必要构建 → 更新本文件记录结果与限制 → 独立提交。所有跨端能力先落在共享 `agent`/`agent-ui/src` contract 与 IoC port，TUI/browser/gateway 仅提供适配；禁止 `agent-ui/src` 引入 console/node API，禁止 timer 驱动渲染。
+
+**P280 · Timeline window ledger（高）** `platform: agent-ui/src（跨平台）`
+
+- 目标：历史、当前 step、异常、plan/file-change 结构项共享同一个行预算，任何项都不能无界顶掉历史；窗口滚动保持 selected message 与 anchor 稳定。
+- 实施：抽取纯函数 `resolveTimelineWindowLedger(messages, limit, mode, anchor)`；为每个 item 分配 `priority/category/estimatedRows`，按优先级保留并生成可点击的 hidden-range marker；展开历史通过 inspector 或 `/timeline verbose` 读取原始消息，不改变主窗口锚点。
+- 验收：长历史 + 多结构项 + CJK/窄宽度快照；断线 replay、plan 更新、窗口收缩不重复不丢失；新增 reducer/窗口纯函数测试，agent-ui 全量与 `components/console` 回归。
+
+**P281 · Timeline visual language（中-高）** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
+
+- 目标：建立专业、可扫描的时间线层级：step header、event row、status/action、duration/meta 具有固定列和语义化符号，长内容只在 inspector 展开。
+- 实施：定义共享 timeline token model 与 ANSI/DOM 两套最小样式 seam；统一 boundary、summary、tool、error 行的 prefix/meta；补齐 320px、80 列、CJK、无色终端快照。
+- 验收：同一事件序列 browser DOM 与 TUI 文本结构一致；状态不依赖颜色；行宽、折叠、选中和 Enter/Esc 行为稳定。
+
+**P282 · Command parser single path（高）** `platform: agent-ui/src（跨平台）`
+
+- 目标：89 条命令及子命令全部由 registry schema 解析，消除 handler 二次 parse 和入口差异。
+- 实施：生成 canonical parsed args；统一 required/default/enum/variadic/extra token 与引号/CJK tokenizer；诊断包含 token index、expected、suggestion；smart-run、palette、queued、直接输入全部调用同一入口。
+- 验收：registry→handler 覆盖率 100%；每类命令覆盖缺参/非法/多余/别名/引号/CJK；失败后草稿和 retry 语义一致。
+
+**P283 · Command exchange reducer（高）** `platform: agent/src + agent-ui/src（跨平台）`
+
+- 目标：notify、command execution、tool result、output history、thread item 统一为可追踪 envelope，面板成为只读 inspector。
+- 实施：扩展共享 `CommandExchangeEvent`（sequence/attempt/receipt/requestId/sessionEpoch/sessionId）；实现 reducer 与 projection port；所有 handler 先提交事件，再派生短通知；重试沿用同一 execution id 追加 attempt。
+- 验收：turn→command→tool→output→plan 顺序快照；复制/replay/clear 走同一记录；失败重试无重复 item；agent、agent-ui、gateway 全量回归。
+
+**P284 · Durable timeline exchange（中-高）** `platform: agent/src + agent-gateway + agent-ui/src`
+
+- 目标：将 P283 envelope 持久化到 gateway timeline store，重启/断线恢复不丢失、不重复并跨 principal 隔离。
+- 实施：durable append/query/replay/cleanup RPC；cursor 与 sinceSeq 双模式；脱敏和 ownership 在 gateway 强制；UI 以 stable key 幂等重放并拒绝旧 epoch。
+- 验收：重启、断线、乱序、重复、权限、分页、attempt 链矩阵；agent/agent-ui/agent-gateway 全量测试。
+
+**P285 · Interaction gate and visual harness（中）** `platform: agent acceptance + agent-ui acceptance`
+
+- 目标：把上述交互纳入可重复门禁，避免“测试全绿但真实路径失效”。
+- 实施：Node/Playwright browser runner 与共享 fake gateway 场景；Linux/macOS PTY、Windows ConPTY 适配；采集 DOM/ARIA/ANSI 快照、首屏可见率、重复 item、焦点回退、命令完成延迟。
+- 验收：desktop/mobile/320px/CJK/长历史/断线/重试四端矩阵；缺少浏览器或 PTY 时明确 skip 并报告，不修改断言伪造通过。
