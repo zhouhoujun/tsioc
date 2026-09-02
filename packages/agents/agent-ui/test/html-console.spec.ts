@@ -191,6 +191,20 @@ export class HtmlConsoleTest {
         expect(inputField?.selectionEnd).toEqual('second command'.length);
     }
 
+    @Test('input panel keeps arrow history navigation when a non-suggestion menu is open')
+    async inputPanelNavigatesHistoryWithOtherMenuOpen() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
+        ref.instance.sessionState.pushInputHistory('previous command');
+        ref.instance.sessionState.setInput('draft', 0);
+        ref.instance.sessionState.selectMenu = { title: 'Sessions', options: [] } as any;
+        let prevented = false;
+        await inputPanel.instance.onKeydown({ key: 'ArrowUp', code: 'ArrowUp', target: inputField, preventDefault() { prevented = true; } } as any);
+        expect(prevented).toEqual(true);
+        expect(ref.instance.sessionState.input).toEqual('previous command');
+    }
+
     @Test('toggles panel summary and detail through html renderer')
     async togglesPanelSummaryAndDetailThroughHtmlRenderer() {
         const ctx = await Application.run(HtmlPanelTestComponent, {

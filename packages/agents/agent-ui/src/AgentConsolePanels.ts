@@ -476,8 +476,10 @@ export class AgentConsoleInputPanelComponent {
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
-        if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !this.state?.selectMenu) {
-            const handled = this.state?.navigateInputHistory(event.key === 'ArrowUp' ? -1 : 1);
+        const key = String(event?.key || event?.code || '');
+        if ((key === 'ArrowUp' || key === 'ArrowDown')
+            && !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu))) {
+            const handled = this.state?.navigateInputHistory(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
                 this.syncTextareaState(event.target as HTMLTextAreaElement | null);
                 event.preventDefault?.();
@@ -2507,7 +2509,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <div class="message-row" v-for="line in renderedLines" trackBy="renderKey">
+        <div class="message-row" v-for="line in renderedLines">
             <label class="message-line" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
