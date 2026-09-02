@@ -84,7 +84,7 @@ export class HtmlConsoleTest {
             completionTokens: 1080,
             totalTokens: 1200
         });
-        await ref.render();
+        await Promise.resolve();
         await Promise.resolve();
         const root = ref.hostView.rootNodes[0] as any;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -130,7 +130,7 @@ export class HtmlConsoleTest {
         }
 
         ref.instance.sessionState.setInput('hello|');
-        await Promise.resolve();
+        await ref.render();
         const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
         expect(inputField?.value || inputField?.getAttribute('value')).toBe('hello|');
     }
@@ -325,6 +325,7 @@ export class HtmlConsoleTest {
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
+        await ref.render();
         await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
 
@@ -357,6 +358,7 @@ export class HtmlConsoleTest {
                 createdAt: index + 3
             }))
         ] as any);
+        await ref.render();
         await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
