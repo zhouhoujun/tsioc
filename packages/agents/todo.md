@@ -1662,6 +1662,8 @@ Turn: Fix session restore                                      running  01:42
 
 **P274 · Overlay interaction presenter（高）**
 
+- P274 收尾（2026-09-02）：统一 presenter 已接入并修复入口导出/旧标题键兼容；`agent-ui` 全量 **943 passing**、`tsc --noEmit` 通过，跨平台 import 扫描 CLEAN。`build:web` 脚本在受限环境中因子进程权限（EPERM）无法完成；需在具备子进程权限的 CI/宿主复验。
+
 - 目标：统一所有 overlay 的标题、空态、快捷键、选中态和 focus 回退，补齐窄终端/CJK/移动触摸语义。
 - 步骤：抽取共享 `OverlayPresenter` 数据模型；为 palette、approval、pending、outputs、plan inspector 接入同一 presenter；补齐 pointer/keyboard 同 action 映射与 aria 状态。
 - 验收：每类 overlay 的 open→navigate→confirm→Esc 矩阵，320px/80 列/CJK 快照，browser DOM 与 TUI ANSI 输出一致。
@@ -1696,3 +1698,8 @@ Turn: Fix session restore                                      running  01:42
 - 目标：建立可在 CI 执行的 Playwright browser smoke 与 PTY/ConPTY 场景矩阵。
 - 步骤：抽取共享 fake gateway 场景；覆盖 desktop/mobile、窄终端、CJK、长输出、断线、焦点回退；记录首屏可见率、事件延迟、重复 item、按键数。
 - 验收：有浏览器/PTY 时纳入门禁；缺环境只输出明确 skip；禁止通过修改断言掩盖产品失败。
+
+### 2026-09-02 收尾验证
+
+- `agent`、`agent-ui`、`agent-gateway`、`agent-cli`、`agent-tools` 已启动全量回归；agent-ui 修复后 943 项通过。gateway/agent-tools 中涉及监听本机端口或 LSP 子进程的失败为当前沙箱 `EPERM`，不是断言失败；具备网络监听权限的宿主需复验。
+- P278 核心 durable timeline/replay、分页、稳定 key 去重、跨 principal 拒绝已有实现与测试；P279 的 Playwright/PTY CI runner 仍未建立，继续保持未完成。

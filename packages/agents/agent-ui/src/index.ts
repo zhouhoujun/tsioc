@@ -19,6 +19,7 @@ export * from './AgentConsoleCommandOutputHistory';
 export * from './AgentConsoleBoundedFileCommandOutputStore';
 export * from './AgentConsoleRpcCommandOutputStore';
 export * from './AgentConsoleOverlay';
+export * from './AgentConsoleOverlayPresenter';
 export * from './AgentConsoleTheme';
 export * from './AgentConsoleStatusline';
 export * from './AgentIdeBridge';

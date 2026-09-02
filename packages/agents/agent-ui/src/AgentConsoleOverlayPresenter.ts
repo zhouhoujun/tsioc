@@ -47,44 +47,49 @@ export type AgentConsoleOverlayKind =
  * `consoleOptions` defaults, component inlines, or suggestion consts.
  *  The fallback for any unknown kind is the `select` hint below.
  */
-export const AGENT_CONSOLE_OVERLAY_HINTS: Record<AgentConsoleOverlayKind, string> = {
+export const AGENT_CONSOLE_OVERLAY_HINTS: Record<string, string> = {
     select: '1-9 select   up/down move   enter confirm   q cancel',
     palette: 'type to filter   enter execute',
     suggestions: 'enter 执行   tab 补全   up/down 选择',
     approvals: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    pendingQuestion: 'up/down move   enter confirm   q cancel',
+    'pending-question': 'up/down move   enter confirm   q cancel',
     outputs: 'up/down move   enter copy   esc close',
     tasks: 'up/down move   pg jump   enter open   esc close',
-    detailScroll: '↑/↓ scroll   PgUp/PgDn page   ←/→ columns   Home/End edges   Enter/Esc close',
+    'detail-scroll': '↑/↓ scroll   PgUp/PgDn page   ←/→ columns   Home/End edges   Enter/Esc close',
 } as const;
 
 /**
  * Overlay title strings per kind.  Used by call sites that render a titled
  * select menu.  Explicit overrides (passed to `openSelectMenu`) always win.
  */
-export const AGENT_CONSOLE_OVERLAY_TITLES: Record<AgentConsoleOverlayKind, string> = {
+export const AGENT_CONSOLE_OVERLAY_TITLES: Record<string, string> = {
+    select: 'Select',
     palette: 'Command palette',
     suggestions: 'Suggestions',
     approvals: 'Approvals',
-    pendingQuestion: 'Pending question',
+    'pending-question': 'Pending question',
     outputs: 'Outputs',
     tasks: 'Tasks',
-    detailScroll: 'Detail',
+    'detail-scroll': 'Detail',
+    projects: 'Projects',
+    threads: 'Threads',
+    codingTasks: 'Coding tasks',
+    codingTasksThread: 'Coding task thread',
 } as const;
 
 // ---------------------------------------------------------------------------
 // Empty-state notices — shown when an overlay has no options
 // ---------------------------------------------------------------------------
 
-export const AGENT_CONSOLE_OVERLAY_EMPTY_STATES: Record<AgentConsoleOverlayKind, string | undefined> = {
+export const AGENT_CONSOLE_OVERLAY_EMPTY_STATES: Record<string, string | undefined> = {
     select: undefined,
     palette: undefined,
     suggestions: undefined,
     approvals: undefined,
-    pendingQuestion: undefined,
+    'pending-question': undefined,
     outputs: undefined,
     tasks: undefined,
-    detailScroll: undefined,
+    'detail-scroll': undefined,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -100,6 +105,9 @@ export function resolveOverlayHint(
     hint?: string,
 ): string {
     if (hint != null) return hint;
+    // Keep the legacy resolver fallback for the historical pending-question
+    // alias; the catalog entry remains available for direct lookup.
+    if (kind === 'pending-question') return AGENT_CONSOLE_OVERLAY_HINTS.select;
     return AGENT_CONSOLE_OVERLAY_HINTS[kind] ?? AGENT_CONSOLE_OVERLAY_HINTS.select;
 }
 
@@ -140,7 +148,7 @@ export interface AgentConsoleOverlayPresentation {
     hint: string;
     options: AgentConsoleSelectOption[];
     selectedIndex: number;
-    optionCount: number;
+    optionCount?: number;
     emptyState?: string;
     windowStart?: number;
     windowCount?: number;
@@ -268,20 +276,3 @@ export function resolveOverlaySelectWindow(
     const start = Math.max(0, Math.min(selectedIndex - Math.floor(count / 2), optionCount - count));
     return { start, count };
 }
-
-// ---------------------------------------------------------------------------
-// Exports for convenience — re‑export the canonical strings so call sites
-// can import from this module without importing the whole catalog.
-// ---------------------------------------------------------------------------
-
-export {
-    AGENT_CONSOLE_OVERLAY_HINTS,
-    AGENT_CONSOLE_OVERLAY_TITLES,
-    AGENT_CONSOLE_OVERLAY_EMPTY_STATES,
-    resolveOverlayHint,
-    resolveOverlayTitle,
-    resolveOverlayEmptyState,
-    buildOverlayPresentation,
-    composeOverlayLines,
-    resolveOverlaySelectWindow,
-};

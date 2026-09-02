@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import type { AgentConsoleSelectOption } from '../src';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES, AGENT_CONSOLE_OVERLAY_EMPTY_STATES, resolveOverlayHint, resolveOverlayTitle, resolveOverlayEmptyState, buildOverlayPresentation, composeOverlayLines, resolveOverlaySelectWindow } from '../src/AgentConsoleOverlayPresenter';
-import type { AgentConsoleOverlayKind } from '../src/AgentConsoleOverlayPresenter';
+import type { AgentConsoleOverlayKind, AgentConsoleOverlayPresentation } from '../src/AgentConsoleOverlayPresenter';
 import { getDisplayWidth, fitByDisplayWidth } from '../src/AgentConsoleTextWidth';
 
 const option = (label: string, extra: Partial<AgentConsoleSelectOption> = {}): AgentConsoleSelectOption => {

@@ -17,6 +17,7 @@ import type {
 import { buildAgentConsoleHelpOptions } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
+import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 
 // ── Command handler context ──────────────────────────────────────────────────
 
