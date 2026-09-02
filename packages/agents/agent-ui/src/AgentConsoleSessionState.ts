@@ -1242,7 +1242,7 @@ export class AgentConsoleSessionState {
                 filtered.push({
                     id: '__timeline_plan_boundary__',
                     role: 'assistant',
-                    content: `-- step ${index}/${this.planTodos.length} ${this.planTodoGlyph(active.status)} ${active.content} --`,
+                    content: `Step ${index} of ${this.planTodos.length}  ·  ${this.planTodoGlyph(active.status)}  ${active.content}`,
                     createdAt: Date.now(),
                     metadata: {
                         uiKind: 'timeline-boundary',
