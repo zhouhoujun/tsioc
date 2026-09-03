@@ -1902,3 +1902,9 @@ Turn: Fix session restore                                      running  01:42
 - 全量测试结果：`agent-channels` 59 passing、`agent-cli` 73 passing、`agent-desktop` 20 passing；`agent`、`agent-ui`、`agent-tools` 在测试编译阶段仍引用已删除的 `InMemory*` fixture，未执行；`agent-gateway` 同样因旧 fixture 导入失败；`agent-providers` 8 passing/5 failed（测试容器缺 `LoggerManagers` provider）；`agent-ssh` 受当前沙箱 `listen EPERM` 限制。
 - 类型检查：`agent-cli` 通过；`agent`、`agent-ui`、`agent-tools`、`agent-gateway` 因上述 InMemory fixture/旧构造器签名错误失败。按架构约束不恢复 InMemory 兼容层，后续需将测试 fixture 迁移到 `better-sqlite3` `:memory:` + TypeORM，并统一 4 参数工具构造器。
 - 限制：P279/P285 的 Playwright/PTY CI runner 仍未建立；gateway/provider/ssh 的环境依赖需在具备监听权限及完整 IoC logger provider 的宿主复验。本轮未将受阻项目误标为完成。
+
+### 2026-09-03 存储依赖倒置续改
+
+- Eval report 持久化已从 `EvalRunner` 内置 `InMemoryEvalReportStore` 改为 `@Abstract()` `EvalReportStore` + `@Injectable()` `TypeOrmEvalReportStore`；`AgentModule` 直接以抽象 token 绑定 TypeORM 实现，`EvalRunner` 构造器强制注入抽象，不再默认 `new` 或静默回退。新增 `AgentEvalReportEntity` 并纳入所有 `AgentOrmModule` connection entity 列表，定向 eval 测试通过。
+- `InMemoryToolActivationStore` 已移除并改名为 `SessionToolActivationStore`。该对象只维护当前宿主进程的工具激活租约，属于 session control 而非持久化 store；消费者仍只依赖 `ToolActivationStore` 抽象，具体实现仅在 composition root 注册。
+- 生产代码剩余 `InMemoryCommandExecutionControl` 同样是 AbortController 瞬时租约，不属于持久化 store；后续应单独做命名治理。测试目录仍有历史 `InMemorySessionStore`/`InMemoryMemoryStore`/`InMemoryAuditSink` fixture 引用，必须迁移到共享 `AgentOrmTestApp` 的真实 sqljs/SQLite connection 后才能恢复 agent/agent-ui/agent-tools/gateway 全量绿灯，禁止重新导出已删除实现。

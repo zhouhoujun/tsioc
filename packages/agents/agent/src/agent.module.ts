@@ -41,7 +41,8 @@ import { AgentServer } from './channels/AgentServer';
 import { AgentClient } from './channels/AgentClient';
 import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
-import { EvalRunner } from './eval/EvalRunner';
+import { EvalReportStore, EvalRunner } from './eval/EvalRunner';
+import { TypeOrmEvalReportStore } from './eval/TypeOrmEvalReportStore';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
 import { FileSnapshotStore } from './harness/FileSnapshotStore';
 import { GitStepSnapshotStore } from './harness/GitStepSnapshotStore';
@@ -66,7 +67,7 @@ import { TypeOrmGoalStore } from './goal/TypeOrmGoalStore';
 import { GoalStore } from './goal/GoalStore';
 import { createAgentProviders } from './provider';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
-import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore';
+import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
 
 @Module({
     imports: [
@@ -113,9 +114,11 @@ import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore
             deps: [AGENT_OPTIONS]
         },
         ToolExecutionCoordinator,
+        TypeOrmEvalReportStore,
+        { provide: EvalReportStore, useExisting: TypeOrmEvalReportStore },
         SystemPromptBuilder,
         ToolApprovalManager,
-        { provide: ToolActivationStore, useClass: InMemoryToolActivationStore },
+        { provide: ToolActivationStore, useClass: SessionToolActivationStore },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: ProjectContextSection, multi: true },

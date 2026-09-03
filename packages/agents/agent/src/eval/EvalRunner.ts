@@ -1,18 +1,17 @@
-import { Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { EvalRun, EvalTask, EvalVerification } from './EvalTask';
 
-export interface EvalReportStore { save(run: EvalRun): Promise<void>; list(): Promise<EvalRun[]>; get(id: string): Promise<EvalRun | undefined>; }
-export class InMemoryEvalReportStore implements EvalReportStore {
-    private runs = new Map<string, EvalRun>();
-    async save(run: EvalRun) { this.runs.set(run.id, run); }
-    async list() { return [...this.runs.values()]; }
-    async get(id: string) { return this.runs.get(id); }
+@Abstract()
+export abstract class EvalReportStore {
+    abstract save(run: EvalRun): Promise<void>;
+    abstract list(): Promise<EvalRun[]>;
+    abstract get(id: string): Promise<EvalRun | undefined>;
 }
 export interface EvalRunnerOptions { verify?: (command: string, task: EvalTask) => Promise<EvalVerification>; now?: () => Date; id?: () => string; }
 @Injectable()
 export class EvalRunner {
-    constructor(private runtime: AgentRuntime, private store: EvalReportStore = new InMemoryEvalReportStore(), private options: EvalRunnerOptions = {}) {}
+    constructor(private runtime: AgentRuntime, private store: EvalReportStore, private options: EvalRunnerOptions = {}) {}
     async run(task: EvalTask): Promise<EvalRun> {
         const now = this.options.now ?? (() => new Date()); const started = now();
         let status: EvalRun['status'] = 'passed'; let message: string | undefined;

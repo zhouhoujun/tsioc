@@ -12,7 +12,7 @@ import { SessionStore } from '../src/memory/SessionStore';
 import { MemoryStore } from '../src/memory/MemoryStore';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
-import { InMemoryToolActivationStore } from '../src/tools/InMemoryToolActivationStore';
+import { SessionToolActivationStore } from '../src/tools/SessionToolActivationStore';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { AgentOptions, defaultAgentOptions } from '../src/options';
 import { AGENT_OPTIONS } from '../src/tokens';
@@ -1967,7 +1967,7 @@ const { runtime } = await createRuntime(
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
         const { runtime } = await createRuntime(
             model,
             registry,
@@ -2019,7 +2019,7 @@ const { runtime } = await createRuntime(
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
         const { runtime } = await createRuntime(
             model,
             registry,
@@ -2064,7 +2064,7 @@ const { runtime } = await createRuntime(
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             deferredTool
-        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
         const { runtime, events } = await createRuntime(
             new DeferredInvokeModelAdapter(),
             registry,

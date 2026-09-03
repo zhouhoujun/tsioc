@@ -583,3 +583,15 @@ export class AgentBackgroundTaskEntity {
     @Column({ type: 'simple-json', nullable: true })
     cause!: Record<string, any> | null;
 }
+
+@Entity()
+export class AgentEvalReportEntity {
+    @PrimaryColumn()
+    id!: string;
+
+    @Column({ type: 'simple-json' })
+    report!: Record<string, any>;
+
+    @Column({ type: 'bigint' })
+    startedAt!: number;
+}
