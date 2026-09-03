@@ -1908,3 +1908,8 @@ Turn: Fix session restore                                      running  01:42
 - Eval report 持久化已从 `EvalRunner` 内置 `InMemoryEvalReportStore` 改为 `@Abstract()` `EvalReportStore` + `@Injectable()` `TypeOrmEvalReportStore`；`AgentModule` 直接以抽象 token 绑定 TypeORM 实现，`EvalRunner` 构造器强制注入抽象，不再默认 `new` 或静默回退。新增 `AgentEvalReportEntity` 并纳入所有 `AgentOrmModule` connection entity 列表，定向 eval 测试通过。
 - `InMemoryToolActivationStore` 已移除并改名为 `SessionToolActivationStore`。该对象只维护当前宿主进程的工具激活租约，属于 session control 而非持久化 store；消费者仍只依赖 `ToolActivationStore` 抽象，具体实现仅在 composition root 注册。
 - 生产代码剩余 `InMemoryCommandExecutionControl` 同样是 AbortController 瞬时租约，不属于持久化 store；后续应单独做命名治理。测试目录仍有历史 `InMemorySessionStore`/`InMemoryMemoryStore`/`InMemoryAuditSink` fixture 引用，必须迁移到共享 `AgentOrmTestApp` 的真实 sqljs/SQLite connection 后才能恢复 agent/agent-ui/agent-tools/gateway 全量绿灯，禁止重新导出已删除实现。
+
+### 2026-09-03 收尾验证（本轮）
+
+- 本轮改动验证通过：`agent` eval 定向测试退出码 0，`npm run build` 通过，生产源码未发现残留的持久化 `InMemory*Store`。
+- 全量测试暂不能判定通过：`agent`、`agent-ui`、`agent-tools`、`agent-gateway` 的旧测试仍在编译阶段导入已删除的 `InMemorySessionStore`/`InMemoryMemoryStore`/`InMemoryAuditSink`，必须完成真实 TypeORM/sqljs fixture 迁移后才能恢复全量门禁；本轮不提交伪兼容实现。
