@@ -1953,3 +1953,11 @@ Turn: Fix session restore                                      running  01:42
 最新进度：`gateway-server.spec.ts` 的 `SessionHandlerTest` 前两个用例已开始切换至 ORM context；该文件其余同步 store 构造仍待逐组迁移，当前保持未提交状态。
 
 补充：大型 `gateway-server.spec.ts` 已完成全部 InMemory store 构造替换为抽象 token 的 ORM context；`tsc --noEmit` 通过。运行期仅剩消息对象由 TypeORM 规范化后增加可选字段的断言兼容调整，已改为部分匹配。
+
+### 2026-09-03 Timeline seq 竞态修复 + 移除 new-able InMemory 测试 fixture（本轮）
+
+- **根因修复**：`TypeOrmTimelineHistoryStore.append` 之前用 `repo.count({where:{sessionId}})` + `save()` 计算 nextSeq，在 `EventHandler.capture()` fire-and-forget（`.catch(() => undefined)`）的并发追加下竞态，导致所有事件 `seq=0`，`reduceTimelineEvents` 排序不稳定，`tool_invoked` 在 `tool_completed` 之后应用、把状态回滚成 `running`。现改为通过私有 promise 链（`pending`）串行化追加，并用 `MAX(seq)` 预热每会话计数器，保证 per-session seq 单调。
+- **防御性修复**：`reduceTimelineEvents` 排序从 `a.seq - b.seq` 改为 `compareTimelineEventsAsc`（seq + id 平局），保证 seq 相同时仍确定性重放。
+- **验证**：`agent-gateway` 全量 **267 passing EXIT 0**（此前该 timeline 用例置灰失败）；`agent/src/**/*.ts` 独立 `tsc --noEmit` 0 错；`agent/test/timeline-projection.spec.ts`、`persistent-timeline.spec.ts` 定向 EXIT 0。
+- **归档重构（用户指示）**：删除 `agent/test/helpers/in-memory-stores.ts`（new-able InMemory fixture），与"消费者使用抽象类、IoC 提供实现、禁止 `new InMemory*`"约束一致；保留 `helpers/agent-orm.ts`（真实 ORM IoC 宿主，26 个测试文件使用）。
+- **限制（P265，未伪造通过）**：`agent` 包测试仍在编译阶段依赖已删除的 `InMemory*` fixture（`tools.spec.ts`、`turn-cancel.spec.ts`、`runtime-loop.spec.ts`、`context-compaction.spec.ts`），用户本轮决定不迁移，故 `agent` 全量测试仍未绿灯；该状态为已知且已记录，不属于本提交的验收门禁。

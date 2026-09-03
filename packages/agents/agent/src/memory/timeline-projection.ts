@@ -326,7 +326,7 @@ export function applyTimelineEvent(entries: Map<string, TimelineEntry>, event: T
  */
 export function reduceTimelineEvents(events: TimelineEventRecord[]): Map<string, TimelineEntry> {
     const entries = new Map<string, TimelineEntry>();
-    const ordered = events.slice().sort((a, b) => a.seq - b.seq);
+    const ordered = events.slice().sort(compareTimelineEventsAsc);
     for (const event of ordered) {
         applyTimelineEvent(entries, event);
     }
