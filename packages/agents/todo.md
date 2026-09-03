@@ -1919,3 +1919,8 @@ Turn: Fix session restore                                      running  01:42
 - `agent-ui` 测试 ORM fixture 改为独立 `testing/agent-orm.ts`，使用 `Application.run({ module: AgentModule, providers: provideAgentOrm(options) })` 直接注册；不再跨包导入 agent 测试模块，也不使用延迟加载或 InMemory store。
 - `TypeormAdapter` 移除字段级 `@InjectLog()` 隐式依赖；数据库连接仍由异步 `@Startup()` 初始化，ORM provider 注册不会要求无 logger 的宿主预先提供 `LoggerManagers`。
 - 验证：`agent-ui` 全量 **953 passing**，`tsc --noEmit` 通过；`typeorm-adapter` 测试仍有既有 PostgreSQL `connect EPERM` 环境失败，未伪造通过。
+
+### 2026-09-03 TypeORM 异步就绪接口
+
+- `TypeormAdapter` 新增并发安全的异步 `ready()`：启动连接 Promise 单例复用，初始化失败清理 pending 状态以支持重试；保留同步 `getConnection()`/`getRepository()` API 兼容现有 resolver 与 transaction 代码。
+- 验证：`packages/typeorm-adapter` `tsc --noEmit` 通过，SQLite/sqljs `test/connet.spec.ts` 定向测试通过。PostgreSQL 连接与本机监听测试仍受当前沙箱 `EPERM` 限制。

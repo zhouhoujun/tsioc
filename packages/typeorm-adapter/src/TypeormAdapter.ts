@@ -17,6 +17,7 @@ export class TypeormAdapter {
     protected options!: ConnectionOptions;
 
     private sources: Map<string, DataSource>;
+    private startupPromise: Promise<void> | undefined;
 
     constructor(@Inject(INJECTOR) protected injector: Injector) {
         this.sources = new Map();
@@ -27,6 +28,27 @@ export class TypeormAdapter {
      */
     @Startup()
     protected async startup(): Promise<void> {
+        if (this.startupPromise) {
+            return this.startupPromise;
+        }
+        this.startupPromise = this.initializeConnections();
+        try {
+            await this.startupPromise;
+        } catch (error) {
+            this.startupPromise = undefined;
+            throw error;
+        }
+    }
+
+    /** Ensure configured connections are initialized before async store work. */
+    async ready(): Promise<void> {
+        if (this.sources.size) {
+            return;
+        }
+        await this.startup();
+    }
+
+    private async initializeConnections(): Promise<void> {
         const connections = this.injector.get(CONNECTIONS);
         const injector = this.injector;
 
