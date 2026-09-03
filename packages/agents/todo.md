@@ -1913,3 +1913,9 @@ Turn: Fix session restore                                      running  01:42
 
 - 本轮改动验证通过：`agent` eval 定向测试退出码 0，`npm run build` 通过，生产源码未发现残留的持久化 `InMemory*Store`。
 - 全量测试暂不能判定通过：`agent`、`agent-ui`、`agent-tools`、`agent-gateway` 的旧测试仍在编译阶段导入已删除的 `InMemorySessionStore`/`InMemoryMemoryStore`/`InMemoryAuditSink`，必须完成真实 TypeORM/sqljs fixture 迁移后才能恢复全量门禁；本轮不提交伪兼容实现。
+
+### 2026-09-03 ORM provider 初始化修复
+
+- `agent-ui` 测试 ORM fixture 改为独立 `testing/agent-orm.ts`，使用 `Application.run({ module: AgentModule, providers: provideAgentOrm(options) })` 直接注册；不再跨包导入 agent 测试模块，也不使用延迟加载或 InMemory store。
+- `TypeormAdapter` 移除字段级 `@InjectLog()` 隐式依赖；数据库连接仍由异步 `@Startup()` 初始化，ORM provider 注册不会要求无 logger 的宿主预先提供 `LoggerManagers`。
+- 验证：`agent-ui` 全量 **953 passing**，`tsc --noEmit` 通过；`typeorm-adapter` 测试仍有既有 PostgreSQL `connect EPERM` 环境失败，未伪造通过。

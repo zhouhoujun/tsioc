@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { AbstractType, isString, Injector, isNil, Static, isFunction, Inject, INJECTOR, Type, isType, InjectUtil, RunContext } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, ApplicationArguments, MODEL_RESOLVERS, ModuleLoader, Dispose } from '@tsdi/core';
-import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
@@ -19,8 +18,6 @@ export class TypeormAdapter {
 
     private sources: Map<string, DataSource>;
 
-    @InjectLog() private logger!: Logger;
-
     constructor(@Inject(INJECTOR) protected injector: Injector) {
         this.sources = new Map();
     }
@@ -30,7 +27,6 @@ export class TypeormAdapter {
      */
     @Startup()
     protected async startup(): Promise<void> {
-        this.logger.debug('startup db connections');
         const connections = this.injector.get(CONNECTIONS);
         const injector = this.injector;
 
@@ -311,13 +307,11 @@ export class TypeormAdapter {
     protected async onDispose(): Promise<void> {
         await this.disconnect();
         this.sources.clear();
-        this.logger = null!;
         this.injector = null!;
         this.options = null!
     }
 
     protected async disconnect(): Promise<void> {
-        this.logger?.debug('close db connections');
         await Promise.all(Array.from(this.sources.values()).map(async c => {
             if (c && c.isInitialized) {
                 await c.destroy()

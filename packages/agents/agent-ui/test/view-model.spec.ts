@@ -11,7 +11,7 @@ import {
     AgentApprovalFailedEvent,
     AgentApprovalRequestedEvent,
     AgentCompensationEvent,
-    InMemoryMemoryStore,
+    MemoryStore,
     AgentModelCompletedEvent,
     AgentStreamChunkEvent,
     AgentToolCompletedEvent,
@@ -47,6 +47,7 @@ import {
     createLinkCommandOutputAction,
     AgentConsoleCommandExecution
 } from '../src';
+import { runAgentUiOrmApp } from '../testing/agent-orm';
 
 class TestFileAdapter extends FileAdapter {
     isAbsolute(target: string): boolean {
@@ -2371,25 +2372,29 @@ export class AgentConsoleComponentTest {
 
     @Test('input history store aggregates local memory entries across workspace sessions')
     async inputHistoryStoreAggregatesLocalMemoryEntriesAcrossWorkspaceSessions() {
-        const memory = new InMemoryMemoryStore();
-        const store = new AgentConsoleInputHistoryStore(undefined, memory as any);
-
-        await store.save(['session-a', '/help'], '/tmp/shared-workspace', 'chat-a');
-        await store.save(['session-b', 'session-a'], '/tmp/shared-workspace', 'chat-b');
-
-        expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-b', 'session-a', '/help']);
-        expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b', 'session-a', '/help']);
-        expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual(['session-b', 'session-a', '/help']);
+        const ctx = await runAgentUiOrmApp();
+        try {
+            const store = new AgentConsoleInputHistoryStore(undefined, ctx.get(MemoryStore));
+            await store.save(['session-a', '/help'], '/tmp/shared-workspace', 'chat-a');
+            await store.save(['session-b', 'session-a'], '/tmp/shared-workspace', 'chat-b');
+            expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-b', 'session-a', '/help']);
+            expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b', 'session-a', '/help']);
+            expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual(['session-b', 'session-a', '/help']);
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('input history store normalizes Windows workspace variants')
     async inputHistoryStoreNormalizesWindowsWorkspaceVariants() {
-        const memory = new InMemoryMemoryStore();
-        const store = new AgentConsoleInputHistoryStore(undefined, memory as any);
-
-        await store.save(['dir'], 'C:\\Repo\\Agents\\', 'chat-a');
-
-        expect(await store.load('c:/repo/agents', 'chat-a')).toEqual(['dir']);
+        const ctx = await runAgentUiOrmApp();
+        try {
+            const store = new AgentConsoleInputHistoryStore(undefined, ctx.get(MemoryStore));
+            await store.save(['dir'], 'C:\\Repo\\Agents\\', 'chat-a');
+            expect(await store.load('c:/repo/agents', 'chat-a')).toEqual(['dir']);
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('tracks detailed tool runs and highlights running tool')
