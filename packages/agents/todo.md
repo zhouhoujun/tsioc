@@ -1959,5 +1959,21 @@ Turn: Fix session restore                                      running  01:42
 - **根因修复**：`TypeOrmTimelineHistoryStore.append` 之前用 `repo.count({where:{sessionId}})` + `save()` 计算 nextSeq，在 `EventHandler.capture()` fire-and-forget（`.catch(() => undefined)`）的并发追加下竞态，导致所有事件 `seq=0`，`reduceTimelineEvents` 排序不稳定，`tool_invoked` 在 `tool_completed` 之后应用、把状态回滚成 `running`。现改为通过私有 promise 链（`pending`）串行化追加，并用 `MAX(seq)` 预热每会话计数器，保证 per-session seq 单调。
 - **防御性修复**：`reduceTimelineEvents` 排序从 `a.seq - b.seq` 改为 `compareTimelineEventsAsc`（seq + id 平局），保证 seq 相同时仍确定性重放。
 - **验证**：`agent-gateway` 全量 **267 passing EXIT 0**（此前该 timeline 用例置灰失败）；`agent/src/**/*.ts` 独立 `tsc --noEmit` 0 错；`agent/test/timeline-projection.spec.ts`、`persistent-timeline.spec.ts` 定向 EXIT 0。
-- **归档重构（用户指示）**：删除 `agent/test/helpers/in-memory-stores.ts`（new-able InMemory fixture），与"消费者使用抽象类、IoC 提供实现、禁止 `new InMemory*`"约束一致；保留 `helpers/agent-orm.ts`（真实 ORM IoC 宿主，26 个测试文件使用）。
-- **限制（P265，未伪造通过）**：`agent` 包测试仍在编译阶段依赖已删除的 `InMemory*` fixture（`tools.spec.ts`、`turn-cancel.spec.ts`、`runtime-loop.spec.ts`、`context-compaction.spec.ts`），用户本轮决定不迁移，故 `agent` 全量测试仍未绿灯；该状态为已知且已记录，不属于本提交的验收门禁。
+- **归档重构（用户指示）**：删除整个 `agent/test/helpers/` 目录（`in-memory-stores.ts` + `agent-orm.ts`）。`in-memory-stores.ts` 是 new-able InMemory fixture，违反"消费者使用抽象类、IoC 提供实现、禁止 `new InMemory*`"约束；`agent-orm.ts`（`runAgentOrmApp` 包装 `Application.run`）随后按用户指示一并删除（`Application.run` 可直接代替，无需封装）。两个提交：`96ccc0e00` 删 in-memory-stores、`24a23d80a` 删 agent-orm。
+- **限制（P265，未伪造通过）**：`agent` 包测试仍在编译阶段依赖已删除的 `./helpers/agent-orm` 与 `../src/memory/InMemory*` fixture（`agent-permission.spec.ts` 等 26 个文件引 `helpers/agent-orm`；`tools.spec.ts`/`turn-cancel.spec.ts`/`context-compaction.spec.ts`/`runtime-loop.spec.ts` 引 InMemory），用户本轮决定不迁移，故 `agent`/`agent-tools` 全量测试仍未绿灯；该状态为已知且已记录，不属于本提交的验收门禁。
+
+### 2026-09-03 收尾验证（本轮，全量测试 + 提交）
+
+- **工作区**：`git diff --check` 通过；无未提交改动；当前分支领先 `origin/7.tui` 2 个提交（`96ccc0e00` timeline 竞态修复、`24a23d80a` 删除 test/helpers）。
+- **全量测试矩阵**（进入各包目录 `npm run test`）：
+  - `agent-gateway` **267 passing EXIT 0**（timeline 修复验证，无回归）
+  - `agent-ui` **953 passing EXIT 0**
+  - `agent-cli` **73 passing EXIT 0**
+  - `agent-channels` **59 passing EXIT 0**
+  - `agent-desktop` **20 passing EXIT 0**
+  - `agent-providers` **13 passing EXIT 0**（此前记录 8/5 缺 LoggerManagers，现随 TypeormAdapter `@InjectLog()` 移除已转绿）
+  - `agent` `src/**/*.ts` 独立 `tsc --noEmit` **0 错**
+- **已知限制（P265，未伪造通过）**：
+  - `agent` / `agent-tools` 测试仍在编译阶段引用已删除的 `./helpers/agent-orm` 与 `../src/memory/InMemory*`（既有未迁移状态，用户明确不迁移），`npm run test` EXIT 1。
+  - 此限制为删除 `test/helpers/` 与不迁移决定的直接、已记录后果，不属于本轮验收门禁。
+- 本轮不新增提交（无源码待提交变更）；收尾记录与上文归档重构均已在既有提交中体现。
