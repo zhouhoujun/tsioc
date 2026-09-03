@@ -1,23 +1,22 @@
 import expect = require('expect');
-import { Suite, Test } from '@tsdi/unit';
-import { buildGoalContext, evaluateGoalCompletion, InMemoryGoalStore } from '../src/goal';
-import { TypeOrmGoalStore } from '../src/goal/TypeOrmGoalStore';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentOrmModule } from '../src/orm.module';
-
-@Module({
-    imports: [AgentOrmModule.withConnection({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)],
-    providers: [{ provide: ModuleLoader, useValue: new DefaultModuleLoader() }]
-})
-class GoalOrmTestModule {}
+import { Suite, Test, After } from '@tsdi/unit';
+import { ApplicationContext } from '@tsdi/core';
+import { buildGoalContext, evaluateGoalCompletion } from '../src/goal';
+import { GoalStore } from '../src/goal/GoalStore';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 @Suite('Agent goals (P83)')
 export class GoalStoreTest {
+    ctx!: ApplicationContext;
+
+    @After()
+    async clean() { await this.ctx?.close(); }
+
     @Test('creates, links, and restores a goal across sessions')
     async createsAndLinksAcrossSessions() {
-        const store = new InMemoryGoalStore();
+        const ctx = await runAgentOrmApp();
+        this.ctx = ctx;
+        const store = ctx.get(GoalStore);
         const goal = await store.create({ title: 'Ship release', objective: 'Prepare version 1', successCriteria: ['tests pass'] });
         await store.linkSession('s1', goal.id);
         await store.linkSession('s2', goal.id);
@@ -29,7 +28,9 @@ export class GoalStoreTest {
 
     @Test('updates completion and can reopen a goal')
     async completesAndReopens() {
-        const store = new InMemoryGoalStore();
+        const ctx = await runAgentOrmApp();
+        this.ctx = ctx;
+        const store = ctx.get(GoalStore);
         const goal = await store.create({ title: 'Release', objective: 'Ship it' });
         const completed = await store.update(goal.id, { status: 'completed' });
         expect(completed.completedAt).toBeTruthy();
@@ -39,7 +40,7 @@ export class GoalStoreTest {
 
     @Test('completion requires every explicit success criterion')
     async evaluatesAllCriteria() {
-        const store = new InMemoryGoalStore();
+        const store = await this.ctxGetGoalStore();
         const goal = await store.create({
             title: 'Release', objective: 'Ship it', successCriteria: ['tests pass', 'build clean']
         });
@@ -50,7 +51,7 @@ export class GoalStoreTest {
 
     @Test('goal context carries objective and criteria')
     async buildsContext() {
-        const store = new InMemoryGoalStore();
+        const store = await this.ctxGetGoalStore();
         const goal = await store.create({ title: 'Release', objective: 'Ship it', successCriteria: ['tests pass'] });
         const context = buildGoalContext(goal);
         expect(context).toContain('[Active Goal]');
@@ -60,14 +61,19 @@ export class GoalStoreTest {
 
     @Test('typeorm goal store persists goal state and session links')
     async persistsWithTypeOrm() {
-        const ctx = await Application.run(GoalOrmTestModule);
-        try {
-            const store = new TypeOrmGoalStore(ctx.get(TypeormAdapter) as TypeormAdapter);
-            const goal = await store.create({ title: 'Release', objective: 'Ship it', successCriteria: ['tests pass'] });
-            await store.linkSession('persisted-session', goal.id);
-            await store.update(goal.id, { status: 'completed' });
-            expect((await store.getSessionGoal('persisted-session'))?.status).toEqual('completed');
-            expect((await store.get(goal.id))?.completedAt).toBeTruthy();
-        } finally { await ctx.close(); }
+        const ctx = await runAgentOrmApp();
+        this.ctx = ctx;
+        const store = ctx.get(GoalStore);
+        const goal = await store.create({ title: 'Release', objective: 'Ship it', successCriteria: ['tests pass'] });
+        await store.linkSession('persisted-session', goal.id);
+        await store.update(goal.id, { status: 'completed' });
+        expect((await store.getSessionGoal('persisted-session'))?.status).toEqual('completed');
+        expect((await store.get(goal.id))?.completedAt).toBeTruthy();
+    }
+
+    private async ctxGetGoalStore() {
+        const ctx = await runAgentOrmApp();
+        this.ctx = ctx;
+        return ctx.get(GoalStore);
     }
 }

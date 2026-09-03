@@ -116,7 +116,7 @@ import {
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, NestedAgentRunner } from './nested-agent-runner';
 import { LightweightAgentRunner } from './lightweight-agent-runner';
 import { BackgroundTaskManager, BACKGROUND_TASK_RUNNER } from './background-task-manager';
-import { BACKGROUND_TASK_HISTORY_STORE, DefaultBackgroundTaskStore, InMemoryBackgroundTaskHistoryStore } from './background-task-store';
+import { BACKGROUND_TASK_HISTORY_STORE, TypeOrmBackgroundTaskStore } from './background-task-store';
 import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { WeatherAdapter } from '../utility/weather.tool';
@@ -664,9 +664,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         { provide: NestedAgentRunner, useExisting: LightweightAgentRunner },
         { provide: BACKGROUND_TASK_RUNNER, useExisting: LightweightAgentRunner },
         BackgroundTaskManager,
-        InMemoryBackgroundTaskHistoryStore,
-        DefaultBackgroundTaskStore,
-        { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: DefaultBackgroundTaskStore },
+        TypeOrmBackgroundTaskStore,
+        { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: TypeOrmBackgroundTaskStore },
         DelegatingSpawnAgentAdapter,
         DelegatingLlmTaskAdapter,
         provideResolvedAgentTools(),

@@ -22,7 +22,5 @@ export {
     cloneBackgroundTaskRecord,
     pageBackgroundTaskRecords,
     BACKGROUND_TASK_HISTORY_STORE,
-    InMemoryBackgroundTaskHistoryStore,
-    DefaultBackgroundTaskStore,
     TypeOrmBackgroundTaskStore
 } from '@tsdi/agent';

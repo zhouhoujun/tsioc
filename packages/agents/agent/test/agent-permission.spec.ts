@@ -2,15 +2,17 @@ import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { AgentTurnAgentConfig } from '../src/runtime/AgentTurnInput';
+import { runAgentOrmApp } from './helpers/agent-orm';
+import { ApplicationContext } from '@tsdi/core';
 
 class FakeApp {
     events: any[] = [];
@@ -118,21 +120,17 @@ class SingleToolRegistry extends ToolRegistry {
     }
 }
 
-function createRuntime(adapter: any, tool: any, app = new FakeApp(), approvalManager?: ToolApprovalManager): DefaultAgentRuntime {
-    const options = { ...defaultAgentOptions };
-    return new DefaultAgentRuntime(
-        adapter,
-        new SingleToolRegistry(tool),
-        new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        options,
-        app as any,
-            new RandomUuidGenerator(),
-        undefined,
-        undefined,
-        approvalManager
-    );
+async function createRuntime(adapter: any, tool: any, approvalManager?: ToolApprovalManager): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: adapter },
+        { provide: ToolRegistry, useValue: new SingleToolRegistry(tool) }
+    ];
+    if (approvalManager) {
+        providers.push({ provide: ToolApprovalManager, useValue: approvalManager });
+    }
+    const ctx = await runAgentOrmApp(providers);
+    const runtime = ctx.get(AgentRuntime);
+    return { runtime, ctx };
 }
 
 function createApprovalManager(app: any, strategy: DefaultApprovalStrategy, timeoutMs = 800): ToolApprovalManager {
@@ -147,30 +145,32 @@ export class AgentPermissionTest {
     async denySkipsTool() {
         const tool = new CountingTool('echo');
         const adapter = new SingleToolCallModelAdapter('echo');
-        const runtime = createRuntime(adapter, tool);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
         const agent: AgentTurnAgentConfig = { permissions: { echo: 'deny' } };
+        try {
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
 
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-
-        expect(tool.invoked).toEqual(0);
-        expect(adapter.requests.length).toEqual(2);
-        const feedback = JSON.stringify(adapter.requests[1].messages);
-        expect(feedback).toContain('denied by the turn permission matrix');
+            expect(tool.invoked).toEqual(0);
+            expect(adapter.requests.length).toEqual(2);
+            const feedback = JSON.stringify(adapter.requests[1].messages);
+            expect(feedback).toContain('denied by the turn permission matrix');
+        } finally { await ctx.close(); }
     }
 
     @Test('unlisted tools keep their default behavior')
     async unlistedToolsRunNormally() {
         const tool = new CountingTool('echo');
         const adapter = new SingleToolCallModelAdapter('echo');
-        const runtime = createRuntime(adapter, tool);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
         const agent: AgentTurnAgentConfig = { permissions: { other: 'deny' } };
+        try {
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
 
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-
-        expect(tool.invoked).toEqual(1);
-        expect(adapter.requests.length).toEqual(2);
-        const feedback = JSON.stringify(adapter.requests[1].messages);
-        expect(feedback).not.toContain('denied by the turn permission matrix');
+            expect(tool.invoked).toEqual(1);
+            expect(adapter.requests.length).toEqual(2);
+            const feedback = JSON.stringify(adapter.requests[1].messages);
+            expect(feedback).not.toContain('denied by the turn permission matrix');
+        } finally { await ctx.close(); }
     }
 
     @Test('allow permission runs a tool that would otherwise require approval')
@@ -182,13 +182,14 @@ export class AgentPermissionTest {
             app,
             new DefaultApprovalStrategy(['shell.exec'])
         );
-        const runtime = createRuntime(adapter, tool, app, approvalManager);
+        const { runtime, ctx } = await createRuntime(adapter, tool, approvalManager);
         const agent: AgentTurnAgentConfig = { permissions: { 'shell.exec': 'allow' } };
+        try {
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
 
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-
-        expect(tool.invoked).toEqual(1);
-        expect(adapter.requests.length).toEqual(2);
+            expect(tool.invoked).toEqual(1);
+            expect(adapter.requests.length).toEqual(2);
+        } finally { await ctx.close(); }
     }
 
     @Test('ask permission forces approval for a tool not in the default approval list')
@@ -200,19 +201,20 @@ export class AgentPermissionTest {
             app,
             new DefaultApprovalStrategy([])
         );
-        const runtime = createRuntime(adapter, tool, app, approvalManager);
+        const { runtime, ctx } = await createRuntime(adapter, tool, approvalManager);
         const agent: AgentTurnAgentConfig = { permissions: { echo: 'ask' } };
+        try {
+            const pending = approvalManager.getPending();
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
+            const pendingAfter = approvalManager.getPending();
 
-        const pending = approvalManager.getPending();
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-        const pendingAfter = approvalManager.getPending();
-
-        expect(tool.invoked).toEqual(0);
-        expect(pending.length).toEqual(0);
-        expect(pendingAfter.length).toEqual(0);
-        expect(adapter.requests.length).toEqual(2);
-        const feedback = JSON.stringify(adapter.requests[1].messages);
-        expect(feedback).toContain('approval timed out');
+            expect(tool.invoked).toEqual(0);
+            expect(pending.length).toEqual(0);
+            expect(pendingAfter.length).toEqual(0);
+            expect(adapter.requests.length).toEqual(2);
+            const feedback = JSON.stringify(adapter.requests[1].messages);
+            expect(feedback).toContain('approval timed out');
+        } finally { await ctx.close(); }
     }
 
     @Test('ask permission is satisfied when the approval is granted')
@@ -224,54 +226,57 @@ export class AgentPermissionTest {
             app,
             new DefaultApprovalStrategy([])
         );
-        const runtime = createRuntime(adapter, tool, app, approvalManager);
+        const { runtime, ctx } = await createRuntime(adapter, tool, approvalManager);
         const agent: AgentTurnAgentConfig = { permissions: { echo: 'ask' } };
-
-        const grantPromise = (async () => {
-            for (let i = 0; i < 50; i++) {
-                const pending = approvalManager.getPending();
-                const request = pending.find(entry => entry.toolName === 'echo');
-                if (request) {
-                    approvalManager.approve(request.id);
-                    return;
+        try {
+            const grantPromise = (async () => {
+                for (let i = 0; i < 50; i++) {
+                    const pending = approvalManager.getPending();
+                    const request = pending.find(entry => entry.toolName === 'echo');
+                    if (request) {
+                        approvalManager.approve(request.id);
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 10));
                 }
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-        })();
+            })();
 
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-        await grantPromise;
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
+            await grantPromise;
 
-        expect(tool.invoked).toEqual(1);
-        expect(adapter.requests.length).toEqual(2);
+            expect(tool.invoked).toEqual(1);
+            expect(adapter.requests.length).toEqual(2);
+        } finally { await ctx.close(); }
     }
 
     @Test('maxSteps budget skips tools once exhausted')
     async maxStepsExhaustionSkipsTool() {
         const tool = new CountingTool('echo');
         const adapter = new TwiceToolCallModelAdapter('echo');
-        const runtime = createRuntime(adapter, tool);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
         const agent: AgentTurnAgentConfig = { maxSteps: 1 };
+        try {
+            await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
 
-        await runtime.runTurn('s1', 'run it', undefined, undefined, undefined, agent);
-
-        expect(tool.invoked).toEqual(1);
-        expect(adapter.requests.length).toEqual(3);
-        const feedback = JSON.stringify(adapter.requests[2].messages);
-        expect(feedback).toContain('step budget');
+            expect(tool.invoked).toEqual(1);
+            expect(adapter.requests.length).toEqual(3);
+            const feedback = JSON.stringify(adapter.requests[2].messages);
+            expect(feedback).toContain('step budget');
+        } finally { await ctx.close(); }
     }
 
     @Test('no agent config leaves the turn unrestricted')
     async noAgentConfigIsUnrestricted() {
         const tool = new CountingTool('echo');
         const adapter = new TwiceToolCallModelAdapter('echo');
-        const runtime = createRuntime(adapter, tool);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
+        try {
+            await runtime.runTurn('s1', 'run it');
 
-        await runtime.runTurn('s1', 'run it');
-
-        expect(tool.invoked).toEqual(2);
-        expect(adapter.requests.length).toEqual(3);
-        const feedback = JSON.stringify(adapter.requests[2].messages);
-        expect(feedback).not.toContain('step budget');
+            expect(tool.invoked).toEqual(2);
+            expect(adapter.requests.length).toEqual(3);
+            const feedback = JSON.stringify(adapter.requests[2].messages);
+            expect(feedback).not.toContain('step budget');
+        } finally { await ctx.close(); }
     }
 }

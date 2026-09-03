@@ -12,7 +12,7 @@ import {
 } from './background-task-store';
 
 export type { BackgroundTaskRecord, BackgroundTaskStatus } from './background-task-store';
-export { BACKGROUND_TASK_HISTORY_STORE, InMemoryBackgroundTaskHistoryStore } from './background-task-store';
+export { BACKGROUND_TASK_HISTORY_STORE, TypeOrmBackgroundTaskStore } from './background-task-store';
 
 export interface BackgroundTaskReport {
     summary?: string;

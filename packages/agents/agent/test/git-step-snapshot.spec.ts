@@ -1,4 +1,4 @@
-import { Application, RandomUuidGenerator } from '@tsdi/core';
+import { Application } from '@tsdi/core';
 import expect = require('expect');
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
@@ -6,15 +6,13 @@ import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { GitStepSnapshotStore } from '../src/harness/GitStepSnapshotStore';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
-import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
-import { ToolRegistry } from '../src/tools/ToolRegistry';
-import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { AgentModule } from '../src/agent.module';
+import { AGENT_OPTIONS } from '../src/tokens';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -168,51 +166,31 @@ export class RuntimeGitStepSnapshotTest {
         const dir = await createGitRepo();
         try {
             await fs.promises.writeFile(path.join(dir, 'a.txt'), 'dirty', 'utf8');
-            const store = new GitStepSnapshotStore();
-            const runtime = new DefaultAgentRuntime(
-                new EchoModelAdapter(),
-                new LocalToolRegistry([], new InMemoryMemoryStore()),
-                new InMemorySessionStore(),
-                new InMemoryMemoryStore(),
-                new SimpleSessionSummarizer(),
-                {
-                    ...defaultAgentOptions,
-                    ui: { console: { workspace: dir } }
-                },
-                new FakeApp() as any,
-                new RandomUuidGenerator(),
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                store,
-                undefined,
-                undefined
-            );
+            const ctx = await runAgentOrmApp([
+                { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+                { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ui: { console: { workspace: dir } } } }
+            ]);
+            try {
+                const runtime = ctx.get(AgentRuntime);
 
-            const result = await runtime.runTurn('s1', 'hello');
-            const snapshots = runtime.listGitStepSnapshots('s1');
-            expect(snapshots.length).toEqual(1);
-            expect(snapshots[0].messageId).toEqual(result.message.id);
+                const result = await runtime.runTurn('s1', 'hello');
+                const snapshots = runtime.listGitStepSnapshots('s1');
+                expect(snapshots.length).toEqual(1);
+                expect(snapshots[0].messageId).toEqual(result.message.id);
 
-            await fs.promises.writeFile(path.join(dir, 'a.txt'), 'changed-after', 'utf8');
-            const reverted = await runtime.revertGitStepSnapshot('s1', result.message.id);
-            expect(reverted.reverted).toEqual(true);
-            expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('dirty');
+                await fs.promises.writeFile(path.join(dir, 'a.txt'), 'changed-after', 'utf8');
+                const reverted = await runtime.revertGitStepSnapshot('s1', result.message.id);
+                expect(reverted.reverted).toEqual(true);
+                expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('dirty');
 
-            const unreverted = await runtime.unrevertGitStepSnapshot('s1');
-            expect(unreverted.reverted).toEqual(true);
-            expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('changed-after');
+                const unreverted = await runtime.unrevertGitStepSnapshot('s1');
+                expect(unreverted.reverted).toEqual(true);
+                expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('changed-after');
 
-            const diff = runtime.diffGitStepSnapshot('s1', result.message.id);
-            expect(diff).not.toEqual(null);
-            expect(diff!.files.some(file => file.filePath === 'a.txt')).toEqual(true);
+                const diff = runtime.diffGitStepSnapshot('s1', result.message.id);
+                expect(diff).not.toEqual(null);
+                expect(diff!.files.some(file => file.filePath === 'a.txt')).toEqual(true);
+            } finally { await ctx.close(); }
         } finally {
             await fs.promises.rm(dir, { recursive: true, force: true });
         }
@@ -220,33 +198,16 @@ export class RuntimeGitStepSnapshotTest {
 
     @Test('revert with no bound snapshot reports an error')
     async revertWithoutSnapshot() {
-        const runtime = new DefaultAgentRuntime(
-            new EchoModelAdapter(),
-            new LocalToolRegistry([], new InMemoryMemoryStore()),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
-        const reverted = await runtime.revertGitStepSnapshot('s1', 'missing');
-        expect(reverted.reverted).toEqual(false);
-        expect(reverted.error).toBeTruthy();
-        expect(runtime.listGitStepSnapshots('s1')).toEqual([]);
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: new EchoModelAdapter() }
+        ]);
+        try {
+            const runtime = ctx.get(AgentRuntime);
+            const reverted = await runtime.revertGitStepSnapshot('s1', 'missing');
+            expect(reverted.reverted).toEqual(false);
+            expect(reverted.error).toBeTruthy();
+            expect(runtime.listGitStepSnapshots('s1')).toEqual([]);
+        } finally { await ctx.close(); }
     }
 
     @Test('module wiring passes gitStepSnapshots options to the store')

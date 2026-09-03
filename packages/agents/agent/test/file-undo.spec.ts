@@ -1,4 +1,4 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, ApplicationContext, ApplicationArguments } from '@tsdi/core';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as os from 'os';
@@ -6,13 +6,15 @@ import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, IReadable } from '@tsdi/common';
 import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     events: any[] = [];
@@ -254,32 +256,16 @@ export class RuntimeFileUndoRedoTest {
         const filePath = path.join(tmp, 'note.txt');
         await fs.promises.writeFile(filePath, 'original', 'utf8');
         const fileAdapter = new NodeTestFileAdapter();
+        const store = new FileSnapshotStore();
+        const tool = new SnapshotWriteTool(filePath);
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: new SingleToolCallModelAdapter('snapshot_write') },
+            { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(tool) },
+            { provide: FileSnapshotStore, useValue: store },
+            { provide: FileAdapter, useValue: fileAdapter }
+        ]);
         try {
-            const store = new FileSnapshotStore();
-            const tool = new SnapshotWriteTool(filePath);
-            const runtime = new DefaultAgentRuntime(
-                new SingleToolCallModelAdapter('snapshot_write'),
-                new SnapshotWriteRegistry(tool),
-                new InMemorySessionStore(),
-                new InMemoryMemoryStore(),
-                new SimpleSessionSummarizer(),
-                defaultAgentOptions,
-                new FakeApp() as any,
-            new RandomUuidGenerator(),
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                store,
-                undefined,
-                undefined,
-                fileAdapter
-            );
+            const runtime = ctx.get(AgentRuntime);
 
             await runtime.runTurn('s1', 'write it');
             expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
@@ -293,69 +279,42 @@ export class RuntimeFileUndoRedoTest {
             expect(redone.restored).toEqual('content');
             expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
         } finally {
+            await ctx.close();
             await fs.promises.rm(tmp, { recursive: true, force: true });
         }
     }
 
-    @Test('undoFileChange returns none when no snapshot exists')
+@Test('undoFileChange returns none when no snapshot exists')
     async undoWithNoSnapshots() {
-        const runtime = new DefaultAgentRuntime(
-            new EchoModelAdapter(),
-            new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            new NodeTestFileAdapter()
-        );
-        const result = await runtime.undoFileChange('s1');
-        expect(result).toEqual({ filePath: '', restored: 'none' });
-        expect(runtime.listFileSnapshots('s1')).toEqual([]);
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+            { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')) },
+            { provide: FileAdapter, useValue: new NodeTestFileAdapter() }
+        ]);
+        try {
+            const runtime = ctx.get(AgentRuntime);
+            const result = await runtime.undoFileChange('s1');
+            expect(result).toEqual({ filePath: '', restored: 'none' });
+            expect(runtime.listFileSnapshots('s1')).toEqual([]);
+        } finally { await ctx.close(); }
     }
 
     @Test('runTurn stores workspace from ApplicationArguments cwd when console workspace is unset')
     async runTurnStoresWorkspaceFromAppArgsCwd() {
-        const sessions = new InMemorySessionStore();
-        const runtime = new DefaultAgentRuntime(
-            new EchoModelAdapter(),
-            new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')),
-            sessions,
-            new InMemoryMemoryStore(),
-            new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            { cwd: '/tmp/app-args-workspace' } as any,
-            new NodeTestFileAdapter()
-        );
+        const appArgs = Object.assign(Object.create(ApplicationArguments.prototype), { cwd: '/tmp/app-args-workspace' });
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+            { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')) },
+            { provide: FileAdapter, useValue: new NodeTestFileAdapter() },
+            { provide: ApplicationArguments, useValue: appArgs }
+        ]);
+        try {
+            const sessions = ctx.get(SessionStore);
+            const runtime = ctx.get(AgentRuntime);
 
-        await runtime.runTurn('s1', 'hello');
+            await runtime.runTurn('s1', 'hello');
 
-        expect((await sessions.get('s1')).workspace).toEqual('/tmp/app-args-workspace');
+            expect((await sessions.get('s1')).workspace).toEqual('/tmp/app-args-workspace');
+        } finally { await ctx.close(); }
     }
 }

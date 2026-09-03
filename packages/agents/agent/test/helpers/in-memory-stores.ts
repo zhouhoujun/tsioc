@@ -1,9 +1,252 @@
+/**
+ * Test-only InMemory store implementations.
+ * These are NOT for production use — production uses TypeORM-backed stores.
+ * Deleted from src/ to prevent accidental production dependency.
+ */
+import { AgentMemoryRecord, MemoryStore } from '../../src/memory/MemoryStore';
+import {
+    AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo,
+    AgentThreadIndex, SessionStore, deriveThreadIndexes
+} from '../../src/memory/SessionStore';
+import { AgentState } from '../../src/runtime/AgentState';
+import { AgentMessage } from '../../src/runtime/AgentMessage';
+import { normalizeAgentWorkspaceIdentity } from '../../src/AgentWorkspacePath';
+import { CreateGoalInput, Goal, GoalStatus, GoalStore } from '../../src/goal/GoalStore';
+import {
+    TimelineEventRecord, TimelineHistoryStore, TimelineNoncePage, TimelinePageOptions,
+    pageTimelineEntries, sortTimelineEntries, reduceTimelineEvents
+} from '../../src/memory/timeline-projection';
+import {
+    BackgroundTaskHistoryStore, BackgroundTaskPage, BackgroundTaskPageOptions,
+    BackgroundTaskRecord, BackgroundTaskHistoryListener, BackgroundTaskCursor,
+    pageBackgroundTaskRecords, cloneBackgroundTaskRecord
+} from '../../src/memory/background-task-store';
 import { Injectable } from '@tsdi/ioc';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex, SessionStore, deriveThreadIndexes } from './SessionStore';
-import { AgentState } from '../runtime/AgentState';
-import { AgentMessage } from '../runtime/AgentMessage';
-import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
+
+// ── InMemoryMemoryStore ──
+
+@Injectable()
+export class InMemoryMemoryStore extends MemoryStore {
+    private records: AgentMemoryRecord[] = [];
+
+    async put(record: AgentMemoryRecord): Promise<void> {
+        this.records.push(record);
+    }
+
+    async search(query: string, sessionId?: string): Promise<AgentMemoryRecord[]> {
+        const lower = query.toLowerCase();
+        return this.records.filter(record => {
+            const scoped = record.scope === 'global' || !sessionId || record.sessionId === sessionId;
+            return scoped && (
+                record.key.toLowerCase().includes(lower) ||
+                record.value.toLowerCase().includes(lower)
+            );
+        });
+    }
+
+    async getAll(sessionId?: string): Promise<AgentMemoryRecord[]> {
+        return this.records.filter(record => record.scope === 'global' || !sessionId || record.sessionId === sessionId);
+    }
+
+    async delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number> {
+        const before = this.records.length;
+        this.records = this.records.filter(record => {
+            if (record.id !== id) return true;
+            if (scope && record.scope !== scope) return true;
+            if (record.scope === 'global') return scope !== 'global';
+            if (!sessionId) return true;
+            return record.sessionId !== sessionId;
+        });
+        return before - this.records.length;
+    }
+
+    async deleteBySession(sessionId: string): Promise<number> {
+        const before = this.records.length;
+        this.records = this.records.filter(record => {
+            if (record.scope === 'global') return true;
+            return record.sessionId !== sessionId;
+        });
+        return before - this.records.length;
+    }
+}
+
+
+// ── InMemoryGoalStore ──
+
+@Injectable()
+export class InMemoryGoalStore extends GoalStore {
+    private readonly goals = new Map<string, Goal>();
+    private readonly sessionGoals = new Map<string, string>();
+
+    async create(input: CreateGoalInput): Promise<Goal> {
+        const now = Date.now();
+        const goal: Goal = {
+            id: String(input.id || `goal-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`),
+            title: required(input.title, 'title'),
+            objective: required(input.objective, 'objective'),
+            successCriteria: normalizeCriteria(input.successCriteria),
+            status: 'active', createdAt: now, updatedAt: now
+        };
+        this.goals.set(goal.id, goal);
+        return cloneGoal(goal);
+    }
+
+    async get(goalId: string): Promise<Goal | undefined> {
+        const goal = this.goals.get(goalId);
+        return goal ? cloneGoal(goal) : undefined;
+    }
+
+    async list(status?: GoalStatus): Promise<Goal[]> {
+        return [...this.goals.values()].filter(goal => !status || goal.status === status)
+            .sort((a, b) => b.updatedAt - a.updatedAt).map(cloneGoal);
+    }
+
+    async update(goalId: string, patch: Partial<Pick<Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<Goal> {
+        const current = this.goals.get(goalId);
+        if (!current) throw new Error(`Goal '${goalId}' not found.`);
+        const now = Date.now();
+        const next: Goal = {
+            ...current,
+            ...(patch.title !== undefined ? { title: required(patch.title, 'title') } : {}),
+            ...(patch.objective !== undefined ? { objective: required(patch.objective, 'objective') } : {}),
+            ...(patch.successCriteria !== undefined ? { successCriteria: normalizeCriteria(patch.successCriteria) } : {}),
+            ...(patch.status ? { status: patch.status } : {}),
+            updatedAt: now,
+            completedAt: patch.status === 'completed' ? now : patch.status === 'active' ? undefined : current.completedAt
+        };
+        this.goals.set(goalId, next);
+        return cloneGoal(next);
+    }
+
+    async linkSession(sessionId: string, goalId?: string): Promise<void> {
+        if (!goalId) { this.sessionGoals.delete(sessionId); return; }
+        if (!this.goals.has(goalId)) throw new Error(`Goal '${goalId}' not found.`);
+        this.sessionGoals.set(sessionId, goalId);
+    }
+
+    async getSessionGoal(sessionId: string): Promise<Goal | undefined> {
+        const id = this.sessionGoals.get(sessionId);
+        return id ? this.get(id) : undefined;
+    }
+}
+
+function required(value: string, field: string): string {
+    const normalized = String(value || '').trim();
+    if (!normalized) throw new Error(`Goal ${field} is required.`);
+    return normalized;
+}
+
+function normalizeCriteria(items?: string[]): string[] {
+    return [...new Set((items || []).map(item => String(item).trim()).filter(Boolean))];
+}
+
+function cloneGoal(goal: Goal): Goal { return { ...goal, successCriteria: [...goal.successCriteria] }; }
+
+
+// ── InMemoryTimelineHistoryStore ──
+
+@Injectable()
+export class InMemoryTimelineHistoryStore extends TimelineHistoryStore {
+    private readonly sessions = new Map<string, { nextSeq: number; events: TimelineEventRecord[] }>();
+
+    private bucket(sessionId: string): { nextSeq: number; events: TimelineEventRecord[] } {
+        let bucket = this.sessions.get(sessionId);
+        if (!bucket) {
+            bucket = { nextSeq: 0, events: [] };
+            this.sessions.set(sessionId, bucket);
+        }
+        return bucket;
+    }
+
+    async append(event: Omit<TimelineEventRecord, 'seq'>): Promise<TimelineEventRecord> {
+        const bucket = this.bucket(event.sessionId);
+        const seq = bucket.nextSeq;
+        bucket.nextSeq += 1;
+        const record: TimelineEventRecord = { ...event, seq };
+        bucket.events.push(record);
+        return record;
+    }
+
+    async get(sessionId: string): Promise<TimelineEventRecord[]> {
+        const bucket = this.sessions.get(sessionId);
+        return bucket ? bucket.events.slice() : [];
+    }
+
+    async replay(sessionId: string, sinceSeq?: number): Promise<TimelineEventRecord[]> {
+        const bucket = this.sessions.get(sessionId);
+        if (!bucket) return [];
+        const from = typeof sinceSeq === 'number' && Number.isFinite(sinceSeq) ? sinceSeq + 1 : 0;
+        return bucket.events.filter(event => event.seq >= from);
+    }
+
+    async query(sessionId: string, options?: TimelinePageOptions): Promise<TimelineNoncePage> {
+        const raw = await this.get(sessionId);
+        return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options);
+    }
+}
+
+
+// ── InMemoryBackgroundTaskHistoryStore ──
+
+@Injectable()
+export class InMemoryBackgroundTaskHistoryStore extends BackgroundTaskHistoryStore {
+    private readonly tasks = new Map<string, BackgroundTaskRecord>();
+    private readonly listeners = new Set<BackgroundTaskHistoryListener>();
+
+    async put(record: BackgroundTaskRecord): Promise<void> {
+        this.tasks.set(record.id, cloneBackgroundTaskRecord(record));
+        const snapshot = cloneBackgroundTaskRecord(record);
+        this.listeners.forEach(listener => {
+            try { listener(snapshot); } catch { /* swallow */ }
+        });
+    }
+
+    async get(taskId: string): Promise<BackgroundTaskRecord | undefined> {
+        const record = this.tasks.get(taskId);
+        return record ? cloneBackgroundTaskRecord(record) : undefined;
+    }
+
+    async pageAll(options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
+        return this.paginate(undefined, options?.cursor, options?.limit);
+    }
+
+    async pageBySession(sessionId: string, options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
+        return this.paginate(sessionId, options?.cursor, options?.limit);
+    }
+
+    async batchCancel(taskIds: string[]): Promise<string[]> {
+        const cancelled: string[] = [];
+        for (const taskId of new Set(taskIds)) {
+            const record = this.tasks.get(taskId);
+            if (record && record.status === 'running') {
+                const next: BackgroundTaskRecord = { ...record, status: 'cancelled', finishedAt: Date.now(), updatedAt: Date.now() };
+                this.tasks.set(taskId, next);
+                const snapshot = cloneBackgroundTaskRecord(next);
+                this.listeners.forEach(listener => {
+                    try { listener(snapshot); } catch { /* swallow */ }
+                });
+                cancelled.push(taskId);
+            }
+        }
+        return cancelled;
+    }
+
+    subscribe(listener: BackgroundTaskHistoryListener): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    private async paginate(sessionId: string | undefined, cursor?: BackgroundTaskCursor, limit?: number): Promise<BackgroundTaskPage> {
+        const sorted = Array.from(this.tasks.values())
+            .filter(record => !sessionId || record.sessionId === sessionId)
+            .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+        return pageBackgroundTaskRecords(sorted, { cursor, limit });
+    }
+}
+
+
+// Recovered from removed src/memory/InMemorySessionStore (git 646e4560d) as a test-local helper.
 interface AgentSessionSnapshotEntry {
     snapshotId: string;
     label?: string;

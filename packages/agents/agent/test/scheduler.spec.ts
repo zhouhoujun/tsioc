@@ -90,7 +90,7 @@ export class SchedulerTest {
             } as any);
 
             const runtime = new RuntimeStub();
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, { scheduler: { enabled: false } } as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, { scheduler: { enabled: false } } as any, null as any);
             (scheduler as any).adapter = adapter;
             await scheduler.start();
             await new Promise(resolve => setTimeout(resolve, 60));
@@ -108,7 +108,7 @@ export class SchedulerTest {
     @Test('runs one-shot task')
     async runsTask() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't1', sessionId: 's1', prompt: 'ping', runAt: Date.now() + 10 });
         await new Promise(resolve => setTimeout(resolve, 30));
         expect(runtime.calls).toEqual(['s1:ping']);
@@ -118,7 +118,7 @@ export class SchedulerTest {
     @Test('runs interval task more than once')
     async runsIntervalTask() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't2', sessionId: 's2', prompt: 'tick', intervalMs: 10 });
         await new Promise(resolve => setTimeout(resolve, 35));
         expect(runtime.calls.length).toBeGreaterThanOrEqual(2);
@@ -129,7 +129,7 @@ export class SchedulerTest {
     @Test('runs cron task more than once')
     async runsCronTask() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't2-cron', sessionId: 's2', prompt: 'tick', cronExpr: '*/1 * * * * *' } as any);
         await new Promise(resolve => setTimeout(resolve, 2200));
         expect(runtime.calls.length).toBeGreaterThanOrEqual(2);
@@ -140,7 +140,7 @@ export class SchedulerTest {
     @Test('cancels scheduled task before execution')
     async cancelsTask() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't3', sessionId: 's3', prompt: 'stop', runAt: Date.now() + 30 });
         await scheduler.cancel('t3');
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -156,7 +156,7 @@ export class SchedulerTest {
         runtime.blocker = new Promise<void>(resolve => {
             release = resolve;
         });
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't4', sessionId: 's4', prompt: 'wait', intervalMs: 10, runAt: Date.now() });
         await new Promise(resolve => setTimeout(resolve, 20));
         await scheduler.cancel('t4');
@@ -174,7 +174,7 @@ export class SchedulerTest {
         runtime.blocker = new Promise<void>(resolve => {
             release = resolve;
         });
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't4-cron', sessionId: 's4', prompt: 'cron-wait', cronExpr: '*/1 * * * * *' } as any);
         await new Promise(resolve => setTimeout(resolve, 1100));
         await scheduler.cancel('t4-cron');
@@ -188,7 +188,7 @@ export class SchedulerTest {
     @Test('runs interval task immediately when runAt is omitted')
     async runsIntervalTaskImmediatelyWithoutRunAt() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't4-immediate', sessionId: 's4', prompt: 'immediate', intervalMs: 1000 });
         await new Promise(resolve => setTimeout(resolve, 40));
         expect(runtime.calls).toEqual(['s4:immediate']);
@@ -212,7 +212,7 @@ export class SchedulerTest {
         runtime.blocker = new Promise<void>(resolve => {
             release = resolve;
         });
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 't4-fail-cron', sessionId: 's4', prompt: 'cron-fail', cronExpr: '*/1 * * * * *' } as any);
         await new Promise(resolve => setTimeout(resolve, 1100));
         await scheduler.cancel('t4-fail-cron');
@@ -226,7 +226,7 @@ export class SchedulerTest {
     @Test('rejects mismatched schedule type')
     async rejectsMismatchedScheduleType() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         let error: Error | undefined;
         try {
             await scheduler.schedule({ id: 'bad-shape', sessionId: 's4', prompt: 'bad', scheduleType: 'interval', runAt: Date.now() + 20 } as any);
@@ -257,7 +257,7 @@ export class SchedulerTest {
             } as any);
 
             const runtime = new RuntimeStub();
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
             await scheduler.start();
             await new Promise(resolve => setTimeout(resolve, 60));
@@ -292,7 +292,7 @@ export class SchedulerTest {
             } as any);
 
             const runtime = new RuntimeStub();
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
             await scheduler.start();
             await new Promise(resolve => setTimeout(resolve, 60));
@@ -316,7 +316,7 @@ export class SchedulerTest {
             runtime.blocker = new Promise<void>(resolve => {
                 release = resolve;
             });
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
             await scheduler.schedule({
                 id: 'persisted-stop-once',
@@ -336,7 +336,7 @@ export class SchedulerTest {
             await stopPromise;
 
             const restartedRuntime = new RuntimeStub();
-            const restarted = new IntervalAgentScheduler(restartedRuntime as any, ctx as any);
+            const restarted = new IntervalAgentScheduler(restartedRuntime as any, ctx as any, null as any, null as any);
             (restarted as any).adapter = adapter;
             await restarted.start();
             await new Promise(resolve => setTimeout(resolve, 40));
@@ -352,7 +352,7 @@ export class SchedulerTest {
     @Test('stop respects shutdown timeout for stuck in-flight task')
     async stopRespectsShutdownTimeoutForStuckInFlightTask() {
         const runtime = new NeverSettlingRuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, { scheduler: { shutdownTimeoutMs: 20 } } as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, { scheduler: { shutdownTimeoutMs: 20 } } as any, null as any);
         await scheduler.schedule({ id: 'stop-timeout', sessionId: 's-timeout', prompt: 'hang', runAt: Date.now() });
         await new Promise(resolve => setTimeout(resolve, 20));
         const started = Date.now();
@@ -367,7 +367,7 @@ export class SchedulerTest {
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             const runtime = new RuntimeStub();
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
 
             const scheduled = await scheduler.schedule({
@@ -383,7 +383,7 @@ export class SchedulerTest {
             expect(storedPaused?.paused).toEqual(true);
             await scheduler.stop();
 
-            const restarted = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const restarted = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (restarted as any).adapter = adapter;
             await restarted.start();
             await new Promise(resolve => setTimeout(resolve, 250));
@@ -410,7 +410,7 @@ export class SchedulerTest {
         runtime.blocker = new Promise<void>(resolve => {
             release = resolve;
         });
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         await scheduler.schedule({ id: 'pause-running', sessionId: 's5', prompt: 'hold', intervalMs: 10, runAt: Date.now() });
         await new Promise(resolve => setTimeout(resolve, 20));
         const paused = await scheduler.pause('pause-running');
@@ -430,7 +430,7 @@ export class SchedulerTest {
     @Test('prompt-only update preserves interval next run')
     async promptOnlyUpdatePreservesIntervalNextRun() {
         const runtime = new RuntimeStub();
-        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, undefined as any, null as any);
         const task = await scheduler.schedule({ id: 'update-prompt-only', sessionId: 's6', prompt: 'before', intervalMs: 1000, runAt: Date.now() + 5000 });
         const updated = await scheduler.update('update-prompt-only', { prompt: 'after' });
         expect(updated?.prompt).toEqual('after');
@@ -455,7 +455,7 @@ export class SchedulerTest {
                 defaultRetryBackoffMs: 10,
                 defaultRetryBackoffMultiplier: 1
             }
-        } as any);
+        } as any, null as any);
 
         await scheduler.schedule({
             id: 'retry-task',
@@ -496,7 +496,7 @@ export class SchedulerTest {
                 defaultRetryBackoffMs: 10,
                 defaultRetryBackoffMultiplier: 1
             }
-        } as any);
+        } as any, null as any);
 
         await scheduler.schedule({
             id: 'recover-task',
@@ -526,7 +526,7 @@ export class SchedulerTest {
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             const runtime = new RuntimeStub();
-            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
 
             const task = await scheduler.schedule({

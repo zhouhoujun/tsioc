@@ -1,11 +1,10 @@
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { ToolRegistry } from './ToolRegistry';
 import { AgentTool, AgentToolDefinition } from './AgentTool';
 import { AGENT_TOOLS } from '../tokens';
 import { MemoryStore } from '../memory/MemoryStore';
 import { SessionStore } from '../memory/SessionStore';
 import { ToolActivationStore } from './ToolActivationStore';
-import { InMemoryToolActivationStore } from './InMemoryToolActivationStore';
 
 const ALWAYS_ACTIVE_TOOL_NAMES = new Set(['tool_search', 'tool_inspect']);
 const ALWAYS_ACTIVE_TOOLSETS = new Set(['registry']);
@@ -14,16 +13,14 @@ const LOCAL_DEFERRED_TOOLSETS = new Set(['filesystem', 'filesystem_write', 'sear
 
 @Injectable()
 export class LocalToolRegistry extends ToolRegistry {
-    private activations: ToolActivationStore;
 
     constructor(
         @Inject(AGENT_TOOLS, { defaultValue: [] }) private tools: AgentTool[],
         private memory: MemoryStore,
-        @Optional() private sessionStore?: SessionStore | null,
-        @Optional() @Inject(ToolActivationStore) activationStore?: ToolActivationStore | null
+        private sessionStore: SessionStore,
+        private activationStore: ToolActivationStore
     ) {
         super();
-        this.activations = activationStore ?? new InMemoryToolActivationStore();
     }
 
     getTools(): AgentTool[] {
@@ -48,7 +45,7 @@ export class LocalToolRegistry extends ToolRegistry {
         if (!tool) {
             throw new Error(`Tool '${name}' not found`);
         }
-        this.activations.activate(sessionId, name);
+        this.activationStore.activate(sessionId, name);
         return true;
     }
 
@@ -169,6 +166,6 @@ export class LocalToolRegistry extends ToolRegistry {
     }
 
     private hasActivation(sessionId: string, name: string): boolean {
-        return this.activations.isActive(sessionId, name);
+        return this.activationStore.isActive(sessionId, name);
     }
 }

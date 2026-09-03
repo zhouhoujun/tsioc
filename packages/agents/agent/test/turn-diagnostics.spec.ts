@@ -1,55 +1,17 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentModule } from '../src/agent.module';
-import { AgentOrmModule } from '../src/orm.module';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore, buildTurnDiagnosticsTrend } from '../src/harness/TurnDiagnosticsStore';
-import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
-import { TypeOrmTurnDiagnosticsStore } from '../src/harness/TypeOrmTurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../src/memory/entities';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-
-@Module({
-    imports: [
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class TurnDiagnosticsOrmTestModule {}
-
-@Module({
-    imports: [
-        AgentModule,
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class AgentTurnDiagnosticsOrmTestModule {}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -153,96 +115,120 @@ function makeRecord(partial: Partial<TurnDiagnosticsRecord> = {}): TurnDiagnosti
 
 @Suite('Turn diagnostics stores')
 export class TurnDiagnosticsStoreTest {
+    private async boot() {
+        const ctx = await runAgentOrmApp();
+        return {
+            ctx,
+            store: ctx.get(TurnDiagnosticsStore),
+            sessionStore: ctx.get(SessionStore),
+            memoryStore: ctx.get(MemoryStore),
+            adapter: ctx.get(TypeormAdapter) as TypeormAdapter
+        };
+    }
+
     @Test('in-memory turn diagnostics store snapshots promptCache immutably')
     async inMemorySnapshotsRecords() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const promptCache = {
-            provider: 'deepseek',
-            supported: 'full',
-            applied: true,
-            appliedStrategy: 'partial'
-        } as any;
-        await store.append(makeRecord({ id: 't-in-mem', promptCache }));
-        promptCache.provider = 'mutated';
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        expect(records[0].promptCache?.provider).toEqual('deepseek');
+        const { ctx, store } = await this.boot();
+        try {
+            const promptCache = {
+                provider: 'deepseek',
+                supported: 'full',
+                applied: true,
+                appliedStrategy: 'partial'
+            } as any;
+            await store.append(makeRecord({ id: 't-in-mem', promptCache }));
+            promptCache.provider = 'mutated';
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            expect(records[0].promptCache?.provider).toEqual('deepseek');
+        } finally { await ctx.close(); }
     }
 
     @Test('in-memory turn diagnostics store filters by session and applies limit')
     async inMemoryFiltersAndLimits() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        await store.append(makeRecord({ id: 't-a', sessionId: 's1', createdAt: 1 }));
-        await store.append(makeRecord({ id: 't-b', sessionId: 's1', createdAt: 2 }));
-        await store.append(makeRecord({ id: 't-c', sessionId: 's2', createdAt: 3 }));
-        expect((await store.list('s1')).length).toEqual(2);
-        expect((await store.list()).length).toEqual(3);
-        expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('t-b');
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 't-a', sessionId: 's1', createdAt: 1 }));
+            await store.append(makeRecord({ id: 't-b', sessionId: 's1', createdAt: 2 }));
+            await store.append(makeRecord({ id: 't-c', sessionId: 's2', createdAt: 3 }));
+            expect((await store.list('s1')).length).toEqual(2);
+            expect((await store.list()).length).toEqual(3);
+            expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('t-b');
+        } finally { await ctx.close(); }
     }
 
     @Test('in-memory turn diagnostics store filters by workspace and supports newest-first order')
     async inMemoryFiltersByWorkspaceAndOrders() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        await store.append(makeRecord({ id: 't-a', sessionId: 's1', workspaceId: '/ws/x', createdAt: 1 }));
-        await store.append(makeRecord({ id: 't-b', sessionId: 's2', workspaceId: '/ws/x', createdAt: 2 }));
-        await store.append(makeRecord({ id: 't-c', sessionId: 's1', workspaceId: '/ws/y', createdAt: 3 }));
-        const scoped = await store.list(undefined, { workspaceId: '/ws/x' });
-        expect(scoped.map(record => record.id)).toEqual(['t-a', 't-b']);
-        const newestFirst = await store.list(undefined, { workspaceId: '/ws/x', order: 'DESC' });
-        expect(newestFirst.map(record => record.id)).toEqual(['t-b', 't-a']);
-        const combined = await store.list('s2', { workspaceId: '/ws/x' });
-        expect(combined.map(record => record.id)).toEqual(['t-b']);
-        const missing = await store.list(undefined, { workspaceId: '/ws/z' });
-        expect(missing.length).toEqual(0);
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 't-a', sessionId: 's1', workspaceId: '/ws/x', createdAt: 1 }));
+            await store.append(makeRecord({ id: 't-b', sessionId: 's2', workspaceId: '/ws/x', createdAt: 2 }));
+            await store.append(makeRecord({ id: 't-c', sessionId: 's1', workspaceId: '/ws/y', createdAt: 3 }));
+            const scoped = await store.list(undefined, { workspaceId: '/ws/x' });
+            expect(scoped.map(record => record.id)).toEqual(['t-a', 't-b']);
+            const newestFirst = await store.list(undefined, { workspaceId: '/ws/x', order: 'DESC' });
+            expect(newestFirst.map(record => record.id)).toEqual(['t-b', 't-a']);
+            const combined = await store.list('s2', { workspaceId: '/ws/x' });
+            expect(combined.map(record => record.id)).toEqual(['t-b']);
+            const missing = await store.list(undefined, { workspaceId: '/ws/z' });
+            expect(missing.length).toEqual(0);
+        } finally { await ctx.close(); }
     }
 
     @Test('aggregate turn diagnostics computes rates and totals across sessions')
     async aggregateComputesRates() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        await store.append(makeRecord({
-            id: 't-1', sessionId: 's1',
-            emptyResponseRetryCount: 2, repeatedClarificationDetected: true,
-            finalAssistantWasClarification: true, followUpRecoveryCount: 1,
-            compactionCount: 1, totalTokenSavings: 4000, createdAt: 1
-        }));
-        await store.append(makeRecord({
-            id: 't-2', sessionId: 's1',
-            emptyResponseRetryCount: 0, repeatedClarificationDetected: false,
-            finalAssistantWasClarification: false, followUpRecoveryCount: 0,
-            compactionCount: 0, totalTokenSavings: 0, createdAt: 2
-        }));
-        await store.append(makeRecord({
-            id: 't-3', sessionId: 's2',
-            emptyResponseRetryCount: 0, repeatedClarificationDetected: false,
-            finalAssistantWasClarification: false, followUpRecoveryCount: 3,
-            compactionCount: 0, totalTokenSavings: 0, createdAt: 3
-        }));
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({
+                id: 't-1', sessionId: 's1',
+                emptyResponseRetryCount: 2, repeatedClarificationDetected: true,
+                finalAssistantWasClarification: true, followUpRecoveryCount: 1,
+                compactionCount: 1, totalTokenSavings: 4000, createdAt: 1
+            }));
+            await store.append(makeRecord({
+                id: 't-2', sessionId: 's1',
+                emptyResponseRetryCount: 0, repeatedClarificationDetected: false,
+                finalAssistantWasClarification: false, followUpRecoveryCount: 0,
+                compactionCount: 0, totalTokenSavings: 0, createdAt: 2
+            }));
+            await store.append(makeRecord({
+                id: 't-3', sessionId: 's2',
+                emptyResponseRetryCount: 0, repeatedClarificationDetected: false,
+                finalAssistantWasClarification: false, followUpRecoveryCount: 3,
+                compactionCount: 0, totalTokenSavings: 0, createdAt: 3
+            }));
 
-        const all = await store.aggregate();
-        expect(all.totalTurns).toEqual(3);
-        expect(all.emptyResponseCount).toEqual(1);
-        expect(all.emptyResponseRate).toEqual(33.3);
-        expect(all.repeatedClarificationCount).toEqual(1);
-        expect(all.repeatedQuestionRate).toEqual(33.3);
-        expect(all.finalClarificationCount).toEqual(1);
-        expect(all.clarificationRate).toEqual(33.3);
-        expect(all.followUpRecoveryCount).toEqual(4);
-        expect(all.followUpRecoveryRate).toEqual(133.3);
-        expect(all.compactionCount).toEqual(1);
-        expect(all.totalTokenSavings).toEqual(4000);
-        expect(all.timeRange).toEqual({ from: 1, to: 3 });
+            const all = await store.aggregate();
+            expect(all.totalTurns).toEqual(3);
+            expect(all.emptyResponseCount).toEqual(1);
+            expect(all.emptyResponseRate).toEqual(33.3);
+            expect(all.repeatedClarificationCount).toEqual(1);
+            expect(all.repeatedQuestionRate).toEqual(33.3);
+            expect(all.finalClarificationCount).toEqual(1);
+            expect(all.clarificationRate).toEqual(33.3);
+            expect(all.followUpRecoveryCount).toEqual(4);
+            expect(all.followUpRecoveryRate).toEqual(133.3);
+            expect(all.compactionCount).toEqual(1);
+            expect(all.totalTokenSavings).toEqual(4000);
+            expect(all.timeRange).toEqual({ from: 1, to: 3 });
 
-        const scoped = await store.aggregate(['s1']);
-        expect(scoped.totalTurns).toEqual(2);
-        expect(scoped.followUpRecoveryCount).toEqual(1);
-        expect(scoped.followUpRecoveryRate).toEqual(50);
-        expect(scoped.timeRange).toEqual({ from: 1, to: 2 });
+            const scoped = await store.aggregate(['s1']);
+            expect(scoped.totalTurns).toEqual(2);
+            expect(scoped.followUpRecoveryCount).toEqual(1);
+            expect(scoped.followUpRecoveryRate).toEqual(50);
+            expect(scoped.timeRange).toEqual({ from: 1, to: 2 });
+        } finally { await ctx.close(); }
+    }
 
-        const empty = new InMemoryTurnDiagnosticsStore();
-        const emptyAggregate = await empty.aggregate();
-        expect(emptyAggregate.totalTurns).toEqual(0);
-        expect(emptyAggregate.emptyResponseRate).toEqual(0);
-        expect(emptyAggregate.timeRange).toBeUndefined();
+    @Test('aggregate on an empty store returns zeroed totals')
+    async aggregateComputesRatesEmpty() {
+        const { ctx, store } = await this.boot();
+        try {
+            const emptyAggregate = await store.aggregate();
+            expect(emptyAggregate.totalTurns).toEqual(0);
+            expect(emptyAggregate.emptyResponseRate).toEqual(0);
+            expect(emptyAggregate.timeRange).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('build turn diagnostics trend buckets records by time per session')
@@ -308,26 +294,26 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('in-memory turn diagnostics store exposes trend')
     async inMemoryTrends() {
-        const day = 24 * 60 * 60 * 1000;
-        const store = new InMemoryTurnDiagnosticsStore();
-        await store.append(makeRecord({ id: 't-1', sessionId: 's1', createdAt: day, totalTokenSavings: 1000 }));
-        await store.append(makeRecord({ id: 't-2', sessionId: 's1', createdAt: day + 1, totalTokenSavings: 2000 }));
-        await store.append(makeRecord({ id: 't-3', sessionId: 's2', createdAt: day, totalTokenSavings: 500 }));
-        const all = await store.trend();
-        expect(all.filter(point => point.sessionId === 's1').length).toEqual(1);
-        expect(all.find(point => point.sessionId === 's1')?.totalTokenSavings).toEqual(3000);
-        const scoped = await store.trend(['s2']);
-        expect(scoped.length).toEqual(1);
-        expect(scoped[0].sessionId).toEqual('s2');
-        expect(scoped[0].totalTokenSavings).toEqual(500);
+        const { ctx, store } = await this.boot();
+        try {
+            const day = 24 * 60 * 60 * 1000;
+            await store.append(makeRecord({ id: 't-1', sessionId: 's1', createdAt: day, totalTokenSavings: 1000 }));
+            await store.append(makeRecord({ id: 't-2', sessionId: 's1', createdAt: day + 1, totalTokenSavings: 2000 }));
+            await store.append(makeRecord({ id: 't-3', sessionId: 's2', createdAt: day, totalTokenSavings: 500 }));
+            const all = await store.trend();
+            expect(all.filter(point => point.sessionId === 's1').length).toEqual(1);
+            expect(all.find(point => point.sessionId === 's1')?.totalTokenSavings).toEqual(3000);
+            const scoped = await store.trend(['s2']);
+            expect(scoped.length).toEqual(1);
+            expect(scoped[0].sessionId).toEqual('s2');
+            expect(scoped[0].totalTokenSavings).toEqual(500);
+        } finally { await ctx.close(); }
     }
 
     @Test('typeorm turn diagnostics store exposes trend')
     async typeOrmTrends() {
-        const ctx = await Application.run(TurnDiagnosticsOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmTurnDiagnosticsStore(adapter);
             const day = 24 * 60 * 60 * 1000;
             await store.append(makeRecord({ id: 'db-tr-1', sessionId: 's-db', createdAt: 10, totalTokenSavings: 4000, compressionRatio: 50 }));
             await store.append(makeRecord({ id: 'db-tr-2', sessionId: 's-db', createdAt: 20, totalTokenSavings: 2000 }));
@@ -346,10 +332,8 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('typeorm turn diagnostics store persists reloads and aggregates records')
     async typeOrmPersistsAndAggregates() {
-        const ctx = await Application.run(TurnDiagnosticsOrmTestModule);
+        const { ctx, store, adapter } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmTurnDiagnosticsStore(adapter);
             await store.append(makeRecord({
                 id: 'db-t1', sessionId: 's-db',
                 emptyResponseRetryCount: 1, repeatedClarificationDetected: true,
@@ -383,10 +367,8 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('typeorm turn diagnostics store persists workspace identity and filters by it')
     async typeOrmPersistsWorkspaceAndFilters() {
-        const ctx = await Application.run(TurnDiagnosticsOrmTestModule);
+        const { ctx, store, adapter } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmTurnDiagnosticsStore(adapter);
             await store.append(makeRecord({ id: 'db-ws-1', sessionId: 's-db-a', workspaceId: '/ws/x', createdAt: 10 }));
             await store.append(makeRecord({ id: 'db-ws-2', sessionId: 's-db-b', workspaceId: '/ws/x', createdAt: 20 }));
             await store.append(makeRecord({ id: 'db-ws-3', sessionId: 's-db-c', workspaceId: '/ws/y', createdAt: 30 }));
@@ -409,23 +391,9 @@ export class TurnDiagnosticsStoreTest {
         }
     }
 
-    @Test('agent module falls back to usable in-memory turn diagnostics store without orm adapter')
-    async agentModuleFallsBackToInMemory() {
-        const ctx = await Application.run(AgentModule);
-        try {
-            const store = ctx.get(TurnDiagnosticsStore);
-            await store.append(makeRecord({ id: 'fallback-t1', sessionId: 'fallback-session' }));
-            const records = await store.list('fallback-session');
-            expect(records.length).toEqual(1);
-            expect(records[0].id).toEqual('fallback-t1');
-        } finally {
-            await ctx.close();
-        }
-    }
-
     @Test('agent module resolves durable turn diagnostics store behavior when orm adapter exists')
     async agentModuleResolvesDurableStore() {
-        const ctx = await Application.run(AgentTurnDiagnosticsOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
@@ -439,101 +407,110 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('runtime records turn diagnostics for completed turns')
     async runtimeRecordsTurnDiagnostics() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        await runtime.runTurn('s1', 'first turn');
-        await runtime.runTurn('s1', 'second turn');
+        const ctx = await runAgentOrmApp();
+        try {
+            const store = ctx.get(TurnDiagnosticsStore);
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            await runtime.runTurn('s1', 'first turn');
+            await runtime.runTurn('s1', 'second turn');
 
-        const records = await store.list('s1');
-        expect(records.length).toEqual(2);
-        expect(records.every(record => record.sessionId === 's1')).toEqual(true);
-        expect(records.every(record => record.emptyResponseRetryCount >= 0)).toEqual(true);
-        expect(records[records.length - 1].createdAt).toBeGreaterThanOrEqual(records[0].createdAt);
+            const records = await store.list('s1');
+            expect(records.length).toEqual(2);
+            expect(records.every(record => record.sessionId === 's1')).toEqual(true);
+            expect(records.every(record => record.emptyResponseRetryCount >= 0)).toEqual(true);
+            expect(records[records.length - 1].createdAt).toBeGreaterThanOrEqual(records[0].createdAt);
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime injects session model profile into model requests until cleared')
     async runtimeInjectsSessionModelProfile() {
-        const adapter = new CapturingProfileModelAdapter();
-        const runtime = new DefaultAgentRuntime(
-            adapter,
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
+        const ctx = await runAgentOrmApp();
+        try {
+            const adapter = new CapturingProfileModelAdapter();
+            const runtime = new DefaultAgentRuntime(
+                adapter,
+                new EmptyToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined
+            );
 
-        await runtime.runTurn('s1', 'first turn');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
+            await runtime.runTurn('s1', 'first turn');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
 
-        runtime.setSessionModelProfile('s1', 'strong');
-        await runtime.runTurn('s1', 'second turn');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
+            runtime.setSessionModelProfile('s1', 'strong');
+            await runtime.runTurn('s1', 'second turn');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
 
-        runtime.clearSessionModelProfile('s1');
-        await runtime.runTurn('s1', 'third turn');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
+            runtime.clearSessionModelProfile('s1');
+            await runtime.runTurn('s1', 'third turn');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('turn profile overrides session model profile for that request only')
     async turnProfileOverridesSessionProfileForSingleTurn() {
-        const adapter = new CapturingProfileModelAdapter();
-        const runtime = new DefaultAgentRuntime(
-            adapter,
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
+        const ctx = await runAgentOrmApp();
+        try {
+            const adapter = new CapturingProfileModelAdapter();
+            const runtime = new DefaultAgentRuntime(
+                adapter,
+                new EmptyToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined
+            );
 
-        runtime.setSessionModelProfile('s1', 'flash');
+            runtime.setSessionModelProfile('s1', 'flash');
 
-        await runtime.runTurn('s1', 'first turn');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+            await runtime.runTurn('s1', 'first turn');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
 
-        await runtime.runTurn('s1', 'second turn', undefined, undefined, 'strong');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
+            await runtime.runTurn('s1', 'second turn', undefined, undefined, 'strong');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('strong');
 
-        await runtime.runTurn('s1', 'third turn');
-        expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+            await runtime.runTurn('s1', 'third turn');
+            expect(adapter.profiles[adapter.profiles.length - 1]).toEqual('flash');
+        } finally { await ctx.close(); }
     }
 }
 
@@ -541,63 +518,69 @@ export class TurnDiagnosticsStoreTest {
 export class TurnFalsifyRateRuntimeTest {
     @Test('runtime injects falsify rate into the request following a falsified tool round')
     async runtimeInjectsFalsifyRateAfterFalsifiedRound() {
-        const model = new FalsifyRateCapturingModelAdapter();
-        const runtime = new DefaultAgentRuntime(
-            model,
-            new FailingEchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
+        const ctx = await runAgentOrmApp();
+        try {
+            const model = new FalsifyRateCapturingModelAdapter();
+            const runtime = new DefaultAgentRuntime(
+                model,
+                new FailingEchoToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined
+            );
 
-        const result = await runtime.runTurn('s1', 'first turn');
+            const result = await runtime.runTurn('s1', 'first turn');
 
-        expect(result.message.content).toEqual('done');
-        expect(model.requests.length).toEqual(2);
-        expect(model.requests[0].falsifyRate).toBeUndefined();
-        expect(model.requests[1].falsifyRate).toBeGreaterThan(0);
+            expect(result.message.content).toEqual('done');
+            expect(model.requests.length).toEqual(2);
+            expect(model.requests[0].falsifyRate).toBeUndefined();
+            expect(model.requests[1].falsifyRate).toBeGreaterThan(0);
 
-        await runtime.runTurn('s1', 'second turn');
-        expect(model.requests.length).toEqual(3);
-        expect(model.requests[2].falsifyRate).toBeUndefined();
+            await runtime.runTurn('s1', 'second turn');
+            expect(model.requests.length).toEqual(3);
+            expect(model.requests[2].falsifyRate).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime leaves falsify rate unset when no tool evidence was measured')
     async runtimeLeavesFalsifyRateUnsetWithoutEvidence() {
-        const model = new FalsifyRateCapturingModelAdapter(false);
-        const runtime = new DefaultAgentRuntime(
-            model,
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
+        const ctx = await runAgentOrmApp();
+        try {
+            const model = new FalsifyRateCapturingModelAdapter(false);
+            const runtime = new DefaultAgentRuntime(
+                model,
+                new EmptyToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined
+            );
 
-        await runtime.runTurn('s1', 'hello');
+            await runtime.runTurn('s1', 'hello');
 
-        expect(model.requests.length).toEqual(1);
-        expect(model.requests[0].falsifyRate).toBeUndefined();
+            expect(model.requests.length).toEqual(1);
+            expect(model.requests[0].falsifyRate).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 }

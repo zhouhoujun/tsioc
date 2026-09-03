@@ -1,50 +1,12 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentModule } from '../src/agent.module';
-import { AgentOrmModule } from '../src/orm.module';
 import { SummaryQualityRecord, SummaryQualityStore, aggregateSummaryQuality, buildSummaryQualityTrend } from '../src/harness/SummaryQualityStore';
 import { scoreSummaryQuality, computeEvidenceCoverage } from '../src/harness/SummaryQualityScorer';
-import { InMemorySummaryQualityStore } from '../src/harness/InMemorySummaryQualityStore';
-import { TypeOrmSummaryQualityStore } from '../src/harness/TypeOrmSummaryQualityStore';
 import { AgentSummaryQualityEntity } from '../src/memory/entities';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
-
-@Module({
-    imports: [
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class SummaryQualityOrmTestModule {}
-
-@Module({
-    imports: [
-        AgentModule,
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class AgentSummaryQualityOrmTestModule {}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -260,53 +222,62 @@ export class EvidenceCoverageTest {
 
 @Suite('Summary quality stores')
 export class SummaryQualityStoreTest {
-    @Test('in-memory summary quality store snapshots records immutably and filters by provider')
+    private async boot() {
+        const ctx = await runAgentOrmApp();
+        return { ctx, store: ctx.get(SummaryQualityStore) };
+    }
+
+    @Test('summary quality store snapshots records immutably and filters by provider')
     async inMemorySnapshotsAndFilters() {
-        const store = new InMemorySummaryQualityStore();
-        const metadata = { route: 'a' } as any;
-        await store.append(makeRecord({ id: 'q-a', provider: 'deepseek', createdAt: 1, metadata }));
-        await store.append(makeRecord({ id: 'q-b', provider: 'deepseek', createdAt: 2 }));
-        await store.append(makeRecord({ id: 'q-c', provider: 'anthropic', createdAt: 3 }));
-        metadata.route = 'mutated';
+        const { ctx, store } = await this.boot();
+        try {
+            const metadata = { route: 'a' } as any;
+            await store.append(makeRecord({ id: 'q-a', provider: 'deepseek', createdAt: 1, metadata }));
+            await store.append(makeRecord({ id: 'q-b', provider: 'deepseek', createdAt: 2 }));
+            await store.append(makeRecord({ id: 'q-c', provider: 'anthropic', createdAt: 3 }));
+            metadata.route = 'mutated';
 
-        const deepseek = await store.list({ provider: 'deepseek' });
-        expect(deepseek.length).toEqual(2);
-        expect(deepseek[0].metadata?.route).toEqual('a');
+            const deepseek = await store.list({ provider: 'deepseek' });
+            expect(deepseek.length).toEqual(2);
+            expect(deepseek[0].metadata?.route).toEqual('a');
 
-        const all = await store.list();
-        expect(all.length).toEqual(3);
+            const all = await store.list();
+            expect(all.length).toEqual(3);
 
-        const paged = await store.list({ provider: 'deepseek', limit: 1, offset: 1 });
-        expect(paged[0].id).toEqual('q-b');
+            const paged = await store.list({ provider: 'deepseek', limit: 1, offset: 1 });
+            expect(paged[0].id).toEqual('q-b');
+        } finally { await ctx.close(); }
     }
 
     @Test('aggregate summary quality groups by provider')
     async aggregateGroupsByProvider() {
-        const store = new InMemorySummaryQualityStore();
-        await store.append(makeRecord({ id: 'q-1', provider: 'deepseek', total: 100, fallbackUsed: false, createdAt: 1 }));
-        await store.append(makeRecord({ id: 'q-2', provider: 'deepseek', total: 60, fallbackUsed: true, createdAt: 2 }));
-        await store.append(makeRecord({ id: 'q-3', provider: 'anthropic', total: 70, fallbackUsed: false, createdAt: 3 }));
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'q-1', provider: 'deepseek', total: 100, fallbackUsed: false, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'q-2', provider: 'deepseek', total: 60, fallbackUsed: true, createdAt: 2 }));
+            await store.append(makeRecord({ id: 'q-3', provider: 'anthropic', total: 70, fallbackUsed: false, createdAt: 3 }));
 
-        const aggregates = await store.aggregate();
-        expect(aggregates.length).toEqual(2);
-        const deepseek = aggregates.find(a => a.provider === 'deepseek')!;
-        expect(deepseek.recordCount).toEqual(2);
-        expect(deepseek.avgTotal).toEqual(80);
-        expect(deepseek.minTotal).toEqual(60);
-        expect(deepseek.maxTotal).toEqual(100);
-        expect(deepseek.fallbackRate).toEqual(50);
-        expect(deepseek.timeRange).toEqual({ from: 1, to: 2 });
+            const aggregates = await store.aggregate();
+            expect(aggregates.length).toEqual(2);
+            const deepseek = aggregates.find(a => a.provider === 'deepseek')!;
+            expect(deepseek.recordCount).toEqual(2);
+            expect(deepseek.avgTotal).toEqual(80);
+            expect(deepseek.minTotal).toEqual(60);
+            expect(deepseek.maxTotal).toEqual(100);
+            expect(deepseek.fallbackRate).toEqual(50);
+            expect(deepseek.timeRange).toEqual({ from: 1, to: 2 });
 
-        const scoped = await store.aggregate('anthropic');
-        expect(scoped.length).toEqual(1);
-        expect(scoped[0].recordCount).toEqual(1);
-        expect(scoped[0].avgTotal).toEqual(70);
+            const scoped = await store.aggregate('anthropic');
+            expect(scoped.length).toEqual(1);
+            expect(scoped[0].recordCount).toEqual(1);
+            expect(scoped[0].avgTotal).toEqual(70);
 
-        const raw = aggregateSummaryQuality([
-            makeRecord({ id: 'r1', provider: 'deepseek', total: 90, createdAt: 1 }),
-            makeRecord({ id: 'r2', provider: 'deepseek', total: 80, createdAt: 2 })
-        ]);
-        expect(raw[0].avgTotal).toEqual(85);
+            const raw = aggregateSummaryQuality([
+                makeRecord({ id: 'r1', provider: 'deepseek', total: 90, createdAt: 1 }),
+                makeRecord({ id: 'r2', provider: 'deepseek', total: 80, createdAt: 2 })
+            ]);
+            expect(raw[0].avgTotal).toEqual(85);
+        } finally { await ctx.close(); }
     }
 
     @Test('aggregate averages evidence coverage over measured records only')
@@ -325,37 +296,41 @@ export class SummaryQualityStoreTest {
 
     @Test('aggregate summary quality scopes to a single model')
     async aggregateScopesToModel() {
-        const store = new InMemorySummaryQualityStore();
-        await store.append(makeRecord({ id: 'm-1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, fallbackUsed: false, createdAt: 1 }));
-        await store.append(makeRecord({ id: 'm-2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fallbackUsed: true, createdAt: 2 }));
-        await store.append(makeRecord({ id: 'm-3', provider: 'deepseek', model: 'deepseek-v3', total: 90, fallbackUsed: false, createdAt: 3 }));
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'm-1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, fallbackUsed: false, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'm-2', provider: 'deepseek', model: 'deepseek-v4-flash', total: 60, fallbackUsed: true, createdAt: 2 }));
+            await store.append(makeRecord({ id: 'm-3', provider: 'deepseek', model: 'deepseek-v3', total: 90, fallbackUsed: false, createdAt: 3 }));
 
-        const aggregates = await store.aggregate('deepseek', 'deepseek-v4-flash');
-        expect(aggregates.length).toEqual(1);
-        expect(aggregates[0].recordCount).toEqual(2);
-        expect(aggregates[0].avgTotal).toEqual(80);
-        expect(aggregates[0].fallbackRate).toEqual(50);
+            const aggregates = await store.aggregate('deepseek', 'deepseek-v4-flash');
+            expect(aggregates.length).toEqual(1);
+            expect(aggregates[0].recordCount).toEqual(2);
+            expect(aggregates[0].avgTotal).toEqual(80);
+            expect(aggregates[0].fallbackRate).toEqual(50);
 
-        const raw = aggregateSummaryQuality([
-            makeRecord({ id: 'm-4', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, createdAt: 4 }),
-            makeRecord({ id: 'm-5', provider: 'deepseek', model: 'deepseek-v3', total: 70, createdAt: 5 })
-        ], undefined, 'deepseek-v3');
-        expect(raw.length).toEqual(1);
-        expect(raw[0].avgTotal).toEqual(70);
+            const raw = aggregateSummaryQuality([
+                makeRecord({ id: 'm-4', provider: 'deepseek', model: 'deepseek-v4-flash', total: 100, createdAt: 4 }),
+                makeRecord({ id: 'm-5', provider: 'deepseek', model: 'deepseek-v3', total: 70, createdAt: 5 })
+            ], undefined, 'deepseek-v3');
+            expect(raw.length).toEqual(1);
+            expect(raw[0].avgTotal).toEqual(70);
+        } finally { await ctx.close(); }
     }
 
-    @Test('in-memory summary quality store filters records by model')
+    @Test('summary quality store filters records by model')
     async inMemoryFiltersByModel() {
-        const store = new InMemorySummaryQualityStore();
-        await store.append(makeRecord({ id: 'q-a', provider: 'deepseek', model: 'deepseek-v4-flash', createdAt: 1 }));
-        await store.append(makeRecord({ id: 'q-b', provider: 'deepseek', model: 'deepseek-v3', createdAt: 2 }));
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'q-a', provider: 'deepseek', model: 'deepseek-v4-flash', createdAt: 1 }));
+            await store.append(makeRecord({ id: 'q-b', provider: 'deepseek', model: 'deepseek-v3', createdAt: 2 }));
 
-        const flash = await store.list({ provider: 'deepseek', model: 'deepseek-v4-flash' });
-        expect(flash.length).toEqual(1);
-        expect(flash[0].id).toEqual('q-a');
+            const flash = await store.list({ provider: 'deepseek', model: 'deepseek-v4-flash' });
+            expect(flash.length).toEqual(1);
+            expect(flash[0].id).toEqual('q-a');
 
-        const all = await store.list({ provider: 'deepseek' });
-        expect(all.length).toEqual(2);
+            const all = await store.list({ provider: 'deepseek' });
+            expect(all.length).toEqual(2);
+        } finally { await ctx.close(); }
     }
 
     @Test('build summary quality trend buckets records per provider over time')
@@ -431,10 +406,9 @@ export class SummaryQualityStoreTest {
 
     @Test('typeorm summary quality store persists reloads and aggregates records')
     async typeOrmPersistsAndAggregates() {
-        const ctx = await Application.run(SummaryQualityOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmSummaryQualityStore(adapter);
             await store.append(makeRecord({ id: 'db-q1', provider: 'deepseek', total: 100, createdAt: 10 }));
             await store.append(makeRecord({ id: 'db-q2', provider: 'deepseek', total: 40, fallbackUsed: true, createdAt: 20 }));
             const records = await store.list({ provider: 'deepseek' });
@@ -457,25 +431,10 @@ export class SummaryQualityStoreTest {
         }
     }
 
-    @Test('agent module falls back to usable in-memory summary quality store without orm adapter')
-    async agentModuleFallsBackToInMemory() {
-        const ctx = await Application.run(AgentModule);
-        try {
-            const store = ctx.get(SummaryQualityStore);
-            await store.append(makeRecord({ id: 'fallback-q1', provider: 'unknown' }));
-            const records = await store.list();
-            expect(records.length).toEqual(1);
-            expect(records[0].id).toEqual('fallback-q1');
-        } finally {
-            await ctx.close();
-        }
-    }
-
     @Test('agent module resolves durable summary quality store when orm adapter exists')
     async agentModuleResolvesDurableStore() {
-        const ctx = await Application.run(AgentSummaryQualityOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const store = ctx.get(SummaryQualityStore);
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             await store.append(makeRecord({ id: 'wired-q1', provider: 'deepseek', total: 95 }));
             const stored = await adapter.getRepository(AgentSummaryQualityEntity).findOne({ where: { id: 'wired-q1' } as any });
@@ -488,10 +447,9 @@ export class SummaryQualityStoreTest {
 
     @Test('typeorm summary quality store roundtrips evidence coverage via metadata')
     async typeOrmRoundtripsEvidenceCoverage() {
-        const ctx = await Application.run(SummaryQualityOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmSummaryQualityStore(adapter);
             await store.append(makeRecord({ id: 'db-ec1', provider: 'deepseek', evidenceCoverage: 80, createdAt: 5 }));
             await store.append(makeRecord({ id: 'db-ec2', provider: 'deepseek', createdAt: 6 }));
 
@@ -516,92 +474,123 @@ export class SummaryQualityStoreTest {
 
 @Suite('LLMSessionSummarizer quality recording')
 export class SummaryQualityIntegrationTest {
+    private async boot() {
+        const ctx = await runAgentOrmApp();
+        return { ctx, store: ctx.get(SummaryQualityStore) };
+    }
+
+    // The summarizer records quality fire-and-forget (void append + catch), so
+    // the durable write may not be visible to list() immediately. Poll briefly.
+    private async waitFor(store: SummaryQualityStore, expected: number): Promise<void> {
+        const deadline = Date.now() + 2000;
+        let count = 0;
+        while (Date.now() < deadline) {
+            count = (await store.list()).length;
+            if (count >= expected) return;
+            await new Promise(r => setTimeout(r, 10));
+        }
+        throw new Error(`store did not reach ${expected} records (stuck at ${count})`);
+    }
+
     @Test('records a scored summary when a store is provided')
     async recordsScoredSummary() {
-        const store = new InMemorySummaryQualityStore();
-        const summarizer = new LLMSessionSummarizer(
-            new StaticModelAdapter(makeFullSummary()) as any,
-            store as any
-        );
-        const messages = [
-            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
-        ];
-        const summary = await summarizer.summarize(messages);
-        expect(summary).toContain('Goal:');
+        const { ctx, store } = await this.boot();
+        try {
+            const summarizer = new LLMSessionSummarizer(
+                new StaticModelAdapter(makeFullSummary()) as any,
+                store as any
+            );
+            const messages = [
+                { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
+            ];
+            const summary = await summarizer.summarize(messages);
+            expect(summary).toContain('Goal:');
 
-        const records = await store.list();
-        expect(records.length).toEqual(1);
-        expect(records[0].provider).toEqual('echo');
-        expect(records[0].model).toEqual('echo');
-        expect(records[0].total).toEqual(100);
-        expect(records[0].fallbackUsed).toEqual(false);
+            await this.waitFor(store, 1);
+            const records = await store.list();
+            expect(records.length).toEqual(1);
+            expect(records[0].provider).toEqual('echo');
+            expect(records[0].model).toEqual('echo');
+            expect(records[0].total).toEqual(100);
+            expect(records[0].fallbackUsed).toEqual(false);
+        } finally { await ctx.close(); }
     }
 
     @Test('marks fallback summaries as fallback in the record')
     async recordsFallbackSummary() {
-        const store = new InMemorySummaryQualityStore();
-        const summarizer = new LLMSessionSummarizer(null, store as any);
-        const messages = [
-            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts and keep docs/plan.md in mind.', createdAt: 1 }
-        ];
-        await summarizer.summarize(messages);
+        const { ctx, store } = await this.boot();
+        try {
+            const summarizer = new LLMSessionSummarizer(null, store as any);
+            const messages = [
+                { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts and keep docs/plan.md in mind.', createdAt: 1 }
+            ];
+            await summarizer.summarize(messages);
 
-        const records = await store.list();
-        expect(records.length).toEqual(1);
-        expect(records[0].provider).toEqual('unknown');
-        expect(records[0].fallbackUsed).toEqual(true);
-        expect(records[0].total).toBeLessThan(100);
+            await this.waitFor(store, 1);
+            const records = await store.list();
+            expect(records.length).toEqual(1);
+            expect(records[0].provider).toEqual('unknown');
+            expect(records[0].fallbackUsed).toEqual(true);
+            expect(records[0].total).toBeLessThan(100);
+        } finally { await ctx.close(); }
     }
 
     @Test('records evidence coverage when evidence is provided and tools are mentioned')
     async recordsEvidenceCoverage() {
-        const store = new InMemorySummaryQualityStore();
-        const summarizer = new LLMSessionSummarizer(
-            new StaticModelAdapter(makeFullSummary()) as any,
-            store as any
-        );
-        const messages = [
-            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
-        ];
-        const evidence = [
-            { id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'read_file', status: 'success', createdAt: 1 },
-            { id: 'e2', turnId: 't1', sessionId: 's1', toolName: 'write_file', status: 'error', createdAt: 1 }
-        ] as any;
-        await summarizer.summarize(messages, evidence);
+        const { ctx, store } = await this.boot();
+        try {
+            const summarizer = new LLMSessionSummarizer(
+                new StaticModelAdapter(makeFullSummary()) as any,
+                store as any
+            );
+            const messages = [
+                { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
+            ];
+            const evidence = [
+                { id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'read_file', status: 'success', createdAt: 1 },
+                { id: 'e2', turnId: 't1', sessionId: 's1', toolName: 'write_file', status: 'error', createdAt: 1 }
+            ] as any;
+            await summarizer.summarize(messages, evidence);
 
-        const records = await store.list();
-        expect(records.length).toEqual(1);
-        expect(records[0].evidenceCoverage).toEqual(0);
+            await this.waitFor(store, 1);
+            const records = await store.list();
+            expect(records.length).toEqual(1);
+            expect(records[0].evidenceCoverage).toEqual(0);
 
-        const mentioning = new LLMSessionSummarizer(
-            new StaticModelAdapter([
-                'Goal: Write src/app.ts and read the config.',
-                'Decisions: Ran write_file and read_file.',
-                'Files: modified: src/app.ts',
-                'Errors: write_file failed.',
-                'Open state: Verify.'
-            ].join('\n')) as any,
-            store as any
-        );
-        await mentioning.summarize(messages, evidence);
-        const all = await store.list();
-        expect(all[1].evidenceCoverage).toEqual(100);
+            const mentioning = new LLMSessionSummarizer(
+                new StaticModelAdapter([
+                    'Goal: Write src/app.ts and read the config.',
+                    'Decisions: Ran write_file and read_file.',
+                    'Files: modified: src/app.ts',
+                    'Errors: write_file failed.',
+                    'Open state: Verify.'
+                ].join('\n')) as any,
+                store as any
+            );
+            await mentioning.summarize(messages, evidence);
+            await this.waitFor(store, 2);
+            const all = await store.list();
+            expect(all[1].evidenceCoverage).toEqual(100);
+        } finally { await ctx.close(); }
     }
 
     @Test('leaves evidence coverage unset when no evidence was provided')
     async recordsWithoutEvidence() {
-        const store = new InMemorySummaryQualityStore();
-        const summarizer = new LLMSessionSummarizer(
-            new StaticModelAdapter(makeFullSummary()) as any,
-            store as any
-        );
-        await summarizer.summarize([
-            { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
-        ]);
+        const { ctx, store } = await this.boot();
+        try {
+            const summarizer = new LLMSessionSummarizer(
+                new StaticModelAdapter(makeFullSummary()) as any,
+                store as any
+            );
+            await summarizer.summarize([
+                { id: '1', role: 'user' as const, content: 'Fix routing in src/app.ts.', createdAt: 1 }
+            ]);
 
-        const records = await store.list();
-        expect(records.length).toEqual(1);
-        expect(records[0].evidenceCoverage).toEqual(undefined);
+            await this.waitFor(store, 1);
+            const records = await store.list();
+            expect(records.length).toEqual(1);
+            expect(records[0].evidenceCoverage).toEqual(undefined);
+        } finally { await ctx.close(); }
     }
 
     @Test('summarization never breaks when the store is missing')

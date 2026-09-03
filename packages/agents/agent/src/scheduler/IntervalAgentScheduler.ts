@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationContext, Runner, Shutdown } from '@tsdi/core';
+import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentScheduler } from './AgentScheduler';
 import { ScheduledAgentTask } from './ScheduledAgentTask';
 import { NextRunCalculator } from './NextRunCalculator';
@@ -7,7 +8,7 @@ import { AgentRuntime } from '../runtime/AgentRuntime';
 import { AgentErrorEvent, AgentTaskScheduledEvent } from '../runtime/AgentEvents';
 import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
-import { getTypeOrmAdapterToken, requireLazy, resolveTypeormAdapter, TypeOrmAdapterLike } from '../lazy-typeorm';
+import { AgentScheduledTaskEntity } from '../memory/entities';
 
 @Injectable()
 export class IntervalAgentScheduler extends AgentScheduler {
@@ -16,13 +17,11 @@ export class IntervalAgentScheduler extends AgentScheduler {
     private inFlight = new Map<string, Promise<void>>();
     private stopping = false;
 
-    private adapter?: TypeOrmAdapterLike | null;
-    private scheduledTaskEntity?: any;
-
     constructor(
         private runtime: AgentRuntime,
         @Inject(ApplicationContext) private app: ApplicationContext,
-        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions
+        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
+        @Inject(TypeormAdapter) private adapter: TypeormAdapter
     ) {
         super();
     }
@@ -402,24 +401,12 @@ export class IntervalAgentScheduler extends AgentScheduler {
         };
     }
 
-    private async ensureAdapter(): Promise<TypeOrmAdapterLike | null> {
-        if (this.adapter !== undefined) {
-            return this.adapter;
-        }
-        if (typeof (this.app as any)?.get !== 'function') {
-            this.adapter = null;
-            return this.adapter;
-        }
-        this.adapter = resolveTypeormAdapter(this.app as any);
+    private async ensureAdapter(): Promise<TypeormAdapter> {
         return this.adapter;
     }
 
     private resolveScheduledTaskEntity(): any {
-        if (this.scheduledTaskEntity) {
-            return this.scheduledTaskEntity;
-        }
-        const entities = requireLazy('./memory/entities') as { AgentScheduledTaskEntity?: any };
-        return (this.scheduledTaskEntity = entities.AgentScheduledTaskEntity);
+        return AgentScheduledTaskEntity;
     }
 
     private createFailedTask(task: ScheduledAgentTask, error: Error): ScheduledAgentTask {

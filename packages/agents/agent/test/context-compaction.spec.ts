@@ -6,7 +6,7 @@ import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { AgentMessage } from '../src/runtime/AgentMessage';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { InMemoryMemoryStore } from './helpers/in-memory-stores';
 
 /**
  * Test-only interface exposing package-internal members of AgentContextManager

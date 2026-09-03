@@ -1,9 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { RandomUuidGenerator } from '@tsdi/core';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { SessionStore } from '../src/memory/SessionStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
@@ -15,6 +14,8 @@ import { AgentSummaryAgent, AgentSessionSummary } from '../src/memory/AgentSumma
 import { DeterministicAgentSummaryAgent } from '../src/memory/DeterministicAgentSummaryAgent';
 import { LLMAgentSummaryAgent } from '../src/memory/LLMAgentSummaryAgent';
 import { AgentMessage, AgentRole } from '../src/runtime/AgentMessage';
+import { AGENT_OPTIONS } from '../src/tokens';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     events: any[] = [];
@@ -53,34 +54,15 @@ function message(role: AgentRole, content: string, id: string): AgentMessage {
     return { id, role, content, createdAt: Date.now() };
 }
 
-function makeRuntime(options: AgentOptions = defaultAgentOptions, summaryAgent?: AgentSummaryAgent | null) {
-    const store = new InMemorySessionStore();
-    const runtime = new DefaultAgentRuntime(
-        new EchoModelAdapter(),
-        new EmptyToolRegistry(),
-        store,
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        options,
-        new FakeApp() as any,
-        new RandomUuidGenerator(),
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        summaryAgent
-    );
-    return { runtime, store };
+async function makeRuntime(options: AgentOptions = defaultAgentOptions, summaryAgent?: AgentSummaryAgent | null): Promise<{ runtime: AgentRuntime; store: SessionStore; ctx: ApplicationContext }> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+        { provide: ToolRegistry, useValue: new EmptyToolRegistry() },
+        { provide: AGENT_OPTIONS, useValue: options },
+        { provide: AgentSummaryAgent, useValue: summaryAgent ?? new DeterministicAgentSummaryAgent() }
+    ];
+    const ctx = await runAgentOrmApp(providers);
+    return { runtime: ctx.get(AgentRuntime), store: ctx.get(SessionStore), ctx };
 }
 
 @Suite('DeterministicAgentSummaryAgent')
@@ -195,23 +177,27 @@ export class LLMAgentSummaryAgentTest {
 export class RuntimeSessionMetadataTest {
     @Test('ensureSessionTitle sets a title for a new session')
     async ensureSessionTitleSetsTitle() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const title = await runtime.ensureSessionTitle('s1');
-        expect(title).toEqual('Build a login page');
-        const state = await store.get('s1');
-        expect(state.title).toEqual('Build a login page');
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const title = await runtime.ensureSessionTitle('s1');
+            expect(title).toEqual('Build a login page');
+            const state = await store.get('s1');
+            expect(state.title).toEqual('Build a login page');
+        } finally { await ctx.close(); }
     }
 
     @Test('ensureSessionTitle does not overwrite an existing title')
     async ensureSessionTitleKeepsExistingTitle() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        await store.setTitle('s1', 'Manual Title');
-        const title = await runtime.ensureSessionTitle('s1');
-        expect(title).toEqual('Manual Title');
-        const state = await store.get('s1');
-        expect(state.title).toEqual('Manual Title');
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            await store.setTitle('s1', 'Manual Title');
+            const title = await runtime.ensureSessionTitle('s1');
+            expect(title).toEqual('Manual Title');
+            const state = await store.get('s1');
+            expect(state.title).toEqual('Manual Title');
+        } finally { await ctx.close(); }
     }
 
     @Test('ensureSessionTitle skips when autoTitle is disabled')
@@ -220,43 +206,51 @@ export class RuntimeSessionMetadataTest {
             ...defaultAgentOptions,
             session: { ...defaultAgentOptions.session, autoTitle: false }
         };
-        const { runtime, store } = makeRuntime(options, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const title = await runtime.ensureSessionTitle('s1');
-        expect(title).toBeUndefined();
-        const state = await store.get('s1');
-        expect(state.title).toBeUndefined();
+        const { runtime, store, ctx } = await makeRuntime(options, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const title = await runtime.ensureSessionTitle('s1');
+            expect(title).toBeUndefined();
+            const state = await store.get('s1');
+            expect(state.title).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('ensureSessionTitle skips when no summary agent is wired')
     async ensureSessionTitleSkipsWithoutSummaryAgent() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, null);
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const title = await runtime.ensureSessionTitle('s1');
-        expect(title).toBeUndefined();
-        const state = await store.get('s1');
-        expect(state.title).toBeUndefined();
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, null);
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const title = await runtime.ensureSessionTitle('s1');
+            expect(title).toBeUndefined();
+            const state = await store.get('s1');
+            expect(state.title).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('refreshSessionSummary sets focusSummary for a new session')
     async refreshSessionSummarySetsFocusSummary() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const summary = await runtime.refreshSessionSummary('s1');
-        expect(summary).toEqual('Build a login page');
-        const state = await store.get('s1');
-        expect(state.focusSummary).toEqual('Build a login page');
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const summary = await runtime.refreshSessionSummary('s1');
+            expect(summary).toEqual('Build a login page');
+            const state = await store.get('s1');
+            expect(state.focusSummary).toEqual('Build a login page');
+        } finally { await ctx.close(); }
     }
 
     @Test('refreshSessionSummary does not overwrite a manually-set focusSummary')
     async refreshSessionSummaryKeepsManualFocusSummary() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        await store.setProjectMetadata('s1', { focusSummary: 'manual summary' });
-        const summary = await runtime.refreshSessionSummary('s1');
-        expect(summary).toEqual('manual summary');
-        const state = await store.get('s1');
-        expect(state.focusSummary).toEqual('manual summary');
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            await store.setProjectMetadata('s1', { focusSummary: 'manual summary' });
+            const summary = await runtime.refreshSessionSummary('s1');
+            expect(summary).toEqual('manual summary');
+            const state = await store.get('s1');
+            expect(state.focusSummary).toEqual('manual summary');
+        } finally { await ctx.close(); }
     }
 
     @Test('refreshSessionSummary skips when autoSummary is disabled')
@@ -265,39 +259,47 @@ export class RuntimeSessionMetadataTest {
             ...defaultAgentOptions,
             session: { ...defaultAgentOptions.session, autoSummary: false }
         };
-        const { runtime, store } = makeRuntime(options, new DeterministicAgentSummaryAgent());
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const summary = await runtime.refreshSessionSummary('s1');
-        expect(summary).toBeUndefined();
-        const state = await store.get('s1');
-        expect(state.focusSummary).toBeUndefined();
+        const { runtime, store, ctx } = await makeRuntime(options, new DeterministicAgentSummaryAgent());
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const summary = await runtime.refreshSessionSummary('s1');
+            expect(summary).toBeUndefined();
+            const state = await store.get('s1');
+            expect(state.focusSummary).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('refreshSessionSummary skips when no summary agent is wired')
     async refreshSessionSummarySkipsWithoutSummaryAgent() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, null);
-        await store.append('s1', message('user', 'Build a login page', 'm1'));
-        const summary = await runtime.refreshSessionSummary('s1');
-        expect(summary).toBeUndefined();
-        const state = await store.get('s1');
-        expect(state.focusSummary).toBeUndefined();
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, null);
+        try {
+            await store.append('s1', message('user', 'Build a login page', 'm1'));
+            const summary = await runtime.refreshSessionSummary('s1');
+            expect(summary).toBeUndefined();
+            const state = await store.get('s1');
+            expect(state.focusSummary).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('runTurn triggers title and focusSummary generation for a new session')
     async runTurnTriggersMetadataGeneration() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
-        await runtime.runTurn('s1', 'Build a login page');
-        const state = await store.get('s1');
-        expect(state.title).toEqual('Build a login page');
-        expect(state.focusSummary).toEqual('Build a login page');
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, new DeterministicAgentSummaryAgent());
+        try {
+            await runtime.runTurn('s1', 'Build a login page');
+            const state = await store.get('s1');
+            expect(state.title).toEqual('Build a login page');
+            expect(state.focusSummary).toEqual('Build a login page');
+        } finally { await ctx.close(); }
     }
 
     @Test('runTurn without summary agent leaves session metadata empty')
     async runTurnWithoutSummaryAgentLeavesMetadataEmpty() {
-        const { runtime, store } = makeRuntime(defaultAgentOptions, null);
-        await runtime.runTurn('s1', 'Build a login page');
-        const state = await store.get('s1');
-        expect(state.title).toBeUndefined();
-        expect(state.focusSummary).toBeUndefined();
+        const { runtime, store, ctx } = await makeRuntime(defaultAgentOptions, null);
+        try {
+            await runtime.runTurn('s1', 'Build a login page');
+            const state = await store.get('s1');
+            expect(state.title).toBeUndefined();
+            expect(state.focusSummary).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 }

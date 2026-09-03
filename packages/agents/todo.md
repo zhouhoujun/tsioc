@@ -136,6 +136,60 @@
 
 ---
 
+## 架构约束（必须遵守）
+
+### 1. 禁止 InMemory 实现
+
+> **2026-09 确认：删除所有 InMemory store 实现，默认使用 SQLite（TypeORM）。**
+
+- **禁止新增 `InMemory*` 类**：所有持久化 store（Session、Memory、Timeline、BackgroundTask、Goal、Audit、Compaction、Diagnostics、Summary、Delegation）必须通过 TypeORM 实现，默认 SQLite。
+- **禁止 Default* 回退到 InMemory**：`Default*Store` 类在无 TypeORM adapter 时应抛出错误，不得静默降级到内存实现。
+- **测试使用真实 SQLite**：测试用 `better-sqlite3` 的 `:memory:` 模式，不使用 InMemory stub。
+- **agent.module.ts 默认导入 AgentOrmModule**：确保 TypeORM adapter 自动可用。
+
+### 2. IoC 依赖倒置（必须遵守）
+
+> **消费者只管使用抽象类，resolve 是 IoC 容器的职责。**
+
+- **构造器直接注入抽象类**：消费者类的构造器直接声明抽象类参数，不使用 `@Optional()` + 手动 fallback。依赖未注册时 IoC 容器直接报错，不要空值兜底。
+- **禁止手动 resolve**：不要在构造器或 `resolveStore()` 中手动调 `resolveTypeormAdapter(app)` + `lazyTypeOrmAdapters.getTypeOrm*()`，这是反模式。
+- **禁止 `Default*` 包装类**：不要创建 `Default*Store` 这样的中间层来手动 resolve TypeORM adapter。直接在 `agent.module.ts` 注册 `TypeOrm*` 类为抽象 token 的实现。
+- **正确的 DI 注册模式**：
+
+```typescript
+// ❌ 反模式：手动 resolve + Default* 包装
+class DefaultSessionStore extends SessionStore {
+    constructor(@Inject(ApplicationContext) private app: ApplicationContext) {}
+    private resolveStore() {
+        const adapter = resolveTypeormAdapter(this.app);
+        return lazyTypeOrmAdapters.getTypeOrmSessionStore(adapter);
+    }
+}
+
+// ✅ 正确：IoC 直接注入抽象类
+// 在 agent.module.ts 中注册：
+{ provide: SessionStore, useClass: TypeOrmSessionStore }
+
+// 在消费者中使用：
+constructor(private sessionStore: SessionStore) {}
+```
+
+- **抽象类用 `@Abstract()` 装饰器**：所有 store 抽象类必须用 `@Abstract()` 装饰器标记。
+- **具体实现用 `@Injectable()` 装饰器**：TypeORM 实现类用 `@Injectable()` 装饰器标记，IoC 容器自动解析。
+- **消费者不关心具体实现**：消费者类（如 `LocalToolRegistry`、`TurnHandler` 等）只注入抽象类，不需要知道底层是 TypeORM 还是其他实现。
+
+### 3. 跨平台约束
+
+- `src/` 下的新功能**只能依赖主入口的跨平台基础**，不得直接 import console 模块或 node API。
+- `console` 专属行为（如 Buffer、process.stdin）通过 DI ports 桥接。
+
+### 4. 响应式框架约束
+
+- Components 是响应式框架，**不需要手动触发更新，不需要定时刷新**。
+- 渲染完全由真实数据变化驱动，无数据变化即无渲染。
+
+---
+
 ## 跨平台入口点与环境约束
 
 > **实施任何功能前必须明确其代码落在哪个入口点的管辖范围。搞错入口 = 环境泄漏。**
@@ -484,6 +538,55 @@
 - 全量回归已执行：agent 797、agent-channels 59、agent-cli 73、agent-desktop 20、agent-vscode 7、components 135、components/console 73、components/html 117（1 既存失败）、agent-ui 953、agent-gateway 267、agent-providers 13、agent-ssh 8 均通过；agent-tools 478 通过（1 环境依赖失败）。
 - 授权本地绑定环境复跑：`agent-gateway` 267 passing、`agent-ssh` 8 passing；此前 `EPERM` 仅为 sandbox 限制，非代码回归。
 - 构建验证：agent-gateway、agent-ssh、agent-tools 及 `agent-ui` `tsc --noEmit` / `build:web` 均通过。静态边界与工作树检查完成。
+### P233 · /command 关键信息实时展示（高） `platform: src/ + agent-ui/src`
+- 目标：/command 执行后在对话流中固定展示关键信息：plan 进度（当前step/总步数）、关键 file changes（新增/修改计数+简短摘要）、工具执行状态（成功/失败/进行中）
+- 方案：
+  - 在 handleCommand 完成后，渲染一个固定 ID 的 command summary 消息块，包含 plan step 进度条、主要 file changes 统计、工具运行状态图标
+  - 内容采用"保尾策略"：头部关键信息永不折叠，底部可折叠的完整输出/Reasoning
+  - /command 结果Enter可展开查看完整输出，但尾部始终保留关键上下文行不被折叠掉
+  - 遵循 Codex 行为：assistant 最终回复全文可见，永不自动截断关键信息；折叠仅用于非关键辅助内容
+- 锚点：`AgentConsoleMessageRenderers.ts` command renderer、`AgentConsoleComponent.ts` handleCommand 分支、`AgentConsolePanels.ts` truncateMessageItem 策略重构
+- **验收标准**：/command 执行后对话流中固定出现 plan 进度+file changes计数+工具状态图标；内容≤200字符默认全显，>200字符按保尾策略折叠尾部而非头部
+
+### P234 · 折叠策略保尾：内容不长不折叠（中） `platform: src/`
+- 目标：采用"头 N−2 行 + `… N more lines` + 尾 2 行"的保尾策略，确保结尾问询永远可见
+- 方案：
+  - 默认折叠线数 COLAPSED_MESSAGE_PREVIEW_LINES 从 8 行调整为 6 行
+  - 内容总长度 < 300 字符时自动展开，无需手动折叠
+  - 始终保留尾部 2 行内容（包括用户问询/关键提示）
+  -  focus 模式保留原有 8 行预览机制（那是显式浏览态）
+- 锚点：`AgentConsolePanels.ts` truncateMessageItem、COLLAPSED_MESSAGE_PREVIEW_LINES 常量重定义
+- **验收标准**：内容≤300字符始终全显；内容>300字符采用保尾策略，尾部始终可见用户问询；focus 模式可选 8 行预览
+
+### P235 · 关键信息优先渲染（中） `platform: src/ + agent-ui/src`
+- 目标：在消息渲染中优先展示关键信息：plan 进度、关键 file changes、工具执行状态，确保用户无需进入面板即可感知
+- 方案：
+  - 新增消息模板标记 `templateKind: 'critical'`，渲染时优先展开而非折叠
+  - planTodo 和 fileChange 消息类型豁免通用折叠规则（它们有自己的 >7 项摘要折叠，自身仍保持展开或仅执行自身折叠）
+  - /command 结果和计划更新消息优先级高于普通 assistant/user 消息
+  - 键位/帮助类参考信息以可滚动覆盖层或持久 scrollback 呈现，不用瞬态状态条
+- 锚点：`AgentConsoleMessageRenderers.ts` templateKind 类型、 `AgentConsolePanels.ts` renderedMessageItems 豁免逻辑
+- **验收标准**：/command 关键信息永不被折叠吞掉；plan 卡片和关键消息有专用豁免机制；键位/帮助信息以持久 scrollback 形式呈现
+
+### P236 · 抽象类与IoC依赖倒置重构（中） `platform: src/ + agent/ + agent-tools/`
+- 目标：提取通用折叠/展开逻辑到抽象基类，通过 IoC 依赖倒置实现可扩展
+- 方案：
+  - 新建 `AgentConsoleCollapseService` 抽象类，定义 `shouldCollapse(text: string): boolean` 和 `getCollapsedConfig(text: string): CollapseConfig` 纯虚方法
+  - 实现 TUI 版和 browser 版两个具体策略类，注入到 AgentConsoleSessionState
+  - 通过 DI port (`@Inject(COLLAPSE_SERVICE)`) 而非直接 new 实现，便于扩展新平台（如 VS Code 扩展）
+  - COLAPSED_MESSAGE_PREVIEW_LINES 等常量移至抽象基类，由各端实现具体值
+  - 同理提取 truncateMessageItem 逻辑到抽象基类，支持不同平台的行计算差异
+- 锚点：`AgentConsoleSessionState.ts` collapseService 注入、`AgentConsolePanels.ts` 折叠逻辑调用
+- **验收标准**：`tsc --noEmit` 通过；抽象基类与两平台实现并存；新增平台注入无需修改核心逻辑
+
+### P237 · UI 互动矩阵与性能基线（中） `platform: agent-ui acceptance + tests`
+- 目标：扩展 PTY 脚本覆盖 /command、折叠、focus stack 等场景；补 browser Playwright 多 viewport 基线
+- 方案：
+  - 扩展 acceptance/fake_model_server.py：新增 /command 关键信息展示、折叠策略测试、focus stack 回退测试场景
+  - 扩展 acceptance/run_acceptance.py：新增 /command 关键信息可见率测试、折叠/展开按键计数测试、focus stack 断线后恢复测试
+  - 新增 PTY 验收脚本：覆盖 /command 关键信息展示、折叠/展开全流程、focus stack 完整测试
+  - browser Playwright 矩阵：320px/1024px/1440px/CJK 视口，验收长消息折叠表现、键位操作、focus stack 回退
+- **验收标准**：agent-ui 全量测试不回归；PTY 三场景通过；browser 矩阵至少 2/3 视口通过；`toolRunSummaryMaxLength` 从 400 调整至 200 且无回归
 
 ### P225 收尾复核（2026-08-27，Plan revision / 乐观并发）
 

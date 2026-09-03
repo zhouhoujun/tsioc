@@ -1,48 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
-import { RandomUuidGenerator } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentModule } from '../src/agent.module';
-import { AgentOrmModule } from '../src/orm.module';
 import { DelegationEdgeInput, DelegationEdgeRecord, DelegationGraphStore, buildDelegationLineage, buildDelegationTree } from '../src/harness/DelegationGraphStore';
-import { InMemoryDelegationGraphStore } from '../src/harness/InMemoryDelegationGraphStore';
-import { TypeOrmDelegationGraphStore } from '../src/harness/TypeOrmDelegationGraphStore';
 import { AgentDelegationEdgeEntity } from '../src/memory/entities';
-
-@Module({
-    imports: [
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class DelegationGraphOrmTestModule {}
-
-@Module({
-    imports: [
-        AgentModule,
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class AgentDelegationGraphOrmTestModule {}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 function makeEdge(partial: Partial<DelegationEdgeInput> = {}): DelegationEdgeInput {
     return {
@@ -56,126 +17,142 @@ function makeEdge(partial: Partial<DelegationEdgeInput> = {}): DelegationEdgeInp
 
 @Suite('Delegation graph stores')
 export class DelegationGraphStoreTest {
+    private async boot() {
+        const ctx = await runAgentOrmApp();
+        return { ctx, store: ctx.get(DelegationGraphStore) };
+    }
+
     @Test('in-memory delegation store appends edges with generated ids and timestamps')
     async inMemoryAppends() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        const record = await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1' }));
-        expect(record.id).toBeTruthy();
-        expect(record.status).toEqual('active');
-        expect(record.createdAt).toBeGreaterThan(0);
-        expect(record.completedAt).toBeUndefined();
+        const { ctx, store } = await this.boot();
+        try {
+            const record = await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1' }));
+            expect(record.id).toBeTruthy();
+            expect(record.status).toEqual('active');
+            expect(record.createdAt).toBeGreaterThan(0);
+            expect(record.completedAt).toBeUndefined();
 
-        const stored = await store.list();
-        expect(stored.length).toEqual(1);
-        expect(stored[0].parentSessionId).toEqual('p1');
-        expect(stored[0].childSessionId).toEqual('c1');
-        expect(stored[0].kind).toEqual('nested');
+            const stored = await store.list();
+            expect(stored.length).toEqual(1);
+            expect(stored[0].parentSessionId).toEqual('p1');
+            expect(stored[0].childSessionId).toEqual('c1');
+            expect(stored[0].kind).toEqual('nested');
+        } finally { await ctx.close(); }
     }
 
     @Test('in-memory delegation store snapshots metadata immutably')
     async inMemorySnapshotsMetadata() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        const metadata = { goal: 'original', toolsets: ['shell'] };
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', metadata }));
-        metadata.goal = 'mutated';
-        const records = await store.list();
-        expect(records[0].metadata?.goal).toEqual('original');
+        const { ctx, store } = await this.boot();
+        try {
+            const metadata = { goal: 'original', toolsets: ['shell'] };
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', metadata }));
+            metadata.goal = 'mutated';
+            const records = await store.list();
+            expect(records[0].metadata?.goal).toEqual('original');
+        } finally { await ctx.close(); }
     }
 
     @Test('markClosed is idempotent and first close wins')
     async markClosedFirstCloseWins() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
-        await store.markClosed('p1', 'c1', 'cancelled', 10);
-        await store.markClosed('p1', 'c1', 'failed', 20);
-        const records = await store.list();
-        expect(records.length).toEqual(1);
-        expect(records[0].status).toEqual('cancelled');
-        expect(records[0].completedAt).toEqual(10);
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
+            await store.markClosed('p1', 'c1', 'cancelled', 10);
+            await store.markClosed('p1', 'c1', 'failed', 20);
+            const records = await store.list();
+            expect(records.length).toEqual(1);
+            expect(records[0].status).toEqual('cancelled');
+            expect(records[0].completedAt).toEqual(10);
+        } finally { await ctx.close(); }
     }
 
     @Test('children filters by status and orders oldest first')
     async childrenFilterAndOrder() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 3 }));
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c2', createdAt: 1 }));
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c3', createdAt: 2, status: 'failed' }));
-        await store.append(makeEdge({ parentSessionId: 'other', childSessionId: 'x', createdAt: 0 }));
-        const all = await store.children('p1');
-        expect(all.map(edge => edge.childSessionId)).toEqual(['c2', 'c3', 'c1']);
-        const active = await store.children('p1', { status: 'active' });
-        expect(active.map(edge => edge.childSessionId)).toEqual(['c2', 'c1']);
-        const both = await store.children('p1', { status: ['active', 'failed'] });
-        expect(both.length).toEqual(3);
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 3 }));
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c2', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c3', createdAt: 2, status: 'failed' }));
+            await store.append(makeEdge({ parentSessionId: 'other', childSessionId: 'x', createdAt: 0 }));
+            const all = await store.children('p1');
+            expect(all.map(edge => edge.childSessionId)).toEqual(['c2', 'c3', 'c1']);
+            const active = await store.children('p1', { status: 'active' });
+            expect(active.map(edge => edge.childSessionId)).toEqual(['c2', 'c1']);
+            const both = await store.children('p1', { status: ['active', 'failed'] });
+            expect(both.length).toEqual(3);
+        } finally { await ctx.close(); }
     }
 
     @Test('ancestors walks to the root and protects against cycles')
     async ancestorsWalkToRoot() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
-        await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'p1', createdAt: 2 }));
-        const lineage = await store.ancestors('c1');
-        expect(lineage.map(edge => edge.parentSessionId)).toEqual(['p1', 'root']);
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'p1', createdAt: 2 }));
+            const lineage = await store.ancestors('c1');
+            expect(lineage.map(edge => edge.parentSessionId)).toEqual(['p1', 'root']);
+        } finally { await ctx.close(); }
+    }
 
-        // cycle: c1 -> p1 -> c1
-        const cyclic = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await cyclic.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
-        await cyclic.append(makeEdge({ parentSessionId: 'c1', childSessionId: 'p1', createdAt: 2 }));
-        const cyclicLineage = await cyclic.ancestors('c1');
-        expect(cyclicLineage.length).toBeLessThanOrEqual(2);
+    @Test('ancestors protects against cycles')
+    async ancestorsCycleSafe() {
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'c1', childSessionId: 'p1', createdAt: 2 }));
+            const cyclicLineage = await store.ancestors('c1');
+            expect(cyclicLineage.length).toBeLessThanOrEqual(2);
+        } finally { await ctx.close(); }
     }
 
     @Test('tree renders nested delegation hierarchy')
     async treeRendersNestedHierarchy() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'a', kind: 'nested', createdAt: 1 }));
-        await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'b', kind: 'parallel', createdAt: 2, status: 'failed' }));
-        await store.append(makeEdge({ parentSessionId: 'a', childSessionId: 'a1', kind: 'spawn_agent', createdAt: 3 }));
-        const tree = await store.tree('root');
-        expect(tree.sessionId).toEqual('root');
-        expect(tree.children.length).toEqual(2);
-        expect(tree.children[0].sessionId).toEqual('a');
-        expect(tree.children[0].kind).toEqual('nested');
-        expect(tree.children[1].sessionId).toEqual('b');
-        expect(tree.children[1].status).toEqual('failed');
-        expect(tree.children[0].children[0].sessionId).toEqual('a1');
-        expect(tree.children[0].children[0].edgeId).toBeTruthy();
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'a', kind: 'nested', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'b', kind: 'parallel', createdAt: 2, status: 'failed' }));
+            await store.append(makeEdge({ parentSessionId: 'a', childSessionId: 'a1', kind: 'spawn_agent', createdAt: 3 }));
+            const tree = await store.tree('root');
+            expect(tree.sessionId).toEqual('root');
+            expect(tree.children.length).toEqual(2);
+            expect(tree.children[0].sessionId).toEqual('a');
+            expect(tree.children[0].kind).toEqual('nested');
+            expect(tree.children[1].sessionId).toEqual('b');
+            expect(tree.children[1].status).toEqual('failed');
+            expect(tree.children[0].children[0].sessionId).toEqual('a1');
+            expect(tree.children[0].children[0].edgeId).toBeTruthy();
+        } finally { await ctx.close(); }
     }
 
     @Test('tree filters by status and depth')
     async treeFiltersStatusAndDepth() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'a', createdAt: 1 }));
-        await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'b', createdAt: 2, status: 'failed' }));
-        await store.append(makeEdge({ parentSessionId: 'a', childSessionId: 'a1', createdAt: 3 }));
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'a', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'root', childSessionId: 'b', createdAt: 2, status: 'failed' }));
+            await store.append(makeEdge({ parentSessionId: 'a', childSessionId: 'a1', createdAt: 3 }));
 
-        const activeOnly = await store.tree('root', { status: 'active' });
-        expect(activeOnly.children.map(child => child.sessionId)).toEqual(['a']);
+            const activeOnly = await store.tree('root', { status: 'active' });
+            expect(activeOnly.children.map(child => child.sessionId)).toEqual(['a']);
 
-        const depthOne = await store.tree('root', { depth: 1 });
-        expect(depthOne.children.length).toEqual(2);
-        expect(depthOne.children.every(child => child.children.length === 0)).toEqual(true);
+            const depthOne = await store.tree('root', { depth: 1 });
+            expect(depthOne.children.length).toEqual(2);
+            expect(depthOne.children.every(child => child.children.length === 0)).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('list scopes to edges touching a session')
     async listScopesToSession() {
-        const store = new InMemoryDelegationGraphStore(new RandomUuidGenerator()
-        );
-        await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
-        await store.append(makeEdge({ parentSessionId: 'c1', childSessionId: 'c2', createdAt: 2 }));
-        await store.append(makeEdge({ parentSessionId: 'other', childSessionId: 'x', createdAt: 3 }));
-        const scoped = await store.list({ sessionId: 'c1' });
-        expect(scoped.length).toEqual(2);
-        const all = await store.list();
-        expect(all.length).toEqual(3);
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeEdge({ parentSessionId: 'p1', childSessionId: 'c1', createdAt: 1 }));
+            await store.append(makeEdge({ parentSessionId: 'c1', childSessionId: 'c2', createdAt: 2 }));
+            await store.append(makeEdge({ parentSessionId: 'other', childSessionId: 'x', createdAt: 3 }));
+            const scoped = await store.list({ sessionId: 'c1' });
+            expect(scoped.length).toEqual(2);
+            const all = await store.list();
+            expect(all.length).toEqual(3);
+        } finally { await ctx.close(); }
     }
 
     @Test('build delegation tree is cycle safe')
@@ -208,12 +185,10 @@ export class DelegationGraphStoreTest {
 
     @Test('typeorm delegation store persists reloads and closes edges')
     async typeOrmPersistsAndCloses() {
-        const ctx = await Application.run(DelegationGraphOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmDelegationGraphStore(adapter,
-            new RandomUuidGenerator()
-        );
+            const store = ctx.get(DelegationGraphStore);
             await store.append(makeEdge({ parentSessionId: 'p-db', childSessionId: 'c-db', kind: 'nested', metadata: { goal: 'db goal' }, createdAt: 10 }));
             await store.markClosed('p-db', 'c-db', 'completed', 20);
 
@@ -235,12 +210,10 @@ export class DelegationGraphStoreTest {
 
     @Test('typeorm delegation store builds trees and lineages')
     async typeOrmBuildsTreesAndLineages() {
-        const ctx = await Application.run(DelegationGraphOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmDelegationGraphStore(adapter,
-            new RandomUuidGenerator()
-        );
+            const store = ctx.get(DelegationGraphStore);
             await store.append(makeEdge({ parentSessionId: 'root-db', childSessionId: 'a-db', createdAt: 1 }));
             await store.append(makeEdge({ parentSessionId: 'root-db', childSessionId: 'b-db', createdAt: 2, status: 'failed' }));
             await store.append(makeEdge({ parentSessionId: 'a-db', childSessionId: 'a1-db', createdAt: 3 }));
@@ -260,23 +233,9 @@ export class DelegationGraphStoreTest {
         }
     }
 
-    @Test('agent module falls back to usable in-memory delegation graph store without orm adapter')
-    async agentModuleFallsBackToInMemory() {
-        const ctx = await Application.run(AgentModule);
-        try {
-            const store = ctx.get(DelegationGraphStore);
-            await store.append(makeEdge({ parentSessionId: 'fallback-p', childSessionId: 'fallback-c' }));
-            const records = await store.list();
-            expect(records.length).toEqual(1);
-            expect(records[0].parentSessionId).toEqual('fallback-p');
-        } finally {
-            await ctx.close();
-        }
-    }
-
-    @Test('agent module resolves durable delegation graph store behavior when orm adapter exists')
+    @Test('delegation graph store resolves through the agent module with orm adapter')
     async agentModuleResolvesDurableStore() {
-        const ctx = await Application.run(AgentDelegationGraphOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const store = ctx.get(DelegationGraphStore);
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;

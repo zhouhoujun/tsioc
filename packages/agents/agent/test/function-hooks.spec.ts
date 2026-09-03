@@ -1,19 +1,19 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     AgentHookCommandExecutor,
     AgentRuntime,
     ApprovalDecision,
-    DefaultAgentRuntime,
     EchoModelAdapter,
-    InMemoryMemoryStore,
-    InMemorySessionStore,
+    ModelAdapter,
     NoopAgentHookCommandExecutor,
     SimpleSessionSummarizer,
     ToolRegistry,
     defaultAgentOptions
 } from '../src';
+import { AGENT_OPTIONS } from '../src/tokens';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class RewriteModelAdapter extends EchoModelAdapter {
     calls = 0;
@@ -78,36 +78,20 @@ function createApprovalManager(): any {
     };
 }
 
-function createRuntime(
+async function createRuntime(
     model: RewriteModelAdapter,
     registry: RecordingToolRegistry,
     options: any,
     executor: AgentHookCommandExecutor | null = new NoopAgentHookCommandExecutor()
-): DefaultAgentRuntime {
-    return new DefaultAgentRuntime(
-        model,
-        registry,
-        new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        { ...defaultAgentOptions, ...options },
-        { publishEvent: async () => undefined } as any,
-            new RandomUuidGenerator(),
-        undefined,
-        undefined,
-        createApprovalManager() as any,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        executor
-    );
+): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: model },
+        { provide: ToolRegistry, useValue: registry },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } },
+        { provide: AgentHookCommandExecutor, useValue: executor ?? new NoopAgentHookCommandExecutor() }
+    ];
+    const ctx = await runAgentOrmApp(providers);
+    return { runtime: ctx.get(AgentRuntime), ctx };
 }
 
 @Suite('Agent function hooks')
@@ -116,7 +100,7 @@ export class AgentFunctionHooksTest {
     async staticBeforeToolFunctionHookRewritesInput() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 functions: {
                     beforeTool: {
@@ -126,10 +110,11 @@ export class AgentFunctionHooksTest {
                 }
             }
         });
-
-        await runtime.runTurn('s1', 'hello');
-        expect(registry.invoked).toHaveLength(1);
-        expect(registry.invoked[0].input).toEqual({ value: 42 });
+        try {
+            await runtime.runTurn('s1', 'hello');
+            expect(registry.invoked).toHaveLength(1);
+            expect(registry.invoked[0].input).toEqual({ value: 42 });
+        } finally { await ctx.close(); }
     }
 
     @Test('function hooks run before shell hooks for the same stage')
@@ -137,7 +122,7 @@ export class AgentFunctionHooksTest {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
         const order: string[] = [];
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 beforeTool: { command: 'shell-before-tool' },
                 functions: {
@@ -151,19 +136,20 @@ export class AgentFunctionHooksTest {
                 }
             }
         }, new StaticHookExecutor());
-
-        await runtime.runTurn('s1', 'hello');
-        expect(order).toEqual(['fn']);
-        const messages = await runtime.getMessages('s1');
-        const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['fn-before-tool', 'shell-before-tool']);
+        try {
+            await runtime.runTurn('s1', 'hello');
+            expect(order).toEqual(['fn']);
+            const messages = await runtime.getMessages('s1');
+            const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['fn-before-tool', 'shell-before-tool']);
+        } finally { await ctx.close(); }
     }
 
     @Test('function hook stdout is appended to the transcript')
     async functionHookStdoutAppendsToTranscript() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 functions: {
                     beforeTurn: {
@@ -173,44 +159,46 @@ export class AgentFunctionHooksTest {
                 }
             }
         });
-
-        await runtime.runTurn('s1', 'hello');
-        const messages = await runtime.getMessages('s1');
-        const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages).toHaveLength(1);
-        expect(hookMessages[0].metadata?.hookStage).toEqual('beforeTurn');
-        expect(hookMessages[0].metadata?.hookName).toEqual('fn-before-turn');
-        expect(hookMessages[0].content).toContain('greetings from js');
+        try {
+            await runtime.runTurn('s1', 'hello');
+            const messages = await runtime.getMessages('s1');
+            const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages).toHaveLength(1);
+            expect(hookMessages[0].metadata?.hookStage).toEqual('beforeTurn');
+            expect(hookMessages[0].metadata?.hookName).toEqual('fn-before-turn');
+            expect(hookMessages[0].content).toContain('greetings from js');
+        } finally { await ctx.close(); }
     }
 
     @Test('dynamic registration adds and removes function hooks at runtime')
     async dynamicRegistrationAddsAndRemovesFunctionHooks() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {});
+        const { runtime, ctx } = await createRuntime(model, registry, {});
+        try {
+            runtime.registerHookFunction('beforeTurn', {
+                name: 'dynamic-fn',
+                handler: async () => ({ exitCode: 0, stdout: 'dynamic hook ran' })
+            });
 
-        runtime.registerHookFunction('beforeTurn', {
-            name: 'dynamic-fn',
-            handler: async () => ({ exitCode: 0, stdout: 'dynamic hook ran' })
-        });
+            await runtime.runTurn('s1', 'hello');
+            let messages = await runtime.getMessages('s1');
+            let hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['dynamic-fn']);
 
-        await runtime.runTurn('s1', 'hello');
-        let messages = await runtime.getMessages('s1');
-        let hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['dynamic-fn']);
-
-        runtime.unregisterHookFunction('beforeTurn', 'dynamic-fn');
-        await runtime.runTurn('s2', 'hello');
-        messages = await runtime.getMessages('s2');
-        hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages).toHaveLength(0);
+            runtime.unregisterHookFunction('beforeTurn', 'dynamic-fn');
+            await runtime.runTurn('s2', 'hello');
+            messages = await runtime.getMessages('s2');
+            hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages).toHaveLength(0);
+        } finally { await ctx.close(); }
     }
 
     @Test('function hook exceptions do not block tool execution')
     async functionHookExceptionsDoNotBlockToolExecution() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 functions: {
                     beforeTool: [
@@ -228,21 +216,22 @@ export class AgentFunctionHooksTest {
                 }
             }
         });
-
-        await runtime.runTurn('s1', 'hello');
-        expect(registry.invoked).toHaveLength(1);
-        expect(registry.invoked[0].input).toEqual({ value: 7 });
-        const messages = await runtime.getMessages('s1');
-        const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['exploding']);
-        expect(hookMessages[0].metadata?.exitCode).toEqual(1);
+        try {
+            await runtime.runTurn('s1', 'hello');
+            expect(registry.invoked).toHaveLength(1);
+            expect(registry.invoked[0].input).toEqual({ value: 7 });
+            const messages = await runtime.getMessages('s1');
+            const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['exploding']);
+            expect(hookMessages[0].metadata?.exitCode).toEqual(1);
+        } finally { await ctx.close(); }
     }
 
     @Test('function hooks work without a shell executor')
     async functionHooksWorkWithoutShellExecutor() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 beforeTurn: { command: 'should-not-run' },
                 functions: {
@@ -253,19 +242,20 @@ export class AgentFunctionHooksTest {
                 }
             }
         });
-
-        await runtime.runTurn('s1', 'hello');
-        const messages = await runtime.getMessages('s1');
-        const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
-        expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['browser-fn']);
-        expect(hookMessages[0].content).toContain('browser hook');
+        try {
+            await runtime.runTurn('s1', 'hello');
+            const messages = await runtime.getMessages('s1');
+            const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
+            expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['browser-fn']);
+            expect(hookMessages[0].content).toContain('browser hook');
+        } finally { await ctx.close(); }
     }
 
     @Test('beforeTool rewrite is reflected in the tool receipt input summary')
     async beforeToolRewriteReflectedInReceipt() {
         const model = new RewriteModelAdapter();
         const registry = new RecordingToolRegistry();
-        const runtime = createRuntime(model, registry, {
+        const { runtime, ctx } = await createRuntime(model, registry, {
             hooks: {
                 functions: {
                     beforeTool: {
@@ -275,11 +265,12 @@ export class AgentFunctionHooksTest {
                 }
             }
         });
-
-        await runtime.runTurn('s1', 'hello');
-        const messages = await runtime.getMessages('s1');
-        const toolMessage = messages.find(message => message.metadata?.kind === 'tool' || message.role === 'assistant');
-        expect(registry.invoked[0].input).toEqual({ value: 42 });
-        expect(toolMessage).toBeDefined();
+        try {
+            await runtime.runTurn('s1', 'hello');
+            const messages = await runtime.getMessages('s1');
+            const toolMessage = messages.find(message => message.metadata?.kind === 'tool' || message.role === 'assistant');
+            expect(registry.invoked[0].input).toEqual({ value: 42 });
+            expect(toolMessage).toBeDefined();
+        } finally { await ctx.close(); }
     }
 }

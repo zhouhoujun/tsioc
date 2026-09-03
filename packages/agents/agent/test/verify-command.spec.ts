@@ -1,21 +1,22 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, IReadable } from '@tsdi/common';
 import { existsSync, mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
-import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { SessionStore } from '../src/memory/SessionStore';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { VerificationGate } from '../src/harness/VerificationGate';
 import { EvidenceLedger } from '../src/harness/EvidenceLedger';
 import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
 import { VerifyCommandRunner, findPackageDirectory, resolvePackageManager, splitCommandTemplate, DEFAULT_VERIFY_AUTO_SCRIPTS } from '../src/harness/VerifyCommandRunner';
+import { AGENT_OPTIONS } from '../src/tokens';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     events: any[] = [];
@@ -185,25 +186,15 @@ function injectedRepairPrompts(adapter: { requests: any[] }): string[] {
     return prompts;
 }
 
-function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, sessions?: InMemorySessionStore, fileAdapter?: FileAdapter, fileSnapshotStore?: FileSnapshotStore): DefaultAgentRuntime {
-    const args: any[] = [
-        model,
-        registry,
-        sessions ?? new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        { ...defaultAgentOptions, ...options },
-        new FakeApp() as any,
-        new RandomUuidGenerator()
+function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, fileAdapter?: FileAdapter, fileSnapshotStore?: FileSnapshotStore): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: model },
+        { provide: ToolRegistry, useValue: registry },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } },
+        { provide: FileAdapter, useValue: fileAdapter ?? new MemoryFileAdapter() },
+        { provide: FileSnapshotStore, useValue: fileSnapshotStore ?? new FileSnapshotStore() }
     ];
-    while (args.length < 17) {
-        args.push(undefined);
-    }
-    args.push(fileSnapshotStore);
-    args.push(undefined);
-    args.push(undefined);
-    args.push(fileAdapter);
-    return new (DefaultAgentRuntime as any)(...args) as DefaultAgentRuntime;
+    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
 function makeTempWorkspace(): string {
@@ -536,28 +527,26 @@ export class RuntimeVerificationCommandsTest {
             const editedFile = join(pkgDir, 'src', 'x.ts');
             const fileAdapter = new MemoryFileAdapter();
             fileAdapter.seed(editedFile, '// x');
-            const sessions = new InMemorySessionStore();
-            await sessions.setWorkspace('s1', root);
-
             const tool = new WriteTool(editedFile, fileAdapter, '// changed');
             const model = new WriteOnceModelAdapter();
-            const runtime = buildRuntime(
+            const { runtime, ctx } = await buildRuntime(
                 model,
                 new WriteToolRegistry(tool),
                 { maxToolRounds: 8, verification: { enabled: true, autoScripts: ['typecheck'], timeoutMs: 30000 } },
-                sessions,
                 fileAdapter,
                 new FileSnapshotStore()
             );
+            try {
+                await ctx.get(SessionStore).setWorkspace('s1', root);
+                const result = await runtime.runTurn('s1', 'write it');
 
-            const result = await runtime.runTurn('s1', 'write it');
-
-            expect(result.message.content).toEqual('done');
-            const prompts = injectedRepairPrompts(model);
-            expect(prompts.length).toEqual(1);
-            expect(prompts[0]).toContain('Verification command failed');
-            expect(prompts[0]).toContain('exit 3');
-            expect(prompts[0]).toContain('typecheck');
+                expect(result.message.content).toEqual('done');
+                const prompts = injectedRepairPrompts(model);
+                expect(prompts.length).toEqual(1);
+                expect(prompts[0]).toContain('Verification command failed');
+                expect(prompts[0]).toContain('exit 3');
+                expect(prompts[0]).toContain('typecheck');
+            } finally { await ctx.close(); }
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
@@ -571,24 +560,22 @@ export class RuntimeVerificationCommandsTest {
             const editedFile = join(pkgDir, 'src', 'x.ts');
             const fileAdapter = new MemoryFileAdapter();
             fileAdapter.seed(editedFile, '// x');
-            const sessions = new InMemorySessionStore();
-            await sessions.setWorkspace('s1', root);
-
             const tool = new WriteTool(editedFile, fileAdapter, '// changed');
             const model = new WriteOnceModelAdapter();
-            const runtime = buildRuntime(
+            const { runtime, ctx } = await buildRuntime(
                 model,
                 new WriteToolRegistry(tool),
                 { maxToolRounds: 8, verification: { enabled: false } },
-                sessions,
                 fileAdapter,
                 new FileSnapshotStore()
             );
+            try {
+                await ctx.get(SessionStore).setWorkspace('s1', root);
+                const result = await runtime.runTurn('s1', 'write it');
 
-            const result = await runtime.runTurn('s1', 'write it');
-
-            expect(result.message.content).toEqual('done');
-            expect(injectedRepairPrompts(model).length).toEqual(0);
+                expect(result.message.content).toEqual('done');
+                expect(injectedRepairPrompts(model).length).toEqual(0);
+            } finally { await ctx.close(); }
         } finally {
             rmSync(root, { recursive: true, force: true });
         }

@@ -54,30 +54,25 @@ export * from './harness/ToolSchemaValidator';
 export * from './harness/RateLimitManager';
 export * from './harness/OutputGuard';
 export * from './harness/AuditSink';
-export * from './harness/InMemoryAuditSink';
+
 export * from './harness/TypeOrmAuditSink';
-export * from './harness/DefaultAuditSink';
 export * from './harness/CompactionHistoryStore';
-export * from './harness/InMemoryCompactionHistoryStore';
+
 export * from './harness/TypeOrmCompactionHistoryStore';
-export * from './harness/DefaultCompactionHistoryStore';
 export * from './harness/TurnDiagnosticsStore';
 export * from './harness/EvidenceLedger';
 export * from './harness/RepairExploration';
 export * from './harness/WeaknessMiner';
 export * from './harness/HarnessProfile';
-export * from './harness/InMemoryTurnDiagnosticsStore';
+
 export * from './harness/TypeOrmTurnDiagnosticsStore';
-export * from './harness/DefaultTurnDiagnosticsStore';
 export * from './harness/SummaryQualityScorer';
 export * from './harness/SummaryQualityStore';
-export * from './harness/InMemorySummaryQualityStore';
+
 export * from './harness/TypeOrmSummaryQualityStore';
-export * from './harness/DefaultSummaryQualityStore';
 export * from './harness/DelegationGraphStore';
-export * from './harness/InMemoryDelegationGraphStore';
+
 export * from './harness/TypeOrmDelegationGraphStore';
-export * from './harness/DefaultDelegationGraphStore';
 export * from './harness/ToolExecutionCoordinator';
 export * from './harness/SandboxExecutor';
 export * from './harness/sandbox-exec';
@@ -107,15 +102,9 @@ export * from './memory/SessionSummarizer';
 export * from './memory/ExperienceDistiller';
 export * from './memory/AgentMemoryRetriever';
 export * from './memory/DeterministicExperienceDistiller';
-export * from './memory/InMemoryMemoryStore';
-export * from './memory/InMemorySessionStore';
-export * from './memory/DefaultMemoryStore';
-export * from './memory/DefaultSessionStore';
-export * from './memory/DefaultTimelineHistoryStore';
 export * from './memory/timeline-projection';
 export * from './memory/nav';
 export * from './memory/background-task-store';
-export * from './memory/DefaultBackgroundTaskStore';
 export * from './memory/TypeOrmBackgroundTaskStore';
 export * from './memory/TypeOrmMemoryStore';
 export * from './memory/TypeOrmSessionStore';

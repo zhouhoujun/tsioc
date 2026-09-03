@@ -1,10 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { WeaknessMiner, mineWeaknesses, normalizeErrorSignature, buildSuggestionHarnessProfilePatch } from '../src/harness/WeaknessMiner';
-import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
-import { InMemoryAuditSink } from '../src/harness/InMemoryAuditSink';
-import { TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
-import { AgentAuditRecord } from '../src/harness/AuditSink';
+import { TurnDiagnosticsStore, TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
+import { AuditSink, AgentAuditRecord } from '../src/harness/AuditSink';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 function record(partial: Partial<TurnDiagnosticsRecord>): TurnDiagnosticsRecord {
     return {
@@ -201,19 +200,22 @@ export class WeaknessMinerTest {
 
     @Test('WeaknessMiner service reads stores and scopes by sessions')
     async weaknessMinerServiceReadsStores() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const sink = new InMemoryAuditSink();
-        await store.append(record({ sessionId: 's1', evidence: { turnId: 't1', sessionId: 's1', entries: [{ id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'a', status: 'error', error: 'ECONNREFUSED', exitCode: 1, createdAt: Date.now() }], successCount: 0, errorCount: 1, skippedCount: 0, falsifiedCount: 0, totalDurationMs: 0, createdAt: Date.now() } }));
-        await sink.append(audit({ sessionId: 's1', toolName: 'a', status: 'error', error: 'ECONNREFUSED' }));
+        const ctx = await runAgentOrmApp();
+        try {
+            const store = ctx.get(TurnDiagnosticsStore);
+            const sink = ctx.get(AuditSink);
+            await store.append(record({ sessionId: 's1', evidence: { turnId: 't1', sessionId: 's1', entries: [{ id: 'e1', turnId: 't1', sessionId: 's1', toolName: 'a', status: 'error', error: 'ECONNREFUSED', exitCode: 1, createdAt: Date.now() }], successCount: 0, errorCount: 1, skippedCount: 0, falsifiedCount: 0, totalDurationMs: 0, createdAt: Date.now() } }));
+            await sink.append(audit({ sessionId: 's1', toolName: 'a', status: 'error', error: 'ECONNREFUSED' }));
 
-        const miner = new WeaknessMiner(store, sink);
-        const all = await miner.mine();
-        expect(all.totalTurns).toEqual(1);
-        expect(all.topFailingTools[0].toolName).toEqual('a');
+            const miner = new WeaknessMiner(store, sink);
+            const all = await miner.mine();
+            expect(all.totalTurns).toEqual(1);
+            expect(all.topFailingTools[0].toolName).toEqual('a');
 
-        const scoped = await miner.mine({ sessionIds: ['s-other'] });
-        expect(scoped.totalTurns).toEqual(0);
-        expect(scoped.empty).toEqual(true);
+            const scoped = await miner.mine({ sessionIds: ['s-other'] });
+            expect(scoped.totalTurns).toEqual(0);
+            expect(scoped.empty).toEqual(true);
+        } finally { await ctx.close(); }
     }
 }
 

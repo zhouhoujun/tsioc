@@ -1,9 +1,35 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
-    applyTimelineEvent, decodeTimelineCursor, encodeTimelineCursor, InMemoryTimelineHistoryStore,
-    reduceTimelineEvents, sortTimelineEntries, TimelineEventRecord
+    applyTimelineEvent, decodeTimelineCursor, encodeTimelineCursor,
+    reduceTimelineEvents, sortTimelineEntries, TimelineEventRecord,
+    TimelineHistoryStore, TimelineNoncePage, TimelinePageOptions, pageTimelineEntries
 } from '../src/memory/timeline-projection';
+
+class TestInMemoryTimelineHistoryStore extends TimelineHistoryStore {
+    private events: TimelineEventRecord[] = [];
+
+    async append(event: Omit<TimelineEventRecord, 'seq'>): Promise<TimelineEventRecord> {
+        const sessionEvents = this.events.filter(e => e.sessionId === event.sessionId);
+        const seq = sessionEvents.length;
+        const record = { ...event, seq };
+        this.events.push(record);
+        return record;
+    }
+
+    async get(sessionId: string): Promise<TimelineEventRecord[]> {
+        return this.events.filter(e => e.sessionId === sessionId).sort((a, b) => a.seq - b.seq);
+    }
+
+    async replay(sessionId: string, sinceSeq?: number): Promise<TimelineEventRecord[]> {
+        return (await this.get(sessionId)).filter(e => e.seq > (sinceSeq ?? -1));
+    }
+
+    async query(sessionId: string, options?: TimelinePageOptions): Promise<TimelineNoncePage> {
+        const raw = await this.get(sessionId);
+        return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options);
+    }
+}
 
 function toolEvent(over: Partial<TimelineEventRecord>): Omit<TimelineEventRecord, 'seq'> {
     return {
@@ -90,7 +116,7 @@ export class TimelineProjectionTest {
 
     @Test('store pages entries by cursor and reports hasMore')
     async pagesByCursor() {
-        const store = new InMemoryTimelineHistoryStore();
+        const store = new TestInMemoryTimelineHistoryStore();
         for (let i = 0; i < 5; i++) {
             await store.append(toolEvent({ id: `t${i}`, toolCallId: `tc${i}`, receiptId: `rc${i}` }) as any);
         }
@@ -109,7 +135,7 @@ export class TimelineProjectionTest {
 
     @Test('replay returns only events after sinceSeq and is idempotent')
     async replayIdempotent() {
-        const store = new InMemoryTimelineHistoryStore();
+        const store = new TestInMemoryTimelineHistoryStore();
         const evts = [];
         for (let i = 0; i < 4; i++) {
             evts.push(await store.append(toolEvent({ id: `t${i}`, toolCallId: `tc${i}`, receiptId: `rc${i}` }) as any));
@@ -124,7 +150,7 @@ export class TimelineProjectionTest {
 
     @Test('append assigns monotonic ascending seq per session')
     async monotonicSeq() {
-        const store = new InMemoryTimelineHistoryStore();
+        const store = new TestInMemoryTimelineHistoryStore();
         const one = await store.append(toolEvent({ id: 'a' }) as any);
         const two = await store.append(toolEvent({ id: 'b' }) as any);
         const other = await store.append(toolEvent({ id: 'c', sessionId: 's2' }) as any);

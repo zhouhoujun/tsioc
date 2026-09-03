@@ -1,56 +1,18 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentModule } from '../src/agent.module';
-import { AgentOrmModule } from '../src/orm.module';
 import { EvidenceLedger, EvidenceLedgerSnapshot, ToolEvidenceEntry } from '../src/harness/EvidenceLedger';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../src/harness/TurnDiagnosticsStore';
-import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
-import { TypeOrmTurnDiagnosticsStore } from '../src/harness/TypeOrmTurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../src/memory/entities';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-
-@Module({
-    imports: [
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class EvidenceOrmTestModule {}
-
-@Module({
-    imports: [
-        AgentModule,
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class AgentEvidenceOrmTestModule {}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -176,29 +138,32 @@ export class EvidenceLedgerTest {
         expect(second.successCount).toEqual(1);
     }
 
-    @Test('in-memory turn diagnostics store round-trips evidence immutably')
+    @Test('turn diagnostics store round-trips evidence immutably')
     async inMemoryRoundTripsEvidence() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const evidence = makeEvidence('turn-x', ['success', 'error']);
-        await store.append(makeRecord({ id: 't-ev', evidence }));
+        const ctx = await runAgentOrmApp();
+        try {
+            const store = ctx.get(TurnDiagnosticsStore);
+            const evidence = makeEvidence('turn-x', ['success', 'error']);
+            await store.append(makeRecord({ id: 't-ev', evidence }));
 
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        expect(records[0].evidence?.successCount).toEqual(1);
-        expect(records[0].evidence?.errorCount).toEqual(1);
-        expect(records[0].evidence?.entries[0].toolName).toEqual('tool_0');
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            expect(records[0].evidence?.successCount).toEqual(1);
+            expect(records[0].evidence?.errorCount).toEqual(1);
+            expect(records[0].evidence?.entries[0].toolName).toEqual('tool_0');
 
-        records[0].evidence!.entries[0].error = 'mutated';
-        const reloaded = await store.list('s1');
-        expect(reloaded[0].evidence?.entries[0].error).toBeUndefined();
+            records[0].evidence!.entries[0].error = 'mutated';
+            const reloaded = await store.list('s1');
+            expect(reloaded[0].evidence?.entries[0].error).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('typeorm turn diagnostics store persists and reloads evidence')
     async typeOrmPersistsEvidence() {
-        const ctx = await Application.run(EvidenceOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmTurnDiagnosticsStore(adapter);
+            const store = ctx.get(TurnDiagnosticsStore);
             const evidence = makeEvidence('db-turn', ['success', 'error', 'skipped']);
             await store.append(makeRecord({ id: 'db-ev-1', sessionId: 's-db', evidence }));
 
@@ -217,89 +182,95 @@ export class EvidenceLedgerTest {
 
     @Test('runtime records tool evidence for mixed tool outcomes in a turn')
     async runtimeRecordsMixedToolEvidence() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = new DefaultAgentRuntime(
-            new MixedToolLoopModelAdapter(),
-            new MixedOutcomeToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new EchoModelAdapter() as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        await runtime.runTurn('s1', 'run tools');
+        const ctx = await runAgentOrmApp();
+        try {
+            const store = ctx.get(TurnDiagnosticsStore);
+            const runtime = new DefaultAgentRuntime(
+                new MixedToolLoopModelAdapter(),
+                new MixedOutcomeToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new EchoModelAdapter() as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            await runtime.runTurn('s1', 'run tools');
 
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        const evidence = records[0].evidence;
-        expect(evidence).toBeTruthy();
-        expect(evidence!.entries.length).toEqual(3);
-        expect(evidence!.successCount).toEqual(1);
-        expect(evidence!.errorCount).toEqual(1);
-        expect(evidence!.skippedCount).toEqual(1);
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            const evidence = records[0].evidence;
+            expect(evidence).toBeTruthy();
+            expect(evidence!.entries.length).toEqual(3);
+            expect(evidence!.successCount).toEqual(1);
+            expect(evidence!.errorCount).toEqual(1);
+            expect(evidence!.skippedCount).toEqual(1);
 
-        const byName = new Map(evidence!.entries.map(entry => [entry.toolName, entry]));
-        expect(byName.get('ok_tool')?.status).toEqual('success');
-        expect(byName.get('fail_tool')?.status).toEqual('error');
-        expect(byName.get('fail_tool')?.error).toEqual('boom');
-        expect(byName.get('unknown_tool')?.status).toEqual('skipped');
-        expect(evidence!.entries.every(entry => entry.turnId === evidence!.turnId)).toEqual(true);
-        expect(evidence!.entries.every(entry => entry.sessionId === 's1')).toEqual(true);
+            const byName = new Map(evidence!.entries.map(entry => [entry.toolName, entry]));
+            expect(byName.get('ok_tool')?.status).toEqual('success');
+            expect(byName.get('fail_tool')?.status).toEqual('error');
+            expect(byName.get('fail_tool')?.error).toEqual('boom');
+            expect(byName.get('unknown_tool')?.status).toEqual('skipped');
+            expect(evidence!.entries.every(entry => entry.turnId === evidence!.turnId)).toEqual(true);
+            expect(evidence!.entries.every(entry => entry.sessionId === 's1')).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime records tool evidence for parallel tool execution')
     async runtimeRecordsParallelToolEvidence() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const options = {
-            ...defaultAgentOptions,
-            tools: {
-                ...defaultAgentOptions.tools,
-                parallelExecution: true,
-                parallelSafeTools: ['ok_tool', 'fail_tool', 'unknown_tool']
-            }
-        };
-        const runtime = new DefaultAgentRuntime(
-            new MixedToolLoopModelAdapter(),
-            new MixedOutcomeToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new EchoModelAdapter() as any),
-            options,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        await runtime.runTurn('s1', 'run tools parallel');
+        const ctx = await runAgentOrmApp();
+        try {
+            const store = ctx.get(TurnDiagnosticsStore);
+            const options = {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: true,
+                    parallelSafeTools: ['ok_tool', 'fail_tool', 'unknown_tool']
+                }
+            };
+            const runtime = new DefaultAgentRuntime(
+                new MixedToolLoopModelAdapter(),
+                new MixedOutcomeToolRegistry(),
+                ctx.get(SessionStore),
+                ctx.get(MemoryStore),
+                new LLMSessionSummarizer(new EchoModelAdapter() as any),
+                options,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            await runtime.runTurn('s1', 'run tools parallel');
 
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        const evidence = records[0].evidence;
-        expect(evidence).toBeTruthy();
-        expect(evidence!.entries.length).toEqual(3);
-        expect(evidence!.successCount).toEqual(1);
-        expect(evidence!.errorCount).toEqual(1);
-        expect(evidence!.skippedCount).toEqual(1);
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            const evidence = records[0].evidence;
+            expect(evidence).toBeTruthy();
+            expect(evidence!.entries.length).toEqual(3);
+            expect(evidence!.successCount).toEqual(1);
+            expect(evidence!.errorCount).toEqual(1);
+            expect(evidence!.skippedCount).toEqual(1);
+        } finally { await ctx.close(); }
     }
 
     @Test('turn diagnostics store resolves through the agent module with evidence support')
     async agentModuleStoreSupportsEvidence() {
-        const ctx = await Application.run(AgentEvidenceOrmTestModule);
+        const ctx = await runAgentOrmApp();
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const evidence = makeEvidence('wired-turn', ['success']);

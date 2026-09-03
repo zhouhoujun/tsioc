@@ -6,7 +6,6 @@ import { ModelAdapter } from './model/ModelAdapter';
 import { RoutedModelAdapter } from './model/RoutedModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
-import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore';
 import { ToolActivationStore } from './tools/ToolActivationStore';
 import { ToolLoopDetector } from './tools/ToolLoopDetector';
 import { ToolApprovalManager } from './tools/ToolApprovalManager';
@@ -15,15 +14,13 @@ import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, Me
 import { AGENT_PROMPT_SECTIONS } from './tokens';
 import { EchoTool, ExperienceSynthesizeTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
-import { InMemorySessionStore } from './memory/InMemorySessionStore';
-import { DefaultSessionStore } from './memory/DefaultSessionStore';
-import { InMemoryTimelineHistoryStore, TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
-import { DefaultTimelineHistoryStore } from './memory/DefaultTimelineHistoryStore';
-import { BACKGROUND_TASK_HISTORY_STORE, InMemoryBackgroundTaskHistoryStore } from './memory/background-task-store';
-import { DefaultBackgroundTaskStore } from './memory/DefaultBackgroundTaskStore';
+import { TypeOrmSessionStore } from './memory/TypeOrmSessionStore';
+import { TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
+import { TypeOrmTimelineHistoryStore } from './memory/TypeOrmTimelineHistoryStore';
+import { BACKGROUND_TASK_HISTORY_STORE } from './memory/background-task-store';
+import { TypeOrmBackgroundTaskStore } from './memory/TypeOrmBackgroundTaskStore';
 import { MemoryStore } from './memory/MemoryStore';
-import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
-import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
+import { TypeOrmMemoryStore } from './memory/TypeOrmMemoryStore';
 import { ProjectMemoryService } from './memory/ProjectMemoryService';
 import { SessionSummarizer } from './memory/SessionSummarizer';
 import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
@@ -53,28 +50,23 @@ import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
 import { RateLimitManager } from './harness/RateLimitManager';
 import { OutputGuard } from './harness/OutputGuard';
 import { AuditSink } from './harness/AuditSink';
-import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
-import { DefaultAuditSink } from './harness/DefaultAuditSink';
+import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
 import { CompactionHistoryStore } from './harness/CompactionHistoryStore';
-import { InMemoryCompactionHistoryStore } from './harness/InMemoryCompactionHistoryStore';
-import { DefaultCompactionHistoryStore } from './harness/DefaultCompactionHistoryStore';
+import { TypeOrmCompactionHistoryStore } from './harness/TypeOrmCompactionHistoryStore';
 import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
-import { InMemoryTurnDiagnosticsStore } from './harness/InMemoryTurnDiagnosticsStore';
-import { DefaultTurnDiagnosticsStore } from './harness/DefaultTurnDiagnosticsStore';
+import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
 import { WeaknessMiner } from './harness/WeaknessMiner';
 import { SummaryQualityStore } from './harness/SummaryQualityStore';
-import { InMemorySummaryQualityStore } from './harness/InMemorySummaryQualityStore';
-import { DefaultSummaryQualityStore } from './harness/DefaultSummaryQualityStore';
+import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
 import { DelegationGraphStore } from './harness/DelegationGraphStore';
-import { InMemoryDelegationGraphStore } from './harness/InMemoryDelegationGraphStore';
-import { DefaultDelegationGraphStore } from './harness/DefaultDelegationGraphStore';
+import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
 import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/AgentHooks';
-import { DefaultGoalStore } from './goal/DefaultGoalStore';
+import { TypeOrmGoalStore } from './goal/TypeOrmGoalStore';
 import { GoalStore } from './goal/GoalStore';
-import { InMemoryGoalStore } from './goal/InMemoryGoalStore';
 import { createAgentProviders } from './provider';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
+import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore';
 
 @Module({
     imports: [
@@ -91,29 +83,23 @@ import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui
             asDefault: true
         },
         AgentContextManager,
-        InMemoryGoalStore,
-        DefaultGoalStore,
-        { provide: GoalStore, useExisting: DefaultGoalStore },
+        TypeOrmGoalStore,
+        { provide: GoalStore, useExisting: TypeOrmGoalStore },
         ToolLoopDetector,
         ToolSchemaValidator,
         RateLimitManager,
         OutputGuard,
-        InMemoryAuditSink,
-        DefaultAuditSink,
-        { provide: AuditSink, useExisting: DefaultAuditSink },
-        InMemoryCompactionHistoryStore,
-        DefaultCompactionHistoryStore,
-        { provide: CompactionHistoryStore, useExisting: DefaultCompactionHistoryStore },
-        InMemoryTurnDiagnosticsStore,
-        DefaultTurnDiagnosticsStore,
-        { provide: TurnDiagnosticsStore, useExisting: DefaultTurnDiagnosticsStore },
+        TypeOrmAuditSink,
+        { provide: AuditSink, useExisting: TypeOrmAuditSink },
+        TypeOrmCompactionHistoryStore,
+        { provide: CompactionHistoryStore, useExisting: TypeOrmCompactionHistoryStore },
+        TypeOrmTurnDiagnosticsStore,
+        { provide: TurnDiagnosticsStore, useExisting: TypeOrmTurnDiagnosticsStore },
         WeaknessMiner,
-        InMemorySummaryQualityStore,
-        DefaultSummaryQualityStore,
-        { provide: SummaryQualityStore, useExisting: DefaultSummaryQualityStore },
-        InMemoryDelegationGraphStore,
-        DefaultDelegationGraphStore,
-        { provide: DelegationGraphStore, useExisting: DefaultDelegationGraphStore },
+        TypeOrmSummaryQualityStore,
+        { provide: SummaryQualityStore, useExisting: TypeOrmSummaryQualityStore },
+        TypeOrmDelegationGraphStore,
+        { provide: DelegationGraphStore, useExisting: TypeOrmDelegationGraphStore },
         NodeChildProcessSandboxExecutor,
         OsSandboxExecutor,
         { provide: SandboxExecutor, useExisting: OsSandboxExecutor, asDefault: true },
@@ -129,8 +115,7 @@ import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui
         ToolExecutionCoordinator,
         SystemPromptBuilder,
         ToolApprovalManager,
-        InMemoryToolActivationStore,
-        { provide: ToolActivationStore, useExisting: InMemoryToolActivationStore },
+        { provide: ToolActivationStore, useClass: InMemoryToolActivationStore },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: ProjectContextSection, multi: true },
@@ -144,21 +129,15 @@ import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui
         MemoryPutTool,
         MemorySearchTool,
         ExperienceSynthesizeTool,
-        InMemorySessionStore,
-        DefaultGoalStore,
-        InMemoryGoalStore,
-        DefaultSessionStore,
-        { provide: SessionStore, useExisting: DefaultSessionStore },
-        InMemoryTimelineHistoryStore,
-        DefaultTimelineHistoryStore,
-        { provide: TIMELINE_HISTORY_STORE, useExisting: DefaultTimelineHistoryStore },
-        InMemoryBackgroundTaskHistoryStore,
-        DefaultBackgroundTaskStore,
-        { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: DefaultBackgroundTaskStore },
-        InMemoryMemoryStore,
-        DefaultMemoryStore,
+        TypeOrmSessionStore,
+        { provide: SessionStore, useExisting: TypeOrmSessionStore },
+        TypeOrmTimelineHistoryStore,
+        { provide: TIMELINE_HISTORY_STORE, useExisting: TypeOrmTimelineHistoryStore },
+        TypeOrmBackgroundTaskStore,
+        { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: TypeOrmBackgroundTaskStore },
+        TypeOrmMemoryStore,
         ProjectMemoryService,
-        { provide: MemoryStore, useExisting: DefaultMemoryStore, asDefault: true },
+        { provide: MemoryStore, useExisting: TypeOrmMemoryStore, asDefault: true },
         DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
         SemanticMemoryRanker,
@@ -190,11 +169,9 @@ import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui
         DefaultAgentRuntime,
         EvalRunner,
         LocalToolRegistry,
-        DefaultSessionStore,
-        InMemorySessionStore,
-        DefaultMemoryStore,
+        TypeOrmSessionStore,
+        TypeOrmMemoryStore,
         ProjectMemoryService,
-        InMemoryMemoryStore,
         IntervalAgentScheduler,
         AgentServer,
         LocalAgentClient

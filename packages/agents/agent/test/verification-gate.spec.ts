@@ -1,20 +1,20 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, IReadable } from '@tsdi/common';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
-import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { SessionStore } from '../src/memory/SessionStore';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { VerificationGate } from '../src/harness/VerificationGate';
 import { EvidenceLedger } from '../src/harness/EvidenceLedger';
 import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
-import { InMemoryTurnDiagnosticsStore } from '../src/harness/InMemoryTurnDiagnosticsStore';
+import { TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsAggregate, TurnDiagnosticsTrendPoint, aggregateTurnDiagnostics, buildTurnDiagnosticsTrend } from '../src/harness/TurnDiagnosticsStore';
 import { buildAttemptSignature, buildRepairPrompt, buildExplorationGuidancePrompt, collectResolvedRepairHints } from '../src/harness/RepairExploration';
-import { TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
+import { AGENT_OPTIONS } from '../src/tokens';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class FakeApp {
     events: any[] = [];
@@ -24,6 +24,34 @@ class FakeApp {
             this.events.push(event);
         }
         return;
+    }
+}
+
+class TestInMemoryTurnDiagnosticsStore extends TurnDiagnosticsStore {
+    private records: TurnDiagnosticsRecord[] = [];
+
+    async append(record: TurnDiagnosticsRecord): Promise<void> {
+        this.records = [...this.records, { ...record }];
+    }
+
+    async list(sessionId?: string, options?: { limit?: number; offset?: number; workspaceId?: string; order?: 'ASC' | 'DESC' }): Promise<TurnDiagnosticsRecord[]> {
+        const offset = options?.offset ?? 0;
+        const limit = options?.limit ?? this.records.length;
+        const ordered = [...this.records].sort((a, b) => {
+            const byTime = options?.order === 'DESC' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt;
+            return byTime || (options?.order === 'DESC' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id));
+        });
+        return ordered
+            .filter(record => (!sessionId || record.sessionId === sessionId) && (!options?.workspaceId || record.workspaceId === options.workspaceId))
+            .slice(offset, offset + limit);
+    }
+
+    async aggregate(sessionIds?: string[]): Promise<TurnDiagnosticsAggregate> {
+        return aggregateTurnDiagnostics(this.records, sessionIds);
+    }
+
+    async trend(sessionIds?: string[], options?: { bucketSize?: number; maxBuckets?: number }): Promise<TurnDiagnosticsTrendPoint[]> {
+        return buildTurnDiagnosticsTrend(this.records, { sessionIds, bucketSize: options?.bucketSize, maxBuckets: options?.maxBuckets });
     }
 }
 
@@ -522,58 +550,41 @@ class FalsifyThenFixWriteModelAdapter extends EchoModelAdapter {
     }
 }
 
-// Constructor indices: turnDiagnosticsStore=15, fileSnapshotStore=17, gitStepSnapshotStore=18, appArgs=19, fileAdapter=20.
+interface RuntimeHandle {
+    runtime: AgentRuntime;
+    ctx: ApplicationContext;
+}
+
 function buildWriteRuntime(
     model: any,
     registry: ToolRegistry,
     options: any = {},
-    diagnosticsStore?: InMemoryTurnDiagnosticsStore,
-    sessions?: InMemorySessionStore,
+    diagnosticsStore?: TurnDiagnosticsStore,
+    sessions?: SessionStore,
     fileAdapter?: FileAdapter,
     fileSnapshotStore?: FileSnapshotStore
-): DefaultAgentRuntime {
-    const args: any[] = [
-        model,
-        registry,
-        sessions ?? new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        { ...defaultAgentOptions, ...options },
-        new FakeApp() as any,
-        new RandomUuidGenerator()
+): Promise<RuntimeHandle> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: model },
+        { provide: ToolRegistry, useValue: registry },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
     ];
-    while (args.length < 15) {
-        args.push(undefined);
-    }
-    args.push(diagnosticsStore);
-    while (args.length < 17) {
-        args.push(undefined);
-    }
-    args.push(fileSnapshotStore);
-    args.push(undefined);
-    args.push(undefined);
-    args.push(fileAdapter);
-    return new (DefaultAgentRuntime as any)(...args) as DefaultAgentRuntime;
+    if (diagnosticsStore) providers.push({ provide: TurnDiagnosticsStore, useValue: diagnosticsStore });
+    if (sessions) providers.push({ provide: SessionStore, useValue: sessions });
+    if (fileAdapter) providers.push({ provide: FileAdapter, useValue: fileAdapter });
+    if (fileSnapshotStore) providers.push({ provide: FileSnapshotStore, useValue: fileSnapshotStore });
+    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
-function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: InMemoryTurnDiagnosticsStore, sessions?: InMemorySessionStore): DefaultAgentRuntime {
-    const args: any[] = [
-        model,
-        registry,
-        sessions ?? new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        { ...defaultAgentOptions, ...options },
-        new FakeApp() as any,
-        new RandomUuidGenerator()
+function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: TurnDiagnosticsStore, sessions?: SessionStore): Promise<RuntimeHandle> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: model },
+        { provide: ToolRegistry, useValue: registry },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
     ];
-    if (diagnosticsStore) {
-        while (args.length < 15) {
-            args.push(undefined);
-        }
-        args.push(diagnosticsStore);
-    }
-    return new (DefaultAgentRuntime as any)(...args) as DefaultAgentRuntime;
+    if (diagnosticsStore) providers.push({ provide: TurnDiagnosticsStore, useValue: diagnosticsStore });
+    if (sessions) providers.push({ provide: SessionStore, useValue: sessions });
+    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
 function injectedRecoveryPrompts(adapter: { requests: any[] }): string[] {
@@ -708,58 +719,62 @@ export class LoopRecoveryTest {
     @Test('injects loop recovery prompt up to the cap then terminates the turn')
     async injectsLoopRecoveryThenTerminates() {
         const model = new LoopModelAdapter();
-        const runtime = buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
+        const { runtime, ctx } = await buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(3);
-        expect(prompts[0]).toContain('repeating the same tool calls');
-        expect(result.message.content).toContain('repeating tool-call loop');
-        expect(result.message.content).toContain('3 recovery attempt(s)');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(3);
+            expect(prompts[0]).toContain('repeating the same tool calls');
+            expect(result.message.content).toContain('repeating tool-call loop');
+            expect(result.message.content).toContain('3 recovery attempt(s)');
+        } finally { await ctx.close(); }
     }
 
     @Test('loop recovery count is captured in turn diagnostics')
     async capturesLoopRecoveryDiagnostics() {
         const model = new LoopModelAdapter();
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 }, store);
+        try {
+            await runtime.runTurn('s1', 'hello');
 
-        await runtime.runTurn('s1', 'hello');
-
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        expect(records[0].metadata?.loopRecoveryCount).toEqual(3);
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            expect(records[0].metadata?.loopRecoveryCount).toEqual(3);
+        } finally { await ctx.close(); }
     }
 
     @Test('model that changes strategy after the recovery prompt continues normally')
     async modelChangesStrategyAndContinues() {
         const model = new LoopThenRecoverModelAdapter();
-        const runtime = buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
+        const { runtime, ctx } = await buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(1);
-        expect(result.message.content).toContain('recovered with a different strategy');
-        expect(result.message.content).not.toContain('repeating tool-call loop');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(1);
+            expect(result.message.content).toContain('recovered with a different strategy');
+            expect(result.message.content).not.toContain('repeating tool-call loop');
+        } finally { await ctx.close(); }
     }
 
     @Test('streaming turn terminates a looping model with the blocked declaration')
     async streamingTurnTerminatesLoopingModel() {
         const model = new StreamingLoopModelAdapter();
-        const runtime = buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
-
-        let finalText = '';
-        for await (const chunk of runtime.runStreamingTurn('s1', 'hello')) {
-            if (chunk.type === 'text') {
-                finalText += chunk.content ?? '';
+        const { runtime, ctx } = await buildRuntime(model, new EchoToolRegistry(), { maxToolRounds: 8 });
+        try {
+            let finalText = '';
+            for await (const chunk of runtime.runStreamingTurn('s1', 'hello')) {
+                if (chunk.type === 'text') {
+                    finalText += chunk.content ?? '';
+                }
             }
-        }
-        expect(finalText).toContain('repeating tool-call loop');
+            expect(finalText).toContain('repeating tool-call loop');
 
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(3);
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(3);
+        } finally { await ctx.close(); }
     }
 }
 
@@ -768,149 +783,163 @@ export class VerificationGateRuntimeTest {
     @Test('injects repair prompt after a tool failure and terminates on consecutive failures')
     async injectsRepairPromptThenTerminates() {
         const model = new FailingModelAdapter();
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('verification gate falsified');
+            expect(prompts[0]).toContain('echo');
+            expect(result.message.content).toContain('failure summary');
+            expect(result.message.content).toContain('falsified');
 
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('verification gate falsified');
-        expect(prompts[0]).toContain('echo');
-        expect(result.message.content).toContain('failure summary');
-        expect(result.message.content).toContain('falsified');
-
-        const records = await store.list('s1');
-        expect(records[0].metadata?.falsificationCount).toEqual(2);
-        const errorEvidence = records[0].evidence?.entries.find(entry => entry.status === 'error');
-        expect(errorEvidence?.falsified).toEqual(true);
+            const records = await store.list('s1');
+            expect(records[0].metadata?.falsificationCount).toEqual(2);
+            const errorEvidence = records[0].evidence?.entries.find(entry => entry.status === 'error');
+            expect(errorEvidence?.falsified).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('turn continues normally once the repair succeeds')
     async turnContinuesAfterSuccessfulRepair() {
         const model = new FailThenSucceedModelAdapter();
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(model, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(model, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(1);
+            expect(result.message.content).toEqual('task completed after repair');
 
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(1);
-        expect(result.message.content).toEqual('task completed after repair');
-
-        const records = await store.list('s1');
-        expect(records[0].metadata?.falsificationCount).toEqual(1);
-        const errorEvidence = records[0].evidence?.entries.find(entry => entry.status === 'error');
-        expect(errorEvidence?.falsified).toEqual(true);
+            const records = await store.list('s1');
+            expect(records[0].metadata?.falsificationCount).toEqual(1);
+            const errorEvidence = records[0].evidence?.entries.find(entry => entry.status === 'error');
+            expect(errorEvidence?.falsified).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('repeated falsification escalates to the exploration guidance prompt before terminating')
     async repeatedFalsificationEscalatesToLoopRecovery() {
         const model = new FailingModelAdapter();
-        const runtime = buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 });
+        const { runtime, ctx } = await buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 });
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(2);
-        expect(prompts[0]).toContain('verification gate falsified');
-        expect(prompts[0]).toContain('Attempt 1:');
-        expect(prompts[1]).toContain('repeatedly failed with similar tool attempts');
-        expect(prompts[1]).toContain('Attempt 2:');
-        expect(result.message.content).toContain('failure summary');
-        expect(result.message.content).toContain('3 consecutive round(s)');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(2);
+            expect(prompts[0]).toContain('verification gate falsified');
+            expect(prompts[0]).toContain('Attempt 1:');
+            expect(prompts[1]).toContain('repeatedly failed with similar tool attempts');
+            expect(prompts[1]).toContain('Attempt 2:');
+            expect(result.message.content).toContain('failure summary');
+            expect(result.message.content).toContain('3 consecutive round(s)');
+        } finally { await ctx.close(); }
     }
 
     @Test('cumulative repair prompt shows every falsified attempt with repeat annotations')
     async cumulativeRepairPromptShowsAllAttempts() {
         const model = new FailingModelAdapter();
-        const runtime = buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 });
+        const { runtime, ctx } = await buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 });
+        try {
+            await runtime.runTurn('s1', 'hello');
 
-        await runtime.runTurn('s1', 'hello');
-
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(2);
-        expect(prompts[0]).toContain('across 1 attempt(s)');
-        expect(prompts[0]).toContain('Attempt 1:');
-        expect(prompts[0]).toContain('Previously attempted and rejected: echo (1x)');
-        expect(prompts[1]).toContain('repeatedly failed with similar tool attempts');
-        expect(prompts[1]).toContain('Attempt 1:');
-        expect(prompts[1]).toContain('Attempt 2:');
-        expect(prompts[1]).toContain('repeat of Attempt 1');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(2);
+            expect(prompts[0]).toContain('across 1 attempt(s)');
+            expect(prompts[0]).toContain('Attempt 1:');
+            expect(prompts[0]).toContain('Previously attempted and rejected: echo (1x)');
+            expect(prompts[1]).toContain('repeatedly failed with similar tool attempts');
+            expect(prompts[1]).toContain('Attempt 1:');
+            expect(prompts[1]).toContain('Attempt 2:');
+            expect(prompts[1]).toContain('repeat of Attempt 1');
+        } finally { await ctx.close(); }
     }
 
     @Test('repair rounds and repeated attempts are captured in turn diagnostics')
     async capturesRepairExplorationDiagnostics() {
         const model = new FailingModelAdapter();
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(model, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        expect(records[0].metadata?.repairRoundsUsed).toEqual(3);
-        expect(records[0].metadata?.repeatedAttemptCount).toEqual(2);
-        expect(records[0].metadata?.falsificationCount).toEqual(3);
-        expect(result.message.content).toContain('2 already-rejected attempt(s) were repeated');
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            expect(records[0].metadata?.repairRoundsUsed).toEqual(3);
+            expect(records[0].metadata?.repeatedAttemptCount).toEqual(2);
+            expect(records[0].metadata?.falsificationCount).toEqual(3);
+            expect(result.message.content).toContain('2 already-rejected attempt(s) were repeated');
+        } finally { await ctx.close(); }
     }
 
     @Test('repair prompt stays cumulative when the first attempt succeeds after a single repair')
     async repairPromptCumulativeOnSingleFailure() {
         const model = new FailThenSucceedModelAdapter();
-        const runtime = buildRuntime(model, new FlakyToolRegistry(1), { maxToolRounds: 8 });
+        const { runtime, ctx } = await buildRuntime(model, new FlakyToolRegistry(1), { maxToolRounds: 8 });
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('across 1 attempt(s)');
-        expect(result.message.content).toEqual('task completed after repair');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('across 1 attempt(s)');
+            expect(result.message.content).toEqual('task completed after repair');
+        } finally { await ctx.close(); }
     }
 
     @Test('a signature repaired in a prior turn is hinted in the next turn\'s repair prompt')
     async crossTurnHintReuse() {
-        const store = new InMemoryTurnDiagnosticsStore();
+        const store = new TestInMemoryTurnDiagnosticsStore();
         const firstModel = new FailThenSucceedModelAdapter();
-        const firstRuntime = buildRuntime(firstModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
-        await firstRuntime.runTurn('s1', 'hello');
+        const firstHandle = await buildRuntime(firstModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await firstHandle.runtime.runTurn('s1', 'hello');
 
-        const recordsAfterFirst = await store.list('s1');
-        expect(recordsAfterFirst.length).toEqual(1);
-        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
-        expect((recordsAfterFirst[0].metadata?.falsifiedSignatures as string[]).length).toEqual(1);
-        const recipes = recordsAfterFirst[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string }> }>;
-        expect(recipes.length).toEqual(1);
-        expect(recipes[0].signature).toEqual((recordsAfterFirst[0].metadata?.falsifiedSignatures as string[])[0]);
-        expect(recipes[0].fixes.length).toBeGreaterThan(0);
-        expect(recipes[0].fixes[0].toolName).toEqual('echo');
+            const recordsAfterFirst = await store.list('s1');
+            expect(recordsAfterFirst.length).toEqual(1);
+            expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+            expect((recordsAfterFirst[0].metadata?.falsifiedSignatures as string[]).length).toEqual(1);
+            const recipes = recordsAfterFirst[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string }> }>;
+            expect(recipes.length).toEqual(1);
+            expect(recipes[0].signature).toEqual((recordsAfterFirst[0].metadata?.falsifiedSignatures as string[])[0]);
+            expect(recipes[0].fixes.length).toBeGreaterThan(0);
+            expect(recipes[0].fixes[0].toolName).toEqual('echo');
+        } finally { await firstHandle.ctx.close(); }
 
         const secondModel = new FailThenSucceedModelAdapter();
-        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
-        const result = await secondRuntime.runTurn('s1', 'hello');
+        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            const result = await secondHandle.runtime.runTurn('s1', 'hello');
 
-        const prompts = injectedRecoveryPrompts(secondModel);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('Prior success from an earlier turn');
-        expect(prompts[0]).toContain('repaired in session s1');
-        expect(prompts[0]).toContain('retry with Tool "echo"');
-        expect(result.message.content).toEqual('task completed after repair');
+            const prompts = injectedRecoveryPrompts(secondModel);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('Prior success from an earlier turn');
+            expect(prompts[0]).toContain('repaired in session s1');
+            expect(prompts[0]).toContain('retry with Tool "echo"');
+            expect(result.message.content).toEqual('task completed after repair');
+        } finally { await secondHandle.ctx.close(); }
     }
 
     @Test('a signature that was never repaired produces no hint in the next turn')
     async crossTurnNoHintWhenUnresolved() {
-        const store = new InMemoryTurnDiagnosticsStore();
+        const store = new TestInMemoryTurnDiagnosticsStore();
         const failedModel = new FailingModelAdapter();
-        const failedRuntime = buildRuntime(failedModel, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 1 }, store);
-        await failedRuntime.runTurn('s1', 'hello');
+        const failedHandle = await buildRuntime(failedModel, new FailingToolRegistry(), { maxToolRounds: 8, maxRepairRounds: 1 }, store);
+        try {
+            await failedHandle.runtime.runTurn('s1', 'hello');
+        } finally { await failedHandle.ctx.close(); }
 
         const recordsAfterFirst = await store.list('s1');
         expect(recordsAfterFirst.length).toEqual(1);
         expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(false);
 
         const secondModel = new FailThenSucceedModelAdapter();
-        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
-        await secondRuntime.runTurn('s1', 'hello');
+        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await secondHandle.runtime.runTurn('s1', 'hello');
+        } finally { await secondHandle.ctx.close(); }
 
         const prompts = injectedRecoveryPrompts(secondModel);
         expect(prompts.length).toEqual(1);
@@ -919,13 +948,13 @@ export class VerificationGateRuntimeTest {
 
     @Test('every signature repaired within a turn gets a repair recipe, not just the first')
     async capturesRecipesForEveryRepairedSignature() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(new SequentialRepairsModelAdapter(), new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(new SequentialRepairsModelAdapter(), new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        expect(result.message.content).toEqual('both repaired');
-        const records = await store.list('s1');
+            expect(result.message.content).toEqual('both repaired');
+            const records = await store.list('s1');
         expect(records[0].metadata?.repairResolved).toEqual(true);
         expect(records[0].metadata?.falsificationCount).toEqual(2);
         const recipes = records[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string }> }>;
@@ -940,19 +969,20 @@ export class VerificationGateRuntimeTest {
             expect(recipe.fixes.length).toBeGreaterThan(0);
             expect(recipe.fixes.every(fix => fix.toolName === 'echo')).toEqual(true);
         }
+        } finally { await ctx.close(); }
     }
 
     @Test('a signature repaired in a round whose gate is still falsified by another signature is captured')
     async capturesRecipesForMidStreakRepairs() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(new MidStreakRepairModelAdapter(), new InputFailureToolRegistry({ x: 1, bad: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(new MidStreakRepairModelAdapter(), new InputFailureToolRegistry({ x: 1, bad: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        const result = await runtime.runTurn('s1', 'hello');
-
-        expect(result.message.content).toEqual('repaired all');
-        const records = await store.list('s1');
-        const recipes = records[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string; inputSummary?: string }> }>;
-        expect(recipes.length).toEqual(2);
+            expect(result.message.content).toEqual('repaired all');
+            const records = await store.list('s1');
+            const recipes = records[0].metadata?.repairRecipes as Array<{ signature: string; fixes: Array<{ toolName: string; inputSummary?: string }> }>;
+            expect(recipes.length).toEqual(2);
         const signatureToRecipe = new Map(recipes.map(recipe => [recipe.signature, recipe]));
         const falsifiedSignatures = records[0].metadata?.falsifiedSignatures as string[];
         expect(falsifiedSignatures.length).toEqual(2);
@@ -963,25 +993,30 @@ export class VerificationGateRuntimeTest {
         const badRecipe = [...signatureToRecipe.values()].find(recipe => recipe.signature.endsWith('::bad'));
         expect(xRecipe?.fixes.some(fix => fix.inputSummary === 'x')).toEqual(true);
         expect(badRecipe?.fixes.some(fix => fix.inputSummary === 'bad')).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('an ignored falsification does not fabricate a recipe from unrelated passing calls')
     async ignoresUnrelatedPassingRoundForRecipes() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const runtime = buildRuntime(new IgnoreFailureModelAdapter(), new TwoToolRegistry(), { maxToolRounds: 8 }, store);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const { runtime, ctx } = await buildRuntime(new IgnoreFailureModelAdapter(), new TwoToolRegistry(), { maxToolRounds: 8 }, store);
+        try {
+            await runtime.runTurn('s1', 'hello');
 
-        await runtime.runTurn('s1', 'hello');
-
-        const records = await store.list('s1');
-        expect(records[0].metadata?.falsificationCount).toEqual(1);
-        expect(records[0].metadata?.repairRecipes).toBeUndefined();
+            const records = await store.list('s1');
+            expect(records[0].metadata?.falsificationCount).toEqual(1);
+            expect(records[0].metadata?.repairRecipes).toBeUndefined();
+        } finally { await ctx.close(); }
     }
 
     @Test('cross-turn hints are reloaded for signatures first falsified later in the same turn')
     async reloadsHintsForLaterFalsifiedSignatures() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const firstRuntime = buildRuntime(new RepairYModelAdapter(), new InputFailureToolRegistry({ y: 1 }), { maxToolRounds: 8 }, store);
-        const firstResult = await firstRuntime.runTurn('s1', 'hello');
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const firstHandle = await buildRuntime(new RepairYModelAdapter(), new InputFailureToolRegistry({ y: 1 }), { maxToolRounds: 8 }, store);
+        let firstResult;
+        try {
+            firstResult = await firstHandle.runtime.runTurn('s1', 'hello');
+        } finally { await firstHandle.ctx.close(); }
         expect(firstResult.message.content).toEqual('y repaired');
 
         const recordsAfterFirst = await store.list('s1');
@@ -989,85 +1024,101 @@ export class VerificationGateRuntimeTest {
         expect(recordsAfterFirst[0].metadata?.falsifiedSignatures).toEqual(['echo::y']);
 
         const model = new XThenYRepairModelAdapter();
-        const runtime = buildRuntime(model, new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
-        const result = await runtime.runTurn('s1', 'hello');
+        const { runtime, ctx } = await buildRuntime(model, new InputFailureToolRegistry({ x: 1, y: 1 }), { maxToolRounds: 8, maxRepairRounds: 3 }, store);
+        try {
+            const result = await runtime.runTurn('s1', 'hello');
 
-        expect(result.message.content).toEqual('x abandoned, y repaired');
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(2);
+            expect(result.message.content).toEqual('x abandoned, y repaired');
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(2);
         expect(prompts[0]).not.toContain('Prior success from an earlier turn');
         expect(prompts[1]).toContain('Prior success from an earlier turn');
         expect(prompts[1]).toContain('Signature "echo::y" (repaired in session s1)');
+        } finally { await ctx.close(); }
     }
 
     @Test('a signature repaired in a prior session of the same workspace is hinted in a new session')
     async crossSessionHintReuseWithinSameWorkspace() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const sessions = new InMemorySessionStore();
-        await sessions.setWorkspace('s1', '/ws/proj');
-        await sessions.setWorkspace('s2', '/ws/proj');
-
-        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        await firstRuntime.runTurn('s1', 'hello');
-
-        const recordsAfterFirst = await store.list('s1');
-        expect(recordsAfterFirst[0].workspaceId).toEqual('/ws/proj');
-        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const sessions = await runAgentOrmApp();
+        try {
+            const sessionStore = sessions.get(SessionStore);
+            await sessionStore.setWorkspace('s1', '/ws/proj');
+            await sessionStore.setWorkspace('s2', '/ws/proj');
+        } finally { await sessions.close(); }
 
         const secondModel = new FailThenSucceedModelAdapter();
-        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        const result = await secondRuntime.runTurn('s2', 'hello');
+        const firstHandle = await buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await firstHandle.runtime.runTurn('s1', 'hello');
+        } finally { await firstHandle.ctx.close(); }
 
-        const prompts = injectedRecoveryPrompts(secondModel);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('Prior success from an earlier turn');
-        expect(prompts[0]).toContain('repaired in session s1');
-        expect(prompts[0]).toContain('retry with Tool "echo"');
-        expect(result.message.content).toEqual('task completed after repair');
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            const result = await secondHandle.runtime.runTurn('s2', 'hello');
+
+            const prompts = injectedRecoveryPrompts(secondModel);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('Prior success from an earlier turn');
+            expect(prompts[0]).toContain('repaired in session s1');
+            expect(prompts[0]).toContain('retry with Tool "echo"');
+            expect(result.message.content).toEqual('task completed after repair');
+        } finally { await secondHandle.ctx.close(); }
     }
 
     @Test('repair hints do not leak across different workspaces')
     async noHintsAcrossDifferentWorkspaces() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const sessions = new InMemorySessionStore();
-        await sessions.setWorkspace('s1', '/ws/a');
-        await sessions.setWorkspace('s2', '/ws/b');
-
-        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        await firstRuntime.runTurn('s1', 'hello');
-
-        const recordsAfterFirst = await store.list('s1');
-        expect(recordsAfterFirst[0].workspaceId).toEqual('/ws/a');
-        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        const store = new TestInMemoryTurnDiagnosticsStore();
+        const sessions = await runAgentOrmApp();
+        try {
+            const sessionStore = sessions.get(SessionStore);
+            await sessionStore.setWorkspace('s1', '/ws/a');
+            await sessionStore.setWorkspace('s2', '/ws/b');
+        } finally { await sessions.close(); }
 
         const secondModel = new FailThenSucceedModelAdapter();
-        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        await secondRuntime.runTurn('s2', 'hello');
+        const firstHandle = await buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await firstHandle.runtime.runTurn('s1', 'hello');
+        } finally { await firstHandle.ctx.close(); }
 
-        const prompts = injectedRecoveryPrompts(secondModel);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await secondHandle.runtime.runTurn('s2', 'hello');
+
+            const prompts = injectedRecoveryPrompts(secondModel);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+        } finally { await secondHandle.ctx.close(); }
     }
 
     @Test('without a workspace, repair hints stay scoped to the current session')
     async noWorkspaceKeepsHintsSessionScoped() {
-        const store = new InMemoryTurnDiagnosticsStore();
-        const sessions = new InMemorySessionStore();
-
-        const firstRuntime = buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        await firstRuntime.runTurn('s1', 'hello');
-
-        const recordsAfterFirst = await store.list('s1');
-        expect(recordsAfterFirst[0].workspaceId).toBeUndefined();
-        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+        const store = new TestInMemoryTurnDiagnosticsStore();
 
         const secondModel = new FailThenSucceedModelAdapter();
-        const secondRuntime = buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessions);
-        await secondRuntime.runTurn('s2', 'hello');
+        const firstHandle = await buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await firstHandle.runtime.runTurn('s1', 'hello');
+        } finally { await firstHandle.ctx.close(); }
 
-        const prompts = injectedRecoveryPrompts(secondModel);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+        const recordsAfterFirst = await store.list('s1');
+        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
+        try {
+            await secondHandle.runtime.runTurn('s2', 'hello');
+
+            const prompts = injectedRecoveryPrompts(secondModel);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).not.toContain('Prior success from an earlier turn');
+        } finally { await secondHandle.ctx.close(); }
     }
 
     @Test('a declared write with no diff is falsified at runtime and gets a file snapshot')
@@ -1076,7 +1127,7 @@ export class VerificationGateRuntimeTest {
         fileAdapter.seed('/w/note.txt', 'same');
         const tool = new NoDiffWriteFileTool('/w/note.txt', fileAdapter);
         const model = new WriteOnceModelAdapter();
-        const runtime = buildWriteRuntime(
+        const { runtime, ctx } = await buildWriteRuntime(
             model,
             new WriteFileToolRegistry(tool),
             { maxToolRounds: 8 },
@@ -1085,25 +1136,26 @@ export class VerificationGateRuntimeTest {
             fileAdapter,
             new FileSnapshotStore()
         );
+        try {
+            const result = await runtime.runTurn('s1', 'write it');
 
-        const result = await runtime.runTurn('s1', 'write it');
-
-        expect(result.message.content).toEqual('done');
-        expect(runtime.listFileSnapshots('s1').length).toEqual(1);
-        const prompts = injectedRecoveryPrompts(model);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('verification gate falsified');
-        expect(prompts[0]).toContain('Declared write to \'/w/note.txt\' but file content did not change.');
+            expect(result.message.content).toEqual('done');
+            expect(runtime.listFileSnapshots('s1').length).toEqual(1);
+            const prompts = injectedRecoveryPrompts(model);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('verification gate falsified');
+            expect(prompts[0]).toContain('Declared write to \'/w/note.txt\' but file content did not change.');
+        } finally { await ctx.close(); }
     }
 
     @Test('a no-diff write falsification carries a repair recipe into a later turn of the same session')
     async writeFalsificationRecipeReusedAcrossTurns() {
-        const store = new InMemoryTurnDiagnosticsStore();
+        const store = new TestInMemoryTurnDiagnosticsStore();
         const fileAdapter = new MemoryFileAdapter();
         fileAdapter.seed('/w/note.txt', 'same');
 
         const firstModel = new FalsifyThenFixWriteModelAdapter();
-        const firstRuntime = buildWriteRuntime(
+        const firstHandle = await buildWriteRuntime(
             firstModel,
             new WriteFileToolRegistry(new SequentialWriteFileTool('/w/note.txt', fileAdapter, 'changed')),
             { maxToolRounds: 8 },
@@ -1112,7 +1164,10 @@ export class VerificationGateRuntimeTest {
             fileAdapter,
             new FileSnapshotStore()
         );
-        const firstResult = await firstRuntime.runTurn('s1', 'write it');
+        let firstResult;
+        try {
+            firstResult = await firstHandle.runtime.runTurn('s1', 'write it');
+        } finally { await firstHandle.ctx.close(); }
         expect(firstResult.message.content).toEqual('write fixed');
 
         const recordsAfterFirst = await store.list('s1');
@@ -1123,7 +1178,7 @@ export class VerificationGateRuntimeTest {
         expect(recipes[0].fixes.some(fix => fix.toolName === 'write_file')).toEqual(true);
 
         const secondModel = new WriteOnceModelAdapter();
-        const secondRuntime = buildWriteRuntime(
+        const secondHandle = await buildWriteRuntime(
             secondModel,
             new WriteFileToolRegistry(new NoDiffWriteFileTool('/w/note.txt', fileAdapter)),
             { maxToolRounds: 8 },
@@ -1132,12 +1187,14 @@ export class VerificationGateRuntimeTest {
             fileAdapter,
             new FileSnapshotStore()
         );
-        await secondRuntime.runTurn('s1', 'write it again');
+        try {
+            await secondHandle.runtime.runTurn('s1', 'write it again');
 
-        const prompts = injectedRecoveryPrompts(secondModel);
-        expect(prompts.length).toEqual(1);
-        expect(prompts[0]).toContain('Prior success from an earlier turn');
-        expect(prompts[0]).toContain('Signature "write_file::" (repaired in session s1)');
+            const prompts = injectedRecoveryPrompts(secondModel);
+            expect(prompts.length).toEqual(1);
+            expect(prompts[0]).toContain('Prior success from an earlier turn');
+            expect(prompts[0]).toContain('Signature "write_file::" (repaired in session s1)');
+        } finally { await secondHandle.ctx.close(); }
     }
 }
 

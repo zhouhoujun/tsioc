@@ -7,20 +7,20 @@ import {
     AGENT_PROMPT_SECTIONS,
     AGENT_TURN_INTERCEPTORS,
     AgentHookCommandExecutor,
-    AgentModule,
     AgentRuntime,
     AgentTurnInput,
     AgentTurnResult,
     ApprovalDecision,
     DefaultAgentRuntime,
     EchoModelAdapter,
-    InMemoryMemoryStore,
-    InMemorySessionStore,
     ModelAdapter,
     SimpleSessionSummarizer,
     ToolRegistry,
     defaultAgentOptions
 } from '../src';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 @Injectable()
 class StaticPromptSection {
@@ -60,13 +60,11 @@ export class AgentExtensionHooksTest {
         }
 
         const model = new CapturingModelAdapter();
-        const ctx = await Application.run(AgentModule, {
-            providers: [
-                { provide: ModelAdapter, useValue: model },
-                StaticPromptSection,
-                { provide: AGENT_PROMPT_SECTIONS, useExisting: StaticPromptSection, multi: true }
-            ]
-        });
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: model },
+            StaticPromptSection,
+            { provide: AGENT_PROMPT_SECTIONS, useExisting: StaticPromptSection, multi: true }
+        ]);
         try {
             const runtime = ctx.get(AgentRuntime);
             await runtime.runTurn('s1', 'hello');
@@ -132,13 +130,11 @@ export class AgentExtensionHooksTest {
         }
 
         const model = new CapturingModelAdapter();
-        const ctx = await Application.run(AgentModule, {
-            providers: [
-                { provide: ModelAdapter, useValue: model },
-                SlashCommandInterceptor,
-                { provide: AGENT_TURN_INTERCEPTORS, useExisting: SlashCommandInterceptor, multi: true }
-            ]
-        });
+        const ctx = await runAgentOrmApp([
+            { provide: ModelAdapter, useValue: model },
+            SlashCommandInterceptor,
+            { provide: AGENT_TURN_INTERCEPTORS, useExisting: SlashCommandInterceptor, multi: true }
+        ]);
         try {
             const runtime = ctx.get(AgentRuntime);
             const result = await runtime.runTurn('s1', '/ping');
@@ -211,11 +207,13 @@ export class AgentExtensionHooksTest {
             cancelBySession: () => 0,
             getPending: () => []
         };
-        const runtime = new DefaultAgentRuntime(
+        const ctx = await runAgentOrmApp();
+        try {
+            const runtime = new DefaultAgentRuntime(
             new HookModelAdapter(),
             new HookToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            ctx.get(SessionStore),
+            ctx.get(MemoryStore),
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -256,5 +254,6 @@ export class AgentExtensionHooksTest {
             'afterTurn'
         ]);
         expect(hookMessages.map(message => message.content.includes('[hook'))).toEqual([true, true, true, true, true]);
+        } finally { await ctx.close(); }
     }
 }

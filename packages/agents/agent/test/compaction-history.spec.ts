@@ -1,55 +1,17 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
-import { TypeormAdapter } from '@tsdi/typeorm-adapter';
-import { AgentModule } from '../src/agent.module';
-import { AgentOrmModule } from '../src/orm.module';
 import { CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory, buildCompactionHistoryTrend } from '../src/harness/CompactionHistoryStore';
-import { InMemoryCompactionHistoryStore } from '../src/harness/InMemoryCompactionHistoryStore';
-import { TypeOrmCompactionHistoryStore } from '../src/harness/TypeOrmCompactionHistoryStore';
+import { TypeormAdapter } from '@tsdi/typeorm-adapter';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { AgentCompactionHistoryEntity } from '../src/memory/entities';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-
-@Module({
-    imports: [
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class CompactionHistoryOrmTestModule {}
-
-@Module({
-    imports: [
-        AgentModule,
-        AgentOrmModule.withConnection({
-            type: 'sqljs' as any,
-            autoLoadEntities: false as any,
-            synchronize: true,
-            autoSave: false,
-            entities: []
-        } as any)
-    ],
-    providers: [
-        { provide: ModuleLoader, useValue: new DefaultModuleLoader() }
-    ]
-})
-class AgentCompactionHistoryOrmTestModule {}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -103,26 +65,40 @@ function makeRecord(partial: Partial<CompactionHistoryRecord> = {}): CompactionH
 
 @Suite('Compaction history stores')
 export class CompactionHistoryStoreTest {
-    @Test('in-memory compaction history store snapshots appended records immutably')
-    async inMemorySnapshotsRecords() {
-        const store = new InMemoryCompactionHistoryStore();
-        const metadata = { nested: { value: 'safe' } };
-        await store.append(makeRecord({ id: 'c-in-mem', metadata }));
-        metadata.nested.value = 'mutated';
-        const records = await store.list('s1');
-        expect(records.length).toEqual(1);
-        expect((records[0].metadata as any).nested.value).toEqual('safe');
+    private async boot() {
+        const ctx = await runAgentOrmApp();
+        return {
+            ctx,
+            store: ctx.get(CompactionHistoryStore),
+            sessionStore: ctx.get(SessionStore),
+            memoryStore: ctx.get(MemoryStore)
+        };
     }
 
-    @Test('in-memory compaction history store filters by session and applies limit')
-    async inMemoryFiltersAndLimits() {
-        const store = new InMemoryCompactionHistoryStore();
-        await store.append(makeRecord({ id: 'c-a', sessionId: 's1', createdAt: 1 }));
-        await store.append(makeRecord({ id: 'c-b', sessionId: 's1', createdAt: 2 }));
-        await store.append(makeRecord({ id: 'c-c', sessionId: 's2', createdAt: 3 }));
-        expect((await store.list('s1')).length).toEqual(2);
-        expect((await store.list()).length).toEqual(3);
-        expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('c-b');
+    @Test('compaction history store snapshots appended records immutably')
+    async snapshotsRecords() {
+        const { ctx, store } = await this.boot();
+        try {
+            const metadata = { nested: { value: 'safe' } };
+            await store.append(makeRecord({ id: 'c-in-mem', metadata }));
+            metadata.nested.value = 'mutated';
+            const records = await store.list('s1');
+            expect(records.length).toEqual(1);
+            expect((records[0].metadata as any).nested.value).toEqual('safe');
+        } finally { await ctx.close(); }
+    }
+
+    @Test('compaction history store filters by session and applies limit')
+    async filtersAndLimits() {
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'c-a', sessionId: 's1', createdAt: 1 }));
+            await store.append(makeRecord({ id: 'c-b', sessionId: 's1', createdAt: 2 }));
+            await store.append(makeRecord({ id: 'c-c', sessionId: 's2', createdAt: 3 }));
+            expect((await store.list('s1')).length).toEqual(2);
+            expect((await store.list()).length).toEqual(3);
+            expect((await store.list('s1', { limit: 1, offset: 1 }))[0].id).toEqual('c-b');
+        } finally { await ctx.close(); }
     }
 
     @Test('aggregate compaction history groups by session with token totals')
@@ -159,23 +135,23 @@ export class CompactionHistoryStoreTest {
         expect(aggregates[0].sessionId).toEqual('s2');
     }
 
-    @Test('in-memory compaction history store aggregates across sessions')
-    async inMemoryAggregates() {
-        const store = new InMemoryCompactionHistoryStore();
-        await store.append(makeRecord({ id: 'm1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, createdAt: 1 }));
-        await store.append(makeRecord({ id: 'm2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, createdAt: 2 }));
-        const aggregates = await store.aggregate('s1');
-        expect(aggregates.length).toEqual(1);
-        expect(aggregates[0].totalTokensSaved).toEqual(4100);
-        expect(aggregates[0].recordCount).toEqual(2);
+    @Test('compaction history store aggregates across sessions')
+    async aggregatesAcrossSessions() {
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'm1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'm2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, createdAt: 2 }));
+            const aggregates = await store.aggregate('s1');
+            expect(aggregates.length).toEqual(1);
+            expect(aggregates[0].totalTokensSaved).toEqual(4100);
+            expect(aggregates[0].recordCount).toEqual(2);
+        } finally { await ctx.close(); }
     }
 
     @Test('typeorm compaction history store aggregates persisted records')
     async typeOrmAggregates() {
-        const ctx = await Application.run(CompactionHistoryOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmCompactionHistoryStore(adapter);
             await store.append(makeRecord({ id: 'db-agg-1', sessionId: 's-agg', beforeTokens: 8000, afterTokens: 4000, createdAt: 1 }));
             await store.append(makeRecord({ id: 'db-agg-2', sessionId: 's-agg', beforeTokens: 2000, afterTokens: 500, createdAt: 2 }));
             await store.append(makeRecord({ id: 'db-agg-3', sessionId: 's-other', beforeTokens: 5000, afterTokens: 1000, createdAt: 3 }));
@@ -185,9 +161,7 @@ export class CompactionHistoryStoreTest {
             expect(scoped[0].recordCount).toEqual(2);
             const all = await store.aggregate();
             expect(all.length).toEqual(2);
-        } finally {
-            await ctx.close();
-        }
+        } finally { await ctx.close(); }
     }
 
     @Test('build compaction history trend buckets records by time per session')
@@ -242,24 +216,24 @@ export class CompactionHistoryStoreTest {
         expect(trend[0].sessionId).toEqual('s2');
     }
 
-    @Test('in-memory compaction history store builds trends across sessions')
-    async inMemoryTrends() {
-        const store = new InMemoryCompactionHistoryStore();
-        await store.append(makeRecord({ id: 'mt1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 }));
-        await store.append(makeRecord({ id: 'mt2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, compressionRatio: 10, createdAt: 2 }));
-        const trend = await store.trend('s1');
-        expect(trend.length).toEqual(1);
-        expect(trend[0].recordCount).toEqual(2);
-        expect(trend[0].totalTokensSaved).toEqual(4100);
-        expect(trend[0].avgCompressionRatio).toEqual(30);
+    @Test('compaction history store builds trends across sessions')
+    async trendsAcrossSessions() {
+        const { ctx, store } = await this.boot();
+        try {
+            await store.append(makeRecord({ id: 'mt1', sessionId: 's1', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 }));
+            await store.append(makeRecord({ id: 'mt2', sessionId: 's1', beforeTokens: 1000, afterTokens: 900, compressionRatio: 10, createdAt: 2 }));
+            const trend = await store.trend('s1');
+            expect(trend.length).toEqual(1);
+            expect(trend[0].recordCount).toEqual(2);
+            expect(trend[0].totalTokensSaved).toEqual(4100);
+            expect(trend[0].avgCompressionRatio).toEqual(30);
+        } finally { await ctx.close(); }
     }
 
     @Test('typeorm compaction history store builds trends from persisted records')
     async typeOrmTrends() {
-        const ctx = await Application.run(CompactionHistoryOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmCompactionHistoryStore(adapter);
             await store.append(makeRecord({ id: 'db-trend-1', sessionId: 's-trend', beforeTokens: 8000, afterTokens: 4000, compressionRatio: 50, createdAt: 1 }));
             await store.append(makeRecord({ id: 'db-trend-2', sessionId: 's-trend', beforeTokens: 2000, afterTokens: 500, compressionRatio: 75, createdAt: 2 }));
             await store.append(makeRecord({ id: 'db-trend-3', sessionId: 's-other', beforeTokens: 5000, afterTokens: 1000, createdAt: 3 }));
@@ -270,17 +244,14 @@ export class CompactionHistoryStoreTest {
             expect(scoped[0].avgCompressionRatio).toEqual(62.5);
             const all = await store.trend();
             expect(all.length).toEqual(2);
-        } finally {
-            await ctx.close();
-        }
+        } finally { await ctx.close(); }
     }
 
     @Test('typeorm compaction history store persists and reloads records')
     async typeOrmPersistsRecords() {
-        const ctx = await Application.run(CompactionHistoryOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
-            const store = new TypeOrmCompactionHistoryStore(adapter);
+            const adapter = ctx.get(TypeormAdapter);
             await store.append(makeRecord({
                 id: 'db-c1',
                 sessionId: 's-db',
@@ -296,223 +267,209 @@ export class CompactionHistoryStoreTest {
             const stored = await adapter.getRepository(AgentCompactionHistoryEntity).findOne({ where: { id: 'db-c1' } as any });
             expect(stored?.strategy).toEqual('pruned');
             expect(stored?.compactionTriggered).toEqual(true);
-        } finally {
-            await ctx.close();
-        }
-    }
-
-    @Test('agent module falls back to usable in-memory compaction history store without orm adapter')
-    async agentModuleFallsBackToInMemory() {
-        const ctx = await Application.run(AgentModule);
-        try {
-            const store = ctx.get(CompactionHistoryStore);
-            await store.append(makeRecord({ id: 'fallback-c1', sessionId: 'fallback-session' }));
-            const records = await store.list('fallback-session');
-            expect(records.length).toEqual(1);
-            expect(records[0].id).toEqual('fallback-c1');
-        } finally {
-            await ctx.close();
-        }
+        } finally { await ctx.close(); }
     }
 
     @Test('agent module resolves durable compaction history store behavior when orm adapter exists')
     async agentModuleResolvesDurableStore() {
-        const ctx = await Application.run(AgentCompactionHistoryOrmTestModule);
+        const { ctx, store } = await this.boot();
         try {
-            const store = ctx.get(CompactionHistoryStore);
-            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const adapter = ctx.get(TypeormAdapter);
             await store.append(makeRecord({ id: 'wired-db-c1', sessionId: 'wired-session' }));
             const stored = await adapter.getRepository(AgentCompactionHistoryEntity).findOne({ where: { id: 'wired-db-c1' } as any });
             expect(stored?.sessionId).toEqual('wired-session');
-        } finally {
-            await ctx.close();
-        }
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime records compaction history when context preparation modifies history')
     async runtimeRecordsCompactionHistory() {
-        const store = new InMemoryCompactionHistoryStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter(
-                'Goal: keep going. Decisions: continue. Files: none. Errors: none. Open state: continue.'
-            ) as any),
-            {
-                ...defaultAgentOptions,
-                session: {
-                    ...defaultAgentOptions.session,
-                    recentMessages: 50,
-                    summaryThreshold: 999
+        const { ctx, store, sessionStore, memoryStore } = await this.boot();
+        try {
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                sessionStore,
+                memoryStore,
+                new LLMSessionSummarizer(new StaticModelAdapter(
+                    'Goal: keep going. Decisions: continue. Files: none. Errors: none. Open state: continue.'
+                ) as any),
+                {
+                    ...defaultAgentOptions,
+                    session: {
+                        ...defaultAgentOptions.session,
+                        recentMessages: 50,
+                        summaryThreshold: 999
+                    },
+                    context: {
+                        ...defaultAgentOptions.context,
+                        compactionThreshold: 6,
+                        compactionMinTokens: 150
+                    }
                 },
-                context: {
-                    ...defaultAgentOptions.context,
-                    compactionThreshold: 6,
-                    compactionMinTokens: 150
-                }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
-        await runtime.runTurn('s1', longGoal);
-        await runtime.runTurn('s1', '继续');
-        await runtime.runTurn('s1', '继续');
-        await runtime.runTurn('s1', '继续');
-        await runtime.runTurn('s1', '补充数据库表设计');
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
+            await runtime.runTurn('s1', longGoal);
+            await runtime.runTurn('s1', '继续');
+            await runtime.runTurn('s1', '继续');
+            await runtime.runTurn('s1', '继续');
+            await runtime.runTurn('s1', '补充数据库表设计');
 
-        const records = await store.list('s1');
-        expect(records.length).toBeGreaterThan(0);
-        expect(records[records.length - 1].sessionId).toEqual('s1');
-        expect(records[records.length - 1].strategy).toEqual('compacted');
-        expect(records[records.length - 1].compactionTriggered).toEqual(true);
-        expect(records[records.length - 1].beforeTokens).toBeGreaterThan(0);
+            const records = await store.list('s1');
+            expect(records.length).toBeGreaterThan(0);
+            expect(records[records.length - 1].sessionId).toEqual('s1');
+            expect(records[records.length - 1].strategy).toEqual('compacted');
+            expect(records[records.length - 1].compactionTriggered).toEqual(true);
+            expect(records[records.length - 1].beforeTokens).toBeGreaterThan(0);
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime skips compaction history when context preparation leaves history unchanged')
     async runtimeSkipsUnchangedHistory() {
-        const store = new InMemoryCompactionHistoryStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        await runtime.runTurn('s2', 'hi');
-        const records = await store.list('s2');
-        expect(records.length).toEqual(0);
+        const { ctx, store, sessionStore, memoryStore } = await this.boot();
+        try {
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                sessionStore,
+                memoryStore,
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            await runtime.runTurn('s2', 'hi');
+            const records = await store.list('s2');
+            expect(records.length).toEqual(0);
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime compactNow forces compaction even below auto threshold and records history')
     async runtimeCompactNowForcesCompaction() {
-        const store = new InMemoryCompactionHistoryStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter(
-                'Goal: keep going. Decisions: continue. Files: none. Errors: none. Open state: continue.'
-            ) as any),
-            {
-                ...defaultAgentOptions,
-                session: {
-                    ...defaultAgentOptions.session,
-                    recentMessages: 2,
-                    summaryThreshold: 999
+        const { ctx, store, sessionStore, memoryStore } = await this.boot();
+        try {
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                sessionStore,
+                memoryStore,
+                new LLMSessionSummarizer(new StaticModelAdapter(
+                    'Goal: keep going. Decisions: continue. Files: none. Errors: none. Open state: continue.'
+                ) as any),
+                {
+                    ...defaultAgentOptions,
+                    session: {
+                        ...defaultAgentOptions.session,
+                        recentMessages: 2,
+                        summaryThreshold: 999
+                    },
+                    context: {
+                        ...defaultAgentOptions.context,
+                        compactionThreshold: 999,
+                        compactionMinTokens: 150,
+                        compactionRecentMessages: 2
+                    }
                 },
-                context: {
-                    ...defaultAgentOptions.context,
-                    compactionThreshold: 999,
-                    compactionMinTokens: 150,
-                    compactionRecentMessages: 2
-                }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
-        // Seed a long history without ever hitting the auto threshold (set to
-        // 999 messages above) so only compactNow can produce a compaction.
-        await runtime.runTurn('s1', longGoal);
-        await runtime.runTurn('s1', '继续');
-        await runtime.runTurn('s1', '继续');
-        await runtime.runTurn('s1', '补充数据库表设计');
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
+            await runtime.runTurn('s1', longGoal);
+            await runtime.runTurn('s1', '继续');
+            await runtime.runTurn('s1', '继续');
+            await runtime.runTurn('s1', '补充数据库表设计');
 
-        const before = (await store.list('s1')).length;
-        expect(before).toEqual(0);
-        const result = await runtime.compactNow('s1', 'manual test');
-        const records = await store.list('s1');
-        expect(result.compacted).toEqual(true);
-        expect(result.sessionId).toEqual('s1');
-        expect(result.reason).toEqual('manual test');
-        expect(result.strategy).toEqual('compacted');
-        // The fake summarizer emits long fixed text, so token metrics are not
-        // meaningful here; assert on the structural compaction outcome instead.
-        expect(result.beforeMessageCount ?? 0).toBeGreaterThan(result.afterMessageCount ?? 0);
-        expect(result.compactedMessageCount ?? 0).toBeGreaterThan(0);
-        expect(result.summaryInserted).toEqual(true);
-        expect(records.length).toEqual(before + 1);
-        expect(records[records.length - 1].compactionTriggered).toEqual(true);
+            const before = (await store.list('s1')).length;
+            expect(before).toEqual(0);
+            const result = await runtime.compactNow('s1', 'manual test');
+            const records = await store.list('s1');
+            expect(result.compacted).toEqual(true);
+            expect(result.sessionId).toEqual('s1');
+            expect(result.reason).toEqual('manual test');
+            expect(result.strategy).toEqual('compacted');
+            expect(result.beforeMessageCount ?? 0).toBeGreaterThan(result.afterMessageCount ?? 0);
+            expect(result.compactedMessageCount ?? 0).toBeGreaterThan(0);
+            expect(result.summaryInserted).toEqual(true);
+            expect(records.length).toEqual(before + 1);
+            expect(records[records.length - 1].compactionTriggered).toEqual(true);
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime compactNow returns turn-in-progress error while a turn is running')
     async runtimeCompactNowRejectsRunningTurn() {
-        const store = new InMemoryCompactionHistoryStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        // Mark the session as mid-turn through the protected turn-tracking set.
-        const exposed = runtime as any;
-        exposed.sessionTurnsRunning.add('busy-session');
-        const result = await runtime.compactNow('busy-session', 'manual');
-        expect(result.compacted).toEqual(false);
-        expect(result.error).toEqual('turn-in-progress');
+        const { ctx, store, sessionStore, memoryStore } = await this.boot();
+        try {
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                sessionStore,
+                memoryStore,
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            const exposed = runtime as any;
+            exposed.sessionTurnsRunning.add('busy-session');
+            const result = await runtime.compactNow('busy-session', 'manual');
+            expect(result.compacted).toEqual(false);
+            expect(result.error).toEqual('turn-in-progress');
+        } finally { await ctx.close(); }
     }
 
     @Test('runtime compactNow reports session-not-found for unknown sessions')
     async runtimeCompactNowUnknownSession() {
-        const store = new InMemoryCompactionHistoryStore();
-        const runtime = new DefaultAgentRuntime(
-            new StaticModelAdapter('done'),
-            new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            store as any
-        );
-        const result = await runtime.compactNow('missing-session');
-        expect(result.compacted).toEqual(false);
-        expect(result.error).toEqual('session-not-found');
+        const { ctx, store, sessionStore, memoryStore } = await this.boot();
+        try {
+            const runtime = new DefaultAgentRuntime(
+                new StaticModelAdapter('done'),
+                new EmptyToolRegistry(),
+                sessionStore,
+                memoryStore,
+                new LLMSessionSummarizer(new StaticModelAdapter('summary') as any),
+                defaultAgentOptions,
+                new FakeApp() as any,
+                new RandomUuidGenerator(),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                store as any
+            );
+            const result = await runtime.compactNow('missing-session');
+            expect(result.compacted).toEqual(false);
+            expect(result.error).toEqual('session-not-found');
+        } finally { await ctx.close(); }
     }
 }

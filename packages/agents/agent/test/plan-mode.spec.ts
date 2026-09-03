@@ -1,26 +1,16 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, ApplicationContext } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
-import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { defaultAgentOptions } from '../src/options';
-
-class FakeApp {
-    events: any[] = [];
-
-    async publishEvent(event?: any): Promise<void> {
-        if (event) {
-            this.events.push(event);
-        }
-        return;
-    }
-}
+import { runAgentOrmApp } from './helpers/agent-orm';
 
 /**
  * Emits a single tool call when the incoming turn is fresh (its last message
@@ -121,34 +111,34 @@ class MinimalRuntime extends AgentRuntime {
     }
 }
 
-function createRuntime(adapter: any, tool: any, app = new FakeApp(), promptBuilder?: any): DefaultAgentRuntime {
-    return new DefaultAgentRuntime(
-        adapter,
-        new SingleToolRegistry(tool),
-        new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
-        new SimpleSessionSummarizer(),
-        defaultAgentOptions,
-        app as any,
-            new RandomUuidGenerator(),
-        undefined,
-        promptBuilder
-    );
+async function createRuntime(adapter: any, tool: any, promptBuilder?: any): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
+    const providers: any[] = [
+        { provide: ModelAdapter, useValue: adapter },
+        { provide: ToolRegistry, useValue: new SingleToolRegistry(tool) }
+    ];
+    if (promptBuilder) {
+        providers.push({ provide: SystemPromptBuilder, useValue: promptBuilder });
+    }
+    const ctx = await runAgentOrmApp(providers);
+    const runtime = ctx.get(AgentRuntime);
+    return { runtime, ctx };
 }
 
 @Suite('Agent plan mode')
 export class PlanModeTest {
     @Test('setPlanMode toggles isPlanMode per session')
-    setPlanModeTogglesPerSession() {
-        const runtime = createRuntime(new EchoModelAdapter(), new CountingTool('write_tool'));
-        expect(runtime.isPlanMode('s1')).toEqual(false);
+    async setPlanModeTogglesPerSession() {
+        const { runtime, ctx } = await createRuntime(new EchoModelAdapter(), new CountingTool('write_tool'));
+        try {
+            expect(runtime.isPlanMode('s1')).toEqual(false);
 
-        runtime.setPlanMode('s1', true);
-        expect(runtime.isPlanMode('s1')).toEqual(true);
-        expect(runtime.isPlanMode('s2')).toEqual(false);
+            runtime.setPlanMode('s1', true);
+            expect(runtime.isPlanMode('s1')).toEqual(true);
+            expect(runtime.isPlanMode('s2')).toEqual(false);
 
-        runtime.setPlanMode('s1', false);
-        expect(runtime.isPlanMode('s1')).toEqual(false);
+            runtime.setPlanMode('s1', false);
+            expect(runtime.isPlanMode('s1')).toEqual(false);
+        } finally { await ctx.close(); }
     }
 
     @Test('abstract AgentRuntime defaults to plan mode disabled and setPlanMode is a no-op')
@@ -163,45 +153,50 @@ export class PlanModeTest {
     async planModeDeniesWriteTools() {
         const tool = new CountingTool('write_tool');
         const adapter = new SingleToolCallModelAdapter('write_tool');
-        const runtime = createRuntime(adapter, tool);
-        runtime.setPlanMode('s1', true);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
+        try {
+            runtime.setPlanMode('s1', true);
 
-        await runtime.runTurn('s1', 'store it');
+            await runtime.runTurn('s1', 'store it');
 
-        expect(tool.invoked).toEqual(0);
-        expect(adapter.requests.length).toEqual(2);
-        const feedback = JSON.stringify(adapter.requests[1].messages);
-        expect(feedback).toContain('disabled in plan mode');
+            expect(tool.invoked).toEqual(0);
+            expect(adapter.requests.length).toEqual(2);
+            const feedback = JSON.stringify(adapter.requests[1].messages);
+            expect(feedback).toContain('disabled in plan mode');
+        } finally { await ctx.close(); }
     }
 
     @Test('plan mode allows read-only tools')
     async planModeAllowsReadOnlyTools() {
         const tool = new CountingTool('read_tool', true);
         const adapter = new SingleToolCallModelAdapter('read_tool');
-        const runtime = createRuntime(adapter, tool);
-        runtime.setPlanMode('s1', true);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
+        try {
+            runtime.setPlanMode('s1', true);
 
-        await runtime.runTurn('s1', 'look it up');
+            await runtime.runTurn('s1', 'look it up');
 
-        expect(tool.invoked).toEqual(1);
-        expect(adapter.requests.length).toEqual(2);
-        const feedback = JSON.stringify(adapter.requests[1].messages);
-        expect(feedback).not.toContain('disabled in plan mode');
+            expect(tool.invoked).toEqual(1);
+            expect(adapter.requests.length).toEqual(2);
+            const feedback = JSON.stringify(adapter.requests[1].messages);
+            expect(feedback).not.toContain('disabled in plan mode');
+        } finally { await ctx.close(); }
     }
 
     @Test('toggling plan mode off restores write tools')
     async togglingOffRestoresWriteTools() {
         const tool = new CountingTool('write_tool');
         const adapter = new SingleToolCallModelAdapter('write_tool');
-        const runtime = createRuntime(adapter, tool);
+        const { runtime, ctx } = await createRuntime(adapter, tool);
+        try {
+            runtime.setPlanMode('s1', true);
+            await runtime.runTurn('s1', 'blocked');
+            expect(tool.invoked).toEqual(0);
 
-        runtime.setPlanMode('s1', true);
-        await runtime.runTurn('s1', 'blocked');
-        expect(tool.invoked).toEqual(0);
-
-        runtime.setPlanMode('s1', false);
-        await runtime.runTurn('s1', 'allowed');
-        expect(tool.invoked).toEqual(1);
+            runtime.setPlanMode('s1', false);
+            await runtime.runTurn('s1', 'allowed');
+            expect(tool.invoked).toEqual(1);
+        } finally { await ctx.close(); }
     }
 
     @Test('plan mode appends the read-only mode hint to the system prompt')
@@ -213,13 +208,15 @@ export class PlanModeTest {
             name: () => 'test',
             render: async () => 'Test prompt'
         }]);
-        const runtime = createRuntime(adapter, tool, new FakeApp(), builder);
-        runtime.setPlanMode('s1', true);
+        const { runtime, ctx } = await createRuntime(adapter, tool, builder);
+        try {
+            runtime.setPlanMode('s1', true);
 
-        await runtime.runTurn('s1', 'plan something');
+            await runtime.runTurn('s1', 'plan something');
 
-        const systemMessage = String(adapter.requests[0].messages[0].content || '');
-        expect(systemMessage).toContain('PLAN MODE');
-        expect(systemMessage).toContain('read-only');
+            const systemMessage = String(adapter.requests[0].messages[0].content || '');
+            expect(systemMessage).toContain('PLAN MODE');
+            expect(systemMessage).toContain('read-only');
+        } finally { await ctx.close(); }
     }
 }
