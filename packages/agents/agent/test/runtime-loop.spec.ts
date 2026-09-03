@@ -1,16 +1,21 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { Application, createRunContext, RunContext } from '@tsdi/core';
-import { RandomUuidGenerator } from '@tsdi/core';
-import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { Application, ApplicationContext, createRunContext, RunContext } from '@tsdi/core';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { runAgentOrmApp } from './helpers/agent-orm';
+import { InMemorySessionStore, InMemoryMemoryStore } from './helpers/in-memory-stores';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
+import { SessionSummarizer } from '../src/memory/SessionSummarizer';
+import { SessionStore } from '../src/memory/SessionStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
+import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
+import { InMemoryToolActivationStore } from '../src/tools/InMemoryToolActivationStore';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
-import { defaultAgentOptions } from '../src/options';
+import { AgentOptions, defaultAgentOptions } from '../src/options';
+import { AGENT_OPTIONS } from '../src/tokens';
 import { TurnHandler } from '../src/runtime/TurnHandler';
 import { AgentTurnResult } from '../src/runtime/AgentTurnResult';
 import { AgentModule } from '../src/agent.module';
@@ -20,47 +25,62 @@ import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
 import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
 import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
 import { AgentMemoryRecord } from '../src/memory/MemoryStore';
-import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
-import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnDiagnosticsEvent } from '../src/runtime/AgentEvents';
+import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent } from '../src/runtime/AgentEvents';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 
-class FakeApp {
-    events: any[] = [];
+const RUNTIME_LOOP_EVENTS = [
+    AgentContextPreparedEvent,
+    AgentMemoryRetrievalFailedEvent,
+    AgentMemoryRetrievalStartedEvent,
+    AgentMemoryRetrievedEvent,
+    AgentTurnDiagnosticsEvent,
+    AgentToolInvokedEvent,
+    AgentToolSkippedEvent,
+    AgentToolCompletedEvent,
+    AgentToolFailedEvent
+];
 
-    async publishEvent(event?: any): Promise<void> {
-        if (event) {
-            this.events.push(event);
-        }
-        return;
-    }
+interface RuntimeLoopHandle {
+    runtime: AgentRuntime;
+    ctx: ApplicationContext;
+    registry: ToolRegistry;
+    events: any[];
 }
 
-class ThrowOnMemoryRetrievedApp extends FakeApp {
-    async publishEvent(event?: any): Promise<void> {
-        await super.publishEvent(event);
-        if (event instanceof AgentMemoryRetrievedEvent) {
-            throw new Error('memory event failed');
-        }
-    }
+interface RuntimeLoopCreateOptions {
+    throwOn?: Array<{ event: any; error?: string }>;
 }
 
-class ThrowOnContextPreparedApp extends FakeApp {
-    async publishEvent(event?: any): Promise<void> {
-        await super.publishEvent(event);
-        if (event instanceof AgentContextPreparedEvent) {
-            throw new Error('context event failed');
-        }
+async function createRuntime(
+    model: ModelAdapter,
+    registry: ToolRegistry,
+    sessions: SessionStore,
+    memory: MemoryStore,
+    summarizer: SessionSummarizer,
+    options: AgentOptions,
+    overrides: Array<{ provide: any; useValue: any }> = [],
+    createOptions: RuntimeLoopCreateOptions = {}
+): Promise<RuntimeLoopHandle> {
+    const ctx = await runAgentOrmApp([
+        { provide: ModelAdapter, useValue: model },
+        { provide: ToolRegistry, useValue: registry },
+        { provide: SessionStore, useValue: sessions },
+        { provide: MemoryStore, useValue: memory },
+        { provide: SessionSummarizer, useValue: summarizer },
+        { provide: AGENT_OPTIONS, useValue: options },
+        ...overrides
+    ]);
+    const events: any[] = [];
+    for (const eventType of RUNTIME_LOOP_EVENTS) {
+        ctx.eventMulticaster.addListener(eventType, event => events.push(event));
     }
-}
-
-class ThrowOnTurnDiagnosticsApp extends FakeApp {
-    async publishEvent(event?: any): Promise<void> {
-        await super.publishEvent(event);
-        if (event instanceof AgentTurnDiagnosticsEvent) {
-            throw new Error('diagnostics event failed');
-        }
+    for (const entry of createOptions.throwOn ?? []) {
+        ctx.eventMulticaster.addListener(entry.event, () => {
+            throw new Error(entry.error ?? 'event failed');
+        });
     }
+    return { runtime: ctx.get(AgentRuntime), ctx, registry: ctx.get(ToolRegistry), events };
 }
 
 class EmptyToolRegistry extends ToolRegistry {
@@ -921,15 +941,13 @@ class PutFailingMemoryStore extends InMemoryMemoryStore {
 export class RuntimeLoopTest {
     @Test('can answer one user turn')
     async runTurn() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -981,15 +999,13 @@ export class RuntimeLoopTest {
 
     @Test('runs tool loop and stores tool message')
     async runsToolLoop() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1015,15 +1031,13 @@ export class RuntimeLoopTest {
         for (let index = 1; index <= 5; index++) {
             await sessions.append('s1', { id: `${index}`, role: 'user', content: `old-${index}`, createdAt: index });
         }
-        const runtime = new DefaultAgentRuntime(
+const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 } },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 } }
         );
 
         await runtime.runTurn('s1', 'newest');
@@ -1067,15 +1081,13 @@ export class RuntimeLoopTest {
         } as any);
         await sessions.append('s1', { id: 'm8', role: 'tool', name: 'todo', content: 'ok', toolCallId: 't4', createdAt: 8 } as any);
 
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 6, summaryThreshold: 999 } },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 6, summaryThreshold: 999 } }
         );
 
         await runtime.runTurn('s1', 'newest');
@@ -1102,15 +1114,13 @@ export class RuntimeLoopTest {
     async sendsRelevantMemorySearchResultsToModel() {
         const model = new CapturingModelAdapter();
         const memory = new SearchOnlyMemoryStore();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             memory,
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'router question');
@@ -1124,16 +1134,13 @@ export class RuntimeLoopTest {
     async doesNotSearchMemoryForBlankInput() {
         const model = new CapturingModelAdapter();
         const memory = new SearchOnlyMemoryStore();
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             memory,
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', '   ');
@@ -1141,9 +1148,9 @@ export class RuntimeLoopTest {
         expect(memory.searchCalls).toEqual([]);
         expect(memory.getAllCalls).toEqual(0);
         expect(model.requests[0].memory).toEqual([]);
-        expect(app.events.some(event => event instanceof AgentMemoryRetrievalStartedEvent)).toEqual(false);
-        expect(app.events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(false);
-        expect(app.events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
+        expect(events.some(event => event instanceof AgentMemoryRetrievalStartedEvent)).toEqual(false);
+        expect(events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(false);
+        expect(events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
     }
 
     @Test('rewrites short follow-up answers after clarification into shared model context')
@@ -1152,15 +1159,13 @@ export class RuntimeLoopTest {
         const sessions = new InMemorySessionStore();
         await sessions.append('s1', { id: 'u1', role: 'user', content: 'Check deployment status', createdAt: 1 } as any);
         await sessions.append('s1', { id: 'a1', role: 'assistant', content: 'Which region should I check?', createdAt: 2 } as any);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'us-east-1');
@@ -1177,23 +1182,20 @@ export class RuntimeLoopTest {
     @Test('recovers empty replies by compacting rewritten follow-up context into a focused retry')
     async recoversEmptyRepliesFromClarificationFollowUp() {
         const model = new BlankThenFollowUpRecoveryModelAdapter();
-        const app = new FakeApp();
         const sessions = new InMemorySessionStore();
         await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
         await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', '成都');
-        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
 
         expect(result.message.content).toEqual('Recovered from follow-up context');
         expect(model.requests.length).toEqual(3);
@@ -1215,20 +1217,17 @@ export class RuntimeLoopTest {
 
     @Test('publishes turn diagnostics for empty-response retry recovery')
     async publishesTurnDiagnosticsForEmptyResponseRetryRecovery() {
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new BlankThenAnswerModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
-        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
 
         expect(result.message.content).toEqual('Recovered answer');
         expect(diagnostics?.diagnostics).toEqual({
@@ -1246,24 +1245,21 @@ export class RuntimeLoopTest {
 
     @Test('flags repeated clarification turns in diagnostics')
     async flagsRepeatedClarificationTurnsInDiagnostics() {
-        const app = new FakeApp();
         const sessions = new InMemorySessionStore();
         await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
         await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new RepeatedClarificationModelAdapter(),
             new EmptyToolRegistry(),
             sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', '成都');
 
-        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
         expect(diagnostics?.diagnostics).toEqual({
             emptyResponseRetryCount: 0,
             followUpRecoveryCount: 0,
@@ -1279,21 +1275,18 @@ export class RuntimeLoopTest {
 
     @Test('turn diagnostics carry prompt cache provider metadata from the final response')
     async turnDiagnosticsCarryPromptCacheMetadata() {
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new PromptCacheModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
 
-        const diagnostics = app.events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+        const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
         expect(diagnostics?.diagnostics.promptCache).toEqual({
             requested: { enabled: true, strategy: 'auto', scopes: ['system', 'summary', 'memory'] },
             provider: 'anthropic',
@@ -1311,32 +1304,25 @@ export class RuntimeLoopTest {
     @Test('publishes memory retrieval lifecycle events on success')
     async publishesMemoryRetrievalLifecycleEventsOnSuccess() {
         const model = new CapturingModelAdapter();
-        const app = new FakeApp();
         const retriever = new CapturingMemoryRetriever([
             { id: 'relevant', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 }
         ]);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            retriever
+            [{ provide: AgentMemoryRetriever, useValue: retriever }]
         );
 
         await runtime.runTurn('s1', 'router question');
 
         expect(retriever.calls).toEqual([{ sessionId: 's1', query: 'router question' }]);
         expect(model.requests[0].memory.map((record: any) => record.id)).toEqual(['relevant']);
-        const started = app.events.find(event => event instanceof AgentMemoryRetrievalStartedEvent);
-        const completed = app.events.find(event => event instanceof AgentMemoryRetrievedEvent);
+        const started = events.find(event => event instanceof AgentMemoryRetrievalStartedEvent);
+        const completed = events.find(event => event instanceof AgentMemoryRetrievedEvent);
         expect(started?.sessionId).toEqual('s1');
         expect(started?.query).toEqual('router question');
         expect(completed?.sessionId).toEqual('s1');
@@ -1347,7 +1333,7 @@ export class RuntimeLoopTest {
     @Test('persists structured session summary after turn threshold is reached')
     async persistsStructuredSessionSummaryAfterThreshold() {
         const sessions = new InMemorySessionStore();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
             sessions,
@@ -1358,9 +1344,7 @@ export class RuntimeLoopTest {
             {
                 ...defaultAgentOptions,
                 session: { ...defaultAgentOptions.session, summaryThreshold: 2 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
 
         await runtime.runTurn('s1', 'Fix routing in src/app.ts and preserve the current task goal.');
@@ -1378,7 +1362,7 @@ export class RuntimeLoopTest {
     @Test('long follow-up sessions keep root goal and tool failure context after compaction')
     async longFollowUpSessionsKeepRootGoalAndToolFailureContextAfterCompaction() {
         const model = new LongSessionRegressionModelAdapter();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new FailingToolRegistry(),
             new InMemorySessionStore(),
@@ -1404,9 +1388,7 @@ export class RuntimeLoopTest {
                     compactionThreshold: 6,
                     compactionMinTokens: 150
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
 
         const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
@@ -1431,8 +1413,7 @@ export class RuntimeLoopTest {
     @Test('publishes context preparation metrics without breaking turn execution')
     async publishesContextPreparationMetricsWithoutBreakingTurnExecution() {
         const model = new LongSessionRegressionModelAdapter();
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new FailingToolRegistry(),
             new InMemorySessionStore(),
@@ -1458,9 +1439,7 @@ export class RuntimeLoopTest {
                     compactionThreshold: 6,
                     compactionMinTokens: 150
                 }
-            },
-            app as any,
-            new RandomUuidGenerator()
+            }
         );
 
         const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
@@ -1470,7 +1449,7 @@ export class RuntimeLoopTest {
         await runtime.runTurn('s1', '继续');
         await runtime.runTurn('s1', '补充数据库表设计');
 
-        const prepared = app.events.find(event =>
+        const prepared = events.find(event =>
             event instanceof AgentContextPreparedEvent &&
             event.report?.strategy === 'compacted'
         ) as AgentContextPreparedEvent | undefined;
@@ -1487,7 +1466,7 @@ export class RuntimeLoopTest {
 
     @Test('context preparation event failures do not break turns')
     async contextPreparationEventFailuresDoNotBreakTurns() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -1500,8 +1479,8 @@ export class RuntimeLoopTest {
                 session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 },
                 context: { ...defaultAgentOptions.context, compactionThreshold: 1, compactionMinTokens: 1 }
             },
-            new ThrowOnContextPreparedApp() as any,
-            new RandomUuidGenerator()
+            [],
+            { throwOn: [{ event: AgentContextPreparedEvent, error: 'context prepared raise' }] }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1511,15 +1490,15 @@ export class RuntimeLoopTest {
 
     @Test('turn diagnostics event failures do not break turns')
     async turnDiagnosticsEventFailuresDoNotBreakTurns() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new ThrowOnTurnDiagnosticsApp() as any,
-            new RandomUuidGenerator()
+            [],
+            { throwOn: [{ event: AgentTurnDiagnosticsEvent, error: 'turn diagnostics raise' }] }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1530,28 +1509,21 @@ export class RuntimeLoopTest {
     @Test('keeps turn successful when memory retrieval fails')
     async keepsTurnSuccessfulWhenMemoryRetrievalFails() {
         const model = new CapturingModelAdapter();
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator(),
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            new FailingMemoryRetriever()
+            [{ provide: AgentMemoryRetriever, useValue: new FailingMemoryRetriever() }]
         );
 
         const result = await runtime.runTurn('s1', 'router question');
 
         expect(result.message.content).toEqual('captured');
         expect(model.requests[0].memory).toEqual([]);
-        const failed = app.events.find(event => event instanceof AgentMemoryRetrievalFailedEvent);
+        const failed = events.find(event => event instanceof AgentMemoryRetrievalFailedEvent);
         expect(failed?.sessionId).toEqual('s1');
         expect(failed?.query).toEqual('router question');
         expect(failed?.error?.message).toEqual('retrieval failed');
@@ -1560,38 +1532,35 @@ export class RuntimeLoopTest {
     @Test('keeps retrieved memory when retrieval lifecycle event publishing fails')
     async keepsRetrievedMemoryWhenRetrievalLifecycleEventPublishingFails() {
         const model = new CapturingModelAdapter();
-        const app = new ThrowOnMemoryRetrievedApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            [],
+            { throwOn: [{ event: AgentMemoryRetrievedEvent, error: 'memory retrieved raise' }] }
         );
 
         const result = await runtime.runTurn('s1', 'router question');
 
         expect(result.message.content).toEqual('captured');
         expect(model.requests[0].memory.map((record: any) => record.id)).toEqual(['relevant']);
-        expect(app.events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(true);
-        expect(app.events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
+        expect(events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(true);
+        expect(events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
     }
 
     @Test('preserves current user message across tool rounds')
     async preservesCurrentUserMessageAcrossToolRounds() {
         const model = new PreservingUserToolLoopModelAdapter();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 2, summaryThreshold: 999 } },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 2, summaryThreshold: 999 } }
         );
 
         await runtime.runTurn('s1', 'keep-me');
@@ -1615,16 +1584,14 @@ export class RuntimeLoopTest {
                 createdAt: 1
             }
         ]);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            distiller
+            [{ provide: ExperienceDistiller, useValue: distiller }]
         );
 
         const result = await runtime.runTurn('s1', 'remember router cache fix');
@@ -1642,16 +1609,14 @@ export class RuntimeLoopTest {
     async doesNotPersistMemoryWhenDistillerReturnsNoExperiences() {
         const memory = new InMemoryMemoryStore();
         const distiller = new CapturingExperienceDistiller();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            distiller
+            [{ provide: ExperienceDistiller, useValue: distiller }]
         );
 
         await runtime.runTurn('s1', 'remember nothing');
@@ -1664,16 +1629,14 @@ export class RuntimeLoopTest {
 
     @Test('keeps runTurn successful when experience distillation fails')
     async keepsRunTurnSuccessfulWhenExperienceDistillationFails() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            new ThrowingExperienceDistiller()
+            [{ provide: ExperienceDistiller, useValue: new ThrowingExperienceDistiller() }]
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1696,16 +1659,14 @@ export class RuntimeLoopTest {
                 createdAt: 1
             }
         ]);
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new PutFailingMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator(),
-            distiller
+            [{ provide: ExperienceDistiller, useValue: distiller }]
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1717,15 +1678,13 @@ export class RuntimeLoopTest {
 
     @Test('stops after reaching tool round limit and requests final answer')
     async stopsAfterToolRoundLimit() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new EndlessToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            { ...defaultAgentOptions, maxToolRounds: 1 },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            { ...defaultAgentOptions, maxToolRounds: 1 }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1739,15 +1698,13 @@ export class RuntimeLoopTest {
 
     @Test('stores assistant tool call history before tool results')
     async storesAssistantToolCallHistory() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -1765,15 +1722,13 @@ export class RuntimeLoopTest {
     @Test('streaming turn yields incrementally through tool loop and persists final message')
     async streamingTurnExecutesToolLoop() {
         const model = new StreamingToolLoopModelAdapter();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const stream = runtime.runStreamingTurn('s1', 'hello');
@@ -1813,15 +1768,13 @@ export class RuntimeLoopTest {
 
     @Test('streaming turn promotes done chunk tool calls into the shared tool loop')
     async streamingTurnPromotesDoneChunkToolCalls() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new DoneChunkToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const stream = runtime.runStreamingTurn('s1', 'hello');
@@ -1846,15 +1799,13 @@ export class RuntimeLoopTest {
 
     @Test('stores tool error result and continues turn')
     async storesToolErrorResultAndContinuesTurn() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         // Tool errors are fed back as tool messages instead of throwing.
@@ -1870,15 +1821,13 @@ export class RuntimeLoopTest {
 
     @Test('synthesizes assistant fallback when tool fails and model returns blank')
     async synthesizesAssistantFallbackWhenToolFailsAndModelReturnsBlank() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new BlankAfterToolErrorModelAdapter(),
             new FailingToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'weather please');
@@ -1888,15 +1837,13 @@ export class RuntimeLoopTest {
 
     @Test('synthesizes assistant fallback when model returns blank without tool errors')
     async synthesizesAssistantFallbackWhenModelReturnsBlankWithoutToolErrors() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new BlankResponseModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1905,15 +1852,13 @@ export class RuntimeLoopTest {
 
     @Test('retries once when model returns blank response')
     async retriesOnceWhenModelReturnsBlankResponse() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new BlankThenAnswerModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1922,15 +1867,13 @@ export class RuntimeLoopTest {
 
     @Test('stores each tool result independently after tool failure')
     async storesEachToolResultIndependentlyAfterToolFailure() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new MultiToolLoopModelAdapter(),
             new FailFirstToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         // Tools now run independently; failures are fed back as messages, not thrown.
@@ -1949,7 +1892,7 @@ export class RuntimeLoopTest {
     @Test('forces sequential execution when tool metadata requires it')
     async forcesSequentialExecutionWhenToolMetadataRequiresIt() {
         const registry = new MetadataDrivenToolRegistry();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new MetadataParallelModelAdapter(),
             registry,
             new InMemorySessionStore(),
@@ -1962,9 +1905,7 @@ export class RuntimeLoopTest {
                     parallelExecution: true,
                     parallelSafeTools: ['lookup', 'mutate']
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1975,7 +1916,7 @@ export class RuntimeLoopTest {
 
     @Test('forces sequential execution when a tool requires approval')
     async forcesSequentialExecutionForApprovalGatedTools() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new MultiToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -1990,9 +1931,7 @@ export class RuntimeLoopTest {
                     requireApproval: ['echo'],
                     approvalTimeoutMs: 1000
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2023,20 +1962,19 @@ export class RuntimeLoopTest {
     @Test('runtime sends deferred tool schemas to the model before activation')
     async runtimeSendsDeferredToolDefinitions() {
         const model = new CapturingModelAdapter();
+        const sessions = new InMemorySessionStore();
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore());
-        const runtime = new DefaultAgentRuntime(
+        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        const { runtime } = await createRuntime(
             model,
             registry,
-            new InMemorySessionStore(),
+            sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2076,20 +2014,19 @@ export class RuntimeLoopTest {
     @Test('tool activation does not leak across sessions')
     async deferredToolActivationIsSessionScoped() {
         const model = new CapturingModelAdapter();
+        const sessions = new InMemorySessionStore();
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore());
-        const runtime = new DefaultAgentRuntime(
+        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        const { runtime } = await createRuntime(
             model,
             registry,
-            new InMemorySessionStore(),
+            sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await registry.activateTool('s1', 'heavy_tool');
@@ -2121,45 +2058,40 @@ export class RuntimeLoopTest {
 
     @Test('runtime auto-activates deferred tools before invocation')
     async runtimeAutoActivatesDeferredToolInvocation() {
-        const app = new FakeApp();
+        const sessions = new InMemorySessionStore();
         const deferredTool = new DeferredRuntimeTool();
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             deferredTool
-        ], new InMemoryMemoryStore());
-        const runtime = new DefaultAgentRuntime(
+        ], new InMemoryMemoryStore(), sessions, new InMemoryToolActivationStore());
+        const { runtime, events } = await createRuntime(
             new DeferredInvokeModelAdapter(),
             registry,
-            new InMemorySessionStore(),
+            sessions,
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
         expect(result.message.content).toEqual('activated');
         expect(deferredTool.invocations).toEqual(1);
         expect(await registry.isToolActive('s1', 'heavy_tool')).toEqual(true);
-        expect(app.events.some(event => event instanceof AgentToolInvokedEvent && event.toolName === 'heavy_tool')).toEqual(true);
-        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'heavy_tool')).toEqual(false);
+        expect(events.some(event => event instanceof AgentToolInvokedEvent && event.toolName === 'heavy_tool')).toEqual(true);
+        expect(events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'heavy_tool')).toEqual(false);
     }
 
     @Test('runtime skips tool calls not exposed in the current model request')
     async runtimeSkipsUnexposedToolCalls() {
-        const app = new FakeApp();
         const registry = new PermissiveToolRegistry();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new UnknownToolModelAdapter(),
             registry,
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2171,21 +2103,18 @@ export class RuntimeLoopTest {
         expect(toolMessages[0].metadata?.receipt?.status).toEqual('skipped');
         expect(toolMessages[0].metadata?.error).toContain('shell.exec');
         expect(toolMessages[0].metadata?.error).toContain('not available');
-        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'shell.exec')).toEqual(true);
+        expect(events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'shell.exec')).toEqual(true);
     }
 
     @Test('stores successful tool execution receipt metadata and events')
     async storesSuccessfulToolExecutionReceiptMetadataAndEvents() {
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2203,8 +2132,8 @@ export class RuntimeLoopTest {
         expect(receipt?.durationMs).toBeGreaterThanOrEqual(0);
         expect(receipt?.outputSummary).toContain('from-tool');
 
-        const invokedEvent = app.events.find(event => event instanceof AgentToolInvokedEvent);
-        const completedEvent = app.events.find(event => event instanceof AgentToolCompletedEvent);
+        const invokedEvent = events.find(event => event instanceof AgentToolInvokedEvent);
+        const completedEvent = events.find(event => event instanceof AgentToolCompletedEvent);
         expect(invokedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
         expect(invokedEvent?.receipt?.status).toEqual('running');
         expect(completedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
@@ -2214,15 +2143,13 @@ export class RuntimeLoopTest {
 
     @Test('stores resolved sandbox metadata on tool execution receipts')
     async storesResolvedSandboxMetadataOnToolExecutionReceipts() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new SandboxedToolLoopModelAdapter(),
             new SandboxedToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2241,15 +2168,13 @@ export class RuntimeLoopTest {
 
     @Test('session sandbox mode overrides receipt sandbox policy')
     async sessionSandboxModeOverridesReceiptSandboxPolicy() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new SandboxedToolLoopModelAdapter(),
             new SandboxedToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
         runtime.setSessionSandboxMode('s1', 'network-block');
 
@@ -2263,15 +2188,13 @@ export class RuntimeLoopTest {
 
     @Test('stores concise location tool output summary instead of json')
     async storesConciseLocationToolOutputSummaryInsteadOfJson() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new LocationToolLoopModelAdapter(),
             new LocationToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'where am i');
@@ -2287,16 +2210,13 @@ export class RuntimeLoopTest {
 
     @Test('stores failed tool execution receipt metadata and events')
     async storesFailedToolExecutionReceiptMetadataAndEvents() {
-        const app = new FakeApp();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            app as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         // Tool errors are now fed back as tool messages instead of throwing.
@@ -2314,9 +2234,9 @@ export class RuntimeLoopTest {
         expect(receipt?.executionMode).toEqual('sequential');
         expect(receipt?.error).toEqual('tool failed');
 
-        const invokedEvent = app.events.find(event => event instanceof AgentToolInvokedEvent);
-        const completedEvent = app.events.find(event => event instanceof AgentToolCompletedEvent);
-        const failedEvent = app.events.find(event => event instanceof AgentToolFailedEvent);
+        const invokedEvent = events.find(event => event instanceof AgentToolInvokedEvent);
+        const completedEvent = events.find(event => event instanceof AgentToolCompletedEvent);
+        const failedEvent = events.find(event => event instanceof AgentToolFailedEvent);
         expect(invokedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
         expect(invokedEvent?.receipt?.status).toEqual('running');
         expect(completedEvent).toEqual(undefined);
@@ -2327,7 +2247,7 @@ export class RuntimeLoopTest {
 
     @Test('records sequential and parallel execution mode in tool receipts')
     async recordsSequentialAndParallelExecutionModeInToolReceipts() {
-        const sequentialRuntime = new DefaultAgentRuntime(
+        const { runtime: sequentialRuntime } = await createRuntime(
             new MetadataParallelModelAdapter(),
             new MetadataDrivenToolRegistry(),
             new InMemorySessionStore(),
@@ -2340,9 +2260,7 @@ export class RuntimeLoopTest {
                     parallelExecution: true,
                     parallelSafeTools: ['lookup', 'mutate']
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
         await sequentialRuntime.runTurn('s1', 'hello');
         const sequentialMessages = await sequentialRuntime.getMessages('s1');
@@ -2350,7 +2268,7 @@ export class RuntimeLoopTest {
         expect(sequentialMessages[3].metadata?.receipt?.executionMode).toEqual('sequential');
 
         const parallelRegistry = new ParallelReadOnlyToolRegistry();
-        const parallelRuntime = new DefaultAgentRuntime(
+        const { runtime: parallelRuntime } = await createRuntime(
             new ParallelReadOnlyModelAdapter(),
             parallelRegistry,
             new InMemorySessionStore(),
@@ -2363,9 +2281,7 @@ export class RuntimeLoopTest {
                     parallelExecution: true,
                     parallelSafeTools: ['lookup_one', 'lookup_two']
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
         await parallelRuntime.runTurn('s2', 'hello');
         const parallelMessages = await parallelRuntime.getMessages('s2');
@@ -2376,7 +2292,7 @@ export class RuntimeLoopTest {
 
     @Test('stores timeout failure for slow tool invocations')
     async storesTimeoutFailureForSlowToolInvocations() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new DelayedToolRegistry(40),
             new InMemorySessionStore(),
@@ -2388,9 +2304,7 @@ export class RuntimeLoopTest {
                     ...defaultAgentOptions.tools,
                     parallelExecution: false
                 }
-            },
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            }
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -2402,15 +2316,13 @@ export class RuntimeLoopTest {
 
     @Test('redacts sensitive tool output before storing tool messages')
     async redactsSensitiveToolOutputBeforeStoringToolMessages() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new SecretToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await runtime.runTurn('s1', 'hello');
@@ -2424,15 +2336,13 @@ export class RuntimeLoopTest {
 
     @Test('denies protected tool invocation for unauthorized principal')
     async deniesProtectedToolInvocationForUnauthorizedPrincipal() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new ProtectedToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-2');
@@ -2445,15 +2355,13 @@ export class RuntimeLoopTest {
 
     @Test('allows protected tool invocation for authorized principal')
     async allowsProtectedToolInvocationForAuthorizedPrincipal() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new ProtectedToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-1');
@@ -2466,15 +2374,13 @@ export class RuntimeLoopTest {
     @Test('keeps principal scoped to each concurrent turn')
     async keepsPrincipalScopedToEachConcurrentTurn() {
         const registry = new ConcurrentPrincipalToolRegistry();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             new ConcurrentPrincipalToolModelAdapter(),
             registry,
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await Promise.all([
@@ -2491,15 +2397,13 @@ export class RuntimeLoopTest {
     @Test('serializes turns per session while allowing different sessions to overlap')
     async serializesTurnsPerSessionWhileAllowingDifferentSessionsToOverlap() {
         const model = new SessionConcurrencyModelAdapter();
-        const runtime = new DefaultAgentRuntime(
+        const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         await Promise.all([
@@ -2514,7 +2418,7 @@ export class RuntimeLoopTest {
 
     @Test('allows local gateway principal for sensitive local-only authorization policy')
     async allowsGatewayLocalPrincipalForLocalOnlyAuthorizationPolicy() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new class extends ProtectedToolRegistry {
                 getTools() {
@@ -2534,9 +2438,7 @@ export class RuntimeLoopTest {
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'gateway-local');
@@ -2548,7 +2450,7 @@ export class RuntimeLoopTest {
 
     @Test('denies unrelated remote principal for local-only authorization policy')
     async deniesRemotePrincipalForLocalOnlyAuthorizationPolicy() {
-        const runtime = new DefaultAgentRuntime(
+        const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new class extends ProtectedToolRegistry {
                 getTools() {
@@ -2568,9 +2470,7 @@ export class RuntimeLoopTest {
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any,
-            new RandomUuidGenerator()
+            defaultAgentOptions
         );
 
         const result = await runtime.runTurn('s1', 'hello', 'user-2');
@@ -2710,31 +2610,28 @@ class ArchetypeToolCallAdapter extends EchoModelAdapter {
     }
 }
 
-function createArchetypeRuntime(
+async function createArchetypeRuntime(
     adapter: any,
     tool: any,
     options = defaultAgentOptions,
     promptBuilder?: any
-): DefaultAgentRuntime {
-    return new DefaultAgentRuntime(
+): Promise<DefaultAgentRuntime> {
+    const { runtime } = await createRuntime(
         adapter,
         new ArchetypeToolRegistry(tool),
         new InMemorySessionStore(),
         new InMemoryMemoryStore(),
         new SimpleSessionSummarizer(),
-        options,
-        new FakeApp() as any,
-        new RandomUuidGenerator(),
-        undefined,
-        promptBuilder
+        options
     );
+    return runtime as DefaultAgentRuntime;
 }
 
 @Suite('Agent archetypes')
 export class AgentArchetypeTest {
     @Test('default archetype is build and sessions resolve independently')
     async defaultArchetypeIsBuild() {
-        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        const runtime = await createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
         expect(runtime.getSessionArchetype('s1')).toEqual('build');
         expect(runtime.isPlanMode('s1')).toEqual(false);
 
@@ -2751,7 +2648,7 @@ export class AgentArchetypeTest {
 
     @Test('setPlanMode collapses onto the plan archetype')
     async setPlanModeDelegatesToArchetype() {
-        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        const runtime = await createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
         runtime.setPlanMode('s1', true);
         expect(runtime.getSessionArchetype('s1')).toEqual('plan');
         expect(runtime.isPlanMode('s1')).toEqual(true);
@@ -2764,7 +2661,7 @@ export class AgentArchetypeTest {
     async planArchetypeGatesTools() {
         const writeTool = new ArchetypeProbeTool('write_tool');
         const writeAdapter = new ArchetypeToolCallAdapter('write_tool', { key: 'k' });
-        const writeRuntime = createArchetypeRuntime(writeAdapter, writeTool);
+        const writeRuntime = await createArchetypeRuntime(writeAdapter, writeTool);
         writeRuntime.setSessionArchetype('s1', 'plan');
 
         await writeRuntime.runTurn('s1', 'store it');
@@ -2774,7 +2671,7 @@ export class AgentArchetypeTest {
 
         const readTool = new ArchetypeProbeTool('read_tool', true);
         const readAdapter = new ArchetypeToolCallAdapter('read_tool', {});
-        const readRuntime = createArchetypeRuntime(readAdapter, readTool);
+        const readRuntime = await createArchetypeRuntime(readAdapter, readTool);
         readRuntime.setSessionArchetype('s1', 'plan');
 
         await readRuntime.runTurn('s1', 'look it up');
@@ -2785,7 +2682,7 @@ export class AgentArchetypeTest {
     async planArchetypeWritePathsCarveOut() {
         const plansTool = new ArchetypeProbeTool('write_tool');
         const plansAdapter = new ArchetypeToolCallAdapter('write_tool', { file: 'plans/step-1.md' });
-        const plansRuntime = createArchetypeRuntime(plansAdapter, plansTool);
+        const plansRuntime = await createArchetypeRuntime(plansAdapter, plansTool);
         plansRuntime.setSessionArchetype('s1', 'plan');
 
         await plansRuntime.runTurn('s1', 'write the plan');
@@ -2793,7 +2690,7 @@ export class AgentArchetypeTest {
 
         const srcTool = new ArchetypeProbeTool('write_tool');
         const srcAdapter = new ArchetypeToolCallAdapter('write_tool', { file: 'src/impl.ts' });
-        const srcRuntime = createArchetypeRuntime(srcAdapter, srcTool);
+        const srcRuntime = await createArchetypeRuntime(srcAdapter, srcTool);
         srcRuntime.setSessionArchetype('s1', 'plan');
 
         await srcRuntime.runTurn('s1', 'write the code');
@@ -2809,7 +2706,7 @@ export class AgentArchetypeTest {
             name: () => 'test',
             render: async () => 'Test prompt'
         }]);
-        const runtime = createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
+        const runtime = await createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
         runtime.setSessionArchetype('s1', 'review');
 
         await runtime.runTurn('s1', 'review the diff');
@@ -2829,7 +2726,7 @@ export class AgentArchetypeTest {
             name: () => 'test',
             render: async () => 'Test prompt'
         }]);
-        const runtime = createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
+        const runtime = await createArchetypeRuntime(adapter, tool, defaultAgentOptions, builder);
         runtime.setSessionArchetype('s1', 'build');
 
         await runtime.runTurn('s1', 'implement it');
@@ -2840,7 +2737,7 @@ export class AgentArchetypeTest {
 
     @Test('archetype switch appends a switch message to an active transcript')
     async archetypeSwitchAppendsMessage() {
-        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
+        const runtime = await createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'));
         await runtime.runTurn('s1', 'hello');
         expect((await runtime.getMessages('s1')).length).toEqual(2);
 
@@ -2870,7 +2767,7 @@ export class AgentArchetypeTest {
                 }
             }
         };
-        const runtime = createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'), options);
+        const runtime = await createArchetypeRuntime(new EchoModelAdapter(), new ArchetypeProbeTool('write_tool'), options);
         const names = runtime.listArchetypes();
         expect(names).toContain('build');
         expect(names).toContain('plan');
@@ -2882,7 +2779,7 @@ export class AgentArchetypeTest {
 
         const tool = new ArchetypeProbeTool('write_tool');
         const adapter = new ArchetypeToolCallAdapter('write_tool', { file: 'plans/step-1.md' });
-        const gateRuntime = createArchetypeRuntime(adapter, tool, options);
+        const gateRuntime = await createArchetypeRuntime(adapter, tool, options);
         gateRuntime.setSessionArchetype('s1', 'guard');
 
         await gateRuntime.runTurn('s1', 'write the plan');
