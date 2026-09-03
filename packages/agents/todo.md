@@ -1924,3 +1924,9 @@ Turn: Fix session restore                                      running  01:42
 
 - `TypeormAdapter` 新增并发安全的异步 `ready()`：启动连接 Promise 单例复用，初始化失败清理 pending 状态以支持重试；保留同步 `getConnection()`/`getRepository()` API 兼容现有 resolver 与 transaction 代码。
 - 验证：`packages/typeorm-adapter` `tsc --noEmit` 通过，SQLite/sqljs `test/connet.spec.ts` 定向测试通过。PostgreSQL 连接与本机监听测试仍受当前沙箱 `EPERM` 限制。
+
+### 2026-09-03 TypeORM store lazy readiness follow-up
+
+- `TypeOrmMemoryStore` 与 `TypeOrmEvalReportStore` 的读写入口统一先等待 `TypeormAdapter.ready()`，确保连接异步懒初始化完成后再访问 repository；不引入 InMemory 或默认回退。
+- 验证：`agent` `npm run build` 通过；`agent-ui` 全量 **953 passing**；`typeorm-adapter` `tsc --noEmit` 通过。
+- 限制：`agent`/`agent-tools`/`agent-gateway` 测试仍包含已删除 InMemory fixture 的历史导入及旧构造器调用，尚未完成真实 SQLite fixture 迁移，因此本轮不宣称 packages/agents 全量测试通过。

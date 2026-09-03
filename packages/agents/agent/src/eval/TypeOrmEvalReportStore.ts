@@ -11,6 +11,7 @@ export class TypeOrmEvalReportStore extends EvalReportStore {
     }
 
     async save(run: EvalRun): Promise<void> {
+        await this.adapter.ready();
         await this.adapter.getRepository(AgentEvalReportEntity).save({
             id: run.id,
             report: run,
@@ -19,6 +20,7 @@ export class TypeOrmEvalReportStore extends EvalReportStore {
     }
 
     async list(): Promise<EvalRun[]> {
+        await this.adapter.ready();
         const rows = await this.adapter.getRepository(AgentEvalReportEntity).find({
             order: { startedAt: 'ASC', id: 'ASC' } as any
         });
@@ -26,6 +28,7 @@ export class TypeOrmEvalReportStore extends EvalReportStore {
     }
 
     async get(id: string): Promise<EvalRun | undefined> {
+        await this.adapter.ready();
         const row = await this.adapter.getRepository(AgentEvalReportEntity).findOne({ where: { id } as any });
         return row?.report as EvalRun | undefined;
     }

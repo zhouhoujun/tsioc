@@ -10,6 +10,7 @@ export class TypeOrmMemoryStore extends MemoryStore {
     }
 
     async put(record: AgentMemoryRecord): Promise<void> {
+        await this.adapter.ready();
         const repo = this.adapter.getRepository(AgentMemoryEntity);
         const entity = repo.create({
             id: record.id,
@@ -33,6 +34,7 @@ export class TypeOrmMemoryStore extends MemoryStore {
     }
 
     async getAll(sessionId?: string): Promise<AgentMemoryRecord[]> {
+        await this.adapter.ready();
         const repo = this.adapter.getRepository(AgentMemoryEntity);
         const records = await repo.find({ order: { createdAt: 'ASC', id: 'ASC' } as any });
         return records
@@ -52,6 +54,7 @@ export class TypeOrmMemoryStore extends MemoryStore {
     }
 
     async delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number> {
+        await this.adapter.ready();
         const repo = this.adapter.getRepository(AgentMemoryEntity);
         const memory = await repo.findOne({ where: { id } as any });
         if (!memory) {
@@ -72,6 +75,7 @@ export class TypeOrmMemoryStore extends MemoryStore {
     }
 
     async deleteBySession(sessionId: string): Promise<number> {
+        await this.adapter.ready();
         const repo = this.adapter.getRepository(AgentMemoryEntity);
         const records = await repo.find({ where: { sessionId, scope: 'session' } as any });
         for (const record of records) {
