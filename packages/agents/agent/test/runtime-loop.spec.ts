@@ -3,12 +3,11 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext, createRunContext, RunContext } from '@tsdi/core';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
-import { InMemorySessionStore, InMemoryMemoryStore } from './helpers/in-memory-stores';
+import { MemoryStore, AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { SessionStore } from '../src/memory/SessionStore';
-import { MemoryStore } from '../src/memory/MemoryStore';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { SessionToolActivationStore } from '../src/tools/SessionToolActivationStore';
@@ -23,7 +22,6 @@ import { withAgentTurnFilters, withAgentTurnGuards, withAgentTurnInterceptors } 
 import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
 import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
 import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
-import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { AgentTool } from '../src/tools/AgentTool';
 import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent } from '../src/runtime/AgentEvents';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
@@ -46,29 +44,42 @@ interface RuntimeLoopHandle {
     ctx: ApplicationContext;
     registry: ToolRegistry;
     events: any[];
+    sessions: SessionStore;
+    memory: MemoryStore;
 }
 
 interface RuntimeLoopCreateOptions {
     throwOn?: Array<{ event: any; error?: string }>;
 }
 
+async function bootStores(): Promise<{ sessionStore: SessionStore; memoryStore: MemoryStore }> {
+    const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) } as any);
+    return { sessionStore: ctx.get(SessionStore), memoryStore: ctx.get(MemoryStore) };
+}
+
 async function createRuntime(
     model: ModelAdapter,
     registry: ToolRegistry,
-    sessions: SessionStore,
-    memory: MemoryStore,
-    summarizer: SessionSummarizer,
-    options: AgentOptions,
+    sessions?: SessionStore,
+    memory?: MemoryStore,
+    summarizer: SessionSummarizer = new SimpleSessionSummarizer(),
+    options: AgentOptions = defaultAgentOptions,
     overrides: Array<{ provide: any; useValue: any }> = [],
     createOptions: RuntimeLoopCreateOptions = {}
 ): Promise<RuntimeLoopHandle> {
-    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: model },
+    const providers: any[] = [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
+        { provide: ModelAdapter, useValue: model },
         { provide: ToolRegistry, useValue: registry },
-        { provide: SessionStore, useValue: sessions },
-        { provide: MemoryStore, useValue: memory },
         { provide: SessionSummarizer, useValue: summarizer },
         { provide: AGENT_OPTIONS, useValue: options },
-        ...overrides]] });
+        ...overrides];
+    if (sessions) {
+        providers.push({ provide: SessionStore, useValue: sessions });
+    }
+    if (memory) {
+        providers.push({ provide: MemoryStore, useValue: memory });
+    }
+    const ctx = await Application.run(AgentModule, { providers });
     const events: any[] = [];
     for (const eventType of RUNTIME_LOOP_EVENTS) {
         ctx.eventMulticaster.addListener(eventType, event => events.push(event));
@@ -78,7 +89,7 @@ async function createRuntime(
             throw new Error(entry.error ?? 'event failed');
         });
     }
-    return { runtime: ctx.get(AgentRuntime), ctx, registry: ctx.get(ToolRegistry), events };
+    return { runtime: ctx.get(AgentRuntime), ctx, registry: ctx.get(ToolRegistry), events, sessions: ctx.get(SessionStore), memory: ctx.get(MemoryStore) };
 }
 
 class EmptyToolRegistry extends ToolRegistry {
@@ -518,16 +529,20 @@ class DeferredInvokeModelAdapter extends EchoModelAdapter {
     }
 }
 
-class SearchOnlyMemoryStore extends InMemoryMemoryStore {
+class SearchOnlyMemoryStore extends MemoryStore {
     searchCalls: Array<{ query: string; sessionId?: string }> = [];
     getAllCalls = 0;
 
-    async search(query: string, sessionId?: string): Promise<any[]> {
+    async put(_record: AgentMemoryRecord): Promise<void> {}
+    async delete(): Promise<number> { return 0; }
+    async deleteBySession(): Promise<number> { return 0; }
+
+    async search(query: string, sessionId?: string): Promise<AgentMemoryRecord[]> {
         this.searchCalls.push({ query, sessionId });
         return [{ id: 'relevant', sessionId, key: 'topic', value: 'router', scope: 'session', createdAt: 1 }];
     }
 
-    async getAll(sessionId?: string): Promise<any[]> {
+    async getAll(sessionId?: string): Promise<AgentMemoryRecord[]> {
         this.getAllCalls++;
         return [{ id: 'irrelevant', sessionId, key: 'other', value: 'unrelated', scope: 'session', createdAt: 1 }];
     }
@@ -929,10 +944,14 @@ class ThrowingExperienceDistiller extends ExperienceDistiller {
     }
 }
 
-class PutFailingMemoryStore extends InMemoryMemoryStore {
+class PutFailingMemoryStore extends MemoryStore {
     async put(): Promise<void> {
         throw new Error('put failed');
     }
+    async search(): Promise<AgentMemoryRecord[]> { return []; }
+    async getAll(): Promise<AgentMemoryRecord[]> { return []; }
+    async delete(): Promise<number> { return 0; }
+    async deleteBySession(): Promise<number> { return 0; }
 }
 
 @Suite('Agent runtime loop')
@@ -942,8 +961,8 @@ export class RuntimeLoopTest {
         const { runtime } = await createRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1000,8 +1019,8 @@ export class RuntimeLoopTest {
         const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1025,18 +1044,17 @@ export class RuntimeLoopTest {
     @Test('sends only configured recent messages to model')
     async sendsOnlyConfiguredRecentMessagesToModel() {
         const model = new CapturingModelAdapter();
-        const sessions = new InMemorySessionStore();
-        for (let index = 1; index <= 5; index++) {
-            await sessions.append('s1', { id: `${index}`, role: 'user', content: `old-${index}`, createdAt: index });
-        }
-const { runtime } = await createRuntime(
+        const { runtime, sessions } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 } }
         );
+        for (let index = 1; index <= 5; index++) {
+            await sessions.append('s1', { id: `${index}`, role: 'user', content: `old-${index}`, createdAt: index });
+        }
 
         await runtime.runTurn('s1', 'newest');
 
@@ -1048,7 +1066,14 @@ const { runtime } = await createRuntime(
     @Test('keeps assistant tool-call message that issued retained tool results when trimming recent messages')
     async keepsAssistantToolCallMessageWhenTrimmingRecentMessages() {
         const model = new CapturingModelAdapter();
-        const sessions = new InMemorySessionStore();
+        const { runtime, sessions } = await createRuntime(
+            model,
+            new EmptyToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 6, summaryThreshold: 999 } }
+        );
         await sessions.append('s1', { id: 'm1', role: 'user', content: '设计并生成一个在线考试系统', createdAt: 1 } as any);
         await sessions.append('s1', {
             id: 'm2', role: 'assistant', content: 'checking',
@@ -1079,15 +1104,6 @@ const { runtime } = await createRuntime(
         } as any);
         await sessions.append('s1', { id: 'm8', role: 'tool', name: 'todo', content: 'ok', toolCallId: 't4', createdAt: 8 } as any);
 
-        const { runtime } = await createRuntime(
-            model,
-            new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
-            new SimpleSessionSummarizer(),
-            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 6, summaryThreshold: 999 } }
-        );
-
         await runtime.runTurn('s1', 'newest');
 
         const sent = model.requests[0].messages as any[];
@@ -1115,7 +1131,7 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
@@ -1135,7 +1151,7 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
@@ -1154,17 +1170,16 @@ const { runtime } = await createRuntime(
     @Test('rewrites short follow-up answers after clarification into shared model context')
     async rewritesClarificationFollowUpIntoModelRequest() {
         const model = new CapturingModelAdapter();
-        const sessions = new InMemorySessionStore();
-        await sessions.append('s1', { id: 'u1', role: 'user', content: 'Check deployment status', createdAt: 1 } as any);
-        await sessions.append('s1', { id: 'a1', role: 'assistant', content: 'Which region should I check?', createdAt: 2 } as any);
-        const { runtime } = await createRuntime(
+        const { runtime, sessions } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
+        await sessions.append('s1', { id: 'u1', role: 'user', content: 'Check deployment status', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: 'Which region should I check?', createdAt: 2 } as any);
 
         await runtime.runTurn('s1', 'us-east-1');
 
@@ -1180,17 +1195,16 @@ const { runtime } = await createRuntime(
     @Test('recovers empty replies by compacting rewritten follow-up context into a focused retry')
     async recoversEmptyRepliesFromClarificationFollowUp() {
         const model = new BlankThenFollowUpRecoveryModelAdapter();
-        const sessions = new InMemorySessionStore();
-        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
-        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
-        const { runtime, events } = await createRuntime(
+        const { runtime, events, sessions } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
+        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
 
         const result = await runtime.runTurn('s1', '成都');
         const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
@@ -1218,8 +1232,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new BlankThenAnswerModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1243,17 +1257,16 @@ const { runtime } = await createRuntime(
 
     @Test('flags repeated clarification turns in diagnostics')
     async flagsRepeatedClarificationTurnsInDiagnostics() {
-        const sessions = new InMemorySessionStore();
-        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
-        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
-        const { runtime, events } = await createRuntime(
+        const { runtime, events, sessions } = await createRuntime(
             new RepeatedClarificationModelAdapter(),
             new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
+        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
 
         await runtime.runTurn('s1', '成都');
 
@@ -1276,8 +1289,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new PromptCacheModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1308,7 +1321,7 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
@@ -1330,12 +1343,11 @@ const { runtime } = await createRuntime(
 
     @Test('persists structured session summary after turn threshold is reached')
     async persistsStructuredSessionSummaryAfterThreshold() {
-        const sessions = new InMemorySessionStore();
-        const { runtime } = await createRuntime(
+        const { runtime, sessions } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new LLMSessionSummarizer(new StaticModelAdapter(
                 'We should fix routing in src/app.ts. The next step is to inspect the router flow and patch the failing branch.'
             ) as any),
@@ -1363,8 +1375,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             model,
             new FailingToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new LLMSessionSummarizer(new StaticModelAdapter(
                 [
                     'Goal: 设计一个跨平台在线考试系统，并补充数据库表设计。',
@@ -1414,8 +1426,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             model,
             new FailingToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new LLMSessionSummarizer(new StaticModelAdapter(
                 [
                     'Goal: 设计一个跨平台在线考试系统。',
@@ -1467,8 +1479,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new LLMSessionSummarizer(new StaticModelAdapter(
                 'Goal: keep testing turn execution.\nDecisions: ignore event errors.\nFiles: No file paths mentioned.\nErrors: No errors recorded.\nOpen state: continue.'
             ) as any),
@@ -1491,8 +1503,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new StaticModelAdapter('done'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             [],
@@ -1510,7 +1522,7 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
@@ -1533,7 +1545,7 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             new SearchOnlyMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
@@ -1555,8 +1567,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             model,
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 2, summaryThreshold: 999 } }
         );
@@ -1570,7 +1582,6 @@ const { runtime } = await createRuntime(
 
     @Test('distills and persists experience memories after completed turn')
     async distillsAndPersistsExperienceMemoriesAfterCompletedTurn() {
-        const memory = new InMemoryMemoryStore();
         const distiller = new CapturingExperienceDistiller([
             {
                 id: 'exp-1',
@@ -1582,11 +1593,11 @@ const { runtime } = await createRuntime(
                 createdAt: 1
             }
         ]);
-        const { runtime } = await createRuntime(
+        const { runtime, memory } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            memory,
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             [{ provide: ExperienceDistiller, useValue: distiller }]
@@ -1605,13 +1616,12 @@ const { runtime } = await createRuntime(
 
     @Test('does not persist memory when distiller returns no experiences')
     async doesNotPersistMemoryWhenDistillerReturnsNoExperiences() {
-        const memory = new InMemoryMemoryStore();
         const distiller = new CapturingExperienceDistiller();
-        const { runtime } = await createRuntime(
+        const { runtime, memory } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            memory,
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             [{ provide: ExperienceDistiller, useValue: distiller }]
@@ -1630,8 +1640,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             [{ provide: ExperienceDistiller, useValue: new ThrowingExperienceDistiller() }]
@@ -1660,7 +1670,7 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
+            undefined,
             new PutFailingMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
@@ -1679,8 +1689,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new EndlessToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             { ...defaultAgentOptions, maxToolRounds: 1 }
         );
@@ -1699,8 +1709,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1723,8 +1733,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             model,
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1769,8 +1779,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new DoneChunkToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1800,8 +1810,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1822,8 +1832,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new BlankAfterToolErrorModelAdapter(),
             new FailingToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1838,8 +1848,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new BlankResponseModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1853,8 +1863,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new BlankThenAnswerModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1868,8 +1878,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new MultiToolLoopModelAdapter(),
             new FailFirstToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -1893,8 +1903,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new MetadataParallelModelAdapter(),
             registry,
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -1917,8 +1927,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new MultiToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -1960,17 +1970,17 @@ const { runtime } = await createRuntime(
     @Test('runtime sends deferred tool schemas to the model before activation')
     async runtimeSendsDeferredToolDefinitions() {
         const model = new CapturingModelAdapter();
-        const sessions = new InMemorySessionStore();
+        const sessions = (await bootStores()).sessionStore;
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
+        ], (await bootStores()).memoryStore, sessions, new SessionToolActivationStore());
         const { runtime } = await createRuntime(
             model,
             registry,
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2012,17 +2022,17 @@ const { runtime } = await createRuntime(
     @Test('tool activation does not leak across sessions')
     async deferredToolActivationIsSessionScoped() {
         const model = new CapturingModelAdapter();
-        const sessions = new InMemorySessionStore();
+        const sessions = (await bootStores()).sessionStore;
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
-        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
+        ], (await bootStores()).memoryStore, sessions, new SessionToolActivationStore());
         const { runtime } = await createRuntime(
             model,
             registry,
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2056,18 +2066,18 @@ const { runtime } = await createRuntime(
 
     @Test('runtime auto-activates deferred tools before invocation')
     async runtimeAutoActivatesDeferredToolInvocation() {
-        const sessions = new InMemorySessionStore();
+        const sessions = (await bootStores()).sessionStore;
         const deferredTool = new DeferredRuntimeTool();
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
             deferredTool
-        ], new InMemoryMemoryStore(), sessions, new SessionToolActivationStore());
+        ], (await bootStores()).memoryStore, sessions, new SessionToolActivationStore());
         const { runtime, events } = await createRuntime(
             new DeferredInvokeModelAdapter(),
             registry,
-            sessions,
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2086,8 +2096,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new UnknownToolModelAdapter(),
             registry,
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2109,8 +2119,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2144,8 +2154,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new SandboxedToolLoopModelAdapter(),
             new SandboxedToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2169,8 +2179,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new SandboxedToolLoopModelAdapter(),
             new SandboxedToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2189,8 +2199,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new LocationToolLoopModelAdapter(),
             new LocationToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2211,8 +2221,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2248,8 +2258,8 @@ const { runtime } = await createRuntime(
         const { runtime: sequentialRuntime } = await createRuntime(
             new MetadataParallelModelAdapter(),
             new MetadataDrivenToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -2269,8 +2279,8 @@ const { runtime } = await createRuntime(
         const { runtime: parallelRuntime } = await createRuntime(
             new ParallelReadOnlyModelAdapter(),
             parallelRegistry,
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -2293,8 +2303,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new ToolLoopModelAdapter(),
             new DelayedToolRegistry(40),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             {
                 ...defaultAgentOptions,
@@ -2317,8 +2327,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new ToolLoopModelAdapter(),
             new SecretToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2337,8 +2347,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new ProtectedToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2356,8 +2366,8 @@ const { runtime } = await createRuntime(
         const { runtime, events } = await createRuntime(
             new ProtectedToolModelAdapter(),
             new ProtectedToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2375,8 +2385,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             new ConcurrentPrincipalToolModelAdapter(),
             registry,
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2398,8 +2408,8 @@ const { runtime } = await createRuntime(
         const { runtime } = await createRuntime(
             model,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2433,8 +2443,8 @@ const { runtime } = await createRuntime(
                     } as any];
                 }
             }(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2465,8 +2475,8 @@ const { runtime } = await createRuntime(
                     } as any];
                 }
             }(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            undefined,
+            undefined,
             new SimpleSessionSummarizer(),
             defaultAgentOptions
         );
@@ -2617,8 +2627,8 @@ async function createArchetypeRuntime(
     const { runtime } = await createRuntime(
         adapter,
         new ArchetypeToolRegistry(tool),
-        new InMemorySessionStore(),
-        new InMemoryMemoryStore(),
+        undefined,
+        undefined,
         new SimpleSessionSummarizer(),
         options
     );

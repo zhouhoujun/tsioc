@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { MemoryStore } from '../src/memory/MemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
 import { MemoryPutTool, MemorySearchTool } from '../src/tools/BuiltinTools';
@@ -17,8 +17,22 @@ import { WeatherAdapter } from '../../agent-tools/utility/weather.tool';
 import { LlmTaskAdapter } from '../../agent-tools/llm/llm-task.tool';
 import { PipelineAdapter } from '../../agent-tools/pipeline/pipeline.tool';
 import { resolveDefaultToolSandboxPolicy } from '../src/harness/ToolSandboxPolicy';
-import { InMemoryAuditSink } from '../src/harness/InMemoryAuditSink';
+import { AuditSink, AgentAuditRecord } from '../src/harness/AuditSink';
+import { SessionStore } from '../src/memory/SessionStore';
+import { ToolActivationStore } from '../src/tools/ToolActivationStore';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 import { defaultAgentOptions } from '../src/options';
+
+async function bootStores(): Promise<{ memoryStore: MemoryStore; sessionStore: SessionStore; activationStore: ToolActivationStore; auditSink: AuditSink }> {
+    const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) } as any);
+    return {
+        memoryStore: ctx.get(MemoryStore),
+        sessionStore: ctx.get(SessionStore),
+        activationStore: ctx.get(ToolActivationStore),
+        auditSink: ctx.get(AuditSink)
+    };
+}
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -152,7 +166,7 @@ class ExplicitSandboxTool implements AgentTool {
 export class BuiltinToolsTest {
     @Test('memory put stores session memory')
     async memoryPutStoresRecord() {
-        const store = new InMemoryMemoryStore();
+        const store = (await bootStores()).memoryStore;
         const tool = new MemoryPutTool();
         await tool.invoke({ key: 'topic', value: 'router', scope: 'session' }, {
             sessionId: 's1',
@@ -167,7 +181,7 @@ export class BuiltinToolsTest {
 
     @Test('memory put compensation removes only the records the call added')
     async memoryPutCompensationRestoresPriorState() {
-        const store = new InMemoryMemoryStore();
+        const store = (await bootStores()).memoryStore;
         const tool = new MemoryPutTool();
         await store.put({
             id: 'existing-1',
@@ -204,7 +218,7 @@ export class BuiltinToolsTest {
 
     @Test('memory search returns matching records')
     async memorySearchFindsRecord() {
-        const store = new InMemoryMemoryStore();
+        const store = (await bootStores()).memoryStore;
         const put = new MemoryPutTool();
         const search = new MemorySearchTool();
         await put.invoke({ key: 'device', value: 'router-shell' }, {
@@ -329,7 +343,7 @@ export class BuiltinToolsTest {
 
     @Test('approval decisions are written to the audit sink')
     async approvalDecisionsWrittenToAuditSink() {
-        const sink = new InMemoryAuditSink();
+        const sink = (await bootStores()).auditSink;
         const approvals = new ToolApprovalManager(
             new FakeApp() as any,
             new RandomUuidGenerator(),
@@ -539,8 +553,9 @@ export class BuiltinToolsTest {
     }
 
     @Test('local tool registry returns resolved definitions with compatibility metadata')
-    localToolRegistryReturnsResolvedDefinitions() {
-        const registry = new LocalToolRegistry([new DescribedTool()], new InMemoryMemoryStore());
+    async localToolRegistryReturnsResolvedDefinitions() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new DescribedTool()], memoryStore, sessionStore, activationStore);
 
         expect(registry.getTools().length).toEqual(1);
         expect(registry.getTool('described')?.description).toEqual('legacy description');
@@ -566,8 +581,8 @@ export class BuiltinToolsTest {
 
     @Test('local tool registry invokes tools with session context')
     async localToolRegistryInvokesToolsWithContext() {
-        const store = new InMemoryMemoryStore();
-        const registry = new LocalToolRegistry([new MemoryPutTool()], store);
+        const { memoryStore: store, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new MemoryPutTool()], store, sessionStore, activationStore);
 
         await registry.activateTool('s1', 'memory.put');
         const result = await registry.invoke('memory.put', { key: 'topic', value: 'router' }, 's1');
@@ -576,11 +591,12 @@ export class BuiltinToolsTest {
     }
 
     @Test('local tool registry returns lightweight stubs by default except registry tools')
-    localToolRegistryReturnsDeferredDefinitions() {
+    async localToolRegistryReturnsDeferredDefinitions() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
         const registry = new LocalToolRegistry([
             new RegistryDiscoveryTool(),
             new DeferredDefinitionTool()
-        ], new InMemoryMemoryStore());
+        ], memoryStore, sessionStore, activationStore);
 
         expect(registry.getToolDefinition('tool_search', 's1')).toEqual({
             name: 'tool_search',
@@ -619,10 +635,11 @@ export class BuiltinToolsTest {
 
     @Test('local tool registry exposes full schema only after session activation')
     async localToolRegistryActivatesDefinitionsPerSession() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
         const registry = new LocalToolRegistry([
             new RegistryDiscoveryTool(),
             new DeferredDefinitionTool()
-        ], new InMemoryMemoryStore());
+        ], memoryStore, sessionStore, activationStore);
 
         expect(registry.getToolDefinition('heavy_tool', 's1')?.inputSchema).toEqual(undefined);
         await registry.activateTool('s1', 'heavy_tool');
@@ -646,11 +663,12 @@ export class BuiltinToolsTest {
     }
 
     @Test('local tool registry exposes deferred schemas through callable definitions before activation')
-    localToolRegistryExposesDeferredCallableDefinitions() {
+    async localToolRegistryExposesDeferredCallableDefinitions() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
         const registry = new LocalToolRegistry([
             new RegistryDiscoveryTool(),
             new MetadataDefinitionTool()
-        ], new InMemoryMemoryStore());
+        ], memoryStore, sessionStore, activationStore);
 
         const lightweight = registry.getToolDefinition('metadata_tool', 's1');
         const callable = registry.getCallableToolDefinitions('s1').find(tool => tool.name === 'metadata_tool');
@@ -668,10 +686,11 @@ export class BuiltinToolsTest {
 
     @Test('local tool registry preserves provenance and activation metadata on lightweight and activated definitions')
     async localToolRegistryPreservesMetadataAcrossActivationStates() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
         const registry = new LocalToolRegistry([
             new RegistryDiscoveryTool(),
             new MetadataDefinitionTool()
-        ], new InMemoryMemoryStore());
+        ], memoryStore, sessionStore, activationStore);
 
         expect(registry.getToolDefinition('metadata_tool', 's1')).toEqual({
             name: 'metadata_tool',
@@ -725,10 +744,11 @@ export class BuiltinToolsTest {
 
     @Test('local tool registry rejects invoke before activation and allows it after activation')
     async localToolRegistryRequiresActivationForDeferredTools() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
         const registry = new LocalToolRegistry([
             new RegistryDiscoveryTool(),
             new DeferredDefinitionTool()
-        ], new InMemoryMemoryStore());
+        ], memoryStore, sessionStore, activationStore);
 
         const search = await registry.invoke('tool_search', { query: 'heavy' }, 's1');
         expect(search.query).toEqual('heavy');
@@ -847,8 +867,9 @@ export class BuiltinToolsTest {
     }
 
     @Test('local tool registry preserves explicit sandbox overrides over inferred defaults')
-    localToolRegistryPreservesExplicitSandboxOverrides() {
-        const registry = new LocalToolRegistry([new ExplicitSandboxTool()], new InMemoryMemoryStore());
+    async localToolRegistryPreservesExplicitSandboxOverrides() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new ExplicitSandboxTool()], memoryStore, sessionStore, activationStore);
         const definition = registry.getToolDefinition('explicit_sandbox');
 
         expect(definition?.execution?.sandboxCapability).toEqual('process_exec');
@@ -964,11 +985,11 @@ export class BuiltinToolsTest {
 
     @Test('memory tools operate through the registry with session visibility')
     async memoryToolsOperateThroughRegistry() {
-        const store = new InMemoryMemoryStore();
+        const { memoryStore: store, sessionStore, activationStore } = await bootStores();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
         await store.put({ id: 's2-note', sessionId: 's2', key: 'topic', value: 'switch', scope: 'session', createdAt: 2 });
         await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
-        const registry = new LocalToolRegistry([new MemoryListTool(), new MemoryDeleteTool()], store);
+        const registry = new LocalToolRegistry([new MemoryListTool(), new MemoryDeleteTool()], store, sessionStore, activationStore);
 
         await registry.activateTool('s1', 'memory.list');
         await registry.activateTool('s1', 'memory.delete');
@@ -991,7 +1012,8 @@ export class BuiltinToolsTest {
         }
 
         const tool = new StrictTool();
-        const registry = new LocalToolRegistry([new RegistryDiscoveryTool(), tool], new InMemoryMemoryStore());
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new RegistryDiscoveryTool(), tool], memoryStore, sessionStore, activationStore);
         await registry.activateTool('s1', 'heavy_tool');
 
         const result = await registry.invoke('heavy_tool', { count: 1, value: 'ok' }, 's1');
@@ -1017,7 +1039,8 @@ export class BuiltinToolsTest {
         }
 
         const scheduler = new FakeScheduler();
-        const registry = new LocalToolRegistry([new ScheduleTool(new RandomUuidGenerator(), { get: () => scheduler } as any)], new InMemoryMemoryStore());
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new ScheduleTool(new RandomUuidGenerator(), { get: () => scheduler } as any)], memoryStore, sessionStore, activationStore);
         await registry.activateTool('session-reg', 'schedule');
         await registry.invoke('schedule', { action: 'create', prompt: 'hello' }, 'session-reg');
         expect(scheduler.tasks.length).toEqual(1);

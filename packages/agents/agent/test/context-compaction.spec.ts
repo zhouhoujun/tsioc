@@ -1,3 +1,4 @@
+import { Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentContextManager, StashedContext, CompactionLevel, CompactionSignals } from '../src/context/AgentContextManager';
@@ -5,8 +6,10 @@ import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
+import { AgentModule } from '../src/agent.module';
+import { MemoryStore } from '../src/memory/MemoryStore';
+import { provideAgentOrm } from '../src/orm.module';
 import { AgentMessage } from '../src/runtime/AgentMessage';
-import { InMemoryMemoryStore } from './helpers/in-memory-stores';
 
 /**
  * Test-only interface exposing package-internal members of AgentContextManager
@@ -1865,6 +1868,13 @@ export class StashTTLTest {
 
 @Suite('Agent experience persistence')
 export class ExperiencePersistenceTest {
+    private async bootStore(): Promise<MemoryStore> {
+        const ctx = await Application.run(AgentModule, {
+            providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
+        } as any);
+        return ctx.get(MemoryStore);
+    }
+
     private makeManager(): AgentContextManager {
         const ctx = new AgentContextManager();
         ctx.configure({ stashTTL: 0 });
@@ -1889,7 +1899,7 @@ export class ExperiencePersistenceTest {
     @Test('persistExperiences stores patterns to memory store')
     async testPersistBasic() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
             this.makeMsg({ id: 'm2', role: 'assistant', content: 'I got an error: invalid token format' }),
@@ -1916,7 +1926,7 @@ export class ExperiencePersistenceTest {
     @Test('persistExperiences skips duplicate patterns')
     async testPersistDedup() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
         ]);
@@ -1937,7 +1947,7 @@ export class ExperiencePersistenceTest {
     @Test('retrieveExperiences returns stored patterns')
     async testRetrieveBasic() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
         ]);
@@ -1961,7 +1971,7 @@ export class ExperiencePersistenceTest {
     @Test('retrieveExperiences filters by type')
     async testRetrieveFilterType() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
             this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: database timeout, connection rejected' }),
@@ -1980,7 +1990,7 @@ export class ExperiencePersistenceTest {
     @Test('persistExperiences uses custom namespace')
     async testCustomNamespace() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
         ]);
@@ -2010,7 +2020,7 @@ export class ExperiencePersistenceTest {
     @Test('loadExperienceMemory returns records from memory store')
     async testLoadExperienceMemory() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
         ]);
@@ -2031,7 +2041,7 @@ export class ExperiencePersistenceTest {
     @Test('loadExperienceMemory returns empty when no experiences exist')
     async testLoadExperienceMemoryEmpty() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         const expRecords = await ctx.loadExperienceMemory(memoryStore);
         expect(expRecords).toEqual([]);
     }
@@ -2039,7 +2049,7 @@ export class ExperiencePersistenceTest {
     @Test('autoSynthesizeExperiences synthesizes and persists from current stash')
     async testAutoSynthesize() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
             this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: timeout, database connection rejected, failed' }),
@@ -2058,9 +2068,9 @@ export class ExperiencePersistenceTest {
     }
 
     @Test('autoSynthesizeExperiences returns empty when stash is empty')
-    testAutoSynthesizeEmpty() {
+    async testAutoSynthesizeEmpty() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         const report = ctx.autoSynthesizeExperiences(memoryStore);
         expect(report.totalSessions).toBe(0);
         expect(report.patterns).toEqual([]);
@@ -2070,7 +2080,7 @@ export class ExperiencePersistenceTest {
     @Test('storedRecords field is set after persist')
     async testStoredRecordsField() {
         const ctx = this.makeManager();
-        const memoryStore = new InMemoryMemoryStore();
+        const memoryStore = await this.bootStore();
         this.stashMessages(ctx, 's1', [
             this.makeMsg({ id: 'm1', role: 'user', content: 'Build a login API with JWT' }),
             this.makeMsg({ id: 'm2', role: 'assistant', content: 'Error: timeout, connection rejected, failed' }),

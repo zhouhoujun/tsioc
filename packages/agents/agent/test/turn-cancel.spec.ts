@@ -1,10 +1,8 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
-import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
-import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
@@ -12,6 +10,10 @@ import { defaultAgentOptions } from '../src/options';
 import { AgentTurnCancelledError } from '../src/runtime/AgentTurnCancelledError';
 import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
 import { ToolApprovalManager } from '../src/tools/ToolApprovalManager';
+import { AgentModule } from '../src/agent.module';
+import { MemoryStore } from '../src/memory/MemoryStore';
+import { SessionStore } from '../src/memory/SessionStore';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -91,15 +93,25 @@ async function waitForState(predicate: () => Promise<boolean>, timeoutMs = 3000)
 
 @Suite('Agent turn cancellation')
 export class TurnCancellationTest {
+    private async boot() {
+        const ctx = await Application.run(AgentModule, {
+            providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
+        } as any);
+        const sessionStore = ctx.get(SessionStore);
+        const memoryStore = ctx.get(MemoryStore);
+        return { ctx, sessionStore, memoryStore };
+    }
+
     @Test('cancelTurn returns true for a running turn and the turn rejects with AgentTurnCancelledError')
     async cancelRunningTurn() {
+        const { sessionStore, memoryStore } = await this.boot();
         const adapter = new AbortAwareBlockingModelAdapter();
         const app = new FakeApp();
         const runtime = new DefaultAgentRuntime(
             adapter,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -129,11 +141,12 @@ export class TurnCancellationTest {
 
     @Test('cancelTurn returns false when no turn is running')
     async cancelWithoutRunningTurn() {
+        const { sessionStore, memoryStore } = await this.boot();
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             new FakeApp() as any,
@@ -149,8 +162,8 @@ export class TurnCancellationTest {
         const cancelRuntime = new DefaultAgentRuntime(
             adapter,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -165,13 +178,14 @@ export class TurnCancellationTest {
 
     @Test('cancelling a streaming turn rejects with AgentTurnCancelledError and publishes cancelled event')
     async cancelStreamingTurn() {
+        const { sessionStore, memoryStore } = await this.boot();
         const adapter = new AbortAwareBlockingStreamingModelAdapter();
         const app = new FakeApp();
         const runtime = new DefaultAgentRuntime(
             adapter,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -206,13 +220,14 @@ export class TurnCancellationTest {
 
     @Test('cancelTurn cascades cancellation to registered child sessions')
     async cancelTurnCascadesToChildSessions() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
         const adapter = new AbortAwareBlockingModelAdapter();
         const runtime = new DefaultAgentRuntime(
             adapter,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -240,14 +255,15 @@ export class TurnCancellationTest {
 
     @Test('unregisterChildSession removes cascade link')
     async unregisterChildSessionRemovesLink() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
         // child-1 completes immediately (not linked), parent and child-2 block.
         const adapter = new SelectiveBlockingModelAdapter(['parent-1', 'child-2']);
         const runtime = new DefaultAgentRuntime(
             adapter,
             new EmptyToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -282,13 +298,14 @@ export class TurnCancellationTest {
 
     @Test('registerChildSession annotates the child as a worker linked to the parent thread')
     async registerChildSessionAnnotatesWorker() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -305,13 +322,14 @@ export class TurnCancellationTest {
 
     @Test('registerChildSession links the child to the parent session when the parent has no thread')
     async registerChildSessionFallsBackToParentSessionId() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -327,13 +345,14 @@ export class TurnCancellationTest {
 
     @Test('registerChildSession preserves a child with an explicit non-worker role')
     async registerChildSessionPreservesExplicitChildMetadata() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -360,13 +379,14 @@ export class TurnCancellationTest {
 
     @Test('registerChildSession fills the origin thread for an existing worker-role child')
     async registerChildSessionKeepsWorkerFieldsAndFillsOrigin() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -385,13 +405,14 @@ export class TurnCancellationTest {
 
     @Test('unregisterChildSession marks the worker thread completed by default')
     async unregisterChildSessionMarksThreadCompleted() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -412,13 +433,14 @@ export class TurnCancellationTest {
 
     @Test('unregisterChildSession maps a failed edge to a blocked worker thread')
     async unregisterChildSessionMapsFailureToBlocked() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -435,13 +457,14 @@ export class TurnCancellationTest {
 
     @Test('unregisterChildSession maps a cancelled edge to an abandoned worker thread')
     async unregisterChildSessionMapsCancelledToAbandoned() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -458,13 +481,14 @@ export class TurnCancellationTest {
 
     @Test('unregisterChildSession preserves an explicit terminal thread status')
     async unregisterChildSessionPreservesExplicitThreadStatus() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
-        const store = new InMemorySessionStore();
+        const store = sessionStore;
         const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             store,
-            new InMemoryMemoryStore(),
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -484,6 +508,7 @@ export class TurnCancellationTest {
 
     @Test('cancelTurn drops pending approval requests for the session')
     async cancelTurnDropsPendingApprovals() {
+        const { sessionStore, memoryStore } = await this.boot();
         const app = new FakeApp();
         const approvalManager = new ToolApprovalManager(
             app as any,
@@ -494,8 +519,8 @@ export class TurnCancellationTest {
         const runtime = new DefaultAgentRuntime(
             new ToolCallingModelAdapter('sensitive_tool'),
             new EchoToolRegistry(),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -528,14 +553,15 @@ export class TurnCancellationTest {
 
     @Test('cancelling a turn rolls back successful side-effecting tool calls with the captured snapshot')
     async cancelTurnRollsBackToolSideEffects() {
+        const { sessionStore, memoryStore } = await this.boot();
         const tool = new ReversiblePutTool();
         const adapter = new ToolThenBlockModelAdapter('reversible_put', 'block');
         const app = new FakeApp();
         const runtime = new DefaultAgentRuntime(
             adapter,
             new SingleToolRegistry(tool),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -572,14 +598,15 @@ export class TurnCancellationTest {
 
     @Test('a failing turn rolls back successful side-effecting tool calls before publishing AgentErrorEvent')
     async failingTurnRollsBackToolSideEffects() {
+        const { sessionStore, memoryStore } = await this.boot();
         const tool = new ReversiblePutTool();
         const adapter = new ToolThenBlockModelAdapter('reversible_put', 'error');
         const app = new FakeApp();
         const runtime = new DefaultAgentRuntime(
             adapter,
             new SingleToolRegistry(tool),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,
@@ -607,6 +634,7 @@ export class TurnCancellationTest {
 
     @Test('rollback compensates successful tool calls in reverse order')
     async rollbackRunsInReverseOrder() {
+        const { sessionStore, memoryStore } = await this.boot();
         const orderLog: string[] = [];
         const toolA = new ReversiblePutTool('reversible_a', orderLog);
         const toolB = new ReversiblePutTool('reversible_b', orderLog);
@@ -615,8 +643,8 @@ export class TurnCancellationTest {
         const runtime = new DefaultAgentRuntime(
             adapter,
             new MultiToolRegistry([toolA, toolB]),
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
+            sessionStore,
+            memoryStore,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
             app as any,

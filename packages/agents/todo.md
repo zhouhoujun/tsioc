@@ -1977,3 +1977,13 @@ Turn: Fix session restore                                      running  01:42
   - `agent` / `agent-tools` 测试仍在编译阶段引用已删除的 `./helpers/agent-orm` 与 `../src/memory/InMemory*`（既有未迁移状态，用户明确不迁移），`npm run test` EXIT 1。
   - 此限制为删除 `test/helpers/` 与不迁移决定的直接、已记录后果，不属于本轮验收门禁。
 - 本轮不新增提交（无源码待提交变更）；收尾记录与上文归档重构均已在既有提交中体现。
+
+### 2026-09-04 迁移收尾：最后 4 个 spec 文件迁移 + 提交（本轮）
+
+- **完成剩余 4 个 spec 的 IoC 迁移**（用户此前决定"只迁移+报告"范围内，未授权 `src/` 修复）：
+  - `runtime-loop.spec.ts`：`createRuntime()` 重写为条件 `useValue` provider（`SessionStore`/`MemoryStore`）；`RuntimeLoopHandle` 暴露 `sessions`/`memory`（同 ctx）；`createArchetypeRuntime` 传 `undefined, undefined`（测试专用，运行时自行解析 store）；`bootStores()` 仅保留给 3 个 `LocalToolRegistry` 用例；`SearchOnlyMemoryStore extends MemoryStore` / `PutFailingMemoryStore extends MemoryStore` 实现全部 5 个抽象方法（put/search/getAll/delete/deleteBySession）。
+  - `tools.spec.ts`：`bootStores()` 返回 `{ memoryStore, sessionStore, activationStore, auditSink }`；批量替换 `new InMemoryMemoryStore()`/`new InMemoryAuditSink()`；11 处 `LocalToolRegistry` 全部改 4 参构造；同步方法改 `async`。
+  - `context-compaction.spec.ts` / `turn-cancel.spec.ts`：完成迁移，`tsc --noEmit` 0 错。
+- **验证**：agent `tsc --noEmit -p tsconfig.json` **0 错 EXIT 0**；`git diff --check` 干净；回归 `components` 135 / `components/console` 73 / `agent-ui` 953 均 EXIT 0。
+- **系统性阻断（P265，未伪造通过）**：agent 全量测试仍 **EXIT 1 / 85 失败**，为已提交迁移 `37f4f0088` 的**既有系统性根因**，非本 4 文件引入。两个根因：① `AgentModule`（`agent.module.ts:73`）仅 import `ConfigModule`，注册 TypeORM store 但未 import `AgentOrmModule`，`Application.run(AgentModule)` 无 `provideAgentOrm` 时无 DataSource；② `TypeormAdapter` 为 `@Static()` 进程级单例，其 `onDispose`（`TypeormAdapter.ts:328-334`）销毁共享 adapter，下一测试 ctx 解析到已死 adapter → `DataSource "undefined" not found`。修复需**改 `src/`**（`agent.module.ts` 加 `AgentOrmModule` import；`TypeormAdapter.onDispose` 改静态安全），**用户尚未授权**，本提交不含 `src/` 改动。
+- **本提交**：4 个迁移后的 spec 文件（同属迁移修复，`git diff --check` 干净）。
