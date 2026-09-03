@@ -1,4 +1,4 @@
-import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, IReadable } from '@tsdi/common';
@@ -14,7 +14,8 @@ import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore, TurnDiagnosticsAggregate, TurnDiagnosticsTrendPoint, aggregateTurnDiagnostics, buildTurnDiagnosticsTrend } from '../src/harness/TurnDiagnosticsStore';
 import { buildAttemptSignature, buildRepairPrompt, buildExplorationGuidancePrompt, collectResolvedRepairHints } from '../src/harness/RepairExploration';
 import { AGENT_OPTIONS } from '../src/tokens';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -573,7 +574,7 @@ function buildWriteRuntime(
     if (sessions) providers.push({ provide: SessionStore, useValue: sessions });
     if (fileAdapter) providers.push({ provide: FileAdapter, useValue: fileAdapter });
     if (fileSnapshotStore) providers.push({ provide: FileSnapshotStore, useValue: fileSnapshotStore });
-    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
+    return Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] }).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
 function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, diagnosticsStore?: TurnDiagnosticsStore, sessions?: SessionStore): Promise<RuntimeHandle> {
@@ -584,7 +585,7 @@ function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, dia
     ];
     if (diagnosticsStore) providers.push({ provide: TurnDiagnosticsStore, useValue: diagnosticsStore });
     if (sessions) providers.push({ provide: SessionStore, useValue: sessions });
-    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
+    return Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] }).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
 function injectedRecoveryPrompts(adapter: { requests: any[] }): string[] {
@@ -1040,7 +1041,7 @@ export class VerificationGateRuntimeTest {
     @Test('a signature repaired in a prior session of the same workspace is hinted in a new session')
     async crossSessionHintReuseWithinSameWorkspace() {
         const store = new TestInMemoryTurnDiagnosticsStore();
-        const sessions = await runAgentOrmApp();
+        const sessions = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const sessionStore = sessions.get(SessionStore);
             await sessionStore.setWorkspace('s1', '/ws/proj');
@@ -1072,7 +1073,7 @@ export class VerificationGateRuntimeTest {
     @Test('repair hints do not leak across different workspaces')
     async noHintsAcrossDifferentWorkspaces() {
         const store = new TestInMemoryTurnDiagnosticsStore();
-        const sessions = await runAgentOrmApp();
+        const sessions = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const sessionStore = sessions.get(SessionStore);
             await sessionStore.setWorkspace('s1', '/ws/a');

@@ -6,7 +6,9 @@ import { scoreSummaryQuality, computeEvidenceCoverage } from '../src/harness/Sum
 import { AgentSummaryQualityEntity } from '../src/memory/entities';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -223,7 +225,7 @@ export class EvidenceCoverageTest {
 @Suite('Summary quality stores')
 export class SummaryQualityStoreTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         return { ctx, store: ctx.get(SummaryQualityStore) };
     }
 
@@ -475,7 +477,7 @@ export class SummaryQualityStoreTest {
 @Suite('LLMSessionSummarizer quality recording')
 export class SummaryQualityIntegrationTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         return { ctx, store: ctx.get(SummaryQualityStore) };
     }
 

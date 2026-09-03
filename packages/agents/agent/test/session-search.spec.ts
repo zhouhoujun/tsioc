@@ -1,10 +1,12 @@
 import expect = require('expect');
 import { SessionStore } from '../src/memory/SessionStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 describe('SessionStore.search', () => {
     it('matches message content across sessions with count and snippet', async () => {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('s1', { id: '1', role: 'user', content: 'deploy the pipeline', createdAt: 1 } as any);
@@ -19,7 +21,7 @@ describe('SessionStore.search', () => {
     });
 
     it('returns empty for no match or blank query', async () => {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('s1', { id: '1', role: 'user', content: 'hello world', createdAt: 1 } as any);
@@ -29,7 +31,7 @@ describe('SessionStore.search', () => {
     });
 
     it('is case-insensitive and applies limit', async () => {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             for (let i = 0; i < 5; i++) {
@@ -44,7 +46,7 @@ describe('SessionStore.search', () => {
     });
 
     it('matches persisted message content through the resolved session store', async () => {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('t1', { id: '1', role: 'user', content: 'search this transcript', createdAt: 1 } as any);

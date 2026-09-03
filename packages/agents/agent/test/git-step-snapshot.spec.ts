@@ -12,7 +12,7 @@ import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { AgentModule } from '../src/agent.module';
 import { AGENT_OPTIONS } from '../src/tokens';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -166,10 +166,8 @@ export class RuntimeGitStepSnapshotTest {
         const dir = await createGitRepo();
         try {
             await fs.promises.writeFile(path.join(dir, 'a.txt'), 'dirty', 'utf8');
-            const ctx = await runAgentOrmApp([
-                { provide: ModelAdapter, useValue: new EchoModelAdapter() },
-                { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ui: { console: { workspace: dir } } } }
-            ]);
+            const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new EchoModelAdapter() },
+                { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ui: { console: { workspace: dir } } } }]] });
             try {
                 const runtime = ctx.get(AgentRuntime);
 
@@ -198,9 +196,7 @@ export class RuntimeGitStepSnapshotTest {
 
     @Test('revert with no bound snapshot reports an error')
     async revertWithoutSnapshot() {
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: new EchoModelAdapter() }
-        ]);
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new EchoModelAdapter() }]] });
         try {
             const runtime = ctx.get(AgentRuntime);
             const reverted = await runtime.revertGitStepSnapshot('s1', 'missing');

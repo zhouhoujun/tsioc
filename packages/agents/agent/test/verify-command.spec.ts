@@ -1,4 +1,4 @@
-import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, IReadable } from '@tsdi/common';
@@ -16,7 +16,8 @@ import { EvidenceLedger } from '../src/harness/EvidenceLedger';
 import { FileSnapshotStore } from '../src/harness/FileSnapshotStore';
 import { VerifyCommandRunner, findPackageDirectory, resolvePackageManager, splitCommandTemplate, DEFAULT_VERIFY_AUTO_SCRIPTS } from '../src/harness/VerifyCommandRunner';
 import { AGENT_OPTIONS } from '../src/tokens';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -194,7 +195,7 @@ function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, fil
         { provide: FileAdapter, useValue: fileAdapter ?? new MemoryFileAdapter() },
         { provide: FileSnapshotStore, useValue: fileSnapshotStore ?? new FileSnapshotStore() }
     ];
-    return runAgentOrmApp(providers).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
+    return Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] }).then(ctx => ({ runtime: ctx.get(AgentRuntime), ctx }));
 }
 
 function makeTempWorkspace(): string {

@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, Application } from '@tsdi/core';
 import { CompactionHistoryRecord, CompactionHistoryStore, aggregateCompactionHistory, buildCompactionHistoryTrend } from '../src/harness/CompactionHistoryStore';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { SessionStore } from '../src/memory/SessionStore';
@@ -11,7 +11,8 @@ import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -66,7 +67,7 @@ function makeRecord(partial: Partial<CompactionHistoryRecord> = {}): CompactionH
 @Suite('Compaction history stores')
 export class CompactionHistoryStoreTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         return {
             ctx,
             store: ctx.get(CompactionHistoryStore),

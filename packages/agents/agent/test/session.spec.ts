@@ -1,12 +1,16 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
 import { SessionStore } from '../src/memory/SessionStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Suite('Agent session store')
 export class SessionStoreTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, {
+            providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
+        });
         const store = ctx.get(SessionStore);
         return { ctx, store };
     }

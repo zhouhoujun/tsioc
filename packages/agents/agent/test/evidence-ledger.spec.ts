@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, Application } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { EvidenceLedger, EvidenceLedgerSnapshot, ToolEvidenceEntry } from '../src/harness/EvidenceLedger';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../src/harness/TurnDiagnosticsStore';
@@ -12,7 +12,8 @@ import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -140,7 +141,7 @@ export class EvidenceLedgerTest {
 
     @Test('turn diagnostics store round-trips evidence immutably')
     async inMemoryRoundTripsEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const evidence = makeEvidence('turn-x', ['success', 'error']);
@@ -160,7 +161,7 @@ export class EvidenceLedgerTest {
 
     @Test('typeorm turn diagnostics store persists and reloads evidence')
     async typeOrmPersistsEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             const store = ctx.get(TurnDiagnosticsStore);
@@ -182,7 +183,7 @@ export class EvidenceLedgerTest {
 
     @Test('runtime records tool evidence for mixed tool outcomes in a turn')
     async runtimeRecordsMixedToolEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const runtime = new DefaultAgentRuntime(
@@ -226,7 +227,7 @@ export class EvidenceLedgerTest {
 
     @Test('runtime records tool evidence for parallel tool execution')
     async runtimeRecordsParallelToolEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const options = {
@@ -270,7 +271,7 @@ export class EvidenceLedgerTest {
 
     @Test('turn diagnostics store resolves through the agent module with evidence support')
     async agentModuleStoreSupportsEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const evidence = makeEvidence('wired-turn', ['success']);

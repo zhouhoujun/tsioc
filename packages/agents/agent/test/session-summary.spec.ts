@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator, Application } from '@tsdi/core';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
 import { SessionStore } from '../src/memory/SessionStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
@@ -15,7 +15,8 @@ import { DeterministicAgentSummaryAgent } from '../src/memory/DeterministicAgent
 import { LLMAgentSummaryAgent } from '../src/memory/LLMAgentSummaryAgent';
 import { AgentMessage, AgentRole } from '../src/runtime/AgentMessage';
 import { AGENT_OPTIONS } from '../src/tokens';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -61,7 +62,7 @@ async function makeRuntime(options: AgentOptions = defaultAgentOptions, summaryA
         { provide: AGENT_OPTIONS, useValue: options },
         { provide: AgentSummaryAgent, useValue: summaryAgent ?? new DeterministicAgentSummaryAgent() }
     ];
-    const ctx = await runAgentOrmApp(providers);
+    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     return { runtime: ctx.get(AgentRuntime), store: ctx.get(SessionStore), ctx };
 }
 

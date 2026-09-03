@@ -1,10 +1,11 @@
 import expect = require('expect');
 import { After } from '@tsdi/unit';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, Application } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AuditSink } from '../src/harness/AuditSink';
 import { AgentAuditLogEntity } from '../src/memory/entities';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 describe('Audit sinks', () => {
     let ctx: ApplicationContext | undefined;
@@ -12,7 +13,7 @@ describe('Audit sinks', () => {
     afterEach(async () => { await ctx?.close(); ctx = undefined; });
 
     it('audit sink snapshots appended records immutably', async () => {
-        const c = await runAgentOrmApp();
+        const c = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         ctx = c;
         const sink = c.get(AuditSink);
         const metadata = { nested: { value: 'safe' } };
@@ -32,7 +33,7 @@ describe('Audit sinks', () => {
     });
 
     it('typeorm audit sink persists and reloads audit records', async () => {
-        const c = await runAgentOrmApp();
+        const c = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         ctx = c;
         const sink = c.get(AuditSink);
         const adapter = c.get(TypeormAdapter) as TypeormAdapter;
@@ -57,7 +58,7 @@ describe('Audit sinks', () => {
     });
 
     it('agent module resolves durable audit sink behavior when orm adapter exists', async () => {
-        const c = await runAgentOrmApp();
+        const c = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         ctx = c;
         const sink = c.get(AuditSink);
         const adapter = c.get(TypeormAdapter) as TypeormAdapter;

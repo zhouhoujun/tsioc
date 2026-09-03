@@ -1,4 +1,4 @@
-import { RandomUuidGenerator, ApplicationContext } from '@tsdi/core';
+import { RandomUuidGenerator, ApplicationContext, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
@@ -10,7 +10,8 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { defaultAgentOptions } from '../src/options';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 /**
  * Emits a single tool call when the incoming turn is fresh (its last message
@@ -119,7 +120,7 @@ async function createRuntime(adapter: any, tool: any, promptBuilder?: any): Prom
     if (promptBuilder) {
         providers.push({ provide: SystemPromptBuilder, useValue: promptBuilder });
     }
-    const ctx = await runAgentOrmApp(providers);
+    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     const runtime = ctx.get(AgentRuntime);
     return { runtime, ctx };
 }

@@ -3,7 +3,9 @@ import { Suite, Test } from '@tsdi/unit';
 import { WeaknessMiner, mineWeaknesses, normalizeErrorSignature, buildSuggestionHarnessProfilePatch } from '../src/harness/WeaknessMiner';
 import { TurnDiagnosticsStore, TurnDiagnosticsRecord } from '../src/harness/TurnDiagnosticsStore';
 import { AuditSink, AgentAuditRecord } from '../src/harness/AuditSink';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 function record(partial: Partial<TurnDiagnosticsRecord>): TurnDiagnosticsRecord {
     return {
@@ -200,7 +202,7 @@ export class WeaknessMinerTest {
 
     @Test('WeaknessMiner service reads stores and scopes by sessions')
     async weaknessMinerServiceReadsStores() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const sink = ctx.get(AuditSink);

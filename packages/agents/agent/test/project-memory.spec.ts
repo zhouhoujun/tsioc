@@ -2,12 +2,14 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { DefaultAgentMemoryRetriever, ProjectMemoryService, SemanticMemoryRanker } from '../src';
 import { MemoryStore } from '../src/memory/MemoryStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Suite('Project memory service (P153)')
 export class ProjectMemoryServiceTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         const store = ctx.get(MemoryStore);
         const service = new ProjectMemoryService(store, new SemanticMemoryRanker());
         return { ctx, store, service };

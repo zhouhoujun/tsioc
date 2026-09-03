@@ -1,9 +1,10 @@
 import expect = require('expect');
 import { Suite, Test, After } from '@tsdi/unit';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, Application } from '@tsdi/core';
 import { buildGoalContext, evaluateGoalCompletion } from '../src/goal';
 import { GoalStore } from '../src/goal/GoalStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Suite('Agent goals (P83)')
 export class GoalStoreTest {
@@ -14,7 +15,7 @@ export class GoalStoreTest {
 
     @Test('creates, links, and restores a goal across sessions')
     async createsAndLinksAcrossSessions() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         this.ctx = ctx;
         const store = ctx.get(GoalStore);
         const goal = await store.create({ title: 'Ship release', objective: 'Prepare version 1', successCriteria: ['tests pass'] });
@@ -28,7 +29,7 @@ export class GoalStoreTest {
 
     @Test('updates completion and can reopen a goal')
     async completesAndReopens() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         this.ctx = ctx;
         const store = ctx.get(GoalStore);
         const goal = await store.create({ title: 'Release', objective: 'Ship it' });
@@ -61,7 +62,7 @@ export class GoalStoreTest {
 
     @Test('typeorm goal store persists goal state and session links')
     async persistsWithTypeOrm() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         this.ctx = ctx;
         const store = ctx.get(GoalStore);
         const goal = await store.create({ title: 'Release', objective: 'Ship it', successCriteria: ['tests pass'] });
@@ -72,7 +73,7 @@ export class GoalStoreTest {
     }
 
     private async ctxGetGoalStore() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         this.ctx = ctx;
         return ctx.get(GoalStore);
     }

@@ -1,4 +1,4 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
@@ -11,8 +11,9 @@ import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { AgentTurnAgentConfig } from '../src/runtime/AgentTurnInput';
-import { runAgentOrmApp } from './helpers/agent-orm';
 import { ApplicationContext } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -128,7 +129,7 @@ async function createRuntime(adapter: any, tool: any, approvalManager?: ToolAppr
     if (approvalManager) {
         providers.push({ provide: ToolApprovalManager, useValue: approvalManager });
     }
-    const ctx = await runAgentOrmApp(providers);
+    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     const runtime = ctx.get(AgentRuntime);
     return { runtime, ctx };
 }

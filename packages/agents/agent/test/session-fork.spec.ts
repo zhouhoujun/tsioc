@@ -1,12 +1,14 @@
 import expect = require('expect');
 import { Test } from '@tsdi/unit';
 import { SessionStore } from '../src/memory/SessionStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 export class SessionForkSpec {
     @Test('forks a session transcript and preserves branch lineage')
     async forksTranscript() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('source', { id: 'u1', role: 'user', content: 'one', createdAt: 1 } as any);
@@ -23,7 +25,7 @@ export class SessionForkSpec {
 
     @Test('rejects an unknown fork message')
     async rejectsUnknownMessage() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await expect(store.fork('missing', 'nope')).rejects.toThrow("Message 'nope'");

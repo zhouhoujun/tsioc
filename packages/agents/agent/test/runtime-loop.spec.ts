@@ -3,7 +3,6 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext, createRunContext, RunContext } from '@tsdi/core';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
-import { runAgentOrmApp } from './helpers/agent-orm';
 import { InMemorySessionStore, InMemoryMemoryStore } from './helpers/in-memory-stores';
 import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
@@ -28,6 +27,7 @@ import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { AgentTool } from '../src/tools/AgentTool';
 import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent } from '../src/runtime/AgentEvents';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
+import { provideAgentOrm } from '../src/orm.module';
 
 const RUNTIME_LOOP_EVENTS = [
     AgentContextPreparedEvent,
@@ -62,15 +62,13 @@ async function createRuntime(
     overrides: Array<{ provide: any; useValue: any }> = [],
     createOptions: RuntimeLoopCreateOptions = {}
 ): Promise<RuntimeLoopHandle> {
-    const ctx = await runAgentOrmApp([
-        { provide: ModelAdapter, useValue: model },
+    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: model },
         { provide: ToolRegistry, useValue: registry },
         { provide: SessionStore, useValue: sessions },
         { provide: MemoryStore, useValue: memory },
         { provide: SessionSummarizer, useValue: summarizer },
         { provide: AGENT_OPTIONS, useValue: options },
-        ...overrides
-    ]);
+        ...overrides]] });
     const events: any[] = [];
     for (const eventType of RUNTIME_LOOP_EVENTS) {
         ctx.eventMulticaster.addListener(eventType, event => events.push(event));

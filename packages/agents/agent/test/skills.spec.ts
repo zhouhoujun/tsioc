@@ -20,7 +20,8 @@ import {
 } from '../src';
 import { SessionStore } from '../src/memory/SessionStore';
 import { MemoryStore } from '../src/memory/MemoryStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Injectable()
 class StaticPromptSection {
@@ -60,11 +61,9 @@ export class AgentExtensionHooksTest {
         }
 
         const model = new CapturingModelAdapter();
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: model },
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: model },
             StaticPromptSection,
-            { provide: AGENT_PROMPT_SECTIONS, useExisting: StaticPromptSection, multi: true }
-        ]);
+            { provide: AGENT_PROMPT_SECTIONS, useExisting: StaticPromptSection, multi: true }]] });
         try {
             const runtime = ctx.get(AgentRuntime);
             await runtime.runTurn('s1', 'hello');
@@ -130,11 +129,9 @@ export class AgentExtensionHooksTest {
         }
 
         const model = new CapturingModelAdapter();
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: model },
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: model },
             SlashCommandInterceptor,
-            { provide: AGENT_TURN_INTERCEPTORS, useExisting: SlashCommandInterceptor, multi: true }
-        ]);
+            { provide: AGENT_TURN_INTERCEPTORS, useExisting: SlashCommandInterceptor, multi: true }]] });
         try {
             const runtime = ctx.get(AgentRuntime);
             const result = await runtime.runTurn('s1', '/ping');
@@ -207,7 +204,7 @@ export class AgentExtensionHooksTest {
             cancelBySession: () => 0,
             getPending: () => []
         };
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const runtime = new DefaultAgentRuntime(
             new HookModelAdapter(),

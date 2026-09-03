@@ -3,7 +3,9 @@ import { Suite, Test } from '@tsdi/unit';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { DelegationEdgeInput, DelegationEdgeRecord, DelegationGraphStore, buildDelegationLineage, buildDelegationTree } from '../src/harness/DelegationGraphStore';
 import { AgentDelegationEdgeEntity } from '../src/memory/entities';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 function makeEdge(partial: Partial<DelegationEdgeInput> = {}): DelegationEdgeInput {
     return {
@@ -18,7 +20,7 @@ function makeEdge(partial: Partial<DelegationEdgeInput> = {}): DelegationEdgeInp
 @Suite('Delegation graph stores')
 export class DelegationGraphStoreTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         return { ctx, store: ctx.get(DelegationGraphStore) };
     }
 
@@ -185,7 +187,7 @@ export class DelegationGraphStoreTest {
 
     @Test('typeorm delegation store persists reloads and closes edges')
     async typeOrmPersistsAndCloses() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             const store = ctx.get(DelegationGraphStore);
@@ -210,7 +212,7 @@ export class DelegationGraphStoreTest {
 
     @Test('typeorm delegation store builds trees and lineages')
     async typeOrmBuildsTreesAndLineages() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
             const store = ctx.get(DelegationGraphStore);
@@ -235,7 +237,7 @@ export class DelegationGraphStoreTest {
 
     @Test('delegation graph store resolves through the agent module with orm adapter')
     async agentModuleResolvesDurableStore() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(DelegationGraphStore);
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;

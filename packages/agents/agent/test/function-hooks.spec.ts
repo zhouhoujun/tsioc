@@ -1,4 +1,4 @@
-import { ApplicationContext, RandomUuidGenerator } from '@tsdi/core';
+import { ApplicationContext, RandomUuidGenerator, Application } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
@@ -13,7 +13,8 @@ import {
     defaultAgentOptions
 } from '../src';
 import { AGENT_OPTIONS } from '../src/tokens';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class RewriteModelAdapter extends EchoModelAdapter {
     calls = 0;
@@ -90,7 +91,7 @@ async function createRuntime(
         { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } },
         { provide: AgentHookCommandExecutor, useValue: executor ?? new NoopAgentHookCommandExecutor() }
     ];
-    const ctx = await runAgentOrmApp(providers);
+    const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     return { runtime: ctx.get(AgentRuntime), ctx };
 }
 

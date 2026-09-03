@@ -2,7 +2,9 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { ReviewFinding, ReviewFindingsStore, ReviewRun } from '../src/harness/ReviewFindingsStore';
 import { AuditSink, AgentAuditRecord } from '../src/harness/AuditSink';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { Application } from '@tsdi/core';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 function run(partial: Partial<ReviewRun>): ReviewRun {
     return {
@@ -35,7 +37,7 @@ function finding(partial: Partial<ReviewFinding>): ReviewFinding {
 export class ReviewFindingsStoreTest {
     @Test('save appends a synthetic audit record with the run in metadata')
     async saveAppendsAuditRecord() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const audit = ctx.get(AuditSink);
             const store = new ReviewFindingsStore(audit);
@@ -78,7 +80,7 @@ export class ReviewFindingsStoreTest {
 
     @Test('list filters by session and commit and ignores other tool records')
     async listFiltersBySessionAndCommit() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const audit = ctx.get(AuditSink);
             const store = new ReviewFindingsStore(audit);
@@ -107,7 +109,7 @@ export class ReviewFindingsStoreTest {
 
     @Test('get returns the run by id or null when missing')
     async getReturnsRunById() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const audit = ctx.get(AuditSink);
             const store = new ReviewFindingsStore(audit);
@@ -122,7 +124,7 @@ export class ReviewFindingsStoreTest {
 
     @Test('list deep-clones metadata so callers cannot mutate stored runs')
     async listDeepClonesMetadata() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const audit = ctx.get(AuditSink);
             const store = new ReviewFindingsStore(audit);

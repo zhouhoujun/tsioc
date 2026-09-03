@@ -1,4 +1,4 @@
-import { RandomUuidGenerator, ApplicationContext, ApplicationArguments } from '@tsdi/core';
+import { RandomUuidGenerator, ApplicationContext, ApplicationArguments, Application } from '@tsdi/core';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as os from 'os';
@@ -14,7 +14,8 @@ import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class FakeApp {
     events: any[] = [];
@@ -258,12 +259,10 @@ export class RuntimeFileUndoRedoTest {
         const fileAdapter = new NodeTestFileAdapter();
         const store = new FileSnapshotStore();
         const tool = new SnapshotWriteTool(filePath);
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: new SingleToolCallModelAdapter('snapshot_write') },
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new SingleToolCallModelAdapter('snapshot_write') },
             { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(tool) },
             { provide: FileSnapshotStore, useValue: store },
-            { provide: FileAdapter, useValue: fileAdapter }
-        ]);
+            { provide: FileAdapter, useValue: fileAdapter }]] });
         try {
             const runtime = ctx.get(AgentRuntime);
 
@@ -286,11 +285,9 @@ export class RuntimeFileUndoRedoTest {
 
 @Test('undoFileChange returns none when no snapshot exists')
     async undoWithNoSnapshots() {
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new EchoModelAdapter() },
             { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')) },
-            { provide: FileAdapter, useValue: new NodeTestFileAdapter() }
-        ]);
+            { provide: FileAdapter, useValue: new NodeTestFileAdapter() }]] });
         try {
             const runtime = ctx.get(AgentRuntime);
             const result = await runtime.undoFileChange('s1');
@@ -302,12 +299,10 @@ export class RuntimeFileUndoRedoTest {
     @Test('runTurn stores workspace from ApplicationArguments cwd when console workspace is unset')
     async runTurnStoresWorkspaceFromAppArgsCwd() {
         const appArgs = Object.assign(Object.create(ApplicationArguments.prototype), { cwd: '/tmp/app-args-workspace' });
-        const ctx = await runAgentOrmApp([
-            { provide: ModelAdapter, useValue: new EchoModelAdapter() },
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new EchoModelAdapter() },
             { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(new SnapshotWriteTool('/tmp/none.txt')) },
             { provide: FileAdapter, useValue: new NodeTestFileAdapter() },
-            { provide: ApplicationArguments, useValue: appArgs }
-        ]);
+            { provide: ApplicationArguments, useValue: appArgs }]] });
         try {
             const sessions = ctx.get(SessionStore);
             const runtime = ctx.get(AgentRuntime);

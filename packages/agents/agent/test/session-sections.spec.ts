@@ -1,14 +1,15 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ApplicationContext } from '@tsdi/core';
+import { ApplicationContext, Application } from '@tsdi/core';
 import { SessionStore } from '../src/memory/SessionStore';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Suite('Agent session sections (P107)')
 export class SessionSectionsTest {
     @Test('adds sections with manual ordering')
     async addsSectionsWithOrdering() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const first = await store.addSection('session', 'Planning');
@@ -23,7 +24,7 @@ export class SessionSectionsTest {
 
     @Test('rejects duplicate section ids')
     async rejectsDuplicateIds() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.addSection('session', 'Planning', undefined, 'section-fixed');
@@ -33,7 +34,7 @@ export class SessionSectionsTest {
 
     @Test('renames sections')
     async renamesSection() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const section = await store.addSection('session', 'Planning');
@@ -45,7 +46,7 @@ export class SessionSectionsTest {
 
     @Test('moves sections to a new position')
     async movesSection() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const a = await store.addSection('session', 'A');
@@ -60,7 +61,7 @@ export class SessionSectionsTest {
 
     @Test('deleting a section clears message attribution')
     async deleteSectionClearsAttribution() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const section = await store.addSection('session', 'Workers');
@@ -75,7 +76,7 @@ export class SessionSectionsTest {
 
     @Test('attributes sub-agent messages to an origin-thread section')
     async attributesSubAgentMessages() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('session', {
@@ -96,7 +97,7 @@ export class SessionSectionsTest {
 
     @Test('attributes messages in a sub-agent session by its own origin thread')
     async attributesBySessionOriginThread() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.setProjectMetadata('worker', {
@@ -114,7 +115,7 @@ export class SessionSectionsTest {
 
     @Test('preserves explicit sectionId over origin-thread attribution')
     async preservesExplicitSectionId() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const section = await store.addSection('session', 'Manual');
@@ -134,7 +135,7 @@ export class SessionSectionsTest {
 
     @Test('does not attribute ordinary messages')
     async leavesOrdinaryMessagesAlone() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.append('session', { id: '1', role: 'user', content: 'hi', createdAt: 1 });
@@ -145,7 +146,7 @@ export class SessionSectionsTest {
 
     @Test('fork copies sections and preserves section ids')
     async forkCopiesSections() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             const section = await store.addSection('session', 'Planning');
@@ -162,7 +163,7 @@ export class SessionSectionsTest {
 
     @Test('thread index exposes sections with message counts')
     async threadIndexExposesSections() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(SessionStore);
             await store.setProjectMetadata('session', { primaryThreadId: 'thread-1', sessionRole: 'main' });

@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { RandomUuidGenerator, Application } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore, buildTurnDiagnosticsTrend } from '../src/harness/TurnDiagnosticsStore';
 import { AgentTurnDiagnosticsEntity } from '../src/memory/entities';
@@ -11,7 +11,8 @@ import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
-import { runAgentOrmApp } from './helpers/agent-orm';
+import { AgentModule } from '../src/agent.module';
+import { provideAgentOrm } from '../src/orm.module';
 
 class StaticModelAdapter extends EchoModelAdapter {
     constructor(private content: string) {
@@ -116,7 +117,7 @@ function makeRecord(partial: Partial<TurnDiagnosticsRecord> = {}): TurnDiagnosti
 @Suite('Turn diagnostics stores')
 export class TurnDiagnosticsStoreTest {
     private async boot() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         return {
             ctx,
             store: ctx.get(TurnDiagnosticsStore),
@@ -393,7 +394,7 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('agent module resolves durable turn diagnostics store behavior when orm adapter exists')
     async agentModuleResolvesDurableStore() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
@@ -407,7 +408,7 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('runtime records turn diagnostics for completed turns')
     async runtimeRecordsTurnDiagnostics() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const store = ctx.get(TurnDiagnosticsStore);
             const runtime = new DefaultAgentRuntime(
@@ -441,7 +442,7 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('runtime injects session model profile into model requests until cleared')
     async runtimeInjectsSessionModelProfile() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const adapter = new CapturingProfileModelAdapter();
             const runtime = new DefaultAgentRuntime(
@@ -478,7 +479,7 @@ export class TurnDiagnosticsStoreTest {
 
     @Test('turn profile overrides session model profile for that request only')
     async turnProfileOverridesSessionProfileForSingleTurn() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const adapter = new CapturingProfileModelAdapter();
             const runtime = new DefaultAgentRuntime(
@@ -518,7 +519,7 @@ export class TurnDiagnosticsStoreTest {
 export class TurnFalsifyRateRuntimeTest {
     @Test('runtime injects falsify rate into the request following a falsified tool round')
     async runtimeInjectsFalsifyRateAfterFalsifiedRound() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const model = new FalsifyRateCapturingModelAdapter();
             const runtime = new DefaultAgentRuntime(
@@ -555,7 +556,7 @@ export class TurnFalsifyRateRuntimeTest {
 
     @Test('runtime leaves falsify rate unset when no tool evidence was measured')
     async runtimeLeavesFalsifyRateUnsetWithoutEvidence() {
-        const ctx = await runAgentOrmApp();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         try {
             const model = new FalsifyRateCapturingModelAdapter(false);
             const runtime = new DefaultAgentRuntime(
