@@ -1895,3 +1895,10 @@ Turn: Fix session restore                                      running  01:42
 - 目标：把上述交互纳入可重复门禁，避免“测试全绿但真实路径失效”。
 - 实施：Node/Playwright browser runner 与共享 fake gateway 场景；Linux/macOS PTY、Windows ConPTY 适配；采集 DOM/ARIA/ANSI 快照、首屏可见率、重复 item、焦点回退、命令完成延迟。
 - 验收：desktop/mobile/320px/CJK/长历史/断线/重试四端矩阵；缺少浏览器或 PTY 时明确 skip 并报告，不修改断言伪造通过。
+
+### 2026-09-03 收尾检查（TypeORM 收敛提交后）
+
+- 工作区检查：`git diff --check` 通过；当前分支最新提交为 `e7e048f7d refactor(agent): remove InMemory stores, adopt TypeORM-backed stores across tests and modules`，无未提交代码改动。
+- 全量测试结果：`agent-channels` 59 passing、`agent-cli` 73 passing、`agent-desktop` 20 passing；`agent`、`agent-ui`、`agent-tools` 在测试编译阶段仍引用已删除的 `InMemory*` fixture，未执行；`agent-gateway` 同样因旧 fixture 导入失败；`agent-providers` 8 passing/5 failed（测试容器缺 `LoggerManagers` provider）；`agent-ssh` 受当前沙箱 `listen EPERM` 限制。
+- 类型检查：`agent-cli` 通过；`agent`、`agent-ui`、`agent-tools`、`agent-gateway` 因上述 InMemory fixture/旧构造器签名错误失败。按架构约束不恢复 InMemory 兼容层，后续需将测试 fixture 迁移到 `better-sqlite3` `:memory:` + TypeORM，并统一 4 参数工具构造器。
+- 限制：P279/P285 的 Playwright/PTY CI runner 仍未建立；gateway/provider/ssh 的环境依赖需在具备监听权限及完整 IoC logger provider 的宿主复验。本轮未将受阻项目误标为完成。
