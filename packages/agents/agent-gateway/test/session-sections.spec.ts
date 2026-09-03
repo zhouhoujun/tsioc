@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
 import { SessionHandler } from '../src/api/SessionHandler';
@@ -9,9 +9,10 @@ import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 
 @Suite('Gateway session sections and message pagination (P107)')
 export class SessionSectionsRpcTest {
-    protected createHarness() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+    protected async createHarness() {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -24,7 +25,7 @@ export class SessionSectionsRpcTest {
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
-        return { store, owners, rpc };
+        return { store, owners, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
@@ -37,7 +38,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.section.create and list honor manual ordering')
     async createAndList() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const first = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Planning' });
         const second = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Implementation' });
         const third = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Review', beforeId: second.section.id });
@@ -49,7 +50,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.section.rename updates the label')
     async rename() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const created = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Planning' });
         await this.call(rpc, 'session.section.rename', { sessionId: 's1', sectionId: created.section.id, label: 'Planning & Design' });
         const sections = await this.call(rpc, 'session.section.list', { sessionId: 's1' });
@@ -58,7 +59,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.section.move reorders sections')
     async move() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const a = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'A' });
         const b = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'B' });
         const c = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'C' });
@@ -72,7 +73,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.section.delete clears message attribution')
     async deleteClearsAttribution() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         const created = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Workers' });
         await store.appendRaw('s1', { id: 'm1', role: 'assistant', content: 'done', createdAt: 1, sectionId: created.section.id });
         await this.call(rpc, 'session.section.delete', { sessionId: 's1', sectionId: created.section.id });
@@ -84,7 +85,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.section.create rejects empty label')
     async rejectsEmptyLabel() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const response = await rpc.handle(
             { jsonrpc: '2.0', id: 1, method: 'session.section.create', params: { sessionId: 's1', label: '  ' } },
             { principalId: 'user-1' }
@@ -94,7 +95,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.messages returns tail page with nextCursor and hasMore')
     async paginatesTail() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         for (let index = 0; index < 10; index++) {
             await store.append('s1', { id: `m${index}`, role: 'assistant', content: `msg-${index}`, createdAt: index });
         }
@@ -107,7 +108,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.messages paginates before a cursor')
     async paginatesBefore() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         for (let index = 0; index < 10; index++) {
             await store.append('s1', { id: `m${index}`, role: 'assistant', content: `msg-${index}`, createdAt: index });
         }
@@ -119,7 +120,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.messages returns incremental messages after a cursor')
     async paginatesAfter() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         for (let index = 0; index < 4; index++) {
             await store.append('s1', { id: `m${index}`, role: 'assistant', content: `msg-${index}`, createdAt: index });
         }
@@ -135,7 +136,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.messages rejects unknown cursor')
     async rejectsUnknownCursor() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         await store.append('s1', { id: 'm0', role: 'assistant', content: 'x', createdAt: 0 });
         const response = await rpc.handle(
             { jsonrpc: '2.0', id: 1, method: 'session.messages', params: { sessionId: 's1', cursor: 'nope' } },
@@ -146,7 +147,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.messages returns sections with message attribution')
     async messagesCarrySections() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         await store.append('s1', {
             id: 'm0',
             role: 'assistant',
@@ -163,7 +164,7 @@ export class SessionSectionsRpcTest {
 
     @Test('session.list_threads exposes thread sections')
     async threadsExposeSections() {
-        const { store, rpc } = this.createHarness();
+        const { store, rpc } = await this.createHarness();
         await store.setProjectMetadata('s1', { primaryThreadId: 'thread-1', sessionRole: 'main' });
         const section = await this.call(rpc, 'session.section.create', { sessionId: 's1', label: 'Workers' });
         await store.appendRaw('s1', { id: 'm0', role: 'assistant', content: 'done', createdAt: 0, sectionId: section.section.id });

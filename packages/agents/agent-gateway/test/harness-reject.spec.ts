@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
 import { SessionHandler } from '../src/api/SessionHandler';
@@ -9,9 +9,10 @@ import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 
 @Suite('Gateway harness rejected-actions RPCs (P147)')
 export class HarnessRejectedActionsRpcTest {
-    protected createHarness(records: any[], toolInvoke?: (name: string, input: any) => Promise<any> | any) {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+    protected async createHarness(records: any[], toolInvoke?: (name: string, input: any) => Promise<any> | any) {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const turnDiagnostics = {
@@ -29,7 +30,7 @@ export class HarnessRejectedActionsRpcTest {
         const runtime = {} as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, tools, owners, sessions, events, {}, null, null, null, null, turnDiagnostics);
-        return { store, owners, rpc };
+        return { store, owners, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
@@ -42,7 +43,7 @@ export class HarnessRejectedActionsRpcTest {
 
     @Test('harness.rejected_actions returns the most recent falsified evidence')
     async listsRejectedActions() {
-        const { store, owners, rpc } = this.createHarness([
+        const { store, owners, rpc } = await this.createHarness([
             {
                 id: 't1', sessionId: 's1', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0,
                 followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false,
@@ -79,7 +80,7 @@ export class HarnessRejectedActionsRpcTest {
 
     @Test('harness.rejected_actions returns empty when nothing was falsified')
     async listsNoRejectedActions() {
-        const { store, owners, rpc } = this.createHarness([
+        const { store, owners, rpc } = await this.createHarness([
             {
                 id: 't1', sessionId: 's1', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0,
                 followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false,
@@ -102,7 +103,7 @@ export class HarnessRejectedActionsRpcTest {
     @Test('harness.retry_rejected_action re-invokes the tool with the parsed input')
     async retriesRejectedAction() {
         const invoked: { name: string; input: any } = { name: '', input: undefined };
-        const { store, owners, rpc } = this.createHarness([
+        const { store, owners, rpc } = await this.createHarness([
             {
                 id: 't1', sessionId: 's1', createdAt: 1, emptyResponseRetryCount: 0, followUpRecoveryCount: 0,
                 followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false,

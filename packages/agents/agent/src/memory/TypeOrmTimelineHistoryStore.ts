@@ -18,6 +18,7 @@ export class TypeOrmTimelineHistoryStore extends TimelineHistoryStore {
     }
 
     async append(event: Omit<TimelineEventRecord, 'seq'>): Promise<TimelineEventRecord> {
+        await this.adapter.ready();
         const nextSeq = await this.repo.count({ where: { sessionId: event.sessionId } as any });
         await this.repo.save(this.repo.create({
             sessionId: event.sessionId,
@@ -42,17 +43,20 @@ export class TypeOrmTimelineHistoryStore extends TimelineHistoryStore {
     }
 
     async get(sessionId: string): Promise<TimelineEventRecord[]> {
+        await this.adapter.ready();
         const rows = await this.repo.find({ where: { sessionId } as any, order: { seq: 'ASC' } as any });
         return rows.map(row => toTimelineRecord(row)).sort(compareTimelineEventsAsc);
     }
 
     async replay(sessionId: string, sinceSeq?: number): Promise<TimelineEventRecord[]> {
+        await this.adapter.ready();
         const from = typeof sinceSeq === 'number' && Number.isFinite(sinceSeq) ? sinceSeq + 1 : 0;
         const rows = await this.repo.find({ where: { sessionId } as any, order: { seq: 'ASC' } as any });
         return rows.filter(row => row.seq >= from).map(row => toTimelineRecord(row)).sort(compareTimelineEventsAsc);
     }
 
     async query(sessionId: string, options?: TimelinePageOptions): Promise<TimelineNoncePage> {
+        await this.adapter.ready();
         const raw = await this.get(sessionId);
         return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options);
     }

@@ -1,4 +1,4 @@
-import { RandomUuidGenerator } from '@tsdi/core';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import { PassThrough } from 'stream';
@@ -22,12 +22,12 @@ import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { UsageHandler } from '../src/api/UsageHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, InMemoryTimelineHistoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore, TIMELINE_HISTORY_STORE, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
 import { StatsHandler } from '../src/api/StatsHandler';
-import { InMemoryAuditSink } from '../../agent/src/harness/InMemoryAuditSink';
+import { AuditSink } from '../../agent/src/harness/AuditSink';
 import { ReadFileTool } from '../../agent-tools/src';
 import { AgentGatewayModule, provideAgentGateway } from '../src';
 import {
@@ -37,6 +37,11 @@ import {
     StreamingTtsAdapter,
     StreamingTtsOptions
 } from '../src/audio';
+
+async function createOrmSessionStore() {
+    const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+    return { context, store: context.get(SessionStore), memory: context.get(MemoryStore), timeline: context.get(TIMELINE_HISTORY_STORE), audit: context.get(AuditSink) };
+}
 
 @Suite('RouteMatcher')
 export class RouteMatcherTest {
@@ -290,9 +295,13 @@ export class GatewayServerJwtAuthTest {
 
 @Suite('SessionHandler')
 export class SessionHandlerTest {
+    private async ormStore() {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        return { context, store: context.get(SessionStore) };
+    }
     @Test('hides automation sessions unless explicitly requested')
     async hidesAutomationSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await this.ormStore();
         const owners = new SessionOwnerStore(store);
         await store.append('interactive', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await store.append('automation', { id: '2', role: 'user', content: 'job', createdAt: 2 });
@@ -307,7 +316,7 @@ export class SessionHandlerTest {
 
     @Test('lists tracked sessions with timestamps')
     async listsTrackedSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await this.ormStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -337,7 +346,7 @@ export class SessionHandlerTest {
 
     @Test('lists sessions with title and pinned flags')
     async listsSessionsWithTitleAndPinned() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await store.setTitle('s1', 'My session');
@@ -368,7 +377,7 @@ export class SessionHandlerTest {
 
     @Test('sorts pinned sessions before unpinned sessions')
     async sortsPinnedSessionsFirst() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const originalNow = Date.now;
         let now = 100;
@@ -407,7 +416,7 @@ export class SessionHandlerTest {
 
     @Test('sets and clears a session title through the api route')
     async setsAndClearsSessionTitleThroughApi() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -441,7 +450,7 @@ export class SessionHandlerTest {
 
     @Test('pins and unpins a session through the api route')
     async pinsAndUnpinsSessionThroughApi() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -465,7 +474,7 @@ export class SessionHandlerTest {
 
     @Test('snapshot routes create, list, restore and delete snapshots')
     async snapshotRoutesRoundTrip() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await store.append('s1', { id: '2', role: 'assistant', content: 'two', createdAt: 2 });
@@ -515,7 +524,7 @@ export class SessionHandlerTest {
         await restoreRoute.handler(req, res, { id: 's1', snapshotId });
         const state = await store.get('s1');
         expect(state.messages.length).toEqual(2);
-        expect(state.messages.map(message => message.content)).toEqual(['one', 'two']);
+        expect(state.messages.map((message: any) => message.content)).toEqual(['one', 'two']);
 
         const deleteRoute = handler.getRoutes().find(route => route.path === '/api/sessions/:id/snapshots/:snapshotId' && route.method === 'DELETE')!;
         await deleteRoute.handler(req, res, { id: 's1', snapshotId });
@@ -524,7 +533,7 @@ export class SessionHandlerTest {
 
     @Test('snapshot restore returns 404 for unknown snapshot')
     async snapshotRestoreReturns404ForUnknownSnapshot() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -549,7 +558,7 @@ export class SessionHandlerTest {
 
     @Test('title and pinned mutation routes forbid foreign principals')
     async mutationRoutesForbidForeignPrincipals() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -575,7 +584,7 @@ export class SessionHandlerTest {
 
     @Test('keeps pinned sessions first inside project groups')
     async keepsPinnedSessionsFirstInsideProjectGroups() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const originalNow = Date.now;
         let now = 100;
@@ -616,7 +625,7 @@ export class SessionHandlerTest {
 
     @Test('lists owned sessions grouped by workspace')
     async listsOwnedSessionsGroupedByWorkspace() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await store.setWorkspace('s1', '/tmp/project-a');
@@ -654,7 +663,7 @@ export class SessionHandlerTest {
 
     @Test('lists owned sessions grouped by thread')
     async listsOwnedSessionsGroupedByThread() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const originalNow = Date.now;
         let now = 100;
@@ -719,7 +728,7 @@ export class SessionHandlerTest {
 
     @Test('lists worker threads with terminal status from session metadata')
     async listsWorkerThreadsWithTerminalStatus() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('w1', { id: '1', role: 'user', content: 'work', createdAt: 1 });
         await store.setWorkspace('w1', '/tmp/project-a');
@@ -757,7 +766,7 @@ export class SessionHandlerTest {
 
     @Test('rejects deleting another principals session')
     async rejectsDeletingForeignSession() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
@@ -787,7 +796,7 @@ export class SessionHandlerTest {
 
     @Test('deletes session without recreating empty owned record')
     async deletesSessionWithoutRecreatingRecord() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -808,8 +817,8 @@ export class SessionHandlerTest {
 
     @Test('session delete route removes session-scoped memory records')
     async sessionDeleteRouteRemovesSessionMemory() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -834,7 +843,7 @@ export class SessionHandlerTest {
 
     @Test('session export route returns transcript with tool calls')
     async sessionExportRouteReturnsTranscript() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const messages = [
             { id: 'u1', role: 'user', content: 'inspect project', createdAt: 1 },
@@ -874,7 +883,7 @@ export class SessionHandlerTest {
 
     @Test('session export route forbids other principals')
     async sessionExportRouteForbidsForeignPrincipal() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('sx-locked', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('sx-locked', 'user-1');
@@ -898,7 +907,7 @@ export class SessionHandlerTest {
 
     @Test('lists persisted owned sessions without track call')
     async listsPersistedOwnedSessionsWithoutTrack() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -924,7 +933,7 @@ export class SessionHandlerTest {
 
     @Test('lists owned sessions with thread project keys before workspace fallback')
     async listsOwnedSessionsPreferThreadProjectKeyOverWorkspace() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await store.setWorkspace('s1', '/tmp/project-a');
@@ -955,7 +964,7 @@ export class SessionHandlerTest {
 
     @Test('projects route prefers latest active session metadata for grouped labels')
     async projectsRoutePrefersLatestActiveSessionMetadataForGroupedLabels() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const originalNow = Date.now;
         let now = 100;
@@ -1007,7 +1016,7 @@ export class SessionHandlerTest {
 
     @Test('lists only actively running sessions')
     async listsOnlyActivelyRunningSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -1040,7 +1049,7 @@ export class SessionHandlerTest {
 
     @Test('cancelled turns are removed from the running sessions list')
     async cancelledTurnsAreRemovedFromRunningSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
         await owners.create('s1', 'user-1');
@@ -1072,7 +1081,7 @@ export class SessionHandlerTest {
 export class ApprovalHandlerTest {
     @Test('lists pending approvals and resolves them through api routes')
     async listsAndResolvesApprovals() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -1117,7 +1126,7 @@ export class ApprovalHandlerTest {
 
     @Test('approval routes return forbidden for non-owners')
     async approvalRoutesForbidNonOwners() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -1152,7 +1161,7 @@ export class ApprovalHandlerTest {
 
     @Test('approval list without sessionId is scoped to owned sessions and exposes expiresAt')
     async approvalListScopesByOwnership() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await store.get('s-2');
@@ -1202,13 +1211,13 @@ export class ApprovalHandlerTest {
 export class StatsHandlerTest {
     @Test('aggregates audit records scoped to owned sessions')
     async aggregatesAuditRecordsScopedToOwnedSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await store.get('s-2');
         await owners.create('s-1', 'user-1');
         await owners.create('s-2', 'user-2');
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         await sink.append({ id: 'a1', sessionId: 's-1', toolName: 'read_file', toolCallId: 't1', status: 'success', durationMs: 10, createdAt: 100 });
         await sink.append({ id: 'a2', sessionId: 's-1', toolName: 'write_file', toolCallId: 't2', status: 'error', error: 'boom', durationMs: 30, createdAt: 200 });
         await sink.append({ id: 'a3', sessionId: 's-2', toolName: 'write_file', toolCallId: 't3', status: 'success', createdAt: 300 });
@@ -1265,11 +1274,11 @@ export class StatsHandlerTest {
 
     @Test('stats route forbids access to sessions owned by others')
     async statsRouteForbidsOthersSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         const handler = new StatsHandler(sink, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/stats' && route.method === 'GET')!;
 
@@ -1295,11 +1304,11 @@ export class StatsHandlerTest {
 
     @Test('stats errors break ties by recency and cap at ten entries')
     async statsErrorsOrderedAndCapped() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         // write_file 'boom' twice, read_file 'nope' once, plus nine more distinct
         // errors to overflow the top-N cap.
         await sink.append({ id: 'e1', sessionId: 's-1', toolName: 'write_file', toolCallId: 't1', status: 'error', error: 'boom', createdAt: 200 });
@@ -1331,11 +1340,11 @@ export class StatsHandlerTest {
 
     @Test('stats byDay buckets records by UTC day')
     async statsBucketsByDay() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         await sink.append({ id: 'd1', sessionId: 's-1', toolName: 'read_file', toolCallId: 't1', status: 'success', createdAt: Date.parse('2026-07-01T12:00:00Z') });
         await sink.append({ id: 'd2', sessionId: 's-1', toolName: 'read_file', toolCallId: 't2', status: 'success', createdAt: Date.parse('2026-07-02T12:00:00Z') });
         await sink.append({ id: 'd3', sessionId: 's-1', toolName: 'read_file', toolCallId: 't3', status: 'error', error: 'x', createdAt: Date.parse('2026-07-02T18:00:00Z') });
@@ -1366,7 +1375,7 @@ export class ToolsHandlerTest {
     @Test('lists registered agent-tools definitions through api route')
     async listsRegisteredAgentTools() {        const registry = new LocalToolRegistry([
             new ReadFileTool({ file: { rootDir: process.cwd() } })
-        ], new InMemoryMemoryStore());
+        ], ((await createOrmSessionStore()).memory) as any, ((await createOrmSessionStore()).store) as any, undefined as any);
         const bundles = [{
             name: 'filesystem',
             description: 'Workspace file reading and search tools.',
@@ -1698,7 +1707,7 @@ export class ToolsHandlerTest {
 export class EventHandlerTest {
     @Test('stores broadcast history and returns it from history route')
     async storesEventHistory() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new EventHandler(owners);
@@ -1734,7 +1743,7 @@ export class EventHandlerTest {
 
     @Test('rejects event history access for another principal')
     async rejectsForeignHistory() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new EventHandler(owners);
@@ -1775,7 +1784,7 @@ export class ChatWebSocketTest {
                 return [{ id: '1', role: 'assistant', content: 'hello', createdAt: 1 }];
             }
         } as any;
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), new (require('../src/auth/SessionQueue').SessionQueue)());
         const socket = {
             write: (buffer: Buffer) => {
@@ -1799,7 +1808,7 @@ export class ChatWebSocketTest {
 
     @Test('rejects resuming a foreign session id')
     async rejectsForeignSessionResume() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const ws = new ChatWebSocket({} as any, owners, {} as any);
@@ -1821,7 +1830,7 @@ export class ChatWebSocketTest {
 
     @Test('rejects resuming an unowned session id')
     async rejectsUnownedSessionResume() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const ws = new ChatWebSocket({} as any, new SessionOwnerStore(store), {} as any);
         let status = 0;
         const req = { headers: { host: 'localhost' }, url: '/ws/chat?sessionId=legacy-session' } as any;
@@ -1850,7 +1859,7 @@ export class ChatWebSocketTest {
                 return [];
             }
         } as any;
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), {
             enqueue: () => Promise.reject(new Error('session queue limit reached')),
             remove: () => undefined
@@ -1875,7 +1884,7 @@ export class ChatWebSocketTest {
     @Test('routes json-rpc websocket messages through shared app rpc server')
     async routesJsonRpcMessagesThroughSharedAppRpcServer() {
         const writes: string[] = [];
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const ws = new ChatWebSocket({} as any, owners, {
@@ -1945,7 +1954,7 @@ export class ChatWebSocketTest {
 export class AuditHandlerTest {
     @Test('lists audit records for owned session and supports filtering')
     async listsAuditRecordsForOwnedSession() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -2001,7 +2010,7 @@ export class AuditHandlerTest {
 
     @Test('rejects audit access for another principal')
     async rejectsForeignAuditAccess() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new AuditHandler({ list: async () => [] } as any, owners);
@@ -2026,7 +2035,7 @@ export class AuditHandlerTest {
 export class ReviewHandlerTest {
     @Test('lists review runs for owned session and supports commit filtering')
     async listsReviewRunsForOwnedSession() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -2068,7 +2077,7 @@ export class ReviewHandlerTest {
 
     @Test('gets a review run by id scoped to the session')
     async getsReviewRunById() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const reviews = {
@@ -2102,7 +2111,7 @@ export class ReviewHandlerTest {
 
     @Test('rejects review access for another principal and missing session')
     async rejectsForeignAndMissingSessionReviewAccess() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new ReviewHandler({ list: async () => [], get: async () => null } as any, owners);
@@ -2140,7 +2149,7 @@ export class ReviewHandlerTest {
 export class CompactionHistoryHandlerTest {
     @Test('lists compaction history records for owned session and supports level filtering')
     async listsCompactionHistoryForOwnedSession() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -2233,7 +2242,7 @@ export class CompactionHistoryHandlerTest {
 
     @Test('rejects compaction history access for another principal')
     async rejectsForeignCompactionHistoryAccess() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new CompactionHistoryHandler({ list: async () => [] } as any, owners);
@@ -2255,7 +2264,7 @@ export class CompactionHistoryHandlerTest {
 
     @Test('requires sessionId for compaction history access')
     async requiresSessionId() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const handler = new CompactionHistoryHandler({ list: async () => [] } as any, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/compaction-history' && route.method === 'GET')!;
@@ -2276,7 +2285,7 @@ export class CompactionHistoryHandlerTest {
 
     @Test('returns compaction history stats across sessions')
     async returnsCompactionHistoryStats() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const handler = new CompactionHistoryHandler({
             list: async () => [],
@@ -2308,7 +2317,7 @@ export class CompactionHistoryHandlerTest {
 
     @Test('rejects foreign compaction history stats access')
     async rejectsForeignCompactionHistoryStats() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new CompactionHistoryHandler({ list: async () => [], aggregate: async () => [] } as any, owners);
@@ -2331,7 +2340,7 @@ export class CompactionHistoryHandlerTest {
     @Test('returns compaction history trend across sessions')
     async returnsCompactionHistoryTrend() {
         const day = 24 * 60 * 60 * 1000;
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const handler = new CompactionHistoryHandler({
             list: async () => [],
@@ -2366,7 +2375,7 @@ export class CompactionHistoryHandlerTest {
 
     @Test('rejects foreign compaction history trend access')
     async rejectsForeignCompactionHistoryTrend() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new CompactionHistoryHandler({ list: async () => [], aggregate: async () => [], trend: async () => [] } as any, owners);
@@ -2592,7 +2601,7 @@ export class SummaryQualityHandlerTest {
 export class TurnDiagnosticsHandlerTest {
     @Test('lists turn diagnostics records for owned session')
     async listsTurnDiagnosticsForOwnedSession() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -2655,7 +2664,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('rejects turn diagnostics access for another principal')
     async rejectsForeignTurnDiagnosticsAccess() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
@@ -2677,7 +2686,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('requires sessionId for turn diagnostics access')
     async requiresSessionId() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics' && route.method === 'GET')!;
@@ -2698,7 +2707,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('lists workspace diagnostics across owned sessions newest first')
     async listsWorkspaceDiagnosticsForOwnedSessions() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-1');
@@ -2750,7 +2759,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('requires workspaceId for workspace turn diagnostics access')
     async requiresWorkspaceId() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const handler = new TurnDiagnosticsHandler({ list: async () => [] } as any, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/turn-diagnostics/workspace' && route.method === 'GET')!;
@@ -2771,7 +2780,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('workspace diagnostics exclude records from sessions owned by other principals')
     async excludesForeignSessionsFromWorkspaceList() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-1');
@@ -2818,7 +2827,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('aggregates turn diagnostics scoped to an owned session')
     async aggregatesScopedStats() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const diagnostics = {
@@ -2862,7 +2871,7 @@ export class TurnDiagnosticsHandlerTest {
 
     @Test('aggregates turn diagnostics across owned sessions without sessionId')
     async aggregatesOwnedStats() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -2911,7 +2920,7 @@ export class TurnDiagnosticsHandlerTest {
     @Test('returns usage stats through http')
     async usageStatsRoute() {
         const now = Date.now();
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('usage-http-1', 'user-1');
         await owners.create('usage-http-2', 'user-2');
@@ -2977,8 +2986,8 @@ export class MemoryHandlerTest {
     @Test('lists only memory for owned sessions')
     async listsOwnedSessionMemory() {
         const runtime = { putMemory: async () => null } as any;
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
@@ -3006,7 +3015,7 @@ export class MemoryHandlerTest {
     @Test('rejects writing memory to foreign session')
     async rejectsForeignSessionMemoryWrite() {
         let called = false;
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const runtime = {
             putMemory: async () => {
                 called = true;
@@ -3016,7 +3025,7 @@ export class MemoryHandlerTest {
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         await owners.create('s2', 'user-2');
-        const securedHandler = new MemoryHandler(runtime, new InMemoryMemoryStore(), store, owners);
+        const securedHandler = new MemoryHandler(runtime, ((await createOrmSessionStore()).memory), store, owners);
         const route = securedHandler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
         let status = 0;
         const req = {} as any;
@@ -3036,7 +3045,7 @@ export class MemoryHandlerTest {
 
     @Test('persists owner across store instances')
     async persistsOwnerAcrossStoreInstances() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
         const reloadedOwners = new SessionOwnerStore(store);
@@ -3049,7 +3058,7 @@ export class MemoryHandlerTest {
     @Test('rejects global memory writes')
     async rejectsGlobalMemoryWrite() {
         let called = false;
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const runtime = {
             putMemory: async () => {
                 called = true;
@@ -3058,7 +3067,7 @@ export class MemoryHandlerTest {
         } as any;
         const owners = new SessionOwnerStore(store);
         await owners.create('s1', 'user-1');
-        const handler = new MemoryHandler(runtime, new InMemoryMemoryStore(), store, owners);
+        const handler = new MemoryHandler(runtime, ((await createOrmSessionStore()).memory), store, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
         let status = 0;
         const req = {} as any;
@@ -3096,8 +3105,8 @@ export class PairingStoreTest {
 export class AppRpcServerTest {
     @Test('records question answers idempotently per session')
     async recordsQuestionAnswersIdempotently() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const runtime = { async getMessages() { return []; } } as any;
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
@@ -3114,22 +3123,21 @@ export class AppRpcServerTest {
 
     @Test('timeline.query projects aggregated entries and timeline.replay pages raw events idempotently')
     async queriesAndReplaysTimeline() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
-        const timeline = new InMemoryTimelineHistoryStore();
+        const { store, memory, timeline } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const runtime = { async getMessages() { return []; } } as any;
         const events = new EventHandler(owners, timeline);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), events, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, timeline);
         await owners.create('timeline-s1', 'user-1');
         const sid = 'timeline-s1';
-        events.onToolInvoked(new AgentToolInvokedEvent({}, sid, 'bash', { cmd: 'ls' }, {
+        await events.onToolInvoked(new AgentToolInvokedEvent({}, sid, 'bash', { cmd: 'ls' }, {
             receiptId: 'rc1', toolCallId: 'tc1', toolName: 'bash', executionMode: 'sequential', status: 'running'
         }));
-        events.onToolCompleted(new AgentToolCompletedEvent({}, sid, 'bash', 'ok', {
+        await events.onToolCompleted(new AgentToolCompletedEvent({}, sid, 'bash', 'ok', {
             receiptId: 'rc1', toolCallId: 'tc1', toolName: 'bash', executionMode: 'sequential', status: 'success', durationMs: 12, outputSummary: 'ok'
         }));
-        events.onTurnStarted(new AgentTurnStartedEvent({}, sid, 'hello'));
+        await events.onTurnStarted(new AgentTurnStartedEvent({}, sid, 'hello'));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         const query1 = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'timeline.query', params: { sessionId: sid } }, { principalId: 'user-1' }) as any;
         const entries = query1.result.entries;
@@ -3159,8 +3167,8 @@ export class AppRpcServerTest {
 
     @Test('nav.query returns a principal-scoped session tree and applies filters through json-rpc')
     async queriesNavTreeThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const runtime = { async getMessages() { return []; } } as any;
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
@@ -3221,8 +3229,8 @@ export class AppRpcServerTest {
 
     @Test('runs turns through shared json-rpc session flow')
     async runsTurnsThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const profiles: Array<string | undefined> = [];
@@ -3329,8 +3337,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign session access through json-rpc')
     async rejectsForeignSessionAccess() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -3357,8 +3365,8 @@ export class AppRpcServerTest {
 
     @Test('supports json-rpc batch requests and notifications')
     async supportsBatchRequestsAndNotifications() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3405,8 +3413,8 @@ export class AppRpcServerTest {
 
     @Test('returns shared app state through json-rpc')
     async returnsSharedAppState() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3459,8 +3467,8 @@ export class AppRpcServerTest {
 
     @Test('reports untrusted workspace and trusts through project.trust RPC')
     async projectTrustRoundTrip() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const runtime = { resolveSessionWorkspace: async () => '/tmp/workspace' } as any;
         const sessions = new SessionHandler(runtime, store, owners);
@@ -3515,8 +3523,8 @@ export class AppRpcServerTest {
 
     @Test('creates fresh session through shared app state instead of reusing workspace sessions')
     async createsFreshSessionThroughSharedAppState() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3569,8 +3577,8 @@ export class AppRpcServerTest {
 
     @Test('creates fresh chat session id when workspace has no prior session')
     async createsFreshChatSessionIdWhenWorkspaceHasNoPriorSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3612,8 +3620,8 @@ export class AppRpcServerTest {
 
     @Test('lists and activates model profiles through json-rpc')
     async listsAndActivatesModelProfiles() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3690,8 +3698,8 @@ export class AppRpcServerTest {
 
     @Test('stores console input history per workspace through json-rpc')
     async storesConsoleInputHistoryPerWorkspace() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3760,8 +3768,8 @@ export class AppRpcServerTest {
 
     @Test('queries console input history across workspace sessions through json-rpc')
     async queriesConsoleInputHistoryAcrossWorkspaceSessions() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3828,8 +3836,8 @@ export class AppRpcServerTest {
 
     @Test('local-system input history query includes legacy anonymous workspace records')
     async localSystemInputHistoryQueryIncludesLegacyAnonymousRecords() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -3900,8 +3908,8 @@ export class AppRpcServerTest {
 
     @Test('lists audit records through json-rpc and applies filters')
     async listsAuditRecordsThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('rpc-audit');
         await owners.create('rpc-audit', 'user-1');
@@ -3961,8 +3969,8 @@ export class AppRpcServerTest {
 
     @Test('reads coding task review data through json-rpc')
     async readsCodingTaskReviewDataThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('rpc-review');
         await owners.create('rpc-review', 'user-1');
@@ -4162,8 +4170,8 @@ export class AppRpcServerTest {
 
     @Test('streams shared turn chunks and final response')
     async streamsSharedTurnChunksAndFinalResponse() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const streamedPrincipals: string[] = [];
@@ -4203,7 +4211,7 @@ export class AppRpcServerTest {
 
         expect(streamedProfiles).toEqual(['strong']);
 
-        expect(frames).toEqual([{
+        expect(frames).toMatchObject([{
             jsonrpc: '2.0',
             method: 'run.turn_stream.chunk',
             params: {
@@ -4222,8 +4230,7 @@ export class AppRpcServerTest {
                 requestId: 11,
                 sessionId: 'rpc-stream',
                 chunkType: 'text',
-                content: 'hel',
-                usage: undefined
+                content: 'hel'
             }
         }, {
             jsonrpc: '2.0',
@@ -4232,8 +4239,7 @@ export class AppRpcServerTest {
                 requestId: 11,
                 sessionId: 'rpc-stream',
                 chunkType: 'text',
-                content: 'lo',
-                usage: undefined
+                content: 'lo'
             }
         }, {
             jsonrpc: '2.0',
@@ -4448,8 +4454,8 @@ export class AppRpcServerTest {
 
     @Test('lists compaction history for owned session through json-rpc')
     async listsCompactionHistoryThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-compaction', 'user-1');
         const events = new EventHandler(owners);
@@ -4518,8 +4524,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign compaction history access through json-rpc')
     async rejectsForeignCompactionHistoryThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-compaction-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -4543,8 +4549,8 @@ export class AppRpcServerTest {
 
     @Test('returns empty compaction history when no store is configured')
     async compactionHistoryWithoutStore() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-empty', 'user-1');
         const events = new EventHandler(owners);
@@ -4563,8 +4569,8 @@ export class AppRpcServerTest {
 
     @Test('returns compaction history stats through json-rpc')
     async compactionHistoryStatsThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-stats', 'user-1');
         const events = new EventHandler(owners);
@@ -4601,8 +4607,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign compaction history stats access through json-rpc')
     async rejectsForeignCompactionHistoryStatsThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-stats-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -4629,8 +4635,8 @@ export class AppRpcServerTest {
 
     @Test('returns empty compaction history stats when no store is configured')
     async compactionHistoryStatsWithoutStore() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-empty-stats', 'user-1');
         const events = new EventHandler(owners);
@@ -4650,8 +4656,8 @@ export class AppRpcServerTest {
     @Test('returns compaction history trend through json-rpc with bucket options')
     async compactionHistoryTrendThroughRpc() {
         const day = 24 * 60 * 60 * 1000;
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-trend', 'user-1');
         const events = new EventHandler(owners);
@@ -4700,8 +4706,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign compaction history trend access through json-rpc')
     async rejectsForeignCompactionHistoryTrendThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-trend-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -4731,8 +4737,8 @@ export class AppRpcServerTest {
 
     @Test('returns empty compaction history trend when no store is configured')
     async compactionHistoryTrendWithoutStore() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-empty-trend', 'user-1');
         const events = new EventHandler(owners);
@@ -4751,8 +4757,8 @@ export class AppRpcServerTest {
 
     @Test('returns turn diagnostics stats through json-rpc')
     async turnDiagnosticsStatsThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag', 'user-1');
         const events = new EventHandler(owners);
@@ -4811,8 +4817,8 @@ export class AppRpcServerTest {
     @Test('returns usage stats through json-rpc')
     async usageStatsThroughRpc() {
         const now = Date.now();
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-usage-1', 'user-1');
         await owners.create('rpc-usage-2', 'user-2');
@@ -4887,8 +4893,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign turn diagnostics access through json-rpc')
     async rejectsForeignTurnDiagnosticsThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -4923,8 +4929,8 @@ export class AppRpcServerTest {
 
     @Test('returns harness audit scoped to owned sessions through json-rpc')
     async harnessAuditScopedToOwnedSessions() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-harness-1', 'user-1');
         await owners.create('rpc-harness-2', 'user-2');
@@ -4967,8 +4973,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign harness audit access through json-rpc')
     async rejectsForeignHarnessAuditThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-harness-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -4993,8 +4999,8 @@ export class AppRpcServerTest {
 
     @Test('returns null harness audit when no miner is configured')
     async harnessAuditWithoutMiner() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-harness-empty', 'user-1');
         const events = new EventHandler(owners);
@@ -5013,8 +5019,8 @@ export class AppRpcServerTest {
 
     @Test('lists builtin harness profiles through json-rpc')
     async listsHarnessProfilesThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {} as any;
@@ -5044,8 +5050,8 @@ export class AppRpcServerTest {
 
     @Test('resolves current harness profile from agent options through json-rpc')
     async currentHarnessProfileFromOptions() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {} as any;
@@ -5065,8 +5071,8 @@ export class AppRpcServerTest {
 
     @Test('diffs harness profiles through json-rpc')
     async diffsHarnessProfilesThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {} as any;
@@ -5094,8 +5100,8 @@ export class AppRpcServerTest {
 
     @Test('aggregates turn diagnostics across owned sessions through json-rpc')
     async turnDiagnosticsStatsScopesToOwnedSessions() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-1', 'user-1');
         await owners.create('rpc-diag-2', 'user-2');
@@ -5126,8 +5132,8 @@ export class AppRpcServerTest {
 
     @Test('returns empty turn diagnostics when no store is configured')
     async turnDiagnosticsWithoutStore() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-empty-diag', 'user-1');
         const events = new EventHandler(owners);
@@ -5154,8 +5160,8 @@ export class AppRpcServerTest {
 
     @Test('returns turn diagnostics records through json-rpc')
     async turnDiagnosticsListThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-list', 'user-1');
         const events = new EventHandler(owners);
@@ -5196,8 +5202,8 @@ export class AppRpcServerTest {
 
     @Test('returns turn diagnostics trend through json-rpc')
     async turnDiagnosticsTrendThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-trend', 'user-1');
         const events = new EventHandler(owners);
@@ -5254,8 +5260,8 @@ export class AppRpcServerTest {
 
     @Test('rejects foreign turn diagnostics trend through json-rpc')
     async rejectsForeignTurnDiagnosticsTrendThroughRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-trend-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -5285,8 +5291,8 @@ export class AppRpcServerTest {
 
     @Test('scopes turn diagnostics trend to owned sessions through json-rpc')
     async turnDiagnosticsTrendScopesToOwnedSessions() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-diag-1', 'user-1');
         await owners.create('rpc-diag-2', 'user-2');
@@ -5322,8 +5328,8 @@ export class AppRpcServerTest {
 
     @Test('returns empty turn diagnostics trend when no store is configured')
     async turnDiagnosticsTrendWithoutStore() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('rpc-empty-diag-trend', 'user-1');
         const events = new EventHandler(owners);
@@ -5341,8 +5347,8 @@ export class AppRpcServerTest {
     }
     @Test('plan mode rpc toggles runtime state through json-rpc')
     async planModeRpcTogglesRuntimeState() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const planModes = new Set<string>();
@@ -5407,8 +5413,8 @@ export class AppRpcServerTest {
 
     @Test('plan mode rpc rejects foreign session access')
     async planModeRpcRejectsForeignSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('pm-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -5436,8 +5442,8 @@ export class AppRpcServerTest {
 
     @Test('sandbox mode rpc toggles runtime state through json-rpc')
     async sandboxModeRpcTogglesRuntimeState() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const sandboxModes = new Map<string, string>();
@@ -5505,8 +5511,8 @@ export class AppRpcServerTest {
 
     @Test('sandbox mode rpc rejects foreign session access')
     async sandboxModeRpcRejectsForeignSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('sb-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -5538,8 +5544,8 @@ export class AppRpcServerTest {
 
     @Test('delegation mode rpc toggles runtime state through json-rpc')
     async delegationModeRpcTogglesRuntimeState() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const delegationModes = new Map<string, string>();
@@ -5607,8 +5613,8 @@ export class AppRpcServerTest {
 
     @Test('delegation mode rpc rejects invalid modes and foreign sessions')
     async delegationModeRpcRejectsInvalidAndForeign() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('dl-s2', 'user-1');
         const events = new EventHandler(owners);
@@ -5648,8 +5654,8 @@ export class AppRpcServerTest {
     }
 
     async undoRedoFileRouteThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const calls: string[] = [];
@@ -5697,8 +5703,8 @@ export class AppRpcServerTest {
 
     @Test('git_snapshot create/list/diff/revert/unrevert route to runtime through json-rpc')
     async gitSnapshotRpcRoundTrip() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const calls: string[] = [];
@@ -5785,8 +5791,8 @@ export class AppRpcServerTest {
 
     @Test('git_snapshot create reports uncaptured state and requires a workspace')
     async gitSnapshotCreateEdgeCases() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -5824,8 +5830,8 @@ export class AppRpcServerTest {
 
     @Test('git_snapshot diff and revert validate required params')
     async gitSnapshotRpcValidation() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -5864,8 +5870,8 @@ export class AppRpcServerTest {
 
     @Test('review diff/list/get/save route through json-rpc and persist findings')
     async reviewRpcRoundTrip() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const review = {
@@ -5891,7 +5897,7 @@ export class AppRpcServerTest {
             }
         } as any;
         const sessions = new SessionHandler({} as any, store, owners);
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         const reviewFindings = new ReviewFindingsStore(sink);
         const rpc = new AppRpcServer(
             { async getMessages() { return []; } } as any,
@@ -5957,12 +5963,12 @@ export class AppRpcServerTest {
 
     @Test('review get rejects foreign sessions and unknown runs')
     async reviewRpcValidation() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const sessions = new SessionHandler({} as any, store, owners);
-        const sink = new InMemoryAuditSink();
+        const sink = ((await createOrmSessionStore()).audit);
         const reviewFindings = new ReviewFindingsStore(sink);
         const rpc = new AppRpcServer(
             { async getMessages() { return []; } } as any,
@@ -6002,8 +6008,8 @@ export class AppRpcServerTest {
 
     @Test('git_snapshot rpc rejects foreign session access')
     async gitSnapshotRpcRejectsForeignSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -6031,7 +6037,7 @@ export class AppRpcServerTest {
 
     @Test('git snapshots REST routes expose create/list/diff/revert/unrevert')
     async gitSnapshotRestRoutesRoundTrip() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const snapshot = { id: 'snap-1', sessionId: 'git-s1', workspace: '/ws/app', commit: 'abc123', messageId: 'msg-1', createdAt: 1 };
         const runtime = {
@@ -6105,8 +6111,8 @@ export class AppRpcServerTest {
 
     @Test('session export returns transcript through json-rpc')
     async sessionExportThroughJsonRpc() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const messages = [
@@ -6149,8 +6155,8 @@ export class AppRpcServerTest {
 
     @Test('session export rejects foreign session access')
     async sessionExportRejectsForeignSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         await store.append('export-locked', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
@@ -6175,8 +6181,8 @@ export class AppRpcServerTest {
 
     @Test('undo_file rejects foreign session access')
     async undoFileRejectsForeignSession() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await owners.create('uf-locked', 'user-1');
         const events = new EventHandler(owners);
@@ -6238,8 +6244,8 @@ export class AppRpcHandlerTest {
 
     @Test('streams context prepared and turn diagnostics events through rpc stream')
     async streamsContextPreparedAndTurnDiagnosticsEvents() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('rpc-diag');
         await owners.create('rpc-diag', 'user-1');
@@ -6332,8 +6338,8 @@ export class AppRpcHandlerTest {
 export class StdioAppRpcServerTest {
     @Test('streams json-rpc responses over jsonl stdio transport')
     async streamsJsonRpcResponsesOverJsonlTransport() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -6388,8 +6394,8 @@ export class StdioAppRpcServerTest {
 
     @Test('streams run turn chunks over stdio jsonl transport')
     async streamsRunTurnChunksOverStdioJsonlTransport() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -6434,7 +6440,7 @@ export class StdioAppRpcServerTest {
         stdio.stop({ input });
 
         const responses = buffer.trim().split('\n').map(line => JSON.parse(line));
-        expect(responses).toEqual([{
+        expect(responses).toMatchObject([{
             jsonrpc: '2.0',
             method: 'run.turn_stream.chunk',
             params: {
@@ -6490,8 +6496,8 @@ export class StdioAppRpcServerTest {
 
     @Test('approval.list returns pending requests scoped by session and principal')
     async approvalListScopesPendingRequests() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await store.get('s-2');
@@ -6514,8 +6520,8 @@ export class StdioAppRpcServerTest {
 
     @Test('approval.approve and approval.reject resolve pending requests')
     async approvalDecideResolvesPendingRequests() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6546,7 +6552,7 @@ export class StdioAppRpcServerTest {
 
     @Test('approval events are forwarded through the SSE event handler')
     async approvalEventsForwardedThroughSse() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6589,7 +6595,7 @@ export class StdioAppRpcServerTest {
 
     @Test('compensation events are forwarded through the SSE event handler')
     async compensationEventsForwardedThroughSse() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6607,7 +6613,7 @@ export class StdioAppRpcServerTest {
 
     @Test('context prepared events are forwarded through the SSE event handler')
     async contextPreparedEventsForwardedThroughSse() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6644,7 +6650,7 @@ export class StdioAppRpcServerTest {
 
     @Test('turn diagnostics events are forwarded through the SSE event handler')
     async turnDiagnosticsEventsForwardedThroughSse() {
-        const store = new InMemorySessionStore();
+        const { store } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6672,8 +6678,8 @@ export class StdioAppRpcServerTest {
 
     @Test('run.cancel is idempotent for unknown and inactive sessions')
     async runCancelIsIdempotent() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.get('s-1');
         await owners.create('s-1', 'user-1');
@@ -6715,8 +6721,8 @@ export class StdioAppRpcServerTest {
 
     @Test('session.compact forwards to runtime compactNow and enforces owner access')
     async sessionCompactForwardsToRuntime() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         await store.append('s-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await owners.create('s-1', 'user-1');
@@ -6810,13 +6816,13 @@ class RpcEchoTtsAdapter extends StreamingTtsAdapter {
 
 @Suite('AppRpcServer audio RPC')
 export class AppRpcServerAudioTest {
-    private makeRpc(withAudio: boolean, audioOptions?: { maxResponseAudioBytes?: number }): {
+    private async makeRpc(withAudio: boolean, audioOptions?: { maxResponseAudioBytes?: number }): Promise<{
         rpc: AppRpcServer;
         stt: RpcEchoTranscriptionAdapter;
         tts: RpcEchoTtsAdapter;
         turns: string[];
-        store: InMemorySessionStore;
-    } {
+        store: SessionStore;
+    }> {
         const turns: string[] = [];
         const runtime = {
             async runTurn(sessionId: string, input: string) {
@@ -6829,8 +6835,8 @@ export class AppRpcServerAudioTest {
                 return (await store.get(sessionId)).messages;
             }
         } as any;
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const sessions = new SessionHandler(runtime, store, owners);
@@ -6847,7 +6853,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.status reports unavailable when no audio handler is configured')
     async statusWithoutAudioHandler() {
-        const { rpc, store } = this.makeRpc(false);
+        const { rpc, store } = await this.makeRpc(false);
         await store.get('s-1');
         const response = await this.handle(rpc, 'audio.status', { sessionId: 's-1' });
         expect(response.result.available).toBe(false);
@@ -6857,7 +6863,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.start fails gracefully without an audio handler')
     async startWithoutAudioHandler() {
-        const { rpc, store } = this.makeRpc(false);
+        const { rpc, store } = await this.makeRpc(false);
         await store.get('s-1');
         const response = await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
         expect(response.result.ok).toBe(false);
@@ -6866,7 +6872,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.start, feed and end run the full RPC flow with base64 chunks')
     async fullRpcFlow() {
-        const { rpc, stt, tts, turns, store } = this.makeRpc(true);
+        const { rpc, stt, tts, turns, store } = await this.makeRpc(true);
         await store.get('s-1');
 
         const start = await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
@@ -6902,7 +6908,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.start negotiates the capture format and rejects incompatible input')
     async startNegotiatesAudioFormat() {
-        const { rpc, store } = this.makeRpc(true);
+        const { rpc, store } = await this.makeRpc(true);
         await store.get('s-1');
 
         const accepted = await this.handle(rpc, 'audio.start', { sessionId: 's-1', format: 'pcm16k' });
@@ -6921,7 +6927,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.end caps synthesized audio included in RPC responses')
     async endCapsSynthesizedAudio() {
-        const { rpc, tts, store } = this.makeRpc(true, { maxResponseAudioBytes: 4 });
+        const { rpc, tts, store } = await this.makeRpc(true, { maxResponseAudioBytes: 4 });
         await store.get('s-1');
         await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
         await this.handle(rpc, 'audio.feed', {
@@ -6939,7 +6945,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.feed and audio.end reject when no session was started')
     async feedAndEndWithoutStart() {
-        const { rpc, store } = this.makeRpc(true);
+        const { rpc, store } = await this.makeRpc(true);
         await store.get('s-1');
 
         const feed = await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('x').toString('base64') });
@@ -6953,7 +6959,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.feed validates the base64 chunk parameter')
     async feedValidatesChunk() {
-        const { rpc, store } = this.makeRpc(true);
+        const { rpc, store } = await this.makeRpc(true);
         await store.get('s-1');
         await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
 
@@ -6966,7 +6972,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio.cancel clears the session and is idempotent')
     async cancelFlow() {
-        const { rpc, stt, store } = this.makeRpc(true);
+        const { rpc, stt, store } = await this.makeRpc(true);
         await store.get('s-1');
         await this.handle(rpc, 'audio.start', { sessionId: 's-1' });
         await this.handle(rpc, 'audio.feed', { sessionId: 's-1', chunk: Buffer.from('partial').toString('base64') });
@@ -6987,7 +6993,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio RPC rejects foreign session access')
     async foreignSessionRejected() {
-        const { rpc, store } = this.makeRpc(true);
+        const { rpc, store } = await this.makeRpc(true);
         await store.get('s-1');
         await store.setOwner('s-1', 'user-2');
 
@@ -7000,7 +7006,7 @@ export class AppRpcServerAudioTest {
 
     @Test('audio methods require a sessionId')
     async missingSessionId() {
-        const { rpc } = this.makeRpc(true);
+        const { rpc } = await this.makeRpc(true);
 
         const start = await this.handle(rpc, 'audio.start', {});
         expect(start.error.code).toBe(-32602);

@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore, MemoryCommandOutputStore, AgentConsoleCommandOutputHistoryEntry } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryCommandOutputStore, AgentConsoleCommandOutputHistoryEntry, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
 import { SessionHandler } from '../src/api/SessionHandler';
@@ -16,9 +16,10 @@ function recordId(principalId: string, sessionId: string): string {
 
 @Suite('Gateway command_output.* RPCs (P267)')
 export class CommandOutputRpcTest {
-    protected createHarness(runtimeOverrides: any = {}) {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+    protected async createHarness(runtimeOverrides: any = {}) {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -36,14 +37,14 @@ export class CommandOutputRpcTest {
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
-        return { store, memory, owners, rpc };
+        return { store, memory, owners, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
         return rpc.handle({ jsonrpc: '2.0', id: 1, method, params }, { principalId });
     }
 
-    protected async seed(harness: { memory: InMemoryMemoryStore }, principalId: string, sessionId: string, entries: AgentConsoleCommandOutputHistoryEntry[]) {
+    protected async seed(harness: { memory: MemoryStore }, principalId: string, sessionId: string, entries: AgentConsoleCommandOutputHistoryEntry[]) {
         const out = new MemoryCommandOutputStore(harness.memory, recordId(principalId, sessionId));
         for (const entry of entries) {
             await out.append({ sessionId, source: 'rpc', ...entry });
@@ -52,7 +53,7 @@ export class CommandOutputRpcTest {
 
     @Test('registers the four command_output capabilities')
     async capabilitiesRegistered() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const response = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'app.capabilities', params: {} }, { principalId: 'user-1' });
         const methods: string[] = (response as any).result?.methods ?? [];
         for (const method of ['command_output.list', 'command_output.append', 'command_output.get', 'command_output.replay', 'command_output.clear']) {
@@ -62,14 +63,14 @@ export class CommandOutputRpcTest {
 
     @Test('RPC response preserves request correlation metadata')
     async preservesRequestMeta() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const response = await rpc.handle({ jsonrpc: '2.0', id: 7, method: 'app.ping', params: {}, meta: { requestId: 'req-7', sessionEpoch: 3 } }, { principalId: 'user-1' });
         expect((response as any).meta).toEqual({ requestId: 'req-7', sessionEpoch: 3 });
     }
 
     @Test('command_output.append enforces session ownership and redacts stored output')
     async appendStoresRedactedEntry() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         await harness.owners.create('co-append', 'user-1');
         const response = await this.call(harness.rpc, 'command_output.append', {
             sessionId: 'co-append',
@@ -85,7 +86,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.list returns seeded durable entries newest-first with totals')
     async listReturnsSeededEntries() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-s1', 'user-1');
         await this.seed(harness, 'user-1', 'co-s1', [
@@ -103,7 +104,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.list supports cursor pagination')
     async listSupportsCursorPagination() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-s2', 'user-1');
         const entries = Array.from({ length: 25 }, (_, index) => ({
@@ -130,7 +131,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.get returns a single entry and null for unknown id')
     async getReturnsEntryAndNullForUnknown() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-s3', 'user-1');
         await this.seed(harness, 'user-1', 'co-s3', [
@@ -147,7 +148,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.get redacts secrets from stored text')
     async getRedactsSecrets() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-s4', 'user-1');
         await this.seed(harness, 'user-1', 'co-s4', [
@@ -162,7 +163,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.clear removes entries for the session only and reports the count')
     async clearRemovesSessionEntriesOnly() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-s5', 'user-1');
         await owners.create('co-s6', 'user-1');
@@ -182,7 +183,7 @@ export class CommandOutputRpcTest {
 
     @Test('denies access to sessions owned by another principal')
     async deniesCrossPrincipalAccess() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-other', 'user-1');
         await this.seed(harness, 'user-1', 'co-other', [{ id: 'private', command: 'p', text: 'p', ts: 1, kind: 'result' }]);
@@ -194,7 +195,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.replay dispatches the stored command through runTurn and returns last message')
     async replayDispatchesCommand() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-replay', 'user-1');
         await this.seed(harness, 'user-1', 'co-replay', [
@@ -212,7 +213,7 @@ export class CommandOutputRpcTest {
 
     @Test('command_output.replay errors when the entry has no command')
     async replayRejectsCommandlessEntry() {
-        const harness = this.createHarness();
+        const harness = await this.createHarness();
         const { owners, rpc } = harness;
         await owners.create('co-replay-empty', 'user-1');
         await this.seed(harness, 'user-1', 'co-replay-empty', [
@@ -226,7 +227,7 @@ export class CommandOutputRpcTest {
 
     @Test('errors when requesting history for a non-existent session')
     async rejectsUnknownSession() {
-        const { rpc } = this.createHarness();
+        const { rpc } = await this.createHarness();
         const response = await this.call(rpc, 'command_output.list', { sessionId: 'no-such-session', workspace: WORKSPACE });
         expect((response as any).error).toBeDefined();
         expect((response as any).error.code).toEqual(-32004);

@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { setRequestAuth } from '../src/auth/AuthMiddleware';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { ShareHandler } from '../src/api/ShareHandler';
@@ -37,7 +37,7 @@ export class SessionShareTest {
 
     @Test('creates an owner-only snapshot and reads it with a public token')
     async createsAndReads() {
-        const sessions = new InMemorySessionStore(); const owners = new SessionOwnerStore(sessions); const shares = new SessionShareStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) }); const sessions = context.get(SessionStore); const owners = new SessionOwnerStore(sessions); const shares = new SessionShareStore();
         await sessions.append('s1', { id: 'm1', role: 'user', content: 'open /workspace/app with token=secret', createdAt: 1 });
         await sessions.setWorkspace('s1', '/workspace/app'); await owners.create('s1', 'owner');
         const handler = new ShareHandler({ getMessages: async () => (await sessions.get('s1')).messages } as any, sessions, owners, shares);
@@ -50,7 +50,7 @@ export class SessionShareTest {
 
     @Test('rejects foreign creation and supports owner revocation')
     async authorizesAndRevokes() {
-        const sessions = new InMemorySessionStore(); const owners = new SessionOwnerStore(sessions); const shares = new SessionShareStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) }); const sessions = context.get(SessionStore); const owners = new SessionOwnerStore(sessions); const shares = new SessionShareStore();
         await sessions.append('s1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 }); await owners.create('s1', 'owner');
         const handler = new ShareHandler({ getMessages: async () => [] } as any, sessions, owners, shares); const routes = handler.getRoutes();
         const foreign = {} as any; setRequestAuth(foreign, { token: 'x', principalId: 'other' }); const denied = response(); await routes[0].handler(foreign, denied, { id: 's1' }); expect(denied.status).toEqual(403);
@@ -61,9 +61,10 @@ export class SessionShareTest {
 
 @Suite('Gateway session share RPCs (P145)')
 export class SessionShareRpcTest {
-    protected createHarness() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+    protected async createHarness() {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const shares = new SessionShareStore();
@@ -74,7 +75,7 @@ export class SessionShareRpcTest {
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, shares);
-        return { store, owners, shares, rpc };
+        return { store, owners, shares, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
@@ -87,7 +88,7 @@ export class SessionShareRpcTest {
 
     @Test('session.share.create produces a token and a share url')
     async createProducesTokenAndUrl() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any);
         await owners.create('s1', 'user-1');
 
@@ -105,7 +106,7 @@ export class SessionShareRpcTest {
 
     @Test('session.share.create redacts secrets from the stored messages')
     async createRedactsSecrets() {
-        const { store, owners, rpc, shares } = this.createHarness();
+        const { store, owners, rpc, shares } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'api key sk-abcdefgh12345678 and Bearer tok1234567890', createdAt: 1 } as any);
         await owners.create('s1', 'user-1');
 
@@ -119,7 +120,7 @@ export class SessionShareRpcTest {
 
     @Test('session.share.revoke removes the share and rejects foreign owners')
     async revokeRemovesShare() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any);
         await owners.create('s1', 'user-1');
 

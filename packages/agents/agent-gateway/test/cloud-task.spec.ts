@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemoryMemoryStore, InMemorySessionStore } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { CloudTaskQueue } from '../src/cloud/CloudTaskQueue';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
@@ -90,8 +90,9 @@ export class CloudTaskQueueTest {
             async getMessages() { return [{ id: 'a1', role: 'assistant', content: 'result' }]; }
         } as any;
         const uuid = new RandomUuidGenerator();
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const sessions = new SessionHandler(runtime, store, owners);
         const events = new EventHandler(owners);

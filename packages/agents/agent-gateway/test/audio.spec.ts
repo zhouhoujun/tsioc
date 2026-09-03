@@ -1,7 +1,8 @@
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore } from '@tsdi/agent';
+import { AgentModule, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application } from '@tsdi/core';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionQueue } from '../src/auth/SessionQueue';
@@ -237,13 +238,13 @@ export class AudioSessionHandlerTest {
 
 @Suite('ChatWebSocket audio channel')
 export class ChatWebSocketAudioTest {
-    private makeWs(): {
+    private async makeWs(): Promise<{
         ws: ChatWebSocket;
         stt: EchoTranscriptionAdapter;
         tts: EchoTtsAdapter;
         turns: string[];
         socket: FakeSocket;
-    } {
+    }> {
         const turns: string[] = [];
         const runtime = {
             runTurn: async (sessionId: string, input: string) => {
@@ -251,7 +252,8 @@ export class ChatWebSocketAudioTest {
                 return { sessionId, message: { role: 'assistant', content: `echo:${input}`, createdAt: 1, id: '1' } };
             }
         } as any;
-        const store = new InMemorySessionStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
         const owners = new SessionOwnerStore(store);
         const stt = new EchoTranscriptionAdapter();
         const tts = new EchoTtsAdapter();
@@ -264,7 +266,7 @@ export class ChatWebSocketAudioTest {
 
     @Test('binary frames feed the audio session only after start')
     async binaryFramesFeedAfterStart() {
-        const { ws, socket } = this.makeWs();
+        const { ws, socket } = await this.makeWs();
 
         (ws as any).handleAudioFrame(socket, Buffer.from('ignored'), 's1');
         expect((ws as any).audioStates.get(socket).buffered.length).toBe(0);
@@ -284,7 +286,7 @@ export class ChatWebSocketAudioTest {
 
     @Test('end action transcribes, runs the turn and streams audio frames back')
     async endRunsFullAudioFlow() {
-        const { ws, tts, turns, socket } = this.makeWs();
+        const { ws, tts, turns, socket } = await this.makeWs();
 
         (ws as any).handleAudioControl(socket, { type: 'audio', action: 'start' }, 's1');
         (ws as any).handleAudioFrame(socket, Buffer.from('hello'), 's1');
@@ -313,7 +315,7 @@ export class ChatWebSocketAudioTest {
 
     @Test('status reports availability and session state')
     async statusReportsState() {
-        const { ws, socket } = this.makeWs();
+        const { ws, socket } = await this.makeWs();
 
         (ws as any).handleAudioControl(socket, { type: 'audio', action: 'status' }, 's1');
         let frame = JSON.parse(framePayload(socket.writes[socket.writes.length - 1]).toString('utf8'));
@@ -329,7 +331,8 @@ export class ChatWebSocketAudioTest {
     @Test('audio control without an audio handler reports unavailable')
     async controlWithoutAudioHandler() {
         const runtime = { runTurn: async () => ({}) } as any;
-        const store = new InMemorySessionStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
         const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), new SessionQueue());
         const socket = makeSocket();
 
@@ -342,7 +345,8 @@ export class ChatWebSocketAudioTest {
     @Test('binary frames are ignored when no audio handler is configured')
     async binaryFramesIgnoredWithoutAudio() {
         const runtime = { runTurn: async () => ({}) } as any;
-        const store = new InMemorySessionStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
         const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), new SessionQueue());
         const socket = makeSocket();
 

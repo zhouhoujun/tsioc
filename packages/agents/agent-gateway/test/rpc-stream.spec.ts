@@ -1,8 +1,8 @@
 import expect = require('expect');
 import { Buffer } from 'buffer';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 import { AppRpcHandler } from '../src/api/AppRpcHandler';
 import { EventHandler } from '../src/api/EventHandler';
@@ -11,9 +11,10 @@ import { SessionHandler } from '../src/api/SessionHandler';
 import { setRequestAuth } from '../src/auth/AuthMiddleware';
 import { AgentTurnStartedEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent } from '@tsdi/agent';
 
-function buildStreamHarness() {
-    const store = new InMemorySessionStore();
-    const memory = new InMemoryMemoryStore();
+async function buildStreamHarness() {
+    const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+    const store = context.get(SessionStore);
+    const memory = context.get(MemoryStore);
     const owners = new SessionOwnerStore(store);
     const events = new EventHandler(owners);
     const runtime = {
@@ -45,21 +46,21 @@ function buildStreamHarness() {
     const sessions = new SessionHandler(runtime, store, owners);
     const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, tools, owners, sessions, events);
     const handler = new AppRpcHandler(rpc);
-    return { rpc, handler, events, store, owners };
+    return { rpc, handler, events, store, owners, context };
 }
 
 @Suite('AppRpcHandler /rpc/stream')
 export class AppRpcStreamTest {
     @Test('registers POST /rpc/stream route')
-    streamRouteRegistered() {
-        const { handler } = buildStreamHarness();
+    async streamRouteRegistered() {
+        const { handler } = await buildStreamHarness();
         const routes = handler.getRoutes();
         expect(routes.some(route => route.method === 'POST' && route.path === '/rpc/stream')).toBe(true);
     }
 
     @Test('non-streaming method yields a single NDJSON result line')
     async nonStreamingMethodYieldsResult() {
-        const { handler } = buildStreamHarness();
+        const { handler } = await buildStreamHarness();
         const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
         const chunks: string[] = [];
         const req = {} as any;
@@ -83,7 +84,7 @@ export class AppRpcStreamTest {
 
     @Test('run.turn_stream yields chunk notification then done result as NDJSON')
     async streamTurnYieldsChunksAndResult() {
-        const { handler } = buildStreamHarness();
+        const { handler } = await buildStreamHarness();
         const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
         const chunks: string[] = [];
         const req = {} as any;
@@ -122,7 +123,7 @@ export class AppRpcStreamTest {
 
     @Test('unknown method yields NDJSON error line')
     async unknownMethodYieldsError() {
-        const { handler } = buildStreamHarness();
+        const { handler } = await buildStreamHarness();
         const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
         const chunks: string[] = [];
         const req = {} as any;
@@ -148,7 +149,7 @@ export class AppRpcStreamTest {
 
     @Test('streamed tool events are flushed as stream chunk notifications')
     async streamedToolEventsFlush() {
-        const { handler } = buildStreamHarness();
+        const { handler } = await buildStreamHarness();
         const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
         const chunks: string[] = [];
         const req = {} as any;

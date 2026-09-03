@@ -1,7 +1,8 @@
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore } from '@tsdi/agent';
+import { AgentModule, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application } from '@tsdi/core';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionQueue } from '../src/auth/SessionQueue';
@@ -163,14 +164,15 @@ export class AudioFrameQuotaTest {
 
 @Suite('ChatWebSocket audio quota')
 export class ChatWebSocketQuotaTest {
-    private makeWs(quota?: AudioFrameQuota): {
+    private async makeWs(quota?: AudioFrameQuota): Promise<{
         ws: ChatWebSocket;
         stt: EchoTranscriptionAdapter;
         socket: FakeSocket;
         quota: AudioFrameQuota;
-    } {
+    }> {
         const runtime = { runTurn: async () => ({}) } as any;
-        const store = new InMemorySessionStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
         const owners = new SessionOwnerStore(store);
         const stt = new EchoTranscriptionAdapter();
         const tts = new EchoTtsAdapter();
@@ -187,8 +189,8 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('oversized audio frame sends audio-error, ends the socket and cancels the session')
-    oversizedFrameBreach() {
-        const { ws, stt, socket } = this.makeWs(new AudioFrameQuota({ audioQuota: { maxFrameBytes: 8 } }));
+    async oversizedFrameBreach() {
+        const { ws, stt, socket } = await this.makeWs(new AudioFrameQuota({ audioQuota: { maxFrameBytes: 8 } }));
         this.start(ws, socket);
         (ws as any).handleAudioFrame(socket, Buffer.from('partial'), 's1');
 
@@ -203,8 +205,8 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('session byte cap breach cancels the connection after the budget is exhausted')
-    sessionBytesBreach() {
-        const { ws, stt, socket } = this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
+    async sessionBytesBreach() {
+        const { ws, stt, socket } = await this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
         this.start(ws, socket);
         (ws as any).handleAudioFrame(socket, Buffer.alloc(6), 's1');
         expect((ws as any).audioStates.get(socket).bufferedBytes).toBe(6);
@@ -220,8 +222,8 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('start action resets the session quota budget')
-    startResetsSessionQuota() {
-        const { ws, socket, quota } = this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
+    async startResetsSessionQuota() {
+        const { ws, socket, quota } = await this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
         this.start(ws, socket);
         (ws as any).handleAudioFrame(socket, Buffer.alloc(6), 's1');
         expect(quota.sessionUsage('s1')).toBe(6);
@@ -232,8 +234,8 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('start action reports incompatible and invalid audio formats')
-    startRejectsUnsupportedFormat() {
-        const { ws, socket } = this.makeWs();
+    async startRejectsUnsupportedFormat() {
+        const { ws, socket } = await this.makeWs();
 
         (ws as any).handleAudioControl(socket, { type: 'audio', action: 'start', format: 'webm' }, 's1');
         expect(lastTextFrame(socket).error).toContain("transcription adapter accepts 'pcm16k'");
@@ -245,8 +247,8 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('socket close resets the session quota budget')
-    closeResetsSessionQuota() {
-        const { ws, socket, quota } = this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
+    async closeResetsSessionQuota() {
+        const { ws, socket, quota } = await this.makeWs(new AudioFrameQuota({ audioQuota: { maxSessionBytes: 10 } }));
         this.start(ws, socket);
         (ws as any).handleAudioFrame(socket, Buffer.alloc(6), 's1');
         expect(quota.sessionUsage('s1')).toBe(6);
@@ -257,9 +259,10 @@ export class ChatWebSocketQuotaTest {
     }
 
     @Test('quota enforcement is skipped when no AudioFrameQuota is configured')
-    quotaBypassedWhenNotConfigured() {
+    async quotaBypassedWhenNotConfigured() {
         const runtime = { runTurn: async () => ({}) } as any;
-        const store = new InMemorySessionStore();
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
         const stt = new EchoTranscriptionAdapter();
         const tts = new EchoTtsAdapter();
         const audio = new AudioSessionHandler(runtime, stt, tts);

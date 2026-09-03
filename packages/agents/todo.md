@@ -1930,3 +1930,26 @@ Turn: Fix session restore                                      running  01:42
 - `TypeOrmMemoryStore` 与 `TypeOrmEvalReportStore` 的读写入口统一先等待 `TypeormAdapter.ready()`，确保连接异步懒初始化完成后再访问 repository；不引入 InMemory 或默认回退。
 - 验证：`agent` `npm run build` 通过；`agent-ui` 全量 **953 passing**；`typeorm-adapter` `tsc --noEmit` 通过。
 - 限制：`agent`/`agent-tools`/`agent-gateway` 测试仍包含已删除 InMemory fixture 的历史导入及旧构造器调用，尚未完成真实 SQLite fixture 迁移，因此本轮不宣称 packages/agents 全量测试通过。
+
+### 2026-09-03 Gateway ORM test migration continuation
+
+- `session-sections.spec.ts`、`session-lifecycle.spec.ts`、`share.spec.ts`、`rpc-stream.spec.ts` 已改为 `Application.run + provideAgentOrm(sqljs)`，通过 IoC 获取 `SessionStore`/`MemoryStore`；不再直接构造 InMemory store。
+- 这些套件已通过自身 TypeScript 检查。`cloud-task`、audio、harness-reject、rpc-command-output 与大型 gateway-server 仍需同样的异步 context 生命周期迁移。
+- 收尾门禁仍未满足：packages/agents 尚未全量测试通过，因此不提交。
+
+### 2026-09-03 Gateway test migration execution plan
+
+按以下顺序持续执行，全部完成并验证后才允许提交：
+
+1. **真实 ORM harness**：为每个 gateway 测试套件使用 `Application.run({ module: AgentModule, providers: provideAgentOrm(sqljs) })`，通过 `ctx.get(SessionStore/MemoryStore)` 注入，禁止测试适配器和 `new InMemory*`。
+2. **小型 RPC 套件迁移**：完成 `session-sections`、`session-lifecycle`、`share`、`rpc-stream`、`cloud-task`，逐文件 `tsc` 与定向测试。
+3. **音频与拒绝操作套件迁移**：完成 `audio`、`audio-quota`、`harness-reject`、`rpc-command-output`，处理 context 关闭与异步 harness 生命周期。
+4. **大型 gateway 套件迁移**：完成 `gateway-server.spec.ts` 的 Session、Memory、Timeline、Audit 真实 ORM 注入及 LocalToolRegistry 新构造签名。
+5. **agents 全量门禁**：运行 `packages/agents/*` 测试；仅允许代码测试真实通过，监听权限等环境限制必须单独标明，不得伪造通过。
+6. **收尾**：`git diff --check`、受影响包 `tsc/build`、更新本节证据；所有门禁通过后再提交。
+
+当前进度：第 3 步的 `audio`、`audio-quota`、`harness-reject`、`rpc-command-output` 已迁移到抽象 store + IoC ORM；第 4 步 `gateway-server.spec.ts` 仍需整体异步 harness 重写，不能用类型断言或模拟存储替代。
+
+最新进度：`gateway-server.spec.ts` 的 `SessionHandlerTest` 前两个用例已开始切换至 ORM context；该文件其余同步 store 构造仍待逐组迁移，当前保持未提交状态。
+
+补充：大型 `gateway-server.spec.ts` 已完成全部 InMemory store 构造替换为抽象 token 的 ORM context；`tsc --noEmit` 通过。运行期仅剩消息对象由 TypeORM 规范化后增加可选字段的断言兼容调整，已改为部分匹配。

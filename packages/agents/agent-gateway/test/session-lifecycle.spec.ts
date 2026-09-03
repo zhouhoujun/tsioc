@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { InMemorySessionStore, InMemoryMemoryStore } from '@tsdi/agent';
-import { RandomUuidGenerator } from '@tsdi/core';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
 import { SessionHandler } from '../src/api/SessionHandler';
@@ -9,9 +9,10 @@ import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 
 @Suite('Gateway session lifecycle RPCs (P124)')
 export class SessionLifecycleRpcTest {
-    protected createHarness() {
-        const store = new InMemorySessionStore();
-        const memory = new InMemoryMemoryStore();
+    protected async createHarness() {
+        const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const store = context.get(SessionStore);
+        const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const runtime = {
@@ -24,7 +25,7 @@ export class SessionLifecycleRpcTest {
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
-        return { store, owners, rpc };
+        return { store, owners, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
@@ -37,7 +38,7 @@ export class SessionLifecycleRpcTest {
 
     @Test('session.set_archived toggles the archived flag and filters session.list')
     async archiveTogglesAndFiltersList() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'one', createdAt: 1 } as any);
         await store.append('s2', { id: 'u2', role: 'user', content: 'two', createdAt: 2 } as any);
         await store.append('s3', { id: 'u3', role: 'user', content: 'three', createdAt: 3 } as any);
@@ -63,7 +64,7 @@ export class SessionLifecycleRpcTest {
 
     @Test('session.set_archived unarchives and surfaces in default list again')
     async archiveUnarchiveRoundTrip() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'one', createdAt: 1 } as any);
         await owners.create('s1', 'user-1');
 
@@ -79,7 +80,7 @@ export class SessionLifecycleRpcTest {
 
     @Test('session.fork creates a branch session visible to the owner')
     async forkCreatesBranch() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('source', { id: 'u1', role: 'user', content: 'one', createdAt: 1 } as any);
         await store.append('source', { id: 'a1', role: 'assistant', content: 'two', createdAt: 2 } as any);
         await owners.create('source', 'user-1');
@@ -96,7 +97,7 @@ export class SessionLifecycleRpcTest {
 
     @Test('session.set_archived rejects a session owned by another principal')
     async archiveRejectsForeignOwner() {
-        const { store, owners, rpc } = this.createHarness();
+        const { store, owners, rpc } = await this.createHarness();
         await store.append('s1', { id: 'u1', role: 'user', content: 'one', createdAt: 1 } as any);
         await owners.create('s1', 'user-1');
 

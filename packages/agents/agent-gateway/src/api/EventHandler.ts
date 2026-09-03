@@ -101,7 +101,7 @@ export class EventHandler {
             inputSummary: event.inputSummary
         });
         this.capture('tool_invoked', {
-            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            id: `tool_invoked:${event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`}`,
             type: 'tool_invoked',
             sessionId: event.sessionId,
             timestamp: Date.now(),
@@ -127,7 +127,7 @@ export class EventHandler {
             this.registerQuestion(event.sessionId, event.output);
         }
         this.capture('tool_completed', {
-            id: event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`,
+            id: `tool_completed:${event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`}`,
             type: 'tool_completed',
             sessionId: event.sessionId,
             timestamp: Date.now(),
