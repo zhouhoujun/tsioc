@@ -6,7 +6,8 @@ import { promises as fs, existsSync, readFileSync } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter } from '@tsdi/common';
-import { DefaultAgentRuntime, EchoModelAdapter, FileSnapshotStore, InMemoryMemoryStore, InMemorySessionStore, LLMSessionSummarizer, LocalToolRegistry, defaultAgentOptions } from '@tsdi/agent';
+import { DefaultAgentRuntime, EchoModelAdapter, FileSnapshotStore, LLMSessionSummarizer, LocalToolRegistry, defaultAgentOptions } from '@tsdi/agent';
+import { TestMemoryStore, TestSessionStore, TestActivationStore } from './test-stores';
 import { ApplyPatchTool } from '../files/apply-patch.tool';
 
 class FsFileAdapter extends FileAdapter {
@@ -375,9 +376,9 @@ export class ApplyPatchToolTest {
             const snapshotStore = new FileSnapshotStore();
             const runtime = new DefaultAgentRuntime(
                 new EchoModelAdapter(),
-                new LocalToolRegistry([], new InMemoryMemoryStore()),
-                new InMemorySessionStore(),
-                new InMemoryMemoryStore(),
+                new LocalToolRegistry([], new TestMemoryStore(), new TestSessionStore(), new TestActivationStore()),
+                new TestSessionStore(),
+                new TestMemoryStore(),
                 new LLMSessionSummarizer(new EchoModelAdapter() as any),
                 defaultAgentOptions,
                 new FakeApp() as any,

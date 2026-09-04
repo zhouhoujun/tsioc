@@ -6,7 +6,8 @@ import { execFileSync } from 'child_process';
 import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
-import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentScheduler, ScheduledAgentTask, provideAgentOrm } from '@tsdi/agent';
+import { TestMemoryStore, TestSessionStore } from './test-stores';
 import { SpawnAgentTool, ParallelSpawnTool, SpawnAgentAdapter } from '../agent';
 import { OrchestrateTool } from '../agent/orchestrate.tool';
 import { FanOutTool, MapReduceTool, RaceTool, WaitAllTool, WaitAnyTool } from '../agent/orchestrate-primitives.tool';
@@ -204,10 +205,10 @@ class FakeScheduler extends AgentScheduler {
     }
 }
 
-function createSessionContext(overrides?: { sessionId?: string; memory?: InMemoryMemoryStore; scheduler?: AgentScheduler; }): any {
+function createSessionContext(overrides?: { sessionId?: string; memory?: TestMemoryStore; scheduler?: AgentScheduler; }): any {
     return {
         sessionId: 's1',
-        memory: new InMemoryMemoryStore(),
+        memory: new TestMemoryStore(),
         ...overrides
     };
 }
@@ -1392,7 +1393,7 @@ export class AgentToolsPackageTest {
     async provideToolsAppliesPerToolActivationPolicyToRegistryDefinitions() {
         const workspace = await this.createWorkspace();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideTools({
                 file: { rootDir: workspace }
             }), ...withToolTestAdapters()]
         });
@@ -1436,7 +1437,7 @@ export class AgentToolsPackageTest {
         const workspace = await this.createWorkspace();
         await fs.writeFile(path.join(workspace, 'README.md'), 'hello', 'utf8');
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideTools({
                 file: { rootDir: workspace }
             }), ...withToolTestAdapters()]
         });
@@ -1569,7 +1570,7 @@ export class AgentToolsPackageTest {
     @Test('provideTools deduplicates tool names already registered by AgentModule')
     async provideToolsDeduplicatesToolNamesAlreadyRegisteredByAgentModule() {
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideTools({ registration: { groups: { filesystem_write: true } } }), ...withToolTestAdapters()]
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideTools({ registration: { groups: { filesystem_write: true } } }), ...withToolTestAdapters()]
         });
         try {
             const registry = ctx.get(ToolRegistry);
@@ -1630,7 +1631,7 @@ export class AgentToolsPackageTest {
 
     @Test('sessions tools return current session metadata list sessions and history')
     async sessionsToolsReturnCurrentSessionMetadataListSessionsAndHistory() {
-        const store = new InMemorySessionStore();
+        const store = new TestSessionStore();
         await store.append('s1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 });
         await store.append('s1', { id: 'm2', role: 'assistant', content: 'world', createdAt: 2, metadata: { source: 'model' } });
         await store.setSummary('s1', 'summary one');
@@ -1662,7 +1663,7 @@ export class AgentToolsPackageTest {
 
     @Test('sessions history does not create missing sessions when explicitly requested')
     async sessionsHistoryDoesNotCreateMissingSessionsWhenExplicitlyRequested() {
-        const store = new InMemorySessionStore();
+        const store = new TestSessionStore();
         const history = new SessionsHistoryTool(store);
 
         const result = await history.invoke({ sessionId: 'missing' }, createSessionContext({ sessionId: 's1' }));
@@ -1674,7 +1675,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory list returns session and global records')
     async memoryListReturnsSessionAndGlobalRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
         await store.put({ id: 's2-note', sessionId: 's2', key: 'topic', value: 'switch', scope: 'session', createdAt: 2 });
         await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
@@ -1689,7 +1690,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory put and search respect visibility and filters')
     async memoryPutAndSearchRespectVisibilityAndFilters() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         const put = new MemoryPutTool(new RandomUuidGenerator());
         const search = new MemorySearchTool();
 
@@ -1723,7 +1724,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory search supports semantic and hybrid modes through the retriever')
     async memorySearchSupportsSemanticAndHybridModes() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', createdAt: 1 });
         await store.put({ id: 's1-note2', sessionId: 's1', key: 'note', value: 'cache network', scope: 'session', createdAt: 2 });
         await store.put({ id: 'global-note', key: 'policy', value: 'shared policy', scope: 'global', createdAt: 3 });
@@ -1742,7 +1743,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory search without retriever falls back to keyword store search')
     async memorySearchWithoutRetrieverFallsBackToKeywordStoreSearch() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', createdAt: 1 });
         const tool = new MemorySearchTool();
 
@@ -1752,7 +1753,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory search validates mode and minScore')
     async memorySearchValidatesModeAndMinScore() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         const tool = new MemorySearchTool();
 
         let modeError: Error | undefined;
@@ -1774,7 +1775,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory delete removes only visible records')
     async memoryDeleteRemovesOnlyVisibleRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
         await store.put({ id: 's2-note', sessionId: 's2', key: 'topic', value: 'switch', scope: 'session', createdAt: 2 });
         await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
@@ -1800,7 +1801,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory delete compensation restores the deleted record exactly')
     async memoryDeleteCompensationRestoresRecord() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', createdAt: 1 });
         const tool = new MemoryDeleteTool();
 
@@ -1816,7 +1817,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory forget compensation restores the forgotten records')
     async memoryForgetCompensationRestoresRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 'keep-1', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
         await store.put({ id: 'drop-1', sessionId: 's1', key: 'scratch', value: 'temp', scope: 'session', createdAt: 2 });
         const tool = new MemoryForgetTool();
@@ -1831,7 +1832,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory purge compensation restores the purged records')
     async memoryPurgeCompensationRestoresRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 'purge-1', sessionId: 's1', key: 'scratch', value: 'temp', scope: 'session', createdAt: 1 });
         const tool = new MemoryPurgeTool();
 
@@ -1845,7 +1846,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory put compensation removes only the records the call added')
     async memoryPutCompensationRemovesOnlyAddedRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 'existing-1', sessionId: 's1', key: 'topic', value: 'old', scope: 'session', createdAt: 1 });
         const tool = new MemoryPutTool(new RandomUuidGenerator());
 
@@ -1862,7 +1863,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory recall returns visible records with filters')
     async memoryRecallReturnsVisibleRecordsWithFilters() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
         await store.put({ id: 's1-policy', key: 'policy', value: 'shared cache', scope: 'global', namespace: 'shared', category: 'core', createdAt: 2 });
         await store.put({ id: 's2-topic', sessionId: 's2', key: 'topic', value: 'other cache', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 3 });
@@ -1885,7 +1886,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory forget deletes visible records by id or key filters')
     async memoryForgetDeletesVisibleRecordsByIdOrKeyFilters() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', createdAt: 1 });
         await store.put({ id: 's1-note', sessionId: 's1', key: 'note', value: 'draft', scope: 'session', namespace: 'agent', createdAt: 2 });
         await store.put({ id: 'global-policy', key: 'policy', value: 'shared', scope: 'global', namespace: 'shared', createdAt: 3 });
@@ -1908,7 +1909,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory export returns deterministic records in json and text formats')
     async memoryExportReturnsDeterministicRecordsInJsonAndTextFormats() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
         await store.put({ id: 'global-policy', key: 'policy', value: 'shared', scope: 'global', namespace: 'shared', category: 'core', createdAt: 2 });
         const tool = new MemoryExportTool();
@@ -1928,7 +1929,7 @@ export class AgentToolsPackageTest {
 
     @Test('memory purge deletes only explicitly scoped records')
     async memoryPurgeDeletesOnlyExplicitlyScopedRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         await store.put({ id: 's1-agent', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
         await store.put({ id: 's1-shared', sessionId: 's1', key: 'note', value: 'draft', scope: 'session', namespace: 'shared', category: 'conversation', createdAt: 2 });
         await store.put({ id: 'global-agent', key: 'policy', value: 'shared', scope: 'global', namespace: 'agent', category: 'core', createdAt: 3 });
@@ -2439,7 +2440,7 @@ export class AgentToolsPackageTest {
 
     @Test('todo store persists items through memory-backed instances')
     async todoStorePersistsItemsThroughMemoryBackedInstances() {
-        const memory = new InMemoryMemoryStore();
+        const memory = new TestMemoryStore();
         const storeA = new TodoStore(memory);
         await storeA.replace('todo-1', [
             { id: '1', content: 'persisted', status: 'pending' },
@@ -3052,6 +3053,7 @@ export class AgentToolsPackageTest {
         const model = new CapturingModelAdapter();
         const ctx = await Application.run(AgentModule, {
             providers: [
+                provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
                 { provide: ModelAdapter, useValue: model },
                 ...provideSkills({
                     skills: [{
@@ -4936,7 +4938,7 @@ export class AgentToolsPackageTest {
 
     @Test('session search searches session store messages')
     async sessionSearchSearchesSessionStoreMessages() {
-        const store = new InMemorySessionStore();
+        const store = new TestSessionStore();
         await store.append('s1', { id: 'm1', role: 'user', content: 'hello world', createdAt: 1 });
         await store.append('s1', { id: 'm2', role: 'assistant', content: 'router cache', createdAt: 2 });
         await store.append('s2', { id: 'm3', role: 'user', content: 'test router', createdAt: 3 });
@@ -5121,7 +5123,7 @@ export class AgentToolsPackageTest {
 
     @Test('data manage exports and imports memory records')
     async dataManageExportsAndImportsMemoryRecords() {
-        const store = new InMemoryMemoryStore();
+        const store = new TestMemoryStore();
         const tool = new DataManageTool({
             async exportData(request: any) {
                 const records = await store.getAll(request.sessionId || 's1');
@@ -5382,8 +5384,8 @@ export class AgentToolsPackageTest {
 
     @Test('checkpoint saves and lists with memory store fallback')
     async checkpointSavesAndListsWithMemoryStoreFallback() {
-        const store = new InMemoryMemoryStore();
-        const sessions = new InMemorySessionStore();
+        const store = new TestMemoryStore();
+        const sessions = new TestSessionStore();
         await sessions.append('s1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 });
         const tool = new CheckpointTool(sessions, store);
 

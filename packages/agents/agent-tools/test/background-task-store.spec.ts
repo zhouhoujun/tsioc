@@ -10,11 +10,11 @@ import {
 import { BackgroundTaskManager } from '../src/background-task-manager';
 import { NestedAgentRunRequest, NestedAgentRunResult, NestedAgentRunner } from '../src/nested-agent-runner';
 import { Application } from '@tsdi/core';
-import { AgentModule, provideAgentOrm } from '@tsdi/agent';
+import { AgentModule, provideAgentOrm, BACKGROUND_TASK_HISTORY_STORE } from '@tsdi/agent';
 
 async function withStore<T>(fn: (store: BackgroundTaskHistoryStore) => Promise<T>): Promise<T> {
     const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
-    try { return await fn(ctx.get(BackgroundTaskHistoryStore)); } finally { await ctx.close(); }
+    try { return await fn(ctx.get(BACKGROUND_TASK_HISTORY_STORE)); } finally { await ctx.close(); }
 }
 
 class ControlledRunner extends NestedAgentRunner {

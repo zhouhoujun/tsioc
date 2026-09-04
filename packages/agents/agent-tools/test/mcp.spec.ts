@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { RandomUuidGenerator } from '@tsdi/core';
-import { AGENT_TOOL_BUNDLES, AgentModule, ToolRegistry } from '@tsdi/agent';
+import { AGENT_TOOL_BUNDLES, AgentModule, ToolRegistry, provideAgentOrm } from '@tsdi/agent';
 import { provideMcpTools, McpClient, createMcpCodeModeAdapter } from '../mcp';
 import { CodeExecutionAdapter, CodeExecutionRequest } from '../code-execution';
 
@@ -70,7 +70,7 @@ export class AgentMcpToolsTest {
     async manifestBackedMcpToolsRegisterNamespacedToolsThroughIoC() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{
                     id: 'demo',
                     client,
@@ -112,7 +112,7 @@ export class AgentMcpToolsTest {
     async manifestBackedMcpToolsStayGatedUntilSessionActivationAndThenInvokeConfiguredClient() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{
                     id: 'demo',
                     client,
@@ -175,7 +175,7 @@ export class AgentMcpToolsTest {
     async dynamicMcpServersRegisterManagementToolsWithoutBootstrapDiscovery() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{ id: 'demo', client }]
             })]
         });
@@ -195,7 +195,7 @@ export class AgentMcpToolsTest {
     async mcpListToolsDiscoversToolsOnDemand() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{ id: 'demo', client }]
             })]
         });
@@ -218,7 +218,7 @@ export class AgentMcpToolsTest {
     async mcpCallToolRejectsDynamicServerToolsUnlessExplicitlyAllowlisted() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{ id: 'demo', client }]
             })]
         });
@@ -241,7 +241,7 @@ export class AgentMcpToolsTest {
     async mcpCallToolAllowsExplicitlyAllowlistedDynamicServerTools() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{ id: 'demo', client, allowedTools: ['echo'] }]
             })]
         });
@@ -261,7 +261,7 @@ export class AgentMcpToolsTest {
     async manifestBackedMcpToolsSkipBootstrapDiscovery() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{
                     id: 'demo',
                     client,
@@ -296,7 +296,7 @@ export class AgentMcpToolsTest {
     @Test('manifest-backed MCP tools expose capability bundle metadata')
     async manifestBackedMcpToolsExposeCapabilityBundleMetadata() {
         const ctx = await Application.run(AgentModule, {
-            providers: [...provideMcpTools({
+            providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                 servers: [{
                     id: 'demo',
                     client: new FakeMcpClient(),
@@ -334,7 +334,7 @@ export class AgentMcpToolsTest {
         let error: Error | undefined;
         try {
             await Application.run(AgentModule, {
-                providers: [...provideMcpTools({
+                providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                     servers: [{
                         id: 'demo',
                         client: new FakeMcpClient(),
@@ -374,7 +374,7 @@ export class AgentMcpToolsTest {
         let error: Error | undefined;
         try {
             await Application.run(AgentModule, {
-                providers: [...provideMcpTools({
+                providers: [provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...provideMcpTools({
                     servers: [{ id: '', client: new FakeMcpClient() }]
                 })]
             });

@@ -2039,3 +2039,18 @@ Turn: Fix session restore                                      running  01:42
 - `background-task-store.spec.ts` 已完成迁移：所有用例通过 `Application.run(AgentModule + provideAgentOrm(sqljs))` 注入 `BackgroundTaskHistoryStore`，不再依赖已删除的 `InMemoryBackgroundTaskHistoryStore`。
 - `agent-tools` 当前类型检查剩余阻断收敛为 `apply-patch.spec.ts` 与 `tools.spec.ts` 的旧 `InMemoryMemoryStore`/`InMemorySessionStore` 引用及相关构造参数/隐式类型错误。
 - 本轮未宣称全量完成；`TypeormAdapter` 未修改。
+
+### 2026-09-04 agent-tools 最终修复：provideAgentOrm 替代 withTestStoreProviders
+
+- 根因：`withTestStoreProviders()` 通过 `Application.run` 的 `useValue` 覆盖 `SessionStore`/`MemoryStore`/`ToolActivationStore`，但 tsioc IoC 容器中 `AgentModule` 模块级 `useExisting: TypeOrmSessionStore` 绑定优先于根级 `useValue`，导致 `DataSource` 仍为 `undefined`。
+- 修复：`mcp.spec.ts`（5 项）与 `tools.spec.ts`（4 项）改用 `provideAgentOrm({ type: 'sqljs', autoLoadEntities: false, synchronize: true, autoSave: false, entities: [] })`，与 `agent/test/eval.spec.ts` 等既有测试一致；该方案提供 sqljs 内存 TypeORM 连接，使 `TypeOrmSessionStore`、`TypeOrmMemoryStore` 等存储正常工作。
+- `test-stores.ts` 中 `withTestStoreProviders()` 保留但不再被使用（`background-task-store.spec.ts` 已直接使用 `provideAgentOrm`）。
+
+### 2026-09-04 全量收尾验证通过
+
+- **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
+- **agent-ui**：953 passing EXIT=0。
+- **agent-cli**：73 passing EXIT=0。
+- **components**：135 passing EXIT=0。
+- **components/console**：73 passing EXIT=0。
+- **结论**：P0–P251 全部实现，InMemory 测试 fixture 迁移完成，packages/agents 可测试包全量通过。`agent-gateway` 受沙箱 `listen EPERM` 限制不在本轮范围；`agent` 包测试超时（sandbox 限制），非代码问题。
