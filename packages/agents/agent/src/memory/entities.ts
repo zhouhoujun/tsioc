@@ -595,3 +595,72 @@ export class AgentEvalReportEntity {
     @Column({ type: 'bigint' })
     startedAt!: number;
 }
+
+@Entity()
+export class AgentCommandExchangeEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column()
+    eventId!: string;
+
+    @Column({ type: 'int' })
+    seq!: number;
+
+    @Column({ type: 'int' })
+    sessionEpoch!: number;
+
+    @Column({ type: 'varchar' })
+    kind!: string;
+
+    @Column()
+    exchangeKey!: string;
+
+    @Column({ type: 'text' })
+    content!: string;
+
+    @Column({ type: 'int' })
+    agentSequence!: number;
+
+    @Column({ type: 'int', nullable: true })
+    attempt!: number | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    receipt!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    requestId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    status!: string | null;
+
+    @Column({ type: 'bigint', nullable: true })
+    durationMs!: number | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    toolCallId!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    command!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    args!: string | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    outputIds!: string[] | null;
+
+    @Column({ type: 'text', nullable: true })
+    error!: string | null;
+
+    @Column({ type: 'boolean', nullable: true })
+    retryable!: boolean | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    source!: string | null;
+
+    @Column({ type: 'bigint' })
+    timestamp!: number;
+}

@@ -117,6 +117,7 @@ export * from './memory/DeterministicAgentSummaryAgent';
 export * from './memory/LLMAgentSummaryAgent';
 export * from './memory/entities';
 export * from './memory/MemoryStoreCommandOutputStore';
+export * from './memory/TypeOrmCommandExchangeStore';
 
 export * from './scheduler/AgentScheduler';
 export * from './scheduler/ScheduleSpec';

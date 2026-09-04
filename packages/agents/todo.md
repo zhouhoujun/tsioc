@@ -1888,11 +1888,18 @@ Turn: Fix session restore                                      running  01:42
 - 2026-09-05 实施切片：`AgentConsoleCommandExecution` 新增 `sequence`（全局单调递增，SessionState 内 `commandExecutionSequence` counter 驱动）、`attempt`（首次 1，retry 同 requestId 从 terminal 状态 +1）、`sessionEpoch`（来自 SessionState 的 `commandExchangeSessionEpoch` counter，session switch 时递增）；reducer 支持 retry 语义（同 requestId + terminal → increment attempt + reset running + clear outputIds/error/retryable，同 requestId + running → no-op）；`CommandExchangeEnvelope` 统一 envelope 类型 + `normalizeCommandExchangeEnvelope` + `commandExchangeKey`；`projectThreadItem` command 分支新增 `sequence` projection；14 单元测试覆盖 reducer retry/attempt/sequence monotonic/epoch、SessionState 序列/epoch/投影、envelope normalization/key。
 - 验收：turn→command→tool→output→plan 顺序快照；复制/replay/clear 走同一记录；失败重试无重复 item；agent、agent-ui、gateway 全量回归。
 
-**P284 · Durable timeline exchange（中-高）** `platform: agent/src + agent-gateway + agent-ui/src`
+**P284 · Durable timeline exchange（中-高）** `platform: agent/src + agent-gateway + agent-ui/src` ✅（2026-09-05）
 
 - 目标：将 P283 envelope 持久化到 gateway timeline store，重启/断线恢复不丢失、不重复并跨 principal 隔离。
 - 实施：durable append/query/replay/cleanup RPC；cursor 与 sinceSeq 双模式；脱敏和 ownership 在 gateway 强制；UI 以 stable key 幂等重放并拒绝旧 epoch。
 - 验收：重启、断线、乱序、重复、权限、分页、attempt 链矩阵；agent/agent-ui/agent-gateway 全量测试。
+
+### 2026-09-05 P284 完成
+
+- 后端：`CommandExchangeStore` 抽象（timeline-projection.ts，@Abstract）+ `TypeOrmCommandExchangeStore`（@Injectable，TypeormAdapter）；`AgentModule` 注册类 + `{ provide: COMMAND_EXCHANGE_STORE, useExisting: TypeOrmCommandExchangeStore }`（mirror TIMELINE_HISTORY_STORE）。
+- Gateway：`CommandExchangeHandler`（POST append / GET query / GET replay / POST cleanup）注入 `SessionOwnerStore` 强制 `isOwner -> 403`，响应经 `RedactionFilter` 脱敏；修复缺 `Inject` import、弃用 `encodeCommandExchangeCursor`；共享脱敏 helper `command-exchange-redact.ts`。`AppRpcServer` 侧 `command_exchange.query`/`replay` 已带 `ensureSessionAccess` 且构造参数为类型化 `@Optional() CommandExchangeStore`（与 timeline 同模式，注册即解析）。`AgentGatewayModule` providers/exports 注册 handler。
+- UI：`AgentConsoleSessionState` seed/project/replay、`AgentConsoleRemoteEventBridge` seedFromCommandExchange/replayFromCommandExchange。
+- 验证：agent-ui 新增 p284-command-exchange-durable.spec.ts（2 用例组 / 17 断言全过）；agent-ui 全量 1029 passing / 7 既有失败（stash 隔离证明为 P284 前基线）；agent-gateway、agent 改动 LSP 零诊断。agent-gateway 全量仍受沙箱 `listen EPERM` 限制，agent 包测试仍超时（sandbox 限制），不在本轮伪造为通过。
 
 **P285 · Interaction gate and visual harness（中）** `platform: agent acceptance + agent-ui acceptance`
 

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -41,6 +41,7 @@ export class AppRpcServer {
         @Optional() private cloudTasks?: CloudTaskQueue | null,
         @Optional() private projectMemory?: ProjectMemoryService | null,
         @Optional() private timeline?: TimelineHistoryStore | null,
+        @Optional() private commandExchange?: CommandExchangeStore | null,
         @Optional() private questionStore?: QuestionStore | null,
         @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null
     ) {
@@ -232,6 +233,8 @@ export class AppRpcServer {
                         'events.history',
                         'timeline.query',
                         'timeline.replay',
+                        'command_exchange.query',
+                        'command_exchange.replay',
                         'audit.list',
                         'todo.get',
                         'coding_task.list',
@@ -442,6 +445,10 @@ export class AppRpcServer {
                 return this.queryTimeline(params, context);
             case 'timeline.replay':
                 return this.replayTimeline(params, context);
+            case 'command_exchange.query':
+                return this.queryCommandExchange(params, context);
+            case 'command_exchange.replay':
+                return this.replayCommandExchange(params, context);
             case 'audit.list':
                 return this.listAudit(params, context);
             case 'todo.get':
@@ -2063,6 +2070,37 @@ export class AppRpcServer {
         const sinceSeq = Number.isFinite(sinceSeqRaw) ? sinceSeqRaw : undefined;
         const events = await this.timeline.replay(sessionId, sinceSeq);
         return { sessionId, sinceSeq: sinceSeq ?? -1, events };
+    }
+
+    private async queryCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.commandExchange) {
+            return { sessionId, records: [], hasMore: false };
+        }
+        const cursor = typeof params?.cursor === 'string' && params.cursor.trim() ? params.cursor.trim() : undefined;
+        const sinceSeqRaw = Number(params?.sinceSeq);
+        const sinceSeq = Number.isFinite(sinceSeqRaw) ? sinceSeqRaw : undefined;
+        const limit = typeof params?.limit === 'number' ? params.limit : undefined;
+        const page = await this.commandExchange.query(sessionId, { cursor, sinceSeq, limit });
+        return {
+            sessionId,
+            records: page.records,
+            ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+            hasMore: page.hasMore
+        };
+    }
+
+    private async replayCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        if (!this.commandExchange) {
+            return { sessionId, records: [] };
+        }
+        const sinceSeqRaw = Number(params?.sinceSeq);
+        const sinceSeq = Number.isFinite(sinceSeqRaw) ? sinceSeqRaw : undefined;
+        const records = await this.commandExchange.replay(sessionId, sinceSeq);
+        return { sessionId, sinceSeq: sinceSeq ?? -1, records };
     }
 
     private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {

@@ -16,8 +16,9 @@ import { AGENT_PROMPT_SECTIONS } from './tokens';
 import { EchoTool, ExperienceSynthesizeTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
 import { TypeOrmSessionStore } from './memory/TypeOrmSessionStore';
-import { TIMELINE_HISTORY_STORE } from './memory/timeline-projection';
+import { TIMELINE_HISTORY_STORE, COMMAND_EXCHANGE_STORE } from './memory/timeline-projection';
 import { TypeOrmTimelineHistoryStore } from './memory/TypeOrmTimelineHistoryStore';
+import { TypeOrmCommandExchangeStore } from './memory/TypeOrmCommandExchangeStore';
 import { BACKGROUND_TASK_HISTORY_STORE } from './memory/background-task-store';
 import { TypeOrmBackgroundTaskStore } from './memory/TypeOrmBackgroundTaskStore';
 import { MemoryStore } from './memory/MemoryStore';
@@ -138,6 +139,8 @@ import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
         { provide: SessionStore, useExisting: TypeOrmSessionStore },
         TypeOrmTimelineHistoryStore,
         { provide: TIMELINE_HISTORY_STORE, useExisting: TypeOrmTimelineHistoryStore },
+        TypeOrmCommandExchangeStore,
+        { provide: COMMAND_EXCHANGE_STORE, useExisting: TypeOrmCommandExchangeStore },
         TypeOrmBackgroundTaskStore,
         { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: TypeOrmBackgroundTaskStore },
         TypeOrmMemoryStore,

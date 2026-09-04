@@ -431,3 +431,121 @@ function normalizeLimit(limit?: number): number {
     return Math.min(value, ABSOLUTE_MAX_LIMIT);
 }
 
+/* ------------------------------------------------------------------ *
+ * Command exchange durable store (P284)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Durable record for a single command exchange envelope, stored append-only
+ * per session. `seq` is assigned by the store at append time and provides
+ * monotonic ordering for cursor paging and replay.
+ */
+export interface CommandExchangeRecord {
+    seq: number;
+    id: string;
+    sessionId: string;
+    sessionEpoch: number;
+    kind: string;
+    key: string;
+    content: string;
+    sequence: number;
+    attempt?: number;
+    receipt?: string;
+    requestId?: string;
+    status?: string;
+    durationMs?: number;
+    toolCallId?: string;
+    command?: string;
+    args?: string;
+    outputIds?: string[];
+    error?: string;
+    retryable?: boolean;
+    source?: string;
+    timestamp: number;
+}
+
+export interface CommandExchangePageOptions {
+    cursor?: string;
+    sinceSeq?: number;
+    limit?: number;
+}
+
+export interface CommandExchangeNoncePage {
+    records: CommandExchangeRecord[];
+    nextCursor?: string;
+    hasMore: boolean;
+}
+
+/** Encode a cursor pointing at the last record seen for command exchange paging. */
+export function encodeCommandExchangeCursor(record: Pick<CommandExchangeRecord, 'seq' | 'id'>): string {
+    return `${record.seq.toString(36)}_${record.id}`;
+}
+
+/** Decode a command exchange cursor. */
+export function decodeCommandExchangeCursor(cursor?: string): { seq: number; id: string } | undefined {
+    if (!cursor) return undefined;
+    const sep = cursor.indexOf('_');
+    if (sep < 0) return undefined;
+    const seq = Number.parseInt(cursor.slice(0, sep), 36);
+    const id = cursor.slice(sep + 1);
+    if (!Number.isFinite(seq) || !id) return undefined;
+    return { seq, id };
+}
+
+/** Stable ascending ordering for command exchange records. */
+export function compareCommandExchangeAsc(left: CommandExchangeRecord, right: CommandExchangeRecord): number {
+    if (left.seq !== right.seq) return left.seq - right.seq;
+    return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+}
+
+/**
+ * Durable command exchange store. Holds RAW `CommandExchangeRecord`s
+ * (append-only per session). Replay and cursor paging are the primary
+ * read paths; the UI uses stable key idempotent replay to rebuild state
+ * after disconnect.
+ */
+@Abstract()
+export abstract class CommandExchangeStore {
+    /** Append one record, assigning the per-session monotonic seq. Idempotent by record id. */
+    abstract append(record: Omit<CommandExchangeRecord, 'seq'>): Promise<CommandExchangeRecord>;
+
+    /** All records for a session, ascending by seq. */
+    abstract get(sessionId: string): Promise<CommandExchangeRecord[]>;
+
+    /** Records strictly after a seq (for replay since last seen). */
+    abstract replay(sessionId: string, sinceSeq?: number): Promise<CommandExchangeRecord[]>;
+
+    /** Cursor-paged records for a session, with optional sinceSeq filter. */
+    abstract query(sessionId: string, options?: CommandExchangePageOptions): Promise<CommandExchangeNoncePage>;
+
+    /** Remove all records for a session at or before a given seq (cleanup / retention). */
+    abstract cleanup(sessionId: string, beforeSeq: number): Promise<number>;
+}
+
+/** DI token for the durable command exchange store. */
+export const COMMAND_EXCHANGE_STORE = token<CommandExchangeStore>('COMMAND_EXCHANGE_STORE');
+
+/**
+ * Page command exchange records with cursor or sinceSeq dual-mode.
+ * Shared by all CommandExchangeStore backends.
+ */
+export function pageCommandExchangeRecords(records: CommandExchangeRecord[], options?: CommandExchangePageOptions): CommandExchangeNoncePage {
+    const pageSize = normalizeLimit(options?.limit);
+    let filtered = records;
+
+    if (typeof options?.sinceSeq === 'number' && Number.isFinite(options.sinceSeq)) {
+        const from = options.sinceSeq + 1;
+        filtered = records.filter(r => r.seq >= from);
+    }
+
+    const anchor = options?.cursor ? decodeCommandExchangeCursor(options.cursor) : undefined;
+    const startIndex = anchor ? filtered.findIndex(r => r.seq === anchor.seq && r.id === anchor.id) : -1;
+    const begin = anchor ? (startIndex >= 0 ? startIndex + 1 : 0) : 0;
+    const items = filtered.slice(begin, begin + pageSize);
+    const endIndex = begin + items.length;
+    const hasMore = endIndex < filtered.length;
+    const last = items[items.length - 1];
+    const nextCursor = hasMore && last ? encodeCommandExchangeCursor({ seq: last.seq, id: last.id }) : undefined;
+    return { records: items, ...(nextCursor ? { nextCursor } : {}), hasMore };
+}
+

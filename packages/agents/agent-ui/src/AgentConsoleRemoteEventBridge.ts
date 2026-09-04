@@ -1,4 +1,4 @@
-import { AgentConsoleAppRpc, TimelineEntry, TimelineEventRecord, reduceTimelineEvents, threadItemKey } from '@tsdi/agent';
+import { AgentConsoleAppRpc, TimelineEntry, TimelineEventRecord, CommandExchangeRecord, reduceTimelineEvents, threadItemKey } from '@tsdi/agent';
 import {
     AgentConsoleApprovalRequest,
     AgentConsolePendingQuestion,
@@ -420,11 +420,14 @@ export class AgentConsoleRemoteEventBridge {
         }
         if (!this.hasConnected) {
             await this.seedFromTimeline();
+            await this.seedFromCommandExchange();
             await this.seedFromNav();
             await this.seedFromQuestions();
         } else {
             // P271: replay raw events missed while SSE was down; idempotent via stable-key upsert (P235).
             await this.replayFromTimeline();
+            // P284: durable command-exchange replay so disconnects lose nothing and duplicate nothing.
+            await this.replayFromCommandExchange();
         }
         const base = String(this.options.baseUrl || '').replace(/\/+$/, '');
         const headers: Record<string, string> = {};
@@ -533,6 +536,64 @@ export class AgentConsoleRemoteEventBridge {
             if (entries.length) {
                 this.state.seedTimeline(entries);
             }
+        } catch {
+            return;
+        }
+    }
+
+    protected async seedFromCommandExchange(): Promise<void> {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
+            return;
+        }
+        const requestedSessionId = this.sessionId;
+        try {
+            const all: CommandExchangeRecord[] = [];
+            let cursor: string | undefined;
+            for (let page = 0; page < 20; page += 1) {
+                const params: Record<string, unknown> = { sessionId: requestedSessionId, limit: 500 };
+                if (cursor) {
+                    params.cursor = cursor;
+                }
+                const result = await this.rpc.request('command_exchange.query', params);
+                if (this.isDriftedFromActiveSession()) {
+                    return;
+                }
+                const records = Array.isArray(result?.records) ? result.records : [];
+                all.push(...records);
+                if (!result?.hasMore || !result?.nextCursor) {
+                    break;
+                }
+                cursor = result.nextCursor;
+            }
+            if (all.length) {
+                this.state.seedCommandExchange(all);
+            }
+        } catch {
+            return;
+        }
+    }
+
+    protected async replayFromCommandExchange(): Promise<void> {
+        if (!this.rpc || !this.sessionId || this.isDriftedFromActiveSession()) {
+            return;
+        }
+        const requestedSessionId = this.sessionId;
+        try {
+            const result = await this.rpc.request('command_exchange.replay', {
+                sessionId: requestedSessionId,
+                sinceSeq: this.state.commandExchangeTailSeq
+            });
+            if (this.isDriftedFromActiveSession()) {
+                return;
+            }
+            const records = Array.isArray(result?.records) ? result.records : [];
+            if (!records.length) {
+                return;
+            }
+            if (records.some((record: CommandExchangeRecord) => record.sessionId && record.sessionId !== this.state.sessionId)) {
+                return;
+            }
+            this.state.seedCommandExchange(records);
         } catch {
             return;
         }

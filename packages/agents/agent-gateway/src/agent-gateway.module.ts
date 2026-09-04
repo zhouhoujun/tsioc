@@ -20,6 +20,7 @@ import { EvalHandler } from './api/EvalHandler';
 import { ShareHandler } from './api/ShareHandler';
 import { SessionShareStore } from './share/SessionShareStore';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
+import { CommandExchangeHandler } from './api/CommandExchangeHandler';
 import { TurnDiagnosticsHandler } from './api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from './api/SummaryQualityHandler';
 import { UsageHandler } from './api/UsageHandler';
@@ -61,6 +62,7 @@ import { QuestionStore } from './app-rpc/QuestionStore';
         SessionShareStore,
         ShareHandler,
         CompactionHistoryHandler,
+        CommandExchangeHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,
         UsageHandler,
@@ -93,6 +95,7 @@ import { QuestionStore } from './app-rpc/QuestionStore';
         AuditHandler,
         ReviewHandler,
         CompactionHistoryHandler,
+        CommandExchangeHandler,
         TurnDiagnosticsHandler,
         SummaryQualityHandler,
         UsageHandler,

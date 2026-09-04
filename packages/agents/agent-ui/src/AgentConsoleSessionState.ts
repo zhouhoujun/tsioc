@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, normalizeThreadItemEvent } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -693,6 +693,8 @@ export class AgentConsoleSessionState {
     timelineStale = false;
     timelineSeedCount = 0;
     timelineTailSeq = -1;
+    commandExchangeTailSeq = -1;
+    commandExchangeSeedCount = 0;
     navTree: NavTree | null = null;
     navSeedCount = 0;
     navFilter: NavFilter = {};
@@ -764,6 +766,8 @@ export class AgentConsoleSessionState {
             // reconnect replay, so reset the timeline cursor with the switch.
             this.timelineTailSeq = -1;
             this.timelineSeedCount = 0;
+            this.commandExchangeTailSeq = -1;
+            this.commandExchangeSeedCount = 0;
             this.timelineReconnecting = false;
             this.timelineStale = false;
             this.activeTurnEventScope = '';
@@ -1383,6 +1387,61 @@ export class AgentConsoleSessionState {
         if (entries.length) {
             this.timelineTailSeq = Math.max(...entries.map(entry => entry.lastSeq ?? -1));
         }
+    }
+
+    seedCommandExchange(records: CommandExchangeRecord[]): void {
+        const list = Array.isArray(records) ? records : [];
+        if (!list.length) {
+            return;
+        }
+        const ordered = list.slice().sort(compareCommandExchangeAsc);
+        let seedCount = 0;
+        const accepted: CommandExchangeRecord[] = [];
+        for (const record of ordered) {
+            if (record.sessionEpoch !== this.commandExchangeSessionEpoch) {
+                continue;
+            }
+            accepted.push(record);
+        }
+        const commands = accepted.filter(record => toThreadItemKind(record.kind) === 'command');
+        const others = accepted.filter(record => toThreadItemKind(record.kind) !== 'command');
+        for (const record of [...others, ...commands]) {
+            if (this.projectCommandExchangeRecord(record)) {
+                seedCount += 1;
+            }
+        }
+        if (seedCount > 0) {
+            this.commandExchangeSeedCount = seedCount;
+        }
+        this.commandExchangeTailSeq = Math.max(ordered[ordered.length - 1].seq, this.commandExchangeTailSeq);
+    }
+
+    protected projectCommandExchangeRecord(record: CommandExchangeRecord): boolean {
+        const kind = toThreadItemKind(record.kind);
+        const key = String(record.key || '').trim();
+        if (!kind || !key) {
+            return false;
+        }
+        const status = normalizeReplayStatus(record.status);
+        this.projectThreadItem({
+            kind,
+            key,
+            sessionId: record.sessionId || this.sessionId,
+            content: record.content || record.command || 'Command',
+            status,
+            sequence: record.sequence,
+            attempt: record.attempt,
+            durationMs: record.durationMs,
+            receiptId: record.receipt,
+            toolCallId: record.toolCallId,
+            command: record.command,
+            args: record.args,
+            outputIds: record.outputIds,
+            error: record.error,
+            retryable: record.retryable,
+            source: 'replay'
+        });
+        return true;
     }
 
     markTimelineReconnecting(reconnecting: boolean): void {
@@ -6765,6 +6824,29 @@ export class AgentConsoleSessionState {
 
 function projectTimelineKey(entry: TimelineEntry): string {
     return entry.key || `${entry.kind}:${entry.label}`;
+}
+
+const REPLAY_THREAD_KINDS: Record<string, ThreadItemKind | undefined> = {
+    command: 'command',
+    tool: 'tool',
+    plan: 'plan'
+};
+
+function toThreadItemKind(kind: string): ThreadItemKind | undefined {
+    return REPLAY_THREAD_KINDS[String(kind || '').trim()];
+}
+
+const REPLAY_STATUSES: Record<string, ThreadItemStatus | undefined> = {
+    running: 'running',
+    success: 'success',
+    error: 'error',
+    cancelled: 'cancelled',
+    pending: 'pending'
+};
+
+function normalizeReplayStatus(status?: string): ThreadItemStatus | undefined {
+    const value = String(status || '').trim();
+    return REPLAY_STATUSES[value];
 }
 
 function projectTimelineContent(entry: TimelineEntry): string {
