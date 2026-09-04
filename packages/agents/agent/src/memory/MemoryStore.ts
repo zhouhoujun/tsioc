@@ -26,4 +26,9 @@ export abstract class MemoryStore {
      * Returns the number of deleted records.
      */
     abstract deleteBySession(sessionId: string): Promise<number>;
+
+    /** Clear all records for an isolated host/test context. */
+    async clear(): Promise<void> {
+        throw new Error('MemoryStore.clear() is not supported by this implementation');
+    }
 }

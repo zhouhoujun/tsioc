@@ -83,4 +83,9 @@ export class TypeOrmMemoryStore extends MemoryStore {
         }
         return records.length;
     }
+
+    async clear(): Promise<void> {
+        await this.adapter.ready();
+        await this.adapter.getRepository(AgentMemoryEntity).clear();
+    }
 }
