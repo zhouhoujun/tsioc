@@ -1954,7 +1954,7 @@ export class RuntimeLoopTest {
     async runtimeKeepsBuiltinToolsCallableByDefault() {
         const model = new CapturingModelAdapter();
         const ctx = await Application.run(AgentModule, {
-            providers: [{ provide: ModelAdapter, useValue: model }]
+            providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), { provide: ModelAdapter, useValue: model }]
         });
         try {
             const runtime = ctx.get(AgentRuntime);
@@ -2493,6 +2493,7 @@ export class RuntimeLoopTest {
     async runtimeUsesProviderGuard() {
         const ctx = await Application.run(AgentModule, {
             providers: [
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
                 { provide: ModelAdapter, useValue: new StaticModelAdapter('guarded') },
                 ...withAgentTurnGuards(() => false)
             ]
@@ -2516,6 +2517,7 @@ export class RuntimeLoopTest {
     async runtimeUsesProviderInterceptor() {
         const ctx = await Application.run(AgentModule, {
             providers: [
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
                 { provide: ModelAdapter, useValue: new StaticModelAdapter('hello') },
                 ...withAgentTurnInterceptors(async (input, next, context) => {
                     const result = await next(input, context);
@@ -2537,6 +2539,7 @@ export class RuntimeLoopTest {
     async runtimeUsesProviderFilter() {
         const ctx = await Application.run(AgentModule, {
             providers: [
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
                 ...withAgentTurnFilters(async (input, _next, _context) => {
                     return {
                         sessionId: input.sessionId,

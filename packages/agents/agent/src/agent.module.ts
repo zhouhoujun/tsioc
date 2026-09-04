@@ -126,7 +126,7 @@ import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
         { provide: AGENT_PROMPT_SECTIONS, useClass: MemorySection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: McpServerInstructionsSection, multi: true },
         LocalToolRegistry,
-        { provide: ToolRegistry, useClass: LocalToolRegistry },
+        { provide: ToolRegistry, useClass: LocalToolRegistry, asDefault: true },
         EchoTool,
         TimeTool,
         MemoryPutTool,

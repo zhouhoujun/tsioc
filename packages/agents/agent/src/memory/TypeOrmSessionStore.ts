@@ -20,7 +20,14 @@ export class TypeOrmSessionStore extends SessionStore {
         if (!session) {
             const now = Date.now();
             session = this.adapter.getRepository(AgentSessionEntity).create({ sessionId, createdAt: now, updatedAt: now });
-            session = await this.adapter.getRepository(AgentSessionEntity).save(session);
+            try {
+                session = await this.adapter.getRepository(AgentSessionEntity).save(session);
+            } catch {
+                const winner = await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any });
+                if (winner) {
+                    session = winner;
+                }
+            }
         }
         const messages = await this.adapter.getRepository(AgentMessageEntity).find({ where: { sessionId } as any, order: { sequence: 'ASC' } as any });
         return {
