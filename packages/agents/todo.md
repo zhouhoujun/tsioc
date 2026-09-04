@@ -1878,6 +1878,7 @@ Turn: Fix session restore                                      running  01:42
 
 - 目标：89 条命令及子命令全部由 registry schema 解析，消除 handler 二次 parse 和入口差异。
 - 实施：生成 canonical parsed args；统一 required/default/enum/variadic/extra token 与引号/CJK tokenizer；诊断包含 token index、expected、suggestion；smart-run、palette、queued、直接输入全部调用同一入口。
+- 2026-09-04 诊断增强：`AgentConsoleCommandArgumentDiagnostic` 新增 `tokenIndex`（0-based 问题 token 位置）、`expected`（合法值模板）、`suggestion`（可操作纠正建议）字段；新增 `formatAgentConsoleCommandDiagnostics()` 将诊断数组格式化为单行提示；`handleCommand` 失败路径已改用该格式化函数，用户在修改重试时可见完整纠正建议。新增 enum args schema：`/yolo [on|off]`、`/display [on|off|show|hide|critical]`、`/raw [on|off|show|hide]`，三种入口共用同一 tokenizer + parser，12 单元测试覆盖 quote/CJK、missing/invalid/extra 诊断、alias 解析、format 辅助函数、registry 全覆盖回归。
 - 验收：registry→handler 覆盖率 100%；每类命令覆盖缺参/非法/多余/别名/引号/CJK；失败后草稿和 retry 语义一致。
 
 **P283 · Command exchange reducer（高）** `platform: agent/src + agent-ui/src（跨平台）`

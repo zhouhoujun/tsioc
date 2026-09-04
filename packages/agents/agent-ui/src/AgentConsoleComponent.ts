@@ -196,6 +196,7 @@ import {
     getAgentConsoleCommandDefinition,
     getAgentConsoleCommandName,
     formatAgentConsoleCommandArgumentTemplate,
+    formatAgentConsoleCommandDiagnostics,
     parseAgentConsoleCommandArguments,
     resolveAgentConsoleCommandDescription
 } from './AgentConsoleCommandRegistry';
@@ -2963,9 +2964,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.pendingCommandRequestId = previousRequestId;
             return true;
         }
-        const diagnostics = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args).diagnostics;
-        if (diagnostics.length) {
-            const reason = diagnostics.map(item => item.message).join(' ');
+        const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args);
+        if (parsedArgs.diagnostics.length) {
+            const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics);
             this.state.failCommandExecution(requestId, reason, false);
             // Preserve the exact command so the user can correct it and retry.
             this.state.setInput(parsed.raw, parsed.raw.length);

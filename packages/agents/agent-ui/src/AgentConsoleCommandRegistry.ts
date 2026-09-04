@@ -65,6 +65,12 @@ export interface AgentConsoleCommandArgumentDiagnostic {
     code: 'missing' | 'invalid' | 'extra';
     message: string;
     argument?: string;
+    /** 0-based index of the offending token in the raw `values` array (missing => next expected slot). */
+    tokenIndex?: number;
+    /** Canonical value(s) that would have been accepted here (enums, defaults, sub-templates). */
+    expected?: string;
+    /** Actionable correction hint, e.g. the closest enum/match or a usage template. */
+    suggestion?: string;
 }
 
 export interface AgentConsoleParsedCommandArguments {
@@ -106,7 +112,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/vim', description: 'toggle vim-style normal/insert input mode', group: 'core' },
     { name: '/permissions', description: 'show or change readonly/sandbox session permissions', group: 'core' },
     { name: '/settings', description: 'unified settings dialog: general, keybinds, providers', group: 'core' },
-    { name: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]', group: 'core' },
+    { name: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off'] }] },
     { name: '/experimental', description: 'experimental features: list / <name> on|off', group: 'core' },
     { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core' },
     { name: '/undo', description: 'revert the last file change', group: 'core' },
@@ -146,9 +152,9 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display' },
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display' },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display' },
-    { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display' },
+    { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical'] }] },
     { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },
-    { name: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]', group: 'display' },
+    { name: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display' },
 
     { name: '/editor', description: 'edit the draft in an external editor (Ctrl+G)', group: 'input' },
@@ -308,20 +314,54 @@ export function parseAgentConsoleCommandArguments(
         const remaining = argument.variadic ? values.slice(valueIndex) : values.slice(valueIndex, valueIndex + 1);
         const raw = argument.variadic ? remaining.join(' ') : remaining[0];
         if (!raw) {
-            if (argument.default !== undefined) resolved.push(argument.default);
-            else if (argument.required) diagnostics.push({ code: 'missing', argument: argument.name, message: `Missing required argument <${argument.name}>.` });
+            if (argument.default !== undefined) {
+                resolved.push(argument.default);
+            } else if (argument.required) {
+                diagnostics.push({
+                    code: 'missing',
+                    argument: argument.name,
+                    tokenIndex: valueIndex,
+                    expected: argument.type === 'enum' && argument.values ? argument.values.join('|') : `<${argument.name}>`,
+                    suggestion: argument.type === 'enum' && argument.values ? `Provide one of: ${argument.values.join(', ')}.` : `Usage: /${definition?.name?.replace(/^\//, '') || 'command'} ${argument.name}.`,
+                    message: `Missing required argument <${argument.name}>.`
+                });
+            }
         } else {
             if (argument.type === 'enum' && argument.values && !argument.values.includes(raw)) {
-                diagnostics.push({ code: 'invalid', argument: argument.name, message: `Invalid ${argument.name} "${raw}". Expected: ${argument.values.join(', ')}.` });
+                const expectedList = argument.values.join('|');
+                diagnostics.push({
+                    code: 'invalid',
+                    argument: argument.name,
+                    tokenIndex: valueIndex,
+                    expected: expectedList,
+                    suggestion: `Did you mean ${argument.values.join(' or ')}?`,
+                    message: `Invalid ${argument.name} "${raw}". Expected: ${argument.values.join(', ')}.`
+                });
             }
             resolved.push(raw);
         }
         valueIndex += remaining.length;
     }
     if (schema.length && valueIndex < values.length && !schema.some(arg => arg.variadic)) {
-        diagnostics.push({ code: 'extra', message: `Unexpected argument${values.length - valueIndex === 1 ? '' : 's'}: ${values.slice(valueIndex).join(' ')}.` });
+        const extraTokens = values.slice(valueIndex);
+        diagnostics.push({
+            code: 'extra',
+            tokenIndex: valueIndex,
+            expected: '<none>',
+            suggestion: `Remove ${extraTokens.length === 1 ? 'it' : 'them'} — the command accepts no more arguments.`,
+            message: `Unexpected argument${extraTokens.length === 1 ? '' : 's'}: ${extraTokens.join(' ')}.`
+        });
     }
     return { values, resolved, diagnostics };
+}
+
+/** Renders diagnostics as a single human-readable correction line for notices. */
+export function formatAgentConsoleCommandDiagnostics(diagnostics: AgentConsoleCommandArgumentDiagnostic[]): string {
+    return diagnostics.map(item => {
+        const parts = [item.message];
+        if (item.suggestion) parts.push(item.suggestion);
+        return parts.join(' ');
+    }).join(' ');
 }
 
 /**
