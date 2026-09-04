@@ -1987,3 +1987,10 @@ Turn: Fix session restore                                      running  01:42
 - **验证**：agent `tsc --noEmit -p tsconfig.json` **0 错 EXIT 0**；`git diff --check` 干净；回归 `components` 135 / `components/console` 73 / `agent-ui` 953 均 EXIT 0。
 - **系统性阻断（P265，未伪造通过）**：agent 全量测试仍 **EXIT 1 / 85 失败**，为已提交迁移 `37f4f0088` 的**既有系统性根因**，非本 4 文件引入。两个根因：① `AgentModule`（`agent.module.ts:73`）仅 import `ConfigModule`，注册 TypeORM store 但未 import `AgentOrmModule`，`Application.run(AgentModule)` 无 `provideAgentOrm` 时无 DataSource；② `TypeormAdapter` 为 `@Static()` 进程级单例，其 `onDispose`（`TypeormAdapter.ts:328-334`）销毁共享 adapter，下一测试 ctx 解析到已死 adapter → `DataSource "undefined" not found`。修复需**改 `src/`**（`agent.module.ts` 加 `AgentOrmModule` import；`TypeormAdapter.onDispose` 改静态安全），**用户尚未授权**，本提交不含 `src/` 改动。
 - **本提交**：4 个迁移后的 spec 文件（同属迁移修复，`git diff --check` 干净）。
+
+### 2026-09-04 收尾检查：全量测试与工作区复核
+
+- **静态检查**：`git diff --check` 通过；`agent-ui/src` 未发现直接引入 `@tsdi/components/console`、`node:` 或未守卫的平台 API（仅保留 `globalThis` 守卫）；工作区除本 TODO 记录外无源码改动。
+- **测试通过**：`agent-desktop` 20 passing、`agent-ssh` 8 passing、`agent-providers` 13 passing（均 EXIT 0）。
+- **测试未完成**：`agent-channels`、`agent-cli`、`agent-gateway`、`agent-tools`、`agent-ui`、`agent` 的 `npm run test` 在本次沙箱运行长时间无输出、未自然退出，已中止，不能据此宣称通过；此前已知的 `agent`/`agent-tools` ORM/InMemory fixture 编译阻断及 gateway 监听 `EPERM` 仍需具备完整宿主权限的 CI 复验。
+- **结论**：本轮完成收尾检查和结果记录；P279/P285 的 Playwright/PTY 门禁仍未建立，P280–P284 的剩余跨宿主验收不在本轮伪造为完成。
