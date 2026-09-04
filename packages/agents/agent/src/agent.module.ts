@@ -121,7 +121,7 @@ import { AgentOrmModule } from './orm.module';
         TypeOrmEvalReportStore,
         { provide: EvalReportStore, useExisting: TypeOrmEvalReportStore },
         SystemPromptBuilder,
-        ToolApprovalManager,
+        { provide: ToolApprovalManager, useClass: ToolApprovalManager, asDefault: true },
         { provide: ToolActivationStore, useClass: SessionToolActivationStore },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },

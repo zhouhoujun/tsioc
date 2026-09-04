@@ -2005,3 +2005,8 @@ Turn: Fix session restore                                      running  01:42
 
 - 修复 TypeORM session search 使用全局消息 `take` 导致单 session 匹配计数被截断的问题；筛选目标 session 后完整扫描其消息并保留 limit/maxSessions 语义。
 - `session-search.spec.ts` 定向套件通过；`agent` `tsc --noEmit` 通过。
+
+### 2026-09-04 agent 测试失败修复：审批 manager 覆盖
+
+- 将 `AgentModule` 内置 `ToolApprovalManager` 注册为 `asDefault`，允许测试和宿主通过显式 provider 注入自定义审批 manager；修复审批测试使用默认 30 秒超时、无法及时 approve 的问题。
+- `agent-permission.spec.ts` 定向套件通过；未修改 `TypeormAdapter`。
