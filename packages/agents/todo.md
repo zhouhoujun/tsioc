@@ -1866,7 +1866,8 @@ Turn: Fix session restore                                      running  01:42
 
 **P281 · Timeline visual language（中-高）** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
 
-- 2026-09-02 状态列切片：时间线 event 行和 plan boundary 不再在内容区重复输出 `├─/·/▸` 状态符号，左侧统一由 status slot 输出单一 glyph；已补充 renderer 回归断言。自然语言 formatter（action-first 短句）保留为本计划下一切片。
+- 2026-09-02 状态列切片：时间线 event 行和 plan boundary 不再在内容区重复输出 `├─/·/▸` 状态符号，左侧统一由 status slot 输出单一 glyph；已补充 renderer 回归断言。
+- 2026-09-04 文案模型切片：引入 `formatTimelineSentence({ actor, action, object, result, detail })` 纯函数 + `resolveTimelineEventSentence(metadata, fallbackContent)` 从事件元数据提取 action-first 短句（Reading package.json / Running read_file (1.2s) / Error: connection refused）；已接入 `AgentConsoleMessageRenderers.ts` 渲染路径，时间线 event 行内容区优先显示 action-first 句子；26 单元测试覆盖空 action、actor/object/result/detail 组合、去重、非 event 消息、turn/tool/plan/context/model/background_task 各类事件类型、uiEventLabel 降级、长错误截断。
 
 - 目标：建立专业、可扫描的时间线层级：step header、event row、status/action、duration/meta 具有固定列和语义化符号，长内容只在 inspector 展开；每行左侧只出现一个状态。
 - 实施：定义共享 timeline token model 与 ANSI/DOM 两套最小样式 seam；统一 boundary、summary、tool、error 行的 prefix/meta；状态只由 status slot 输出 `✓/✕/●/○`，层级由缩进和 rail 表达，禁止再用 `├─/·/▸` 充当第二状态；补齐 320px、80 列、CJK、无色终端快照。

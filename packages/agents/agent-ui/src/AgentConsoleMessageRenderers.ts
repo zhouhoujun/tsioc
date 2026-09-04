@@ -8,6 +8,7 @@ import {
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
+import { resolveTimelineEventSentence } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary';
@@ -294,8 +295,11 @@ export function renderAgentConsoleMessageItem(
     const displayContent = hideToolOutput
         ? ''
         : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
+    const timelineSentence = timelineEvent
+        ? resolveTimelineEventSentence(message?.metadata, displayContent)
+        : undefined;
     const eventRowContent = timelineEvent
-        ? truncateTimelineEventRowContent(displayContent, statusKind)
+        ? truncateTimelineEventRowContent(timelineSentence ?? displayContent, statusKind)
         : displayContent;
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;

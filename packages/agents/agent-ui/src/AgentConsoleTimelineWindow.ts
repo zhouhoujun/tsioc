@@ -131,6 +131,171 @@ function makeSummary(
     };
 }
 
+// ── Timeline sentence formatter ──────────────────────────────────────────────
+
+export interface TimelineSentenceParts {
+    actor?: string;
+    action: string;
+    object?: string;
+    result?: string;
+    detail?: string;
+}
+
+export function formatTimelineSentence(parts: TimelineSentenceParts): string {
+    const { actor, action, object, result, detail } = parts;
+    if (!action) return '';
+
+    const segments: string[] = [];
+    if (actor) segments.push(actor);
+    segments.push(object ? `${action} ${object}` : action);
+    if (result) segments.push(result);
+    if (detail) segments.push(detail);
+
+    return segments.join(' ').replace(/\b(\w+)\s+\1\b/gi, '$1');
+}
+
+// ── Event semantic field extraction ──────────────────────────────────────────
+
+function resolveEventActionVerb(uiEventType: string, status?: string): string {
+    const failed = status === 'failed' || status === 'error';
+    switch (uiEventType) {
+        case 'turn_started':
+        case 'turn_start':
+            return 'Understanding request';
+        case 'turn_cancelled':
+        case 'turn_cancel':
+            return 'Turn cancelled';
+        case 'error':
+            return 'Error';
+        case 'tool_call':
+        case 'tool_invoked':
+        case 'tool_running':
+            return 'Running';
+        case 'tool_succeeded':
+        case 'tool_completed':
+            return failed ? 'Running' : 'Completed';
+        case 'tool_failed':
+            return 'Running';
+        case 'plan_created':
+            return 'Created plan';
+        case 'plan_step_started':
+        case 'step_started':
+            return 'Executing step';
+        case 'plan_step_completed':
+        case 'step_completed':
+            return failed ? 'Step failed' : 'Completed step';
+        case 'plan_step_blocked':
+        case 'step_blocked':
+            return 'Step blocked';
+        case 'approval':
+        case 'approval_request':
+            return 'Approval requested';
+        case 'context_prepared':
+            return 'Prepared context';
+        case 'model_completed':
+            return 'Model responded';
+        case 'background_task_started':
+            return 'Background task started';
+        case 'background_task_completed':
+            return 'Background task completed';
+        case 'background_task_failed':
+            return 'Background task failed';
+        case 'timeline_summary':
+            return '';
+        default:
+            return 'Completed';
+    }
+}
+
+function resolveEventResultPhrase(
+    status?: string,
+    error?: string,
+    durationMs?: number
+): string {
+    const parts: string[] = [];
+    const duration = formatEventDuration(durationMs);
+
+    if (status === 'failed' || status === 'error') {
+        const msg = error
+            ? (error.length > 80 ? `${error.slice(0, 77)}...` : error)
+            : 'failed';
+        parts.push(error ? `failed: ${msg}` : msg);
+    }
+
+    if (duration) parts.push(duration);
+    return parts.join(' ');
+}
+
+function formatEventDuration(durationMs?: number): string {
+    if (durationMs == null || !Number.isFinite(durationMs) || durationMs < 0) return '';
+    if (durationMs < 1000) return `(${Math.round(durationMs)}ms)`;
+    const seconds = durationMs / 1000;
+    const formatted = seconds >= 10
+        ? `${Math.round(seconds)}s`
+        : `${seconds.toFixed(1).replace(/\.0$/, '')}s`;
+    return `(${formatted})`;
+}
+
+function resolveEventObjectLabel(
+    uiEventType: string,
+    label?: string,
+    content?: string
+): string {
+    const trimmedLabel = String(label || '').trim();
+    const trimmedContent = String(content || '').trim();
+    if (uiEventType.startsWith('tool_') || uiEventType === 'tool_call') return trimmedLabel || '';
+    if (uiEventType.startsWith('plan_') || uiEventType.startsWith('step_')) return trimmedContent || trimmedLabel || '';
+    return trimmedLabel || trimmedContent || '';
+}
+
+export function resolveTimelineEventSentence(
+    metadata?: Record<string, any>,
+    fallbackContent?: string
+): string | undefined {
+    if (!metadata || metadata.uiKind !== 'event') return undefined;
+
+    const uiEventType = String(metadata.uiEventType || '').trim();
+    const status = String(metadata.status || '').trim();
+    const label = String(metadata.label || metadata.uiEventLabel || '').trim();
+    const content = String(fallbackContent || '').trim();
+    const error = String(metadata.error || '').trim();
+    const durationMs = Number(metadata.durationMs);
+
+    const action = resolveEventActionVerb(uiEventType, status);
+    if (!action) return undefined;
+
+    if (uiEventType === 'turn_cancelled' || uiEventType === 'turn_cancel') return action;
+    if (uiEventType === 'error') return `Error: ${error || content || 'unknown error'}`;
+
+    if (uiEventType.startsWith('background_task')) {
+        const taskId = String(metadata.taskId || '').trim();
+        const object = taskId ? `#${taskId}` : '';
+        const result = resolveEventResultPhrase(status, error, durationMs);
+        return formatTimelineSentence({ action, object, result });
+    }
+
+    if (uiEventType.startsWith('tool_') || uiEventType === 'tool_call') {
+        const object = resolveEventObjectLabel(uiEventType, label, content);
+        const result = resolveEventResultPhrase(status, error, durationMs);
+        return formatTimelineSentence({ action, object, result });
+    }
+
+    if (uiEventType.startsWith('plan_') || uiEventType.startsWith('step_')) {
+        const object = resolveEventObjectLabel(uiEventType, label, content);
+        const result = resolveEventResultPhrase(status, error, durationMs);
+        return formatTimelineSentence({ action, object, result });
+    }
+
+    if (uiEventType === 'context_prepared' || uiEventType === 'model_completed') {
+        const result = resolveEventResultPhrase(status, error, durationMs);
+        return formatTimelineSentence({ action, result });
+    }
+
+    const object = resolveEventObjectLabel(uiEventType, label, content);
+    const result = resolveEventResultPhrase(status, error, durationMs);
+    return formatTimelineSentence({ action, object, result });
+}
+
 // ── Core pure function ───────────────────────────────────────────────────────
 
 /**
