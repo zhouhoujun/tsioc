@@ -2010,3 +2010,9 @@ Turn: Fix session restore                                      running  01:42
 
 - 将 `AgentModule` 内置 `ToolApprovalManager` 注册为 `asDefault`，允许测试和宿主通过显式 provider 注入自定义审批 manager；修复审批测试使用默认 30 秒超时、无法及时 approve 的问题。
 - `agent-permission.spec.ts` 定向套件通过；未修改 `TypeormAdapter`。
+
+### 2026-09-04 ApprovalManager IoC 抽象收敛
+
+- 新增 `ApprovalManager` 抽象 contract，`ToolApprovalManager` 作为具体实现继承该 contract。
+- `DefaultAgentRuntime` 改为注入 `ApprovalManager`；`AgentModule` 仅将 `ToolApprovalManager` 注册为该抽象的实现，避免消费者依赖具体类。
+- `agent` `tsc --noEmit` 通过；`TypeormAdapter` 未修改。

@@ -9,7 +9,7 @@ import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
 import { ToolActivationStore } from './tools/ToolActivationStore';
 import { ToolLoopDetector } from './tools/ToolLoopDetector';
-import { ToolApprovalManager } from './tools/ToolApprovalManager';
+import { ApprovalManager, ToolApprovalManager } from './tools/ToolApprovalManager';
 import { AgentContextManager } from './context/AgentContextManager';
 import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, MemorySection, ProjectContextSection, McpServerInstructionsSection } from './prompt/SystemPromptBuilder';
 import { AGENT_PROMPT_SECTIONS } from './tokens';
@@ -121,7 +121,7 @@ import { AgentOrmModule } from './orm.module';
         TypeOrmEvalReportStore,
         { provide: EvalReportStore, useExisting: TypeOrmEvalReportStore },
         SystemPromptBuilder,
-        { provide: ToolApprovalManager, useClass: ToolApprovalManager, asDefault: true },
+        { provide: ApprovalManager, useClass: ToolApprovalManager },
         { provide: ToolActivationStore, useClass: SessionToolActivationStore },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },

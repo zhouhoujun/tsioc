@@ -16,7 +16,7 @@ import { StreamChunk } from '../model/StreamChunk';
 import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
-import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
+import { ApprovalDecision, ApprovalManager, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
@@ -120,7 +120,7 @@ const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls witho
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
-    protected toolApprovalManager?: ToolApprovalManager;
+    protected toolApprovalManager?: ApprovalManager;
     protected hookManager?: AgentHookManager;
     protected _stopped = false;
     private reviewGates = new Map<string, { active: boolean; taskId: string }>();
@@ -145,7 +145,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         protected uuid: UuidGenerator,
         @Optional() @Inject(ExperienceDistiller) protected experienceDistiller?: ExperienceDistiller,
         @Optional() protected promptBuilder?: SystemPromptBuilder,
-        @Optional() protected approvalManagerInput?: ToolApprovalManager,
+        @Optional() protected approvalManagerInput?: ApprovalManager,
         @Optional() protected injectedContextManager?: AgentContextManager,
         @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever,
         @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
@@ -3060,7 +3060,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         return states;
     }
 
-    private resolveApprovalManager(approvalManager?: ToolApprovalManager): ToolApprovalManager | undefined {
+    private resolveApprovalManager(approvalManager?: ApprovalManager): ApprovalManager | undefined {
         if (approvalManager?.isConfigured()) {
             return approvalManager;
         }

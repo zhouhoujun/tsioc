@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject, token } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional, Inject, token } from '@tsdi/ioc';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
@@ -108,6 +108,21 @@ export interface ApprovalResult {
     request?: ApprovalRequest;
 }
 
+/** IoC contract for approval consumers; implementations may be replaced per host. */
+@Abstract()
+export abstract class ApprovalManager {
+    abstract checkApproval(toolName: string, input: any, sessionId: string, force?: boolean): Promise<ApprovalResult>;
+    abstract requireApproval(toolName: string, input: any, sessionId: string): Promise<boolean>;
+    abstract requiresApproval(toolName: string, input: any): boolean;
+    abstract approve(requestId: string): boolean;
+    abstract reject(requestId: string): boolean;
+    abstract cancelBySession(sessionId: string): number;
+    abstract getPending(): ApprovalRequestView[];
+    abstract isConfigured(): boolean;
+    abstract isAutoApproveEnabled(): boolean;
+    abstract setAutoApprove(enabled: boolean): void;
+}
+
 const DEFAULT_APPROVAL_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_APPROVAL_TIMEOUT_MS = 300000;
 const DEFAULT_MAX_PENDING_APPROVALS = 100;
@@ -159,7 +174,7 @@ function summarizeApprovalInput(input: any): string | undefined {
 }
 
 @Injectable()
-export class ToolApprovalManager {
+export class ToolApprovalManager extends ApprovalManager {
     private pending = new Map<string, {
         request: ApprovalRequest;
         resolve: (decision: ApprovalDecision) => void;
@@ -178,6 +193,7 @@ export class ToolApprovalManager {
         @Optional() @Inject(AgentApprovalReviewer, { defaultValue: null })
         private reviewer?: ApprovalReviewer
     ) {
+        super();
     }
 
     isConfigured(): boolean {
