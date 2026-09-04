@@ -1857,11 +1857,12 @@ Turn: Fix session restore                                      running  01:42
 
 > 每个 plan 收尾固定执行：检查实现与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/必要构建 → 更新本文件记录结果与限制 → 独立提交。所有跨端能力先落在共享 `agent`/`agent-ui/src` contract 与 IoC port，TUI/browser/gateway 仅提供适配；禁止 `agent-ui/src` 引入 console/node API，禁止 timer 驱动渲染。
 
-**P280 · Timeline window ledger（高）** `platform: agent-ui/src（跨平台）`
+**P280 · Timeline window ledger（高）** `platform: agent-ui/src（跨平台）` ✅ 2026-09-04 完成
 
 - 目标：历史、当前 step、异常、plan/file-change 结构项共享同一个行预算，任何项都不能无界顶掉历史；窗口滚动保持 selected message 与 anchor 稳定。
 - 实施：抽取纯函数 `resolveTimelineWindowLedger(messages, limit, mode, anchor)`；为每个 item 分配 `priority/category/estimatedRows`，按优先级保留并生成可点击的 hidden-range marker；展开历史通过 inspector 或 `/timeline verbose` 读取原始消息，不改变主窗口锚点。
 - 验收：长历史 + 多结构项 + CJK/窄宽度快照；断线 replay、plan 更新、窗口收缩不重复不丢失；新增 reducer/窗口纯函数测试，agent-ui 全量与 `components/console` 回归。
+- **结果**：新增 `AgentConsoleTimelineWindow.ts` 纯函数模块（resolveTimelineWindowLedger + priority/category/estimatedRows 注解），`AgentConsolePanels.ts` 委托调用；12 项纯函数单元测试覆盖 verbose/steps/compact 模式、优先级分级、estimatedRows 估算、空输入边界；agent-ui 966 passing / 0 failing / EXIT=0，tsc --noEmit 干净。
 
 **P281 · Timeline visual language（中-高）** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
 
