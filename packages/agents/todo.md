@@ -2000,3 +2000,8 @@ Turn: Fix session restore                                      running  01:42
 - `AgentModule` 现显式导入 `AgentOrmModule`，并注册 `DefaultModuleLoader`，修复无外部 `provideAgentOrm` 时的 ORM bootstrap 依赖缺失。
 - 未修改 `packages/typeorm-adapter/src/TypeormAdapter.ts`（按用户要求保持原样）。
 - `agent` `tsc --noEmit` 通过；完整套件仍受长时审批/宿主环境用例影响，未宣称全绿。
+
+### 2026-09-04 SessionStore.search 修复
+
+- 修复 TypeORM session search 使用全局消息 `take` 导致单 session 匹配计数被截断的问题；筛选目标 session 后完整扫描其消息并保留 limit/maxSessions 语义。
+- `session-search.spec.ts` 定向套件通过；`agent` `tsc --noEmit` 通过。

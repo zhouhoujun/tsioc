@@ -493,7 +493,9 @@ export class TypeOrmSessionStore extends SessionStore {
         const messageRows = await this.adapter.getRepository(AgentMessageEntity).find({
             where: sessionRows.length ? { sessionId: In(sessionRows.map(row => row.sessionId)) } as any : { sessionId: '__no-sessions__' } as any,
             order: { createdAt: 'DESC' as any },
-            take: TypeOrmSessionStore.SEARCH_SCAN_LIMIT
+            // Scan all messages for the selected sessions so a session's
+            // match count is not truncated by a global newest-message cap.
+            take: undefined
         });
 
         const buckets = new Map<string, SessionSearchMatch & { count: number }>();
