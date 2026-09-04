@@ -2016,3 +2016,9 @@ Turn: Fix session restore                                      running  01:42
 - 新增 `ApprovalManager` 抽象 contract，`ToolApprovalManager` 作为具体实现继承该 contract。
 - `DefaultAgentRuntime` 改为注入 `ApprovalManager`；`AgentModule` 仅将 `ToolApprovalManager` 注册为该抽象的实现，避免消费者依赖具体类。
 - `agent` `tsc --noEmit` 通过；`TypeormAdapter` 未修改。
+
+### 2026-09-04 收尾门禁复核
+
+- 静态检查：`git diff --check` 通过；`agent-ui/src` 跨平台 console/node 直接 import 扫描无违规；`agent` `tsc --noEmit` 通过。
+- 全量测试：`agent-desktop` 20 passing EXIT 0；`agent-ssh` 因当前沙箱禁止 `127.0.0.1` 监听而报 `listen EPERM`；`agent`、`agent-ui`、`agent-tools`、`agent-gateway`、`agent-cli`、`agent-channels`、`agent-providers`、`agent-vscode` 在 90 秒门限内未自然退出，已终止，未伪造为通过。
+- 结论：本轮完成检查与证据记录；监听权限和长时 runner 需在具备宿主能力的 CI 继续复验。
