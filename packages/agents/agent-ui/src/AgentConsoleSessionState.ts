@@ -613,6 +613,7 @@ export class AgentConsoleSessionState {
     protected planEventSequence = 0;
     protected commandOutputSequence = 0;
     protected commandExecutionSequence = 0;
+    protected commandExchangeSessionEpoch = 0;
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -756,6 +757,7 @@ export class AgentConsoleSessionState {
             this.contextPreparation = null;
             this.commandExecutions = [];
             this.commandExecutionMessages = [];
+            this.commandExchangeSessionEpoch++;
             this.commandOutputs = [];
             // P269/P271: per-session monotonic seq — a stale tail from the
             // previous session would skip the new session's low-seq events on
@@ -1533,6 +1535,7 @@ export class AgentConsoleSessionState {
                     args: normalized.args,
                     requestId: normalized.key,
                     status: normalized.status === 'success' ? 'succeeded' : normalized.status,
+                    sequence: normalized.sequence,
                     attempt: normalized.attempt || 1,
                     outputIds: normalized.outputIds?.slice() || [],
                     error: normalized.error,
@@ -4324,11 +4327,12 @@ export class AgentConsoleSessionState {
 
     beginCommandExecution(command: string, args: string): string {
         const control = this.requireCommandExecutionControl();
-        const requestId = `cmd-${++this.commandExecutionSequence}`;
+        const sequence = ++this.commandExecutionSequence;
+        const requestId = `cmd-${sequence}`;
         control.begin(requestId, this.sessionId);
         this.commandExecutions = reduceAgentConsoleCommandExecution(
             this.commandExecutions,
-            createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId)
+            createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId, Date.now(), sequence, this.commandExchangeSessionEpoch)
         );
         this.syncCommandExecutionTranscript(requestId);
         return requestId;
@@ -4423,6 +4427,8 @@ export class AgentConsoleSessionState {
             sessionId: this.sessionId,
             content,
             status: execution.status === 'succeeded' ? 'success' : execution.status === 'failed' ? 'error' : execution.status === 'cancelled' ? 'cancelled' : execution.status === 'running' ? 'running' : undefined,
+            sequence: execution.sequence,
+            attempt: execution.attempt,
             command: execution.command,
             args: execution.args,
             outputIds: execution.outputIds,

@@ -137,4 +137,5 @@ export * from './ui/CommandOutputHistory';
 export * from './ui/CommandExecution';
 export * from './ui/CommandExecutionControl';
 export * from './ui/ThreadItemProjection';
+export * from './ui/CommandExchangeEvent';
 export * from './ui/AgentRpcRequestMeta';

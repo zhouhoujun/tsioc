@@ -1881,10 +1881,11 @@ Turn: Fix session restore                                      running  01:42
 - 2026-09-04 诊断增强：`AgentConsoleCommandArgumentDiagnostic` 新增 `tokenIndex`（0-based 问题 token 位置）、`expected`（合法值模板）、`suggestion`（可操作纠正建议）字段；新增 `formatAgentConsoleCommandDiagnostics()` 将诊断数组格式化为单行提示；`handleCommand` 失败路径已改用该格式化函数，用户在修改重试时可见完整纠正建议。新增 enum args schema：`/yolo [on|off]`、`/display [on|off|show|hide|critical]`、`/raw [on|off|show|hide]`，三种入口共用同一 tokenizer + parser，12 单元测试覆盖 quote/CJK、missing/invalid/extra 诊断、alias 解析、format 辅助函数、registry 全覆盖回归。
 - 验收：registry→handler 覆盖率 100%；每类命令覆盖缺参/非法/多余/别名/引号/CJK；失败后草稿和 retry 语义一致。
 
-**P283 · Command exchange reducer（高）** `platform: agent/src + agent-ui/src（跨平台）`
+**P283 · Command exchange reducer（高）** `platform: agent/src + agent-ui/src（跨平台）` ✅ 2026-09-05
 
 - 目标：notify、command execution、tool result、output history、thread item 统一为可追踪 envelope，面板成为只读 inspector。
 - 实施：扩展共享 `CommandExchangeEvent`（sequence/attempt/receipt/requestId/sessionEpoch/sessionId）；实现 reducer 与 projection port；所有 handler 先提交事件，再派生短通知；重试沿用同一 execution id 追加 attempt。
+- 2026-09-05 实施切片：`AgentConsoleCommandExecution` 新增 `sequence`（全局单调递增，SessionState 内 `commandExecutionSequence` counter 驱动）、`attempt`（首次 1，retry 同 requestId 从 terminal 状态 +1）、`sessionEpoch`（来自 SessionState 的 `commandExchangeSessionEpoch` counter，session switch 时递增）；reducer 支持 retry 语义（同 requestId + terminal → increment attempt + reset running + clear outputIds/error/retryable，同 requestId + running → no-op）；`CommandExchangeEnvelope` 统一 envelope 类型 + `normalizeCommandExchangeEnvelope` + `commandExchangeKey`；`projectThreadItem` command 分支新增 `sequence` projection；14 单元测试覆盖 reducer retry/attempt/sequence monotonic/epoch、SessionState 序列/epoch/投影、envelope normalization/key。
 - 验收：turn→command→tool→output→plan 顺序快照；复制/replay/clear 走同一记录；失败重试无重复 item；agent、agent-ui、gateway 全量回归。
 
 **P284 · Durable timeline exchange（中-高）** `platform: agent/src + agent-gateway + agent-ui/src`
