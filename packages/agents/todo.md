@@ -2028,3 +2028,8 @@ Turn: Fix session restore                                      running  01:42
 - `todo-store-v2.spec.ts` 已改用真实 SQLite ORM context，避免恢复已删除的 `InMemoryMemoryStore`。
 - `agent-tools` 当前仍有 `apply-patch.spec.ts`、`tools.spec.ts`、`background-task-store.spec.ts` 的历史 `InMemory*` 引用，类型检查/全量测试尚不能通过；本轮不伪造完成，也不恢复内存 fixture。
 - `AgentModule` 默认 ORM import 已移除，避免轻量 `agent-ui` 测试触发 ORM bootstrap；`agent-ui` 953、`agent-cli` 73、`agent-channels` 59、`agent-vscode` 7、`agent-desktop` 20、`agent-providers` 13 已验证通过。`agent-gateway` 仍受监听 `EPERM` 限制。
+
+### 2026-09-04 收尾复核（未完成）
+
+- 本轮确认 `agent-ui` 953、`agent-cli` 73、`agent-channels` 59、`agent-vscode` 7、`agent-desktop` 20、`agent-providers` 13 通过。
+- `agent-tools` 类型检查仍被 `apply-patch`、`tools`、`background-task-store` 的已删除 `InMemory*` 测试 fixture 阻断；`agent-gateway` 受监听 `EPERM`；`agent` 仍有 sandbox receipt 失败，故不标记全量完成。
