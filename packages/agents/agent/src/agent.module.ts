@@ -1,4 +1,5 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions } from './options';
 import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
@@ -68,13 +69,16 @@ import { GoalStore } from './goal/GoalStore';
 import { createAgentProviders } from './provider';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
 import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
+import { AgentOrmModule } from './orm.module';
 
 @Module({
     imports: [
-        ConfigModule
+        ConfigModule,
+        AgentOrmModule
     ],
     bootstrap: [AgentRuntime],
     providers: [
+        { provide: ModuleLoader, useClass: DefaultModuleLoader, asDefault: true },
         { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
         { provide: COMMAND_EXECUTION_CONTROL, useClass: InMemoryCommandExecutionControl, asDefault: true },
         {

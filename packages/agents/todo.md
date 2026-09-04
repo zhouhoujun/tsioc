@@ -1994,3 +1994,9 @@ Turn: Fix session restore                                      running  01:42
 - **测试通过**：`agent-desktop` 20 passing、`agent-ssh` 8 passing、`agent-providers` 13 passing（均 EXIT 0）。
 - **测试未完成**：`agent-channels`、`agent-cli`、`agent-gateway`、`agent-tools`、`agent-ui`、`agent` 的 `npm run test` 在本次沙箱运行长时间无输出、未自然退出，已中止，不能据此宣称通过；此前已知的 `agent`/`agent-tools` ORM/InMemory fixture 编译阻断及 gateway 监听 `EPERM` 仍需具备完整宿主权限的 CI 复验。
 - **结论**：本轮完成收尾检查和结果记录；P279/P285 的 Playwright/PTY 门禁仍未建立，P280–P284 的剩余跨宿主验收不在本轮伪造为完成。
+
+### 2026-09-04 ORM bootstrap 修复
+
+- `AgentModule` 现显式导入 `AgentOrmModule`，并注册 `DefaultModuleLoader`，修复无外部 `provideAgentOrm` 时的 ORM bootstrap 依赖缺失。
+- 未修改 `packages/typeorm-adapter/src/TypeormAdapter.ts`（按用户要求保持原样）。
+- `agent` `tsc --noEmit` 通过；完整套件仍受长时审批/宿主环境用例影响，未宣称全绿。
