@@ -2033,3 +2033,9 @@ Turn: Fix session restore                                      running  01:42
 
 - 本轮确认 `agent-ui` 953、`agent-cli` 73、`agent-channels` 59、`agent-vscode` 7、`agent-desktop` 20、`agent-providers` 13 通过。
 - `agent-tools` 类型检查仍被 `apply-patch`、`tools`、`background-task-store` 的已删除 `InMemory*` 测试 fixture 阻断；`agent-gateway` 受监听 `EPERM`；`agent` 仍有 sandbox receipt 失败，故不标记全量完成。
+
+### 2026-09-04 agent-tools background-task 迁移
+
+- `background-task-store.spec.ts` 已完成迁移：所有用例通过 `Application.run(AgentModule + provideAgentOrm(sqljs))` 注入 `BackgroundTaskHistoryStore`，不再依赖已删除的 `InMemoryBackgroundTaskHistoryStore`。
+- `agent-tools` 当前类型检查剩余阻断收敛为 `apply-patch.spec.ts` 与 `tools.spec.ts` 的旧 `InMemoryMemoryStore`/`InMemorySessionStore` 引用及相关构造参数/隐式类型错误。
+- 本轮未宣称全量完成；`TypeormAdapter` 未修改。
