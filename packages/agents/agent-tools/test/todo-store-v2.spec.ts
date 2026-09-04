@@ -2,7 +2,8 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
-import { InMemoryMemoryStore } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm } from '@tsdi/agent';
+import { Application } from '@tsdi/core';
 
 function createSessionContext(opts: { sessionId?: string } = {}): any {
     return { sessionId: opts.sessionId || 'test-session' };
@@ -486,7 +487,9 @@ export class TodoStoreRevisionMigrationTest {
 
     @Test('legacy array payload migrates to version 3 on next persist and reads with revision')
     async legacyArrayPayloadMigrates() {
-        const memory = new InMemoryMemoryStore();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const memory = ctx.get(MemoryStore);
+        try {
         const legacy = [
             { id: 'a', content: 'legacy a', status: 'completed' },
             { id: 'b', content: 'legacy b', status: 'pending' }
@@ -507,11 +510,14 @@ export class TodoStoreRevisionMigrationTest {
         expect(plan.todos.length).toBe(2);
         expect(plan.planId).toBe('plan:mig1');
         expect(plan.revision).toBe(1);
+        } finally { await ctx.close(); }
     }
 
     @Test('revision survives re-read from persisted store after writes')
     async revisionSurvivesPersist() {
-        const memory = new InMemoryMemoryStore();
+        const ctx = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const memory = ctx.get(MemoryStore);
+        try {
         const store = new TodoStore(memory as any);
         await store.replace('mig2', [item('a')]);
         let plan = await store.readPlan('mig2');
@@ -520,6 +526,7 @@ export class TodoStoreRevisionMigrationTest {
         plan = await store.readPlan('mig2');
         expect(plan.revision).toBe(2);
         expect(plan.todos.length).toBe(2);
+        } finally { await ctx.close(); }
     }
 }
 

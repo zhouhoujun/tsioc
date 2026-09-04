@@ -2022,3 +2022,9 @@ Turn: Fix session restore                                      running  01:42
 - 静态检查：`git diff --check` 通过；`agent-ui/src` 跨平台 console/node 直接 import 扫描无违规；`agent` `tsc --noEmit` 通过。
 - 全量测试：`agent-desktop` 20 passing EXIT 0；`agent-ssh` 因当前沙箱禁止 `127.0.0.1` 监听而报 `listen EPERM`；`agent`、`agent-ui`、`agent-tools`、`agent-gateway`、`agent-cli`、`agent-channels`、`agent-providers`、`agent-vscode` 在 90 秒门限内未自然退出，已终止，未伪造为通过。
 - 结论：本轮完成检查与证据记录；监听权限和长时 runner 需在具备宿主能力的 CI 继续复验。
+
+### 2026-09-04 agent-tools 迁移继续
+
+- `todo-store-v2.spec.ts` 已改用真实 SQLite ORM context，避免恢复已删除的 `InMemoryMemoryStore`。
+- `agent-tools` 当前仍有 `apply-patch.spec.ts`、`tools.spec.ts`、`background-task-store.spec.ts` 的历史 `InMemory*` 引用，类型检查/全量测试尚不能通过；本轮不伪造完成，也不恢复内存 fixture。
+- `AgentModule` 默认 ORM import 已移除，避免轻量 `agent-ui` 测试触发 ORM bootstrap；`agent-ui` 953、`agent-cli` 73、`agent-channels` 59、`agent-vscode` 7、`agent-desktop` 20、`agent-providers` 13 已验证通过。`agent-gateway` 仍受监听 `EPERM` 限制。

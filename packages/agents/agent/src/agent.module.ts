@@ -69,12 +69,10 @@ import { GoalStore } from './goal/GoalStore';
 import { createAgentProviders } from './provider';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
 import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
-import { AgentOrmModule } from './orm.module';
 
 @Module({
     imports: [
-        ConfigModule,
-        AgentOrmModule
+        ConfigModule
     ],
     bootstrap: [AgentRuntime],
     providers: [
