@@ -8,6 +8,50 @@ import {
     formatAgentConsoleCommandArgumentTemplate,
     tokenizeAgentConsoleCommandArguments
 } from '../src';
+import { InMemoryCommandExecutionControl } from '@tsdi/agent';
+import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionService, AgentConsoleSessionState } from '../src';
+
+class RuntimeStub {
+    async runTurn(sessionId: string, input: string): Promise<any> {
+        return { sessionId, message: { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 } };
+    }
+    async getMessages(): Promise<any[]> { return []; }
+}
+
+class SchedulerStub {
+    async schedule(task: any): Promise<any> { return task; }
+    getTasks(): any[] { return []; }
+}
+
+class FakeAppRpc {
+    async request(method: string, params?: any): Promise<any> {
+        switch (method) {
+            case 'session.messages':
+                return { messages: [], sections: [], nextCursor: undefined, hasMore: false };
+            case 'tools.list':
+                return [];
+            default:
+                return {};
+        }
+    }
+}
+
+function createConsole(): { state: AgentConsoleSessionState; component: AgentConsoleComponent } {
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+    state.configure({ sessionId: 'active-1' } as any);
+    const runtime = new RuntimeStub() as any;
+    const rpc = new FakeAppRpc() as any;
+    const sessionService = new AgentConsoleSessionService(rpc, null);
+    const bridge = new AgentConsoleEventBridge(state, runtime, null, rpc, null);
+    const component = new AgentConsoleComponent(
+        state, runtime, new SchedulerStub() as any, bridge,
+        { ui: { title: 'Console' } } as any, null, rpc, sessionService,
+        undefined, undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, null, null
+    );
+    return { state, component };
+}
 
 @Suite('P282 command parser single path')
 export class P282CommandParserSinglePathTest {
@@ -158,5 +202,56 @@ export class P282CommandParserSinglePathTest {
                 expect(formatAgentConsoleCommandArgumentTemplate(def)).toBeTruthy();
             }
         });
+    }
+
+    @Test('registry definitions and handlers map 1:1 (no defined-without-handler, no handler-without-definition)')
+    registryHandlerBidirectionalCoverage() {
+        const { AGENT_CONSOLE_COMMAND_DEFINITIONS } = require('../src/AgentConsoleCommandRegistry');
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const defNames = AGENT_CONSOLE_COMMAND_DEFINITIONS.map((def: any) => def.name);
+        const handlerNames = Object.keys(COMMAND_HANDLERS);
+        const aliases = new Set(
+            AGENT_CONSOLE_COMMAND_DEFINITIONS.flatMap((def: any) => (def.aliases || []).map((a: string) => a))
+        );
+        // Handler keys must be definition names or declared aliases — never untracked.
+        defNames.forEach((name: string) => {
+            expect(handlerNames).toContain(name);
+        });
+        handlerNames.forEach((key: string) => {
+            expect(defNames.includes(key) || aliases.has(key)).toBe(true);
+        });
+    }
+}
+
+@Suite('P282 draft/retry consistency through handleCommand')
+export class P282DraftRetryConsistencyTest {
+
+    @Test('required-arg diagnostics preserve the draft for correction')
+    async missingArgPreservesDraft() {
+        const { state, component } = createConsole();
+        const result = await (component as any).handleCommand('/search');
+        expect(result).toEqual(true);
+        expect(state.input).toEqual('/search');
+        expect(state.notice).toContain('Missing required argument');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+    }
+
+    @Test('invalid enum preserves the draft and surfaces the suggestion')
+    async invalidEnumPreservesDraft() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/yolo maybe');
+        expect(state.input).toEqual('/yolo maybe');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.notice).toContain('maybe');
+    }
+
+    @Test('corrected retry passes the same single path and succeeds')
+    async correctedRetrySucceeds() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/yolo maybe');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        await (component as any).handleCommand('/yolo on');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.commandExecutions.length).toBeGreaterThan(1);
     }
 }
