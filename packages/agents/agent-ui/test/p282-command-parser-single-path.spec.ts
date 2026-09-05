@@ -263,6 +263,42 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(mcp, 'chat').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('session cluster: /fork /side accept an optional messageId')
+    sessionClusterSingleIdContracts() {
+        const fork = getAgentConsoleCommandDefinition('/fork')!;
+        expect(parseAgentConsoleCommandArguments(fork, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(fork, 'msg-123').resolved).toEqual(['msg-123']);
+        expect(parseAgentConsoleCommandArguments(fork, '"msg 123"').resolved).toEqual(['msg 123']);
+        expect(parseAgentConsoleCommandArguments(fork, 'a b').diagnostics[0].code).toEqual('extra');
+
+        const side = getAgentConsoleCommandDefinition('/side')!;
+        expect(parseAgentConsoleCommandArguments(side, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(side, 'msg-456').resolved).toEqual(['msg-456']);
+        expect(parseAgentConsoleCommandArguments(side, 'a b').diagnostics[0].code).toEqual('extra');
+
+        const unshare = getAgentConsoleCommandDefinition('/unshare')!;
+        expect(parseAgentConsoleCommandArguments(unshare, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(unshare, 'tk-1').resolved).toEqual(['tk-1']);
+        expect(parseAgentConsoleCommandArguments(unshare, 'tk-1 tk-2').diagnostics[0].code).toEqual('extra');
+    }
+
+    @Test('session cluster: /sections accepts a variadic label tail')
+    sessionClusterVariadicLabelContracts() {
+        const sections = getAgentConsoleCommandDefinition('/sections')!;
+        expect(parseAgentConsoleCommandArguments(sections, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(sections, 'Next step').resolved).toEqual(['Next step']);
+        expect(parseAgentConsoleCommandArguments(sections, '"Next step"').resolved).toEqual(['Next step']);
+    }
+
+    @Test('session cluster: bare commands pass through without diagnostics')
+    sessionClusterBareContracts() {
+        ['/resume', '/archive', '/share', '/threads'].forEach(name => {
+            const def = getAgentConsoleCommandDefinition(name)!;
+            expect(parseAgentConsoleCommandArguments(def, '').diagnostics).toEqual([]);
+            expect(parseAgentConsoleCommandArguments(def, 'anything at all').diagnostics).toEqual([]);
+        });
+    }
+
     @Test('session category: /model /snapshot accept optional variadic values')
     sessionOptionalContracts() {
         expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/model')!, '').diagnostics).toEqual([]);
@@ -445,6 +481,98 @@ export class P282DraftRetryConsistencyTest {
             'plugins:plugin-a',
             'voice:stop'
         ]);
+    }
+
+    @Test('handlers consume resolved args for /fork /side /sections /unshare')
+    async sessionClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            state: {
+                sessionId: 'active-1',
+                closeReview: () => {},
+                closeGitSnapshotDetail: () => {}
+            },
+            sessionService: {
+                forkSession: async (_source: string, mid?: string) => { received.push(`fork:${mid}`); return 'forked-1'; },
+                createSection: async (_sid: string, label: string) => { received.push(`section:${label}`); }
+            },
+            refreshCurrentSections: async () => {},
+            openSession: async () => {},
+            notify: (msg: string) => { received.push(`notify:${msg}`); }
+        } as any;
+        await COMMAND_HANDLERS['/fork'](ctx, 'garbage raw', {
+            command: '/fork', matches: ['/fork'],
+            parsedArgs: { values: ['msg-123'], resolved: ['msg-123'], diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/side'](ctx, 'garbage', {
+            command: '/side', matches: ['/side'],
+            parsedArgs: { values: ['msg-456'], resolved: ['msg-456'], diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/sections'](ctx, 'garbage', {
+            command: '/sections', matches: ['/sections'],
+            parsedArgs: { values: ['Next step'], resolved: ['Next step'], diagnostics: [] }
+        });
+        expect(received).toContain('fork:msg-123');
+        expect(received).toContain('fork:msg-456');
+        expect(received).toContain('section:Next step');
+        expect(received).toContain('notify:Opened side session forked-1.');
+
+        const runCtx = {
+            runShareCommand: async (arg: string) => { received.push(`share:${arg}`); return true; },
+            runUnshareCommand: async (arg: string) => { received.push(`unshare:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/share'](runCtx, 'garbage', {
+            command: '/share', matches: ['/share'],
+            parsedArgs: { values: [], resolved: [], diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/unshare'](runCtx, 'garbage', {
+            command: '/unshare', matches: ['/unshare'],
+            parsedArgs: { values: ['tk-1'], resolved: ['tk-1'], diagnostics: [] }
+        });
+        expect(received).toContain('share:');
+        expect(received).toContain('unshare:tk-1');
+    }
+
+    @Test('session-cluster handlers fall back to raw args without parsedArgs')
+    async sessionClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            state: {
+                sessionId: 'active-1',
+                closeReview: () => {},
+                closeGitSnapshotDetail: () => {}
+            },
+            sessionService: {
+                forkSession: async (_source: string, mid?: string) => { received.push(`fork:${mid}`); return 'forked-1'; },
+                createSection: async (_sid: string, label: string) => { received.push(`section:${label}`); }
+            },
+            refreshCurrentSections: async () => {},
+            openSession: async () => {},
+            notify: () => {}
+        } as any;
+        await COMMAND_HANDLERS['/fork'](ctx, 'msg-raw', { command: '/fork', matches: ['/fork'] });
+        await COMMAND_HANDLERS['/sections'](ctx, 'raw label', { command: '/sections', matches: ['/sections'] });
+        expect(received).toContain('fork:msg-raw');
+        expect(received).toContain('section:raw label');
+
+        const unshareCtx = {
+            runUnshareCommand: async (arg: string) => { received.push(`unshare:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/unshare'](unshareCtx, 'tk-raw', { command: '/unshare', matches: ['/unshare'] });
+        expect(received).toContain('unshare:tk-raw');
+    }
+
+    @Test('extra token in /fork preserves the draft for correction')
+    async forkExtraTokenPreservesDraft() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/fork a b');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/fork a b');
+        expect(state.notice).toContain('Unexpected');
     }
 
     @Test('input-cluster handlers fall back to raw args without parsedArgs')
