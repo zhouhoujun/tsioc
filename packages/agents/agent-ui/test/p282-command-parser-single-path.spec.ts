@@ -373,6 +373,32 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(copy, 'bogus').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('delegation cluster: /delegation /usage /quality /compactions /compact /diagnostics /harness keep a variadic free-form tail')
+    delegationClusterVariadicContracts() {
+        ['/delegation', '/usage', '/quality', '/compactions', '/compact', '/diagnostics', '/harness'].forEach(name => {
+            const def = getAgentConsoleCommandDefinition(name)!;
+            expect(parseAgentConsoleCommandArguments(def, '').diagnostics).toEqual([]);
+            expect(parseAgentConsoleCommandArguments(def, 'tree sess-1 2').resolved).toEqual(['tree sess-1 2']);
+            expect(parseAgentConsoleCommandArguments(def, 'daily s1').resolved).toEqual(['daily s1']);
+            expect(parseAgentConsoleCommandArguments(def, '"quoted value"').resolved).toEqual(['quoted value']);
+        });
+        const delegation = getAgentConsoleCommandDefinition('/delegation')!;
+        expect(parseAgentConsoleCommandArguments(delegation, 'tree').resolved).toEqual(['tree']);
+        expect(parseAgentConsoleCommandArguments(delegation, 'lineage s1').resolved).toEqual(['lineage s1']);
+        expect(parseAgentConsoleCommandArguments(delegation, 'mode explicit').resolved).toEqual(['mode explicit']);
+        expect(parseAgentConsoleCommandArguments(delegation, 'sess-filter').resolved).toEqual(['sess-filter']);
+        const quality = getAgentConsoleCommandDefinition('/quality')!;
+        expect(parseAgentConsoleCommandArguments(quality, 'list client-1').resolved).toEqual(['list client-1']);
+        expect(parseAgentConsoleCommandArguments(quality, 'trend client-2 7 30').resolved).toEqual(['trend client-2 7 30']);
+        const diagnostics = getAgentConsoleCommandDefinition('/diagnostics')!;
+        expect(parseAgentConsoleCommandArguments(diagnostics, 'list sid').resolved).toEqual(['list sid']);
+        const harness = getAgentConsoleCommandDefinition('/harness')!;
+        expect(parseAgentConsoleCommandArguments(harness, 'audit sid').resolved).toEqual(['audit sid']);
+        expect(parseAgentConsoleCommandArguments(harness, 'profile list').resolved).toEqual(['profile list']);
+        const compact = getAgentConsoleCommandDefinition('/compact')!;
+        expect(parseAgentConsoleCommandArguments(compact, 'too long').resolved).toEqual(['too long']);
+    }
+
     @Test('registry to handler coverage: every definition resolves a parseable contract')
     registryCoverage() {
         // Every command with an args schema must parse a representative value without crashing,
@@ -775,5 +801,123 @@ export class P282DraftRetryConsistencyTest {
         expect(state.latestCommandExecution?.status).toEqual('failed');
         expect(state.input).toEqual('/copy bogus');
         expect(state.notice).toContain('Invalid');
+    }
+
+    @Test('delegation-cluster handlers consume resolved args')
+    async delegationClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            openUsage: async (a?: string) => { received.push(`usage:${a}`); return true; },
+            openSummaryQualityRecords: async (p?: string) => { received.push(`quality-list:${p}`); return true; },
+            parseSummaryQualityTrendArgs: (rest: string) => { received.push(`quality-trend-parse:${rest}`); return { provider: 'c1', bucketSize: 7, maxBuckets: 30 }; },
+            openSummaryQualityTrend: async (p?: string, b?: number, m?: number) => { received.push(`quality-trend:${p}:${b}:${m}`); return true; },
+            openCompactionHistory: async (sid?: string) => { received.push(`compactions:${sid}`); return true; },
+            parseCompactionHistoryTrendArgs: (rest: string) => { received.push(`compactions-trend-parse:${rest}`); return { sessionId: 's1', bucketSize: 7, maxBuckets: 30 }; },
+            openCompactionHistoryTrend: async (sid?: string, b?: number, m?: number) => { received.push(`compactions-trend:${sid}:${b}:${m}`); return true; },
+            sessionService: {
+                compactSession: async (_sid: string, reason?: string) => { received.push(`compact:${reason}`); return { compacted: false }; }
+            },
+            state: { sessionId: 'active-1' },
+            notify: (n: string) => { received.push(`notify:${n}`); },
+            openTurnDiagnostics: async (sid?: string) => { received.push(`diagnostics:${sid}`); return true; },
+            openTurnDiagnosticsList: async (sid?: string) => { received.push(`diagnostics-list:${sid}`); return true; },
+            parseTurnDiagnosticsTrendArgs: (rest: string) => { received.push(`diagnostics-trend-parse:${rest}`); return { sessionId: 's1', bucketSize: 7, maxBuckets: 30 }; },
+            openTurnDiagnosticsTrend: async (sid?: string, b?: number, m?: number) => { received.push(`diagnostics-trend:${sid}:${b}:${m}`); return true; },
+            openDelegationTree: async (sid?: string, status?: string, depth?: number) => { received.push(`tree:${sid ?? ''}:${status ?? ''}:${depth ?? ''}`); return true; },
+            openDelegationLineage: async (sid?: string) => { received.push(`lineage:${sid}`); return true; },
+            runDelegationModeCommand: async (cmd: string) => { received.push(`mode:${cmd}`); return true; },
+            openDelegationList: async (sid?: string) => { received.push(`delegation-list:${sid}`); return true; },
+            openHarnessAudit: async (sid?: string) => { received.push(`audit:${sid}`); return true; },
+            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; }
+        } as any;
+        const metaFor = (command: string, resolved: string[]) => ({
+            command, matches: [command],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/usage'](ctx, 'garbage', metaFor('/usage', ['daily s1']));
+        await COMMAND_HANDLERS['/quality'](ctx, 'garbage', metaFor('/quality', ['list client-1']));
+        await COMMAND_HANDLERS['/quality'](ctx, 'garbage', metaFor('/quality', ['trend c1 7 30']));
+        await COMMAND_HANDLERS['/compactions'](ctx, 'garbage', metaFor('/compactions', ['sess-x']));
+        await COMMAND_HANDLERS['/compactions'](ctx, 'garbage', metaFor('/compactions', ['trend s1 7 30']));
+        await COMMAND_HANDLERS['/compact'](ctx, 'garbage', metaFor('/compact', ['too long']));
+        await COMMAND_HANDLERS['/diagnostics'](ctx, 'garbage', metaFor('/diagnostics', ['list sid']));
+        await COMMAND_HANDLERS['/diagnostics'](ctx, 'garbage', metaFor('/diagnostics', ['sess-d']));
+        await COMMAND_HANDLERS['/diagnostics'](ctx, 'garbage', metaFor('/diagnostics', ['trend s1 7 30']));
+        await COMMAND_HANDLERS['/delegation'](ctx, 'garbage', metaFor('/delegation', ['tree s1 2']));
+        await COMMAND_HANDLERS['/delegation'](ctx, 'garbage', metaFor('/delegation', ['lineage s1']));
+        await COMMAND_HANDLERS['/delegation'](ctx, 'garbage', metaFor('/delegation', ['mode explicit']));
+        await COMMAND_HANDLERS['/delegation'](ctx, 'garbage', metaFor('/delegation', ['sess-filter']));
+        await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['audit s1']));
+        await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['profile list']));
+        expect(received).toEqual([
+            'usage:daily s1',
+            'quality-list:client-1',
+            'quality-trend-parse: c1 7 30', 'quality-trend:c1:7:30',
+            'compactions:sess-x',
+            'compactions-trend-parse: s1 7 30', 'compactions-trend:s1:7:30',
+            'compact:too long', 'notify:Nothing to compact: history already within budget.',
+            'diagnostics-list:sid',
+            'diagnostics:sess-d',
+            'diagnostics-trend-parse: s1 7 30', 'diagnostics-trend:s1:7:30',
+            'tree:s1:2:', 'lineage:s1', 'mode:explicit', 'delegation-list:sess-filter',
+            'audit:s1', 'profile:list'
+        ]);
+    }
+
+    @Test('delegation-cluster handlers fall back to raw args without parsedArgs')
+    async delegationClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            openUsage: async (a?: string) => { received.push(`usage:${a}`); return true; },
+            openSummaryQualityRecords: async (p?: string) => { received.push(`quality-list:${p}`); return true; },
+            parseSummaryQualityTrendArgs: (rest: string) => { received.push(`quality-trend-parse:${rest}`); return { provider: 'c1', bucketSize: 7, maxBuckets: 30 }; },
+            openSummaryQualityTrend: async (p?: string, b?: number, m?: number) => { received.push(`quality-trend:${p}:${b}:${m}`); return true; },
+            openCompactionHistory: async (sid?: string) => { received.push(`compactions:${sid}`); return true; },
+            parseCompactionHistoryTrendArgs: (rest: string) => { received.push(`compactions-trend-parse:${rest}`); return { sessionId: 's1', bucketSize: 7, maxBuckets: 30 }; },
+            openCompactionHistoryTrend: async (sid?: string, b?: number, m?: number) => { received.push(`compactions-trend:${sid}:${b}:${m}`); return true; },
+            sessionService: {
+                compactSession: async (_sid: string, reason?: string) => { received.push(`compact:${reason}`); return { compacted: false }; }
+            },
+            state: { sessionId: 'active-1' },
+            notify: () => {},
+            openTurnDiagnostics: async (sid?: string) => { received.push(`diagnostics:${sid}`); return true; },
+            openTurnDiagnosticsList: async (sid?: string) => { received.push(`diagnostics-list:${sid}`); return true; },
+            parseTurnDiagnosticsTrendArgs: (rest: string) => { received.push(`diagnostics-trend-parse:${rest}`); return { sessionId: 's1', bucketSize: 7, maxBuckets: 30 }; },
+            openTurnDiagnosticsTrend: async (sid?: string, b?: number, m?: number) => { received.push(`diagnostics-trend:${sid}:${b}:${m}`); return true; },
+            openDelegationTree: async (sid?: string, status?: string, depth?: number) => { received.push(`tree:${sid ?? ''}:${status ?? ''}:${depth ?? ''}`); return true; },
+            openDelegationLineage: async (sid?: string) => { received.push(`lineage:${sid}`); return true; },
+            runDelegationModeCommand: async (cmd: string) => { received.push(`mode:${cmd}`); return true; },
+            openDelegationList: async (sid?: string) => { received.push(`delegation-list:${sid}`); return true; },
+            openHarnessAudit: async (sid?: string) => { received.push(`audit:${sid}`); return true; },
+            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/usage'](ctx, 'daily raw', { command: '/usage', matches: ['/usage'] });
+        await COMMAND_HANDLERS['/quality'](ctx, 'list raw-provider', { command: '/quality', matches: ['/quality'] });
+        await COMMAND_HANDLERS['/quality'](ctx, 'trend rp 7 30', { command: '/quality', matches: ['/quality'] });
+        await COMMAND_HANDLERS['/compactions'](ctx, 'raw-sess', { command: '/compactions', matches: ['/compactions'] });
+        await COMMAND_HANDLERS['/compactions'](ctx, 'trend rs 7 30', { command: '/compactions', matches: ['/compactions'] });
+        await COMMAND_HANDLERS['/compact'](ctx, 'raw reason', { command: '/compact', matches: ['/compact'] });
+        await COMMAND_HANDLERS['/diagnostics'](ctx, 'raw-sid', { command: '/diagnostics', matches: ['/diagnostics'] });
+        await COMMAND_HANDLERS['/delegation'](ctx, 'tree rs 3', { command: '/delegation', matches: ['/delegation'] });
+        await COMMAND_HANDLERS['/delegation'](ctx, 'lineage rs2', { command: '/delegation', matches: ['/delegation'] });
+        await COMMAND_HANDLERS['/delegation'](ctx, 'mode proactive', { command: '/delegation', matches: ['/delegation'] });
+        await COMMAND_HANDLERS['/delegation'](ctx, 'raw-filter', { command: '/delegation', matches: ['/delegation'] });
+        await COMMAND_HANDLERS['/harness'](ctx, 'audit rs', { command: '/harness', matches: ['/harness'] });
+        await COMMAND_HANDLERS['/harness'](ctx, 'profile current', { command: '/harness', matches: ['/harness'] });
+        expect(received).toEqual([
+            'usage:daily raw',
+            'quality-list:raw-provider',
+            'quality-trend-parse: rp 7 30', 'quality-trend:c1:7:30',
+            'compactions:raw-sess',
+            'compactions-trend-parse: rs 7 30', 'compactions-trend:s1:7:30',
+            'compact:raw reason',
+            'diagnostics:raw-sid',
+            'tree:rs:3:', 'lineage:rs2', 'mode:proactive', 'delegation-list:raw-filter',
+            'audit:rs', 'profile:current'
+        ]);
     }
 }

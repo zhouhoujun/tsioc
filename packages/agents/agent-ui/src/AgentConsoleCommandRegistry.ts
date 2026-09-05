@@ -190,17 +190,18 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', needsArgs: true, args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
     { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks' },
 
-    { name: '/delegation', description: 'delegation edges [sessionId]', group: 'delegation', subcommands: [
+    { name: '/delegation', description: 'delegation edges [sessionId]', group: 'delegation', args: [{ name: 'arg', variadic: true }], subcommands: [
         { sub: 'tree', description: 'delegation tree [sessionId] [status] [depth]' },
         { sub: 'lineage', description: 'delegation lineage [sessionId]' },
         { sub: 'mode', description: 'delegation mode [disabled|explicit|proactive|default]' }
     ] },
     { name: '/goal', description: 'create, show, link, complete, or reopen a persistent goal', group: 'delegation' },
-    { name: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]', group: 'delegation' },
+    { name: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]', group: 'delegation', args: [{ name: 'arg', variadic: true }] },
     {
         name: '/quality',
         description: 'quality stats / list / trend by provider',
         group: 'delegation',
+        args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' }
         ]
@@ -209,21 +210,23 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         name: '/compactions',
         description: 'compaction history [sessionId]',
         group: 'delegation',
+        args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' }
         ]
     },
-    { name: '/compact', description: 'force compaction now [reason]', group: 'delegation' },
+    { name: '/compact', description: 'force compaction now [reason]', group: 'delegation', args: [{ name: 'reason', variadic: true }] },
     {
         name: '/diagnostics',
         description: 'turn diagnostics [sessionId]',
         group: 'delegation',
+        args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'list', description: 'turn diagnostics records [sessionId]' },
             { sub: 'trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' }
         ]
     },
-    { name: '/harness', description: 'harness audit / profile', group: 'delegation', subcommands: [
+    { name: '/harness', description: 'harness audit / profile', group: 'delegation', args: [{ name: 'arg', variadic: true }], subcommands: [
         { sub: 'audit', description: 'failure-pattern audit [sessionId]' },
         { sub: 'profile', description: 'governance profile list/current/diff' }
     ] },
