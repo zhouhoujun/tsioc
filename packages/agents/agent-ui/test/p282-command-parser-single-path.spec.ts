@@ -322,6 +322,57 @@ export class P282CommandParserSinglePathTest {
         expect(canonical).toEqual('/quit');
     }
 
+    @Test('session nav: /session /new /tools accept an optional value')
+    sessionNavClusterSingleIdContracts() {
+        const session = getAgentConsoleCommandDefinition('/session')!;
+        expect(parseAgentConsoleCommandArguments(session, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(session, 'sess-123').resolved).toEqual(['sess-123']);
+        expect(parseAgentConsoleCommandArguments(session, 'a b').diagnostics[0].code).toEqual('extra');
+
+        const fresh = getAgentConsoleCommandDefinition('/new')!;
+        expect(parseAgentConsoleCommandArguments(fresh, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(fresh, 'sess-456').resolved).toEqual(['sess-456']);
+        expect(parseAgentConsoleCommandArguments(fresh, 'a b').diagnostics[0].code).toEqual('extra');
+
+        const tools = getAgentConsoleCommandDefinition('/tools')!;
+        expect(parseAgentConsoleCommandArguments(tools, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(tools, 'bash').resolved).toEqual(['bash']);
+        expect(parseAgentConsoleCommandArguments(tools, 'a b').diagnostics[0].code).toEqual('extra');
+    }
+
+    @Test('session nav: /approve /deny accept an optional id and /approve retry passes')
+    approveDenyIdContracts() {
+        const approve = getAgentConsoleCommandDefinition('/approve')!;
+        expect(parseAgentConsoleCommandArguments(approve, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(approve, 'req-1').resolved).toEqual(['req-1']);
+        expect(parseAgentConsoleCommandArguments(approve, 'retry').resolved).toEqual(['retry']);
+        expect(parseAgentConsoleCommandArguments(approve, 'a b').diagnostics[0].code).toEqual('extra');
+
+        const deny = getAgentConsoleCommandDefinition('/deny')!;
+        expect(parseAgentConsoleCommandArguments(deny, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(deny, 'req-2').resolved).toEqual(['req-2']);
+        expect(parseAgentConsoleCommandArguments(deny, 'a b').diagnostics[0].code).toEqual('extra');
+    }
+
+    @Test('session nav: /title accepts a variadic name preserving set/list/unset verbs')
+    titleVariadicContracts() {
+        const title = getAgentConsoleCommandDefinition('/title')!;
+        expect(parseAgentConsoleCommandArguments(title, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(title, 'my title').resolved).toEqual(['my title']);
+        expect(parseAgentConsoleCommandArguments(title, '"my title"').resolved).toEqual(['my title']);
+        expect(parseAgentConsoleCommandArguments(title, 'set model,context').resolved).toEqual(['set model,context']);
+    }
+
+    @Test('session nav: /copy restricts to input/workspace/session/model enum')
+    copyEnumTargetContracts() {
+        const copy = getAgentConsoleCommandDefinition('/copy')!;
+        expect(parseAgentConsoleCommandArguments(copy, '').diagnostics).toEqual([]);
+        ['input', 'workspace', 'session', 'model'].forEach(target => {
+            expect(parseAgentConsoleCommandArguments(copy, target).resolved).toEqual([target]);
+        });
+        expect(parseAgentConsoleCommandArguments(copy, 'bogus').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('registry to handler coverage: every definition resolves a parseable contract')
     registryCoverage() {
         // Every command with an args schema must parse a representative value without crashing,
@@ -589,5 +640,140 @@ export class P282DraftRetryConsistencyTest {
         } as any;
         await COMMAND_HANDLERS['/voice'](voiceCtx, 'start', { command: '/voice', matches: ['/voice'] });
         expect(received).toEqual('start');
+    }
+
+    @Test('session-nav handlers consume resolved args for /session /new /title /approve /deny /copy /tools')
+    async sessionNavClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            refreshSessions: async () => { received.push('refresh'); },
+            openSession: async (id: string | undefined) => { received.push(`open:${id}`); },
+            runTitleCommand: async (arg: string) => { received.push(`titleCmd:${arg}`); return true; },
+            sessionService: {
+                setSessionTitle: async (sid: string, title: string) => { received.push(`setTitle:${sid}:${title}`); }
+            },
+            state: {
+                sessionId: 'active-1',
+                input: 'my input',
+                workspace: 'ws-1',
+                provider: 'p1',
+                model: 'm1',
+                setTitle: () => {},
+                closeReview: () => {},
+                closeGitSnapshotDetail: () => {},
+                setMessagesFocused: () => {},
+                setSessionsFocused: () => {},
+                setToolsFocused: () => {},
+                tools: [],
+                sessions: []
+            },
+            updateTerminalTitle: () => {},
+            pushCommandOutput: () => {},
+            notify: (n: string) => { received.push(`notify:${n}`); },
+            getPendingApprovals: async () => {
+                received.push('pend');
+                return [
+                    { id: 'req-1', toolName: 'weather', reason: 'check' },
+                    { id: 'req-2', toolName: 'files', reason: 'write' }
+                ];
+            },
+            applyApprovalDecision: async (action: string, id: string) => { received.push(`apply:${action}:${id}`); return true; },
+            runApproveRetryCommand: async () => { received.push('retryCmd'); return true; },
+            copyFocusedTextActionHandler: async (text: string, kind: string) => { received.push(`copy:${kind}:${text}`); },
+            activateSelectedToolActionHandler: async (arg: string) => { received.push(`tools:${arg}`); return true; }
+        } as any;
+        const metaFor = (command: string, resolved: string[]) => ({
+            command, matches: [command],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/session'](ctx, 'garbage', metaFor('/session', ['sess-7']));
+        await COMMAND_HANDLERS['/new'](ctx, 'garbage', metaFor('/new', ['sess-8']));
+        await COMMAND_HANDLERS['/title'](ctx, 'garbage', metaFor('/title', ['my cool title']));
+        await COMMAND_HANDLERS['/title'](ctx, 'garbage', metaFor('/title', ['list']));
+        await COMMAND_HANDLERS['/approve'](ctx, 'garbage', metaFor('/approve', ['req-1']));
+        await COMMAND_HANDLERS['/approve'](ctx, 'garbage', metaFor('/approve', ['retry']));
+        await COMMAND_HANDLERS['/deny'](ctx, 'garbage', metaFor('/deny', ['req-2']));
+        await COMMAND_HANDLERS['/copy'](ctx, 'garbage', metaFor('/copy', ['workspace']));
+        await COMMAND_HANDLERS['/copy'](ctx, 'garbage', metaFor('/copy', ['input']));
+        await COMMAND_HANDLERS['/copy'](ctx, 'garbage', metaFor('/copy', ['session']));
+        await COMMAND_HANDLERS['/copy'](ctx, 'garbage', metaFor('/copy', ['model']));
+        await COMMAND_HANDLERS['/tools'](ctx, 'garbage', metaFor('/tools', ['bash*']));
+        expect(received).toEqual([
+            'refresh', 'open:sess-7',
+            'open:sess-8',
+            'setTitle:active-1:my cool title', 'refresh',
+            'titleCmd:list',
+            'pend', 'apply:approve:req-1', 'notify:Approved weather (req-1).',
+            'retryCmd',
+            'pend', 'apply:deny:req-2', 'notify:Denied files (req-2).',
+            'copy:workspace:ws-1', 'copy:input:my input', 'copy:session:active-1', 'copy:model:p1 / m1',
+            'tools:bash*'
+        ]);
+    }
+
+    @Test('session-nav handlers fall back to raw args without parsedArgs')
+    async sessionNavClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            refreshSessions: async () => { received.push('refresh'); },
+            openSession: async (id: string | undefined) => { received.push(`open:${id}`); },
+            sessionService: {
+                setSessionTitle: async (sid: string, title: string) => { received.push(`setTitle:${sid}:${title}`); }
+            },
+            state: {
+                sessionId: 'active-1', input: 'in', workspace: 'ws', provider: 'p', model: 'm',
+                setTitle: () => {}, closeReview: () => {}, closeGitSnapshotDetail: () => {},
+                setMessagesFocused: () => {}, setSessionsFocused: () => {}, setToolsFocused: () => {},
+                tools: [], sessions: []
+            },
+            updateTerminalTitle: () => {},
+            pushCommandOutput: () => {},
+            notify: (n: string) => { received.push(`notify:${n}`); },
+            getPendingApprovals: async () => {
+                received.push('pend');
+                return [{ id: 'req-raw', toolName: 'weather', reason: 'r' }];
+            },
+            applyApprovalDecision: async (action: string, id: string) => { received.push(`apply:${action}:${id}`); return true; },
+            copyFocusedTextActionHandler: async (text: string, kind: string) => { received.push(`copy:${kind}:${text}`); },
+            activateSelectedToolActionHandler: async (arg: string) => { received.push(`tools:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/session'](ctx, 'sess-raw', { command: '/session', matches: ['/session'] });
+        await COMMAND_HANDLERS['/new'](ctx, 'sess-raw2', { command: '/new', matches: ['/new'] });
+        await COMMAND_HANDLERS['/title'](ctx, 'my raw title', { command: '/title', matches: ['/title'] });
+        await COMMAND_HANDLERS['/approve'](ctx, 'req-raw', { command: '/approve', matches: ['/approve'] });
+        await COMMAND_HANDLERS['/deny'](ctx, 'req-raw', { command: '/deny', matches: ['/deny'] });
+        await COMMAND_HANDLERS['/copy'](ctx, 'workspace', { command: '/copy', matches: ['/copy'] });
+        await COMMAND_HANDLERS['/tools'](ctx, 'grep', { command: '/tools', matches: ['/tools'] });
+        expect(received).toEqual([
+            'refresh', 'open:sess-raw',
+            'open:sess-raw2',
+            'setTitle:active-1:my raw title', 'refresh',
+            'pend', 'apply:approve:req-raw', 'notify:Approved weather (req-raw).',
+            'pend', 'apply:deny:req-raw', 'notify:Denied weather (req-raw).',
+            'copy:workspace:ws',
+            'tools:grep'
+        ]);
+    }
+
+    @Test('extra token in /session preserves the draft for correction')
+    async sessionNavExtraTokenPreservesDraft() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/session a b');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/session a b');
+        expect(state.notice).toContain('Unexpected');
+    }
+
+    @Test('invalid /copy target preserves the draft for correction')
+    async copyInvalidTargetPreservesDraft() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/copy bogus');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/copy bogus');
+        expect(state.notice).toContain('Invalid');
     }
 }
