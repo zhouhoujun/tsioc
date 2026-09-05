@@ -211,6 +211,58 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(personality, 'reset').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('input cluster: /apps /plugins accept a single optional id')
+    inputClusterSingleIdContracts() {
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/apps')!, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/apps')!, 'gmail').resolved).toEqual(['gmail']);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/apps')!, '$gmail').resolved).toEqual(['$gmail']);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/plugins')!, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/plugins')!, 'plugin-a').resolved).toEqual(['plugin-a']);
+    }
+
+    @Test('input cluster: /editor /skills accept variadic free-form (joined tail)')
+    inputClusterVariadicFreeFormContracts() {
+        const editor = getAgentConsoleCommandDefinition('/editor')!;
+        expect(parseAgentConsoleCommandArguments(editor, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(editor, 'fix this bug').resolved).toEqual(['fix this bug']);
+        expect(parseAgentConsoleCommandArguments(editor, '"fix this bug"').resolved).toEqual(['fix this bug']);
+
+        const skills = getAgentConsoleCommandDefinition('/skills')!;
+        expect(parseAgentConsoleCommandArguments(skills, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(skills, 'async patterns').resolved).toEqual(['async patterns']);
+        expect(parseAgentConsoleCommandArguments(skills, '"async patterns"').resolved).toEqual(['async patterns']);
+    }
+
+    @Test('input cluster: /stash /voice /mcp validate verbs with handler aliases')
+    inputClusterVerbEnumContracts() {
+        const stash = getAgentConsoleCommandDefinition('/stash')!;
+        expect(parseAgentConsoleCommandArguments(stash, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'list').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'push').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'save').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'pop').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'restore').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'rm').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'drop').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'delete').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(stash, 'push "my stash"').resolved).toEqual(['push', 'my stash']);
+        expect(parseAgentConsoleCommandArguments(stash, 'bogus').diagnostics[0].code).toEqual('invalid');
+
+        const voice = getAgentConsoleCommandDefinition('/voice')!;
+        expect(parseAgentConsoleCommandArguments(voice, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(voice, 'start').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(voice, 'stop').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(voice, 'cancel').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(voice, 'status').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(voice, 'loud').diagnostics[0].code).toEqual('invalid');
+
+        const mcp = getAgentConsoleCommandDefinition('/mcp')!;
+        expect(parseAgentConsoleCommandArguments(mcp, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(mcp, 'verbose').resolved).toEqual(['verbose']);
+        expect(parseAgentConsoleCommandArguments(mcp, '-v').resolved).toEqual(['-v']);
+        expect(parseAgentConsoleCommandArguments(mcp, 'chat').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('session category: /model /snapshot accept optional variadic values')
     sessionOptionalContracts() {
         expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/model')!, '').diagnostics).toEqual([]);
@@ -358,5 +410,56 @@ export class P282DraftRetryConsistencyTest {
         } as any;
         await COMMAND_HANDLERS['/timeline'](ctx, 'compact', { command: '/timeline', matches: ['/timeline'] });
         expect(received).toEqual('compact');
+    }
+
+    @Test('handlers consume resolved args for /editor /stash /apps /skills /mcp /plugins /voice')
+    async inputClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            runEditorCommand: async (arg: string) => { received.push(`editor:${arg}`); return true; },
+            runStashCommand: async (arg: string) => { received.push(`stash:${arg}`); return true; },
+            runAppsCommand: async (arg: string) => { received.push(`apps:${arg}`); return true; },
+            runSkillsCommand: async (arg: string) => { received.push(`skills:${arg}`); return true; },
+            runMcpCommand: async (arg: string) => { received.push(`mcp:${arg}`); return true; },
+            runPluginsCommand: async (arg: string) => { received.push(`plugins:${arg}`); return true; },
+            handleVoiceCommand: async (arg: string) => { received.push(`voice:${arg}`); return true; }
+        } as any;
+        const metaFor = (resolved: string[]) => ({
+            command: '/editor', matches: ['/editor'],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/editor'](ctx, 'garbage', metaFor(['fix', 'this', 'bug']));
+        await COMMAND_HANDLERS['/stash'](ctx, 'garbage', metaFor(['push', 'my stash']));
+        await COMMAND_HANDLERS['/apps'](ctx, 'garbage', metaFor(['gmail']));
+        await COMMAND_HANDLERS['/skills'](ctx, 'garbage', metaFor(['async patterns']));
+        await COMMAND_HANDLERS['/mcp'](ctx, 'garbage', metaFor(['verbose']));
+        await COMMAND_HANDLERS['/plugins'](ctx, 'garbage', metaFor(['plugin-a']));
+        await COMMAND_HANDLERS['/voice'](ctx, 'garbage', metaFor(['stop']));
+        expect(received).toEqual([
+            'editor:fix this bug',
+            'stash:push my stash',
+            'apps:gmail',
+            'skills:async patterns',
+            'mcp:verbose',
+            'plugins:plugin-a',
+            'voice:stop'
+        ]);
+    }
+
+    @Test('input-cluster handlers fall back to raw args without parsedArgs')
+    async inputClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        let received: string | undefined;
+        const ctx = {
+            runStashCommand: async (arg: string) => { received = arg; return true; }
+        } as any;
+        await COMMAND_HANDLERS['/stash'](ctx, 'pop release-1', { command: '/stash', matches: ['/stash'] });
+        expect(received).toEqual('pop release-1');
+        const voiceCtx = {
+            handleVoiceCommand: async (arg: string) => { received = arg; return true; }
+        } as any;
+        await COMMAND_HANDLERS['/voice'](voiceCtx, 'start', { command: '/voice', matches: ['/voice'] });
+        expect(received).toEqual('start');
     }
 }

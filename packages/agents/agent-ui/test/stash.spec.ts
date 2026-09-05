@@ -184,12 +184,13 @@ export class AgentConsoleStashTest {
         expect(state.notice).toContain('Removed stash "wip"');
     }
 
-    @Test('/stash with an unknown verb notifies usage')
+    @Test('/stash with an unknown verb notifies correction and preserves the draft (P282 gate)')
     async unknownVerb() {
         const { state, component } = createStashConsole();
         const result = await (component as any).handleCommand('/stash bogus');
         expect(result).toEqual(true);
-        expect(state.notice).toContain('Usage: /stash');
+        expect(state.input).toEqual('/stash bogus');
+        expect(state.notice).toContain('Invalid verb "bogus"');
     }
 
     @Test('constructor wires the stash store into the component')
