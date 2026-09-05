@@ -399,6 +399,43 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(compact, 'too long').resolved).toEqual(['too long']);
     }
 
+    @Test('core mode/toggle cluster: /vim /plan /archetype /experimental /keymap /permissions get precise contracts')
+    coreModeClusterContracts() {
+        const vim = getAgentConsoleCommandDefinition('/vim')!;
+        expect(parseAgentConsoleCommandArguments(vim, '').diagnostics).toEqual([]);
+        ['on', 'off', '1', '0', 'true', 'false'].forEach(mode => {
+            expect(parseAgentConsoleCommandArguments(vim, mode).resolved).toEqual([mode]);
+        });
+        expect(parseAgentConsoleCommandArguments(vim, 'maybe').diagnostics[0].code).toEqual('invalid');
+
+        const plan = getAgentConsoleCommandDefinition('/plan')!;
+        expect(parseAgentConsoleCommandArguments(plan, 'off').resolved).toEqual(['off']);
+        expect(parseAgentConsoleCommandArguments(plan, 'maybe').diagnostics[0].code).toEqual('invalid');
+
+        const archetype = getAgentConsoleCommandDefinition('/archetype')!;
+        expect(parseAgentConsoleCommandArguments(archetype, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(archetype, 'build').resolved).toEqual(['build']);
+
+        const experimental = getAgentConsoleCommandDefinition('/experimental')!;
+        expect(parseAgentConsoleCommandArguments(experimental, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(experimental, 'tree-sitter on').resolved).toEqual(['tree-sitter', 'on']);
+        expect(parseAgentConsoleCommandArguments(experimental, 'side-pane on').resolved).toEqual(['side-pane', 'on']);
+        expect(parseAgentConsoleCommandArguments(experimental, 'feature maybe').diagnostics[0].code).toEqual('invalid');
+        expect(parseAgentConsoleCommandArguments(experimental, 'side-pane on extra').diagnostics[0].code).toEqual('extra');
+
+        const keymap = getAgentConsoleCommandDefinition('/keymap')!;
+        expect(parseAgentConsoleCommandArguments(keymap, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(keymap, 'list').resolved).toEqual(['list']);
+        expect(parseAgentConsoleCommandArguments(keymap, 'global set ctrl+c copy').resolved).toEqual(['global set ctrl+c copy']);
+
+        const permissions = getAgentConsoleCommandDefinition('/permissions')!;
+        expect(parseAgentConsoleCommandArguments(permissions, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(permissions, 'status').resolved).toEqual(['status']);
+        expect(parseAgentConsoleCommandArguments(permissions, 'readonly on').resolved).toEqual(['readonly', 'on']);
+        expect(parseAgentConsoleCommandArguments(permissions, 'sandbox default').resolved).toEqual(['sandbox', 'default']);
+        expect(parseAgentConsoleCommandArguments(permissions, 'bogus on').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('registry to handler coverage: every definition resolves a parseable contract')
     registryCoverage() {
         // Every command with an args schema must parse a representative value without crashing,
@@ -919,5 +956,78 @@ export class P282DraftRetryConsistencyTest {
             'tree:rs:3:', 'lineage:rs2', 'mode:proactive', 'delegation-list:raw-filter',
             'audit:rs', 'profile:current'
         ]);
+    }
+
+    @Test('core-mode handlers consume resolved args for /vim /plan /archetype /experimental /keymap /permissions')
+    async coreModeClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            runVimCommand: async (arg: string) => { received.push(`vim:${arg}`); return true; },
+            runPlanCommand: async (arg: string) => { received.push(`plan:${arg}`); return true; },
+            runArchetypeCommand: async (arg: string) => { received.push(`archetype:${arg}`); return true; },
+            runExperimentalCommand: async (arg: string) => { received.push(`experimental:${arg}`); return true; },
+            runKeymapCommand: async (arg: string) => { received.push(`keymap:${arg}`); return true; },
+            runPermissionsCommand: async (arg: string) => { received.push(`permissions:${arg}`); return true; }
+        } as any;
+        const metaFor = (command: string, resolved: string[]) => ({
+            command, matches: [command],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/vim'](ctx, 'garbage', metaFor('/vim', ['on']));
+        await COMMAND_HANDLERS['/plan'](ctx, 'garbage', metaFor('/plan', ['off']));
+        await COMMAND_HANDLERS['/archetype'](ctx, 'garbage', metaFor('/archetype', ['build']));
+        await COMMAND_HANDLERS['/experimental'](ctx, 'garbage', metaFor('/experimental', ['feature', 'on']));
+        await COMMAND_HANDLERS['/keymap'](ctx, 'garbage', metaFor('/keymap', ['global set ctrl+c copy']));
+        await COMMAND_HANDLERS['/permissions'](ctx, 'garbage', metaFor('/permissions', ['readonly', 'on']));
+        expect(received).toEqual([
+            'vim:on',
+            'plan:off',
+            'archetype:build',
+            'experimental:feature on',
+            'keymap:global set ctrl+c copy',
+            'permissions:readonly on'
+        ]);
+    }
+
+    @Test('core-mode handlers fall back to raw args without parsedArgs')
+    async coreModeClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            runVimCommand: async (arg: string) => { received.push(`vim:${arg}`); return true; },
+            runPlanCommand: async (arg: string) => { received.push(`plan:${arg}`); return true; },
+            runArchetypeCommand: async (arg: string) => { received.push(`archetype:${arg}`); return true; },
+            runExperimentalCommand: async (arg: string) => { received.push(`experimental:${arg}`); return true; },
+            runKeymapCommand: async (arg: string) => { received.push(`keymap:${arg}`); return true; },
+            runPermissionsCommand: async (arg: string) => { received.push(`permissions:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/vim'](ctx, 'on', { command: '/vim', matches: ['/vim'] });
+        await COMMAND_HANDLERS['/plan'](ctx, 'off', { command: '/plan', matches: ['/plan'] });
+        await COMMAND_HANDLERS['/archetype'](ctx, 'build', { command: '/archetype', matches: ['/archetype'] });
+        await COMMAND_HANDLERS['/experimental'](ctx, 'feature on', { command: '/experimental', matches: ['/experimental'] });
+        await COMMAND_HANDLERS['/keymap'](ctx, 'global set ctrl+c copy', { command: '/keymap', matches: ['/keymap'] });
+        await COMMAND_HANDLERS['/permissions'](ctx, 'readonly on', { command: '/permissions', matches: ['/permissions'] });
+        expect(received).toEqual([
+            'vim:on',
+            'plan:off',
+            'archetype:build',
+            'experimental:feature on',
+            'keymap:global set ctrl+c copy',
+            'permissions:readonly on'
+        ]);
+    }
+
+    @Test('canonical args: /vim off then on toggles vim mode (pure-state handler)')
+    async vimCanonicalToggle() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/vim off');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.vimMode).toEqual(false);
+        await (component as any).handleCommand('/vim on');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.vimMode).toEqual(true);
     }
 }
