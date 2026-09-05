@@ -1350,24 +1350,29 @@ export class AgentConsoleSessionState {
         if (filtered.length === this.messages.length) {
             return;
         }
-        this.setMessages(filtered);
+        this.setMessages(filtered, true);
     }
 
     removeUiEventMessage(eventKey: string): void {
         const key = String(eventKey || '').trim();
         if (!key) return;
         const filtered = this.messages.filter(message => message?.metadata?.uiKind !== 'event' || message?.metadata?.uiEventKey !== key);
-        if (filtered.length !== this.messages.length) this.setMessages(filtered);
+        if (filtered.length !== this.messages.length) this.setMessages(filtered, true);
     }
 
     seedTimeline(entries: TimelineEntry[]): void {
         let seedCount = 0;
+        let changed = false;
+        // Bulk history load: apply all entries in ONE render cycle instead of
+        // one setMessages per entry (600 reactive cascades = minutes of sync
+        // work). Replicates upsertUiEventMessage dedup on a working array.
+        const pending = this.messages.slice();
         for (const entry of sortTimelineEntries(entries)) {
             const key = this.qualifyUiEventKey(projectTimelineKey(entry));
             if (!key) {
                 continue;
             }
-            this.upsertUiEventMessage(key, projectTimelineContent(entry), {
+            const options: AgentConsoleUiEventOptions = {
                 eventType: entry.kind,
                 label: entry.kind,
                 status: entry.status === 'failed' ? 'error' : entry.status === 'running' ? 'running' : 'success',
@@ -1378,8 +1383,30 @@ export class AgentConsoleSessionState {
                 attempt: entry.attempt,
                 source: 'remote',
                 sequence: entry.sequence
-            });
+            };
+            const text = String(projectTimelineContent(entry) || '').trim();
+            if (text) {
+                const existingIndex = pending.findIndex(message => message?.metadata?.uiKind === 'event' && message?.metadata?.uiEventKey === key);
+                if (existingIndex >= 0) {
+                    const existing = pending[existingIndex];
+                    const nextMessage = this.createUiEventMessage(text, {
+                        ...options,
+                        id: existing.id,
+                        createdAt: existing.createdAt
+                    });
+                    if (!this.isSameUiEventMessage(existing, nextMessage)) {
+                        pending[existingIndex] = nextMessage;
+                        changed = true;
+                    }
+                } else {
+                    pending.push(this.createUiEventMessage(text, options));
+                    changed = true;
+                }
+            }
             seedCount += 1;
+        }
+        if (changed) {
+            this.setMessages(pending, true);
         }
         if (seedCount > 0) {
             this.timelineSeedCount = seedCount;
@@ -1541,7 +1568,7 @@ export class AgentConsoleSessionState {
         }
         const next = this.messages.slice();
         next.push(this.createUiEventMessage(text, options));
-        this.setMessages(next);
+        this.setMessages(next, true);
     }
 
     upsertUiEventMessage(
@@ -1573,7 +1600,7 @@ export class AgentConsoleSessionState {
                 eventKey
             }));
         }
-        this.setMessages(next);
+        this.setMessages(next, true);
     }
 
     /** Shared cross-host projection entry point for transcript thread items. */
@@ -1649,7 +1676,7 @@ export class AgentConsoleSessionState {
                 error: true
             }
         });
-        this.setMessages(currentMessages);
+        this.setMessages(currentMessages, true);
     }
 
     protected createUiEventMessage(

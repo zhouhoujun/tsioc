@@ -1907,6 +1907,13 @@ Turn: Fix session restore                                      running  01:42
 - 实施：Node/Playwright browser runner 与共享 fake gateway 场景；Linux/macOS PTY、Windows ConPTY 适配；采集 DOM/ARIA/ANSI 快照、首屏可见率、重复 item、焦点回退、命令完成延迟。
 - 验收：desktop/mobile/320px/CJK/长历史/断线/重试四端矩阵；缺少浏览器或 PTY 时明确 skip 并报告，不修改断言伪造通过。
 
+### 2026-09-05 P285 挂载超时修复（跨渲染器模板工厂缓存）✅
+
+- 根因：`ComponentRefImpl.render()` 原先把编译产物缓存在类级注解 `def.ƿtempFac`（进程级单槽，跨 Application.run 共享）。console-renderer.spec.ts 先用 ConsoleTemplateCompiler 编译 `AgentConsoleComponent` 并缓存；随后 desktop（html）挂载复用该 console 工厂——v-for 模板节点是 ConsoleElement，`TemplateRefImpl.createEmbeddedView` 以当前 HtmlRenderer 克隆时 `getAttributes` 对 Map 型 attributes 取不到 name/value，静态 class（`.message-row`/`.message-line`）被静默丢弃；panel 级元素在编译期经 ConsoleRenderer 捕获属性故不受影响。metrics rowCount=0 → render 永不 settle → 挂载 10.9s 超时。
+- 修复：`packages/components/src/impl/component.ts` 将单槽缓存改为按 TemplateCompiler 实例分键（`WeakMap<ComponentDef, Map<TemplateCompiler, TemplateFactory>>`）。同渲染器复用保留（性能不变），跨渲染器/跨 Application.run 重新编译。
+- 验证：阳性对照（禁用 polluter → 1.896s settle）；恢复 polluter 后 probe 2.1s settle 且 `.message-row` 齐全；`{console-renderer, p285-interaction-gate}` 74 passing 0 failed；agent-ui 全量 1040 passing / 7 既有失败（与 HEAD 基线完全一致）；components 135 passing；components/console 73 passing；LSP 零诊断。临时 probe/runner 已删除；`p285-interaction-gate.spec.ts` 字母序紧随 console-renderer 运行，构成永久回归门禁。Playwright/PTY runner 仍未建立（浏览器/终端验收走 skip+report，未伪造通过）。
+- 收尾复核（2026-09-05，提交前）：components 135 passing EXIT=0；components/console 73 passing EXIT=0；agent-ui 全量 **1039 passing / 7 既有失败**（1040 → 1039 为删除 1 个 probe 临时 spec 所致，7 个失败与既有 HEAD 集合精确一致：message-renderer:275、p237-b2:113、p237-event-row-summary:64/77、repro-mouse-click:70/114/158）；agent-ui `tsc --noEmit` EXIT=0；components/component.ts 及 agent-ui 改动文件 LSP 零诊断；`git diff --check` 干净。提交见后续 commit。
+
 ### 2026-09-03 收尾检查（TypeORM 收敛提交后）
 
 - 工作区检查：`git diff --check` 通过；当前分支最新提交为 `e7e048f7d refactor(agent): remove InMemory stores, adopt TypeORM-backed stores across tests and modules`，无未提交代码改动。

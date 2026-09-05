@@ -1,6 +1,6 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
-import { ComponentRef, ComponentsModule } from '@tsdi/components';
+import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
@@ -32,6 +32,8 @@ export interface AgentWebConsoleOptions {
     fetchImpl?: typeof fetch;
     /** Timeout for RPC requests in ms */
     timeoutMs?: number;
+    /** Reconnect delay for the SSE event bridge after a dropped connection, in ms. Defaults to 3000. */
+    reconnectDelayMs?: number;
     /** Register the mobile PWA service worker. Defaults to true. */
     pwa?: boolean;
     /** Service worker URL, relative to the hosting page by default. */
@@ -119,7 +121,11 @@ export async function mountAgentWebConsole(
         ]
     });
 
-    const state = (config.state ?? ctx.get(AgentConsoleSessionState)) as AgentConsoleSessionState;
+    const rawState = (config.state ?? ctx.get(AgentConsoleSessionState)) as AgentConsoleSessionState;
+    // Mutate the reactive proxy (owned by the app's shared ReactiveEffect), not
+    // the raw instance: raw mutations bypass the set trap and silently never
+    // re-render the bindings.
+    const state = reactive(rawState, ctx.get(ReactiveEffect));
     // An externally supplied state bypasses constructor injection, so wire its
     // cross-platform control port from this host's injector explicitly.
     if (config.state) {
@@ -137,14 +143,18 @@ export async function mountAgentWebConsole(
         token: config.token,
         rpc,
         ...(config.fetchImpl ? { fetchImpl: config.fetchImpl } : {}),
-        reconnectDelayMs: 3000,
+        reconnectDelayMs: config.reconnectDelayMs ?? 3000,
         onReconnected: () => state.onSessionReconnected?.()
     });
 
     const rootRef = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent> | undefined;
     const root = rootRef?.hostView?.rootNodes?.[0] as unknown as HTMLElement | undefined;
     if (root) {
-        mount.appendChild(root);
+        // Mount = replace: a prior mount (or pre-existing page content) must not
+        // linger as ghost DOM under the next console, or DOM metrics/bindings
+        // sample a stale panel that never settles. (P285 regressions: mobile,
+        // cjk, disconnect all re-mounted into the same #agent-console container.)
+        mount.replaceChildren(root);
     } else {
         mount.textContent = 'Console component did not render.';
     }

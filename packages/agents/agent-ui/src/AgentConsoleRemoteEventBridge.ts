@@ -341,7 +341,8 @@ function projectRemoteToolTimeline(
         receiptId: receiptId || undefined,
         attempt: Number(data?.receipt?.attemptCount) || undefined,
         source: 'remote',
-        sequence: Number(data?.sequence) || undefined
+        sequence: Number(data?.sequence) || undefined,
+        durationMs: Number(data?.durationMs ?? data?.receipt?.durationMs) || undefined
     });
 }
 

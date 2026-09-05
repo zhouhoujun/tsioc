@@ -12,7 +12,7 @@ import { NodeInjector } from '../refs/injector';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
-import { TemplateRef } from '../refs/template';
+import { TemplateRef, TemplateFactory } from '../refs/template';
 import { LOCAL_REFS, RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
 import { ViewChildMetadata } from '../decorators/query';
@@ -21,6 +21,20 @@ import { TEMPLATE_SCHEMAS } from '../template/schema-provider';
 import { DefaultReactiveEffect } from './effect';
 import { DIRECTIVES, CUSTOM_ELEMENTS } from '../decorators/directive';
 import { COMPONENTS } from '../decorators/component';
+
+
+/**
+ * Compiled template factory cache, keyed by ComponentDef annotation, then by the
+ * TemplateCompiler instance that produced it.
+ *
+ * Factories bake renderer-specific AST nodes (e.g. ConsoleElement trees from the
+ * console compiler). Reusing a factory compiled by a different renderer (a
+ * console-compiled factory inside an html mount) drops static attributes while
+ * cloning v-for template nodes, because HtmlRenderer.getAttributes cannot read a
+ * ConsoleElement's Map-based attributes. Keying per compiler instance keeps
+ * same-renderer reuse while isolating cross-renderer (cross-Application.run) mounts.
+ */
+const tempFacCaches = new WeakMap<ComponentDef, Map<TemplateCompiler, TemplateFactory>>();
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
@@ -92,10 +106,16 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
         const components = this.injector.get(COMPONENTS) || [];
         
-        if (!def.ƿtempFac) {
+        const compiler = this.injector.get(TemplateCompiler);
+        let tempFacs = tempFacCaches.get(def);
+        if (!tempFacs) {
+            tempFacs = new Map();
+            tempFacCaches.set(def, tempFacs);
+        }
+        let factory = tempFacs.get(compiler);
+        if (!factory) {
             const template = def.template || await fetchTemplate(def.templateUrl!);
-            const compiler = this.injector.get(TemplateCompiler);
-            (def as any).ƿtempFac = compiler.compile<T>(template, {
+            factory = compiler.compile<T>(template, {
                 directives,
                 components,
                 customElements,
@@ -104,10 +124,11 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                     def.schemas
                 )
             });
+            tempFacs.set(compiler, factory);
         }
         this._hostView?.destroy();
         const host = this._elementRef;
-        const templateRef =  def.ƿtempFac!(host, this.injector);
+        const templateRef = factory(host, this.injector);
         this.injector.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
         this.attachHostViewToElement();
