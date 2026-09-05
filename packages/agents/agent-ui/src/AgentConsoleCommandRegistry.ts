@@ -102,7 +102,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     { name: '/status', description: 'show session status', group: 'core' },
     { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', needsArgs: true, args: [{ name: 'profile', variadic: true }] },
-    { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', needsArgs: true },
+    { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', needsArgs: true, args: [{ name: 'profile' }] },
     { name: '/tools', description: 'inspect the currently enabled tools: /tools [<name>]', group: 'core' },
     { name: '/skills', description: 'browse skills: /skills [query | <id>]', group: 'core' },
     { name: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]', group: 'core' },
@@ -149,13 +149,13 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/init', description: 'generate AGENTS.md project context', group: 'session' },
     { name: '/ssh', description: 'SSH hosts: list / connect / disconnect / forward', group: 'session' },
 
-    { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display' },
-    { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display' },
-    { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display' },
+    { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display', args: [{ name: 'name' }] },
+    { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
+    { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['off', 'compact', 'steps', 'verbose'] }] },
     { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical'] }] },
     { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },
     { name: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
-    { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display' },
+    { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'fields', variadic: true }] },
 
     { name: '/editor', description: 'edit the draft in an external editor (Ctrl+G)', group: 'input' },
     { name: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]', group: 'input' },
@@ -186,7 +186,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     { name: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)', group: 'hooks' },
     { name: '/memories', description: 'memory injection: status / on / off', group: 'hooks' },
-    { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', needsArgs: true },
+    { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', needsArgs: true, args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
     { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks' },
 
     { name: '/delegation', description: 'delegation edges [sessionId]', group: 'delegation', subcommands: [

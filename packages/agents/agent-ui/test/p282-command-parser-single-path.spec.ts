@@ -168,6 +168,49 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(raw, 'never').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('display cluster: /timeline /thinking validate enum members')
+    displayClusterEnumContracts() {
+        const timeline = getAgentConsoleCommandDefinition('/timeline')!;
+        ['off', 'compact', 'steps', 'verbose'].forEach(v =>
+            expect(parseAgentConsoleCommandArguments(timeline, v).diagnostics).toEqual([]));
+        expect(parseAgentConsoleCommandArguments(timeline, 'bogus').diagnostics[0].code).toEqual('invalid');
+
+        const thinking = getAgentConsoleCommandDefinition('/thinking')!;
+        ['on', 'off', 'show', 'hide'].forEach(v =>
+            expect(parseAgentConsoleCommandArguments(thinking, v).diagnostics).toEqual([]));
+        expect(parseAgentConsoleCommandArguments(thinking, 'bogus').diagnostics[0].code).toEqual('invalid');
+    }
+
+    @Test('display cluster: /theme /statusline accept canonical free-form + verb grammar')
+    displayClusterVariadicContracts() {
+        const theme = getAgentConsoleCommandDefinition('/theme')!;
+        expect(parseAgentConsoleCommandArguments(theme, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(theme, 'solarized').resolved).toEqual(['solarized']);
+        expect(parseAgentConsoleCommandArguments(theme, '"Solarized Dark"').resolved).toEqual(['Solarized Dark']);
+
+        const statusline = getAgentConsoleCommandDefinition('/statusline')!;
+        expect(parseAgentConsoleCommandArguments(statusline, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(statusline, 'list').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(statusline, 'set model,context').resolved).toEqual(['set', 'model,context']);
+        expect(parseAgentConsoleCommandArguments(statusline, 'unset model').resolved).toEqual(['unset', 'model']);
+        expect(parseAgentConsoleCommandArguments(statusline, 'set "context,git-branch"').resolved).toEqual(['set', 'context,git-branch']);
+        expect(parseAgentConsoleCommandArguments(statusline, 'toggle').diagnostics[0].code).toEqual('invalid');
+    }
+
+    @Test('hooks cluster: /fast /personality accept canonical values')
+    hooksClusterContracts() {
+        const fast = getAgentConsoleCommandDefinition('/fast')!;
+        expect(parseAgentConsoleCommandArguments(fast, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(fast, 'deepseek').resolved).toEqual(['deepseek']);
+
+        const personality = getAgentConsoleCommandDefinition('/personality')!;
+        expect(parseAgentConsoleCommandArguments(personality, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(personality, 'list').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(personality, 'set fire').resolved).toEqual(['set', 'fire']);
+        expect(parseAgentConsoleCommandArguments(personality, 'unset').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(personality, 'reset').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('session category: /model /snapshot accept optional variadic values')
     sessionOptionalContracts() {
         expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/model')!, '').diagnostics).toEqual([]);
@@ -253,5 +296,67 @@ export class P282DraftRetryConsistencyTest {
         await (component as any).handleCommand('/yolo on');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
         expect(state.commandExecutions.length).toBeGreaterThan(1);
+    }
+
+    @Test('canonical args: quoted /timeline value reaches the handler resolved')
+    async timelineQuotedCanonical() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/timeline "steps"');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.timelineViewMode).toEqual('steps');
+    }
+
+    @Test('canonical args: /thinking off then on toggles the thinking switch')
+    async thinkingCanonicalToggle() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/thinking off');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.showThinking).toEqual(false);
+        await (component as any).handleCommand('/thinking on');
+        expect(state.showThinking).toEqual(true);
+    }
+
+    @Test('canonical args: /statusline set model,context applies both fields')
+    async statuslineCanonicalSet() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/statusline set model,context');
+        expect(state.latestCommandExecution?.status).toEqual('succeeded');
+        expect(state.statusline).toContain('model');
+        expect(state.statusline).toContain('context');
+    }
+
+    @Test('invalid /personality verb preserves the draft for correction')
+    async personalityInvalidVerbPreservesDraft() {
+        const { state, component } = createConsole();
+        await (component as any).handleCommand('/personality reset');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/personality reset');
+        expect(state.notice).toContain('reset');
+    }
+
+    @Test('handlers consume parsedArgs.resolved over raw args when meta carries the parse')
+    async handlerPrefersCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        let received: string | undefined;
+        const ctx = {
+            runTimelineModeCommand: async (arg: string) => { received = arg; return true; }
+        } as any;
+        await COMMAND_HANDLERS['/timeline'](ctx, 'garbage raw', {
+            command: '/timeline',
+            matches: ['/timeline'],
+            parsedArgs: { values: ['verbose'], resolved: ['verbose'], diagnostics: [] }
+        });
+        expect(received).toEqual('verbose');
+    }
+
+    @Test('handlers fall back to raw args when meta lacks parsedArgs (direct invocation)')
+    async handlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        let received: string | undefined;
+        const ctx = {
+            runTimelineModeCommand: async (arg: string) => { received = arg; return true; }
+        } as any;
+        await COMMAND_HANDLERS['/timeline'](ctx, 'compact', { command: '/timeline', matches: ['/timeline'] });
+        expect(received).toEqual('compact');
     }
 }

@@ -15,6 +15,7 @@ import type {
     AgentConsoleSessionItem
 } from './AgentConsoleSessionState';
 import { buildAgentConsoleHelpOptions } from './AgentConsoleCommandRegistry';
+import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
@@ -221,8 +222,12 @@ export interface CommandHandlerContext {
 export type CommandHandler = (
     ctx: CommandHandlerContext,
     args: string,
-    resolved: { command: string; matches: string[] }
+    resolved: { command: string; matches: string[]; parsedArgs?: AgentConsoleParsedCommandArguments }
 ) => Promise<boolean>;
+
+function canonicalArgsOf(meta: { parsedArgs?: AgentConsoleParsedCommandArguments }, raw: string): string {
+    return meta.parsedArgs ? meta.parsedArgs.resolved.join(' ') : raw;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1312,21 +1317,21 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
     '/review': handleReview,
     '/diff': (ctx, args) => guardDelegate(ctx, args, { command: '/diff', matches: [] }, a => ctx.openWorktreeDiff(a)),
-    '/theme': (ctx, args) => ctx.runThemeCommand(args),
-    '/thinking': (ctx, args) => ctx.runThinkingCommand(args),
-    '/display': (ctx, args) => ctx.runDisplayCommand(args),
+    '/theme': (ctx, args, meta) => ctx.runThemeCommand(canonicalArgsOf(meta, args)),
+    '/thinking': (ctx, args, meta) => ctx.runThinkingCommand(canonicalArgsOf(meta, args)),
+    '/display': (ctx, args, meta) => ctx.runDisplayCommand(canonicalArgsOf(meta, args)),
     '/outputs': handleOutputs,
-    '/timeline': (ctx, args) => ctx.runTimelineModeCommand(args),
-    '/raw': (ctx, args) => ctx.runRawModeCommand(args),
+    '/timeline': (ctx, args, meta) => ctx.runTimelineModeCommand(canonicalArgsOf(meta, args)),
+    '/raw': (ctx, args, meta) => ctx.runRawModeCommand(canonicalArgsOf(meta, args)),
     '/stash': (ctx, args) => ctx.runStashCommand(args),
-    '/statusline': (ctx, args) => ctx.runStatuslineCommand(args),
+    '/statusline': (ctx, args, meta) => ctx.runStatuslineCommand(canonicalArgsOf(meta, args)),
     '/hooks': (ctx) => ctx.runHooksCommand(),
     '/memories': (ctx, args) => ctx.runMemoriesCommand(args),
-    '/fast': (ctx, args) => ctx.runFastCommand(args),
-    '/personality': (ctx, args) => ctx.runPersonalityCommand(args),
+    '/fast': (ctx, args, meta) => ctx.runFastCommand(canonicalArgsOf(meta, args)),
+    '/personality': (ctx, args, meta) => ctx.runPersonalityCommand(canonicalArgsOf(meta, args)),
     '/debug-config': (ctx) => ctx.runDebugConfigCommand(),
     '/settings': (ctx) => ctx.runSettingsCommand(),
-    '/yolo': (ctx, args) => ctx.runYoloCommand(args),
+    '/yolo': (ctx, args, meta) => ctx.runYoloCommand(canonicalArgsOf(meta, args)),
     '/experimental': (ctx, args) => ctx.runExperimentalCommand(args),
     '/feedback': (ctx) => ctx.runFeedbackCommand(),
     '/ps': (ctx, args) => ctx.runBackgroundTasksCommand(args),

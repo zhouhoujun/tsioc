@@ -2977,7 +2977,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const handler = COMMAND_HANDLERS[canonical];
         if (handler) {
             try {
-                const handled = await handler(this.buildCommandContext(this.state.getCommandExecutionSignal(requestId)), args, { command: canonical, matches: resolved.matches });
+                const handled = await handler(this.buildCommandContext(this.state.getCommandExecutionSignal(requestId)), args, { command: canonical, matches: resolved.matches, parsedArgs });
                 if (!this.state.isCommandExecutionCurrent(requestId)) {
                     this.pendingCommandRequestId = previousRequestId;
                     return true;
