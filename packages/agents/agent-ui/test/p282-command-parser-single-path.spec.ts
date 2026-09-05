@@ -477,6 +477,62 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(ssh, 'bogus').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('final cluster: /ide /attach accept a variadic free-form tail')
+    finalClusterVariadicFreeFormContracts() {
+        const ide = getAgentConsoleCommandDefinition('/ide')!;
+        expect(parseAgentConsoleCommandArguments(ide, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(ide, 'refresh').resolved).toEqual(['refresh']);
+        expect(parseAgentConsoleCommandArguments(ide, 'detach').resolved).toEqual(['detach']);
+        expect(parseAgentConsoleCommandArguments(ide, 'what file is active').resolved).toEqual(['what file is active']);
+
+        const attach = getAgentConsoleCommandDefinition('/attach')!;
+        expect(parseAgentConsoleCommandArguments(attach, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(attach, 'cat.png').resolved).toEqual(['cat.png']);
+        expect(parseAgentConsoleCommandArguments(attach, 'clear').resolved).toEqual(['clear']);
+        expect(parseAgentConsoleCommandArguments(attach, '"cat photo.png"').resolved).toEqual(['cat photo.png']);
+    }
+
+    @Test('final cluster: /jobs /tasks /retry /rollback accept a single optional task id')
+    finalClusterSingleTaskIdContracts() {
+        ['/jobs', '/tasks', '/retry', '/rollback'].forEach(name => {
+            const def = getAgentConsoleCommandDefinition(name)!;
+            expect(parseAgentConsoleCommandArguments(def, '').diagnostics).toEqual([]);
+            expect(parseAgentConsoleCommandArguments(def, 'task-1').resolved).toEqual(['task-1']);
+            expect(parseAgentConsoleCommandArguments(def, 'task-1 extra').diagnostics[0].code).toEqual('extra');
+        });
+    }
+
+    @Test('final cluster: /memories validates its verb enum then joins the tail')
+    finalClusterMemoriesContracts() {
+        const memories = getAgentConsoleCommandDefinition('/memories')!;
+        expect(parseAgentConsoleCommandArguments(memories, '').diagnostics).toEqual([]);
+        ['list', 'injected', 'add', 'remove', 'rm', 'on', 'off'].forEach(v =>
+            expect(parseAgentConsoleCommandArguments(memories, v).diagnostics).toEqual([]));
+        expect(parseAgentConsoleCommandArguments(memories, 'add language=TypeScript').resolved).toEqual(['add', 'language=TypeScript']);
+        expect(parseAgentConsoleCommandArguments(memories, 'remove language').resolved).toEqual(['remove', 'language']);
+        expect(parseAgentConsoleCommandArguments(memories, 'maybe').diagnostics[0].code).toEqual('invalid');
+    }
+
+    @Test('final cluster: /goal keeps a variadic free-form tail')
+    finalClusterGoalContracts() {
+        const goal = getAgentConsoleCommandDefinition('/goal')!;
+        expect(parseAgentConsoleCommandArguments(goal, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(goal, 'create Release | Ship version 1 | tests pass; build clean').resolved)
+            .toEqual(['create Release | Ship version 1 | tests pass; build clean']);
+        expect(parseAgentConsoleCommandArguments(goal, 'show').resolved).toEqual(['show']);
+        expect(parseAgentConsoleCommandArguments(goal, 'goal-1').resolved).toEqual(['goal-1']);
+    }
+
+    @Test('final cluster: /ps validates its verb enum (show/stop/undo + filters) and joins the tail')
+    finalClusterPsContracts() {
+        const ps = getAgentConsoleCommandDefinition('/ps')!;
+        expect(parseAgentConsoleCommandArguments(ps, '').diagnostics).toEqual([]);
+        ['show', 'stop', 'undo', 'current', 'all', 'running', 'completed', 'failed', 'cancelled'].forEach(v =>
+            expect(parseAgentConsoleCommandArguments(ps, v).diagnostics).toEqual([]));
+        expect(parseAgentConsoleCommandArguments(ps, 'stop bg-1 bg-2').resolved).toEqual(['stop', 'bg-1 bg-2']);
+        expect(parseAgentConsoleCommandArguments(ps, 'list').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('registry to handler coverage: every definition resolves a parseable contract')
     registryCoverage() {
         // Every command with an args schema must parse a representative value without crashing,
@@ -1128,5 +1184,93 @@ export class P282DraftRetryConsistencyTest {
         await (component as any).handleCommand('/vim on');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
         expect(state.vimMode).toEqual(true);
+    }
+
+    @Test('final-cluster handlers consume resolved args for /ide /attach /jobs /tasks /memories /goal /retry /rollback /ps')
+    async finalClusterHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            notifyBusyState: () => {},
+            runIdeCommand: async (arg: string) => { received.push(`ide:${arg}`); return true; },
+            runAttachCommand: async (arg: string) => { received.push(`attach:${arg}`); return true; },
+            openScheduledJobsDashboard: async (arg?: string) => { received.push(`jobs:${arg}`); return true; },
+            openCodingTaskInspector: async (arg?: string) => { received.push(`tasks:${arg}`); return true; },
+            runMemoriesCommand: async (arg: string) => { received.push(`memories:${arg}`); return true; },
+            runGoalCommand: async (arg: string) => { received.push(`goal:${arg}`); return true; },
+            retryFailedCodingTask: async (arg?: string) => { received.push(`retry:${arg}`); return true; },
+            rollbackCodingTask: async (arg?: string) => { received.push(`rollback:${arg}`); return true; },
+            runBackgroundTasksCommand: async (arg: string) => { received.push(`ps:${arg}`); return true; }
+        } as any;
+        const metaFor = (command: string, resolved: string[]) => ({
+            command, matches: [command],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/ide'](ctx, 'garbage', metaFor('/ide', ['what file is active']));
+        await COMMAND_HANDLERS['/attach'](ctx, 'garbage', metaFor('/attach', ['cat.png']));
+        await COMMAND_HANDLERS['/attach'](ctx, 'garbage', metaFor('/attach', ['clear']));
+        await COMMAND_HANDLERS['/jobs'](ctx, 'garbage', metaFor('/jobs', ['job-1']));
+        await COMMAND_HANDLERS['/tasks'](ctx, 'garbage', metaFor('/tasks', ['task-1']));
+        await COMMAND_HANDLERS['/memories'](ctx, 'garbage', metaFor('/memories', ['add', 'language=TypeScript']));
+        await COMMAND_HANDLERS['/memories'](ctx, 'garbage', metaFor('/memories', ['list']));
+        await COMMAND_HANDLERS['/goal'](ctx, 'garbage', metaFor('/goal', ['create Release | Ship | tests pass; build clean']));
+        await COMMAND_HANDLERS['/retry'](ctx, 'garbage', metaFor('/retry', ['task-1']));
+        await COMMAND_HANDLERS['/rollback'](ctx, 'garbage', metaFor('/rollback', ['task-1']));
+        await COMMAND_HANDLERS['/ps'](ctx, 'garbage', metaFor('/ps', ['stop', 'bg-x']));
+        await COMMAND_HANDLERS['/ps'](ctx, 'garbage', metaFor('/ps', ['all']));
+        expect(received).toEqual([
+            'ide:what file is active',
+            'attach:cat.png',
+            'attach:clear',
+            'jobs:job-1',
+            'tasks:task-1',
+            'memories:add language=TypeScript',
+            'memories:list',
+            'goal:create Release | Ship | tests pass; build clean',
+            'retry:task-1',
+            'rollback:task-1',
+            'ps:stop bg-x',
+            'ps:all'
+        ]);
+    }
+
+    @Test('final-cluster handlers fall back to raw args without parsedArgs')
+    async finalClusterHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            notifyBusyState: () => {},
+            runIdeCommand: async (arg: string) => { received.push(`ide:${arg}`); return true; },
+            runAttachCommand: async (arg: string) => { received.push(`attach:${arg}`); return true; },
+            openScheduledJobsDashboard: async (arg?: string) => { received.push(`jobs:${arg}`); return true; },
+            openCodingTaskInspector: async (arg?: string) => { received.push(`tasks:${arg}`); return true; },
+            runMemoriesCommand: async (arg: string) => { received.push(`memories:${arg}`); return true; },
+            runGoalCommand: async (arg: string) => { received.push(`goal:${arg}`); return true; },
+            retryFailedCodingTask: async (arg?: string) => { received.push(`retry:${arg}`); return true; },
+            rollbackCodingTask: async (arg?: string) => { received.push(`rollback:${arg}`); return true; },
+            runBackgroundTasksCommand: async (arg: string) => { received.push(`ps:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/ide'](ctx, 'refresh', { command: '/ide', matches: ['/ide'] });
+        await COMMAND_HANDLERS['/attach'](ctx, 'raw.png', { command: '/attach', matches: ['/attach'] });
+        await COMMAND_HANDLERS['/jobs'](ctx, 'raw-job', { command: '/jobs', matches: ['/jobs'] });
+        await COMMAND_HANDLERS['/tasks'](ctx, 'raw-task', { command: '/tasks', matches: ['/tasks'] });
+        await COMMAND_HANDLERS['/memories'](ctx, 'off', { command: '/memories', matches: ['/memories'] });
+        await COMMAND_HANDLERS['/goal'](ctx, 'show goal-1', { command: '/goal', matches: ['/goal'] });
+        await COMMAND_HANDLERS['/retry'](ctx, 'raw-retry', { command: '/retry', matches: ['/retry'] });
+        await COMMAND_HANDLERS['/rollback'](ctx, 'raw-rollback', { command: '/rollback', matches: ['/rollback'] });
+        await COMMAND_HANDLERS['/ps'](ctx, 'stop raw-bg', { command: '/ps', matches: ['/ps'] });
+        expect(received).toEqual([
+            'ide:refresh',
+            'attach:raw.png',
+            'jobs:raw-job',
+            'tasks:raw-task',
+            'memories:off',
+            'goal:show goal-1',
+            'retry:raw-retry',
+            'rollback:raw-rollback',
+            'ps:stop raw-bg'
+        ]);
     }
 }

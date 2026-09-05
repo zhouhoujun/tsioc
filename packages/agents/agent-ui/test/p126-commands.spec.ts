@@ -123,11 +123,13 @@ export class P126CommandClusterTest {
         expect((component as any).options.ui.memoryInjection).toEqual(true);
     }
 
-    @Test('/memories rejects invalid arguments')
+    @Test('/memories rejects invalid verb and preserves the draft for correction')
     async memoriesInvalid() {
         const { state, component } = createConsole();
         await (component as any).handleCommand('/memories maybe');
-        expect(state.notice).toContain('Usage: /memories');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/memories maybe');
+        expect(state.notice).toContain('Invalid');
     }
 
     @Test('/memories manages project records and lists injected memory')

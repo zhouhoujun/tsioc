@@ -160,12 +160,12 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/editor', description: 'edit the draft in an external editor (Ctrl+G)', group: 'input', args: [{ name: 'initial', variadic: true }] },
     { name: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'push', 'save', 'pop', 'restore', 'rm', 'drop', 'delete'] }, { name: 'name', variadic: true }] },
     { name: '/voice', description: 'voice session status/start/stop/cancel', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['start', 'stop', 'cancel', 'status'] }] },
-    { name: '/ide', description: 'IDE bridge: show attached editor context', group: 'input' },
+    { name: '/ide', description: 'IDE bridge: show attached editor context', group: 'input', args: [{ name: 'arg', variadic: true }] },
     { name: '/multiline', description: 'multiline', group: 'input' },
     { name: '/send', description: 'send the multiline draft', group: 'input' },
     { name: '/cancel', description: 'cancel running turn', group: 'input' },
     { name: '/clear', description: 'start a new session (clear the current conversation)', group: 'input' },
-    { name: '/attach', description: 'attach an image for the next prompt', group: 'input' },
+    { name: '/attach', description: 'attach an image for the next prompt', group: 'input', args: [{ name: 'arg', variadic: true }] },
 
     // Review owns an extensible subcommand grammar, so keep its tail variadic.
     { name: '/review', description: 'coding task review', group: 'review', args: [{ name: 'command', variadic: true }] },
@@ -181,12 +181,12 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         ]
     },
     { name: '/deny', description: 'deny pending approval request: /deny [<id>]', group: 'review', args: [{ name: 'id' }] },
-    { name: '/jobs', description: 'scheduled jobs', group: 'review' },
-    { name: '/tasks', description: 'task inspector', group: 'review' },
+    { name: '/jobs', description: 'scheduled jobs: /jobs [<taskId>]', group: 'review', args: [{ name: 'taskId' }] },
+    { name: '/tasks', description: 'task inspector: /tasks [<taskId>]', group: 'review', args: [{ name: 'taskId' }] },
     { name: '/toolruns', description: 'inspect tool runs for this session', group: 'review' },
 
     { name: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)', group: 'hooks' },
-    { name: '/memories', description: 'memory injection: status / on / off', group: 'hooks' },
+    { name: '/memories', description: 'memory injection: status / on / off', group: 'hooks', args: [{ name: 'verb', type: 'enum', values: ['list', 'injected', 'add', 'remove', 'rm', 'on', 'off'] }, { name: 'arg', variadic: true }] },
     { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', needsArgs: true, args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
     { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks' },
 
@@ -195,7 +195,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         { sub: 'lineage', description: 'delegation lineage [sessionId]' },
         { sub: 'mode', description: 'delegation mode [disabled|explicit|proactive|default]' }
     ] },
-    { name: '/goal', description: 'create, show, link, complete, or reopen a persistent goal', group: 'delegation' },
+    { name: '/goal', description: 'create, show, link, complete, or reopen a persistent goal', group: 'delegation', args: [{ name: 'arg', variadic: true }] },
     { name: '/usage', description: 'usage [daily|weekly|cumulative] [sessionId] [since]', group: 'delegation', args: [{ name: 'arg', variadic: true }] },
     {
         name: '/quality',
@@ -230,10 +230,13 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         { sub: 'audit', description: 'failure-pattern audit [sessionId]' },
         { sub: 'profile', description: 'governance profile list/current/diff' }
     ] },
-    { name: '/retry', description: 'retry failed workers', group: 'delegation' },
-    { name: '/rollback', description: 'rollback coding task', group: 'delegation' },
+    { name: '/retry', description: 'retry failed workers: /retry [<taskId>]', group: 'delegation', args: [{ name: 'taskId' }] },
+    { name: '/rollback', description: 'rollback coding task: /rollback [<taskId>]', group: 'delegation', args: [{ name: 'taskId' }] },
 
-    { name: '/ps', description: 'background tasks: list / stop <id>', group: 'system' },
+    { name: '/ps', description: 'background tasks: list / stop <id>', group: 'system', args: [
+        { name: 'verb', type: 'enum', values: ['show', 'stop', 'undo', 'current', 'all', 'running', 'completed', 'failed', 'cancelled'] },
+        { name: 'arg', variadic: true }
+    ] },
     { name: '/quit', description: 'quit the agent console', group: 'system', aliases: ['/q'] },
     {
         name: '/exit',
