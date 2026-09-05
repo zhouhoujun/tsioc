@@ -298,8 +298,11 @@ export function renderAgentConsoleMessageItem(
     const timelineSentence = timelineEvent
         ? resolveTimelineEventSentence(message?.metadata, displayContent)
         : undefined;
+    // Content stays the primary row text (P237 truncation/expansion contract;
+    // long rows also keep the detail toggle); the sentence only fills empty
+    // content events like model_completed.
     const eventRowContent = timelineEvent
-        ? truncateTimelineEventRowContent(timelineSentence ?? displayContent, statusKind)
+        ? truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind)
         : displayContent;
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;

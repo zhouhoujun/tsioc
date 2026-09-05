@@ -5,6 +5,7 @@ import {
     resolveTimelineEventSentence,
     TimelineSentenceParts
 } from '../src/AgentConsoleTimelineWindow';
+import { renderAgentConsoleMessageItems } from '../src/AgentConsoleMessageRenderers';
 
 @Suite('formatTimelineSentence (P281)')
 export class FormatTimelineSentenceTest {
@@ -243,5 +244,37 @@ export class ResolveTimelineEventSentenceTest {
         });
         expect(result!.length).toBeLessThan(longError.length + 30);
         expect(result).toContain('failed:');
+    }
+}
+
+@Suite('event row content precedence (P281 renderer integration)')
+export class EventRowContentPrecedenceTest {
+
+    @Test('content-bearing event rows keep raw content over the sentence')
+    testContentWinsOverSentence() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'e1', role: 'assistant', content: 'Read src/index.ts', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        }] as any);
+        expect(items[0].lines[0].content).toBe('Read src/index.ts');
+    }
+
+    @Test('empty-content event rows fall back to the action-first sentence')
+    testSentenceFillsEmptyContent() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'e2', role: 'assistant', content: '', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'model_completed', status: 'success' }
+        }] as any);
+        expect(items[0].lines[0].content).toBe('Model responded');
+    }
+
+    @Test('long failed rows keep the full body so the cause stays visible')
+    testFailedRowsKeepFullContent() {
+        const longContent = 'x'.repeat(300);
+        const items = renderAgentConsoleMessageItems([{
+            id: 'e3', role: 'assistant', content: longContent, createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error', durationMs: 40 }
+        }] as any);
+        expect(items[0].lines[0].content).toBe(longContent);
     }
 }
