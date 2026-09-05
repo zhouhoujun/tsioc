@@ -436,6 +436,47 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(permissions, 'bogus on').diagnostics[0].code).toEqual('invalid');
     }
 
+    @Test('session-tools cluster: /git-snapshots /export /cd /init /ssh get precise contracts')
+    sessionToolsClusterContracts() {
+        const gitSnapshots = getAgentConsoleCommandDefinition('/git-snapshots')!;
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'list').resolved).toEqual(['list']);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'diff msg-1').resolved).toEqual(['diff', 'msg-1']);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'revert m1').resolved).toEqual(['revert', 'm1']);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'restore m1').resolved).toEqual(['restore', 'm1']);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'unrevert').resolved).toEqual(['unrevert']);
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'ls').diagnostics[0].code).toEqual('invalid');
+        expect(parseAgentConsoleCommandArguments(gitSnapshots, 'bogus').diagnostics[0].code).toEqual('invalid');
+
+        const exportDef = getAgentConsoleCommandDefinition('/export')!;
+        expect(parseAgentConsoleCommandArguments(exportDef, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(exportDef, 'jsonl').resolved).toEqual(['jsonl']);
+        expect(parseAgentConsoleCommandArguments(exportDef, 'jsonl sess-1 ./out.json').resolved).toEqual(['jsonl sess-1 ./out.json']);
+        expect(parseAgentConsoleCommandArguments(exportDef, '"quoted value"').resolved).toEqual(['quoted value']);
+
+        const cd = getAgentConsoleCommandDefinition('/cd')!;
+        expect(parseAgentConsoleCommandArguments(cd, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(cd, '/tmp').resolved).toEqual(['/tmp']);
+        expect(parseAgentConsoleCommandArguments(cd, 'my dir').resolved).toEqual(['my dir']);
+        expect(parseAgentConsoleCommandArguments(cd, '"my dir"').resolved).toEqual(['my dir']);
+
+        const init = getAgentConsoleCommandDefinition('/init')!;
+        expect(parseAgentConsoleCommandArguments(init, '').diagnostics).toEqual([]);
+        expect(parseAgentConsoleCommandArguments(init, '--force').resolved).toEqual(['--force']);
+        expect(parseAgentConsoleCommandArguments(init, 'garbage').diagnostics[0].code).toEqual('invalid');
+
+        const ssh = getAgentConsoleCommandDefinition('/ssh')!;
+        expect(parseAgentConsoleCommandArguments(ssh, '').diagnostics).toEqual([]);
+        ['list', 'ls', 'help', '?'].forEach(action => {
+            expect(parseAgentConsoleCommandArguments(ssh, action).resolved).toEqual([action]);
+        });
+        expect(parseAgentConsoleCommandArguments(ssh, 'connect web').resolved).toEqual(['connect', 'web']);
+        expect(parseAgentConsoleCommandArguments(ssh, 'disconnect web').resolved).toEqual(['disconnect', 'web']);
+        expect(parseAgentConsoleCommandArguments(ssh, 'shell web').resolved).toEqual(['shell', 'web']);
+        expect(parseAgentConsoleCommandArguments(ssh, 'forward web 127.0.0.1 3306').resolved).toEqual(['forward', 'web 127.0.0.1 3306']);
+        expect(parseAgentConsoleCommandArguments(ssh, 'bogus').diagnostics[0].code).toEqual('invalid');
+    }
+
     @Test('registry to handler coverage: every definition resolves a parseable contract')
     registryCoverage() {
         // Every command with an args schema must parse a representative value without crashing,
@@ -1017,6 +1058,64 @@ export class P282DraftRetryConsistencyTest {
             'experimental:feature on',
             'keymap:global set ctrl+c copy',
             'permissions:readonly on'
+        ]);
+    }
+
+    @Test('session-tools handlers consume resolved args for /git-snapshots /export /cd /init /ssh')
+    async sessionToolsHandlersConsumeCanonicalArgs() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            notifyBusyState: () => {},
+            runGitSnapshotsCommand: async (arg: string) => { received.push(`gitSnap:${arg}`); return true; },
+            runExportCommand: async (arg: string) => { received.push(`export:${arg}`); return true; },
+            runCdCommand: (arg: string) => { received.push(`cd:${arg}`); },
+            runInitCommand: async (arg: string) => { received.push(`init:${arg}`); return true; },
+            runSshCommand: async (arg: string) => { received.push(`ssh:${arg}`); return true; }
+        } as any;
+        const metaFor = (command: string, resolved: string[]) => ({
+            command, matches: [command],
+            parsedArgs: { values: resolved, resolved, diagnostics: [] }
+        });
+        await COMMAND_HANDLERS['/git-snapshots'](ctx, 'garbage', metaFor('/git-snapshots', ['diff', 'msg-1']));
+        await COMMAND_HANDLERS['/export'](ctx, 'garbage', metaFor('/export', ['jsonl sess-1 out.json']));
+        await COMMAND_HANDLERS['/cd'](ctx, 'garbage', metaFor('/cd', ['my dir']));
+        await COMMAND_HANDLERS['/init'](ctx, 'garbage', metaFor('/init', ['--force']));
+        await COMMAND_HANDLERS['/ssh'](ctx, 'garbage', metaFor('/ssh', ['forward', 'web 127.0.0.1 3306']));
+        expect(received).toEqual([
+            'gitSnap:diff msg-1',
+            'export:jsonl sess-1 out.json',
+            'cd:my dir',
+            'init:--force',
+            'ssh:forward web 127.0.0.1 3306'
+        ]);
+    }
+
+    @Test('session-tools handlers fall back to raw args without parsedArgs')
+    async sessionToolsHandlerRawFallback() {
+        const { COMMAND_HANDLERS } = require('../src/AgentConsoleCommandHandlers');
+        const received: string[] = [];
+        const ctx = {
+            isTurnInProgress: () => false,
+            notifyBusyState: () => {},
+            runGitSnapshotsCommand: async (arg: string) => { received.push(`gitSnap:${arg}`); return true; },
+            runExportCommand: async (arg: string) => { received.push(`export:${arg}`); return true; },
+            runCdCommand: (arg: string) => { received.push(`cd:${arg}`); },
+            runInitCommand: async (arg: string) => { received.push(`init:${arg}`); return true; },
+            runSshCommand: async (arg: string) => { received.push(`ssh:${arg}`); return true; }
+        } as any;
+        await COMMAND_HANDLERS['/git-snapshots'](ctx, 'diff raw', { command: '/git-snapshots', matches: ['/git-snapshots'] });
+        await COMMAND_HANDLERS['/export'](ctx, 'jsonl raw', { command: '/export', matches: ['/export'] });
+        await COMMAND_HANDLERS['/cd'](ctx, 'raw dir', { command: '/cd', matches: ['/cd'] });
+        await COMMAND_HANDLERS['/init'](ctx, '--force', { command: '/init', matches: ['/init'] });
+        await COMMAND_HANDLERS['/ssh'](ctx, 'connect web', { command: '/ssh', matches: ['/ssh'] });
+        expect(received).toEqual([
+            'gitSnap:diff raw',
+            'export:jsonl raw',
+            'cd:raw dir',
+            'init:--force',
+            'ssh:connect web'
         ]);
     }
 

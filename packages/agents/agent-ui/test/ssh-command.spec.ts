@@ -197,12 +197,14 @@ export class SshConsoleCommandTest {
         expect(state.notice).toContain('Usage: /ssh forward <host> <destAddr> <destPort>');
     }
 
-    @Test('ssh unknown subcommand shows usage')
+    @Test('ssh unknown subcommand fails at the gate with a diagnostic')
     async sshUnknownSubcommand() {
         const { state, component } = createSshConsole(new FakeSshManager());
 
         await (component as any).handleCommand('/ssh bogus');
-        expect(state.notice).toContain('Unknown /ssh command');
+        expect(state.notice).toContain('Invalid action "bogus"');
+        expect(state.latestCommandExecution?.status).toEqual('failed');
+        expect(state.input).toEqual('/ssh bogus');
     }
 
     @Test('ssh help shows usage')
