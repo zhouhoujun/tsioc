@@ -100,6 +100,10 @@ describe('Reactive', () => {
             expect(canReactive(new Set())).toBeFalsy();
         });
 
+        it('should return false for Promise', () => {
+            expect(canReactive(Promise.resolve())).toBeFalsy();
+        });
+
         it('should return false for objects marked noReact', () => {
             const obj: any = { [noReact]: true };
             expect(canReactive(obj)).toBeFalsy();
@@ -116,6 +120,8 @@ describe('Reactive', () => {
         it('should return same object for non-reactive targets', () => {
             const date = new Date();
             expect(reactive(date, effect)).toBe(date);
+            const promise = Promise.resolve();
+            expect(reactive(promise, effect)).toBe(promise);
         });
 
         it('should return null for null', () => {

@@ -3,11 +3,12 @@
 
 Scripted turn sequences, selected by FAKE_SCENARIO:
 
-  default (tail/todo, P200):
-    1. long reply ending with a tail question          -> scenario 1 (tail visibility)
-    2. tool_call  {todo: pending item}                 -> scenario 3 setup
-    3. tool_call  {todo: same item completed}          -> scenario 3 checkbox flip
-    4. short closing text                              -> scenario 3 settle
+  default (tail/todo, P200) — content-keyed, decoupled from request index:
+    user text contains 长文  -> long reply ending with a tail question (scenario 1)
+    user text contains 计划  -> pending -> completed -> closing todo roundtrip
+                               (scenario 3; the tail-continuation 继续 drifts the
+                               request index, so routing keys off the message body)
+    anything else            -> short closing text
 
   plan-lifecycle (P232 part B):
     1. text plans + tool_call creates parallel steps   -> plan creation
@@ -36,6 +37,20 @@ PORT = int(os.environ.get('FAKE_PORT', '0'))
 TODO_CONTENT = os.environ.get('FAKE_TODO_CONTENT', '计划项 A')
 SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
 RECORD_USAGE = os.environ.get('FAKE_RECORD_USAGE', 'false').lower() in ('true', '1', 'yes')
+# Optional absolute log path. The acceptance driver never drains the server's
+# stdout/stderr pipe after the ready line, so writing diagnostics to the pipe
+# fills its buffer and freezes the server; a file avoids that entirely.
+_FAKE_LOG = os.environ.get('FAKE_LOG', '')
+_flog = None
+if _FAKE_LOG:
+    _flog = open(_FAKE_LOG, 'a', encoding='utf-8')
+
+
+def _log(line):
+    if _flog is not None:
+        _flog.write(line + '\n')
+        _flog.flush()
+
 
 # Track usage stats for /usage command
 turn_count = 0
@@ -106,58 +121,60 @@ def _plan_turn(i):
     return _text('计划已全部完成。')
 
 
-def _turn(i):
+def _last_user_text(messages):
+    """Text of the most recent non-empty user message (used for routing)."""
+    for m in reversed(messages or []):
+        if not isinstance(m, dict) or m.get('role') != 'user':
+            continue
+        content = m.get('content')
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+    return ''
+
+
+def _tool_result_count(messages):
+    """Number of tool-result roundtrips already in the request, so a turn can
+    advance pending -> completed -> closing without depending on the global
+    request index (which the tail-continuation `继续` drifts)."""
+    return sum(1 for m in (messages or [])
+               if isinstance(m, dict) and m.get('role') == 'tool')
+
+
+def _todo_turn(status):
+    return _todo_call('call_acc_1',
+                      [{'id': 'acc-1', 'content': TODO_CONTENT, 'status': status}])
+
+
+def _default_turn(messages):
+    """Content-keyed default scenario: route on the last user message text plus
+    the tool-result roundtrip count instead of the global request index."""
+    global total_tokens
+    text = _last_user_text(messages)
+    n_tool = _tool_result_count(messages)
+    if '长文' in text:
+        lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
+                 for n in range(1, 121)]
+        content = '\n'.join(lines) + '\n\n是否继续？'
+        total_tokens += len(content) // 4
+        return {'role': 'assistant', 'content': content + '\n'}
+    if '计划' in text:
+        if n_tool == 0:
+            return _todo_turn('pending')
+        if n_tool == 1:
+            return _todo_turn('completed')
+        return {'role': 'assistant', 'content': '计划已全部完成。'}
+    return {'role': 'assistant', 'content': '计划已全部完成。'}
+
+
+def _turn(i, messages):
     """Return the scripted assistant message dict for request number i (1-based)."""
     global turn_count, total_tokens
     turn_count += 1
-    # Estimate tokens per turn (rough estimate)
     total_tokens += 20
 
     if SCENARIO == 'plan-lifecycle':
         return _plan_turn(i)
-    if i == 1:
-        lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
-                 for n in range(1, 121)]
-        content = '\n'.join(lines) + '\n\n是否继续？'
-        # Count roughly
-        total_tokens += len(content) // 4
-        return {'role': 'assistant', 'content': content + '\n'}
-    if i == 2:
-        msg = {
-            'role': 'assistant',
-            'content': None,
-            'tool_calls': [{
-                'id': 'call_acc_1',
-                'type': 'function',
-                'function': {
-                    'name': 'todo',
-                    'arguments': json.dumps(
-                        {'todos': [{'id': 'acc-1', 'content': TODO_CONTENT, 'status': 'pending'}]},
-                        ensure_ascii=False),
-                },
-            }],
-        }
-        # Record that a todo tool was called
-        if RECORD_USAGE:
-            pass  # usage already counted above
-        return msg
-    if i == 3:
-        msg = {
-            'role': 'assistant',
-            'content': None,
-            'tool_calls': [{
-                'id': 'call_acc_2',
-                'type': 'function',
-                'function': {
-                    'name': 'todo',
-                    'arguments': json.dumps(
-                        {'todos': [{'id': 'acc-1', 'content': TODO_CONTENT, 'status': 'completed'}]},
-                        ensure_ascii=False),
-                },
-            }],
-        }
-        return msg
-    return {'role': 'assistant', 'content': '计划已全部完成。'}
+    return _default_turn(messages)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -183,7 +200,11 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             pass
         Handler.request_count += 1
-        message = _turn(Handler.request_count)
+        messages = body.get('messages') or []
+        message = _turn(Handler.request_count, messages)
+        _log(f'req={Handler.request_count} text={_last_user_text(messages)!r} '
+             f'tool_results={_tool_result_count(messages)} -> '
+             f'{("tool:" + (message["tool_calls"][0]["function"]["name"] if message.get("tool_calls") else "")) or "text"}')
         want_stream = bool(body.get('stream'))
         if not want_stream:
             self._json({
@@ -208,17 +229,18 @@ class Handler(BaseHTTPRequestHandler):
         elif message.get('tool_calls'):
             args = message['tool_calls'][0]['function']['arguments']
             pieces = [args]
-            base['choices'][0]['delta'] = {
-                'tool_calls': [{'index': 0, 'id': message['tool_calls'][0]['id'],
-                                'type': 'function',
-                                'function': {'name': message['tool_calls'][0]['function']['name'],
-                                             'arguments': ''}}]
-            }
         try:
             if content:
                 chunk = json.dumps(dict(base, choices=[dict(base['choices'][0], delta={'role': 'assistant'})]),
                                    ensure_ascii=False)
                 self.wfile.write(f'data: {chunk}\n\n'.encode())
+            if message.get('tool_calls') and pieces:
+                tc0 = message['tool_calls'][0]
+                init_chunk = json.dumps(dict(base, choices=[dict(base['choices'][0], delta={
+                    'tool_calls': [{'index': 0, 'id': tc0['id'], 'type': 'function',
+                                    'function': {'name': tc0['function']['name'], 'arguments': ''}}]
+                })]), ensure_ascii=False)
+                self.wfile.write(f'data: {init_chunk}\n\n'.encode())
             for piece in pieces:
                 delta = {'content': piece} if content else {
                     'tool_calls': [{'index': 0,

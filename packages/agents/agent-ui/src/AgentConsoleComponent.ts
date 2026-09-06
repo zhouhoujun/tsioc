@@ -276,6 +276,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected globalKeyPending = '';
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
     protected commandPaletteQuery = '';
+    protected startupWorkspace = '';
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
     protected activeTurnRun?: Promise<void> | null = null;
@@ -298,12 +299,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         private scheduler: AgentScheduler,
         private bridge: AgentConsoleEventBridge,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions,
-        @Optional() private toolRegistry?: ToolRegistry | null,
+        @Optional() @Inject(ToolRegistry) private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
-        @Optional() private sessionService?: AgentConsoleSessionService | null,
+        @Optional() @Inject(AgentConsoleSessionService) private sessionService?: AgentConsoleSessionService | null,
         @Optional() private approvalManager?: ToolApprovalManager | null,
-        @Optional() private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null,
-        @Optional() private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
+        @Optional() @Inject(AgentConsoleWorkspaceMentionsProvider) private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null,
+        @Optional() @Inject(AgentConsoleInputHistoryStore) private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
         @Optional() @Inject(ComponentRef) private componentRef?: ComponentRef<AgentConsoleComponent> | null,
         @Optional() @Inject(ConsoleTerminalSurfaceAccessor) private surfaceAccessor?: ConsoleTerminalSurfaceAccessor | null,
         @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
@@ -311,19 +312,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private audioCapture?: AudioCaptureAdapter | null,
         @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
         @Optional() private translator?: TranslatorService,
-        @Optional() private globalKeymap?: AgentConsoleKeymap | null,
-        @Optional() private keymapStore?: AgentConsoleKeymapStore | null,
-        @Optional() private themeStore?: AgentConsoleThemeStore | null,
+        @Optional() @Inject(AgentConsoleKeymap) private globalKeymap?: AgentConsoleKeymap | null,
+        @Optional() @Inject(AgentConsoleKeymapStore) private keymapStore?: AgentConsoleKeymapStore | null,
+        @Optional() @Inject(AgentConsoleThemeStore) private themeStore?: AgentConsoleThemeStore | null,
         @Optional() private statuslineStore?: AgentConsoleStatuslineStore | null,
         @Optional() private titleStore?: AgentConsoleTitleStore | null,
         @Optional() private backgroundTasks?: BackgroundTaskManager | null,
         @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null,
         @Optional() @Inject(AGENT_EDITOR_BRIDGE) private editorBridge?: AgentEditorBridge | null,
-        @Optional() private rawModeStore?: AgentConsoleRawModeStore | null,
-        @Optional() private stashStore?: AgentConsoleStashStore | null,
+        @Optional() @Inject(AgentConsoleRawModeStore) private rawModeStore?: AgentConsoleRawModeStore | null,
+        @Optional() @Inject(AgentConsoleStashStore) private stashStore?: AgentConsoleStashStore | null,
         @Optional() private modelStore?: AgentConsoleModelStore | null,
-        @Optional() private settingsStore?: AgentConsoleSettingsStore | null,
-        @Optional() private projectMemory?: ProjectMemoryService | null
+        @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
+        @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -338,6 +339,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setRawMode(this.options.ui?.rawMode === true);
         this.state.setPlanNudgesEnabled(this.options.ui?.planNudges !== false);
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
+        this.startupWorkspace = String(this.options.ui?.console?.workspace || '').trim();
+        if (this.startupWorkspace) {
+            this.state.setWorkspace(this.startupWorkspace);
+        }
     }
 
     protected resolveInitialStatusline(): AgentConsoleStatuslineField[] {
@@ -1650,36 +1655,46 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.sessionService.setSessionArchived(target.id, false);
             target.archived = false;
         }
+        const configuredWorkspace = String(this.startupWorkspace || this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
+        const nextWorkspace = requestId === 1 && configuredWorkspace
+            ? configuredWorkspace
+            : String(target.workspace || '').trim() || configuredWorkspace;
         this.openReviewRequestId++;
         this.taskViewContextVersion++;
-            this.state.configure({ sessionId: target.id });
-            this.state.setQueuedPromptCount((this.queuedPrompts.get(target.id) || []).length);
-            this.state.setMessagesFocused(false);
-            this.state.setSessionsFocused(false);
-            this.state.setProjectsFocused(false);
-            this.state.setToolsFocused(false);
-            this.state.setToolRunsFocused(false);
-            this.state.setApprovalsFocused(false);
-            this.state.setTasksFocused(false);
-            this.state.setJobsFocused(false);
-            this.state.setPendingApprovals([]);
-            this.state.clearReview();
-            this.state.clearPlanTodos();
-            this.state.setPendingQuestion(null);
-            this.state.clearToolActivity();
-            this.state.setContextPreparation(null);
-            this.state.closeMessageDetail();
-            this.state.clearActivities();
-            this.state.setLastError('');
-            this.updateTerminalTitle();
-            this.state.setNotice('');
-            this.state.setInput('', 0);
-            this.editTargetMessageId = '';
-            this.editDraftBefore = '';
-            this.editAttachmentsBefore = [];
-            this.lastEditSessionMessageId = '';
-            this.editDismissedAt = 0;
-            this.lastEscapeAt = 0;
+        this.state.configure({
+            sessionId: target.id,
+            workspace: nextWorkspace
+        });
+        if (nextWorkspace) {
+            this.state.setWorkspace(nextWorkspace);
+        }
+        this.state.setQueuedPromptCount((this.queuedPrompts.get(target.id) || []).length);
+        this.state.setMessagesFocused(false);
+        this.state.setSessionsFocused(false);
+        this.state.setProjectsFocused(false);
+        this.state.setToolsFocused(false);
+        this.state.setToolRunsFocused(false);
+        this.state.setApprovalsFocused(false);
+        this.state.setTasksFocused(false);
+        this.state.setJobsFocused(false);
+        this.state.setPendingApprovals([]);
+        this.state.clearReview();
+        this.state.clearPlanTodos();
+        this.state.setPendingQuestion(null);
+        this.state.clearToolActivity();
+        this.state.setContextPreparation(null);
+        this.state.closeMessageDetail();
+        this.state.clearActivities();
+        this.state.setLastError('');
+        this.updateTerminalTitle();
+        this.state.setNotice('');
+        this.state.setInput('', 0);
+        this.editTargetMessageId = '';
+        this.editDraftBefore = '';
+        this.editAttachmentsBefore = [];
+        this.lastEditSessionMessageId = '';
+        this.editDismissedAt = 0;
+        this.lastEscapeAt = 0;
         await this.refreshSessions(target.id);
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
@@ -2351,7 +2366,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.workspaceMentionsProvider = injected;
         } else {
             const fileAdapter = this.app?.get(FileAdapter, null) as FileAdapter | null;
-            this.workspaceMentionsProvider = injected;
+            this.workspaceMentionsProvider = fileAdapter
+                ? new AgentConsoleWorkspaceMentionsProvider(fileAdapter)
+                : injected;
         }
         this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }
@@ -2539,8 +2556,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             provider: typeof meta.provider === 'string' ? meta.provider : undefined,
             model: typeof meta.model === 'string' ? meta.model : undefined,
             modelProfile: typeof meta.modelProfile === 'string' ? meta.modelProfile : undefined,
-            workspace: typeof meta.workspace === 'string' ? meta.workspace : undefined
+            workspace: this.startupWorkspace || (typeof meta.workspace === 'string' ? meta.workspace : undefined)
         });
+        if (this.startupWorkspace) {
+            this.state.setWorkspace(this.startupWorkspace);
+        }
         this.state.setQueuedPromptCount((this.queuedPrompts.get(this.state.sessionId) || []).length);
         this.updateTerminalTitle();
     }
@@ -2595,7 +2615,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected resolveHistoryWorkspace(): string {
-        const configured = String(this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
+        const configured = String(this.state.workspace || this.startupWorkspace || (this.options.ui?.console as any)?.workspace || '').trim();
         if (configured) {
             return configured;
         }
@@ -5729,6 +5749,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.state.setWhichKeyVisible(false);
             }
         }
+        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && this.isTurnInProgress()) {
+            await this.interruptTurn();
+            return true;
+        }
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (this.state.selectMenu || this.state.isAnyFocusActive())) {
             this.globalKeyPending = '';
             return false;
@@ -6808,7 +6832,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.notify(lines.join('\n'));
     }
 
-    protected runCdCommand(args: string): void {
+    protected async runCdCommand(args: string): Promise<void> {
         const target = String(args || '').trim();
         if (!target) {
             this.notify(this.workspace);
@@ -6824,7 +6848,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             resolved = target;
         }
         resolved = resolved.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+        await this.persistInputHistory();
         this.state.setWorkspace(resolved);
+        await this.restoreInputHistory();
         this.notify(`workspace → ${resolved}`);
     }
 

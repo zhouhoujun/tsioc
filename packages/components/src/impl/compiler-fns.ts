@@ -900,11 +900,24 @@ export function bindingInterpolationFactory(element: RNode, attrName: string, ex
 
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
+        const writeValue = (name: string, value: string) => {
+            // `value` 插值绑定（如 `value="{{input}}"`）须写入控件的实时属性：
+            // 真实 DOM 的 textarea/input 一旦被用户输入，setAttribute('value', ...)
+            // 只改默认值、不改实时值，导致 submit 后清空/恢复草稿不生效；TUI 的
+            // ConsoleElement 没有 `value` 属性，仍走 setAttribute 落 attributes map
+            // （renderToLines 以 getAttribute('value') 读取）。
+            const elAny = el as unknown as { value?: unknown };
+            if (name === 'value' && 'value' in elAny && typeof elAny.value === 'string') {
+                (el as unknown as { value: string }).value = value;
+                return;
+            }
+            el.setAttribute(name, value);
+        };
         evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
-            el.setAttribute(attrName, updatedText);
+            writeValue(attrName, updatedText);
         }, injector, delimiter);
 
-        return () => el.setAttribute(attrName, expr); // 恢复原始值
+        return () => writeValue(attrName, expr); // 恢复原始值
     });
 }
 

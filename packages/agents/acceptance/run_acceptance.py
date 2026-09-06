@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """PTY acceptance driver for the tsdi agent TUI (P200/G123).
 
-Drives three scenarios from P190's manual acceptance list against a real PTY:
+Drives scenarios from P190's manual acceptance list against a real PTY:
 
   1. tail-visibility : long streamed reply keeps its trailing question visible
   2. keymap overlay  : ctrl+alt+k toggles the which-key overlay
   3. plan checkbox   : scripted `todo` tool calls flip [ ] -> [x] live
+  6. slash-command (P282): invalid verb shows diagnostic + preserves draft,
+     corrected retry succeeds and consumes the draft
 
 Usage (repo root):
   python3 packages/agents/acceptance/run_acceptance.py
@@ -257,20 +259,95 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
     send(fd, b'\x0f')  # Ctrl+O -> command-outputs toggle
     opened = wait_for(fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')], timeout=20)
     if not opened:
+        # Close the panel on failure so its focus does not leak into the next
+        # scenario (an open command-outputs panel swallows composer keystrokes).
+        send(fd, b'\x1b')
+        time.sleep(0.5)
+        drain(fd, screen)
         print('[FAIL] scenario 5 (P262): outputs panel not detected after Ctrl+O')
         return False
     view = screen.viewport()
     if '/usage' not in view:
+        send(fd, b'\x1b')
+        time.sleep(0.5)
+        drain(fd, screen)
         print('[FAIL] scenario 5 (P262): /usage entry missing from panel:\n' + view)
         return False
 
     send(fd, b'\x1b')  # Esc closes the panel
     time.sleep(0.8)
     drain(fd, screen)
-    if re.search(re.escape('command outputs'), screen.viewport()):
-        print('[FAIL] scenario 5 (P262): panel did not close on Esc')
+    # Screen.viewport() is the last 40 lines of an append-only rolling buffer:
+    # the closed panel's frame text stays in the window forever, so a
+    # whole-viewport absence check can never pass after the panel closes.
+    # Probe behaviorally instead: the focus layer swallows composer keystrokes
+    # while the panel is open, so '> x' renders exactly when the composer
+    # regained focus (i.e. the panel really closed).
+    send(fd, b'x')
+    probe = wait_for(fd, screen, [re.escape('> x')], timeout=10)
+    send(fd, b'\x7f')  # backspace the probe char so the next scenario starts clean
+    time.sleep(0.5)
+    drain(fd, screen)
+    if not probe:
+        print('[FAIL] scenario 5 (P262): panel did not close on Esc (composer swallowed probe char)')
         return False
     print('[PASS] scenario 5 (P262): /usage output reviewable via Ctrl+O panel and Esc-closable')
+    return True
+
+
+def scenario_slash_command_p282(pid: int, fd: int, screen: Screen) -> bool:
+    """P282: invalid slash-command verb renders a diagnostic and preserves the
+    composer draft; the corrected retry executes and consumes the draft."""
+    err_text = 'Invalid verb "bork". Expected: list, set, unset.'
+    ok_text = 'Statusline set to model, context.'
+
+    send(fd, '\r'.encode())
+    time.sleep(0.5)
+    drain(fd, screen)
+
+    send(fd, '/statusline bork\r'.encode())
+    diag = wait_for(fd, screen, [re.escape(err_text)], timeout=TIMEOUT)
+    if not diag:
+        print('[FAIL] scenario 6 (P282): invalid-verb diagnostic never rendered')
+        return False
+    time.sleep(0.5)
+    drain(fd, screen)
+    if '/statusline bork' not in screen.viewport():
+        print('[FAIL] scenario 6 (P282): draft lost after invalid verb:\n' + screen.viewport())
+        return False
+    print('[PASS] scenario 6 (P282): invalid verb diagnostic rendered, draft preserved')
+
+    # P282 keeps the failed draft in the composer for correction; clear it with
+    # backspaces before retyping, otherwise the retry appends to the preserved
+    # draft ('/statusline bork' + retry => invalid verb "bork/statusline").
+    send(fd, b'\x7f' * 20)  # '/statusline bork' is 16 chars; extras are no-ops
+    time.sleep(0.5)
+    drain(fd, screen)
+    # The rolling buffer never forgets: the pre-backspace composer line
+    # '> /statusline bork' stays in the window even after the draft is cleared,
+    # so a window-wide absence check can never pass. The composer re-renders on
+    # every keystroke, so only the newest '> ' line reflects the current draft.
+    composer_lines = [ln for ln in screen.viewport().splitlines() if re.match(r'^\s*>\s*$|^\s*>\s+\S', ln)]
+    if composer_lines and re.search(r'/statusline\s+bork', composer_lines[-1]):
+        print('[FAIL] scenario 6 (P282): preserved draft not cleared by backspace:\n' + screen.viewport())
+        return False
+
+    send(fd, '/statusline set model,context\r'.encode())
+    ok = wait_for(fd, screen, [re.escape(ok_text)], timeout=TIMEOUT)
+    if not ok:
+        print('[FAIL] scenario 6 (P282): corrected retry success notice never rendered')
+        return False
+    time.sleep(0.5)
+    drain(fd, screen)
+    view = screen.viewport()
+    composer_lines = [ln for ln in view.splitlines() if re.match(r'^\s*>\s*$|^\s*>\s+\S', ln)]
+    # The typed echo "> /statusline set ..." stays in the rolling buffer after submit,
+    # so a whole-viewport absence check can never pass; only the newest composer line
+    # reflects whether the successful command consumed the draft.
+    if composer_lines and re.search(r'/statusline', composer_lines[-1]):
+        print('[FAIL] scenario 6 (P282): draft not consumed after success:\n' + view)
+        return False
+    print('[PASS] scenario 6 (P282): corrected retry succeeded, draft consumed')
     return True
 
 
@@ -421,6 +498,7 @@ def main() -> int:
             results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
+            results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))

@@ -336,6 +336,14 @@ export class TypeormAdapter {
     protected async disconnect(): Promise<void> {
         await Promise.all(Array.from(this.sources.values()).map(async c => {
             if (c && c.isInitialized) {
+                // sqljs keeps its database in memory and only persists to file
+                // on autoSave, which is skipped while a transaction is active;
+                // persist the final state before destroy() closes the in-memory db.
+                const options = c.options as { type?: string; location?: string; autoSave?: boolean };
+                const driver = c.driver as { save?: () => Promise<void> };
+                if (options.type === 'sqljs' && options.location && options.autoSave && typeof driver.save === 'function') {
+                    await driver.save();
+                }
                 await c.destroy()
             }
         }))

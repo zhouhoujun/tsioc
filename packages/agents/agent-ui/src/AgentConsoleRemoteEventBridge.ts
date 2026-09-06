@@ -27,11 +27,19 @@ interface SseFrame {
 }
 
 function resolveFetch(options: AgentConsoleRemoteEventBridgeOptions): typeof fetch {
-    return options.fetchImpl
-        ?? ((globalThis as { fetch?: typeof fetch }).fetch as typeof fetch | undefined)
-        ?? (() => {
-            throw new Error('fetch is not available; provide fetchImpl in AgentConsoleRemoteEventBridgeOptions');
-        }) as unknown as typeof fetch;
+    const custom = options.fetchImpl;
+    if (custom) {
+        return custom;
+    }
+    const globalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
+    if (globalFetch) {
+        // Browsers throw "Illegal invocation" when extracted window.fetch is called
+        // with a detached receiver; bind it to the global object.
+        return globalFetch.bind(globalThis) as typeof fetch;
+    }
+    return (() => {
+        throw new Error('fetch is not available; provide fetchImpl in AgentConsoleRemoteEventBridgeOptions');
+    }) as unknown as typeof fetch;
 }
 
 export function parseSseFrames(input: string): { frames: SseFrame[]; rest: string } {

@@ -50,14 +50,15 @@ export function canReactive(target: any) {
 let isComputing = false;
 let currentComputedKey: string | symbol | null = null;
 
-const native$ = /\[native code\]/;
 function isNative(target: any) {
-    // return !!target && native$.test(getType(target)?.toString()??'')
+    // Promise must stay raw: proxying it breaks .then/.catch (internal slots
+    // are only readable on the real promise) and pollutes it with REACT_FlAG.
     return target instanceof Date
         || target instanceof Map
         || target instanceof Set
         || target instanceof WeakMap
         || target instanceof WeakSet
+        || target instanceof Promise
 }
 
 function isSubscribable(target: any): target is { subscribe(listener: () => void): () => void } {

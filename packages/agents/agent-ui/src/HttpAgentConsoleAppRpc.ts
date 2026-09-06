@@ -20,11 +20,19 @@ interface RpcEnvelope {
 const DEFAULT_TIMEOUT_MS = 300_000;
 
 function resolveFetch(options: HttpAgentConsoleAppRpcOptions): typeof fetch {
-    return options.fetchImpl
-        ?? ((globalThis as { fetch?: typeof fetch }).fetch as typeof fetch | undefined)
-        ?? (() => {
-            throw new Error('fetch is not available; provide fetchImpl in HttpAgentConsoleAppRpcOptions');
-        }) as unknown as typeof fetch;
+    const custom = options.fetchImpl;
+    if (custom) {
+        return custom;
+    }
+    const globalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
+    if (globalFetch) {
+        // Browsers throw "Illegal invocation" when extracted window.fetch is
+        // called with a detached receiver; bind it to the global object.
+        return globalFetch.bind(globalThis) as typeof fetch;
+    }
+    return (() => {
+        throw new Error('fetch is not available; provide fetchImpl in HttpAgentConsoleAppRpcOptions');
+    }) as unknown as typeof fetch;
 }
 
 function buildHeaders(options: HttpAgentConsoleAppRpcOptions): Record<string, string> {

@@ -24,6 +24,7 @@ import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
+    AgentConsoleCommandOutputsPanelComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleAssistantMessageItemComponent,
     AgentConsoleApprovalsPanelComponent,
@@ -34,6 +35,7 @@ import {
     AgentConsoleMessagesPanelComponent,
     AgentConsoleReviewPanelComponent,
     AgentConsoleErrorMessageItemComponent,
+    AgentConsoleGitSnapshotPanelComponent,
     AgentConsoleSelectPanelComponent,
     AgentConsoleWhichKeyPanelComponent,
     AgentConsoleHealthPopoverComponent,
@@ -66,6 +68,7 @@ import {
     declarations: [
         AgentConsoleComponent,
         AgentConsoleBrandPanelComponent,
+        AgentConsoleCommandOutputsPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
@@ -83,6 +86,7 @@ import {
         AgentConsoleAssistantMessageItemComponent,
         AgentConsoleToolMessageItemComponent,
         AgentConsoleErrorMessageItemComponent,
+        AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleSystemMessageItemComponent,
         AgentConsoleMessagesPanelComponent,
         AgentConsoleMessageDetailPanelComponent,
@@ -110,6 +114,7 @@ import {
     exports: [
         AgentConsoleComponent,
         AgentConsoleBrandPanelComponent,
+        AgentConsoleCommandOutputsPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
@@ -127,6 +132,7 @@ import {
         AgentConsoleAssistantMessageItemComponent,
         AgentConsoleToolMessageItemComponent,
         AgentConsoleErrorMessageItemComponent,
+        AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleSystemMessageItemComponent,
         AgentConsoleMessagesPanelComponent,
         AgentConsoleMessageDetailPanelComponent,

@@ -268,6 +268,7 @@ export class FakeAgentGateway {
     protected questions: FakeQuestionItem[];
     protected tools: FakeToolDefinition[];
     protected commandOutputs: FakeCommandOutputEntry[];
+    protected inputHistoryByWorkspace = new Map<string, string[]>();
     readonly rpcCalls: FakeRpcCall[] = [];
     readonly sse: FakeSseChannel;
     protected sessionId: string;
@@ -434,6 +435,12 @@ export class FakeAgentGateway {
             case 'tools.list': {
                 return this.tools;
             }
+            case 'tools.invoke': {
+                // Benign: `refreshMentionCatalog` probes mention providers (skill_list /
+                // plugins) via tools.invoke; empty output keeps the catalog empty instead
+                // of surfacing an unserved -32601 during connection checks.
+                return { output: {} };
+            }
             case 'command_output.list': {
                 const items = this.commandOutputs
                     .filter(entry => !entry.sessionId || entry.sessionId === sessionId)
@@ -458,6 +465,88 @@ export class FakeAgentGateway {
                     return count;
                 }
                 return 0;
+            }
+            case 'session.create': {
+                // Mirrors AppRpcServer.createSession (ephemeral store; recordId keyed for command_output).
+                const requested = String(p.sessionId || '').trim() || this.sessionId;
+                const createdAt = Date.now();
+                return {
+                    sessionId: requested,
+                    createdAt,
+                    updatedAt: createdAt,
+                    workspace: this.workspace,
+                    commandOutputRecordId: `rpc:${this.workspace}:${requested}`
+                };
+            }
+            case 'session.list': {
+                // Mirrors AppRpcServer.listSessions: plain array, not a wrapper.
+                return [];
+            }
+            case 'session.list_projects': {
+                // Mirrors AppRpcServer.listSessionProjects: plain array of groups.
+                return [];
+            }
+            case 'session.messages': {
+                // Mirrors AppRpcServer.getSessionMessages: a page over the session's
+                // persisted message store — empty until turns land; the bridge's
+                // seed/replay phase builds the rendered rows from timeline events.
+                return {
+                    sessionId,
+                    messages: [],
+                    sections: [],
+                    goalSummary: undefined,
+                    nextCursor: undefined,
+                    hasMore: false
+                };
+            }
+            case 'approval.list': {
+                // Mirrors the agent-gateway approval surface: `{ requests }`.
+                return { sessionId, requests: [] };
+            }
+            case 'app.inputHistory.get': {
+                // Mirrors AppRpcServer.getInputHistory -> merged string[].
+                const workspace = String(p.workspace || '').trim() || 'default';
+                return this.inputHistoryByWorkspace.get(workspace) ?? [];
+            }
+            case 'app.inputHistory.put': {
+                // Mirrors AppRpcServer.putInputHistory -> `{ workspace, entries }`.
+                const workspace = String(p.workspace || '').trim() || 'default';
+                const entries = Array.isArray(p.entries)
+                    ? p.entries.map(String).slice(0, 200)
+                    : [];
+                this.inputHistoryByWorkspace.set(workspace, entries);
+                return { workspace, entries };
+            }
+            case 'session.plan_mode.get': {
+                // Mirrors AppRpcServer.getSessionPlanMode -> `{ sessionId, enabled }`.
+                return { sessionId, enabled: false };
+            }
+            case 'coding_task.list': {
+                // Mirrors AppRpcServer.listCodingTasks -> `{ sessionId, tasks, total }`.
+                return { sessionId, tasks: [], total: 0 };
+            }
+            case 'usage.stats': {
+                // Mirrors AppRpcServer.getUsageStats -> `{ usage, budgets }` (empty windows).
+                return {
+                    usage: {
+                        daily: { turns: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, sessions: 0, timeRange: null },
+                        weekly: { turns: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, sessions: 0, timeRange: null },
+                        cumulative: { turns: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, sessions: 0, timeRange: null }
+                    },
+                    budgets: {}
+                };
+            }
+            case 'summary_quality.stats': {
+                // Mirrors AppRpcServer.getSummaryQualityStats -> `{ aggregates }`.
+                return { aggregates: [] };
+            }
+            case 'compaction_history.stats': {
+                // Mirrors AppRpcServer.getCompactionHistoryStats -> `{ aggregates }`.
+                return { aggregates: [] };
+            }
+            case 'turn_diagnostics.stats': {
+                // Mirrors AppRpcServer.getTurnDiagnosticsStats -> `{ aggregate }`.
+                return { aggregate: null };
             }
             default: {
                 return { code: -32601, message: `Unknown method: ${method}` };

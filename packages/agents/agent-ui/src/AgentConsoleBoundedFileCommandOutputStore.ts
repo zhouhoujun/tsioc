@@ -26,24 +26,26 @@ import {
 @Injectable()
 export class BoundedFileCommandOutputStore extends AbstractCommandOutputStore {
     protected readonly fileAdapter: FileAdapter;
+    protected readonly fileDirectory: string;
     protected readonly filePath: string;
 
     /** `fileAdapter` always exists for a durable store; the host supplies it. */
     constructor(fileAdapter: FileAdapter, directory = '', cap = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP) {
         super(Math.max(1, Math.floor(cap ?? AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP)));
         this.fileAdapter = fileAdapter;
-        this.filePath = this.fileAdapter.join(String(directory), '.tsdi-agent', 'command-output-history.json');
+        this.fileDirectory = this.fileAdapter.join(String(directory), '.tsdi-agent');
+        this.filePath = this.fileAdapter.join(this.fileDirectory, 'command-output-history.json');
         this.load();
     }
 
     override async append(entry: AgentConsoleCommandOutputHistoryEntry): Promise<void> {
         await super.append(entry);
-        this.persist();
+        await this.persist();
     }
 
     override async clear(sessionId?: string, opts: { all?: boolean } = {}): Promise<number> {
         const removed = await super.clear(sessionId, opts);
-        this.persist();
+        await this.persist();
         return removed;
     }
 
@@ -63,9 +65,12 @@ export class BoundedFileCommandOutputStore extends AbstractCommandOutputStore {
         }
     }
 
-    protected persist(): void {
+    protected async persist(): Promise<void> {
         try {
-            void this.fileAdapter.writeText(
+            // Ensure the parent directory exists so the first write never hits
+            // ENOENT (mirrors AgentConsoleSettingsStore.save).
+            await this.fileAdapter.mkdir(this.fileDirectory, { recursive: true });
+            await this.fileAdapter.writeText(
                 this.filePath,
                 JSON.stringify({ version: 1, entries: this.entries })
             );

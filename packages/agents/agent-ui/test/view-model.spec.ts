@@ -1739,9 +1739,11 @@ function createWorkspaceFixture(): string {
     fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
     fs.mkdirSync(path.join(workspace, 'docs', 'guides'), { recursive: true });
     fs.mkdirSync(path.join(workspace, 'dist'), { recursive: true });
+    fs.mkdirSync(path.join(workspace, 'docs', 'references'), { recursive: true });
     fs.writeFileSync(path.join(workspace, 'src', 'index.ts'), 'export const demo = 1;\n', 'utf8');
     fs.writeFileSync(path.join(workspace, 'src', 'feature.ts'), 'export const feature = () => "ok";\n', 'utf8');
     fs.writeFileSync(path.join(workspace, 'docs', 'guides', 'intro.md'), '# Intro\nworkspace mention test\n', 'utf8');
+    fs.writeFileSync(path.join(workspace, 'docs', 'references', '引用文件.md'), '# Reference\n', 'utf8');
     fs.writeFileSync(path.join(workspace, 'dist', 'bundle.js'), 'console.log("compiled");\n', 'utf8');
     return workspace;
 }
@@ -2647,6 +2649,10 @@ export class AgentConsoleComponentTest {
             state.setInput('check @int', 'check @int'.length);
             await waitForSuggestionMenu(state);
             expect(state.selectMenu?.options.map(option => option.value)).toContain('@docs/guides/intro.md');
+
+            state.setInput('check @文件', 'check @文件'.length);
+            await waitForSuggestionMenu(state);
+            expect(state.selectMenu?.options.map(option => option.value)).toContain('@docs/references/引用文件.md');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
@@ -2690,7 +2696,7 @@ export class AgentConsoleComponentTest {
                 new ToolRegistryStub(),
                 app,
                 undefined,
-                new AgentConsoleWorkspaceMentionsProvider(new TestFileAdapter())
+                new AgentConsoleWorkspaceMentionsProvider()
             );
             component.configure({
                 sessionId: 'chat-app-workspace-mentions',
@@ -3185,6 +3191,111 @@ export class AgentConsoleComponentTest {
         expect(historyStore.saveCalls[1]).toEqual(['history-a', 'history-b']);
         expect(historyStore.sessionIds[2]).toEqual('chat-b');
         expect(historyStore.sessionIds[3]).toEqual('');
+    }
+
+    @Test('openSession follows the session workspace when reloading input history choices')
+    async openSessionFollowsSessionWorkspaceForInputHistoryChoices() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const historyStore = new InputHistoryStoreStub();
+        sessionService.sessions = [
+            { id: 'chat-a', current: true, lastActiveAt: 3, workspace: '/tmp/workspace-a' },
+            { id: 'chat-b', current: false, lastActiveAt: 2, workspace: '/tmp/workspace-b' }
+        ];
+        historyStore.setScopedEntries('/tmp/workspace-a', 'chat-a', ['alpha history']);
+        historyStore.setScopedEntries('/tmp/workspace-b', 'chat-b', ['beta history']);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            undefined,
+            { ui: { title: 'Console', console: { workspace: '/tmp/workspace-a' } } },
+            historyStore
+        );
+
+        component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-a' });
+        await component.onInit();
+        component.sessionState.setInput('draft-a', 7);
+
+        await (component as any).openSession('chat-b');
+
+        expect(component.workspace).toEqual('/tmp/workspace-b');
+        expect(component.sessionState.workspace).toEqual('/tmp/workspace-b');
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['beta history']);
+        expect(historyStore.workspaces).toContain('/tmp/workspace-b');
+    }
+
+    @Test('openSession keeps the configured workspace on initial launch even if ensureSession returns another workspace')
+    async openSessionKeepsConfiguredWorkspaceOnInitialLaunch() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const historyStore = new InputHistoryStoreStub();
+        const appRpc = new AppRpcStub();
+        appRpc.state = {
+            sessionId: 'chat-a',
+            workspace: '/tmp/workspace-b'
+        };
+        sessionService.sessions = [{ id: 'chat-a', current: true, lastActiveAt: 3, workspace: '/tmp/workspace-b' }];
+        sessionService.ensureSessionHandlers.set('chat-a', async () => ({ id: 'chat-a', current: true, workspace: '/tmp/workspace-b' } as any));
+        historyStore.setScopedEntries('/tmp/workspace-a', 'chat-a', ['alpha history']);
+        historyStore.setScopedEntries('/tmp/workspace-b', 'chat-a', ['beta history']);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            appRpc,
+            { ui: { title: 'Console', console: { workspace: '/tmp/workspace-a' } } },
+            historyStore
+        );
+
+        component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-a' });
+        await component.onInit();
+
+        expect(component.workspace).toEqual('/tmp/workspace-a');
+        expect(component.sessionState.workspace).toEqual('/tmp/workspace-a');
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['alpha history']);
+    }
+
+    @Test('cd command persists current workspace history and reloads the next workspace history')
+    async cdCommandReloadsWorkspaceHistoryChoices() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const historyStore = new InputHistoryStoreStub();
+        historyStore.setScopedEntries('/tmp/workspace-a', 'chat-a', ['alpha history']);
+        historyStore.setScopedEntries('/tmp/workspace-b', 'chat-a', ['beta history']);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', console: { workspace: '/tmp/workspace-a' } } },
+            historyStore
+        );
+
+        component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-a' });
+        await component.onInit();
+        component.sessionState.setInputHistoryEntries(['alpha history', 'draft alpha']);
+
+        await (component as any).runCdCommand('/tmp/workspace-b');
+
+        expect(component.sessionState.getInputHistoryEntries()).toEqual(['beta history']);
+        expect(historyStore.saveCalls.some(call => call.includes('draft alpha'))).toBe(true);
+        expect(historyStore.workspaces).toContain('/tmp/workspace-a');
+        expect(historyStore.workspaces).toContain('/tmp/workspace-b');
     }
 
     @Test('openSession ignores stale switches blocked behind history persistence')

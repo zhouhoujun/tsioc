@@ -122,7 +122,7 @@ export async function runAgentConsole(
         const sessionState = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
         const fileAdapter = ctx?.get ? ctx.get(FileAdapter) : undefined;
         if (sessionState && fileAdapter) {
-            sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(fileAdapter, resolved.root));
+            sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(fileAdapter, resolved.workspace));
             await sessionState.loadCommandOutputHistory();
         }
     } catch {

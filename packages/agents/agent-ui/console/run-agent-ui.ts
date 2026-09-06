@@ -1,4 +1,5 @@
 import { Application, ApplicationRunners } from '@tsdi/core';
+import { FileAdapter } from '@tsdi/common';
 import { AnimatedTextLifecycleService } from '@tsdi/components';
 import { AGENT_OPTIONS } from '@tsdi/agent';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@tsdi/components/console';
 import {
     AgentUiModule,
+    AgentConsoleWorkspaceMentionsProvider,
     ConsoleTerminalSurfaceAccessor
 } from '@tsdi/agent-ui';
 
@@ -42,6 +44,11 @@ export async function runAgentTUI(
                     provide: ConsoleTerminalSurfaceAccessor,
                     deps: [PlatformConsoleTerminalSurfaceAccessor],
                     useFactory: (surface: PlatformConsoleTerminalSurfaceAccessor) => surface
+                },
+                {
+                    provide: AgentConsoleWorkspaceMentionsProvider,
+                    deps: [FileAdapter],
+                    useFactory: (fileAdapter: FileAdapter | null) => new AgentConsoleWorkspaceMentionsProvider(fileAdapter || undefined)
                 },
                 AnimatedTextLifecycleService,
                 ...(options.providers || []),

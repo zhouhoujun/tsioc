@@ -139,6 +139,30 @@ const nodeBuiltinStubPlugin: esbuild.Plugin = {
     }
 };
 
+/**
+ * Node-only third-party leaf stubs (mirrors nodeBuiltinStubPlugin).
+ *
+ * `AgentModule` statically imports the TypeOrm stores, dragging `typeorm`
+ * into the bundle; its inert driver deps (pg, ioredis, mkdirp, ...) execute
+ * bare `process.*` at module scope and crash the IIFE on load. Typeorm is
+ * intentionally NOT stubbed: `memory/entities.js` applies its decorators.
+ */
+const nodeOnlyThirdPartyStubPlugin: esbuild.Plugin = {
+    name: 'node-only-third-party-stub',
+    setup(build) {
+        const stubRegex = /^(mkdirp|glob|rimraf|path-scurry|graceful-fs|pg|pgpass|pg-connection-string|ioredis|redis|redis-errors|denque|cluster-key-slot|standard-as-callback|chokidar)$/;
+        build.onResolve({ filter: stubRegex }, (): ResolveResult => {
+            return { path: 'node-only-third-party-stub', namespace: 'node-only-third-party-stub' };
+        });
+        build.onLoad({ filter: /.*/, namespace: 'node-only-third-party-stub' }, (): esbuild.OnLoadResult => {
+            return {
+                contents: 'module.exports = {};',
+                loader: 'js'
+            };
+        });
+    }
+};
+
 async function main(): Promise<void> {
     compileWithTsc();
     const distDir = path.join(PACKAGE_DIR, 'web', 'dist');
@@ -148,9 +172,10 @@ async function main(): Promise<void> {
         format: 'iife',
         platform: 'browser',
         target: 'es2020',
+        define: { global: 'globalThis' },
         sourcemap: true,
         legalComments: 'none',
-        plugins: [tscOutputAliasPlugin, nodeBuiltinStubPlugin],
+        plugins: [tscOutputAliasPlugin, nodeBuiltinStubPlugin, nodeOnlyThirdPartyStubPlugin],
         nodePaths: [path.join(ROOT, 'node_modules')],
         external: [
             'jsdom',

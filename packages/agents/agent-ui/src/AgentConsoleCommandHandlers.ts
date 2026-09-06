@@ -113,7 +113,7 @@ export interface CommandHandlerContext {
     runKeymapCommand(args: string): Promise<void>;
     runPermissionsCommand(args: string): Promise<void>;
     runStatusCommand(): Promise<void>;
-    runCdCommand(args: string): void;
+    runCdCommand(args: string): void | Promise<void>;
     runGoalCommand(args: string): Promise<void>;
     runUndoCommand(): Promise<void>;
     runRedoCommand(): Promise<void>;
@@ -1298,7 +1298,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/keymap': (ctx, args, meta) => ctx.runKeymapCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/permissions': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runPermissionsCommand(a).then(() => true)),
     '/status': (ctx) => ctx.runStatusCommand().then(() => true),
-    '/cd': (ctx, args, meta) => { ctx.runCdCommand(canonicalArgsOf(meta, args)); return Promise.resolve(true); },
+    '/cd': async (ctx, args, meta) => { await ctx.runCdCommand(canonicalArgsOf(meta, args)); return true; },
     '/pwd': handlePwd,
     '/goal': (ctx, args, meta) => ctx.runGoalCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/undo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/undo', matches: [] }, () => ctx.runUndoCommand().then(() => true)),

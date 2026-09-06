@@ -1,0 +1,14 @@
+╭─────────────────────╮│P285 INTERACTION GATE││deepseek-v4-flash │╰─────────────────────╯
+model: deepseek/deepseek-v4-flashStatusline set to model, context.
+✓ · 210ms · 成功 bash completed · 210ms
+✓ · 340ms · 成功 grep completed · 340ms
+✓ · 860ms · 成功 分析文件 completed · 860ms
+! 19:46 · 错误 /yolo maybe failed: Invalid mode "maybe". Expected: on, off. Did you mean on or off?
+• 19:46 /yolo on completed
+! 19:46 · 错误 /statusline bork failed: Invalid verb "bork". Expected: list, set, unset. Did you mean list or set or unset?
+• 19:46 /statusline set model,context completed
+? Continue with the refactor?
+1. yes
+2. no
+selected 1/2 · ↑↓ choose · 1-9 select · Enter confirm · Esc dismiss
+deepseek-v4-flash · 0 tokens

@@ -36,16 +36,18 @@ export interface GatewayDomMetrics {
     };
 }
 
-const PANEL_SELECTOR = '.console-panel.console-messages-panel';
-const ROW_SELECTOR = '.message-row';
-const LINE_SELECTOR = 'label.message-line[aria-label]';
-const CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/;
-
 export function collectGatewayMetrics(
     doc: Document,
     root: Element | Document = doc,
     opts?: { viewport?: { width: number; height: number } }
 ): GatewayDomMetrics {
+    // Keep these LOCAL: `collectorSource` (collectGatewayMetrics.toString()) ships
+    // only the function body into the browser, so any module-scope reference would
+    // throw ReferenceError on page.evaluate (P282 gate: PANEL_SELECTOR undefined).
+    const PANEL_SELECTOR = '.console-panel.console-messages-panel';
+    const ROW_SELECTOR = '.message-row';
+    const LINE_SELECTOR = 'label.message-line[aria-label]';
+    const CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/;
     const win = doc.defaultView;
     const innerHeight = win && typeof win.innerHeight === 'number' ? win.innerHeight : 0;
     const innerWidth = win && typeof win.innerWidth === 'number' ? win.innerWidth : 0;

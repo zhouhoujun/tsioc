@@ -217,7 +217,10 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         }
         const nameLower = entryName.toLowerCase();
         const pathLower = relativePath.toLowerCase();
-        return nameLower.startsWith(queryLower) || pathLower.startsWith(queryLower);
+        return nameLower.startsWith(queryLower)
+            || nameLower.includes(queryLower)
+            || pathLower.startsWith(queryLower)
+            || pathLower.includes(queryLower);
     }
 
     protected async listDirectorySuggestions(

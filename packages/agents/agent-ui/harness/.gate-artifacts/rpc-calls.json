@@ -1,0 +1,205 @@
+[
+  {
+    "method": "app.state",
+    "params": {},
+    "at": 1788695168108
+  },
+  {
+    "method": "app.inputHistory.get",
+    "params": {
+      "workspace": "default"
+    },
+    "at": 1788695168157
+  },
+  {
+    "method": "session.create",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168207
+  },
+  {
+    "method": "session.list_projects",
+    "params": {},
+    "at": 1788695168229
+  },
+  {
+    "method": "session.list",
+    "params": {},
+    "at": 1788695168241
+  },
+  {
+    "method": "session.messages",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168263
+  },
+  {
+    "method": "tools.list",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168288
+  },
+  {
+    "method": "approval.list",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168296
+  },
+  {
+    "method": "coding_task.list",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168298
+  },
+  {
+    "method": "app.inputHistory.get",
+    "params": {
+      "workspace": "default"
+    },
+    "at": 1788695168301
+  },
+  {
+    "method": "session.plan_mode.get",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168341
+  },
+  {
+    "method": "app.inputHistory.get",
+    "params": {
+      "workspace": "default"
+    },
+    "at": 1788695168351
+  },
+  {
+    "method": "tools.list",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695168353
+  },
+  {
+    "method": "tools.invoke",
+    "params": {
+      "sessionId": "session-A",
+      "name": "skill_list",
+      "input": {}
+    },
+    "at": 1788695168367
+  },
+  {
+    "method": "tools.invoke",
+    "params": {
+      "sessionId": "session-A",
+      "name": "plugins",
+      "input": {
+        "action": "list"
+      }
+    },
+    "at": 1788695168368
+  },
+  {
+    "method": "usage.stats",
+    "params": {},
+    "at": 1788695168389
+  },
+  {
+    "method": "summary_quality.stats",
+    "params": {},
+    "at": 1788695168400
+  },
+  {
+    "method": "compaction_history.stats",
+    "params": {},
+    "at": 1788695168421
+  },
+  {
+    "method": "turn_diagnostics.stats",
+    "params": {},
+    "at": 1788695168430
+  },
+  {
+    "method": "timeline.query",
+    "params": {
+      "sessionId": "session-A",
+      "limit": 500
+    },
+    "at": 1788695168817
+  },
+  {
+    "method": "command_exchange.query",
+    "params": {
+      "sessionId": "session-A",
+      "limit": 500
+    },
+    "at": 1788695168965
+  },
+  {
+    "method": "nav.query",
+    "params": {},
+    "at": 1788695169112
+  },
+  {
+    "method": "question.list",
+    "params": {
+      "sessionId": "session-A"
+    },
+    "at": 1788695169135
+  },
+  {
+    "method": "app.inputHistory.put",
+    "params": {
+      "workspace": "default",
+      "sessionId": "session-A",
+      "entries": [
+        "/yolo maybe"
+      ]
+    },
+    "at": 1788695170733
+  },
+  {
+    "method": "app.inputHistory.put",
+    "params": {
+      "workspace": "default",
+      "sessionId": "session-A",
+      "entries": [
+        "/yolo on",
+        "/yolo maybe"
+      ]
+    },
+    "at": 1788695170838
+  },
+  {
+    "method": "app.inputHistory.put",
+    "params": {
+      "workspace": "default",
+      "sessionId": "session-A",
+      "entries": [
+        "/statusline bork",
+        "/yolo on",
+        "/yolo maybe"
+      ]
+    },
+    "at": 1788695170949
+  },
+  {
+    "method": "app.inputHistory.put",
+    "params": {
+      "workspace": "default",
+      "sessionId": "session-A",
+      "entries": [
+        "/statusline set model,context",
+        "/statusline bork",
+        "/yolo on",
+        "/yolo maybe"
+      ]
+    },
+    "at": 1788695171042
+  }
+]
