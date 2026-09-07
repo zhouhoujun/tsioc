@@ -382,6 +382,8 @@ export interface AgentConsoleOptions {
     storedToolRunsLimit?: number;
     activityVisibleItems?: number;
     activityHistoryLimit?: number;
+    searchSessionLimit?: number;
+    editEscapeWindowMs?: number;
     summaryMaxLength?: number;
     toolRunSummaryMaxLength?: number;
     sessionHint?: string;
@@ -437,6 +439,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     storedToolRunsLimit: 8,
     activityVisibleItems: 3,
     activityHistoryLimit: 30,
+    searchSessionLimit: 100,
+    editEscapeWindowMs: 400,
     summaryMaxLength: 80,
     toolRunSummaryMaxLength: 400,
     sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',

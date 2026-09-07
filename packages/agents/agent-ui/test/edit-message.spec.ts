@@ -119,6 +119,25 @@ function standardMessages(): any[] {
 @Suite('edit last message (P130)')
 export class EditMessageTest {
 
+    @Test('console options expose stable defaults for search and edit timing')
+    consoleOptionDefaults() {
+        const { state } = createEditConsole([]);
+        expect(state.consoleOptions.searchSessionLimit).toEqual(100);
+        expect(state.consoleOptions.editEscapeWindowMs).toEqual(400);
+    }
+
+    @Test('editEscapeWindowMs can narrow the double-Esc window')
+    async configurableEscapeWindow() {
+        const { state, component } = createEditConsole(standardMessages());
+        state.setConsoleOptions({ editEscapeWindowMs: 10 });
+        (component as any).lastEscapeAt = Date.now() - 50;
+
+        const handled = await pressEsc(component);
+
+        expect(handled).toEqual(false);
+        expect((component as any).editTargetMessageId).toEqual('');
+    }
+
     @Test('Esc,Esc enters edit mode on the last editable user message')
     async doubleEscEntersEditMode() {
         const { state, component } = createEditConsole(standardMessages());

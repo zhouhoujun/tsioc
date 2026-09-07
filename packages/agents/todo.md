@@ -2192,6 +2192,8 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：将 `SEARCH_SESSION_LIMIT` / `EDIT_ESCAPE_WINDOW_MS` 提为 `consoleOptions` 可配置项（带默认值），生效点 `AgentConsoleComponent.ts:3827/5818/5866`，并同步 `editEscapeWindowMs` 透传。属低风险，注意默认值与现一致。
 - **验收**：可通过 `consoleOptions` 覆盖；默认行为不变；全量测试通过。
 
+**A2 收尾（2026-09-08）✅**：`searchSessionLimit`（默认 100）与 `editEscapeWindowMs`（默认 400ms）已进入跨平台 `AgentConsoleOptions`，组件搜索候选截断、双 Esc 判定及 edit handler context 均读取响应式 state 配置，原静态魔法常量与引用归零；新增默认值和覆盖窗口测试。`agent-ui` `tsc --noEmit` EXIT=0、全量 **1103 passing**；DOM/TUI 门禁均 4/4 PASS；`build:web` 仍受沙箱 `spawnSync /bin/sh EPERM` 限制。
+
 #### 批次 A3 · 平台环境信息经守卫/注入（中）
 
 - **写死点**：

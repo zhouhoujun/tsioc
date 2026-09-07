@@ -253,9 +253,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
         '.pdf': 'application/pdf'
     };
-    protected static readonly SEARCH_SESSION_LIMIT = 100;
     protected static readonly SEARCH_CONCURRENCY = 6;
-    protected static readonly EDIT_ESCAPE_WINDOW_MS = 400;
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected shellMultilineMode = false;
@@ -3824,7 +3822,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         sessions: AgentConsoleSessionItem[]
     ): Promise<Map<string, { count: number; snippet: string }>> {
         const hits = new Map<string, { count: number; snippet: string }>();
-        const candidates = sessions.slice(0, AgentConsoleComponent.SEARCH_SESSION_LIMIT);
+        const candidates = sessions.slice(0, this.state.consoleOptions.searchSessionLimit);
         const results = await this.mapWithConcurrency(
             candidates,
             AgentConsoleComponent.SEARCH_CONCURRENCY,
@@ -5810,12 +5808,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     /**
      * P130 edit-last-message Esc state machine (G55/G70):
      * edit-active Esc dismisses (records target for step-back); idle double
-     * Esc within EDIT_ESCAPE_WINDOW_MS re-enters at the previous message, or
+     * Esc within the configured editEscapeWindowMs re-enters at the previous message, or
      * at the last editable user message when no dismissal is recent.
      */
     protected async handleIdleEscape(): Promise<boolean> {
         const now = Date.now();
-        const withinWindow = now - this.lastEscapeAt <= AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS;
+        const withinWindow = now - this.lastEscapeAt <= this.state.consoleOptions.editEscapeWindowMs;
         this.lastEscapeAt = now;
         if (this.editTargetMessageId) {
             this.dismissEditMode();
@@ -5863,7 +5861,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return {
             state: this.state,
             notify: (message, duration) => this.notify(message, duration),
-            editEscapeWindowMs: AgentConsoleComponent.EDIT_ESCAPE_WINDOW_MS,
+            editEscapeWindowMs: this.state.consoleOptions.editEscapeWindowMs,
             getEditableUserMessages: () => this.getEditableUserMessages(),
             extractEditableMessageText: target => this.extractEditableMessageText(target),
             getEditableImageParts: target => this.getEditableImageParts(target),
