@@ -2122,6 +2122,15 @@ Turn: Fix session restore                                      running  01:42
   3. 外部 state 需镜像 `state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL))` + `setCommandOutputStore(new RpcCommandOutputStore(rpc, ...))` + `configure({sessionId, workspace})`，顺序与 web-console.ts 一致。
 - **验证**：TUI 门禁 4 场景全过 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）——成为 P281 跨平台渲染一致性的**结构验证载体**（原先"浏览器 DOM/TUI 结构一致性验收不具备运行载体、skip+report"的限制解除）；DOM 门禁同步 4/4 PASS 无回归；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0；agent-ui 全量 **1101 passing / 0 failed EXIT=0**。P281、P285 可标 ✅。
 
+### 2026-09-08 packages/agents 全量收尾复核
+
+- **源码/完成项检查**：本轮开始时工作区干净；P281/P285 双端门禁与启动 session 回归修复均已在前置提交中，未发现需要补写的源码改动。
+- **全量包测试**：`agent-channels` 59、`agent-cli` 74、`agent-gateway` 267、`agent-tools` 478、`agent-providers` 13、`agent-ssh` 8、`agent-vscode` 7、`agent-desktop` 20 全部 passing，EXIT=0；`agent-ui` **1101 passing / 0 failed**，runner 在 summary 后未自然退出，手动终止残留进程。
+- **已知基线失败**：`agent` **750 passing / 44 failed EXIT=1**，失败集中在 `verification-gate.spec.ts` 的 TypeORM `DataSource "undefined"` 与由此引发的 verification/repair metadata 断言，与 2026-09-07 已记录基线数量一致；本轮无源码 diff，未引入新回归。
+- **跨端门禁**：`run-dom-gate.ts` 和 `run-tui-gate.ts` 均 **PASS (4 scenarios) EXIT=0**，覆盖 desktop-basic / mobile-320 / cjk-long-history / disconnect-retry。
+- **类型/构建限制**：并行执行 10 个包 `tsc --noEmit` 时，`agent-vscode`/`agent-desktop` EXIT=0，其余进程长时间无输出且不退出，已终止，不宣称通过；`agent-ui build:web` 内部 `spawnSync /bin/sh` 被当前沙箱以 `EPERM` 拒绝，需在可创建子进程的宿主/CI 复验。
+- **结论**：已完成实现状态检查、可运行包全量测试、双端门禁与结果归档；不把 `agent` 的 44 个已知失败或沙箱限制伪记为全绿。
+
 - **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
 - **agent-ui**：953 passing EXIT=0。
 - **agent-cli**：73 passing EXIT=0。
