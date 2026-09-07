@@ -2236,6 +2236,13 @@ Turn: Fix session restore                                      running  01:42
   - `TimerDriven`（主动 setInterval/setTimeout 刷新界面）→ **违规，必须移除**（架构红线）。
 - **验收**：审计表写入本节；残留 `setInterval/setTimeout` 刷新类用法归零；全量测试通过。
 
+**A5 收尾（2026-09-07）✅（纯审计批次，零代码改动）**：agent-ui/src 全量 **62 处 `Date.now()/Math.random()`** 逐点审计，与计划基线一致（`AgentConsoleSessionState.ts` 18、`AgentConsoleComponent.ts` 17、`AgentConsoleRemoteEventBridge.ts` 8、`AgentConsoleEventBridge.ts` 7、`AgentConsoleSessionService.ts` 3、`AgentConsoleEditModeHandlers.ts` 2、`AgentConsoleInputHistoryStore.ts` 2、`AgentConsoleExportHandlers.ts` 2、`HttpAgentConsoleAppRpc.ts` 1、`AgentConsoleTimelineWindow.ts` 1、`AgentConsolePanels.ts` 1），分类审计表：
+- **`Id/timestamp`（58 处）**：消息/事件/attachment/session/request 唯一 id 生成（`${Date.now()}-${Math.random().toString(16).slice(2,8)}` 等）与 createdAt/updatedAt/expiresAt/exportedAt/ts 时间戳记录——符合"id 生成可随数据变化"规则，保留。
+- **`TimeDerived`（4 处）**：`AgentConsolePanels.ts:933` 耗时秒数 getter（`Date.now()-startedAt`，随真实渲染推进）；`AgentConsoleComponent.ts:5430` 任务耗时展示（`finishedAt ?? Date.now()`）；`AgentConsoleComponent.ts:5815` 与 `AgentConsoleEditModeHandlers.ts:50/89` 的 Esc 双击窗口判定（事件驱动时间差 `Date.now()-lastEscAt <= editEscapeWindowMs`，非定时器）——符合"动画/时间显示必须时间派生"约束，保留。
+- **`TimerDriven`（0 处）**：**无违规**。全库 `setInterval` 为 0；3 处 `setTimeout`（`HttpAgentConsoleAppRpc.ts:63` 请求超时 abort、`AgentConsoleRemoteEventBridge.ts:386/661` 断线重连延迟）均为网络/请求生命周期管理，不驱动界面刷新。
+- **`SystemClockInjection`（0 处新增）**：审计无阻断确定性测试的用例——时间戳均有创建时点直传（`createdAt: options.createdAt ?? Date.now()` 等）或记录值回读路径，测试夹具可注入时钟（P238 基线），无需引入可注入时钟 provider。
+- **结论**：无违规使用点，无需代码改动；"禁止定时器主动驱动无数据变化的刷新"红线在 agent-ui 全库命中数为 0。验收：审计表写入本节 ✅；残留刷新类定时器用法 0 ✅；agent-ui 全量测试通过（收尾矩阵 1103 passing EXIT=0）✅。
+
 ### v17-B agent-ui UX 差距（对照 codex/opencode）
 
 现状（代码证据）：命令面板/焦点栈/Timeline/plan 卡片/overlay 已具备（见 1464 差距表与 1235 深度对比）。以下为对照 codex/opencode（2026 行为）识别的新差距，按交互价值拆分。
