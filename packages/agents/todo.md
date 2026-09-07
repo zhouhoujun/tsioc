@@ -1864,7 +1864,7 @@ Turn: Fix session restore                                      running  01:42
 - 验收：长历史 + 多结构项 + CJK/窄宽度快照；断线 replay、plan 更新、窗口收缩不重复不丢失；新增 reducer/窗口纯函数测试，agent-ui 全量与 `components/console` 回归。
 - **结果**：新增 `AgentConsoleTimelineWindow.ts` 纯函数模块（resolveTimelineWindowLedger + priority/category/estimatedRows 注解），`AgentConsolePanels.ts` 委托调用；12 项纯函数单元测试覆盖 verbose/steps/compact 模式、优先级分级、estimatedRows 估算、空输入边界；agent-ui 966 passing / 0 failing / EXIT=0，tsc --noEmit 干净。
 
-**P281 · Timeline visual language（中-高）** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
+**P281 · Timeline visual language（中-高）✅** `platform: agent-ui/src + components/console（跨平台共享 renderer）`
 
 - 2026-09-02 状态列切片：时间线 event 行和 plan boundary 不再在内容区重复输出 `├─/·/▸` 状态符号，左侧统一由 status slot 输出单一 glyph；已补充 renderer 回归断言。
 - 2026-09-04 文案模型切片：引入 `formatTimelineSentence({ actor, action, object, result, detail })` 纯函数 + `resolveTimelineEventSentence(metadata, fallbackContent)` 从事件元数据提取 action-first 短句（Reading package.json / Running read_file (1.2s) / Error: connection refused）；26 单元测试覆盖空 action、actor/object/result/detail 组合、去重、非 event 消息、turn/tool/plan/context/model/background_task 各类事件类型、uiEventLabel 降级、长错误截断。
@@ -1912,7 +1912,7 @@ Turn: Fix session restore                                      running  01:42
 - UI：`AgentConsoleSessionState` seed/project/replay、`AgentConsoleRemoteEventBridge` seedFromCommandExchange/replayFromCommandExchange。
 - 验证：agent-ui 新增 p284-command-exchange-durable.spec.ts（2 用例组 / 17 断言全过）；agent-ui 全量 1029 passing / 7 既有失败（stash 隔离证明为 P284 前基线）；agent-gateway、agent 改动 LSP 零诊断。agent-gateway 全量仍受沙箱 `listen EPERM` 限制，agent 包测试仍超时（sandbox 限制），不在本轮伪造为通过。
 
-**P285 · Interaction gate and visual harness（中）** `platform: agent acceptance + agent-ui acceptance`
+**P285 · Interaction gate and visual harness（中）✅** `platform: agent acceptance + agent-ui acceptance`
 
 - 目标：把上述交互纳入可重复门禁，避免“测试全绿但真实路径失效”。
 - 实施：Node/Playwright browser runner 与共享 fake gateway 场景；Linux/macOS PTY、Windows ConPTY 适配；采集 DOM/ARIA/ANSI 快照、首屏可见率、重复 item、焦点回退、命令完成延迟。
@@ -2098,6 +2098,16 @@ Turn: Fix session restore                                      running  01:42
 - **背景**：上一版浏览器门禁（`harness/run-browser-gate.ts`，Playwright + Chromium）需下载浏览器并依赖系统库（sandbox 无 Chrome、ATK 库缺失，靠 `LD_LIBRARY_PATH` 本地补丁才能跑），验证成本高。
 - **改动**：删除 `harness/run-browser-gate.ts`，新增 `harness/run-dom-gate.ts`——单进程 JSDOM virtual DOM 门禁，复用共享 `FakeAgentGateway` + `SCENARIOS` + `collectGatewayMetrics`，挂载真实 `mountAgentWebConsole`，断言真实状态/网关 RPC 记录/DOM 指标；`npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts [scenarioId]`，EXIT 0=全过 1=有失败。`FakeAgentGateway.ts`/`scenarios.ts` 头部说明同步更新。
 - **验证**：4 场景全过 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0；agent-ui 全量 **1101 passing / 0 failed EXIT=0**（P285 JSDOM spec 仍在套件内，无回归）。无需 Playwright/Chrome 下载。
+
+### 2026-09-07 P285 TUI/console 侧门禁（门禁 + 流式双镜头）✅ 与 P281 结构一致性载体
+
+- **背景**：浏览器侧已有 virtual-DOM 门禁（`run-dom-gate.ts`），console/TUI 侧缺失。用户明确"agent-ui 同时支持门禁和流式"——agent-ui 是 Codex 式**流式布局（不限高度）**，console 渲染器没有视口/首屏概念。
+- **改动**：新增 `harness/run-tui-gate.ts`——与 DOM 门禁共享同一套 `FakeAgentGateway` + `SCENARIOS`，但渲染镜头换成 `ConsoleRenderer.renderToLines` 的**完整文本流**（流式镜头），并叠加同样的结构规则（单状态槽 glyph/自然短句/去重/CJK）。命令：`npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts [scenarioId]`，EXIT 0=全过 1=有失败。
+- **关键装配契约**（镜像 web-console.ts，TUI 用 `ConsoleTemplateModule` 替代 `HtmlTemplateModule`）：
+  1. **`AGENT_OPTIONS.bootstrapTurn.sessionId` 必须提供**——否则组件 `onInit` 的 `openSession('default')` 会把 sessionId 拉回 `default`，`commandExchangeSessionEpoch` 抬到 2+，`seedCommandExchange` 按 `record.sessionEpoch !== epoch` 过滤掉全部 command 记录，seed 计数卡 0（DOM 门禁靠 `mountAgentWebConsole` 内部已配好而幸免）。
+  2. **`bridge.subscribe()` 不能 `await`**——`connectOnce` seed 完成后挂在 SSE `reader.read()` 上永不 resolve；必须 fire-and-forget，全程用 `waitUntil` 轮询定时器维持事件循环，finally 里**先 `gateway.dispose()` 关 SSE 流**（reader 吐 done=true、subscribe 才 settle）、再 `await` subscribe 拿 disposeBridge 收尾。
+  3. 外部 state 需镜像 `state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL))` + `setCommandOutputStore(new RpcCommandOutputStore(rpc, ...))` + `configure({sessionId, workspace})`，顺序与 web-console.ts 一致。
+- **验证**：TUI 门禁 4 场景全过 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）——成为 P281 跨平台渲染一致性的**结构验证载体**（原先"浏览器 DOM/TUI 结构一致性验收不具备运行载体、skip+report"的限制解除）；DOM 门禁同步 4/4 PASS 无回归；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0；agent-ui 全量 **1101 passing / 0 failed EXIT=0**。P281、P285 可标 ✅。
 
 - **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
 - **agent-ui**：953 passing EXIT=0。
