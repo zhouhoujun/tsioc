@@ -2895,6 +2895,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runTimelineModeCommand: (a) => self.runTimelineModeCommand(a),
             runRawModeCommand: (a) => self.runRawModeCommand(a),
             runStashCommand: (a) => self.runStashCommand(a),
+            runQueueCommand: (a) => self.runQueueCommand(a),
             runStatuslineCommand: (a) => self.runStatuslineCommand(a),
             runHooksCommand: () => self.runHooksCommand(),
             runMemoriesCommand: (a) => self.runMemoriesCommand(a),
@@ -4332,6 +4333,34 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return true;
     }
 
+    protected async runQueueCommand(args?: string): Promise<boolean> {
+        const parsed = String(args || '').trim();
+        const queue = this.queuedPrompts.get(this.state.sessionId) || [];
+        if (!parsed || parsed.toLowerCase() === 'list') {
+            if (!queue.length) {
+                this.notify('No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.');
+                return true;
+            }
+            const lines = queue.map((entry, index) =>
+                `${index + 1}. ${entry.command ? '[command] ' : ''}${entry.input}${entry.attachments.length ? ` (+${entry.attachments.length} attachment${entry.attachments.length === 1 ? '' : 's'})` : ''}`
+            );
+            this.pushCommandOutput('/queue list', `Queued prompts (${queue.length}):\n${lines.join('\n')}`);
+            return true;
+        }
+        if (parsed.toLowerCase() === 'clear') {
+            if (!queue.length) {
+                this.notify('No queued prompts to clear.');
+                return true;
+            }
+            this.queuedPrompts.delete(this.state.sessionId);
+            this.state.setQueuedPromptCount(0);
+            this.notify(`Cleared ${queue.length} queued prompt${queue.length === 1 ? '' : 's'}.`);
+            return true;
+        }
+        this.notify('Usage: /queue [list|clear]');
+        return true;
+    }
+
     protected async applyTheme(value: string): Promise<boolean> {
         if (!isAgentConsoleThemeName(value)) {
             this.notify(`Unknown theme "${value}". Available: ${agentConsoleThemeNames.join(', ')}.`);
@@ -5534,6 +5563,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected decodeGlobalKey(raw: string): string {
         if (raw === '\u001b') return 'escape';
+        if (raw === '\t') return 'tab';
         const arrows: Record<string, string> = {
             '\u001b[A': 'up',
             '\u001b[B': 'down',
@@ -6005,7 +6035,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             await this.runTimelineModeCommand();
             return true;
         }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode'>, string> = {
+        if (action === 'queue-follow-up') {
+            return this.queueDraft();
+        }
+        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up'>, string> = {
             'new-session': '/new',
             compact: '/compact',
             export: '/export',

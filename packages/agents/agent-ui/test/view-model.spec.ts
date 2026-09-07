@@ -10759,6 +10759,33 @@ export class AgentConsoleComponentTest {
         expect(state.queuedPromptCount).toEqual(0);
     }
 
+    @Test('queue command lists queued prompts and clears them')
+    async queueCommandListsAndClears() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+
+        state.setInput('follow-up prompt');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('/compact');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        expect(state.queuedPromptCount).toEqual(2);
+
+        await (component as any).handleCommand('/queue');
+        expect(state.commandOutputs.some(entry => entry.command === '/queue list')).toEqual(true);
+        const listed = state.commandOutputs.find(entry => entry.command === '/queue list');
+        expect(listed?.text).toContain('Queued prompts (2)');
+        expect(listed?.text).toContain('follow-up prompt');
+        expect(listed?.text).toContain('[command] /compact');
+
+        await (component as any).handleCommand('/queue clear');
+        expect(state.queuedPromptCount).toEqual(0);
+        expect(state.notice).toContain('Cleared 2 queued prompts.');
+
+        await (component as any).handleCommand('/queue');
+        expect(state.notice).toContain('No queued prompts');
+    }
+
     @Test('escape interrupts a running turn before vim handling in tui and browser')
     async escapeInterruptsRunningTurnAcrossHosts() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());

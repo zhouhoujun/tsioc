@@ -130,6 +130,7 @@ export interface CommandHandlerContext {
     runTimelineModeCommand(args?: string): Promise<boolean>;
     runRawModeCommand(args: string): Promise<boolean>;
     runStashCommand(args: string): Promise<boolean>;
+    runQueueCommand(args?: string): Promise<boolean>;
     runStatuslineCommand(args: string): Promise<boolean>;
     runHooksCommand(): Promise<boolean>;
     runMemoriesCommand(args: string): Promise<boolean>;
@@ -1324,6 +1325,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/timeline': (ctx, args, meta) => ctx.runTimelineModeCommand(canonicalArgsOf(meta, args)),
     '/raw': (ctx, args, meta) => ctx.runRawModeCommand(canonicalArgsOf(meta, args)),
     '/stash': (ctx, args, meta) => ctx.runStashCommand(canonicalArgsOf(meta, args)),
+    '/queue': (ctx, args, meta) => ctx.runQueueCommand(canonicalArgsOf(meta, args)),
     '/statusline': (ctx, args, meta) => ctx.runStatuslineCommand(canonicalArgsOf(meta, args)),
     '/hooks': (ctx) => ctx.runHooksCommand(),
     '/memories': (ctx, args, meta) => ctx.runMemoriesCommand(canonicalArgsOf(meta, args)),

@@ -2253,6 +2253,8 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：新增 keymap action `queue-follow-up`（Tab），运行中把 composer 草稿入队为"下一 turn 提示"，完成当前 turn 后自动注入；提供查看/清空队列命令。跨端共用 `SessionState`，浏览器与 TUI 同动作。
 - **验收**：`AgentConsoleKeymap` 含 `tab`→`queue-follow-up`；排队后当前 turn 不被中断、完成后注入；门禁/全量测试通过。
 
+**B1 收尾（2026-09-07）✅**：keymap 链新增 `queue-follow-up` action（`AgentConsoleKeymap.ts` union + `AGENT_CONSOLE_GLOBAL_ACTIONS` + `AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP.tab`）；`AgentConsoleComponent.ts` `decodeGlobalKey` 增加 `'\t'`→`'tab'` 映射（此前 `\t` 被 charCode 推算出 `ctrl+i`，永不命中绑定、Tab 只能靠 SessionState 兜底），TUI 运行中 Tab 现经 composer 上下文 → `queue-follow-up` → `queueDraft()` 入队；`executeGlobalKeyAction` 该分支直接 `return this.queueDraft()`（idle 返回 false → 回落 `processDecodedInput`，保留 idle/阻塞菜单/suggestion 菜单行为；浏览器 Tab 长度≠1 不经全局键，走面板既有路径）；`commands` Record 的 `Exclude` 类型同步排除新 action。新增 `/queue` 命令（registry `input` 组 + `CommandHandlerContext.runQueueCommand` + `COMMAND_HANDLERS` 分发 + 组件实现）：`/queue` 列出队列（空队列 notify 提示按 Tab）、`/queue clear` 清空并归零 `queuedPromptCount`。测试：command-registry.spec 89→90/input 9→10；keymap-context.spec 新增 B1 suite（resolve/decode/运行中入队三断言）；view-model.spec 新增 `/queue list`+`/queue clear` 命令测试。门禁：agent-ui 全量 **1107 passing EXIT=0（基线 1103，+4 为 B1 新增测试，0 回归）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
 #### 批次 B2 · Esc×2 编辑上一条消息（跟随 codex `Esc, Esc`）（高）
 
 - **差距**：codex 空 composer 下 `Esc, Esc` 编辑上一条消息、继续按回退更早；本项目 keymap 无此绑定，仅 `EDIT_ESCAPE_WINDOW_MS` 用于 Esc 重入（单次逻辑，非"连按遍历 transcript"）。

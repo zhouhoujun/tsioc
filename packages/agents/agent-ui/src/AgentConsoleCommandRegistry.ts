@@ -158,6 +158,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'fields', variadic: true }] },
 
     { name: '/editor', description: 'edit the draft in an external editor (Ctrl+G)', group: 'input', args: [{ name: 'initial', variadic: true }] },
+    { name: '/queue', description: 'queued follow-up prompts: /queue [list|clear] (Tab while a turn is running)', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'clear'] }] },
     { name: '/stash', description: 'named draft stash: /stash [list|push <name>|pop <name>|rm <name>]', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'push', 'save', 'pop', 'restore', 'rm', 'drop', 'delete'] }, { name: 'name', variadic: true }] },
     { name: '/voice', description: 'voice session status/start/stop/cancel', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['start', 'stop', 'cancel', 'status'] }] },
     { name: '/ide', description: 'IDE bridge: show attached editor context', group: 'input', args: [{ name: 'arg', variadic: true }] },

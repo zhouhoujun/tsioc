@@ -10,7 +10,9 @@ import {
     AgentConsoleKeymapStore,
     AgentConsoleModelStore,
     AgentConsoleWhichKeyPanelComponent,
-    AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP
+    AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP,
+    AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP,
+    isAgentConsoleGlobalAction
 } from '../src';
 
 class RuntimeStub {
@@ -890,5 +892,39 @@ export class AgentConsoleWhichKeyTest {
         expect(state.whichKeyBindings.length).toEqual(1);
         state.setWhichKeyVisible(false);
         expect(state.whichKeyBindings).toEqual([]);
+    }
+}
+
+@Suite('queue-follow-up composer Tab keymap (B1)')
+export class AgentConsoleQueueFollowUpKeymapTest {
+
+    @Test('composer Tab resolves to queue-follow-up; other contexts leave Tab unbound')
+    composerTabResolves() {
+        const keymap = new AgentConsoleKeymap();
+        expect(AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP['tab']).toEqual('queue-follow-up');
+        expect(isAgentConsoleGlobalAction('queue-follow-up')).toEqual(true);
+        expect(keymap.resolve('tab', 'composer')).toEqual('queue-follow-up');
+        expect(keymap.resolve('tab', 'global')).toBeUndefined();
+        expect(keymap.resolve('tab', 'list')).toBeUndefined();
+        expect(keymap.resolve('tab', 'approval')).toBeUndefined();
+        expect(keymap.resolve('tab', 'pager')).toBeUndefined();
+    }
+
+    @Test('TUI Tab decodes to the tab key (not ctrl+i)')
+    tuiTabDecodesToTab() {
+        const { component } = createKeymapConsoleParts();
+        expect((component as any).decodeGlobalKey('\t')).toEqual('tab');
+    }
+
+    @Test('Tab during a running turn queues the draft through the global key handler')
+    async tuiTabQueuesFollowUpDraft() {
+        const { state, component } = createKeymapConsoleParts();
+        state.setStatus('running');
+        state.setInput('queued follow-up');
+        const consumed = await (component as any).handleGlobalKeyInput('\t');
+        expect(consumed).toEqual(true);
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued prompt (1)');
     }
 }
