@@ -2277,6 +2277,8 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：为 `/copy` 增加 Ctrl+O 快捷（与现有 keymap 不冲突）；评估 `/raw` 原样滚动切换（低优先，仅在虚拟终端支持时）。
 - **验收**：`ctrl+o` 触发 /copy；行为与 /copy 一致。
 
+**B4 收尾（2026-09-08）✅（按用户裁决调整）**：用户裁决板上 `ctrl+o` 与 `ctrl+x y` 两个默认键位**均移除**——复制能力由系统原生「选中文字 + Ctrl+C」承担（浏览器 DOM 原生选区 / TUI 终端模拟器选区），不再提供 `/copy`、`/outputs` 的默认快捷键。`AGENT_CONSOLE_DEFAULT_KEYMAP` 删除 `'ctrl+x y': 'copy'` 与 `'ctrl+o': 'command-outputs'`（全局 23→21）；`copy`/`command-outputs` 保留在 `AgentConsoleGlobalAction` union 与 `AGENT_CONSOLE_GLOBAL_ACTIONS`，`commands` Record（`copy: '/copy'`、`'command-outputs': '/outputs'`）不变，`/copy`、`/outputs` 命令与用户自定义 keymap 绑定仍可达。`/raw` 评估：**已存在**（`AgentConsoleRawMode.ts` + `AgentConsoleCommandRegistry` `/raw` + `AgentTuiConfig.rawMode`），无需新工作。测试：`tuiTogglesOverlayOn` 断言更新（composer context 26→24 绑定、`ctrl+l` 落回第 1 页、`n` 翻页后第 2 页为空）。门禁：agent-ui 全量 **1113 passing EXIT=0（0 回归，0 新增）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
 #### 批次 B5 · 命令面板/状态行/knowledge 冲刺（对照 opencode）（中，可拆分多个计划项）
 
 - **差距与方案**：

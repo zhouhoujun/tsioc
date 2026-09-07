@@ -98,7 +98,6 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x m': 'model',
     'ctrl+x a': 'archetypes',
     'ctrl+x s': 'status',
-    'ctrl+x y': 'copy',
     escape: 'interrupt-turn',
     'ctrl+p': 'command-palette',
     'ctrl+g': 'open-editor',
@@ -108,8 +107,7 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+t': 'model-variant-cycle',
     'ctrl+alt+k': 'which-key-toggle',
     'ctrl+x h': 'status-health',
-    'ctrl+x g': 'timeline-mode',
-    'ctrl+o': 'command-outputs'
+    'ctrl+x g': 'timeline-mode'
 };
 export function normalizeAgentConsoleKeySequence(value: string): string {
     return String(value || '').trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');

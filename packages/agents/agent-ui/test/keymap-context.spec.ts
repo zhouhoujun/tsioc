@@ -818,12 +818,12 @@ export class AgentConsoleWhichKeyTest {
         const keymap = new AgentConsoleKeymap();
         const bindings = keymap.effectiveBindings((component as any).resolveKeymapContext());
         // The overlay snapshots one page of up to 25 bindings; the composer context
-        // now has 26 (B3 adds ctrl+l), which lands on page 2.
+        // now has 24 (B4 removes ctrl+o and ctrl+x y), all on page 0 — ctrl+l included.
         expect(state.whichKeyBindings.length).toEqual(Math.min(Object.keys(bindings).length, 25));
         expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+alt+k', action: 'which-key-toggle' });
-        expect(state.whichKeyBindings).not.toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
-        expect(await (component as any).handleGlobalKeyInput('n')).toEqual(true);
         expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
+        expect(await (component as any).handleGlobalKeyInput('n')).toEqual(true);
+        expect(state.whichKeyBindings).toEqual([]);
     }
 
     @Test('TUI ctrl+alt+k toggles the overlay off and clears bindings')
