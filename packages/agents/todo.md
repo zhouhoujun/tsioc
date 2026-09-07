@@ -2217,6 +2217,14 @@ Turn: Fix session restore                                      running  01:42
 
 **A4 收尾（2026-09-07）✅**：`defaultAgentOptions.model` 的 `baseUrl`/`apiKeyEnv` 改为经 `DEFAULT_DEEPSEEK_PROVIDER`（`BUILTIN_AGENT_PROVIDERS.find(id==='deepseek')`）引用 registry，移除 `options.ts` 与 `provider-registry.ts` 的重复字面量；deepseek 为 registry 首条目，模块加载必命中，默认行为不变。`agent` 全量 **751 passing / 44 failed（与 A3 后基线一致）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
 
+### 2026-09-07 packages/agents v17-A 批次收尾复核（A3/A4）
+
+- **完成项检查**：A3（平台环境信息守卫化）、A4（默认 provider 配置去重引用 registry）均已实现并通过各自门禁，`options.ts`、`env.ts`、`VerifyCommandRunner.ts`、`orm.module.ts`、`ToolApprovalManager.ts`、`tools.spec.ts`、`todo.md` 为变更面；两批各自独立提交 `cbdb02b22`、`162af843a`。
+- **受影响包全量测试**：`agent` **751 passing / 44 failed EXIT=1（44 个失败为既有 verification-gate TypeORM DataSource "undefined" 基线，非本轮引入）**；`agent` 消费方包全部绿：`agent-tools` 478、`agent-gateway` 267、`agent-ui` 1103、`agent-cli` 74、`agent-channels` 59、`agent-providers` 13、`agent-ssh` 8，EXIT=0。
+- **框架层回归**：`components` 136、`components/console` 73、`components/html` 117 全绿 EXIT=0（本轮 agent 侧经全局守卫/registry 引用间接触及的组件层无回归）。
+- **类型检查**：`agent` `tsc --noEmit` EXIT=0；A3 门禁内已修复 `orm.module.homedir` 的 `string | undefined` 类型错误。
+- **结论**：v17-A 批次 A3/A4 完成并收尾，全量矩阵无新回归；A5（Date.now/Math.random 逐点审计）及 B1–B7（UX 差距批次）为后续批次，需在计划续篇按各自门禁继续。
+
 #### 批次 A5 · Date.now / Math.random 使用点复核（须逐点判定，禁止一刀切禁用）
 
 - **写死点**：agent-ui/src 共 62 处 `Date.now()/Math.random()`（其中 `AgentConsoleSessionState.ts` 18 处），主要用于 id、时间戳、时间派生动画。
