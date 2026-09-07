@@ -2246,8 +2246,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.onReviewConclusionsWriteBack = (conclusions) => this.writeReviewConclusionsToMemory(conclusions);
         this.state.onSessionReconnected = () => this.restoreReviewAnnotationsCacheFromDisk();
         this.restoreReviewAnnotationsCacheFromDisk();
-        this.bridge.bindState(this.sessionState);
-        this.bridge.subscribe();
         this.ensureWorkspaceMentionResolver();
         await this.restoreGlobalKeymap();
         await this.restoreTheme();
@@ -2260,7 +2258,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.resolveGitBranch();
         await this.bootstrapStateFromAppRpc();
         await this.initializeInputHistory();
-        await this.openSession(this.state.sessionId, { persistCurrentHistory: false });
+        const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
+        await this.openSession(explicitSessionId || undefined, { persistCurrentHistory: false });
+        // Subscribe only after the initial session is selected. Subscribing
+        // earlier lets the remote bridge seed the default session's timeline
+        // into a new, non-resumed chat.
+        this.bridge.bindState(this.sessionState);
+        this.bridge.subscribe();
         this.scheduleInputHistoryRestore();
         await this.refreshTools();
         await this.refreshMentionCatalog();
@@ -3871,9 +3875,25 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (!message) {
                 continue;
             }
+            // Tool-call payloads are projected into compact timeline/event
+            // rows; replaying the raw `tool` messages would print large JSON
+            // blobs (including embedded source files) on startup.
+            if (message.role === 'tool' && message.metadata?.uiKind !== 'event') {
+                continue;
+            }
             if (message.role === 'assistant' && !String(message.content || '').trim()) {
                 continue;
             }
+            // Older sessions may contain an accidentally persisted host
+            // transcript (tool payloads, file listings and role separators)
+            // instead of a chat message. Never dump that raw transcript into
+            // the startup viewport.
+            const content = String(message.content || '');
+            const transcriptMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
+            if (transcriptMarkers.length >= 2
+                || (transcriptMarkers.length >= 1
+                    && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))))
+                continue;
             const previous = normalized[normalized.length - 1];
             if (message.role === 'assistant'
                 && message.metadata?.error
@@ -5748,6 +5768,20 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (mappedKey && this.globalKeymap!.resolve(mappedKey, this.resolveKeymapContext()) !== 'which-key-toggle') {
                 this.state.setWhichKeyVisible(false);
             }
+        }
+        // In a terminal, Ctrl+C is commonly configured as copy while idle,
+        // but must act as an interrupt during an active turn. Keep the idle
+        // binding untouched so copy continues to work.
+        if (ctrlKey && rawKey === 'c' && this.isTurnInProgress()) {
+            await this.interruptTurn();
+            return true;
+        }
+        if (ctrlKey && rawKey === 'c') {
+            // Raw-mode terminals do not emit SIGINT. Preserve the familiar
+            // shell behaviour for an idle console; when text is selected the
+            // terminal emulator consumes Ctrl+C for copy before this handler.
+            void this.requestTerminalExit();
+            return true;
         }
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && this.isTurnInProgress()) {
             await this.interruptTurn();

@@ -1265,7 +1265,14 @@ export class AgentConsoleSessionState {
     }
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
-        this.messages = messages;
+        this.messages = messages.filter(message => {
+            if (!message || typeof message.content !== 'string') return false;
+            const content = message.content;
+            const roleMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
+            return !(roleMarkers.length >= 2
+                || (roleMarkers.length >= 1
+                    && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))));
+        });
         if (!preserveCommandExecutionMessages) {
             this.commandExecutionMessages = [];
         }

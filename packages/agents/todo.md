@@ -2077,6 +2077,19 @@ Turn: Fix session restore                                      running  01:42
 
 ### 2026-09-04 全量收尾验证通过
 
+### 2026-09-07 TUI Ctrl+C / Esc 中断语义修复
+
+- 修复 `AgentConsoleComponent` 原始终端输入处理：运行中的 `Ctrl+C` 直接取消当前 turn；空闲时请求终端退出，弥补 raw mode 下不会产生 SIGINT 的行为差异。
+- 保留默认 keymap 的 `Ctrl+C` 空缺，避免覆盖 copy 命令/终端选中文本复制；有选中文本时由终端模拟器优先消费复制。
+- `agent-ui` `tsc --noEmit` 通过，`git diff --check` 通过。
+- 同步过滤历史中误持久化的 host/tool transcript，避免启动首屏直接倾倒原始 JSON；`/model` 可在空闲会话正常进入切换器。
+
+### 2026-09-07 启动 transcript 污染收尾复核
+
+- 根因复核：启动 session 选择与 remote bridge seed 存在时序风险；新增显式 session 判定、延后 bridge 订阅，并在统一 `setMessages()` 入口拒绝带角色分隔符/工具 payload 结构的原始 transcript。
+- `agent-ui` `tsc --noEmit` EXIT=0，`git diff --check` EXIT=0。
+- `agent-ui` 全量测试在当前沙箱 90 秒内无输出且未自然退出，已中止，不能宣称全量通过；CLI 实际启动另受 `/home/zhouyou/.tsdi-agent/agent.db` EROFS 限制。
+
 - **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
 - **agent-ui**：953 passing EXIT=0。
 - **agent-cli**：73 passing EXIT=0。

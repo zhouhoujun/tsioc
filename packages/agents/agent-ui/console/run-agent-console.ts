@@ -55,12 +55,13 @@ export function createDefaultConsoleUi(): AgentConsoleLaunchTarget {
  * Resolve explicit session ID from bootstrap turn or options.
  */
 export function resolveExplicitSessionId(options: AgentConsoleRunOptions = {}, agentOptions: any = {}): string | undefined {
-    const bootstrapSessionId = String(agentOptions?.bootstrapTurn?.sessionId || '').trim();
-    if (bootstrapSessionId) {
-        return bootstrapSessionId;
-    }
     const explicitSessionId = String(options.session || '').trim();
-    return explicitSessionId || undefined;
+    if (explicitSessionId) {
+        return explicitSessionId;
+    }
+    const bootstrap = agentOptions?.bootstrapTurn;
+    const bootstrapSessionId = String(bootstrap?.sessionId || '').trim();
+    return bootstrap?.enabled === true && bootstrapSessionId ? bootstrapSessionId : undefined;
 }
 
 /**
@@ -117,8 +118,17 @@ export function buildConsoleAgentOptions(
             }
         }
     });
-    if (!sessionId && merged.bootstrapTurn) {
-        delete merged.bootstrapTurn.sessionId;
+    // A plain `chat` starts a fresh session. Do not carry a bootstrap turn
+    // (which may contain prior transcript/tool payloads) unless the caller
+    // explicitly selected a session to resume.
+    if (!sessionId) {
+        // mergeAgentOptions supplies a default `sessionId: "default"`; an
+        // implicit default must not be mistaken for an explicit resume.
+        merged.bootstrapTurn = {
+            ...(merged.bootstrapTurn || {}),
+            enabled: false,
+            sessionId: ''
+        };
     }
     return merged;
 }
