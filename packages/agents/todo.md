@@ -2206,6 +2206,8 @@ Turn: Fix session restore                                      running  01:42
   - `ToolApprovalManager`：工具名→category 分类改为基于工具 `category` 元数据或在工具注册处携带 approval 分类，移除硬编码 `APPROVAL_CATEGORIES` 字符串表；保留向后兼容 fallback。
 - **验收**：`grep -rn "process\.env\|os\.homedir" packages/agents/agent/src` 仅允许全局守卫/注入工具处出现；分类行为与现一致（相关测试通过）。
 
+**A3 收尾（2026-09-07）✅**：新增 `agent/src/env.ts` 全局守卫工具（`resolveProcessEnv()` / `resolveEnvValue()` / `resolveEnvHome()`），`process.env`/`os.homedir` 字面量收敛至守卫工具内；`VerifyCommandRunner` 的 spawn env 改经守卫解析，并新增 `options.env` 覆盖（`runProcess` 注入签名扩展可选第 5 参 env）；`orm.module.ts` 的 `homedir` 改经 `resolveEnvHome()`（接口如实返回 `string | undefined`，无守卫时回落 `~/.tsdi-agent`）；`ToolApprovalManager.classifyApprovalCategory` 增加 `ApprovalCategoryMetadata`（`origin` / `sandboxCapability`）元数据优先分类（skill/mcp origin 与 network/sandbox 执行能力直接映射），保留原名/前缀表作无元数据调用点（如 `HarnessProfile` 派生）的向后兼容 fallback；新增元数据派生分类断言测试。验收：grep 仅 `env.ts` 含 `process.env`/`os.homedir`；`agent` 全量 **751 passing / 44 failed（基线 750/44，+1 为新增 A3 分类测试；44 个失败为既有基线）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
 #### 批次 A4 · provider baseUrl / apiKeyEnv 集中（低）
 
 - **写死点**：`agent/src/model/provider-registry.ts:13-16`（deepseek/openai/anthropic/gemini 的 baseUrl/apiKeyEnv 内镶）、`options.ts:339-340` 默认 baseUrl。

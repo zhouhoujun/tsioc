@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { dirname, join, sep } from 'path';
+import { resolveProcessEnv } from '../env';
 
 /**
  * P79: verify-command evidence source.
@@ -64,8 +65,10 @@ export interface VerifyCommandRunnerOptions {
     maxOutputChars?: number;
     /** Package directory discovery upper bound; never walk above this directory. */
     workspace?: string;
+    /** Explicit env for spawned commands (defaults to the host process env via the global guard). */
+    env?: Record<string, string | undefined>;
     /** Injectable process runner for tests (defaults to the real spawn-based runner). */
-    runProcess?: (command: string, args: string[], cwd: string, timeoutMs: number) => Promise<{
+    runProcess?: (command: string, args: string[], cwd: string, timeoutMs: number, env?: Record<string, string | undefined>) => Promise<{
         exitCode?: number;
         output: string;
         durationMs: number;
@@ -81,13 +84,14 @@ const DEFAULT_RUNNER = (
     command: string,
     args: string[],
     cwd: string,
-    timeoutMs: number
+    timeoutMs: number,
+    env?: Record<string, string | undefined>
 ): Promise<{ exitCode?: number; output: string; durationMs: number; timedOut: boolean }> =>
     new Promise(resolve => {
         const startedAt = Date.now();
         const child = spawn(command, args, {
             cwd,
-            env: process.env,
+            env: env ?? resolveProcessEnv(),
             stdio: ['ignore', 'pipe', 'pipe'],
             shell: false
         });
@@ -220,6 +224,7 @@ export class VerifyCommandRunner {
         const autoScripts = this.options?.autoScripts ?? DEFAULT_VERIFY_AUTO_SCRIPTS;
         const runProcess = this.options?.runProcess ?? DEFAULT_RUNNER;
         const explicit = this.options?.verifyCommands ?? {};
+        const env = this.options?.env;
 
         if (filePaths.length === 0) {
             return [];
@@ -260,6 +265,7 @@ export class VerifyCommandRunner {
                     cwd: pkgDir,
                     timeoutMs,
                     maxOutputChars,
+                    env,
                     runProcess
                 }));
             }
@@ -280,6 +286,7 @@ export class VerifyCommandRunner {
                     cwd: pkgDir,
                     timeoutMs,
                     maxOutputChars,
+                    env,
                     runProcess
                 }));
             }
@@ -297,10 +304,11 @@ export class VerifyCommandRunner {
         cwd: string;
         timeoutMs: number;
         maxOutputChars: number;
+        env?: Record<string, string | undefined>;
         runProcess: NonNullable<VerifyCommandRunnerOptions['runProcess']>;
     }): Promise<VerifyCommandRun> {
         const display = `${params.command} ${params.args.join(' ')}`.trim();
-        const result = await params.runProcess(params.command, params.args, params.cwd, params.timeoutMs);
+        const result = await params.runProcess(params.command, params.args, params.cwd, params.timeoutMs, params.env);
         const output = truncateTail(result.output, params.maxOutputChars);
         const failed = result.timedOut || (result.exitCode !== undefined && result.exitCode !== 0);
         return {

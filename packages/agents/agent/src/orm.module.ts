@@ -3,10 +3,11 @@ import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
 import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentEvalReportEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
+import { resolveEnvHome } from './env';
 
 interface AgentOrmNodeRuntime {
     join(...paths: string[]): string;
-    homedir(): string;
+    homedir(): string | undefined;
     ensureDirectory(path: string): void;
 }
 
@@ -48,10 +49,9 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
         }
         const fs = req('fs');
         const path = req('path');
-        const os = req('os');
         return {
             join: (...paths: string[]) => path.join(...paths),
-            homedir: () => process.env.HOME || os.homedir(),
+            homedir: () => resolveEnvHome(),
             ensureDirectory: (target: string) => {
                 fs.mkdirSync(target, { recursive: true });
             }
@@ -106,10 +106,11 @@ export function provideAgentOrmStorage(root: string, fileName = 'agent.db'): Pro
 
 function resolveAgentOrmStorageLocation(root: string, fileName: string): string {
     const runtime = loadNodeOrmRuntime();
-    if (!runtime) {
+    const home = runtime?.homedir();
+    if (!runtime || !home) {
         return joinOrmPath('~/.tsdi-agent', 'agent.db');
     }
-    const storageRoot = runtime.join(runtime.homedir(), '.tsdi-agent');
+    const storageRoot = runtime.join(home, '.tsdi-agent');
     runtime.ensureDirectory(storageRoot);
     return runtime.join(storageRoot, 'agent.db');
 }

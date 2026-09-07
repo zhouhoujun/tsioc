@@ -552,6 +552,19 @@ export class BuiltinToolsTest {
         expect(classifyApprovalCategory('memory.put')).toBeUndefined();
     }
 
+    @Test('A3: category classifier prefers tool metadata over name heuristics')
+    categoryClassifierPrefersMetadata() {
+        expect(classifyApprovalCategory('echo', { origin: 'skill' })).toEqual('skill');
+        expect(classifyApprovalCategory('echo', { origin: 'mcp' })).toEqual('mcp');
+        expect(classifyApprovalCategory('echo', { sandboxCapability: 'process_exec' })).toEqual('sandbox');
+        expect(classifyApprovalCategory('echo', { sandboxCapability: 'network_fetch' })).toEqual('network');
+        expect(classifyApprovalCategory('web_search', { origin: 'mcp' })).toEqual('mcp');
+        expect(classifyApprovalCategory('terminal', { origin: 'builtin' })).toEqual('sandbox');
+        expect(classifyApprovalCategory('terminal', { origin: 'builtin', sandboxCapability: 'readonly_fs' })).toEqual('sandbox');
+        expect(classifyApprovalCategory('memory.put', { origin: 'builtin', sandboxCapability: 'workspace_write' })).toBeUndefined();
+        expect(classifyApprovalCategory('web_search', { origin: 'builtin', sandboxCapability: 'workspace_write' })).toEqual('network');
+    }
+
     @Test('local tool registry returns resolved definitions with compatibility metadata')
     async localToolRegistryReturnsResolvedDefinitions() {
         const { memoryStore, sessionStore, activationStore } = await bootStores();

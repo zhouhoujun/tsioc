@@ -501,7 +501,37 @@ export const APPROVAL_CATEGORY_DEFINITIONS: Record<ApprovalCategory, { names: st
 
 const APPROVAL_CATEGORY_ORDER: ApprovalCategory[] = ['network', 'mcp', 'skill', 'sandbox'];
 
-export function classifyApprovalCategory(toolName: string): ApprovalCategory | undefined {
+/** Structural tool metadata used to derive the approval category (A3). */
+export interface ApprovalCategoryMetadata {
+    origin?: 'builtin' | 'skill' | 'mcp';
+    sandboxCapability?: string;
+}
+
+/**
+ * Classify a tool into its granular approval category. When `metadata` is
+ * provided it is the primary signal (skill/mcp origins and network/sandbox
+ * execution capabilities map directly); otherwise the historical name /
+ * prefix table is used. `echo`/`memory.*` and unknown tools stay undefined.
+ */
+export function classifyApprovalCategory(toolName: string, metadata?: ApprovalCategoryMetadata): ApprovalCategory | undefined {
+    if (metadata) {
+        if (metadata.origin === 'skill') {
+            return 'skill';
+        }
+        if (metadata.origin === 'mcp') {
+            return 'mcp';
+        }
+        if (metadata.sandboxCapability === 'network_fetch') {
+            return 'network';
+        }
+        if (
+            metadata.sandboxCapability === 'process_exec' ||
+            metadata.sandboxCapability === 'code_exec' ||
+            metadata.sandboxCapability === 'vcs_exec'
+        ) {
+            return 'sandbox';
+        }
+    }
     const name = String(toolName ?? '').trim();
     if (!name) {
         return undefined;
