@@ -9155,6 +9155,13 @@ export class AgentConsoleComponentTest {
         expect(state.notice).toContain('ON (read-only)');
         expect(state.notice).toContain('sandbox workspace');
         expect(state.notice).toContain('delegation explicit');
+        expect(state.textOverlay?.title).toBe('status');
+        expect(state.textOverlay?.lines).toContain('session: st-1');
+        expect(state.textOverlay?.lines).toContain('model: fast');
+        expect(state.textOverlay?.lines).toContain('archetype: build');
+        expect(state.textOverlay?.lines).toContain('plan mode: ON (read-only)');
+        expect(state.textOverlay?.lines).toContain('sandbox: workspace');
+        expect(state.textOverlay?.lines).toContain('delegation: explicit');
     }
 
     @Test('delegation mode command shows the current mode with no arguments')

@@ -6947,7 +6947,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             }
         }
         const model = this.state.modelProfile || this.state.model || 'default';
-        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planMode ? 'ON (read-only)' : 'off'} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
+        const planModeText = planMode ? 'ON (read-only)' : 'off';
+        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planModeText} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
+        this.state.openTextOverlay('status', [
+            `session: ${sessionId}`,
+            `model: ${model}`,
+            `archetype: ${archetype}`,
+            `plan mode: ${planModeText}`,
+            `sandbox: ${sandboxMode}`,
+            `delegation: ${delegationMode}`,
+        ]);
     }
 
     protected async runGoalCommand(args: string): Promise<void> {

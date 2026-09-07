@@ -2286,6 +2286,13 @@ Turn: Fix session restore                                      running  01:42
   - `/keymap`（codex 支持运行时重映射）与 `/vim`（composer modal 编辑）——本项目已有多套 keymap（`AGENT_CONSOLE_DEFAULT_KEYMAP` 等）但缺运行时 `/keymap` 命令与 modal 编辑；列为可选冲刺，评估 Vim 模态的成本（TUI 与浏览器 composer）后决定。
   - message 上下文动作（编辑/重发/steer/feedback）：本项目**无** `messageActions`（`grep` 为空）；codex 空 Esc、steer 语义已部分存在（`steerMode`），建议补充"编辑上一条/重发/反馈"入口（与 B2 合并）。
 
+**B5 收尾（2026-09-08）✅**：
+- **子项①（实现，唯一差距）**：`AgentConsoleComponent.ts` `runStatusCommand`（:6935）输出由「仅单行 notice」升级为「**可复用状态面板 + 单行摘要并存**」——结构化六行（session/model/archetype/plan mode/sandbox/delegation，`plan mode: ON (read-only)`/`off` 与摘要同源）经 `state.openTextOverlay('status', lines)` 打开可复用文本面板（复用既有 textOverlay：Esc 关闭、上下滚动、焦点管理，与 `status-health`/`which-key`/`/keymap list` overlay 同一机制，TUI/browser 共用 SessionState），同时保留 `pushCommandOutput('/status', 单行摘要)` 进命令输出环 + notice（命令历史/`/outputs` 不回归）。
+- **子项②（已存在，无代码）**：`runKeymapCommand`（:6589）已实现运行时重映射全链——list/set/unset/reset/record（record 参数化动态绑定）+ 5 上下文分域（global/composer/list/approval/pager）+ `persistGlobalKeymap` 持久化；`/vim` modal 编辑已由 `handleVimKey`/`vimMode`/`effectiveVimBindings`（AgentConsoleVim.ts + `setVimBinding`/`unsetVimBinding`）承担，TUI 与浏览器 composer 共用。无需新代码。
+- **子项③（已存在，与 B2 合并）**：编辑上一条已由 B2/P130 落地（`handleIdleEscape` Esc,Esc + `AgentConsoleEditModeHandlers`，14 断言）；`/feedback`（`runFeedbackCommand` :5323）、steer（`steerMode`）均在。无需新代码。
+- **测试**：`view-model.spec.ts` `statusCommandReportsSessionState`（:9142）增补 7 断言——`textOverlay.title === 'status'` + 六行结构化内容（`session: st-1`/`model: fast`/`archetype: build`/`plan mode: ON (read-only)`/`sandbox: workspace`/`delegation: explicit`），原 notice 五断言不变。
+- **门禁**：agent-ui 全量 **1113 passing EXIT=0（0 回归，0 新增用例）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
 #### 批次 B6 · 长会话性能与虚拟化（对照 codex 长聊天）（中）
 
 - **差距**：`messagesVisibleItems: 7` 默认 + `resolveConsoleListWindow` 已做窗口/pin/保尾，但**每次数据变化全量重渲染**（满足架构约束——响应式替换节点），长会话大消息流仍可能在浏览器出现性能瓶颈。codex 用增量/虚拟化行渲染。
