@@ -2183,6 +2183,8 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：新增共享 `AgentConsolePathProvider`（或常量 token）暴露 `dotDir(workspace)` / `storeFile(workspace, name)`；各 store 的 `this.fileAdapter.join(workspace, '.tsdi-agent', '<name>.json')` 改为经注入 provider 解析。同时满足 `agent-ui/src` 不直接引用 node（`fileAdapter` 已是注入抽象，路径 provider 同样注入）。
 - **验收**：`grep -rn "'.tsdi-agent'" agent-ui/src` 归零（仅 provider 定义处 1 处）；agent-ui 全量 + `tsc --noEmit` 通过。
 
+**A1 收尾（2026-09-08）✅**：新增跨平台 `AgentConsolePathProvider`，模型、stash、settings、statusline、theme、raw-mode、title、keymap、command-output 与 export 路径均收敛到共享 provider/纯函数；`agent-ui/src` 的 `.tsdi-agent` 字面量仅保留在 provider 定义处。`agent-ui` `tsc --noEmit` EXIT=0、全量 **1101 passing**；DOM/TUI 门禁均 4/4 PASS；P170 平台边界扫描 CLEAN；`build:web` 仍受沙箱 `spawnSync /bin/sh EPERM` 限制。
+
 #### 批次 A2 · 魔法数集中化（低）
 
 - **写死点**：`AgentConsoleComponent.ts:256` `SEARCH_SESSION_LIMIT=100`（已是常量，但硬编码值）、`:258` `EDIT_ESCAPE_WINDOW_MS=400`。

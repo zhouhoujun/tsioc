@@ -1,9 +1,10 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 @Injectable()
 export class AgentConsoleStashStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<Record<string, string>> {
         if (!workspace || !this.fileAdapter) return {};
@@ -26,12 +27,12 @@ export class AgentConsoleStashStore {
 
     async save(workspace: string, stashes: Record<string, string>): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, stashes }, null, 2));
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'stash.json');
+        return this.paths?.storeFile(workspace, 'stash.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'stash.json');
     }
 }

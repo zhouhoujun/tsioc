@@ -17,6 +17,7 @@
  */
 import { FileAdapter } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory } from './AgentConsolePathProvider';
 import {
     AbstractCommandOutputStore,
     AgentConsoleCommandOutputHistoryEntry,
@@ -30,10 +31,10 @@ export class BoundedFileCommandOutputStore extends AbstractCommandOutputStore {
     protected readonly filePath: string;
 
     /** `fileAdapter` always exists for a durable store; the host supplies it. */
-    constructor(fileAdapter: FileAdapter, directory = '', cap = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP) {
+    constructor(fileAdapter: FileAdapter, directory = '', cap = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP, paths?: AgentConsolePathProvider) {
         super(Math.max(1, Math.floor(cap ?? AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP)));
         this.fileAdapter = fileAdapter;
-        this.fileDirectory = this.fileAdapter.join(String(directory), '.tsdi-agent');
+        this.fileDirectory = paths?.dotDirectory(String(directory)) || resolveAgentConsoleDirectory(this.fileAdapter, String(directory));
         this.filePath = this.fileAdapter.join(this.fileDirectory, 'command-output-history.json');
         this.load();
     }

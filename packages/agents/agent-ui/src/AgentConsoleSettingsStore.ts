@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 export interface AgentConsoleSettingsData {
     language?: string;
@@ -19,7 +20,7 @@ export interface AgentConsoleSettingsData {
 
 @Injectable()
 export class AgentConsoleSettingsStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<AgentConsoleSettingsData> {
         if (!workspace || !this.fileAdapter) return {};
@@ -50,7 +51,7 @@ export class AgentConsoleSettingsStore {
 
     async save(workspace: string, data: AgentConsoleSettingsData): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         const mode = data.timelineViewMode ?? (typeof data.timelineMode === 'boolean' ? (data.timelineMode ? 'compact' : 'off') : undefined);
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({
@@ -71,7 +72,7 @@ export class AgentConsoleSettingsStore {
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'settings.json');
+        return this.paths?.storeFile(workspace, 'settings.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'settings.json');
     }
 }
 

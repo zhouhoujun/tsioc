@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 export const AGENT_CONSOLE_TITLE_FIELDS = [
     'project',
@@ -91,7 +92,7 @@ export function composeAgentConsoleTerminalTitle(
 
 @Injectable()
 export class AgentConsoleTitleStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<AgentConsoleTitleField[] | undefined> {
         if (!workspace || !this.fileAdapter) return undefined;
@@ -105,12 +106,12 @@ export class AgentConsoleTitleStore {
 
     async save(workspace: string, title: AgentConsoleTitleField[]): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, title }, null, 2));
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'title.json');
+        return this.paths?.storeFile(workspace, 'title.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'title.json');
     }
 }

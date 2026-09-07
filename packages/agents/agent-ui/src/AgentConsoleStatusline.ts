@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 export const AGENT_CONSOLE_STATUSLINE_FIELDS = [
     'model',
@@ -38,7 +39,7 @@ export function normalizeAgentConsoleStatusline(fields?: string[] | null): Agent
 
 @Injectable()
 export class AgentConsoleStatuslineStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<AgentConsoleStatuslineField[] | undefined> {
         if (!workspace || !this.fileAdapter) return undefined;
@@ -52,12 +53,12 @@ export class AgentConsoleStatuslineStore {
 
     async save(workspace: string, statusline: AgentConsoleStatuslineField[]): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, statusline }, null, 2));
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'statusline.json');
+        return this.paths?.storeFile(workspace, 'statusline.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'statusline.json');
     }
 }

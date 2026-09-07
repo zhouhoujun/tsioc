@@ -7,6 +7,7 @@ import type {
 import type {
     AgentConsolePendingAttachment,
 } from './AgentConsoleSessionState';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory } from './AgentConsolePathProvider';
 
 // ── Export / attachment context ──────────────────────────────────────────────
 
@@ -98,7 +99,8 @@ export async function tryWriteSessionExport(
     if (!fileAdapter) {
         return undefined;
     }
-    const targetPath = resolveExportTargetPath(fileAdapter, ctx.workspace, result, requestedPath);
+    const paths = ctx.app?.get(AgentConsolePathProvider, null) as AgentConsolePathProvider | null;
+    const targetPath = resolveExportTargetPath(fileAdapter, ctx.workspace, result, requestedPath, paths);
     try {
         const dirname = resolvePathDirectory(targetPath, fileAdapter);
         if (dirname) {
@@ -138,7 +140,8 @@ export function resolveExportTargetPath(
     fileAdapter: FileAdapter,
     workspace: string,
     result: AgentSessionExportResult,
-    requestedPath?: string
+    requestedPath?: string,
+    paths?: AgentConsolePathProvider | null
 ): string {
     const trimmed = String(requestedPath || '').trim();
     if (trimmed) {
@@ -151,9 +154,8 @@ export function resolveExportTargetPath(
             : fileAdapter.normalize(trimmed);
     }
     const ws = String(workspace || '').trim();
-    return ws
-        ? fileAdapter.join(ws, '.tsdi-agent', 'exports', result.fileName)
-        : fileAdapter.join('.tsdi-agent', 'exports', result.fileName);
+    const directory = paths?.dotDirectory(ws || '.') || resolveAgentConsoleDirectory(fileAdapter, ws || '.');
+    return fileAdapter.join(directory, 'exports', result.fileName);
 }
 
 export function resolvePathDirectory(targetPath: string, fileAdapter: FileAdapter): string {

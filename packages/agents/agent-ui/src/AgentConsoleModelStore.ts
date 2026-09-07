@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 export interface AgentConsoleModelStoreData {
     favorites: string[];
@@ -8,7 +9,7 @@ export interface AgentConsoleModelStoreData {
 
 @Injectable()
 export class AgentConsoleModelStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<AgentConsoleModelStoreData> {
         if (!workspace || !this.fileAdapter) return { favorites: [], recents: [] };
@@ -25,7 +26,7 @@ export class AgentConsoleModelStore {
 
     async save(workspace: string, data: AgentConsoleModelStoreData): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({
             version: 1,
@@ -47,6 +48,6 @@ export class AgentConsoleModelStore {
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'models.json');
+        return this.paths?.storeFile(workspace, 'models.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'models.json');
     }
 }

@@ -5,6 +5,7 @@ import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
 import { agentUiChinese, agentUiEnglish } from './agent-ui.i18n';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
+import { AgentConsolePathProvider } from './AgentConsolePathProvider';
 
 function resolveDefaultLocale(): string {
     const env = getGlobalProcess()?.env || {};
@@ -102,6 +103,7 @@ import {
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleEventBridge,
+        AgentConsolePathProvider,
         AgentConsoleInputHistoryStore,
         AgentConsoleWorkspaceMentionsProvider,
         AgentConsoleKeymap,

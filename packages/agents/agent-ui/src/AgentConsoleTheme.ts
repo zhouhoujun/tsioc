@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
 export interface AgentConsoleTheme {
     statusTitle: string;
@@ -158,7 +159,7 @@ export function isAgentConsoleThemeName(value: string): value is AgentConsoleThe
 
 @Injectable()
 export class AgentConsoleThemeStore {
-    constructor(@Optional() private fileAdapter?: FileAdapter | null) {}
+    constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
 
     async load(workspace: string): Promise<AgentConsoleThemeName | undefined> {
         if (!workspace || !this.fileAdapter) return undefined;
@@ -172,13 +173,13 @@ export class AgentConsoleThemeStore {
 
     async save(workspace: string, theme: AgentConsoleThemeName): Promise<void> {
         if (!workspace || !this.fileAdapter) return;
-        const directory = this.fileAdapter.join(workspace, '.tsdi-agent');
+        const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({ version: 1, theme }, null, 2));
     }
 
     private path(workspace: string): string {
-        return this.fileAdapter!.join(workspace, '.tsdi-agent', 'theme.json');
+        return this.paths?.storeFile(workspace, 'theme.json') || resolveAgentConsoleStoreFile(this.fileAdapter!, workspace, 'theme.json');
     }
 }
 

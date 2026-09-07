@@ -27,6 +27,7 @@ export * from './AgentEditorBridge';
 export * from './AgentTuiConfig';
 export * from './AgentConsoleWorkspaceMentions';
 export * from './AgentConsoleKeymap';
+export * from './AgentConsolePathProvider';
 export * from './AgentConsoleRawMode';
 export * from './AgentConsoleStash';
 export * from './AgentConsoleModelStore';
