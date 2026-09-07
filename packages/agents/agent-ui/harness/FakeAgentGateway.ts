@@ -5,7 +5,7 @@
  * while staying fully transport-agnostic (no node import, no browser import —
  * only pure helpers re-exported from `@tsdi/agent`). It powers BOTH the JSDOM
  * gate spec (via `createFetchImpl`) and the Node/Playwright browser runner (via
- * the shared `harness/run-browser-gate.ts` transport on the same core).
+ * (`harness/run-dom-gate.ts`) on the same core.
  *
  * The RPC handlers intentionally use the SAME projection/paging helpers as the
  * real durable stores (`reduceTimelineEvents`, `sortTimelineEntries`,

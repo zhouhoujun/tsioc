@@ -2,8 +2,8 @@
  * P285 — Shared interaction scenarios for the interaction gate.
  *
  * The SAME scenario objects drive the JSDOM gate spec
- * (`test/p285-interaction-gate.spec.ts`) and the Node/Playwright browser runner
- * (`harness/run-browser-gate.ts`). Therefore this module is PURE DATA + fixture
+ * (`test/p285-interaction-gate.spec.ts`) and the standalone virtual-DOM gate
+ * (`harness/run-dom-gate.ts`). Therefore this module is PURE DATA + fixture
  * builders: it must not import from `@tsdi/agent-ui` and must not touch any node
  * API (no `process`, `fs`, ...). Only the transport-agnostic fake gateway
  * (`./FakeAgentGateway`) and `@tsdi/agent` wire types are allowed.

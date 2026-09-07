@@ -2091,7 +2091,13 @@ Turn: Fix session restore                                      running  01:42
 - `agent-ui` 全量测试在当前沙箱 90 秒内无输出且未自然退出，已中止，不能宣称全量通过；CLI 实际启动另受 `/home/zhouyou/.tsdi-agent/agent.db` EROFS 限制。
 - **后续回归（2026-09-07 收尾复核）**：该提交的 component 侧改动 `openSession(explicitSessionId || undefined)` 在纯聊天/配置/被 app-RPC 接管场景下丢失当前会话——`buildConsoleAgentOptions` 对 plain chat 强制 `bootstrapTurn.sessionId` 为空，`explicitSessionId || undefined` 恒为 `undefined`，`ensureSession(undefined)` 静默新建 session（stub `session-1` / gateway `rpc-<uuid>`），导致 agent-ui 全量 **28 失败**（1073 passing / 28 failed EXIT=1；1101 基线与 P282 绿态 `217adf76b` 完全吻合，证实全部为本次回归）：`sessionId: "console"` vs `"session-1"` 断言（tools/compact/review/diff/share/approvals/voice/configure/bootstraps 簇）、RPC-available 布尔断言、`configure({sessionId})` 后 `onInit` 会话被顶掉（working usage / event bridge / queued-prompt 簇）。
 - **修复**（`AgentConsoleComponent.ts:2262`）：`await this.openSession(explicitSessionId || this.state.sessionId || undefined, { persistCurrentHistory: false })`——显式 resume 目标优先，否则保留当前已配置/当前会话（默认 `'console'`、`configure({sessionId})`、`bootstrapStateFromAppRpc()` 的 app.state.sessionId），杜绝静默新建会话丢弃当前对话；延后 bridge 订阅、`resolveExplicitSessionId` 显式判定、`setMessages` transcript 过滤三项实质修复均保留。
-- **验证**：agent-ui 全量 **1101 passing / 0 failed EXIT=0**（28 回归全部转绿，恢复 P282 绿态）；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0。agent 包全量 `750 passing / 44 failed`（TypeORM `DataSource "undefined"` sandbox 限制 + README 已记录的 verification-gate 预存失败），经 `git stash` 隔离证实与本次改动无关（clean HEAD 同样 44 失败）。P285 浏览器门禁（`harness/run-browser-gate.ts`）因 sandbox 无 Chrome/Playwright browser 缓存无法执行，按 P285 验收条款走 skip+report，未伪造通过。
+- **验证**：agent-ui 全量 **1101 passing / 0 failed EXIT=0**（28 回归全部转绿，恢复 P282 绿态）；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0。agent 包全量 `750 passing / 44 failed`（TypeORM `DataSource "undefined"` sandbox 限制 + README 已记录的 verification-gate 预存失败），经 `git stash` 隔离证实与本次改动无关（clean HEAD 同样 44 失败）。
+
+### 2026-09-07 P285 浏览器门禁换为 virtual DOM 简易工具
+
+- **背景**：上一版浏览器门禁（`harness/run-browser-gate.ts`，Playwright + Chromium）需下载浏览器并依赖系统库（sandbox 无 Chrome、ATK 库缺失，靠 `LD_LIBRARY_PATH` 本地补丁才能跑），验证成本高。
+- **改动**：删除 `harness/run-browser-gate.ts`，新增 `harness/run-dom-gate.ts`——单进程 JSDOM virtual DOM 门禁，复用共享 `FakeAgentGateway` + `SCENARIOS` + `collectGatewayMetrics`，挂载真实 `mountAgentWebConsole`，断言真实状态/网关 RPC 记录/DOM 指标；`npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts [scenarioId]`，EXIT 0=全过 1=有失败。`FakeAgentGateway.ts`/`scenarios.ts` 头部说明同步更新。
+- **验证**：4 场景全过 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0；agent-ui 全量 **1101 passing / 0 failed EXIT=0**（P285 JSDOM spec 仍在套件内，无回归）。无需 Playwright/Chrome 下载。
 
 - **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
 - **agent-ui**：953 passing EXIT=0。
