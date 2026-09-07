@@ -100,7 +100,8 @@ function createKeymapConsoleParts(
     keymapStore?: AgentConsoleKeymapStore,
     workspace?: string,
     rpc?: any,
-    modelStore?: AgentConsoleModelStore
+    modelStore?: AgentConsoleModelStore,
+    surfaceAccessor?: any
 ): { state: AgentConsoleSessionState; component: AgentConsoleComponent } {
     const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
     state.configure({ sessionId: 'active-1', ...(workspace ? { workspace } : {}) } as any);
@@ -121,7 +122,7 @@ function createKeymapConsoleParts(
         undefined,
         undefined,
         undefined,
-        undefined,
+        surfaceAccessor,
         undefined,
         undefined,
         undefined,
@@ -816,8 +817,13 @@ export class AgentConsoleWhichKeyTest {
         expect(state.whichKeyBindings.length).toBeGreaterThan(0);
         const keymap = new AgentConsoleKeymap();
         const bindings = keymap.effectiveBindings((component as any).resolveKeymapContext());
-        expect(Object.keys(bindings).length).toEqual(state.whichKeyBindings.length);
+        // The overlay snapshots one page of up to 25 bindings; the composer context
+        // now has 26 (B3 adds ctrl+l), which lands on page 2.
+        expect(state.whichKeyBindings.length).toEqual(Math.min(Object.keys(bindings).length, 25));
         expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+alt+k', action: 'which-key-toggle' });
+        expect(state.whichKeyBindings).not.toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
+        expect(await (component as any).handleGlobalKeyInput('n')).toEqual(true);
+        expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
     }
 
     @Test('TUI ctrl+alt+k toggles the overlay off and clears bindings')
@@ -926,5 +932,73 @@ export class AgentConsoleQueueFollowUpKeymapTest {
         expect(state.queuedPromptCount).toEqual(1);
         expect(state.input).toEqual('');
         expect(state.notice).toContain('Queued prompt (1)');
+    }
+}
+
+@Suite('clear-scrollback composer ctrl+l keymap (B3)')
+export class AgentConsoleClearScrollbackKeymapTest {
+
+    @Test('composer ctrl+l resolves to clear-scrollback; other contexts leave ctrl+l unbound')
+    composerCtrlLResolves() {
+        const keymap = new AgentConsoleKeymap();
+        expect(AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP['ctrl+l']).toEqual('clear-scrollback');
+        expect(isAgentConsoleGlobalAction('clear-scrollback')).toEqual(true);
+        expect(keymap.resolve('ctrl+l', 'composer')).toEqual('clear-scrollback');
+        expect(keymap.resolve('ctrl+l', 'global')).toBeUndefined();
+        expect(keymap.resolve('ctrl+l', 'list')).toBeUndefined();
+        expect(keymap.resolve('ctrl+l', 'approval')).toBeUndefined();
+        expect(keymap.resolve('ctrl+l', 'pager')).toBeUndefined();
+    }
+
+    @Test('TUI ctrl+l decodes to the ctrl+l key (not lowercase l)')
+    tuiCtrlLDecodesToCtrlL() {
+        const { component } = createKeymapConsoleParts();
+        expect((component as any).decodeGlobalKey('\x0c')).toEqual('ctrl+l');
+    }
+
+    @Test('TUI ctrl+l clears the scrollback through the surface port without writing back')
+    async tuiCtrlLClearsScrollback() {
+        const writes: string[] = [];
+        let resets = 0;
+        const surfaceAccessor = {
+            writeRawTerminalData: (data: string) => { writes.push(data); return true; },
+            resetTerminalRenderState: () => { resets += 1; return true; }
+        } as any;
+        const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, undefined, undefined, surfaceAccessor);
+        const consumed = await (component as any).handleGlobalKeyInput('\x0c');
+        expect(consumed).toEqual(true);
+        expect(writes).toEqual(['\x1b[2J\x1b[3J\x1b[H']);
+        expect(resets).toEqual(1);
+        expect(state.sessionId).toEqual('active-1');
+        expect(state.messages.length).toEqual(0);
+        expect(state.input).toEqual('');
+    }
+
+    @Test('TUI ctrl+l without a surface port only consumes the key')
+    async tuiCtrlLWithoutSurfaceConsumes() {
+        const { component } = createKeymapConsoleParts();
+        expect(await (component as any).handleGlobalKeyInput('\x0c')).toEqual(true);
+    }
+
+    @Test('browser ctrl+l clears the scrollback through the surface port when present')
+    async browserCtrlLClearsScrollback() {
+        const writes: string[] = [];
+        let resets = 0;
+        const surfaceAccessor = {
+            writeRawTerminalData: (data: string) => { writes.push(data); return true; },
+            resetTerminalRenderState: () => { resets += 1; return true; }
+        } as any;
+        const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, undefined, undefined, surfaceAccessor);
+        expect(await (component as any).handleBrowserGlobalKeyInput('l', { ctrlKey: true })).toEqual(true);
+        expect(writes).toEqual(['\x1b[2J\x1b[3J\x1b[H']);
+        expect(resets).toEqual(1);
+        expect(state.sessionId).toEqual('active-1');
+        expect(state.messages.length).toEqual(0);
+    }
+
+    @Test('browser ctrl+l without a surface port only consumes the key')
+    async browserCtrlLWithoutSurfaceConsumes() {
+        const { component } = createKeymapConsoleParts();
+        expect(await (component as any).handleBrowserGlobalKeyInput('l', { ctrlKey: true })).toEqual(true);
     }
 }

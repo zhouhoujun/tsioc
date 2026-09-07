@@ -49,7 +49,8 @@ export type AgentConsoleGlobalAction =
     | 'status-health'
     | 'timeline-mode'
     | 'command-outputs'
-    | 'queue-follow-up';
+    | 'queue-follow-up'
+    | 'clear-scrollback';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -57,7 +58,7 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
-    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up'
+    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up', 'clear-scrollback'
 ];
 
 export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
@@ -80,7 +81,9 @@ export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlob
 export const AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {
     pageup: 'message-page-up',
     /** While a turn is running, Tab queues the composer draft as the next follow-up prompt. */
-    tab: 'queue-follow-up'
+    tab: 'queue-follow-up',
+    /** Empty composer Ctrl+L clears the visible scrollback without resetting the session. */
+    'ctrl+l': 'clear-scrollback'
 };
 
 export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalAction> = {

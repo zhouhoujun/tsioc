@@ -131,5 +131,8 @@ export const CONSOLE_UTILS = new InjectToken<ConsoleUtils>('ConsoleUtils');
 
 // ── Constants (platform-independent) ───────────────────────────────────────
 
+/** Sequence clearing the terminal screen and scrollback (ED2 + ED3 + cursor home). */
+export const CLEAR_SCROLLBACK_SEQUENCE = '\x1b[2J\x1b[3J\x1b[H';
+
 /** Default terminal column width when not detected from the environment. */
 export const DEFAULT_TERMINAL_COLUMNS = 100;

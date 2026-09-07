@@ -2261,11 +2261,15 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：composer 为时空 composer 连按 `Esc,Esc` 进入"编辑上一条"。首个 Esc 已有 `interrupt-turn` 语义（运行中）与空态占位，需区分：空 composer 场景专用 `edit-last-msg` 动作，连按继续回退上一/更早消息。保持跨端一致。
 - **验收**：空 composer `Esc,Esc` 编辑最后一条 user/assistant 消息；继续 Esc 回退更早；测试通过。
 
+**B2 收尾（2026-09-07）✅**：验证确认 B2 已由 **P130（G55/G70）** 完整落地并带测试，无需新代码：`AgentConsoleComponent.handleIdleEscape`（:5844）Esc 双击状态机 + `AgentConsoleEditModeHandlers.ts`（enterEditMode :43 / startEditTarget :64 / dismissEditMode :86）；`getEditableUserMessages`（:5860）过滤 **user-only、非 steer、非空**（assistant 输出不可编辑，与 codex 语义一致——原验收文案「user/assistant」修正为「user」）；`editEscapeWindowMs` 默认 400 可配置；dismiss 后连按 Esc 经 recentDismiss 分支回退上一/更早消息，首条边界提示；支持 [Mention Context] 剥离、image parts 恢复为待附附件、编辑中途提交按位置 fork/原会话/新建会话三态。测试：`test/edit-message.spec.ts` 14 断言（窗口默认/可窄化、Esc,Esc 进入、取消恢复草稿、step-back、首条边界、steer 跳过、无消息提示、[Mention Context] 剥离、image parts 恢复、mid-history fork、首条新建会话、末条原地运行、未知命令不 fork）。门禁：agent-ui 全量 **1107 passing EXIT=0**；`tsc --noEmit` EXIT=0；`git diff --check` 通过（本次无源码改动，与 B1 同一批次收尾）。
+
 #### 批次 B3 · Ctrl+L 清屏不重置会话（跟随 codex）（中）
 
 - **差距**：codex `Ctrl+L` 清屏（保留上下文）；本项目 keymap 无 `ctrl+l` 绑定（Ctrl+L 在浏览器会被全局层占用风险，见 2026-09-02 上下键被全局层抢占的教训）。
 - **方案**：为空 composer 增加 `ctrl+l`→`clear-scrollback`，仅清除可视滚动不回写/不重置会话；浏览器需先于全局层消费。与 `messagesVisibleItems` 窗口交互需保证不破坏 pin/保尾。
 - **验收**：`ctrl+l` 清可视区不回写消息；TUI/browser 一致；全量测试通过。
+
+**B3 收尾（2026-09-07）✅**：keymap 链新增 `clear-scrollback` action（`AgentConsoleKeymap.ts` union + `AGENT_CONSOLE_GLOBAL_ACTIONS` + `AGENT_CONSOLE_COMPOSER_DEFAULT_KEYMAP['ctrl+l']`）；`decodeGlobalKey('\x0c')` 复用既有 ctrl+字符分支（code 12→`ctrl+l`）无需改 decode；`AgentConsoleComponent.ts` `executeGlobalKeyAction` 增加 clear-scrollback 分支 → `clearScrollback()`，`commands` Record 的 `Exclude` 类型同步排除新 action。清屏仅经 surface 端口：`surfaceAccessor.writeRawTerminalData(CLEAR_SCROLLBACK_SEQUENCE)` + `resetTerminalRenderState()`，均 optional 调用、无 surface 时仍返回 true（消费键、浏览器端先于全局层 preventDefault），**不回写消息/不重置会话/不触碰 `messagesVisibleItems`**（pin/保尾不受影响）。`console-ports.ts` 导出 `CLEAR_SCROLLBACK_SEQUENCE = '\x1b[2J\x1b[3J\x1b[H'`（ED2+ED3+光标归位，与 `buildClearScreenSequence(true)` 等值，跨平台字面量、agent-ui/src 不引用 `@tsdi/components/console`）。测试：`keymap-context.spec` 新增 B3 suite 6 断言（composer ctrl+l 解析且其他上下文未绑定、TUI decode、TUI 清屏经 surface 不回写、TUI 无 surface 仅消费、browser 清屏经 surface、browser 无 surface 仅消费）；harness 增第 6 参 `surfaceAccessor`（位置 #13，与构造器 keymapStore #20/modelStore #29 对齐，修掉 4 个因参数错位而误挂 AND `refreshWhichKeyBindings` 分页裁剪导致的失败）；who-key overlay 分页语义已由既有设计承载（`pageSize=25`，composer 26 个绑定后 `ctrl+l` 落第 2 页），`tuiTogglesOverlayOn` 断言更新为分页感知并验证 `n` 翻页可取回 `ctrl+l`。门禁：agent-ui 全量 **1113 passing EXIT=0（基线 1107，+6 为 B3 新增测试，0 回归）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
 
 #### 批次 B4 · /copy 与外部编辑器强化（对照 codex `Ctrl+O`/`/raw`）（低）
 
