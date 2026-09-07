@@ -1116,7 +1116,7 @@ Turn: Fix session restore                                      running  01:42
 > 4. plan/todo 从不出现或位置错误、被折叠双重吃行。
 > 参考 opencode 行为：`/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入；关键信息优先展示，尾部永不吞。
 
-### 批次 I · /command 支持完善（P247）
+### 批次 I · /command 支持完善（P247）✅ 已完成（registry/命令面板由 P260–P262/P265–P266 承接）
 
 - **P247 · /command 支持完善（高）** `platform: agent-ui/src + agent RPC`
   - **目标**：显著提升 `/command` 列表的实用性，目前多数子命令要么未实现、要么只在特定上下文生效，用户期望获得类似 opencode 的统一命令面板体验。
@@ -1128,7 +1128,7 @@ Turn: Fix session restore                                      running  01:42
   - **锚点**：`AgentConsoleComponent` `runKeymapCommand`、`AgentConsoleSessionState` commandHints、`AgentConsoleKeymap` effectiveBindings。
   - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 
-### 批次 II · 折叠策略重构：尾部永不吞（P248）
+### 批次 II · 折叠策略重构：尾部永不吞（P248）✅ 已完成（保尾策略由 P253 承接）
 
 - **P248 · 折叠策略重构：尾部永不吞（中）** `platform: agent-ui/src（跨平台）`
   - **目标**：解决"assistant/user 长回复尾部问询被折叠吞掉"的问题，改用"保尾"策略，确保尾部永远可见关键交互信息。
@@ -1140,7 +1140,7 @@ Turn: Fix session restore                                      running  01:42
   - **锚点**：`AgentConsolePanels.ts` `renderedMessageItems`、`truncateMessageItem`、`COLLAPSED_MESSAGE_PREVIEW_LINES`。
   - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 
-### 批次 III · 信息展示重构：保尾 + 结构化 inline（P249）
+### 批次 III · 信息展示重构：保尾 + 结构化 inline（P249）✅ 已完成（保尾 + criticalFlag 由 P253/P264 承接）
 
 - **P249 · 信息展示重构：保尾策略与结构化 inline（高）** `platform: agent-ui/src（跨平台）`
   - **目标**：解决"关键设计plan信息隐藏在折叠中"的问题，改用"保尾 + 结构化 inline" 的混合展示策略，确保尾部永远可见关键交互信息，同时保留折叠获取完整内容的能力。
@@ -1153,7 +1153,7 @@ Turn: Fix session restore                                      running  01:42
   - **锚点**：`AgentConsolePanels.ts` `renderedMessageItems`、`truncateMessageItem`、`COLLAPSED_MESSAGE_PREVIEW_LINES`。
   - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 
-### 批次 IV · 设计计划关键信息优先展示（P250）
+### 批次 IV · 设计计划关键信息优先展示（P250）✅ 已完成（plan 卡片位置/免折叠/关键信息由 P254/P257 承接）
 
 - **P250 · 设计计划关键信息优先展示（中）** `platform: agent/src/prompt + agent-ui/src`
   - **目标**：解决"系统提示明确抑制：`Do not call todo … unless the user explicitly asks`" 与"plan 卡片被 push 到消息流末尾并吃 8 行折叠" 两个问题，改为主动引导模型先建立计划，随后每步完成即实时更新，且关键plan信息优先在对话流中可见。
@@ -1165,7 +1165,7 @@ Turn: Fix session restore                                      running  01:42
   - **锚点**：`AgentConsoleSessionState.ts` `displayMessages`、`buildPlanMessage`、`AgentConsoleMessageRenderers.ts` planTodo renderer。
   - **收尾**：检查完成项与 git diff → agent-ui 全量测试 → `tsc --noEmit`/`build:web` → 更新本节结果 → 独立提交。
 
-### 批次 V · /command 交互化：问题选择控件（P251）
+### 批次 V · /command 交互化：问题选择控件（P251）✅ 已完成（选择控件交互由 P256/P265 承接）
 
 - **P251 · /command 交互化：问题选择控件（中-高）** `platform: agent-ui/src`
   - **目标**：实现 `/command` 结果的交互式选择控件，参考 opencode 行为：`/command` 结果为带编号选项的选择控件，Enter 确认/Esc 收起，非阻塞注入。
@@ -1410,7 +1410,7 @@ Turn: Fix session restore                                      running  01:42
 
 ### 三、实施批次
 
-#### 批次 I · /command 交互化（P252）
+#### 批次 I · /command 交互化（P252）✅ 已完成（由 P260–P262 承接，见 1468 差距表）
 - **P252 · /command 交互化：统一命令面板（高）** `platform: agent-ui/src（跨平台）`
   - 新增 `AgentConsoleCommandPanelComponent`：命令列表 overlay，支持 `/` 过滤、↑↓ 导航、Enter 确认、Esc 收起。
   - 所有 `/command` 结果统一走命令面板。
@@ -1420,7 +1420,7 @@ Turn: Fix session restore                                      running  01:42
   - 静态约束：`rg "@tsdi/components/console" packages/agents/agent-ui/src` 应为空。
   - 回归基线：确保 P0–P251 已有测试不回归。
 
-#### 批次 II · 折叠策略重构（P253）
+#### 批次 II · 折叠策略重构（P253）✅ 已完成（`truncateMessageItem` 三分支保尾，见 1470 差距表）
 - **P253 · 保尾折叠：assistant/user 消息不吞尾部（高）** `platform: agent-ui/src（跨平台）`
   - 修改 `truncateMessageItem`：非 focused 模式对 assistant/user 消息采用"头 2 行 + … + 尾 2 行"保尾策略。
   - reasoning/tool/system 保持现有折叠不变。
@@ -1434,7 +1434,7 @@ Turn: Fix session restore                                      running  01:42
   - 渲染强化：checkbox 字形、进度条、in_progress 高亮。
   - ✅ 已实现：通过 P187/P233 完成。
 
-#### 批次 IV · 文件变更 + Ask_user + 输出内联（P255-P256, P258）
+#### 批次 IV · 文件变更 + Ask_user + 输出内联（P255-P256, P258）✅ 已完成
 - **P255 · 文件变更概要内联（高）** `platform: agent-ui/src（跨平台）` ✅ 已完成
   - ✅ 已实现：通过 P174 完成。
 - **P256 · Ask_user 交互化（中-高）** `platform: agent-ui/src（跨平台）` ✅ 已完成
@@ -1450,7 +1450,7 @@ Turn: Fix session restore                                      running  01:42
   - plan 卡片豁免通用 8 行折叠。
   - ✅ 已实现：ToolsSection.ts 已含主动规划口径。
 
-#### 批次 VI · 验证与回归（P259）
+#### 批次 VI · 验证与回归（P259）✅ 已完成（自动回归通过；端到端 runner 限制由 P238/P262/P285 承接）
 - **P259 · 全量验证与真实终端验收** `platform: 验证（跨平台）`
   - **自动回归完成（2026-08-31）**：agent 797、agent-ui 872、components 135、components/console 73、components/html 117 均通过；agent-ui `tsc --noEmit`/`build:web` 通过，`src/` 无 `@tsdi/components/console` 或 `node:` 直接 import。
   - **端到端限制**：Playwright 已作为工具依赖安装，但当前没有 agent-ui browser E2E runner；PTY 脚本限 Linux/macOS，场景 1/2 已通过，场景 3/5 仍受 fake model/driver 时序限制（见 P262）。这些限制需由独立的 P238 harness 工作承接。
@@ -2128,3 +2128,138 @@ Turn: Fix session restore                                      running  01:42
 - **components**：135 passing EXIT=0。
 - **components/console**：73 passing EXIT=0。
 - **结论**：P0–P251 全部实现，InMemory 测试 fixture 迁移完成，packages/agents 可测试包全量通过。`agent-gateway` 受沙箱 `listen EPERM` 限制不在本轮范围；`agent` 包测试超时（sandbox 限制），非代码问题。
+
+---
+
+## 完成计划合并归档（v11–v16 → 能力项，2026-09-07）
+
+用户指令"把完成计划合并到功能项里"执行：以下已完成计划段（v11–v16）已收敛为能力项，不再单独立项跟踪。原始历史切片保留在上文对应批次标题（已标 ✅ 并注明承接关系），此处只维护能力清单与后续缺口。
+
+### 已合并的能力项（含日期）
+
+| 能力域 | 覆盖计划 | 现状 / 承接 | 后续缺口 |
+|---|---|---|---|
+| 命令系统（统一 registry） | P247/P252/P260–P262/P265–P266/P268 | 89 条命令由 registry 提供 canonical/alias/group/desc/schema；palette、补全、help、smart-run、queued 共用解析与 fuzzy 选择；execution 具备 idle/running/succeeded/failed/cancelled、requestId、重试、输出关联、取消控制 | 部分 handler 仍二次字符串解析（v16 已登记，见上） |
+| 命令解析（schema） | P275→P282 | 89/89 定义↔handler 双向覆盖、39+50 条 schema 化、self-parse 全量消除、失败草稿保留 + 修正重试 | 无 |
+| 折叠策略（保尾） | P248/P249/P253 | `truncateMessageItem` 三分支保尾：assistant/user 头 2 行 + … + 尾 2 行；reasoning/tool/system 保持折叠 | 无 |
+| 关键信息优先展示 | P250/P254/P257 | plan 卡片豁免通用折叠、位置前置、criticalFlag 关键字优先 | 无 |
+| Overlay / 可访问性 | P266/P270/P274 | select/palette/approval/pending/outputs/plan inspector 共享 focus stack 与跨端语义投影；browser role/label/active-descendant，TUI 保持一致操作映射 | 无 |
+| 异步一致性 | P269/P277/P283 | RPC envelope 透传 requestId/sessionEpoch/sequence/attempt；handler 注入 execution context；AbortSignal 取消、会话切换 epoch 拒绝、timeline replay sequence 拒绝 | P269 会话级 epoch 拒绝先于 P277 完成 |
+| Thread item 本地投影 | P271 | command/tool/plan/file-change 在 SessionState 经稳定 key 幂等 upsert；timeline compact/steps/verbose、异常优先、详情 inspector | 无 |
+| exchange envelope（写侧） | P276→P283 / P278→P284 | `CommandExchangeEnvelope` + reducer + sequence/attempt/epoch + retry；`CommandExchangeStore` 抽象 + TypeORM 实现 + gateway REST `POST /api/command-exchange/append` | **候选发现（下轮待办）**：`AppRpcServer` 未暴露 RPC append，packages/agents 无进程内 append 调用者——真实现仅可能来自宿主/外部进程，需确认写侧闭环 |
+| 跨平台门禁 | P272/P279→P285 / P281 | `run-dom-gate.ts`（JSDOM virtual-DOM）+ `run-tui-gate.ts`（ConsoleRenderer 流式镜头）共享 `FakeAgentGateway`+`SCENARIOS`+`collectGatewayMetrics`；4 场景双端 4/4 PASS EXIT=0；PTY 场景 1/2/3/5/6 PASS | PTY 场景 4（如存在）仍缺；DOM/TUI 结构一致性现已有运行载体（P281 结构验证载体） |
+| overlay 纯逻辑控制器 | P273 | 8 个 storage fallback 组件内 `new` 已删；仅保留无平台依赖纯内存 `AgentConsoleKeymap` | `AgentConsoleOverlayController` 同为纯逻辑（无状态无平台依赖），判为豁免 |
+| TUI/浏览器双平台收敛 | P203–P212 / P213–P218 / P219–P224（v-deep） | timeline/command overlay/todo/plan 展示能力已跨端统一 | 见下 v17-B UX 差距 |
+| 存储依赖倒置（TypeORM） | v16（2026-09-03/04 一系列） | `CommandExchangeStore` 抽象 + `TypeOrmCommandExchangeStore`；AppRpcServer query/replay；gateway REST append | 见上 exchange 写侧 |
+
+### 合并后的剩余缺口（不重复立项，直接进 v17）
+
+1. **exchange 写侧闭环**（P278→P284 承接但不完整）：AppRpcServer 仅有 query/replay，无 RPC append；进程内无 append 调用者。需确认宿主/外部进程写入路径，或补 RPC append。
+2. **v16 已登记的四大领域**（时间线窗口/视觉/状态列/描述语言、命令处理二次解析）仍在缺口表（1864–1868 行），未实现。
+
+---
+
+## 深入缺口与执行计划 v17：硬编码/写死重构 + agent-ui UX 差距
+
+用户指令"分析当前 agent 的不足，特别写死的地方需要按规则重构，并分析 agent-ui 用户交互不足，参考 codex/opencode 提出优化方案并拆分为可执行计划"。本段按 **A. 硬编码/写死重构** 与 **B. agent-ui UX 差距** 两个子域拆批，逐批固定门禁：检查完成项与 `git diff` → 受影响包全量测试 → `tsc --noEmit`/构建 → 更新本节结果 → 独立提交。实现必须保持 TUI/browser 共用 SessionState 与 renderer，禁止 timer 驱动刷新，禁止布局层"脏节点追踪"。
+
+### v17-A 硬编码 / 写死重构（按架构规则）
+
+违反的规则：**IoC 依赖倒置**（todo.md 150–181 行）——平台环境信息与路径必须经注入的 adapter/service，不得内镶字面量；**跨平台约束**（181–193 行）——`agent-ui/src` 不得直接引用 node 库，环境信息用全局守卫。以下按"写死点 → 规则 → 重构方案 → 验收"拆批。
+
+#### 批次 A1 · `.tsdi-agent` 路径集中化（高）
+
+- **写死点（20 处跨 10 个 store 文件）**：`AgentConsoleModelStore.ts:28/50`（models.json）、`AgentConsoleStash.ts:29/35`（stash.json）、`AgentConsoleExportHandlers.ts:155-156`（exports）、`AgentConsoleSettingsStore.ts:53/74`（settings.json）、`AgentConsoleStatusline.ts:55/61`（statusline.json）、`AgentConsoleTheme.ts:175/181`（theme.json）、`AgentConsoleRawMode.ts:21/27`（raw-mode.json）、`AgentConsoleBoundedFileCommandOutputStore.ts:36`、`AgentConsoleTitle.ts:108/114`（title.json）、`AgentConsoleKeymap.ts:276/291`（keymap.json）。
+- **规则**：路径是环境/配置信息，应经注入的路径解析器提供，不在各 store 各自硬编码（违反 DRY + IoC 依赖倒置）。
+- **方案**：新增共享 `AgentConsolePathProvider`（或常量 token）暴露 `dotDir(workspace)` / `storeFile(workspace, name)`；各 store 的 `this.fileAdapter.join(workspace, '.tsdi-agent', '<name>.json')` 改为经注入 provider 解析。同时满足 `agent-ui/src` 不直接引用 node（`fileAdapter` 已是注入抽象，路径 provider 同样注入）。
+- **验收**：`grep -rn "'.tsdi-agent'" agent-ui/src` 归零（仅 provider 定义处 1 处）；agent-ui 全量 + `tsc --noEmit` 通过。
+
+#### 批次 A2 · 魔法数集中化（低）
+
+- **写死点**：`AgentConsoleComponent.ts:256` `SEARCH_SESSION_LIMIT=100`（已是常量，但硬编码值）、`:258` `EDIT_ESCAPE_WINDOW_MS=400`。
+- **规则**：可配置参数应进 `AgentConsoleOptions`（如 UI options），不得为魔法常量。
+- **方案**：将 `SEARCH_SESSION_LIMIT` / `EDIT_ESCAPE_WINDOW_MS` 提为 `consoleOptions` 可配置项（带默认值），生效点 `AgentConsoleComponent.ts:3827/5818/5866`，并同步 `editEscapeWindowMs` 透传。属低风险，注意默认值与现一致。
+- **验收**：可通过 `consoleOptions` 覆盖；默认行为不变；全量测试通过。
+
+#### 批次 A3 · 平台环境信息经守卫/注入（中）
+
+- **写死点**：
+  - `agent/src/harness/VerifyCommandRunner.ts:90` `env: process.env`（直接 node 引用违反跨平台约束）。
+  - `agent/src/orm.module.ts:54` `homedir: () => process.env.HOME || os.homedir()`。
+  - `agent/src/tools/ToolApprovalManager.ts:497+` 硬编码工具名/前缀分类表（`mcp.`/`skill.`/sandbox 工具清单 `terminal, process.start, ...`）。
+- **规则**：`agent` 库不得直接引用 node API（全局守卫 `(globalThis as { process?: ... }).process`）；工具分类应从工具注册表派生或注入，而非维护显式字符串表。
+- **方案**：
+  - `VerifyCommandRunner` 的 `env` 与 `orm.module` 的 `homedir`：改为 `injectEnv()` / 全局守卫 `resolveProcessEnv()` 工具（与既有模式一致），并允许经 options 覆盖。
+  - `ToolApprovalManager`：工具名→category 分类改为基于工具 `category` 元数据或在工具注册处携带 approval 分类，移除硬编码 `APPROVAL_CATEGORIES` 字符串表；保留向后兼容 fallback。
+- **验收**：`grep -rn "process\.env\|os\.homedir" packages/agents/agent/src` 仅允许全局守卫/注入工具处出现；分类行为与现一致（相关测试通过）。
+
+#### 批次 A4 · provider baseUrl / apiKeyEnv 集中（低）
+
+- **写死点**：`agent/src/model/provider-registry.ts:13-16`（deepseek/openai/anthropic/gemini 的 baseUrl/apiKeyEnv 内镶）、`options.ts:339-340` 默认 baseUrl。
+- **规则**：Provider 定义是静态配置，可归入注配置（已有 `ProviderRegistry`/`AgentProviderRegistry` 抽象）。**注意**：这属于"有意的产品默认值"，非缺陷；仅需确认它们已经 registry 注入而非散落 options 默认值。若 `options.ts` 默认与 registry 重复，应去重统一引用。
+- **方案**：`options.ts` 默认 baseUrl/apiKeyEnv 改为引用 `provider-registry`，消除重复定义（单一事实源）；非功能性重构，风险低。
+- **验收**：默认行为不变；全量测试通过。
+
+#### 批次 A5 · Date.now / Math.random 使用点复核（须逐点判定，禁止一刀切禁用）
+
+- **写死点**：agent-ui/src 共 62 处 `Date.now()/Math.random()`（其中 `AgentConsoleSessionState.ts` 18 处），主要用于 id、时间戳、时间派生动画。
+- **规则**（架构约束：动画必须"时间派生"，getter 由 `Date.now()` 计算；id 生成可随数据变化）：**不禁止 Date.now 用于时间派生/时间戳/id 唯一性**；只禁止"用定时器主动驱动无数据变化的刷新"。
+- **方案**：逐个审计 62 处，标记分类：
+  - `TimeDerived`（动画 frame 由 Date.now 计算，随真实渲染推进）→ 保留。
+  - `Id/timestamp`（消息 id、createdAt）→ 保留但确认不破坏确定性（测试夹具可注入时钟，见 P238 基线）。
+  - `SystemClockInjection`（需可测）→ 若阻断确定性测试，引入可注入时钟 provider。
+  - `TimerDriven`（主动 setInterval/setTimeout 刷新界面）→ **违规，必须移除**（架构红线）。
+- **验收**：审计表写入本节；残留 `setInterval/setTimeout` 刷新类用法归零；全量测试通过。
+
+### v17-B agent-ui UX 差距（对照 codex/opencode）
+
+现状（代码证据）：命令面板/焦点栈/Timeline/plan 卡片/overlay 已具备（见 1464 差距表与 1235 深度对比）。以下为对照 codex/opencode（2026 行为）识别的新差距，按交互价值拆分。
+
+#### 批次 B1 · Tab 排队后续提示（跟随 codex `queueNextTurn`）（高）
+
+- **差距**：codex 在 agent 运行中 `Tab` 可**排队**一条后续提示（不打断当前 turn）；本项目 `AgentConsoleKeymap.ts` 无 `tab` 绑定、无 queued prompt 管线（模型侧有 `pendingTurnModelProfile` 但不等于用户排队提示）。
+- **方案**：新增 keymap action `queue-follow-up`（Tab），运行中把 composer 草稿入队为"下一 turn 提示"，完成当前 turn 后自动注入；提供查看/清空队列命令。跨端共用 `SessionState`，浏览器与 TUI 同动作。
+- **验收**：`AgentConsoleKeymap` 含 `tab`→`queue-follow-up`；排队后当前 turn 不被中断、完成后注入；门禁/全量测试通过。
+
+#### 批次 B2 · Esc×2 编辑上一条消息（跟随 codex `Esc, Esc`）（高）
+
+- **差距**：codex 空 composer 下 `Esc, Esc` 编辑上一条消息、继续按回退更早；本项目 keymap 无此绑定，仅 `EDIT_ESCAPE_WINDOW_MS` 用于 Esc 重入（单次逻辑，非"连按遍历 transcript"）。
+- **方案**：composer 为时空 composer 连按 `Esc,Esc` 进入"编辑上一条"。首个 Esc 已有 `interrupt-turn` 语义（运行中）与空态占位，需区分：空 composer 场景专用 `edit-last-msg` 动作，连按继续回退上一/更早消息。保持跨端一致。
+- **验收**：空 composer `Esc,Esc` 编辑最后一条 user/assistant 消息；继续 Esc 回退更早；测试通过。
+
+#### 批次 B3 · Ctrl+L 清屏不重置会话（跟随 codex）（中）
+
+- **差距**：codex `Ctrl+L` 清屏（保留上下文）；本项目 keymap 无 `ctrl+l` 绑定（Ctrl+L 在浏览器会被全局层占用风险，见 2026-09-02 上下键被全局层抢占的教训）。
+- **方案**：为空 composer 增加 `ctrl+l`→`clear-scrollback`，仅清除可视滚动不回写/不重置会话；浏览器需先于全局层消费。与 `messagesVisibleItems` 窗口交互需保证不破坏 pin/保尾。
+- **验收**：`ctrl+l` 清可视区不回写消息；TUI/browser 一致；全量测试通过。
+
+#### 批次 B4 · /copy 与外部编辑器强化（对照 codex `Ctrl+O`/`/raw`）（低）
+
+- **差距**：codex `/copy`（Ctrl+O）复制最近完成输出、`/raw` 原样滚动；本项目已有 `/copy`（keymap `ctrl+x y`），但 `/raw`（原样滚动）与 `open-editor`（Ctrl+G 已有）外无"复制最近输出"轻量入口。
+- **方案**：为 `/copy` 增加 Ctrl+O 快捷（与现有 keymap 不冲突）；评估 `/raw` 原样滚动切换（低优先，仅在虚拟终端支持时）。
+- **验收**：`ctrl+o` 触发 /copy；行为与 /copy 一致。
+
+#### 批次 B5 · 命令面板/状态行/knowledge 冲刺（对照 opencode）（中，可拆分多个计划项）
+
+- **差距与方案**：
+  - `/model` / `/status` 元命令当前为即时输出（`ctx.runStatusCommand()`），对照 opencode 可有更强"状态面板"；本项目已有 `status-health`、`which-key`、`toggle-thinking`，重点是把 `runStatusCommand` 输出做成可复用的状态行/面板融合，而非仅 notice。
+  - `/keymap`（codex 支持运行时重映射）与 `/vim`（composer modal 编辑）——本项目已有多套 keymap（`AGENT_CONSOLE_DEFAULT_KEYMAP` 等）但缺运行时 `/keymap` 命令与 modal 编辑；列为可选冲刺，评估 Vim 模态的成本（TUI 与浏览器 composer）后决定。
+  - message 上下文动作（编辑/重发/steer/feedback）：本项目**无** `messageActions`（`grep` 为空）；codex 空 Esc、steer 语义已部分存在（`steerMode`），建议补充"编辑上一条/重发/反馈"入口（与 B2 合并）。
+
+#### 批次 B6 · 长会话性能与虚拟化（对照 codex 长聊天）（中）
+
+- **差距**：`messagesVisibleItems: 7` 默认 + `resolveConsoleListWindow` 已做窗口/pin/保尾，但**每次数据变化全量重渲染**（满足架构约束——响应式替换节点），长会话大消息流仍可能在浏览器出现性能瓶颈。codex 用增量/虚拟化行渲染。
+- **方案**：不违反"禁止脏节点缓存"（AGENTS.md 明文禁止基于变化源的复用）。评估**仅窗口内渲染 + 虚拟滚动占位**（如复用 `resolveConsoleListWindow` 已有滑动窗口，仅渲染 window 内切片，避免渲染整棵大消息列表），保持响应式契约（窗口计算本身是纯 getter，由数据变化驱动）。若实现虚拟化，须门禁验证窗口锚点不漂移（P238 基线）。
+- **验收**：大消息流场景虚拟滚动占位生效、pin/保尾不回归；门禁 + 全量测试通过。
+
+#### 批次 B7 · exchange 写侧闭环（承接合并归档的剩余缺口）（中）
+
+- **差距**：`AppRpcServer` 仅暴露 `command_exchange.query/replay`，无 RPC append；整个 packages/agents 无进程内 append 调用者（仅 FakeAgentGateway/scenarios 引用）。
+- **方案**：确认宿主实现是否在外部进程写 `CommandExchangeStore`；若应支持进程内写，补 `command_exchange.append` RPC 与调用点，使 durable thread-item 双向闭环（P278/P284 真正完成）。
+- **验收**：进程内 append 一条 → query/replay 可见；门禁场景含写→读回环验证。
+
+### v17 批次门禁总则
+
+- 每批固定门禁：检查完成项与 `git diff` → 受影响包全量测试（agent-ui 基线 1101 passing；受影响再加 agent/agent-gateway 对应包）→ `tsc --noEmit`/`build:web` → 更新本节结果与基线数字 → 独立提交。
+- 保持 TUI/browser 共用 SessionState 与 renderer；禁止 timer 驱动刷新（B6 虚拟化尤其注意不引入 setInterval）；禁止布局层"脏节点追踪"缓存。
+- 缺浏览器/PTY 时明确 skip+report，不修改断言伪造通过（P285 原则）。
