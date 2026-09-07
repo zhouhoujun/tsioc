@@ -1,4 +1,5 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
+import { BUILTIN_AGENT_PROVIDERS } from './model/provider-registry';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
@@ -293,6 +294,9 @@ export interface AgentOptions {
     delegationMode?: AgentDelegationMode;
 }
 
+/** A4: default deepseek connection settings reference the provider registry (single source of truth). */
+const DEFAULT_DEEPSEEK_PROVIDER = BUILTIN_AGENT_PROVIDERS.find(provider => provider.id === 'deepseek');
+
 export const defaultAgentOptions: AgentOptions = {
     name: 'HermesAgent',
     // Generation tasks commonly need discovery, planning, several edits, and
@@ -336,8 +340,8 @@ export const defaultAgentOptions: AgentOptions = {
     model: {
         provider: 'deepseek',
         model: 'deepseek-v4-flash',
-        baseUrl: 'https://api.deepseek.com',
-        apiKeyEnv: 'DEEPSEEK_API_KEY',
+        baseUrl: DEFAULT_DEEPSEEK_PROVIDER?.baseUrl,
+        apiKeyEnv: DEFAULT_DEEPSEEK_PROVIDER?.apiKeyEnv,
         timeoutMs: 120000
     },
     bootstrapTurn: {

@@ -2215,6 +2215,8 @@ Turn: Fix session restore                                      running  01:42
 - **方案**：`options.ts` 默认 baseUrl/apiKeyEnv 改为引用 `provider-registry`，消除重复定义（单一事实源）；非功能性重构，风险低。
 - **验收**：默认行为不变；全量测试通过。
 
+**A4 收尾（2026-09-07）✅**：`defaultAgentOptions.model` 的 `baseUrl`/`apiKeyEnv` 改为经 `DEFAULT_DEEPSEEK_PROVIDER`（`BUILTIN_AGENT_PROVIDERS.find(id==='deepseek')`）引用 registry，移除 `options.ts` 与 `provider-registry.ts` 的重复字面量；deepseek 为 registry 首条目，模块加载必命中，默认行为不变。`agent` 全量 **751 passing / 44 failed（与 A3 后基线一致）**；`tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
 #### 批次 A5 · Date.now / Math.random 使用点复核（须逐点判定，禁止一刀切禁用）
 
 - **写死点**：agent-ui/src 共 62 处 `Date.now()/Math.random()`（其中 `AgentConsoleSessionState.ts` 18 处），主要用于 id、时间戳、时间派生动画。
