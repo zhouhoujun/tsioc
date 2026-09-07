@@ -2089,6 +2089,9 @@ Turn: Fix session restore                                      running  01:42
 - 根因复核：启动 session 选择与 remote bridge seed 存在时序风险；新增显式 session 判定、延后 bridge 订阅，并在统一 `setMessages()` 入口拒绝带角色分隔符/工具 payload 结构的原始 transcript。
 - `agent-ui` `tsc --noEmit` EXIT=0，`git diff --check` EXIT=0。
 - `agent-ui` 全量测试在当前沙箱 90 秒内无输出且未自然退出，已中止，不能宣称全量通过；CLI 实际启动另受 `/home/zhouyou/.tsdi-agent/agent.db` EROFS 限制。
+- **后续回归（2026-09-07 收尾复核）**：该提交的 component 侧改动 `openSession(explicitSessionId || undefined)` 在纯聊天/配置/被 app-RPC 接管场景下丢失当前会话——`buildConsoleAgentOptions` 对 plain chat 强制 `bootstrapTurn.sessionId` 为空，`explicitSessionId || undefined` 恒为 `undefined`，`ensureSession(undefined)` 静默新建 session（stub `session-1` / gateway `rpc-<uuid>`），导致 agent-ui 全量 **28 失败**（1073 passing / 28 failed EXIT=1；1101 基线与 P282 绿态 `217adf76b` 完全吻合，证实全部为本次回归）：`sessionId: "console"` vs `"session-1"` 断言（tools/compact/review/diff/share/approvals/voice/configure/bootstraps 簇）、RPC-available 布尔断言、`configure({sessionId})` 后 `onInit` 会话被顶掉（working usage / event bridge / queued-prompt 簇）。
+- **修复**（`AgentConsoleComponent.ts:2262`）：`await this.openSession(explicitSessionId || this.state.sessionId || undefined, { persistCurrentHistory: false })`——显式 resume 目标优先，否则保留当前已配置/当前会话（默认 `'console'`、`configure({sessionId})`、`bootstrapStateFromAppRpc()` 的 app.state.sessionId），杜绝静默新建会话丢弃当前对话；延后 bridge 订阅、`resolveExplicitSessionId` 显式判定、`setMessages` transcript 过滤三项实质修复均保留。
+- **验证**：agent-ui 全量 **1101 passing / 0 failed EXIT=0**（28 回归全部转绿，恢复 P282 绿态）；`tsc --noEmit` EXIT=0；`git diff --check` EXIT=0。agent 包全量 `750 passing / 44 failed`（TypeORM `DataSource "undefined"` sandbox 限制 + README 已记录的 verification-gate 预存失败），经 `git stash` 隔离证实与本次改动无关（clean HEAD 同样 44 失败）。P285 浏览器门禁（`harness/run-browser-gate.ts`）因 sandbox 无 Chrome/Playwright browser 缓存无法执行，按 P285 验收条款走 skip+report，未伪造通过。
 
 - **agent-tools**：478 passing / 0 failing EXIT=0（修复前 478 passing / 9 failing）。
 - **agent-ui**：953 passing EXIT=0。

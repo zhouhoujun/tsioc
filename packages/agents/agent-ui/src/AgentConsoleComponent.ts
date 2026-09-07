@@ -2259,7 +2259,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.bootstrapStateFromAppRpc();
         await this.initializeInputHistory();
         const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
-        await this.openSession(explicitSessionId || undefined, { persistCurrentHistory: false });
+        // undefined would silently create a new session and discard the current conversation.
+        await this.openSession(explicitSessionId || this.state.sessionId || undefined, { persistCurrentHistory: false });
         // Subscribe only after the initial session is selected. Subscribing
         // earlier lets the remote bridge seed the default session's timeline
         // into a new, non-resumed chat.
