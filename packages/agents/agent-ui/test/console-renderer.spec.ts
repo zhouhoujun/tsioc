@@ -1862,6 +1862,32 @@ export class AgentConsoleTuiRendererTest {
             .toEqual(['event-6', 'event-7', 'event-8']);
     }
 
+    @Test('large message stream renders only the windowed slice (bounded virtualization)')
+    async largeStreamRendersWindowedSlice() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setMessages(Array.from({ length: 300 }, (_, index) => ({
+            id: `msg-${index + 1}`,
+            role: index % 2 === 0 ? 'user' : 'assistant',
+            content: `message ${index + 1} with a longer body line for collapse accounting`,
+            createdAt: index + 1
+        })) as any);
+        await ref.render();
+        await Promise.resolve();
+
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const visible = panel.instance.visibleMessages;
+        expect(visible.length).toBeGreaterThan(0);
+        expect(visible.length).toBeLessThanOrEqual(10);
+        expect(visible.some(item => item.id === 'msg-300')).toBe(true);
+        expect(visible.some(item => item.id === 'msg-1')).toBe(false);
+
+        const rendered = panel.instance.renderedLines;
+        expect(rendered.length).toBeGreaterThan(0);
+        expect(rendered.length).toBeLessThan(60);
+        expect(rendered.every(line => !line.messageId || !String(line.messageId).startsWith('msg-1'))).toBe(true);
+    }
+
     @Test('setMessages does not auto-select synthetic plan message')
     async setMessagesDoesNotSelectPlanMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

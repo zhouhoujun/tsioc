@@ -2298,12 +2298,18 @@ Turn: Fix session restore                                      running  01:42
 - **差距**：`messagesVisibleItems: 7` 默认 + `resolveConsoleListWindow` 已做窗口/pin/保尾，但**每次数据变化全量重渲染**（满足架构约束——响应式替换节点），长会话大消息流仍可能在浏览器出现性能瓶颈。codex 用增量/虚拟化行渲染。
 - **方案**：不违反"禁止脏节点缓存"（AGENTS.md 明文禁止基于变化源的复用）。评估**仅窗口内渲染 + 虚拟滚动占位**（如复用 `resolveConsoleListWindow` 已有滑动窗口，仅渲染 window 内切片，避免渲染整棵大消息列表），保持响应式契约（窗口计算本身是纯 getter，由数据变化驱动）。若实现虚拟化，须门禁验证窗口锚点不漂移（P238 基线）。
 - **验收**：大消息流场景虚拟滚动占位生效、pin/保尾不回归；门禁 + 全量测试通过。
+- **已落地（评估驱动 closeout）**：渲染链已只渲染窗口切片，无需新代码——`AgentConsolePanels.ts` 模板遍历 `renderedLines`（:2684）→ `renderedMessageItems`（:2720）→ `messageItems`（:2602，`renderAgentConsoleMessageItems(this.visibleMessages, ...)`）→ `visibleMessages`（:2567，`resolveConsoleListWindow` 切片到 `messagesVisibleItems`，pin/保尾保留）。即"仅渲染 window 内切片 + pin/保尾"**已由既有纯 getter 链条承担**，窗口计算数据变化驱动、无 setInterval/timer、无脏节点缓存。
+- **新增回归测试**：`console-renderer.spec.ts` `largeStreamRendersWindowedSlice`（suite Agent Console TUI Renderer）——300 条消息 + `messagesVisibleItems: 4`，断言 `visibleMessages.length ≤ 10`、`renderedLines.length < 60`（整棵列表不渲染）、头消息 `msg-1` 不在窗口内、尾消息 `msg-300` 保留。DISABLED-pin 场景由既有 `html-console.spec.ts` 348–370 / `console-renderer.spec.ts` 583–621 / p285 185–186 覆盖（不回归）。
+- **门禁**：agent-ui 全量 **1115 passing EXIT=0**；`tsc --noEmit` EXIT=0。
 
 #### 批次 B7 · exchange 写侧闭环（承接合并归档的剩余缺口）（中）
 
 - **差距**：`AppRpcServer` 仅暴露 `command_exchange.query/replay`，无 RPC append；整个 packages/agents 无进程内 append 调用者（仅 FakeAgentGateway/scenarios 引用）。
 - **方案**：确认宿主实现是否在外部进程写 `CommandExchangeStore`；若应支持进程内写，补 `command_exchange.append` RPC 与调用点，使 durable thread-item 双向闭环（P278/P284 真正完成）。
 - **验收**：进程内 append 一条 → query/replay 可见；门禁场景含写→读回环验证。
+- **已落地**：`AppRpcServer.ts` 新增 `command_exchange.append` 能力（capabilities + dispatch case + `appendCommandExchange` handler，:2109 起）——`requireSessionId` → `ensureSessionAccess(createIfMissing: true)` → 无 store 抛 `-32603` → 缺 `record` 抛 `-32602` → 从 record 构建 `Omit<CommandExchangeRecord,'seq'>`（`id` 兜底 `cmdex:${sessionId}:${Date.now()}`，attempt/receipt/requestId/toolCallId/command/args/outputIds/error/retryable/source 等可选字段透传）→ `commandExchange.append` → 返回 `{ sessionId, record: redactCommandExchangeRecord(saved) }`。`FakeAgentGateway.handleRpc` 同步补充同能力 case（复用 `appendCommandExchange` helper，缺 record 返回 `{ error: { code: -32602 } }`），供 agent-ui 测试/PTY 场景使用。
+- **测试**：`agent-gateway/test/rpc-command-exchange.spec.ts` 新增（`MemoryCommandExchangeStore` 内存实现）4 用例——capabilities 注册、append→query+replay 回环、所有权强制（foreign principal `-32601` 系 403 语义）、缺 record `-32602`；`p285-interaction-gate.spec.ts` 增 FakeAgentGateway `command_exchange.append` → query/replay 写→读回环（browser/PTY 门禁场景）。
+- **门禁**：agent-gateway 全量 **271 passing EXIT=0**；agent-ui 全量 **1115 passing EXIT=0（+2 新增用例）**；`tsc --noEmit`（agent-gateway、agent-ui）EXIT=0；`git diff --check` 通过。
 
 ### v17 批次门禁总则
 
