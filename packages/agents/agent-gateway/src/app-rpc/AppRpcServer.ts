@@ -1,8 +1,9 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
+import { redactCommandExchangeRecord } from '../api/command-exchange-redact';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
@@ -235,6 +236,7 @@ export class AppRpcServer {
                         'timeline.replay',
                         'command_exchange.query',
                         'command_exchange.replay',
+                        'command_exchange.append',
                         'audit.list',
                         'todo.get',
                         'coding_task.list',
@@ -449,6 +451,8 @@ export class AppRpcServer {
                 return this.queryCommandExchange(params, context);
             case 'command_exchange.replay':
                 return this.replayCommandExchange(params, context);
+            case 'command_exchange.append':
+                return this.appendCommandExchange(params, context);
             case 'audit.list':
                 return this.listAudit(params, context);
             case 'todo.get':
@@ -2101,6 +2105,47 @@ export class AppRpcServer {
         const sinceSeq = Number.isFinite(sinceSeqRaw) ? sinceSeqRaw : undefined;
         const records = await this.commandExchange.replay(sessionId, sinceSeq);
         return { sessionId, sinceSeq: sinceSeq ?? -1, records };
+    }
+
+    private async appendCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        if (!this.commandExchange) {
+            throw new AppRpcError(-32603, 'command_exchange.append: command exchange store not configured');
+        }
+        const source = params?.record;
+        if (!source || typeof source !== 'object') {
+            throw new AppRpcError(-32602, 'command_exchange.append: record is required');
+        }
+        const {
+            sessionEpoch = 0, kind = 'command', key = '', content = '', sequence = 0,
+            attempt, receipt, requestId, status, durationMs, toolCallId, command, args,
+            outputIds, error, retryable, source: recordSource, timestamp
+        } = source;
+        const record: Omit<CommandExchangeRecord, 'seq'> = {
+            id: source?.id || `cmdex:${sessionId}:${Date.now()}`,
+            sessionId,
+            sessionEpoch: Number(sessionEpoch) || 0,
+            kind: String(kind),
+            key: String(key),
+            content: String(content),
+            sequence: Number(sequence) || 0,
+            attempt: attempt != null ? Number(attempt) : undefined,
+            receipt: receipt != null ? String(receipt) : undefined,
+            requestId: requestId != null ? String(requestId) : undefined,
+            status: status != null ? String(status) : undefined,
+            durationMs: durationMs != null ? Number(durationMs) : undefined,
+            toolCallId: toolCallId != null ? String(toolCallId) : undefined,
+            command: command != null ? String(command) : undefined,
+            args: args != null ? String(args) : undefined,
+            outputIds: Array.isArray(outputIds) ? outputIds.map(String) : undefined,
+            error: error != null ? String(error) : undefined,
+            retryable: retryable != null ? Boolean(retryable) : undefined,
+            source: recordSource != null ? String(recordSource) : undefined,
+            timestamp: Number(timestamp) || Date.now()
+        };
+        const saved = await this.commandExchange.append(record);
+        return { sessionId, record: redactCommandExchangeRecord(saved) };
     }
 
     private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {

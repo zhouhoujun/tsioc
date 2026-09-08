@@ -89,6 +89,24 @@ export class P285GatewayWireContractTest {
         expect(second[0].seq).toBe(1);
     }
 
+    @Test('command_exchange.append RPC persists a record visible to query and replay (write→read loopback)')
+    async commandExchangeAppendLoopback() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const append = await gateway.handleRpc('command_exchange.append', {
+            sessionId: 'session-A',
+            record: { id: 'loop-1', kind: 'command', key: 'bash', content: 'design docs', sequence: 0 }
+        });
+        expect(append.record.id).toBe('loop-1');
+        expect(append.record.seq).toBe(0);
+        expect(append.record.sessionEpoch).toBe(1);
+
+        const query = await gateway.handleRpc('command_exchange.query', { sessionId: 'session-A' });
+        expect(query.records.map((record: { content: string }) => record.content)).toContain('design docs');
+
+        const replay = await gateway.handleRpc('command_exchange.replay', { sessionId: 'session-A', sinceSeq: -1 });
+        expect(replay.records.map((record: { seq: number }) => record.seq)).toEqual([0]);
+    }
+
     @Test('unknown RPC surfaces -32601 through the transport envelope')
     async unknownRpcError() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });

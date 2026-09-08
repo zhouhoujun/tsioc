@@ -426,6 +426,14 @@ export class FakeAgentGateway {
                     .filter(record => record.seq > sinceSeq);
                 return { records };
             }
+            case 'command_exchange.append': {
+                const raw = p.record;
+                if (!raw || typeof raw !== 'object') {
+                    return { error: { code: -32602, message: 'command_exchange.append: record is required' } };
+                }
+                const [appended] = this.appendCommandExchange([raw as never]);
+                return { sessionId, record: appended };
+            }
             case 'nav.query': {
                 return { sessions: this.navSessions };
             }
