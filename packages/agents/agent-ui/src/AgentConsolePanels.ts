@@ -54,6 +54,8 @@ import {
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 const REASONING_MESSAGE_PREVIEW_LINES = 4;
 const QUESTION_TAIL_VISIBLE_BUDGET = 6;
+// 折叠策略（对标 opencode/codex UI）：对话内容（assistant/user 普通回复、方案询问）永不折叠，全文展示；
+// 仅辅助过程内容折叠：reasoning（4 行无尾）、工具事件/输出、fileChange、system、error、timelineBoundary（8 行保尾）
 
 function escapeFollowUpTerm(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2765,9 +2767,22 @@ export class AgentConsoleMessagesPanelComponent {
                 };
             });
         }
-        return this.messageItems.map(item => this.isPlanTodoMessageItem(item)
-            ? item
-            : this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true));
+        return this.messageItems.map(item => {
+            if (this.isPlanTodoMessageItem(item)) {
+                return item;
+            }
+            if (this.isReasoningMessageItem(item)) {
+                return this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES, false);
+            }
+            if (this.isEventRowMessageItem(item)) {
+                return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+            }
+            if (item.templateKind === 'assistant' || item.templateKind === 'user') {
+                // 对话内容（含方案+询问的最终回复）永不折叠：对标 opencode/codex 普通回复全文展示
+                return item;
+            }
+            return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+        });
     }
 
     protected isPlanTodoMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
@@ -2778,6 +2793,13 @@ export class AgentConsoleMessagesPanelComponent {
         return item.lines.some(line => {
             const message = this.state.messages.find(candidate => candidate.id === line.messageId);
             return message?.metadata?.uiEventType === 'reasoning';
+        });
+    }
+
+    protected isEventRowMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
+        return item.lines.some(line => {
+            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
+            return message?.metadata?.uiKind === 'event';
         });
     }
 

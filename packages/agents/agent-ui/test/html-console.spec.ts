@@ -319,7 +319,7 @@ export class HtmlConsoleTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a1',
-            role: 'assistant',
+            role: 'system',
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
@@ -342,30 +342,31 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 
-    @Test('expanding an older pinned message refreshes and restores the visible window')
-    async expandingPinnedMessageRefreshesVisibleWindow() {
+    @Test('expanding a folded auxiliary message refreshes and restores the visible window')
+    async expandingFoldedAuxiliaryMessageRefreshesVisibleWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
         ref.instance.sessionState.setMessages([
-            { id: 'u1', role: 'user', content: Array.from({ length: 12 }, (_, index) => `request ${index + 1}`).join('\n'), createdAt: 1 },
+            { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 },
             { id: 'a1', role: 'assistant', content: 'middle marker', createdAt: 2 },
             ...Array.from({ length: 8 }, (_, index) => ({
                 id: `tail-${index}`,
                 role: 'assistant',
                 content: `tail ${index}`,
                 createdAt: index + 3
-            }))
+            })),
+            { id: 's1', role: 'system', content: Array.from({ length: 90 }, (_, index) => `line ${index + 1}`).join('\n'), createdAt: 20 }
         ] as any);
         await ref.render();
         await Promise.resolve();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(false);
 
-        const toggle = messagesPanel.instance.renderedLines.find(line => line.messageId === 'u1' && line.previewCollapsed);
+        const toggle = messagesPanel.instance.renderedLines.find(line => line.messageId === 's1' && line.previewCollapsed);
         messagesPanel.instance.onMessageLineClick(toggle);
         expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(true);
 
-        const collapse = messagesPanel.instance.renderedLines.find(line => line.messageId === 'u1' && line.toggleContent === 'Click to collapse');
+        const collapse = messagesPanel.instance.renderedLines.find(line => line.messageId === 's1' && line.toggleContent === 'Click to collapse');
         messagesPanel.instance.onMessageLineClick(collapse);
         expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
     }

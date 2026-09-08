@@ -417,6 +417,15 @@ constructor(private sessionStore: SessionStore) {}
   - 未聚焦消息区时提供展开路径：Enter 直接作用于最新折叠消息，或底部 hint 提示先按方向键聚焦。
   - 锚点：`AgentConsolePanels.ts` messageExpandLabel/messageCollapseLabel、键位处理层。
 
+> **✅ 折叠策略最终定案并落地（2026-09，opencode/codex 实站源码对标）**：
+> - 用户逐字口径：「方案询问的都不折叠」「默认不折叠，具体什么内容折叠参考 opencode/codex」，opencode 源码在 `~/workspace/ai/opencode`。
+> - opencode 实测结论：`UserMessage`/`TextPart`（assistant 最终回复）全文 markdown **永不折叠**；`ReasoningPart` 折叠为单行 `+ Thought: <title> · <duration>`；`ToolPart` InlineTool 单行 / BlockTool 输出截断（Shell `maxLines=10`、generic `maxLines=3`）+ Click to expand。
+> - **落地映射**：`planTodo` → 永不折叠；`reasoning` → 4 行无尾折叠；`eventRow` → 8 行保尾折叠；`assistant`/`user` → **永不折叠**（直接 `return item`，含"方案+询问"最终回复）；`tool`/`system`/`error`/`timelineBoundary`/`fileChange` → 8 行保尾折叠（对标 BlockTool 截断语义）。
+> - 折叠交互保留既有机制：`previewCollapsed` toggle、`… N more lines`、Click to expand/collapse、问句尾保留（`QUESTION_TAIL_VISIBLE_BUDGET=6`）。
+> - 删除 `LONG_SPEECH_FOLD_LINES=80` 阈值常量；default 分支（`AgentConsolePanels.ts` renderedMessageItems）assistant/user 直接返回原 item。
+> - 测试同步：`console-renderer.spec.ts` 90 行 assistant 全文显示断言（无折叠）；86 行 `role:'system'` 保尾断言不变；`html-console.spec.ts` expanding 用例折叠目标改为 system 辅助消息（pinned root `u1` 保持 user role）。
+> - 门禁通过：agent-ui 全套 **1117 passing EXIT=0**、`tsc --noEmit` 干净、`build:web` EXIT=0。
+
 ### 批次 II · 参考类命令 overlay 化（P184–P185）
 
 - **P184 · G107 · /keymap /help /tools 结果进 overlay（高）** `platform: src/（跨平台）`

@@ -65,7 +65,7 @@ export class RuntimeMousePipelineReproTest {
 
         instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: 'hello', createdAt: 0 } as any,
-            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
+            { id: 'a1', role: 'system', content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
         ]);
         await this.settle();
 

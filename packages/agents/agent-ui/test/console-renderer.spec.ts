@@ -423,7 +423,7 @@ export class AgentConsoleMessagesRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a1',
-            role: 'assistant',
+            role: 'system',
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
@@ -439,14 +439,60 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
+    @Test('shows assistant replies in full in default unfocused mode (opencode-style)')
+    async showsAssistantRepliesInFullWhenUnfocused() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{
+            id: 'a1',
+            role: 'assistant',
+            content: Array.from({ length: 42 }, (_, index) => `line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 42'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 20'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… more lines'))).toBe(false);
+        expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
+    }
+
+    @Test('shows very long assistant replies in full in default mode (opencode-style)')
+    async showsVeryLongAssistantRepliesInFullWhenUnfocused() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{
+            id: 'a1',
+            role: 'assistant',
+            content: Array.from({ length: 90 }, (_, index) => `line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 90'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 42'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… more lines'))).toBe(false);
+        expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
+    }
+
     @Test('keeps trailing question lines visible when unfocused messages collapse')
     async keepsTrailingLinesVisibleWhenUnfocusedMessagesCollapse() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a2',
-            role: 'assistant',
+            role: 'system',
             content: [
-                ...Array.from({ length: 10 }, (_, index) => `detail ${index + 1}`),
+                ...Array.from({ length: 85 }, (_, index) => `detail ${index + 1}`),
                 '需要我继续完成这些收尾吗？'
             ].join('\n'),
             createdAt: 2
@@ -459,7 +505,7 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('detail 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 6 more lines'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 81 more lines'))).toBe(true);
         expect(messageLines.some(line => line.includes('需要我继续完成这些收尾吗？'))).toBe(true);
     }
 
@@ -477,7 +523,7 @@ export class AgentConsoleMessagesRendererTest {
 
             consoleRef.instance.sessionState.setMessages([{
                 id: 'a1',
-                role: 'assistant',
+                role: 'system',
                 content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
                 createdAt: 1
             } as any]);
@@ -541,7 +587,7 @@ export class AgentConsoleMessagesRendererTest {
 
             consoleRef.instance.sessionState.setMessages([{
                 id: 'a1',
-                role: 'assistant',
+                role: 'system',
                 content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
                 createdAt: 1
             } as any]);
