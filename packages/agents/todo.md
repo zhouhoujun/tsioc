@@ -2155,16 +2155,18 @@ Turn: Fix session restore                                      running  01:42
 | Overlay / 可访问性 | P266/P270/P274 | select/palette/approval/pending/outputs/plan inspector 共享 focus stack 与跨端语义投影；browser role/label/active-descendant，TUI 保持一致操作映射 | 无 |
 | 异步一致性 | P269/P277/P283 | RPC envelope 透传 requestId/sessionEpoch/sequence/attempt；handler 注入 execution context；AbortSignal 取消、会话切换 epoch 拒绝、timeline replay sequence 拒绝 | P269 会话级 epoch 拒绝先于 P277 完成 |
 | Thread item 本地投影 | P271 | command/tool/plan/file-change 在 SessionState 经稳定 key 幂等 upsert；timeline compact/steps/verbose、异常优先、详情 inspector | 无 |
-| exchange envelope（写侧） | P276→P283 / P278→P284 | `CommandExchangeEnvelope` + reducer + sequence/attempt/epoch + retry；`CommandExchangeStore` 抽象 + TypeORM 实现 + gateway REST `POST /api/command-exchange/append` | **候选发现（下轮待办）**：`AppRpcServer` 未暴露 RPC append，packages/agents 无进程内 append 调用者——真实现仅可能来自宿主/外部进程，需确认写侧闭环 |
-| 跨平台门禁 | P272/P279→P285 / P281 | `run-dom-gate.ts`（JSDOM virtual-DOM）+ `run-tui-gate.ts`（ConsoleRenderer 流式镜头）共享 `FakeAgentGateway`+`SCENARIOS`+`collectGatewayMetrics`；4 场景双端 4/4 PASS EXIT=0；PTY 场景 1/2/3/5/6 PASS | PTY 场景 4（如存在）仍缺；DOM/TUI 结构一致性现已有运行载体（P281 结构验证载体） |
+| exchange envelope（写侧） | P276→P283 / P278→P284 / v17-B7+D | `CommandExchangeEnvelope` + reducer + sequence/attempt/epoch + retry；`CommandExchangeStore` 抽象 + TypeORM 实现 + gateway REST `POST /api/command-exchange/append`；**`AppRpcServer` 已补 RPC `command_exchange.append`（v17-B7）并经真实 TypeORM sqljs 回环验证（v17-D）** | 无（写侧闭环已由 v17-B7+D 关闭） |
+| 跨平台门禁 | P272/P279→P285 / P281 | `run-dom-gate.ts`（JSDOM virtual-DOM）+ `run-tui-gate.ts`（ConsoleRenderer 流式镜头）共享 `FakeAgentGateway`+`SCENARIOS`+`collectGatewayMetrics`；4 场景双端 4/4 PASS EXIT=0；PTY 场景 1/2/3/5/6 PASS | 无（PTY 场景 4 为 `plan-lifecycle`，仅在 `FAKE_SCENARIO=plan-lifecycle` 下运行，`acceptance/CHECKLIST.md` 已登记；DOM/TUI 结构一致性现已有运行载体） |
 | overlay 纯逻辑控制器 | P273 | 8 个 storage fallback 组件内 `new` 已删；仅保留无平台依赖纯内存 `AgentConsoleKeymap` | `AgentConsoleOverlayController` 同为纯逻辑（无状态无平台依赖），判为豁免 |
-| TUI/浏览器双平台收敛 | P203–P212 / P213–P218 / P219–P224（v-deep） | timeline/command overlay/todo/plan 展示能力已跨端统一 | 见下 v17-B UX 差距 |
-| 存储依赖倒置（TypeORM） | v16（2026-09-03/04 一系列） | `CommandExchangeStore` 抽象 + `TypeOrmCommandExchangeStore`；AppRpcServer query/replay；gateway REST append | 见上 exchange 写侧 |
+| TUI/浏览器双平台收敛 | P203–P212 / P213–P218 / P219–P224（v-deep） | timeline/command overlay/todo/plan 展示能力已跨端统一；v17-B（B1–B7）UX 差距批次全部收尾 | 无 |
+| 存储依赖倒置（TypeORM） | v16（2026-09-03/04 一系列） | `CommandExchangeStore` 抽象 + `TypeOrmCommandExchangeStore`；AppRpcServer query/replay/append；gateway REST append | 无（写侧闭环已关闭） |
 
 ### 合并后的剩余缺口（不重复立项，直接进 v17）
 
-1. **exchange 写侧闭环**（P278→P284 承接但不完整）：AppRpcServer 仅有 query/replay，无 RPC append；进程内无 append 调用者。需确认宿主/外部进程写入路径，或补 RPC append。
-2. **v16 已登记的四大领域**（时间线窗口/视觉/状态列/描述语言、命令处理二次解析）仍在缺口表（1864–1868 行），未实现。
+> 以下两条缺口均已由 v17 内部批次关闭，保留条目仅作历史承接记录，**不再立项**：
+
+1. **exchange 写侧闭环**（P278→P284 承接）——**已关闭（v17-B7 + v17-D）**：`AppRpcServer` 已实现 `command_exchange.append` RPC（capabilities + dispatch + handler，缺 record/缺 store 返回 `-32602`/`-32603`、所有权 `-32601`）；`rpc-command-exchange.spec.ts` 用真实 sqljs `:memory:` repository 覆盖 append→query/replay 回环；FakeAgentGateway 场景含写→读回环。
+2. **v16 已登记的四大领域**（1864–1868 行缺口表）——**已关闭（P280/P281/P282）**：时间线窗口由 `AgentConsoleTimelineWindow.ts` 纯函数 ledger 落地（P280 ✅）；时间线视觉/状态列/描述语言由单状态 slot + `formatTimelineSentence` 落地（P281 ✅）；命令处理二次解析由 registry 单路径全量消除（P282 ✅，89/89 定义↔handler + 59 schema + 30 bare + self-parse 归零）。
 
 ---
 
@@ -2383,3 +2385,12 @@ Turn: Fix session restore                                      running  01:42
 - **修复**：删除 `InMemoryCommandOutputStore` 类、agent-ui 兼容再导出及 SessionState 未使用 import；共享抽象保留过滤、session 隔离、cursor 分页与 cap 淘汰纯逻辑。5 个测试全部迁移到 `BoundedFileCommandOutputStore + FileAdapter`，同一套行为现在经 durable file seam 验证，不再以内存 store 冒充持久化。
 - **边界判定**：`InMemoryCommandExecutionControl` 是 AbortSignal/requestId 生命周期控制器，不是持久化 store；gateway 的 `MemoryCommandOutputStore` 以注入的 TypeORM `MemoryStore` 为持久化后端，也不是内存 fallback，本批不做错误删除。
 - **全量验证**：`agent` **795**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **271**、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1115**、`agent-desktop` **20**、`agent-vscode` **7**，全部 10 包 0 failed / EXIT=0；`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` EXIT=0；`agent-ui npm run build:web` 在提升沙箱权限后成功（worker 10.8 KB、web bundle 8.3 MB）；`git diff --check` 通过。
+
+### v17-F · 归档缺口复核与全量收尾（2026-09-08）✅
+
+- **复核对象**：完成计划合并归档（2143–2167 行）遗留的两条"剩余缺口"与跨平台门禁的 PTY 场景 4 记录，逐一对照代码现状复核。
+- **exchange 写侧闭环 → 已关闭**：`AppRpcServer` 已具 `command_exchange.append` RPC（`agent-gateway/src/app-rpc/AppRpcServer.ts`，capabilities + dispatch + handler，缺 record/缺 store 分别回 `-32602`/`-32603`、foreign principal `-32601`）；`rpc-command-exchange.spec.ts` 走真实 sqljs `:memory:` repository 覆盖 append→query/replay 回环、所有权与非法参数；`FakeAgentGateway.handleRpc` 同步同能力 case，agent-ui `p285-interaction-gate.spec.ts` 含写→读回环。归档表"候选发现（下轮待办）"更新为"已由 v17-B7+D 关闭"。
+- **v16 四大领域 → 已关闭**：时间线窗口（P280 `AgentConsoleTimelineWindow.ts` ledger ✅）、时间线视觉/状态列/描述语言（P281 单状态槽 + `formatTimelineSentence` ✅）、命令处理二次解析（P282 89/89 单路径，59 schema + 30 bare，self-parse 归零 ✅）——归档缺口条目改为"已关闭（P280/P281/P282）"，不再立项。
+- **PTY 场景 4 → 已登记**：`acceptance/CHECKLIST.md` 确认场景 4 为 plan-lifecycle（`FAKE_SCENARIO=plan-lifecycle python3 run_acceptance.py` 驱动），非缺失项；归档表更新为"无"。
+- **全量验证（2026-09-08 复核）**：10 包 agent 系全量（agent **795**、agent-channels **59**、agent-cli **74**、agent-gateway **271**、agent-providers **13**、agent-ssh **8**、agent-tools **478**、agent-ui **1115**、agent-desktop **20**、agent-vscode **7**）+ 框架层（components **136**、components/console **73**、components/html **117**）全部 0 failed / EXIT=0；`run-dom-gate.ts` 与 `run-tui-gate.ts` 各 **4/4 PASS**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）；`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
+- **结论**：v17 全批次（A1–A5、B1–B7、C、D、E）与 v16 遗留缺口全部闭环，工作区仅本文档改动，独立提交。
