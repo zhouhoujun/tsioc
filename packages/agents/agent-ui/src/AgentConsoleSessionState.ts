@@ -33,7 +33,6 @@ import {
 import {
     AgentConsoleCommandOutputHistoryEntry,
     CommandOutputStore,
-    InMemoryCommandOutputStore,
     redactCommandOutputSecret
 } from './AgentConsoleCommandOutputHistory';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';

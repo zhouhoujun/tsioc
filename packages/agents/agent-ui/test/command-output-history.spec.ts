@@ -3,7 +3,6 @@ import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter } from '@tsdi/common';
 import {
     AgentConsoleCommandOutputHistoryEntry,
-    InMemoryCommandOutputStore,
     AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE,
     redactCommandOutputSecret
 } from '../src/AgentConsoleCommandOutputHistory';
@@ -69,11 +68,15 @@ function makeEntry(overrides: Partial<AgentConsoleCommandOutputHistoryEntry> = {
     };
 }
 
+function makeStore(cap?: number): BoundedFileCommandOutputStore {
+    return new BoundedFileCommandOutputStore(new FakeFileAdapter(), '/tmp', cap);
+}
+
 @Suite('Command output durable history')
 export class AgentConsoleCommandOutputHistoryTest {
-    @Test('InMemoryCommandOutputStore appends newest-first')
+    @Test('durable store appends newest-first')
     async appendNewestFirst() {
-        const store = new InMemoryCommandOutputStore();
+        const store = makeStore();
         await store.append(makeEntry({ id: 'output-1', command: '/a' }));
         await store.append(makeEntry({ id: 'output-2', command: '/b' }));
         const page = await store.list();
@@ -83,9 +86,9 @@ export class AgentConsoleCommandOutputHistoryTest {
         expect(page.total).toBe(2);
     }
 
-    @Test('InMemoryCommandOutputStore evicts oldest beyond cap')
+    @Test('durable store evicts oldest beyond cap')
     async evictBeyondCap() {
-        const store = new InMemoryCommandOutputStore(3);
+        const store = makeStore(3);
         for (let i = 1; i <= 5; i++) {
             await store.append(makeEntry({ id: `output-${i}` }));
         }
@@ -93,9 +96,9 @@ export class AgentConsoleCommandOutputHistoryTest {
         expect(page.items.map(e => e.id)).toEqual(['output-5', 'output-4', 'output-3']);
     }
 
-    @Test('InMemoryCommandOutputStore filters by command and text')
+    @Test('durable store filters by command and text')
     async filterByCommandAndText() {
-        const store = new InMemoryCommandOutputStore();
+        const store = makeStore();
         await store.append(makeEntry({ id: 'output-1', command: '/status', text: 'model deepseek' }));
         await store.append(makeEntry({ id: 'output-2', command: '/theme', text: 'solarized' }));
         const byCommand = await store.list({ filter: 'status' });
@@ -106,9 +109,9 @@ export class AgentConsoleCommandOutputHistoryTest {
         expect(none.items.length).toBe(0);
     }
 
-    @Test('InMemoryCommandOutputStore paginates with cursor')
+    @Test('durable store paginates with cursor')
     async paginateWithCursor() {
-        const store = new InMemoryCommandOutputStore();
+        const store = makeStore();
         for (let i = 1; i <= 10; i++) {
             await store.append(makeEntry({ id: `output-${i}` }));
         }
@@ -127,9 +130,9 @@ export class AgentConsoleCommandOutputHistoryTest {
         expect(third.nextCursor).toBeUndefined();
     }
 
-    @Test('InMemoryCommandOutputStore isolates sessions and clears all')
+    @Test('durable store isolates sessions and clears all')
     async sessionIsolationAndClear() {
-        const store = new InMemoryCommandOutputStore();
+        const store = makeStore();
         await store.append(makeEntry({ id: 'output-1', sessionId: 'ses-a' }));
         await store.append(makeEntry({ id: 'output-2', sessionId: 'ses-b' }));
         const a = await store.list({ sessionId: 'ses-a' });

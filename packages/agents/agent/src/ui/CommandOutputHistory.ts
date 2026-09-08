@@ -4,7 +4,7 @@
  * Shared, cross-platform command-output history model. Hosted in `@tsdi/agent`
  * (the common dependency of both `@tsdi/agent-ui` and `@tsdi/agent-gateway`) so
  * the durable-store abstraction is implemented once and reused by every
- * concrete store (in-memory default, `FileAdapter`-backed TUI/CLI store,
+ * concrete store (`FileAdapter`-backed TUI/CLI store,
  * `MemoryStore`-backed gateway store, browser RPC store) instead of being
  * duplicated per sub-project. This follows the package-wide rule: common
  * functionality via an abstract base class + IoC dependency inversion.
@@ -15,7 +15,6 @@
  *   - `CommandOutputStore` — the storage seam (port) consumed by hosts.
  *   - `AbstractCommandOutputStore` — shared filter/session-match/cursor-pagination/
  *     cap-eviction logic; concrete stores only supply their persistence seam.
- *   - `InMemoryCommandOutputStore` — the bounded default / reference for tests.
  *   - `redactCommandOutputSecret` — write-time redaction so a store never
  *     persists raw credentials (mirrors the agent runtime `RedactionFilter`).
  *
@@ -85,7 +84,7 @@ function matchesSession(entry: AgentConsoleCommandOutputHistoryEntry, sessionId:
  * Shared, newest-first bounded command-output store.
  *
  * Owns the filtering / session-matching / cursor-pagination / cap-eviction logic
- * and the in-memory `entries` array so every concrete store (in-memory, file,
+ * and the loaded `entries` array so every concrete store (file,
  * memory-store, RPC) reuses one implementation instead of duplicating it.
  * Subclasses only supply the persistence seam (constructor loading +
  * post-mutation persist) and otherwise inherit `list`/`get`/`append`/`clear`.
@@ -151,14 +150,6 @@ export abstract class AbstractCommandOutputStore implements CommandOutputStore {
         }
     }
 }
-
-/**
- * In-memory, newest-first, bounded command-output store.
- *
- * The default used when no host injects a durable store; also the reference
- * implementation for tests.
- */
-export class InMemoryCommandOutputStore extends AbstractCommandOutputStore {}
 
 const SECRET_KEY = /(api[-_]?key|token|secret|password|authorization|cookie)/i;
 const SECRET_VALUE = /(Bearer\s+)[A-Za-z0-9._-]+|\b(sk-[A-Za-z0-9_-]{8,})\b/gi;

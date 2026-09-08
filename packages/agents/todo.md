@@ -2376,3 +2376,10 @@ Turn: Fix session restore                                      running  01:42
 - **修复**：`orm.module.ts` 新增唯一 `AGENT_ORM_ENTITIES` 清单，`AgentOrmModule` 默认连接与 `provideAgentOrm()` 共用该清单；补入 `AgentCommandExchangeEntity`，并审计 `entities.ts` 的 15 个实体全部已注册。`rpc-command-exchange.spec.ts` 删除本地 InMemory stub，直接解析 `TypeOrmCommandExchangeStore`，append→query/replay、ownership、非法参数均走真实 sqljs `:memory:` repository。
 - **计划一致性**：P269/P272/P279 中早期“未完成”描述改为明确的历史阶段记录，当前完成态统一指向后续 P277/P282/P285/v15 收尾，避免已关闭缺口被重复立项。
 - **全量验证**：`agent` **795**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **271**、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1115**、`agent-desktop` **20**、`agent-vscode` **7**，全部 10 包 0 failed / EXIT=0；`agent`、`agent-gateway` `npx tsc --noEmit` EXIT=0；`git diff --check` 通过。
+
+### v17-E · Command output 内存默认实现移除（2026-09-08）✅
+
+- **检查发现**：共享 `CommandOutputStore` 仍导出 `InMemoryCommandOutputStore`，文档明确称其为“无宿主注入时的默认实现”；这与 2026-09 架构约束“禁止新增/保留 InMemory 持久化 store、测试使用真实持久化 seam”冲突。运行时已无实际消费者，仅 agent-ui 的 5 个历史测试直接构造该类。
+- **修复**：删除 `InMemoryCommandOutputStore` 类、agent-ui 兼容再导出及 SessionState 未使用 import；共享抽象保留过滤、session 隔离、cursor 分页与 cap 淘汰纯逻辑。5 个测试全部迁移到 `BoundedFileCommandOutputStore + FileAdapter`，同一套行为现在经 durable file seam 验证，不再以内存 store 冒充持久化。
+- **边界判定**：`InMemoryCommandExecutionControl` 是 AbortSignal/requestId 生命周期控制器，不是持久化 store；gateway 的 `MemoryCommandOutputStore` 以注入的 TypeORM `MemoryStore` 为持久化后端，也不是内存 fallback，本批不做错误删除。
+- **全量验证**：`agent` **795**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **271**、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1115**、`agent-desktop` **20**、`agent-vscode` **7**，全部 10 包 0 failed / EXIT=0；`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` EXIT=0；`agent-ui npm run build:web` 在提升沙箱权限后成功（worker 10.8 KB、web bundle 8.3 MB）；`git diff --check` 通过。

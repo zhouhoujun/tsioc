@@ -13,7 +13,6 @@ export {
     CommandOutputPage,
     CommandOutputStore,
     AbstractCommandOutputStore,
-    InMemoryCommandOutputStore,
     AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP,
     AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE,
     redactCommandOutputSecret,
