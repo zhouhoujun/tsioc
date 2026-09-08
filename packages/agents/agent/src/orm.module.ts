@@ -2,8 +2,16 @@ import { importProvidersFrom, Module, ModuleWithProviders, Provider } from '@tsd
 import { LoggerModule } from '@tsdi/logger';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
-import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentEvalReportEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
+import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCommandExchangeEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentEvalReportEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity } from './memory/entities';
 import { resolveEnvHome } from './env';
+
+const AGENT_ORM_ENTITIES = [
+    AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity,
+    AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity,
+    AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity,
+    AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity,
+    AgentEvalReportEntity, AgentCommandExchangeEntity
+];
 
 interface AgentOrmNodeRuntime {
     join(...paths: string[]): string;
@@ -69,7 +77,7 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
             synchronize: true,
-            entities: [AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity, AgentEvalReportEntity]
+            entities: [...AGENT_ORM_ENTITIES]
         } as TypeormOptions)
     ]
 })
@@ -118,7 +126,7 @@ function resolveAgentOrmStorageLocation(root: string, fileName: string): string 
 
 function createAgentOrmProviders(options: TypeormOptions): Provider[] {
     options.entities ??= [];
-    options.entities.push(AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity, AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity, AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity, AgentEvalReportEntity);
+    options.entities.push(...AGENT_ORM_ENTITIES);
     return provideTypeOrm(options);
 }
 

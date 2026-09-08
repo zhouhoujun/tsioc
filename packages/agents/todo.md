@@ -1686,7 +1686,7 @@ Turn: Fix session restore                                      running  01:42
 - 验收：慢 RPC + 快速切会话、断线重连、重复执行、Esc 取消四类时序测试；无旧结果污染、无未处理 Promise rejection。
 
 - 本地 IoC 重构（2026-09-01）：共享 `agent/src/ui/CommandExecutionControl.ts` 定义 `CommandExecutionControlPort` 与 `COMMAND_EXECUTION_CONTROL` token，`AgentModule` 绑定 `InMemoryCommandExecutionControl` 默认实现，remote host 可覆写；SessionState 仅构造注入 port，既不直接保存 `AbortController`/Map，也不在字段/default setter 中 `new` 具体实现。browser composition root 从 context 取得 state；外部传入 state 时显式回填 injector 的 port。request id 跨 session 不复用。定向状态回归覆盖 injected port、取消与 stale completion。RPC response 尚未携带 requestId/epoch，remote host replacement 仍是后续切片，故不得标记为跨 host 完成态。
-- RPC envelope 增量（2026-09-01）：共享 `AgentRpcRequestMeta` 定义 `requestId/sessionEpoch`，HTTP、gateway 与 stdio/in-process transport 兼容透传；普通 response、stream chunk/done 与 error 均回显同一 meta。现有 command handler 尚未把每个本地 execution 的 meta 注入全部 RPC 调用，断线 replay 的 epoch 拒绝策略也未完成，故 P269 继续保持未完成态。
+- RPC envelope 增量（2026-09-01，历史阶段记录）：共享 `AgentRpcRequestMeta` 定义 `requestId/sessionEpoch`，HTTP、gateway 与 stdio/in-process transport 兼容透传；当时 command handler 注入与 replay epoch 拒绝尚未完成，后续已由本节“全量 handler 注入与 replay 拒绝收尾”及 P277 完成，不再是当前缺口。
 - 组件定时刷新清理（2026-09-01）：`AgentConsoleComponent` 的流式 assistant 更新改为每个真实 chunk 立即驱动状态，移除 stream flush/pending notice/input-history restore 的 `setTimeout` 主动刷新路径；等待状态由响应式 turn status 表示。组件层不再使用 `setTimeout/setInterval`。
 - 规则扫描补充（2026-09-01）：复核 `agent-ui/src` 后确认仅 `HttpAgentConsoleAppRpc` 的请求超时与 `AgentConsoleRemoteEventBridge` 的断线重连保留定时器；二者属于 transport 生命周期，不驱动组件渲染。`AgentConsoleComponent` 已无定时器刷新。
 - 全量 handler 注入与 replay 拒绝收尾（2026-09-01）：`AgentConsoleComponent` 33 处 `appRpc.request(...)` 全部透传 `this.rpcRequestContext()`（含 `run.turn`/`tools.invoke` 与全部 review/coding-task/model/parallel 侧 handler）；`AgentConsoleReviewHandlers`/`AgentConsoleCodingTaskHandlers`/`AgentConsoleModelHandlers` 的结构化 `appRpc` 类型补上 `context?: any` 第三参数以对齐 `AgentConsoleAppRpc` 规范签名。`AgentConsoleRemoteEventBridge` 增加断线 replay 拒绝：`connectOnce` 在 state.sessionId 与新连接 sessionId 分歧时 re-anchor 并清 parserBuffer，帧循环顶部对分歧 session break，帧过滤由 `event.sessionId !== this.sessionId` 改为 `!== this.state.sessionId`（跨组件状态经代理广播，持 state 引用）。新增 `dropsStaleReplayFrames` 用例：stale 会话 `turn_started` 被拒（status 保持 idle）而当前会话 `tool_invoked` 照常应用（runningTools 生效），同时保留既有 `ignoresOtherSessions` 拒绝路径。agent-ui 全量 909→**910 passing** EXIT=0、`tsc --noEmit` EXIT=0、`build:web` EXIT=0、P170 边界扫描 CLEAN。
@@ -1720,8 +1720,8 @@ Turn: Fix session restore                                      running  01:42
 
 - `agent` 全量：797 passing；`agent-ui` 全量：909 passing；`agent-gateway` 全量：267 passing。
 - 三包 `tsc --noEmit` 与 `git diff --check` 通过；gateway 监听类测试在提升权限后通过。
-- P272 的 Playwright/PTY CI runner 尚未建立，当前不标记为完成；现有 Python PTY 验收继续按平台可用性显式 skip。
-- 现有 PTY 脚本复验（2026-09-01）：场景 1/2 通过；场景 3 计划项未进入 viewport，场景 5 `/usage` 在无 usage 数据时仅显示通知、未写入 outputs ring，故均失败。脚本已补充跨场景继续提示清理并兼容当前计划 glyph；失败 artifact 保留于 `acceptance/artifacts/20260901-161623/`，待建立稳定 mock usage 与 thread-item replay 后再纳入门禁，P272 继续保持未完成态。
+- P272 的 Playwright/PTY CI runner 在 2026-09-01 尚未建立；该历史缺口已于 2026-09-07 由 P285 的 DOM/TUI 双门禁与 PTY runner 收尾，当前完成态以上方 P272 标题及 v15 收尾复核为准。
+- 现有 PTY 脚本复验（2026-09-01，历史失败记录）：场景 1/2 通过，场景 3/5 当时失败；稳定 mock usage、thread-item replay 与 runner 后续已由 P282/P285 补齐，2026-09-07 复验场景 1/2/3/5/6 PASS，P272 已关闭。
 - 收尾复核（2026-09-01）：`agent` 797 passing、`agent-ui` 909 passing；`agent-gateway` 259 passing，另有 8 项监听/静态服务测试因 sandbox `listen EPERM` 失败；三包 `tsc --noEmit` 均通过。gateway 受限项与既有基线一致，未发现新增回归。
 - 下一切片边界（2026-09-01）：`AgentRpcRequestMeta` 已在 transport envelope 往返，但 `AgentConsoleComponent` 各异步 handler 尚未统一注入当前 command execution 的 `requestId/sessionEpoch`；在补齐注入与断线 replay 拒绝策略前，不提升 P269/P271 完成度。
 - 最终构建复核（2026-09-01）：`agent-ui npm run build:web` 成功，生成 3.6 MB console bundle 与 markdown worker；未引入额外工作区变更。
@@ -1804,7 +1804,7 @@ Turn: Fix session restore                                      running  01:42
 ### 2026-09-02 收尾验证
 
 - `agent`、`agent-ui`、`agent-gateway`、`agent-cli`、`agent-tools` 已启动全量回归；agent-ui 修复后 943 项通过。gateway/agent-tools 中涉及监听本机端口或 LSP 子进程的失败为当前沙箱 `EPERM`，不是断言失败；具备网络监听权限的宿主需复验。
-- P278 核心 durable timeline/replay、分页、稳定 key 去重、跨 principal 拒绝已有实现与测试；P279 的 Playwright/PTY CI runner 仍未建立，继续保持未完成。
+- P278 核心 durable timeline/replay、分页、稳定 key 去重、跨 principal 拒绝已有实现与测试；P279 runner 在 2026-09-02 尚未建立，后续已由 P285 于 2026-09-07 完成，当前状态见下方 v15 收尾复核。
 
 ### 2026-09-07 v15 收尾（P271–P279 全部完成态复核）
 
@@ -2369,3 +2369,10 @@ Turn: Fix session restore                                      running  01:42
 - 13 个剩余失败已全部修复：跨 run 验证测试复用同一真实 SQLite SessionStore；summary-agent fixture 可真实表达未注入；turn 返回前等待标题/摘要落库；recent-message 断言排除独立 system prompt；sandbox receipt 与默认 OS executor 能力一致；plan/build 切换消息按 session 串行并在 turn 前完成；搜索 snippet 优先用户命中；TypeORM thread index 从消息表统计 section 数；snapshot 删除测试等待异步 delete；approval API 返回前等待 audit 持久化。
 - `agent` 全量 **795 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1115 passing / 0 failed / EXIT=0**。`agent-channels`、`agent-cli`、`agent-gateway`、`agent-tools`、`agent-providers`、`agent-ssh`、`agent-desktop`、`agent-vscode` 全量测试均 EXIT=0。
 - `agent` 与 `agent-ui` 的 `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 与跨平台边界检查通过；包根临时 probe/runner 已全部删除。
+
+### v17-D · Command exchange 真实 ORM 闭环（2026-09-08）✅
+
+- **检查发现**：B7 的 gateway RPC 回环测试自建 `MemoryCommandExchangeStore`，违反“持久化 store 测试使用真实 SQLite”的架构约束，并掩盖 `AgentOrmModule` 未注册 `AgentCommandExchangeEntity` 的产品缺陷；真实 `command_exchange.append` 会报 `No metadata for "AgentCommandExchangeEntity" was found`。
+- **修复**：`orm.module.ts` 新增唯一 `AGENT_ORM_ENTITIES` 清单，`AgentOrmModule` 默认连接与 `provideAgentOrm()` 共用该清单；补入 `AgentCommandExchangeEntity`，并审计 `entities.ts` 的 15 个实体全部已注册。`rpc-command-exchange.spec.ts` 删除本地 InMemory stub，直接解析 `TypeOrmCommandExchangeStore`，append→query/replay、ownership、非法参数均走真实 sqljs `:memory:` repository。
+- **计划一致性**：P269/P272/P279 中早期“未完成”描述改为明确的历史阶段记录，当前完成态统一指向后续 P277/P282/P285/v15 收尾，避免已关闭缺口被重复立项。
+- **全量验证**：`agent` **795**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **271**、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1115**、`agent-desktop` **20**、`agent-vscode` **7**，全部 10 包 0 failed / EXIT=0；`agent`、`agent-gateway` `npx tsc --noEmit` EXIT=0；`git diff --check` 通过。

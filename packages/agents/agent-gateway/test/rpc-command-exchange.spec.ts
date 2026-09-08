@@ -1,43 +1,11 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { AgentModule, CommandExchangeRecord, CommandExchangeStore, CommandExchangePageOptions, CommandExchangeNoncePage, compareCommandExchangeAsc, MemoryStore, provideAgentOrm, SessionStore } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore, TypeOrmCommandExchangeStore } from '@tsdi/agent';
 import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
-
-class MemoryCommandExchangeStore extends CommandExchangeStore {
-    private records: CommandExchangeRecord[] = [];
-
-    async append(record: Omit<CommandExchangeRecord, 'seq'>): Promise<CommandExchangeRecord> {
-        const existing = this.records.find(r => r.id === record.id);
-        if (existing) return existing;
-        const seq = this.records.reduce((max, r) => Math.max(max, r.seq), -1) + 1;
-        const full: CommandExchangeRecord = { ...record, seq };
-        this.records.push(full);
-        return full;
-    }
-
-    async get(sessionId: string): Promise<CommandExchangeRecord[]> {
-        return this.records.filter(r => r.sessionId === sessionId).sort(compareCommandExchangeAsc);
-    }
-
-    async replay(sessionId: string, sinceSeq?: number): Promise<CommandExchangeRecord[]> {
-        return (await this.get(sessionId)).filter(r => sinceSeq == null || r.seq > sinceSeq);
-    }
-
-    async query(sessionId: string, _options?: CommandExchangePageOptions): Promise<CommandExchangeNoncePage> {
-        const all = await this.get(sessionId);
-        return { records: all, hasMore: false };
-    }
-
-    async cleanup(sessionId: string, beforeSeq: number): Promise<number> {
-        const before = this.records.length;
-        this.records = this.records.filter(r => !(r.sessionId === sessionId && r.seq <= beforeSeq));
-        return before - this.records.length;
-    }
-}
 
 @Suite('Gateway command_exchange.* RPCs (P278/P284)')
 export class CommandExchangeRpcTest {
@@ -47,7 +15,7 @@ export class CommandExchangeRpcTest {
         const memory = context.get(MemoryStore);
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
-        const exchange = new MemoryCommandExchangeStore();
+        const exchange = context.get(TypeOrmCommandExchangeStore);
         const runtime = {
             async runTurn(sessionId: string, input: string) {
                 await store.append(sessionId, { id: 'u-replay', role: 'user', content: input, createdAt: 1 } as any);
