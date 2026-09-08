@@ -151,14 +151,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator,
         @Optional() protected compactionHistoryStore?: CompactionHistoryStore,
         @Optional() protected turnDiagnosticsStore?: TurnDiagnosticsStore,
-        @Optional() protected delegationGraph?: DelegationGraphStore | null,
+        @Optional() protected delegationGraph?: DelegationGraphStore,
         @Optional() protected fileSnapshotStore?: FileSnapshotStore,
         @Optional() protected gitStepSnapshotStore?: GitStepSnapshotStore,
-        @Optional() protected appArgs?: ApplicationArguments | null,
-        @Optional() protected fileAdapter?: FileAdapter | null,
-        @Optional() protected hookExecutor?: AgentHookCommandExecutor | null,
-        @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent | null,
-        @Optional() protected goalStore?: GoalStore | null
+        @Optional() protected appArgs?: ApplicationArguments,
+        @Optional() protected fileAdapter?: FileAdapter,
+        @Optional() protected hookExecutor?: AgentHookCommandExecutor,
+        @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent,
+        @Optional() protected goalStore?: GoalStore
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -264,6 +264,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
+        await this.waitForPendingArchetypeSwitch(input.sessionId);
         await this.ensureSessionWorkspace(input.sessionId);
         const gate = this.reviewGates.get(input.sessionId);
         if (gate?.active) {
@@ -280,7 +281,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         );
         const appended = await this.sessions.append(input.sessionId, userMessage);
         if (appended.messages.length === 1) {
-            void this.ensureSessionTitle(input.sessionId).catch(() => undefined);
+            await this.ensureSessionTitle(input.sessionId).catch(() => undefined);
         }
         const turnContext: TurnExecutionContext = {
             principalId: input.principalId,
@@ -308,7 +309,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.sessions.append(input.sessionId, result.message);
             await this.evaluateSessionGoal(input.sessionId, result.message.content);
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
-            void this.refreshSessionSummary(input.sessionId).catch(() => undefined);
+            await this.refreshSessionSummary(input.sessionId).catch(() => undefined);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
             await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
@@ -393,6 +394,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.beginTurnAbortScope(sessionId);
         try {
+            await this.waitForPendingArchetypeSwitch(sessionId);
             await this.ensureSessionWorkspace(sessionId);
             await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
             const userMessage = this.createMessage(
@@ -405,7 +407,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
             const appended = await this.sessions.append(sessionId, userMessage);
             if (appended.messages.length === 1) {
-                void this.ensureSessionTitle(sessionId).catch(() => undefined);
+                await this.ensureSessionTitle(sessionId).catch(() => undefined);
             }
             const turnContext: TurnExecutionContext = {
                 principalId,
@@ -432,7 +434,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.bindGitStepSnapshot(sessionId, result.message.id);
                 await this.sessions.append(sessionId, result.message);
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
-                void this.refreshSessionSummary(sessionId).catch(() => undefined);
+                await this.refreshSessionSummary(sessionId).catch(() => undefined);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
                 await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
@@ -1932,6 +1934,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionArchetypes = new Map<string, string>();
     protected sessionSandboxModes = new Map<string, import('../harness/sandbox-exec').SandboxMode>();
     protected sessionDelegationModes = new Map<string, AgentDelegationMode>();
+    protected pendingArchetypeSwitches = new Map<string, Promise<void>>();
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
@@ -1964,9 +1967,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (next !== previous) {
             const switchConfig = resolveArchetype(this.options.archetypes, next);
             if (switchConfig) {
-                void this.appendArchetypeSwitchMessage(sessionId, switchConfig, previous);
+                const previousPending = this.pendingArchetypeSwitches.get(sessionId) ?? Promise.resolve();
+                const pending = previousPending
+                    .then(() => this.appendArchetypeSwitchMessage(sessionId, switchConfig, previous))
+                    .finally(() => {
+                        if (this.pendingArchetypeSwitches.get(sessionId) === pending) {
+                            this.pendingArchetypeSwitches.delete(sessionId);
+                        }
+                    });
+                this.pendingArchetypeSwitches.set(sessionId, pending);
             }
         }
+    }
+
+    protected async waitForPendingArchetypeSwitch(sessionId: string): Promise<void> {
+        await this.pendingArchetypeSwitches.get(sessionId);
     }
 
     getSessionArchetype(sessionId: string): string {
@@ -3008,7 +3023,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
     async ensureSessionTitle(sessionId: string): Promise<string | undefined> {
         const sessionOptions = this.options.session ?? {};
         if (sessionOptions.autoTitle === false || !this.summaryAgent) {
-            return (await this.sessions.get(sessionId)).title;
+            return sessionOptions.autoTitle === false ? (await this.sessions.get(sessionId)).title : undefined;
         }
         const state = await this.sessions.get(sessionId);
         if (state.title || !state.messages.length) {
@@ -3028,7 +3043,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
     async refreshSessionSummary(sessionId: string): Promise<string | undefined> {
         const sessionOptions = this.options.session ?? {};
         if (sessionOptions.autoSummary === false || !this.summaryAgent) {
-            return (await this.sessions.get(sessionId)).focusSummary ?? undefined;
+            return sessionOptions.autoSummary === false ? (await this.sessions.get(sessionId)).focusSummary ?? undefined : undefined;
         }
         const state = await this.sessions.get(sessionId);
         if (state.focusSummary || !state.messages.length) {

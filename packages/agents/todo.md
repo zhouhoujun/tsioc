@@ -2316,3 +2316,56 @@ Turn: Fix session restore                                      running  01:42
 - 每批固定门禁：检查完成项与 `git diff` → 受影响包全量测试（agent-ui 基线 1101 passing；受影响再加 agent/agent-gateway 对应包）→ `tsc --noEmit`/`build:web` → 更新本节结果与基线数字 → 独立提交。
 - 保持 TUI/browser 共用 SessionState 与 renderer；禁止 timer 驱动刷新（B6 虚拟化尤其注意不引入 setInterval）；禁止布局层"脏节点追踪"缓存。
 - 缺浏览器/PTY 时明确 skip+report，不修改断言伪造通过（P285 原则）。
+
+---
+
+### v17-C · agent 包测试失败收尾（2026-09-08 交接，codex 继续）
+
+> 背景：v17-B 收尾后，`agent` 包基线 **776 passing / 19 failing EXIT=1**（agent-test-5.log 留档，`/tmp/opencode/agent-test-5.log`）。用户裁决：「必须修改了再提交」「写明了全量测试通过才能提交」。下表记录当前完成度与剩余失败（截至 2026-09-08 单跑复验）。
+
+#### 已实施修复（工作区未提交，`git diff` 面）
+
+| 面 | 改动 | 根因 / 证据 |
+|---|---|---|
+| `src/runtime/DefaultAgentRuntime.ts` | 构造参数 6 处移除 `\| null` 联合（delegationGraph / appArgs / fileAdapter / hookExecutor / summaryAgent / goalStore；summaryAgent 保留 `@Inject(AgentSummaryAgent)`） | **根因定案**：TS `emitDecoratorMetadata` 对 `T \| null` 联合参数发射 `design:paramtypes` 为 `Object`（非类本身），裸 `@Optional()` 无法按类型注入 → 值为 undefined。去联合会发射真实类 → 正常解析。probe-di9 实证（`faWithNull?: FA \| null` → undefined；`faClean?: FA` → 解析成功）。由此修复 `verification-gate:1146/:1175`、`file-undo:275/:312`、`function-hooks:145` |
+| `src/agent.module.ts` | 大量 token provider 补 `asDefault: true`（GoalStore / AuditSink / CompactionHistoryStore / TurnDiagnosticsStore / SummaryQualityStore / DelegationGraphStore / EvalReportStore / SessionStore / TIMELINE_HISTORY_STORE / COMMAND_EXCHANGE_STORE / BACKGROUND_TASK_HISTORY_STORE / SessionSummarizer / AgentSummaryAgent / ExperienceDistiller / AgentScheduler / AgentClient）；`SystemPromptBuilder` 由裸类注册改 `{ provide, useClass: SystemPromptBuilder, asDefault: true }` | **根因定案**：module 内无 `asDefault` 注册会遮蔽 app 层同 token 的 `useValue`/`useClass`（`delegation-mode:235` 的 builder 覆盖被吞）。`asDefault: true` 使 app 覆盖生效。probe-pb 实证（修前 `rt.promptBuilder === test builder: false`，修后 `true`）。由此修复 `delegation-mode:235` |
+| `src/scheduler/IntervalAgentScheduler.ts` | 构造器 `this.options = this.options ?? defaultAgentOptions;`（options 显式传 null 时穿透类属性默认值） | 防御性归一化，`isEnabled()/stop()/shouldRetryTask()` 内 `this.options.scheduler?.` 不再崩溃 |
+| `test/bootstrap.spec.ts` / `test/tools.spec.ts` | `Application.run(AgentModule, ...)` 补 `provideAgentOrm({ type: 'sqljs', synchronize: true, ... })` providers | 以满足 IoC 倒置约束（测试用真实 SQLite `:memory:`） |
+
+#### 已复验转绿（单独跑）
+
+- `verification-gate`：**39 passing / 1 failed**（:1146/:1175 两处写失败已修复；仅剩 :1066）
+- `file-undo`：**9 / 9 全绿**
+- `function-hooks`：**7 / 7 全绿**
+- `delegation-mode`：**13 / 13 全绿**
+
+#### 剩余 13 个失败（逐一单跑复验，均为基线既有；修复后须回跑确认）
+
+> 单跑方式：包根建 tmp runner（`/tmp` 下报 Cannot find module '@tsdi/unit'），`timeout 300 npx ts-node -r tsconfig-paths/register <runner>`；结束后删除该 tmp（`test/**` 被 globby 命中，勿留在 `test/`）。**verification-gate 抛错会杀进程，必须单独跑。**
+
+| spec:line | 断言 | 根因线索（初步） |
+|---|---|---|
+| `verification-gate.spec.ts:1066`（`workspaceSupportsCrossRunHintReuse`） | `prompts[0]` 含 `'Prior success from an earlier turn'` | workspace 不跨 `Application.run` 上下文（每次独立 sqljs `:memory:` 库）→ 需共享 SessionStore：保持第一个 run 的 contexts 开启、`sessionStore = sessions.get(SessionStore)`、传 shareSessionStore 给第二个 run、最后 close 两个。参考 `e7e048f7d`/`96ee730e4` 的 sessions 接线与 `37f4f0088` 测试迁移 |
+| `session-summary.spec.ts:226/:279/:302`（`...SkipsWithoutSummaryAgent` / `...LeavesMetadataEmpty` ×3） | 期望 title/summary undefined，实得 `'Build a login page'` | `makeRuntime` 的 provider 是 `{ provide: AgentSummaryAgent, useValue: summaryAgent ?? new DeterministicAgentSummaryAgent() }` ——`??` 把传入的 `null` 兜成 Deterministic，无法真正模拟无 agent。需确认 runtime 对无 summaryAgent 的期待：改 fixture 传 `undefined` 并让 module 的 asDefault 生效，或该改运行时注入语义 |
+| `session-summary.spec.ts:292`（`runTurnTriggersMetadataGeneration`） | 期望 focusSummary `'Build a login page'`，实得 undefined | runTurn 路径下 focusSummary 未写入（title 有值）。查 `DefaultAgentRuntime.runTurn` → `refreshSessionSummary`/`ensureSessionTitle` 调用链与 store.setProjectMetadata 写路径 |
+| `runtime-loop.spec.ts:1061`（`sends only configured recent messages to model`） | 期望 messages 只有 3 条用户内容，实得 +16（混入系统提示 `'You are an autonomous task agent...'`） | model.requests[0].messages 中混入系统提示内容 → 测 context window 附近最近 N 条时多出系统提示；查 messageWindow/recent 过滤对系统提示的处理（:2173 sandboxSupported 期望 false 得 true，另一独立小点） |
+| `runtime-loop.spec.ts:1580`（`preserves current user message across tool rounds`） | 期望 `['keep-me', '', '{"value":"round-3"}']`，实得同样混入系统提示（+26） | 同上：system 内容混入 messages 数组；查 `-4` 条窗口选取逻辑 |
+| `runtime-loop.spec.ts:2173`（`storesResolvedSandboxMetadataOnToolExecutionReceipts`） | 期望 `sandboxSupported === false`，实得 true | 测试用 empty ToolRegistry + 无 sandbox executor 注入，但 receipt 的 sandboxSupported 仍为 true；查解析后的读路径默认值 |
+| `plan-mode.spec.ts:199`（`togglingOffRestoresWriteTools`） | 期望 `tool.invoked === 1`，实得 0 | plan mode 关闭 + 第二 turn 后写工具仍未执行；查 `checkArchetypeToolGate`（:2070-2099）/ `setPlanMode`（:1936）/ `setSessionArchetype`（:1948-1965）/ `DEFAULT_ARCHETYPE='build'`（AgentArchetype.ts:47） |
+| `session-search.spec.ts:19` | 期望 snippet 含 `'[user] deploy the pipeline'`，实得 `'[assistant] pipeline is green'` | 搜索排序：assistant 命中排在 user 之前；查 `SessionStore.search`（TypeOrmSessionStore `search`）排序/评分 |
+| `session-sections.spec.ts:176`（`threadIndexExposesSections`） | 期望 `sections: [{ label: 'Workers', messageCount: 2 }]`，实得 messageCount 0 | `listThreads()` 的 section messageCount 未统计 `appendRaw` 写入的消息；查线程索引聚合 |
+| `session.spec.ts:577`（`deletesSnapshotAndRemovesSnapshotsOnSessionDelete`） | 期望快照列表空，实得仍有 1 条 | **根因已知**：`session.spec.ts:576` `store.delete('session')` **未 await**，与异步 `TypeOrmSessionStore.delete`（TypeOrmSessionStore.ts:465-468 依次删 messages→snapshots→session）竞态；`listSnapshots` 仍见旧数据。修复：测试内 `await store.delete('session')`（注释同 :53/:80 处场景，唯一调用点） |
+| `tools.spec.ts:366`（`approvalDecisionsWrittenToAuditSink`） | 期望审计 2 条，实得 1 | 审批决策审计只落 1 条（approve/reject 之一缺失或重复写同 key）；查 `ToolApprovalManager` 审批决策写审计路径 |
+
+#### 交接说明（codex）
+
+1. 工作区已含上述 4 项未提交修复（`git diff` 可见），**尚未提交**——按门禁须等全量通过再提交。
+2. 剩余失败已在 `packages/agents/agent/` 包根遗留单跑 runner 参考（`run-check1-5.tmp.ts` / `run-one*.tmp.ts` / `probe-*.tmp.ts`），**复验完毕即删除**；`test/run-vg.tmp.ts` 必须删（会被 globby 命中污染全量）。
+3. agent 全量跑法：`cd packages/agents/agent && npm test`（等价 `npx ts-node -r tsconfig-paths/register unit.ts`，无根级 runner、每包自带 `unit.ts`）。
+4. 提交门禁：受影响包全量 EXIT=0 → `tsc --noEmit` → `git diff --check` → 更新本节 → 独立提交；勿把剩余失败伪记为全绿。
+
+#### v17-C 收尾（2026-09-08）✅
+
+- 13 个剩余失败已全部修复：跨 run 验证测试复用同一真实 SQLite SessionStore；summary-agent fixture 可真实表达未注入；turn 返回前等待标题/摘要落库；recent-message 断言排除独立 system prompt；sandbox receipt 与默认 OS executor 能力一致；plan/build 切换消息按 session 串行并在 turn 前完成；搜索 snippet 优先用户命中；TypeORM thread index 从消息表统计 section 数；snapshot 删除测试等待异步 delete；approval API 返回前等待 audit 持久化。
+- `agent` 全量 **795 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1115 passing / 0 failed / EXIT=0**。`agent-channels`、`agent-cli`、`agent-gateway`、`agent-tools`、`agent-providers`、`agent-ssh`、`agent-desktop`、`agent-vscode` 全量测试均 EXIT=0。
+- `agent` 与 `agent-ui` 的 `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 与跨平台边界检查通过；包根临时 probe/runner 已全部删除。

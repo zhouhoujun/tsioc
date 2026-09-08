@@ -3,6 +3,7 @@ import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext, RunContext, Runner } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { AgentModule, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink, SessionSearchMatch, SessionSearchOptions } from '../src';
+import { provideAgentOrm } from '../src/orm.module';
 
 @Injectable()
 class CustomBootstrapRuntime extends AgentRuntime {
@@ -60,7 +61,9 @@ export class BootstrapTest {
 
     @Before()
     async init() {
-        this.ctx = await Application.run(AgentModule);
+        this.ctx = await Application.run(AgentModule, {
+            providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
+        });
     }
 
     @Test('can bootstrap agent module')
@@ -119,7 +122,8 @@ export class BootstrapTest {
             module: AgentModule,
             providers: [
                 ...options.providers!,
-                { provide: ModelAdapter, useValue: model }
+                { provide: ModelAdapter, useValue: model },
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
             ]
         });
         try {
@@ -138,7 +142,8 @@ export class BootstrapTest {
             module: AgentModule,
             providers: [
                 CustomBootstrapRuntime,
-                { provide: AgentRuntime, useExisting: CustomBootstrapRuntime }
+                { provide: AgentRuntime, useExisting: CustomBootstrapRuntime },
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
             ]
         });
         try {

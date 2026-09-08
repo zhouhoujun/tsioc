@@ -231,7 +231,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 .catch(() => {});
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), false))
                 .catch(() => {});
-            this.recordApprovalAudit(request, ApprovalDecision.DENIED);
+            await this.recordApprovalAudit(request, ApprovalDecision.DENIED);
             return { decision: ApprovalDecision.DENIED, request };
         }
 
@@ -240,7 +240,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 .catch(() => {});
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), true))
                 .catch(() => {});
-            this.recordApprovalAudit(request, ApprovalDecision.APPROVED, 'auto-approved by session flag');
+            await this.recordApprovalAudit(request, ApprovalDecision.APPROVED, 'auto-approved by session flag');
             return { decision: ApprovalDecision.APPROVED, request };
         }
 
@@ -269,7 +269,7 @@ export class ToolApprovalManager extends ApprovalManager {
 
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
             .catch(() => {});
-        this.recordApprovalAudit(request, decision);
+        await this.recordApprovalAudit(request, decision);
         return { decision, request };
     }
 
@@ -308,7 +308,7 @@ export class ToolApprovalManager extends ApprovalManager {
             .catch(() => {});
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
             .catch(() => {});
-        this.recordApprovalAudit(request, decision, reviewReason);
+        await this.recordApprovalAudit(request, decision, reviewReason);
         return { decision, request };
     }
 
@@ -439,7 +439,7 @@ export class ToolApprovalManager extends ApprovalManager {
      * The record keeps the gated tool name and marks metadata.kind =
      * 'approval' so aggregated stats can separate decisions from executions.
      */
-    private recordApprovalAudit(request: ApprovalRequest, decision: ApprovalDecision, reviewReason?: string): void {
+    private async recordApprovalAudit(request: ApprovalRequest, decision: ApprovalDecision, reviewReason?: string): Promise<void> {
         if (!this.auditSink) {
             return;
         }
@@ -470,7 +470,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 reviewReason
             }
         };
-        this.auditSink.append(record).catch(() => {});
+        await this.auditSink.append(record).catch(() => {});
     }
 }
 

@@ -573,7 +573,7 @@ export class SessionStoreTest {
             expect(await store.listSnapshots('session')).toEqual([]);
 
             await store.snapshot('session');
-            store.delete('session');
+            await store.delete('session');
             expect(await store.listSnapshots('session')).toEqual([]);
         } finally { await ctx.close(); }
     }

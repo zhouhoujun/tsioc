@@ -140,7 +140,23 @@ export class TypeOrmSessionStore extends SessionStore {
 
     async listThreads(): Promise<AgentThreadIndex[]> {
         const sessions = await this.adapter.getRepository(AgentSessionEntity).find();
-        return deriveThreadIndexes(sessions);
+        const messages = await this.adapter.getRepository(AgentMessageEntity).find({ order: { sequence: 'ASC' } as any });
+        const messagesBySession = new Map<string, AgentMessage[]>();
+        for (const message of messages) {
+            const entries = messagesBySession.get(message.sessionId) ?? [];
+            entries.push({
+                id: message.messageId,
+                role: message.role as AgentMessage['role'],
+                content: message.content,
+                sectionId: message.sectionId ?? undefined,
+                createdAt: Number(message.createdAt)
+            });
+            messagesBySession.set(message.sessionId, entries);
+        }
+        return deriveThreadIndexes(sessions.map(session => ({
+            ...session,
+            messages: messagesBySession.get(session.sessionId) ?? []
+        })));
     }
 
     async appendRaw(sessionId: string, message: AgentMessage): Promise<AgentState> {
@@ -498,7 +514,7 @@ export class TypeOrmSessionStore extends SessionStore {
             take: undefined
         });
 
-        const buckets = new Map<string, SessionSearchMatch & { count: number }>();
+        const buckets = new Map<string, SessionSearchMatch & { count: number; snippetRole?: string }>();
         for (const row of messageRows) {
             if (!String(row.content || '').toLowerCase().includes(normalizedQuery)) {
                 continue;
@@ -508,6 +524,10 @@ export class TypeOrmSessionStore extends SessionStore {
             const updatedAt = Number(session?.updatedAt || session?.createdAt || row.createdAt || 0);
             if (existing) {
                 existing.count++;
+                if (row.role === 'user' && existing.snippetRole !== 'user') {
+                    existing.snippet = `[${row.role}] ${String(row.content || '')}`;
+                    existing.snippetRole = row.role;
+                }
                 if (updatedAt > (existing.updatedAt ?? 0)) {
                     existing.updatedAt = updatedAt;
                 }
@@ -517,12 +537,13 @@ export class TypeOrmSessionStore extends SessionStore {
                 sessionId: row.sessionId,
                 count: 1,
                 snippet: `[${row.role}] ${String(row.content || '')}`,
+                snippetRole: row.role,
                 updatedAt,
                 summary: session?.summary ?? undefined,
                 workspace: session?.workspace ?? undefined
             });
         }
-        const results = Array.from(buckets.values());
+        const results = Array.from(buckets.values()).map(({ snippetRole: _snippetRole, ...match }) => match);
         results.sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
         return results.slice(0, limit);
     }

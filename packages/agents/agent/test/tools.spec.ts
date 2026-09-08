@@ -907,7 +907,8 @@ export class BuiltinToolsTest {
                         }
                     }
                 }),
-                ...withToolTestAdapters()
+                ...withToolTestAdapters(),
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
             ]
         });
         try {
@@ -960,7 +961,8 @@ export class BuiltinToolsTest {
                     }
                 } as any),
                 ...withHttpAgentTools(),
-                ...withToolTestAdapters()
+                ...withToolTestAdapters(),
+                ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any)
             ]
         });
         try {

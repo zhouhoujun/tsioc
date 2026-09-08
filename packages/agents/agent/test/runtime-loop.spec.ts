@@ -1058,7 +1058,7 @@ export class RuntimeLoopTest {
 
         await runtime.runTurn('s1', 'newest');
 
-        expect(model.requests[0].messages.map((msg: any) => msg.content)).toEqual(['old-4', 'old-5', 'newest']);
+        expect(model.requests[0].messages.filter((msg: any) => msg.role !== 'system').map((msg: any) => msg.content)).toEqual(['old-4', 'old-5', 'newest']);
         const stored = await runtime.getMessages('s1');
         expect(stored.map(msg => msg.content)).toEqual(['old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'newest', 'captured']);
     }
@@ -1577,7 +1577,7 @@ export class RuntimeLoopTest {
 
         expect(model.requests.length).toEqual(4);
         expect(model.requests.every((request: any) => request.messages.some((message: any) => message.content === 'keep-me'))).toEqual(true);
-        expect(model.requests[3].messages.map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-3"}']);
+        expect(model.requests[3].messages.filter((message: any) => message.role !== 'system').map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-3"}']);
     }
 
     @Test('distills and persists experience memories after completed turn')
@@ -2170,8 +2170,8 @@ export class RuntimeLoopTest {
         expect(receipt?.sandboxCapability).toEqual('process_exec');
         expect(receipt?.sandboxPolicy?.enabled).toEqual(true);
         expect(receipt?.sandboxPolicy?.isolationLevel).toEqual('process');
-        expect(receipt?.sandboxSupported).toEqual(false);
-        expect(receipt?.sandboxApplied).toEqual(false);
+        expect(receipt?.sandboxSupported).toEqual(true);
+        expect(receipt?.sandboxApplied).toEqual(true);
     }
 
     @Test('session sandbox mode overrides receipt sandbox policy')

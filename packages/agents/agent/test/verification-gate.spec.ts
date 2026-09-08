@@ -1042,32 +1042,31 @@ export class VerificationGateRuntimeTest {
     async crossSessionHintReuseWithinSameWorkspace() {
         const store = new TestInMemoryTurnDiagnosticsStore();
         const sessions = await Application.run(AgentModule, { providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
+        const sessionStore = sessions.get(SessionStore);
         try {
-            const sessionStore = sessions.get(SessionStore);
             await sessionStore.setWorkspace('s1', '/ws/proj');
             await sessionStore.setWorkspace('s2', '/ws/proj');
+            const secondModel = new FailThenSucceedModelAdapter();
+            const firstHandle = await buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessionStore);
+            try {
+                await firstHandle.runtime.runTurn('s1', 'hello');
+            } finally { await firstHandle.ctx.close(); }
+
+            const recordsAfterFirst = await store.list('s1');
+            expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
+
+            const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store, sessionStore);
+            try {
+                const result = await secondHandle.runtime.runTurn('s2', 'hello');
+
+                const prompts = injectedRecoveryPrompts(secondModel);
+                expect(prompts.length).toEqual(1);
+                expect(prompts[0]).toContain('Prior success from an earlier turn');
+                expect(prompts[0]).toContain('repaired in session s1');
+                expect(prompts[0]).toContain('retry with Tool "echo"');
+                expect(result.message.content).toEqual('task completed after repair');
+            } finally { await secondHandle.ctx.close(); }
         } finally { await sessions.close(); }
-
-        const secondModel = new FailThenSucceedModelAdapter();
-        const firstHandle = await buildRuntime(new FailThenSucceedModelAdapter(), new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
-        try {
-            await firstHandle.runtime.runTurn('s1', 'hello');
-        } finally { await firstHandle.ctx.close(); }
-
-        const recordsAfterFirst = await store.list('s1');
-        expect(recordsAfterFirst[0].metadata?.repairResolved).toEqual(true);
-
-        const secondHandle = await buildRuntime(secondModel, new FlakyToolRegistry(1), { maxToolRounds: 8 }, store);
-        try {
-            const result = await secondHandle.runtime.runTurn('s2', 'hello');
-
-            const prompts = injectedRecoveryPrompts(secondModel);
-            expect(prompts.length).toEqual(1);
-            expect(prompts[0]).toContain('Prior success from an earlier turn');
-            expect(prompts[0]).toContain('repaired in session s1');
-            expect(prompts[0]).toContain('retry with Tool "echo"');
-            expect(result.message.content).toEqual('task completed after repair');
-        } finally { await secondHandle.ctx.close(); }
     }
 
     @Test('repair hints do not leak across different workspaces')

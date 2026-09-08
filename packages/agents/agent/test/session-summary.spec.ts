@@ -60,7 +60,7 @@ async function makeRuntime(options: AgentOptions = defaultAgentOptions, summaryA
         { provide: ModelAdapter, useValue: new EchoModelAdapter() },
         { provide: ToolRegistry, useValue: new EmptyToolRegistry() },
         { provide: AGENT_OPTIONS, useValue: options },
-        { provide: AgentSummaryAgent, useValue: summaryAgent ?? new DeterministicAgentSummaryAgent() }
+        { provide: AgentSummaryAgent, useValue: summaryAgent === null ? undefined : (summaryAgent ?? new DeterministicAgentSummaryAgent()) }
     ];
     const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     return { runtime: ctx.get(AgentRuntime), store: ctx.get(SessionStore), ctx };

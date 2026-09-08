@@ -24,6 +24,9 @@ export class IntervalAgentScheduler extends AgentScheduler {
         @Inject(TypeormAdapter) private adapter: TypeormAdapter
     ) {
         super();
+        // options 显式传 null 时（如单元测试）穿透类属性默认值，
+        // isEnabled()/stop()/shouldRetryTask() 里的 this.options.scheduler?. 会崩溃，统一归一化。
+        this.options = this.options ?? defaultAgentOptions;
     }
 
     @Runner()
