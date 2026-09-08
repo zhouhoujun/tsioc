@@ -2403,3 +2403,23 @@ Turn: Fix session restore                                      running  01:42
 - **PTY 场景 4 → 已登记**：`acceptance/CHECKLIST.md` 确认场景 4 为 plan-lifecycle（`FAKE_SCENARIO=plan-lifecycle python3 run_acceptance.py` 驱动），非缺失项；归档表更新为"无"。
 - **全量验证（2026-09-08 复核）**：10 包 agent 系全量（agent **795**、agent-channels **59**、agent-cli **74**、agent-gateway **271**、agent-providers **13**、agent-ssh **8**、agent-tools **478**、agent-ui **1115**、agent-desktop **20**、agent-vscode **7**）+ 框架层（components **136**、components/console **73**、components/html **117**）全部 0 failed / EXIT=0；`run-dom-gate.ts` 与 `run-tui-gate.ts` 各 **4/4 PASS**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）；`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
 - **结论**：v17 全批次（A1–A5、B1–B7、C、D、E）与 v16 遗留缺口全部闭环，工作区仅本文档改动，独立提交。
+
+### v18-A · 后台任务 delegation 聚合与 gateway RPC（P231B，2026-09-09）✅
+
+- **增量定位**：P231 part A（2026-08-27）完成后，P231B 明确列出 "delegation 级聚合与 gateway 层批量任务 RPC 仍需独立增量"。本批交付这两项：store 层跨会话聚合 `pageBySessions` + `AppRpcServer` 三个 RPC（`background_task.list/get/cancel`）。
+- **store 层**：
+  - `BackgroundTaskHistoryStore` 抽象新增 `pageBySessions(sessionIds, options)`：跨 owner session 集合的 cursor 分页快照（newest first）；契约明确空/未知 session id 返回空页、重复 id 无害。
+  - `TypeOrmBackgroundTaskStore`：`loadAll(sessionId)` 重构为接受 `string | string[] | undefined`——undefined 查全表（保留 `pageAll` 语义）、字符串查单会话、数组去重（过滤空白）后以 TypeORM `In` 查询、全空/空数组直接返回空页；`pageBySessions` 委托 `loadAll` + `pageBackgroundTaskRecords`（复用既有 `startedAt desc + id asc` 稳定 cursor 排序）。
+  - `DelegationGraphStore` 新增纯函数 `collectDelegationSessionIds(root)`：DFS 展平子树全部 `sessionId`（含 root），供 RPC 聚合 delegation 子树。
+- **gateway 层（AppRpcServer）**：
+  - 构造器末尾新增 `@Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null`（位置参数不变，既有 25 参调用方兼容）。
+  - capabilities 新增 `background_task.list` / `background_task.get` / `background_task.cancel`；dispatch 增加 3 个 case（`coding_task.rollback` 分支之后）。
+  - `listBackgroundTasks`：必须提供 `sessionId` 或 `delegationRoot` 之一（否则 `-32602`；刻意不做无 scope 全局 pageAll，规避 house principal 泄漏）；`sessionId` 路径 `ensureSessionAccess` + `pageBySession`；`delegationRoot` 路径 `ensureSessionAccess(root)` → `this.delegation?.tree(root)` → `collectDelegationSessionIds` → `pageBySessions`，返回 `{ delegationRoot, sessionIds, items, nextCursor?, hasMore }`；store 未注入时返回空页而非报错。
+  - `getBackgroundTask`：缺 taskId `-32602`；store 缺失或 task 不存在均 `-32004`；存在则按 `task.sessionId` `ensureSessionAccess`（越权 `-32003`）。
+  - `cancelBackgroundTasks`：非空数组校验 + 去重（否则 `-32602`）；store 缺失 `-32000`；**missing id 跳过（与 store `batchCancel` best-effort 契约一致）+ 鉴权 fail-fast**——先逐条 `get` + `ensureSessionAccess` 全部通过才 `batchCancel`，任何越权记录都阻止全部变更（防部分取消）；返回 `{ taskIds, cancelled }`（cancelled 为实际取消的 running id）。
+  - UI 侧不新增 wrapper 方法（走既有 raw `request`）；live manager 取消维持 `/ps stop`，本 RPC 仅动 durable store。
+- **测试**：
+  - `agent/test/persistent-background-task.spec.ts` +2：跨 3 会话 DESC 排序 + 重复 id 去重 + limit/cursor 两页分页（hasMore/nextCursor）；空数组/未知/空白 session 列表空页、混合已知+未知只返回已知记录。
+  - `agent-gateway/test/gateway-server.spec.ts` +5：list by session（capabilities 含 3 方法、limit+cursor 分页、foreign principal 越权）、list by delegationRoot（三级树聚合 `sessionIds` + 跨会话 items 排序、limit 分页、越权）、缺 scope 与空 `delegationRoot` 均 `-32602`、get（找到/不存在 `-32004`/越权）、cancel（missing 跳过 + `cancelled` 列表 + 空数组 `-32602` + 混合越权 fail-fast 时两任务均保持 `running`、无部分取消）。
+- **验证**：`agent` 796 passing（唯一失败 `nodeChildProcessRespectsWallTimeLimit` 为 sandbox executor 既有偶发，仅 `tools.spec.ts`，与本次改动无关，孤立运行 EXIT=0）；`agent-gateway` 276 passing 0 failed；`agent`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
+- **结论**：P231B（delegation 聚合 + gateway 任务 RPC）闭环；批次 B/C/E 与待人工确认的 F/D 无前置依赖，可继续。

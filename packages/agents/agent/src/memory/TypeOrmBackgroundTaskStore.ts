@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
+import { In } from 'typeorm';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentBackgroundTaskEntity } from './entities';
 import {
@@ -55,6 +56,11 @@ export class TypeOrmBackgroundTaskStore extends BackgroundTaskHistoryStore {
         return pageBackgroundTaskRecords(sorted, options);
     }
 
+    async pageBySessions(sessionIds: string[], options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
+        const sorted = await this.loadAll(sessionIds);
+        return pageBackgroundTaskRecords(sorted, options);
+    }
+
     async batchCancel(taskIds: string[]): Promise<string[]> {
         const cancelled: string[] = [];
         for (const taskId of new Set(taskIds)) {
@@ -95,9 +101,19 @@ export class TypeOrmBackgroundTaskStore extends BackgroundTaskHistoryStore {
         return () => this.listeners.delete(listener);
     }
 
-    private async loadAll(sessionId: string | undefined): Promise<BackgroundTaskRecord[]> {
+    private async loadAll(sessionId: string | string[] | undefined): Promise<BackgroundTaskRecord[]> {
+        let where: Record<string, unknown> | undefined;
+        if (typeof sessionId === 'string' && sessionId) {
+            where = { sessionId };
+        } else if (Array.isArray(sessionId)) {
+            const unique = Array.from(new Set(sessionId.filter(id => Boolean(id && id.trim()))));
+            if (!unique.length) {
+                return [];
+            }
+            where = { sessionId: In(unique) };
+        }
         const rows = await this.repo.find({
-            ...(sessionId ? { where: { sessionId } as any } : {}),
+            ...(where ? { where: where as any } : {}),
             order: { startedAt: 'DESC' } as any
         });
         const records = rows.map(toRecord);

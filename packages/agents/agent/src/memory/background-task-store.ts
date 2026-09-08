@@ -159,6 +159,13 @@ export abstract class BackgroundTaskHistoryStore {
     /** Cursor paged snapshot for one owner session, newest first. */
     abstract pageBySession(sessionId: string, options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage>;
 
+    /**
+     * Cursor paged snapshot across a set of owner sessions (e.g. a delegation
+     * subtree), newest first. Empty or unknown session ids yield an empty page;
+     * duplicate ids are harmless.
+     */
+    abstract pageBySessions(sessionIds: string[], options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage>;
+
     /** Batch cancel all tasks that are still running. Returns the ids cancelled. */
     abstract batchCancel(taskIds: string[]): Promise<string[]>;
 

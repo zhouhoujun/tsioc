@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { redactCommandExchangeRecord } from '../api/command-exchange-redact';
 import { SessionHandler } from '../api/SessionHandler';
@@ -44,7 +44,8 @@ export class AppRpcServer {
         @Optional() private timeline?: TimelineHistoryStore | null,
         @Optional() private commandExchange?: CommandExchangeStore | null,
         @Optional() private questionStore?: QuestionStore | null,
-        @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null
+        @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null,
+        @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null
     ) {
     }
 
@@ -287,7 +288,10 @@ export class AppRpcServer {
                         'goal.list',
                         'goal.link',
                         'goal.complete',
-                        'goal.reopen'
+                        'goal.reopen',
+                        'background_task.list',
+                        'background_task.get',
+                        'background_task.cancel'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -469,6 +473,12 @@ export class AppRpcServer {
                 return this.retryFailedCodingTask(params, context);
             case 'coding_task.rollback':
                 return this.rollbackCodingTask(params, context);
+            case 'background_task.list':
+                return this.listBackgroundTasks(params, context);
+            case 'background_task.get':
+                return this.getBackgroundTask(params, context);
+            case 'background_task.cancel':
+                return this.cancelBackgroundTasks(params, context);
             case 'review_annotations.save':
                 return this.saveReviewAnnotations(params, context);
             case 'review_annotations.load':
@@ -3084,6 +3094,91 @@ export class AppRpcServer {
             task: output?.task ?? null,
             retried: output?.ran === true
         };
+    }
+
+    private async listBackgroundTasks(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.optionalSessionId(params);
+        const delegationRoot = typeof params?.delegationRoot === 'string' && params.delegationRoot.trim()
+            ? params.delegationRoot.trim()
+            : undefined;
+        if (!sessionId && !delegationRoot) {
+            throw new AppRpcError(-32602, 'Invalid params: provide either sessionId or delegationRoot');
+        }
+        if (!this.backgroundTaskStore) {
+            return sessionId
+                ? { sessionId, items: [], hasMore: false }
+                : { delegationRoot, sessionIds: [], items: [], hasMore: false };
+        }
+        const pageOptions: BackgroundTaskPageOptions = {};
+        if (typeof params?.cursor === 'string' && params.cursor) {
+            pageOptions.cursor = params.cursor;
+        }
+        if (params?.limit !== undefined && params.limit !== null && params.limit !== '') {
+            pageOptions.limit = params.limit;
+        }
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context);
+            const page = await this.backgroundTaskStore.pageBySession(sessionId, pageOptions);
+            return {
+                sessionId,
+                items: page.items,
+                ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+                hasMore: page.hasMore
+            };
+        }
+        const root = delegationRoot as string;
+        await this.ensureSessionAccess(root, context);
+        const tree = await this.delegation?.tree(root);
+        const sessionIds = tree ? collectDelegationSessionIds(tree) : [root];
+        const page = await this.backgroundTaskStore.pageBySessions(sessionIds, pageOptions);
+        return {
+            delegationRoot: root,
+            sessionIds,
+            items: page.items,
+            ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+            hasMore: page.hasMore
+        };
+    }
+
+    private async getBackgroundTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        if (!this.backgroundTaskStore) {
+            throw new AppRpcError(-32004, `Background task "${taskId}" was not found.`);
+        }
+        const task = await this.backgroundTaskStore.get(taskId);
+        if (!task) {
+            throw new AppRpcError(-32004, `Background task "${taskId}" was not found.`);
+        }
+        await this.ensureSessionAccess(task.sessionId, context);
+        return { taskId, task };
+    }
+
+    private async cancelBackgroundTasks(params: any, context: AppRpcRequestContext): Promise<any> {
+        const raw = params?.taskIds;
+        if (!Array.isArray(raw) || !raw.length) {
+            throw new AppRpcError(-32602, 'Invalid params: taskIds must be a non-empty array');
+        }
+        const taskIds = Array.from(new Set(
+            raw.filter((id: unknown) => typeof id === 'string' && id.trim()).map(id => String(id).trim())
+        ));
+        if (!taskIds.length) {
+            throw new AppRpcError(-32602, 'Invalid params: taskIds must be a non-empty array');
+        }
+        if (!this.backgroundTaskStore) {
+            throw new AppRpcError(-32000, 'Background task history store is unavailable.');
+        }
+        // Batch cancel is best-effort per id (missing ids are skipped, mirroring
+        // the store contract); authorization still fails fast so no mutation
+        // happens when any known record is not owned by the caller.
+        for (const taskId of taskIds) {
+            const task = await this.backgroundTaskStore.get(taskId);
+            if (!task) {
+                continue;
+            }
+            await this.ensureSessionAccess(task.sessionId, context);
+        }
+        const cancelled = await this.backgroundTaskStore.batchCancel(taskIds);
+        return { taskIds, cancelled };
     }
 
     private async invokeCodingTask(sessionId: string, input: Record<string, any>, context: AppRpcRequestContext): Promise<any> {

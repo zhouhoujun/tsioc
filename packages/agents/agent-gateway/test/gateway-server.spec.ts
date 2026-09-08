@@ -22,7 +22,7 @@ import { CompactionHistoryHandler } from '../src/api/CompactionHistoryHandler';
 import { TurnDiagnosticsHandler } from '../src/api/TurnDiagnosticsHandler';
 import { SummaryQualityHandler } from '../src/api/SummaryQualityHandler';
 import { UsageHandler } from '../src/api/UsageHandler';
-import { AgentModule, MemoryStore, provideAgentOrm, SessionStore, TIMELINE_HISTORY_STORE, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm, SessionStore, TIMELINE_HISTORY_STORE, BACKGROUND_TASK_HISTORY_STORE, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentTurnDiagnosticsEvent, LocalToolRegistry, ToolApprovalManager, WeaknessMiner, ReviewFindingsStore } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ApprovalHandler } from '../src/api/ApprovalHandler';
@@ -3163,6 +3163,150 @@ export class AppRpcServerTest {
 
         const forbiddenReplay = await rpc.handle({ jsonrpc: '2.0', id: 6, method: 'timeline.replay', params: { sessionId: sid, sinceSeq: 0 } }, { principalId: 'other' });
         expect((forbiddenReplay as any).error).toBeDefined();
+    }
+
+    @Test('background_task.list pages tasks by session and exposes capabilities')
+    async listsBackgroundTasksBySession() {
+        const { context, store, memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const backgroundTasks = context.get(BACKGROUND_TASK_HISTORY_STORE);
+        await store.get('bg-s1');
+        await owners.create('bg-s1', 'user-1');
+        await backgroundTasks.put({ id: 't1', sessionId: 'bg-s1', status: 'running', goal: 'goal-t1', startedAt: 1000 });
+        await backgroundTasks.put({ id: 't2', sessionId: 'bg-s1', status: 'completed', goal: 'goal-t2', startedAt: 2000 });
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners),
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, backgroundTasks);
+
+        const caps = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'app.capabilities', params: {} }, { principalId: 'user-1' }) as any;
+        const methods = caps.result.methods as string[];
+        expect(methods).toEqual(expect.arrayContaining(['background_task.list', 'background_task.get', 'background_task.cancel']));
+
+        const first = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'background_task.list', params: { sessionId: 'bg-s1', limit: 1 } }, { principalId: 'user-1' }) as any;
+        expect(first.result.sessionId).toEqual('bg-s1');
+        expect(first.result.items.map((item: any) => item.id)).toEqual(['t2']);
+        expect(first.result.hasMore).toEqual(true);
+        expect(first.result.nextCursor).toBeDefined();
+
+        const second = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'background_task.list', params: { sessionId: 'bg-s1', limit: 1, cursor: first.result.nextCursor } }, { principalId: 'user-1' }) as any;
+        expect(second.result.items.map((item: any) => item.id)).toEqual(['t1']);
+        expect(second.result.hasMore).toEqual(false);
+
+        const empty = await rpc.handle({ jsonrpc: '2.0', id: 4, method: 'background_task.list', params: { sessionId: 'bg-s1' } }, { principalId: 'user-1' }) as any;
+        expect(empty.result.items.length).toEqual(2);
+
+        const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 5, method: 'background_task.list', params: { sessionId: 'bg-s1' } }, { principalId: 'other' });
+        expect((forbidden as any).error).toBeDefined();
+    }
+
+    @Test('background_task.list aggregates a delegation subtree by delegationRoot')
+    async listsBackgroundTasksByDelegationRoot() {
+        const { context, store, memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const backgroundTasks = context.get(BACKGROUND_TASK_HISTORY_STORE);
+        const delegation = {
+            tree: async (root: string) => ({
+                sessionId: root,
+                children: [{ sessionId: 'bg-child', children: [{ sessionId: 'bg-grandchild', children: [] }] }]
+            })
+        } as any;
+        await store.get('bg-root');
+        await owners.create('bg-root', 'user-1');
+        await store.get('bg-child');
+        await owners.create('bg-child', 'user-1');
+        await store.get('bg-grandchild');
+        await owners.create('bg-grandchild', 'user-1');
+        await backgroundTasks.put({ id: 'root-1', sessionId: 'bg-root', status: 'running', goal: 'goal-root', startedAt: 1000 });
+        await backgroundTasks.put({ id: 'child-1', sessionId: 'bg-child', status: 'completed', goal: 'goal-child', startedAt: 2000 });
+        await backgroundTasks.put({ id: 'grand-1', sessionId: 'bg-grandchild', status: 'failed', goal: 'goal-grand', startedAt: 3000 });
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners),
+            undefined, undefined, undefined, undefined, undefined, undefined, delegation, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, backgroundTasks);
+
+        const all = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'background_task.list', params: { delegationRoot: 'bg-root' } }, { principalId: 'user-1' }) as any;
+        expect(all.result.delegationRoot).toEqual('bg-root');
+        expect(all.result.sessionIds).toEqual(expect.arrayContaining(['bg-root', 'bg-child', 'bg-grandchild']));
+        expect(all.result.items.map((item: any) => item.id)).toEqual(['grand-1', 'child-1', 'root-1']);
+
+        const paged = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'background_task.list', params: { delegationRoot: 'bg-root', limit: 2 } }, { principalId: 'user-1' }) as any;
+        expect(paged.result.items.map((item: any) => item.id)).toEqual(['grand-1', 'child-1']);
+        expect(paged.result.hasMore).toEqual(true);
+
+        const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'background_task.list', params: { delegationRoot: 'bg-root' } }, { principalId: 'other' });
+        expect((forbidden as any).error).toBeDefined();
+    }
+
+    @Test('background_task.list rejects missing scope including empty delegation roots')
+    async rejectsScopeLessBackgroundTaskList() {
+        const { context, store, memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const backgroundTasks = context.get(BACKGROUND_TASK_HISTORY_STORE);
+        await store.get('bg-s1');
+        await owners.create('bg-s1', 'user-1');
+        await backgroundTasks.put({ id: 't1', sessionId: 'bg-s1', status: 'running', goal: 'goal-t1', startedAt: 1000 });
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners),
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, backgroundTasks);
+
+        const missing = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'background_task.list', params: {} }, { principalId: 'user-1' }) as any;
+        expect(missing.error.code).toEqual(-32602);
+
+        const blankDelegation = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'background_task.list', params: { delegationRoot: '' } }, { principalId: 'user-1' }) as any;
+        expect(blankDelegation.error.code).toEqual(-32602);
+    }
+
+    @Test('background_task.get returns a task and enforces session ownership')
+    async getsBackgroundTaskWithOwnership() {
+        const { context, store, memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const backgroundTasks = context.get(BACKGROUND_TASK_HISTORY_STORE);
+        await store.get('bg-s1');
+        await owners.create('bg-s1', 'user-1');
+        await backgroundTasks.put({ id: 't1', sessionId: 'bg-s1', status: 'running', goal: 'goal-t1', startedAt: 1000 });
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners),
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, backgroundTasks);
+
+        const found = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'background_task.get', params: { taskId: 't1' } }, { principalId: 'user-1' }) as any;
+        expect(found.result.taskId).toEqual('t1');
+        expect(found.result.task.sessionId).toEqual('bg-s1');
+
+        const missing = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'background_task.get', params: { taskId: 'nope' } }, { principalId: 'user-1' }) as any;
+        expect(missing.error.code).toEqual(-32004);
+
+        const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'background_task.get', params: { taskId: 't1' } }, { principalId: 'other' });
+        expect((forbidden as any).error).toBeDefined();
+    }
+
+    @Test('background_task.cancel batch-cancels running tasks with fail-fast authorization')
+    async cancelsBackgroundTasksWithFailFastAuth() {
+        const { context, store, memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const backgroundTasks = context.get(BACKGROUND_TASK_HISTORY_STORE);
+        await store.get('bg-s1');
+        await owners.create('bg-s1', 'user-1');
+        await store.get('bg-other');
+        await owners.create('bg-other', 'user-2');
+        await backgroundTasks.put({ id: 'run-1', sessionId: 'bg-s1', status: 'running', goal: 'goal-run', startedAt: 1000 });
+        await backgroundTasks.put({ id: 'run-2', sessionId: 'bg-s1', status: 'running', goal: 'goal-run2', startedAt: 2000 });
+        await backgroundTasks.put({ id: 'run-3', sessionId: 'bg-s1', status: 'running', goal: 'goal-run3', startedAt: 4000 });
+        await backgroundTasks.put({ id: 'foreign-1', sessionId: 'bg-other', status: 'running', goal: 'goal-foreign', startedAt: 3000 });
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners),
+            undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, backgroundTasks);
+
+        const cancelled = await rpc.handle({ jsonrpc: '2.0', id: 1, method: 'background_task.cancel', params: { taskIds: ['run-1', 'run-2', 'missing'] } }, { principalId: 'user-1' }) as any;
+        expect(cancelled.result.taskIds).toEqual(['run-1', 'run-2', 'missing']);
+        expect(cancelled.result.cancelled).toEqual(['run-1', 'run-2']);
+        expect((await backgroundTasks.get('run-1'))?.status).toEqual('cancelled');
+
+        const invalid = await rpc.handle({ jsonrpc: '2.0', id: 2, method: 'background_task.cancel', params: { taskIds: [] } }, { principalId: 'user-1' }) as any;
+        expect(invalid.error.code).toEqual(-32602);
+
+        const forbidden = await rpc.handle({ jsonrpc: '2.0', id: 3, method: 'background_task.cancel', params: { taskIds: ['run-3', 'foreign-1'] } }, { principalId: 'user-1' }) as any;
+        expect(forbidden.error).toBeDefined();
+        expect((await backgroundTasks.get('run-3'))?.status).toEqual('running');
+        expect((await backgroundTasks.get('foreign-1'))?.status).toEqual('running');
     }
 
     @Test('nav.query returns a principal-scoped session tree and applies filters through json-rpc')

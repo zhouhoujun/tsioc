@@ -111,6 +111,51 @@ describe('Persistent background-task store', () => {
         }
     });
 
+    it('pages across multiple sessions with de-duplication and cursor paging', async () => {
+        const ctx = await Application.run(PersistentBackgroundTaskTestModule);
+        try {
+            const store = ctx.get(TypeOrmBackgroundTaskStore) as TypeOrmBackgroundTaskStore;
+            await store.put(record({ id: 'a-1', sessionId: 'sA', startedAt: 1 }));
+            await store.put(record({ id: 'b-1', sessionId: 'sB', startedAt: 2 }));
+            await store.put(record({ id: 'a-2', sessionId: 'sA', startedAt: 3 }));
+            await store.put(record({ id: 'c-1', sessionId: 'sC', startedAt: 4 }));
+
+            const all = await store.pageBySessions(['sA', 'sB', 'sC']);
+            expect(all.items.length).toEqual(4);
+            expect(all.items.map(item => item.id)).toEqual(['c-1', 'a-2', 'b-1', 'a-1']);
+
+            const deduped = await store.pageBySessions(['sA', 'sA', 'sB', 'sC', 'sB']);
+            expect(deduped.items.length).toEqual(4);
+
+            const first = await store.pageBySessions(['sA', 'sB', 'sC'], { limit: 2 });
+            expect(first.items.map(item => item.id)).toEqual(['c-1', 'a-2']);
+            expect(first.hasMore).toEqual(true);
+            expect(first.nextCursor).toBeDefined();
+
+            const second = await store.pageBySessions(['sA', 'sB', 'sC'], { limit: 2, cursor: first.nextCursor });
+            expect(second.items.map(item => item.id)).toEqual(['b-1', 'a-1']);
+            expect(second.hasMore).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('returns empty pages for empty, unknown, or blank session lists', async () => {
+        const ctx = await Application.run(PersistentBackgroundTaskTestModule);
+        try {
+            const store = ctx.get(TypeOrmBackgroundTaskStore) as TypeOrmBackgroundTaskStore;
+            await store.put(record({ id: 'a-1', sessionId: 'sA', startedAt: 1 }));
+            expect((await store.pageBySessions([])).items.length).toEqual(0);
+            expect((await store.pageBySessions(['unknown'])).items.length).toEqual(0);
+            expect((await store.pageBySessions(['', '  '])).items.length).toEqual(0);
+            const onlyKnown = await store.pageBySessions(['sA', 'unknown']);
+            expect(onlyKnown.items.length).toEqual(1);
+            expect(onlyKnown.items[0].id).toEqual('a-1');
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('notifies subscribers on put and batchCancel', async () => {
         const ctx = await Application.run(PersistentBackgroundTaskTestModule);
         try {

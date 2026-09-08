@@ -147,6 +147,18 @@ export function buildDelegationLineage(edges: DelegationEdgeRecord[], childSessi
     return lineage;
 }
 
+export function collectDelegationSessionIds(root: DelegationTreeNode): string[] {
+    const ids: string[] = [];
+    const visit = (node: DelegationTreeNode) => {
+        ids.push(node.sessionId);
+        for (const child of node.children) {
+            visit(child);
+        }
+    };
+    visit(root);
+    return ids;
+}
+
 function normalizeStatuses(status?: DelegationEdgeStatus | DelegationEdgeStatus[]): DelegationEdgeStatus[] | undefined {
     if (!status) {
         return undefined;
