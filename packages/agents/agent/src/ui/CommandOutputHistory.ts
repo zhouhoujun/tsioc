@@ -92,14 +92,17 @@ function matchesSession(entry: AgentConsoleCommandOutputHistoryEntry, sessionId:
 export abstract class AbstractCommandOutputStore implements CommandOutputStore {
     protected entries: AgentConsoleCommandOutputHistoryEntry[] = [];
 
-    constructor(protected readonly cap: number = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP) {}
+    constructor(
+        protected readonly cap: number = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP,
+        protected readonly pageSize: number = AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE
+    ) {}
 
     async list(query: CommandOutputQuery = {}): Promise<CommandOutputPage> {
         const needle = normalizeFilter(query.filter);
         const filtered = this.entries.filter(
             entry => matchesSession(entry, query.sessionId) && matchesFilter(entry, needle)
         );
-        const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? AGENT_CONSOLE_COMMAND_OUTPUT_DEFAULT_PAGE)));
+        const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? this.pageSize)));
         const start = this.decodeCursor(query.cursor);
         const items = filtered.slice(start, start + limit);
         const total = filtered.length;
