@@ -2553,3 +2553,11 @@ Turn: Fix session restore                                      running  01:42
 - **未纳入**：`FakeAgentGateway.appendCommandExchange` 是刻意宽松的测试门 fixture（直接展开 raw record 并自动补 seq/id/sessionEpoch），与传输层严格构造目的不同，保持不动以保护 1117 条 agent-ui 门禁。
 - 测试：新增 `agent/test/thread-item-projection.spec.ts` 2 断言（`parseRecord`/`parseDefaults`）+ 新文件 `agent/test/command-output-history.spec.ts` 4 断言（`redactsEntry`/`noop`/`preservesUndefined`/`secret`）。
 - 门禁：`agent` 全量 **811 passing / 0 failed / EXIT=0**（基线 805 +6）；`agent-gateway` 全量 **278 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1117 passing / 0 failed / EXIT=0**；`agent`、`agent-gateway`、`agent-ui` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理。
+
+### v19-B3 · command-exchange append 幂等与 replay 守卫（2026-09-09 ✅）
+
+- **范围**：兑现 `CommandExchangeStore.append` 接口文档声明的 "Idempotent by record id" 契约（此前实现未去重，重复 id 会写入多行、分配递增 seq，破坏 replay 稳定性），并补齐乱序/重复/跨 session/跨 principal 拒绝测试与 replay fuzz。
+- **幂等 append**：`agent/src/memory/TypeOrmCommandExchangeStore.ts` 新增每 session 的 `byId` 内存索引（`id → 已存记录`），与 `seqCounters` 同源懒加载（首次访问经 `get()` seeding，避免额外查询）；`append` 对已存在 id 直接返回既有记录（不分配 seq、不落新行、忽略后续 payload），新记录保存后同步写入索引；`cleanup` 同时失效 `seqCounters` 与 `byId`（删除后同 session 重新 append 会从 DB 重新 seed，seq 接续正确）。
+- **未纳入**：`FakeAgentGateway.appendCommandExchange` 保持刻意宽松（B2 已记录原因，agent-ui 门禁 1117 依赖其直接铺开行为）；跨进程 SQLite 验收与 exchange 指标（dropped/stale/duplicate/unauthorized）仍留 v19-B 后续切片。
+- 测试：`agent-gateway/test/rpc-command-exchange.spec.ts` 新增 5 断言——`appendIdempotent`（同 id 二次 append 返回原 seq/原内容，query/replay 仍 1 条）、`outOfOrderClientSequence`（客户端 sequence 5/1/3 乱序时 store seq 仍按到达序 0/1/2）、`crossSessionIsolation`（A 的记录不出现在 B 的 query/replay）、`queryReplayForbidden`（外 principal 对已属 session 的 query 与 replay 均被拒）、`replayFuzzAndCursorWalk`（150 条 append 后 replay seq 连续 0..149，cursor 分页 limit=25 走完全部记录各一次）。
+- 门禁：`agent-gateway` 全量 **283 passing / 0 failed / EXIT=0**（基线 278 +5）；`agent` 全量 **811 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1117 passing / 0 failed / EXIT=0**；`agent`、`agent-gateway`、`agent-ui` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
