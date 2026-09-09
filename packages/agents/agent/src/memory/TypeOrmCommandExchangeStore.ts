@@ -18,18 +18,25 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
     }
 
     private readonly seqCounters = new Map<string, number>();
+    /** Stored record by id per session, for idempotent append (dedup by record id). */
+    private readonly byId = new Map<string, Map<string, CommandExchangeRecord>>();
     private pending: Promise<unknown> = Promise.resolve();
 
     async append(record: Omit<CommandExchangeRecord, 'seq'>): Promise<CommandExchangeRecord> {
         await this.adapter.ready();
         const run = this.pending.then(async () => {
-            let next = this.seqCounters.get(record.sessionId);
-            if (next === undefined) {
+            let ids = this.byId.get(record.sessionId);
+            if (ids === undefined) {
                 const existing = await this.get(record.sessionId);
-                next = existing.reduce((max, r) => Math.max(max, r.seq), -1) + 1;
-                this.seqCounters.set(record.sessionId, next);
+                ids = new Map(existing.map(r => [r.id, r]));
+                this.byId.set(record.sessionId, ids);
+                this.seqCounters.set(record.sessionId, existing.reduce((max, r) => Math.max(max, r.seq), -1) + 1);
             }
-            const seq = next;
+            const duplicate = ids.get(record.id);
+            if (duplicate) {
+                return duplicate;
+            }
+            const seq = this.seqCounters.get(record.sessionId)!;
             this.seqCounters.set(record.sessionId, seq + 1);
             await this.repo.save(this.repo.create({
                 sessionId: record.sessionId,
@@ -54,7 +61,9 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
                 source: record.source ?? null,
                 timestamp: record.timestamp
             }));
-            return { ...record, seq } as CommandExchangeRecord;
+            const saved = { ...record, seq } as CommandExchangeRecord;
+            ids.set(record.id, saved);
+            return saved;
         });
         this.pending = run.catch(() => undefined);
         return run;
@@ -86,6 +95,7 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
         if (!toDelete.length) return 0;
         await this.repo.remove(toDelete);
         this.seqCounters.delete(sessionId);
+        this.byId.delete(sessionId);
         return toDelete.length;
     }
 }
