@@ -2501,6 +2501,7 @@ Turn: Fix session restore                                      running  01:42
 - **IoC/跨端**：agent 持有纯 schema 与解析函数；agent-ui 只通过 `AgentConsoleOptions`/port 读取解析结果，gateway/CLI 负责注入 workspace/session 覆盖，禁止 UI 直接读取环境变量或 node API。
 - **迁移清单**：`ToolApprovalManager`、`CommandOutputHistory`、`timeline-projection`、`background-task-store`、`HttpAgentConsoleAppRpc` 改读 policy；保留导出常量作为 deprecated alias，避免破坏外部消费者。
 - **验收**：默认值与现有行为完全一致；四级覆盖优先级和序列化 round-trip 有单测；agent、agent-ui、agent-gateway 全量测试与 tsc 通过；完成后按固定门禁独立提交。
+- **切片 1 进度（2026-09-09）**：共享 `AgentPolicyConfig`/`AgentPolicyLimits` 与 `resolveAgentPolicy` 已落地，默认值集中声明；runtime approval timeout 已优先消费 policy 并保留旧 tools 配置兼容。新增四级覆盖与输入不可变测试，`agent` 全量 **799 passing**、`tsc --noEmit` 通过。其余分页/RPC 消费迁移未完成，本项保持待执行。
 
 ### v19-A2 · Clock/Scheduler 可替换化（待执行）
 
