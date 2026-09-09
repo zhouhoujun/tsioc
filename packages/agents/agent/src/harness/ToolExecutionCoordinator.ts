@@ -10,6 +10,7 @@ import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
 import { resolveToolSandboxState } from './ToolSandboxPolicy';
+import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
 export interface ToolExecutionRequest {
     sessionId: string;
@@ -40,7 +41,8 @@ export class ToolExecutionCoordinator {
         @Inject(ApplicationContext) private app: ApplicationContext,
         private uuid: UuidGenerator,
         @Optional() private auditSink?: AuditSink,
-        @Optional() private sandboxExecutor?: SandboxExecutor
+        @Optional() private sandboxExecutor?: SandboxExecutor,
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) private clock?: AgentClock
     ) {
     }
 
@@ -63,7 +65,7 @@ export class ToolExecutionCoordinator {
 
         let lastError: Error | undefined;
         for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-            const startedAt = Date.now();
+            const startedAt = this.clock?.now() ?? Date.now();
             try {
                 this.validator.validateOrThrow(definition.inputSchema, request.toolCall.input, `Tool "${definition.name}" input`);
                 this.ensureAuthorized(definition, request.principalId);
@@ -74,7 +76,7 @@ export class ToolExecutionCoordinator {
                 const completedReceipt: AgentToolExecutionReceipt = {
                     ...baseReceipt,
                     status: 'success',
-                    durationMs: Math.max(0, Date.now() - startedAt),
+                    durationMs: Math.max(0, (this.clock?.now() ?? Date.now()) - startedAt),
                     outputSummary: this.summarize(definition.name, redactedOutput),
                     attemptCount: attempt,
                     lspDiagnostics: extractLspDiagnostics(rawOutput)
@@ -90,7 +92,7 @@ export class ToolExecutionCoordinator {
                     outputSummary: completedReceipt.outputSummary,
                     durationMs: completedReceipt.durationMs,
                     attemptCount: attempt,
-                    createdAt: Date.now(),
+                    createdAt: this.clock?.now() ?? Date.now(),
                     metadata: {
                         executionMode: request.executionMode,
                         sandboxCapability: sandboxState.capability,
@@ -115,7 +117,7 @@ export class ToolExecutionCoordinator {
                 const failedReceipt: AgentToolExecutionReceipt = {
                     ...baseReceipt,
                     status: 'error',
-                    durationMs: Math.max(0, Date.now() - startedAt),
+                    durationMs: Math.max(0, (this.clock?.now() ?? Date.now()) - startedAt),
                     error: lastError.message,
                     attemptCount: attempt
                 };
@@ -130,7 +132,7 @@ export class ToolExecutionCoordinator {
                     error: lastError.message,
                     durationMs: failedReceipt.durationMs,
                     attemptCount: attempt,
-                    createdAt: Date.now(),
+                    createdAt: this.clock?.now() ?? Date.now(),
                     metadata: {
                         executionMode: request.executionMode,
                         sandboxCapability: sandboxState.capability,
@@ -276,6 +278,10 @@ export class ToolExecutionCoordinator {
 
     private async sleep(delayMs: number): Promise<void> {
         if (delayMs <= 0) {
+            return;
+        }
+        if (this.clock) {
+            await this.clock.sleep(delayMs);
             return;
         }
         await new Promise(resolve => setTimeout(resolve, delayMs));

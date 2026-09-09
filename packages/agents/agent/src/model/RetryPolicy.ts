@@ -32,12 +32,12 @@ export function isRetryableError(kind: ModelErrorKind): boolean {
         || kind === 'server' || kind === 'network' || kind === 'timeout';
 }
 
-export function retryAfterMs(value: string | null | undefined): number | undefined {
+export function retryAfterMs(value: string | null | undefined, now: number = Date.now()): number | undefined {
     if (!value) return undefined;
     const seconds = Number(value);
     if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
     const date = Date.parse(value);
-    return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
+    return Number.isFinite(date) ? Math.max(0, date - now) : undefined;
 }
 
 export function retryDelayMs(attempt: number, retryAfter?: string | null): number {

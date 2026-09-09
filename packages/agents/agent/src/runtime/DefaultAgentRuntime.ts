@@ -25,6 +25,7 @@ import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
+import { AgentClock, AGENT_CLOCK } from './Clock';
 import { AgentContextManager, ContextPreparationReport, SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
@@ -158,7 +159,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected fileAdapter?: FileAdapter,
         @Optional() protected hookExecutor?: AgentHookCommandExecutor,
         @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent,
-        @Optional() protected goalStore?: GoalStore
+        @Optional() protected goalStore?: GoalStore,
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -178,7 +180,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.toolExecutionCoordinator = new ToolExecutionCoordinator(
                 this.toolRegistry,
                 new ToolSchemaValidator(),
-                new RateLimitManager(),
+                new RateLimitManager(this.clock),
                 new OutputGuard(),
                 this.app,
                 this.uuid
@@ -196,6 +198,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 compaction
             });
         });
+    }
+
+    protected now(): number {
+        return this.clock?.now() ?? Date.now();
     }
 
     async runTurn(
@@ -2601,7 +2607,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                 if (captured) {
                     fileSnapshot = {
                         ...captured,
-                        timestamp: Date.now(),
+                        timestamp: this.now(),
                         toolName: toolCall.name,
                         toolCallId: toolCall.id,
                         after: null
@@ -2652,7 +2658,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             };
         }
 
-        const startedAt = Date.now();
+        const startedAt = this.now();
         try {
             const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId, turnContext.workspace);
             loopDetector.record(toolCall.name, toolCallInput, output);
@@ -2662,7 +2668,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             const completedReceipt: AgentToolExecutionReceipt = {
                 ...sandboxReceipt,
                 status: 'success',
-                durationMs: Math.max(0, Date.now() - startedAt),
+                durationMs: Math.max(0, this.now() - startedAt),
                 outputSummary: this.summarizeToolOutput(toolCall.name, output)
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
@@ -2686,7 +2692,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             const failedReceipt: AgentToolExecutionReceipt = {
                 ...sandboxReceipt,
                 status: 'error',
-                durationMs: Math.max(0, Date.now() - startedAt),
+                durationMs: Math.max(0, this.now() - startedAt),
                 error: err.message
             };
             await this.app.publishEvent(new AgentToolFailedEvent(this, sessionId, toolCall.name, err, failedReceipt));

@@ -2,6 +2,7 @@ import { Abstract, Injectable, Optional, Inject, token } from '@tsdi/ioc';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
+import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
 export interface ApprovalStrategy {
     requires(toolName: string, input: any): boolean;
@@ -178,7 +179,6 @@ export class ToolApprovalManager extends ApprovalManager {
     private pending = new Map<string, {
         request: ApprovalRequest;
         resolve: (decision: ApprovalDecision) => void;
-        timer: ReturnType<typeof setTimeout>;
     }>();
 
     constructor(
@@ -191,7 +191,9 @@ export class ToolApprovalManager extends ApprovalManager {
         @Optional()
         private auditSink?: AuditSink,
         @Optional() @Inject(AgentApprovalReviewer, { defaultValue: null })
-        private reviewer?: ApprovalReviewer
+        private reviewer?: ApprovalReviewer,
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null })
+        private clock?: AgentClock
     ) {
         super();
     }
@@ -255,16 +257,18 @@ export class ToolApprovalManager extends ApprovalManager {
         }
 
         const decision = await new Promise<ApprovalDecision>((resolve) => {
-            const timer = setTimeout(() => {
+            this.pending.set(request.id, { request, resolve });
+            this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
+                .catch(() => {});
+            // v19-A2: use clock.sleep() for deterministic timeout in tests
+            const sleep = this.clock?.sleep ?? (ms => new Promise(r => setTimeout(r, Math.max(0, ms))));
+            sleep(request.timeoutMs).then(() => {
+                if (!this.pending.has(request.id)) return;
                 this.pending.delete(request.id);
                 this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(request), new Error('Approval timeout')))
                     .catch(() => {});
                 resolve(ApprovalDecision.TIMEOUT);
-            }, request.timeoutMs);
-
-            this.pending.set(request.id, { request, resolve, timer });
-            this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
-                .catch(() => {});
+            });
         });
 
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
@@ -315,7 +319,6 @@ export class ToolApprovalManager extends ApprovalManager {
     approve(requestId: string): boolean {
         const pending = this.pending.get(requestId);
         if (!pending) return false;
-        clearTimeout(pending.timer);
         this.pending.delete(requestId);
         pending.resolve(ApprovalDecision.APPROVED);
         return true;
@@ -324,7 +327,6 @@ export class ToolApprovalManager extends ApprovalManager {
     reject(requestId: string): boolean {
         const pending = this.pending.get(requestId);
         if (!pending) return false;
-        clearTimeout(pending.timer);
         this.pending.delete(requestId);
         pending.resolve(ApprovalDecision.DENIED);
         return true;
@@ -342,7 +344,6 @@ export class ToolApprovalManager extends ApprovalManager {
             if (pending.request.sessionId !== sessionId) {
                 continue;
             }
-            clearTimeout(pending.timer);
             this.pending.delete(requestId);
             pending.resolve(ApprovalDecision.CANCELLED);
             this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval cancelled by turn cancellation')))
@@ -370,13 +371,12 @@ export class ToolApprovalManager extends ApprovalManager {
      * Returns how many were swept.
      */
     private sweepExpired(): number {
-        const now = Date.now();
+        const now = this.clock?.now() ?? Date.now();
         let swept = 0;
         for (const [requestId, pending] of Array.from(this.pending.entries())) {
             if (pending.request.expiresAt > now) {
                 continue;
             }
-            clearTimeout(pending.timer);
             this.pending.delete(requestId);
             pending.resolve(ApprovalDecision.TIMEOUT);
             this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval timeout')))
@@ -394,7 +394,7 @@ export class ToolApprovalManager extends ApprovalManager {
             this.options?.defaultTimeoutMs ?? DEFAULT_APPROVAL_TIMEOUT_MS,
             this.options?.maxTimeoutMs ?? DEFAULT_MAX_APPROVAL_TIMEOUT_MS
         );
-        const createdAt = Date.now();
+        const createdAt = this.clock?.now() ?? Date.now();
         return {
             id: this.uuid.generate(),
             toolName,
@@ -459,7 +459,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 : decision === ApprovalDecision.CANCELLED
                     ? 'Approval request cancelled by turn cancellation'
                     : undefined,
-            createdAt: Date.now(),
+            createdAt: this.clock?.now() ?? Date.now(),
             metadata: {
                 kind: 'approval',
                 approvalId: request.id,

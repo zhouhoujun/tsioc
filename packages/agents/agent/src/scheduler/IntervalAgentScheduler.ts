@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationContext, Runner, Shutdown } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentScheduler } from './AgentScheduler';
@@ -9,6 +9,7 @@ import { AgentErrorEvent, AgentTaskScheduledEvent } from '../runtime/AgentEvents
 import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { AgentScheduledTaskEntity } from '../memory/entities';
+import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
 @Injectable()
 export class IntervalAgentScheduler extends AgentScheduler {
@@ -21,12 +22,17 @@ export class IntervalAgentScheduler extends AgentScheduler {
         private runtime: AgentRuntime,
         @Inject(ApplicationContext) private app: ApplicationContext,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
-        @Inject(TypeormAdapter) private adapter: TypeormAdapter
+        @Inject(TypeormAdapter) private adapter: TypeormAdapter,
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) private clock?: AgentClock
     ) {
         super();
         // options 显式传 null 时（如单元测试）穿透类属性默认值，
         // isEnabled()/stop()/shouldRetryTask() 里的 this.options.scheduler?. 会崩溃，统一归一化。
         this.options = this.options ?? defaultAgentOptions;
+    }
+
+    private now(): number {
+        return this.clock?.now() ?? Date.now();
     }
 
     @Runner()
@@ -91,7 +97,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             ...task,
             cancelled: true,
             running: false,
-            updatedAt: Date.now()
+            updatedAt: this.now()
         };
 
         if (this.shouldRepeat(cancelledTask)) {
@@ -127,7 +133,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         const pausedTask: ScheduledAgentTask = {
             ...task,
             paused: true,
-            updatedAt: Date.now()
+            updatedAt: this.now()
         };
         this.tasks.set(taskId, pausedTask);
         if (!pausedTask.running) {
@@ -147,7 +153,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!task || task.cancelled) {
             return undefined;
         }
-        const now = Date.now();
+        const now = this.now();
         const resumedTask: ScheduledAgentTask = {
             ...task,
             paused: false,
@@ -178,7 +184,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             id: task.id,
             sessionId: task.sessionId,
             createdAt: task.createdAt,
-            updatedAt: Date.now(),
+            updatedAt: this.now(),
             nextRunAt: patch.nextRunAt ?? (timingChanged ? undefined : task.nextRunAt)
         });
         this.tasks.set(taskId, updatedTask);
@@ -194,7 +200,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         if (!task || task.cancelled) {
             return undefined;
         }
-        const now = Date.now();
+        const now = this.now();
         const recoveredTask: ScheduledAgentTask = this.normalizeTask({
             ...task,
             paused: false,
@@ -229,7 +235,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             return;
         }
 
-        const delay = Math.max((task.nextRunAt ?? task.runAt ?? Date.now()) - Date.now(), 0);
+        const delay = Math.max((task.nextRunAt ?? task.runAt ?? this.now()) - this.now(), 0);
         const timer = setTimeout(() => {
             this.fireAndForget(task.id);
         }, delay);
@@ -266,7 +272,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
         const runningTask: ScheduledAgentTask = {
             ...task,
             running: true,
-            updatedAt: Date.now()
+            updatedAt: this.now()
         };
         this.tasks.set(runningTask.id, runningTask);
 
@@ -278,14 +284,14 @@ export class IntervalAgentScheduler extends AgentScheduler {
                 this.tasks.set(currentTask.id, {
                     ...currentTask,
                     running: false,
-                    lastRunAt: Date.now(),
-                    updatedAt: Date.now()
+                    lastRunAt: this.now(),
+                    updatedAt: this.now()
                 });
                 await this.persistTask(this.tasks.get(currentTask.id)!);
                 return;
             }
 
-            const now = Date.now();
+            const now = this.now();
             const latestTask = this.tasks.get(runningTask.id) ?? await this.findPersistedTask(runningTask.id);
             if (!latestTask || latestTask.cancelled) {
                 return;
@@ -382,7 +388,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
     private normalizeTask(task: ScheduledAgentTask): ScheduledAgentTask {
         this.validateSchedule(task);
-        const now = Date.now();
+        const now = this.now();
         const scheduleType = this.detectScheduleType(task);
         return {
             ...task,
@@ -413,7 +419,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private createFailedTask(task: ScheduledAgentTask, error: Error): ScheduledAgentTask {
-        const now = Date.now();
+        const now = this.now();
         const failureCount = (task.failureCount ?? 0) + 1;
         const maxAttempts = task.maxAttempts ?? this.options.scheduler?.defaultMaxAttempts ?? defaultAgentOptions.scheduler?.defaultMaxAttempts ?? 3;
         const retryBackoffMs = task.retryBackoffMs ?? this.options.scheduler?.defaultRetryBackoffMs ?? defaultAgentOptions.scheduler?.defaultRetryBackoffMs ?? 1000;
@@ -527,7 +533,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private recoverTask(task: ScheduledAgentTask): ScheduledAgentTask {
-        const now = Date.now();
+        const now = this.now();
         const recovered = this.normalizeTask(task);
         if (!recovered.running) {
             return recovered;

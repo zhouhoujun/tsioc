@@ -6,6 +6,7 @@ import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
+import { AgentClock } from '../runtime/Clock';
 
 interface AnthropicContentBlock {
     type: 'text' | 'image' | 'document' | 'tool_use' | 'tool_result';
@@ -122,7 +123,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
     readonly provider = 'anthropic';
 
-    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
+    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
         super();
         this.appArgs = appArgs;
     }
@@ -620,7 +621,11 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
     private async retry(request: ModelRequest, attempt: number, _status: number, retryAfter?: string | null): Promise<ModelResponse> {
         const delay = retryDelayMs(attempt, retryAfter);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        if (this.clock) {
+            await this.clock.sleep(delay);
+        } else {
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
         return this.complete(request, attempt + 1);
     }
 

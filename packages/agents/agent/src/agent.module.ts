@@ -70,6 +70,7 @@ import { GoalStore } from './goal/GoalStore';
 import { createAgentProviders } from './provider';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
 import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
+import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
 
 @Module({
     imports: [
@@ -80,10 +81,11 @@ import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
         { provide: ModuleLoader, useClass: DefaultModuleLoader, asDefault: true },
         { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
         { provide: COMMAND_EXECUTION_CONTROL, useClass: InMemoryCommandExecutionControl, asDefault: true },
+        { provide: AGENT_CLOCK, useClass: SystemAgentClock, asDefault: true },
         {
             provide: ModelAdapter,
-            useFactory: (options: AgentOptions) => new RoutedModelAdapter(options.model ?? defaultAgentOptions.model!),
-            deps: [AGENT_OPTIONS],
+            useFactory: (options: AgentOptions, clock: AgentClock) => new RoutedModelAdapter(options.model ?? defaultAgentOptions.model!, undefined, clock),
+            deps: [AGENT_OPTIONS, AGENT_CLOCK],
             asDefault: true
         },
         AgentContextManager,

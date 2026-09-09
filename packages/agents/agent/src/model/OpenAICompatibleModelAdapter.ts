@@ -8,6 +8,7 @@ import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions, PromptCacheRuntimeMetadata, ResolvedAgentPromptCachePolicy, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
+import { AgentClock } from '../runtime/Clock';
 
 type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
 
@@ -137,7 +138,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     private lastStaticPrefixHash?: string;
     private staticPrefixBroken = false;
 
-    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
+    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
         super();
         this.provider = String(this.options.provider || '').trim().toLowerCase() || 'openai-compatible';
         this.appArgs = appArgs;
@@ -460,7 +461,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
     private async retry(request: ModelRequest, attempt: number, _lastStatus: number, retryAfter?: string | null): Promise<ModelResponse> {
         const delay = retryDelayMs(attempt, retryAfter);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        if (this.clock) {
+            await this.clock.sleep(delay);
+        } else {
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
         return this.complete(request, attempt + 1);
     }
 

@@ -8,6 +8,7 @@ import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
 import { getAgentMessageText } from '../runtime/AgentMessage';
+import { AgentClock } from '../runtime/Clock';
 
 interface ResolvedRouteSelection {
     adapter: ModelAdapter;
@@ -27,7 +28,7 @@ export class RoutedModelAdapter extends ModelAdapter {
 
     readonly provider: string;
 
-    constructor(private readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
+    constructor(private readonly options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
         super();
         this.provider = this.normalizeProvider(this.options.provider, this.options.baseUrl);
         this.appArgs = appArgs;
@@ -344,13 +345,13 @@ export class RoutedModelAdapter extends ModelAdapter {
     private createAdapter(config: AgentModelConfig): ModelAdapter {
         switch (config.provider) {
             case 'anthropic':
-                return new AnthropicModelAdapter(config, this.appArgs);
+                return new AnthropicModelAdapter(config, this.appArgs, this.clock);
             case 'echo':
                 return new EchoModelAdapter();
             case 'openai':
             case 'deepseek':
             case 'openai-compatible':
-                return new OpenAICompatibleModelAdapter(config, this.appArgs);
+                return new OpenAICompatibleModelAdapter(config, this.appArgs, this.clock);
             default:
                 if (config.baseUrl) {
                     return new OpenAICompatibleModelAdapter(config, this.appArgs);
