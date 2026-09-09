@@ -2493,3 +2493,9 @@ Turn: Fix session restore                                      running  01:42
 3. 执行 `tsc --noEmit`/必要构建、`git diff --check`；
 4. 将完成项、测试数字、环境限制和未决风险写回本文件；
 5. 独立提交，提交信息包含 plan 编号；未满足门禁不得标记完成。
+
+### v19-D 收尾复核（2026-09-09）✅
+
+- 完成工作区、临时文件与差异检查；`git diff --check` 通过。agent-ui 跨平台扫描仅命中 `globalThis` 守卫形式的 Buffer 适配，无直接 Node/console import。
+- packages/agents 全量矩阵全部 EXIT=0：`agent` 797、`agent-ui` 1117、`agent-channels` 59、`agent-cli` 74、`agent-gateway` 276、`agent-tools` 478、`agent-providers` 13、`agent-ssh` 8、`agent-desktop` 20、`agent-vscode` 7。
+- `agent`、`agent-ui`、`agent-gateway`、`agent-tools` `tsc --noEmit` 全部通过；本轮无源码缺口，可靠性基线完成记录。
