@@ -2506,6 +2506,7 @@ Turn: Fix session restore                                      running  01:42
 - **切片 3 进度（2026-09-09）**：`AbstractCommandOutputStore` 的 page size 从 `list()` 内部常量提升为可注入构造参数，默认仍为 20、上限仍为 100；现有 File/Memory/RPC store 行为不变。`agent` 全量 **799 passing**；下一切片接入 `policy.limits.commandOutputHistoryCap/pageSize` 到各宿主 composition root。
 - **切片 4 进度（2026-09-09）**：`BoundedFileCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，同时保留旧 cap/默认值兼容。agent-ui 全量 **1117 passing**、`tsc --noEmit` 通过；gateway/RPC store 的 policy 注入留待下一切片。
 - **切片 5 进度（2026-09-09）**：`MemoryCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，保留旧 cap 构造兼容。agent-gateway 全量 **276 passing**（提升权限宿主）、`tsc --noEmit` 通过；gateway composition root 注入 policy 与 HTTP/RPC 端到端覆盖留待下一切片。
+- **切片 6 / v19-A1 收尾（2026-09-09）**：CLI `run-console` composition root 将 `runtimeAgentOptions.policy` 注入 `BoundedFileCommandOutputStore`；agent-cli 全量 **74 passing**、`tsc --noEmit` 通过。A1 已完成 policy schema、approval、timeline/background-task、command-output 与 RPC timeout 的 seam/消费接线；后续覆盖测试与其他宿主扩展归入 v19-A2/B1。
 
 ### v19-A2 · Clock/Scheduler 可替换化（待执行）
 
