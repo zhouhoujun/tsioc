@@ -2,7 +2,7 @@ import * as http from 'http';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import {
     COMMAND_EXCHANGE_STORE, CommandExchangeStore,
-    CommandExchangeRecord, CommandExchangePageOptions
+    CommandExchangeRecord, CommandExchangePageOptions, parseCommandExchangeRecord
 } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
@@ -35,29 +35,7 @@ export class CommandExchangeHandler {
                 res.end(JSON.stringify({ error: 'forbidden' }));
                 return;
             }
-            const { sessionEpoch = 0, kind = 'command', key = '', content = '', sequence = 0, attempt, receipt, requestId, status, durationMs, toolCallId, command, args, outputIds, error, retryable, source, timestamp } = body ?? {};
-            const record: Omit<CommandExchangeRecord, 'seq'> = {
-                id: body?.id || `cmdex:${sessionId}:${Date.now()}`,
-                sessionId,
-                sessionEpoch: Number(sessionEpoch) || 0,
-                kind: String(kind),
-                key: String(key),
-                content: String(content),
-                sequence: Number(sequence) || 0,
-                attempt: attempt != null ? Number(attempt) : undefined,
-                receipt: receipt != null ? String(receipt) : undefined,
-                requestId: requestId != null ? String(requestId) : undefined,
-                status: status != null ? String(status) : undefined,
-                durationMs: durationMs != null ? Number(durationMs) : undefined,
-                toolCallId: toolCallId != null ? String(toolCallId) : undefined,
-                command: command != null ? String(command) : undefined,
-                args: args != null ? String(args) : undefined,
-                outputIds: Array.isArray(outputIds) ? outputIds.map(String) : undefined,
-                error: error != null ? String(error) : undefined,
-                retryable: retryable != null ? Boolean(retryable) : undefined,
-                source: source != null ? String(source) : undefined,
-                timestamp: Number(timestamp) || Date.now()
-            };
+            const record: Omit<CommandExchangeRecord, 'seq'> = parseCommandExchangeRecord(sessionId, body ?? {});
             const saved = await store.append(record);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(redactCommandExchangeRecord(saved)));

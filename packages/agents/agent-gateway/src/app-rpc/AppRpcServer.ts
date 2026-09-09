@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, RedactionFilter, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, parseCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { redactCommandExchangeRecord } from '../api/command-exchange-redact';
 import { SessionHandler } from '../api/SessionHandler';
@@ -17,7 +17,6 @@ import { QuestionStore } from './QuestionStore';
 export class AppRpcServer {
     protected static readonly CONSOLE_INPUT_HISTORY_KEY = 'agent-ui.console.input-history';
     protected static readonly REVIEW_ANNOTATIONS_CACHE_KEY = 'agent-ui.review.annotations-cache';
-    protected static readonly commandOutputRedactor = new RedactionFilter();
 
     constructor(
         private runtime: AgentRuntime,
@@ -709,12 +708,7 @@ export class AppRpcServer {
     }
 
     private redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry {
-        const redactedText = AppRpcServer.commandOutputRedactor.redactText(entry.text);
-        const redactedCommand = AppRpcServer.commandOutputRedactor.redactText(entry.command);
-        const argsSummary = entry.argsSummary
-            ? AppRpcServer.commandOutputRedactor.redactText(entry.argsSummary)
-            : entry.argsSummary;
-        return { ...entry, text: redactedText, command: redactedCommand, argsSummary };
+        return redactCommandOutputEntry(entry);
     }
 
     private async listCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -2127,33 +2121,7 @@ export class AppRpcServer {
         if (!source || typeof source !== 'object') {
             throw new AppRpcError(-32602, 'command_exchange.append: record is required');
         }
-        const {
-            sessionEpoch = 0, kind = 'command', key = '', content = '', sequence = 0,
-            attempt, receipt, requestId, status, durationMs, toolCallId, command, args,
-            outputIds, error, retryable, source: recordSource, timestamp
-        } = source;
-        const record: Omit<CommandExchangeRecord, 'seq'> = {
-            id: source?.id || `cmdex:${sessionId}:${Date.now()}`,
-            sessionId,
-            sessionEpoch: Number(sessionEpoch) || 0,
-            kind: String(kind),
-            key: String(key),
-            content: String(content),
-            sequence: Number(sequence) || 0,
-            attempt: attempt != null ? Number(attempt) : undefined,
-            receipt: receipt != null ? String(receipt) : undefined,
-            requestId: requestId != null ? String(requestId) : undefined,
-            status: status != null ? String(status) : undefined,
-            durationMs: durationMs != null ? Number(durationMs) : undefined,
-            toolCallId: toolCallId != null ? String(toolCallId) : undefined,
-            command: command != null ? String(command) : undefined,
-            args: args != null ? String(args) : undefined,
-            outputIds: Array.isArray(outputIds) ? outputIds.map(String) : undefined,
-            error: error != null ? String(error) : undefined,
-            retryable: retryable != null ? Boolean(retryable) : undefined,
-            source: recordSource != null ? String(recordSource) : undefined,
-            timestamp: Number(timestamp) || Date.now()
-        };
+        const record: Omit<CommandExchangeRecord, 'seq'> = parseCommandExchangeRecord(sessionId, source);
         const saved = await this.commandExchange.append(record);
         return { sessionId, record: redactCommandExchangeRecord(saved) };
     }
