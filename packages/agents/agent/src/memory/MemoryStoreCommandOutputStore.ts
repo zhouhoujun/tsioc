@@ -16,6 +16,7 @@
 
 import { AbstractCommandOutputStore, AgentConsoleCommandOutputHistoryEntry, AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP, CommandOutputPage, CommandOutputQuery } from '../ui/CommandOutputHistory';
 import { MemoryStore } from './MemoryStore';
+import { AgentPolicyConfig } from '../options';
 
 /** MemoryStore record key under which the aggregate command-output history lives. */
 export const COMMAND_OUTPUT_MEMORY_KEY = 'agent:command-output-history';
@@ -37,9 +38,13 @@ export class MemoryCommandOutputStore extends AbstractCommandOutputStore {
     constructor(
         protected readonly memory: MemoryStore,
         protected readonly recordId: string,
-        cap: number = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP
+        cap: number = AGENT_CONSOLE_COMMAND_OUTPUT_HISTORY_CAP,
+        policy?: AgentPolicyConfig
     ) {
-        super(cap);
+        super(
+            Math.max(1, Math.floor(policy?.limits?.commandOutputHistoryCap ?? cap)),
+            Math.max(1, Math.floor(policy?.limits?.commandOutputPageSize ?? 20))
+        );
     }
 
     protected async load(): Promise<void> {
