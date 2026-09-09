@@ -308,6 +308,17 @@ export function formatAgentConsoleCommandArgumentTemplate(definition: AgentConso
     }).join(' ');
 }
 
+/** Renders a command's positional schema as readable catalog rows, e.g. 'query...: string (required)'. */
+export function formatAgentConsoleCommandArgumentForm(definition: AgentConsoleCommandDefinition | undefined): string[] {
+    return (definition?.args || []).map(arg => {
+        const typeLabel = arg.type === 'enum' && arg.values?.length ? `enum(${arg.values.join('|')})` : 'string';
+        const flags: string[] = [];
+        if (arg.required) flags.push('required');
+        if (arg.default !== undefined) flags.push(`default=${arg.default}`);
+        return `${arg.name}${arg.variadic ? '...' : ''}: ${typeLabel}${flags.length ? ` (${flags.join(', ')})` : ''}`;
+    });
+}
+
 /** Validates a positional schema and returns parsed values plus actionable diagnostics. */
 export function parseAgentConsoleCommandArguments(
     definition: AgentConsoleCommandDefinition | undefined,
@@ -370,6 +381,16 @@ export function formatAgentConsoleCommandDiagnostics(diagnostics: AgentConsoleCo
         if (item.suggestion) parts.push(item.suggestion);
         return parts.join(' ');
     }).join(' ');
+}
+
+/** Renders diagnostics as multi-line echo rows (message, expected, maybe) for notices and overlays. */
+export function formatAgentConsoleCommandDiagnosticEcho(diagnostics: AgentConsoleCommandArgumentDiagnostic[]): string[] {
+    return diagnostics.flatMap(item => {
+        const rows = [item.message];
+        if (item.expected) rows.push(`expected: ${item.expected}`);
+        if (item.suggestion) rows.push(`maybe: ${item.suggestion}`);
+        return rows;
+    });
 }
 
 /**

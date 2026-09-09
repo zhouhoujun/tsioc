@@ -196,7 +196,9 @@ import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHa
 import {
     getAgentConsoleCommandDefinition,
     getAgentConsoleCommandName,
+    formatAgentConsoleCommandArgumentForm,
     formatAgentConsoleCommandArgumentTemplate,
+    formatAgentConsoleCommandDiagnosticEcho,
     formatAgentConsoleCommandDiagnostics,
     parseAgentConsoleCommandArguments,
     resolveAgentConsoleCommandDescription
@@ -2995,7 +2997,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.state.failCommandExecution(requestId, reason, false);
             // Preserve the exact command so the user can correct it and retry.
             this.state.setInput(parsed.raw, parsed.raw.length);
-            this.notify(reason);
+            this.notify(formatAgentConsoleCommandDiagnosticEcho(parsedArgs.diagnostics).join('\n'));
             this.pendingCommandRequestId = previousRequestId;
             return true;
         }
@@ -6211,14 +6213,19 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.commandPaletteQuery = query;
         const commands = this.state.commandHints
             .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
-            .map(command => ({
-                label: command,
-                value: command,
-                description: [
-                    resolveAgentConsoleCommandDescription(command) || 'command',
-                    formatAgentConsoleCommandArgumentTemplate(getAgentConsoleCommandDefinition(command))
-                ].filter(Boolean).join(' ')
-            }));
+            .map(command => {
+                const definition = getAgentConsoleCommandDefinition(command);
+                const form = formatAgentConsoleCommandArgumentForm(definition);
+                return {
+                    label: command,
+                    value: command,
+                    description: [
+                        resolveAgentConsoleCommandDescription(command) || 'command',
+                        formatAgentConsoleCommandArgumentTemplate(definition)
+                    ].filter(Boolean).join(' '),
+                    detail: form.length ? form.join('\n') : undefined
+                };
+            });
         this.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette);
         this.state.selectMenuAction = async value => {
             this.commandPaletteQuery = '';

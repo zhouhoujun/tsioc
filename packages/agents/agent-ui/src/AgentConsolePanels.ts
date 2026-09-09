@@ -3775,6 +3775,7 @@ export class AgentConsoleActivityPanelComponent {
                 options="{{menuOptionsJson}}"
                 selectedIndex="{{menuSelectedIndexText}}"
                 visibleCount="{{visibleOptionCountText}}"
+                detailLines="{{menuDetailLinesJson}}"
                 optionActiveStyle="{{activeTheme.selectOptionActive}}"
                 optionStyle="{{activeTheme.selectOption}}"
                 @keydown="onKeydown($event)"></select>
@@ -3813,6 +3814,20 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuOptionsJson(): string {
         return JSON.stringify(this.menuOptions);
+    }
+
+    get menuDetailLines(): string[] {
+        const detail = this.state.selectedSelectMenuOption?.detail;
+        if (typeof detail !== 'string') {
+            return [];
+        }
+        const cap = Math.max(1, this.state.consoleOptions.selectDetailVisibleLines || 6);
+        return detail.split('\n').map(line => line.trim()).filter(Boolean).slice(0, cap);
+    }
+
+    get menuDetailLinesJson(): string {
+        const lines = this.menuDetailLines;
+        return lines.length ? JSON.stringify(lines) : '';
     }
 
     get menuSelectedIndex(): number {
