@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { AgentModule, MemoryStore, provideAgentOrm, SessionStore, TypeOrmCommandExchangeStore } from '@tsdi/agent';
+import { AgentModule, ExchangeMetrics, MemoryStore, provideAgentOrm, SessionStore, TypeOrmCommandExchangeStore } from '@tsdi/agent';
 import { Application, RandomUuidGenerator } from '@tsdi/core';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { EventHandler } from '../src/api/EventHandler';
@@ -16,6 +16,7 @@ export class CommandExchangeRpcTest {
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
         const exchange = context.get(TypeOrmCommandExchangeStore);
+        const metrics = context.get(ExchangeMetrics);
         const runtime = {
             async runTurn(sessionId: string, input: string) {
                 await store.append(sessionId, { id: 'u-replay', role: 'user', content: input, createdAt: 1 } as any);
@@ -36,9 +37,9 @@ export class CommandExchangeRpcTest {
             owners, sessions, events,
             undefined, undefined, undefined, undefined, undefined, undefined, undefined,
             undefined, undefined, undefined, undefined, undefined, undefined, undefined,
-            exchange
+            exchange, undefined, undefined, undefined, metrics
         );
-        return { store, memory, owners, events, exchange, rpc, context };
+        return { store, memory, owners, events, exchange, metrics, rpc, context };
     }
 
     protected async call(rpc: AppRpcServer, method: string, params: any, principalId = 'user-1') {
@@ -54,6 +55,7 @@ export class CommandExchangeRpcTest {
             expect(methods).toContain('command_exchange.append');
             expect(methods).toContain('command_exchange.query');
             expect(methods).toContain('command_exchange.replay');
+            expect(methods).toContain('command_exchange.metrics');
         } finally {
             await context.close();
         }
@@ -237,6 +239,71 @@ export class CommandExchangeRpcTest {
                 guard++;
             } while (cursor && guard < 20);
             expect(seen).toEqual(Array.from({ length: total }, (_, i) => i));
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('append rejects a stale sessionEpoch with -32005 and does not persist the stale record')
+    async appendStaleRejected() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-stale', 'user-1');
+        try {
+            const fresh = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-stale',
+                record: { id: 'r-fresh', kind: 'command', key: 'bash', content: 'fresh', sequence: 0, sessionEpoch: 7 }
+            });
+            expect((fresh as any).error).toBeUndefined();
+
+            const stale = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-stale',
+                record: { id: 'r-stale', kind: 'command', key: 'bash', content: 'stale', sequence: 1, sessionEpoch: 2 }
+            });
+            expect((stale as any).error).toBeDefined();
+            expect((stale as any).error.code).toEqual(-32005);
+
+            const query = await this.call(rpc, 'command_exchange.query', { sessionId: 'ces-stale' });
+            expect((query as any).error).toBeUndefined();
+            expect((query as any).result.records.length).toBe(1);
+            expect((query as any).result.records[0].id).toBe('r-fresh');
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('command_exchange.metrics aggregates dropped/stale/duplicate/unauthorized counters')
+    async metricsAggregates() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-metric', 'user-1');
+        try {
+            await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-metric',
+                record: { id: 'r-dup', kind: 'command', key: 'bash', content: 'v1', sequence: 0 }
+            });
+            await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-metric',
+                record: { id: 'r-dup', kind: 'command', key: 'bash', content: 'v2', sequence: 1 }
+            });
+            await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-metric',
+                record: { id: 'r-fresh', kind: 'command', key: 'bash', content: 'fresh', sequence: 2, sessionEpoch: 5 }
+            });
+            const stale = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-metric',
+                record: { id: 'r-stale', kind: 'command', key: 'bash', content: 'stale', sequence: 3, sessionEpoch: 2 }
+            });
+            expect((stale as any).error?.code).toEqual(-32005);
+            const missing = await this.call(rpc, 'command_exchange.append', { sessionId: 'ces-metric' });
+            expect((missing as any).error?.code).toEqual(-32602);
+            const foreign = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-metric',
+                record: { id: 'r-x', kind: 'command', key: 'bash', content: 'x', sequence: 4 }
+            }, 'user-2');
+            expect((foreign as any).error?.code).toEqual(-32003);
+
+            const metrics = await this.call(rpc, 'command_exchange.metrics', {});
+            expect((metrics as any).error).toBeUndefined();
+            expect((metrics as any).result).toEqual({ dropped: 1, stale: 1, duplicate: 1, unauthorized: 1 });
         } finally {
             await context.close();
         }
