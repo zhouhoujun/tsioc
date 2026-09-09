@@ -1,4 +1,6 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { AgentOptions, defaultAgentOptions } from '../options';
+import { AGENT_OPTIONS } from '../tokens';
 import { In } from 'typeorm';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentBackgroundTaskEntity } from './entities';
@@ -12,7 +14,7 @@ import {
 export class TypeOrmBackgroundTaskStore extends BackgroundTaskHistoryStore {
     private readonly listeners = new Set<BackgroundTaskHistoryListener>();
 
-    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
+    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter, @Optional() @Inject(AGENT_OPTIONS) private options?: AgentOptions) {
         super();
     }
 
@@ -48,17 +50,17 @@ export class TypeOrmBackgroundTaskStore extends BackgroundTaskHistoryStore {
 
     async pageAll(options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
         const sorted = await this.loadAll(undefined);
-        return pageBackgroundTaskRecords(sorted, options);
+        return pageBackgroundTaskRecords(sorted, options, this.options?.policy?.limits?.backgroundTaskPageSize ?? defaultAgentOptions.policy?.limits?.backgroundTaskPageSize);
     }
 
     async pageBySession(sessionId: string, options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
         const sorted = await this.loadAll(sessionId);
-        return pageBackgroundTaskRecords(sorted, options);
+        return pageBackgroundTaskRecords(sorted, options, this.options?.policy?.limits?.backgroundTaskPageSize ?? defaultAgentOptions.policy?.limits?.backgroundTaskPageSize);
     }
 
     async pageBySessions(sessionIds: string[], options?: BackgroundTaskPageOptions): Promise<BackgroundTaskPage> {
         const sorted = await this.loadAll(sessionIds);
-        return pageBackgroundTaskRecords(sorted, options);
+        return pageBackgroundTaskRecords(sorted, options, this.options?.policy?.limits?.backgroundTaskPageSize ?? defaultAgentOptions.policy?.limits?.backgroundTaskPageSize);
     }
 
     async batchCancel(taskIds: string[]): Promise<string[]> {

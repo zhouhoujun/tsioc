@@ -1,4 +1,6 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { AgentOptions, defaultAgentOptions } from '../options';
+import { AGENT_OPTIONS } from '../tokens';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentTimelineEventEntity } from './entities';
 import {
@@ -9,7 +11,7 @@ import {
 
 @Injectable()
 export class TypeOrmTimelineHistoryStore extends TimelineHistoryStore {
-    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
+    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter, @Optional() @Inject(AGENT_OPTIONS) private options?: AgentOptions) {
         super();
     }
 
@@ -77,7 +79,7 @@ export class TypeOrmTimelineHistoryStore extends TimelineHistoryStore {
     async query(sessionId: string, options?: TimelinePageOptions): Promise<TimelineNoncePage> {
         await this.adapter.ready();
         const raw = await this.get(sessionId);
-        return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options);
+        return pageTimelineEntries(sortTimelineEntries(reduceTimelineEvents(raw).values()), options, this.options?.policy?.limits?.timelinePageSize ?? defaultAgentOptions.policy?.limits?.timelinePageSize);
     }
 }
 
