@@ -2441,3 +2441,55 @@ Turn: Fix session restore                                      running  01:42
 
 - 在完整宿主权限下复跑此前受 `listen EPERM` 影响的包：`agent-gateway` **276 passing**、`agent-tools` **478 passing**、`agent-ssh` **8 passing**，全部 EXIT=0。
 - 至此 packages/agents 全部子包均完成全量测试；此前记录的监听失败确认为沙箱限制而非代码回归。
+
+## v19 · 完成计划归并与下一阶段重构路线（2026-09-09）
+
+### 已完成能力归并（单一索引）
+
+- **运行时与模型**：turn/stream、上下文压缩重放、prompt cache、多 provider/routing/retry、sandbox 策略、计划与 archetype 门控。
+- **持久化与可观测**：TypeORM SQLite stores（session/memory/timeline/background-task/command-exchange/audit/diagnostics/summary/delegation）、跨会话 delegation 聚合、undo/redo、usage 与 evidence ledger。
+- **工具与生态**：40+ 工具、LSP 反馈/自动安装、MCP stdio/HTTP/OAuth、skills、plugins、hooks、gateway 多协议与审批审计。
+- **agent-ui 交互**：跨平台响应式 SessionState、90 条命令 registry、fuzzy 补全与 smart-run、命令输出历史、计划/任务/diff/question 内联、timeline 分页/replay、TUI/browser 双门禁。
+- **交付与宿主**：CLI/TUI、browser、VS Code、Electron、远程 session、PTY/DOM 验收脚手架。
+
+### 当前不足与硬编码审计
+
+1. **配置常量分散**：`AgentConsoleSessionState`、`console-ports`、`CommandOutputHistory`、`TimelineWindow`、`ToolApprovalManager`、模型 adapter 各自维护 page/cap/timeout/摘要长度；同一语义无法按 workspace/session/profile 统一覆盖。
+2. **策略与实现耦合**：默认 archetype、delegation mode、retry backoff、verification tools、approval limits 以模块级常量直接参与决策，缺少可观测的“来源/覆盖链”。
+3. **时间与调度不可替换**：模型重试、审批过期、scheduler、远程重连仍直接调用 timer；虽不驱动 UI，但测试与宿主无法统一注入 Clock/Scheduler。
+4. **交换协议重复**：gateway、FakeAgentGateway、RemoteEventBridge 各自拼装事件/command-exchange envelope，字段校验、去重、权限与脱敏规则存在漂移风险。
+5. **UI 展示耦合状态**：Panels 直接读取多组 ring/overlay 字段；命令结果、tool receipt、plan step、timeline event 缺统一 `ThreadItem` 投影与优先级预算，窄终端下仍可能信息拥挤。
+6. **交互缺口（Codex/opencode 对照）**：命令面板虽可搜索但缺 schema 驱动表单/参数校验回显；plan 与 file-change 的轻量摘要未始终紧邻对应 assistant turn；gateway 断线重放缺端到端跨 host 压测与幂等指标。
+
+### v19-A · 配置/策略集中化（agent，共享层）
+
+- 建立 `AgentPolicyConfig`（limits、timeouts、retry、render budgets、verification/approval/sandbox）及来源链 `default < workspace < session < request`；现有常量改为 schema 默认值，禁止业务代码再写裸数字。
+- 注入可替换 `Clock`/`Scheduler` port，生产实现使用全局 timer，测试实现使用 deterministic clock；确保 UI 仍仅由响应式数据变化驱动。
+- 迁移顺序：options/schema → runtime/tools/scheduler → agent-ui ports；每步保留向后兼容序列化。
+- 验收：配置覆盖矩阵、来源可观测、确定性重试/过期测试；`agent` + 受影响包全量测试与 tsc。
+
+### v19-B · 统一交换契约与安全门（agent + agent-gateway）
+
+- 抽取跨端 `AgentExchangeEnvelope`/`ExchangeCodec`：统一 requestId/sessionEpoch/seq、事件类型、redaction、capability 与 principal 校验；gateway/Fake/stdio/HTTP/WS 全部复用。
+- 增加 replay fuzz、乱序/重复/跨 session/跨 principal 拒绝测试，以及 append→query→replay 跨进程 SQLite 验收。
+- 输出 exchange 指标（dropped/stale/duplicate/unauthorized）供 diagnostics 与 `/status` 展示。
+
+### v19-C · agent-ui 信息架构重排（跨平台）
+
+- 以统一 `ThreadItemProjection` 输出 turn→step→event 树：plan、tool、file-change、question、command-output 使用同一稳定 key、状态槽与摘要预算。
+- 对齐 Codex 的线性可读性（思考→执行→结果→计划更新）与 opencode 的 task block：默认 inline summary，Enter 打开 inspector；异常/审批固定展开，长输出尾部保留。
+- 增加 schema 驱动命令表单与错误回显；命令结果、交换事件、任务状态在断线重连后保持顺序与幂等。
+- 验收：320px/CJK/长会话/断线四场景 DOM+PTY，键盘与浏览器鼠标路径一致，禁止脏节点缓存与 timer 刷新。
+
+### v19-D · 可靠性与性能门禁（全 packages/agents）
+
+- 建立统一 browser Playwright + PTY runner（可替换 gateway/mock、SQLite fixture），纳入 CI；记录耗时、内存、事件丢失率、首屏与重放延迟基线。
+- 对 10 个 agent 子包及 components 层执行全量测试、`tsc --noEmit`、必要 `build:web`；监听类测试在具备宿主权限环境执行，沙箱限制必须显式记录。
+
+### 每个 plan 固定收尾门禁
+
+1. 检查实现、架构边界与 `git diff`，清理临时 runner；
+2. 运行受影响包全量测试及跨端门禁；
+3. 执行 `tsc --noEmit`/必要构建、`git diff --check`；
+4. 将完成项、测试数字、环境限制和未决风险写回本文件；
+5. 独立提交，提交信息包含 plan 编号；未满足门禁不得标记完成。
