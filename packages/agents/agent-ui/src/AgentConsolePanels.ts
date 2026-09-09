@@ -2684,12 +2684,16 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get renderedLines(): AgentConsoleRenderedLine[] {
-        return this.renderedMessageItems.flatMap((item, itemIndex) => item.lines.map((line, lineIndex) => ({
-            ...line,
-            renderKey: line.messageId
-                ? `${line.messageId}:${lineIndex}`
-                : `${item.templateKind || 'message'}:${itemIndex}:${lineIndex}`
-        })));
+        return this.renderedMessageItems.flatMap(item => {
+            const itemKey = item.lines.find(line => line.messageId)?.messageId
+                || `${item.templateKind || 'message'}:${item.renderRegion || 'row'}`;
+            return item.lines.map((line, lineIndex) => ({
+                ...line,
+                renderKey: line.messageId
+                    ? `${line.messageId}:${lineIndex}`
+                    : `${itemKey}:${lineIndex}`
+            }));
+        });
     }
 
     get messagesSummary(): string {
@@ -2729,7 +2733,9 @@ export class AgentConsoleMessagesPanelComponent {
                     && item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
                     return item;
                 }
-                if (this.isPlanTodoMessageItem(item)) {
+                if (this.isPlanTodoMessageItem(item)
+                    || this.isErrorMessageItem(item)
+                    || this.isApprovalMessageItem(item)) {
                     return item;
                 }
                 const reasoning = this.isReasoningMessageItem(item);
@@ -2768,7 +2774,9 @@ export class AgentConsoleMessagesPanelComponent {
             });
         }
         return this.messageItems.map(item => {
-            if (this.isPlanTodoMessageItem(item)) {
+            if (this.isPlanTodoMessageItem(item)
+                || this.isErrorMessageItem(item)
+                || this.isApprovalMessageItem(item)) {
                 return item;
             }
             if (this.isReasoningMessageItem(item)) {
@@ -2800,6 +2808,20 @@ export class AgentConsoleMessagesPanelComponent {
         return item.lines.some(line => {
             const message = this.state.messages.find(candidate => candidate.id === line.messageId);
             return message?.metadata?.uiKind === 'event';
+        });
+    }
+
+    protected isErrorMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
+        return item.statusKind === 'failed'
+            || item.statusKind === 'error'
+            || item.templateKind === 'error';
+    }
+
+    protected isApprovalMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
+        return item.lines.some(line => {
+            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
+            const uiEventType = String(message?.metadata?.uiEventType || '');
+            return uiEventType === 'approval' || uiEventType === 'approval_request';
         });
     }
 

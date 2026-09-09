@@ -11,6 +11,7 @@
  */
 
 import type { AgentMessage } from '@tsdi/agent';
+import { getDisplayWidth } from './AgentConsoleTextWidth';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,8 +87,8 @@ function estimateRows(message: TimelineWindowMessage): number {
     if (message.metadata?.uiKind === 'timeline-boundary') return 1;
     // A summary line is 1 row
     if (message.metadata?.uiEventType === 'timeline_summary') return 1;
-    // Rough heuristic: 1 row per ~80 chars
-    return Math.max(1, Math.ceil(content.length / 80));
+    // Rough heuristic: 1 row per ~80 display columns (CJK/emoji double-width aware)
+    return Math.max(1, Math.ceil(getDisplayWidth(content) / 80));
 }
 
 function classifyItem(
