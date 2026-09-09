@@ -2,7 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentMessage, basenameAgentPath, ScheduledAgentTask, THREAD_ITEM_PREVIEW_LINES } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -51,9 +51,9 @@ import {
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
 
-const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
-const REASONING_MESSAGE_PREVIEW_LINES = 4;
-const QUESTION_TAIL_VISIBLE_BUDGET = 6;
+const COLLAPSED_MESSAGE_PREVIEW_LINES = THREAD_ITEM_PREVIEW_LINES.auxiliary;
+const REASONING_MESSAGE_PREVIEW_LINES = THREAD_ITEM_PREVIEW_LINES.reasoning;
+const QUESTION_TAIL_VISIBLE_BUDGET = THREAD_ITEM_PREVIEW_LINES.questionTailVisible;
 // 折叠策略（对标 opencode/codex UI）：对话内容（assistant/user 普通回复、方案询问）永不折叠，全文展示；
 // 仅辅助过程内容折叠：reasoning（4 行无尾）、工具事件/输出、fileChange、system、error、timelineBoundary（8 行保尾）
 
