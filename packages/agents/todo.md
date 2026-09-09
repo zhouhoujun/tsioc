@@ -2431,3 +2431,8 @@ Turn: Fix session restore                                      running  01:42
 - `agent-gateway` 功能用例 **268 passing**；8 项静态目录/mDNS 用例因当前沙箱禁止监听端口（`listen EPERM`）失败，属既有环境限制，非本批回归。`agent-tools` 同样受 LSP/mock server 与监听权限限制，未将环境失败伪记为通过。
 - `agent`、`agent-gateway`、`agent-ui` TypeScript 检查通过；DOM/TUI 门禁沿用 v17-F 记录（4/4 PASS）。
 - 结论：P231B 实现与验收完成，保留监听权限限制说明，提交本次收尾文档更新。
+
+### v18-A 框架层复核（2026-09-09）✅
+
+- 补跑框架层回归：`components`、`components/console`、`components/html` 均通过（HTML 117 passing）。
+- 响应式与跨平台渲染基线保持稳定，未发现新增失败或工作区源码改动。
