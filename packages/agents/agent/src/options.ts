@@ -249,6 +249,8 @@ export interface AgentTokenBudgetOptions {
 }
 
 export interface AgentOptions {
+    /** v19 policy limits; optional overlays preserve existing defaults. */
+    policy?: AgentPolicyConfig;
     name?: string;
     maxToolRounds?: number;
     /** B2: max consecutive falsified rounds before a turn terminates with a failure summary (default 2). */
@@ -294,10 +296,32 @@ export interface AgentOptions {
     delegationMode?: AgentDelegationMode;
 }
 
+export interface AgentPolicyLimits {
+    commandOutputHistoryCap?: number;
+    commandOutputPageSize?: number;
+    timelinePageSize?: number;
+    backgroundTaskPageSize?: number;
+    approvalTimeoutMs?: number;
+    approvalMaxPending?: number;
+    rpcTimeoutMs?: number;
+}
+
+export interface AgentPolicyConfig {
+    limits?: AgentPolicyLimits;
+    source?: 'default' | 'workspace' | 'session' | 'request';
+}
+
+export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undefined>): AgentPolicyConfig {
+    const limits = overrides.reduce<AgentPolicyLimits>((merged, item) => ({ ...merged, ...(item?.limits ?? {}) }), {});
+    const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicyConfig['source'];
+    return { limits, ...(source ? { source } : {}) };
+}
+
 /** A4: default deepseek connection settings reference the provider registry (single source of truth). */
 const DEFAULT_DEEPSEEK_PROVIDER = BUILTIN_AGENT_PROVIDERS.find(provider => provider.id === 'deepseek');
 
 export const defaultAgentOptions: AgentOptions = {
+    policy: { source: 'default', limits: { commandOutputHistoryCap: 500, commandOutputPageSize: 20, timelinePageSize: 100, backgroundTaskPageSize: 50, approvalTimeoutMs: 30000, approvalMaxPending: 100, rpcTimeoutMs: 300000 } },
     name: 'HermesAgent',
     // Generation tasks commonly need discovery, planning, several edits, and
     // verification. Four rounds stops them before the first usable artifact.
