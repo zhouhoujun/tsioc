@@ -1,9 +1,10 @@
-import { AgentConsoleAppRpc, AgentRpcRequestMeta } from '@tsdi/agent';
+import { AgentConsoleAppRpc, AgentRpcRequestMeta, AgentPolicyConfig, defaultAgentOptions } from '@tsdi/agent';
 
 export interface HttpAgentConsoleAppRpcOptions {
     baseUrl: string;
     token?: string;
     timeoutMs?: number;
+    policy?: AgentPolicyConfig;
     fetchImpl?: typeof fetch;
 }
 
@@ -145,7 +146,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
     }
 
     async request(method: string, params?: any, context?: any): Promise<any> {
-        const timeout = Number(this.options.timeoutMs || context?.timeoutMs || DEFAULT_TIMEOUT_MS);
+        const timeout = Number(this.options.timeoutMs || context?.timeoutMs || this.options.policy?.limits?.rpcTimeoutMs || defaultAgentOptions.policy?.limits?.rpcTimeoutMs || DEFAULT_TIMEOUT_MS);
         const timeoutCtl = createTimeoutSignal(timeout);
         const merged = mergeAbortSignals(timeoutCtl.signal, context?.signal);
         try {
@@ -181,7 +182,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
     }
 
     async *stream(method: string, params?: any, context?: any): AsyncGenerator<any, void, void> {
-        const timeout = Number(this.options.timeoutMs || context?.timeoutMs || DEFAULT_TIMEOUT_MS);
+        const timeout = Number(this.options.timeoutMs || context?.timeoutMs || this.options.policy?.limits?.rpcTimeoutMs || defaultAgentOptions.policy?.limits?.rpcTimeoutMs || DEFAULT_TIMEOUT_MS);
         const timeoutCtl = createTimeoutSignal(timeout);
         const merged = mergeAbortSignals(timeoutCtl.signal, context?.signal);
         try {
