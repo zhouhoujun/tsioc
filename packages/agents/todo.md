@@ -2436,3 +2436,8 @@ Turn: Fix session restore                                      running  01:42
 
 - 补跑框架层回归：`components`、`components/console`、`components/html` 均通过（HTML 117 passing）。
 - 响应式与跨平台渲染基线保持稳定，未发现新增失败或工作区源码改动。
+
+### v18-A 提升权限回归（2026-09-09）✅
+
+- 在完整宿主权限下复跑此前受 `listen EPERM` 影响的包：`agent-gateway` **276 passing**、`agent-tools` **478 passing**、`agent-ssh` **8 passing**，全部 EXIT=0。
+- 至此 packages/agents 全部子包均完成全量测试；此前记录的监听失败确认为沙箱限制而非代码回归。
