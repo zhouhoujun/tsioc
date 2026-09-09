@@ -3088,7 +3088,10 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             this.uuid,
             new DefaultApprovalStrategy(required),
             {
-                defaultTimeoutMs: this.options.tools?.approvalTimeoutMs ?? defaultAgentOptions.tools?.approvalTimeoutMs,
+                defaultTimeoutMs: this.options.policy?.limits?.approvalTimeoutMs
+                    ?? this.options.tools?.approvalTimeoutMs
+                    ?? defaultAgentOptions.policy?.limits?.approvalTimeoutMs
+                    ?? defaultAgentOptions.tools?.approvalTimeoutMs,
                 autoDeny: false,
                 autoReview: this.options.tools?.approvalAutoReview ?? defaultAgentOptions.tools?.approvalAutoReview
             }
