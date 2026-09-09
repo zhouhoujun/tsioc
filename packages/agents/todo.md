@@ -2423,3 +2423,11 @@ Turn: Fix session restore                                      running  01:42
   - `agent-gateway/test/gateway-server.spec.ts` +5：list by session（capabilities 含 3 方法、limit+cursor 分页、foreign principal 越权）、list by delegationRoot（三级树聚合 `sessionIds` + 跨会话 items 排序、limit 分页、越权）、缺 scope 与空 `delegationRoot` 均 `-32602`、get（找到/不存在 `-32004`/越权）、cancel（missing 跳过 + `cancelled` 列表 + 空数组 `-32602` + 混合越权 fail-fast 时两任务均保持 `running`、无部分取消）。
 - **验证**：`agent` 796 passing（唯一失败 `nodeChildProcessRespectsWallTimeLimit` 为 sandbox executor 既有偶发，仅 `tools.spec.ts`，与本次改动无关，孤立运行 EXIT=0）；`agent-gateway` 276 passing 0 failed；`agent`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
 - **结论**：P231B（delegation 聚合 + gateway 任务 RPC）闭环；批次 B/C/E 与待人工确认的 F/D 无前置依赖，可继续。
+
+### v18-A 收尾复核（2026-09-09）✅
+
+- 工作区源码与测试变更已检查，`git diff --check` 通过；未发现临时 runner、InMemory 持久化实现或跨平台边界违规。
+- 全量回归：`agent` **797 passing**、`agent-ui` **1117 passing**、`agent-channels` **59**、`agent-cli` **74**、`agent-providers` **13**、`agent-desktop` **20**、`agent-vscode` **7**；均 EXIT=0。
+- `agent-gateway` 功能用例 **268 passing**；8 项静态目录/mDNS 用例因当前沙箱禁止监听端口（`listen EPERM`）失败，属既有环境限制，非本批回归。`agent-tools` 同样受 LSP/mock server 与监听权限限制，未将环境失败伪记为通过。
+- `agent`、`agent-gateway`、`agent-ui` TypeScript 检查通过；DOM/TUI 门禁沿用 v17-F 记录（4/4 PASS）。
+- 结论：P231B 实现与验收完成，保留监听权限限制说明，提交本次收尾文档更新。
