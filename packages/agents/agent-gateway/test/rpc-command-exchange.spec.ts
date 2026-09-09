@@ -115,4 +115,130 @@ export class CommandExchangeRpcTest {
             await context.close();
         }
     }
+
+    @Test('append is idempotent by record id')
+    async appendIdempotent() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-dup', 'user-1');
+        try {
+            const first = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-dup',
+                record: { id: 'r-dup', kind: 'command', key: 'bash', content: 'git status', sequence: 0 }
+            });
+            expect((first as any).error).toBeUndefined();
+            const second = await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-dup',
+                record: { id: 'r-dup', kind: 'command', key: 'bash', content: 'git status --porcelain', sequence: 1 }
+            });
+            expect((second as any).error).toBeUndefined();
+            expect((second as any).result.record.seq).toEqual((first as any).result.record.seq);
+            expect((second as any).result.record.content).toBe('git status');
+
+            const query = await this.call(rpc, 'command_exchange.query', { sessionId: 'ces-dup' });
+            expect((query as any).result.records.length).toBe(1);
+            const replay = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-dup', sinceSeq: -1 });
+            expect((replay as any).result.records.length).toBe(1);
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('store seq stays monotonic under out-of-order client sequence')
+    async outOfOrderClientSequence() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-ooo', 'user-1');
+        try {
+            for (const [index, sequence] of [5, 1, 3].entries()) {
+                const append = await this.call(rpc, 'command_exchange.append', {
+                    sessionId: 'ces-ooo',
+                    record: { id: `r-ooo-${index}`, kind: 'command', key: 'bash', content: `c${sequence}`, sequence }
+                });
+                expect((append as any).error).toBeUndefined();
+            }
+            const replay = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-ooo', sinceSeq: -1 });
+            const replayed = (replay as any).result.records;
+            expect(replayed.map((r: any) => r.seq)).toEqual([0, 1, 2]);
+            expect(replayed.map((r: any) => r.sequence)).toEqual([5, 1, 3]);
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('replay and query are cross-session isolated')
+    async crossSessionIsolation() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-a', 'user-1');
+        await owners.create('ces-b', 'user-1');
+        try {
+            await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-a',
+                record: { id: 'r-a', kind: 'command', key: 'bash', content: 'in-a', sequence: 0 }
+            });
+            const queryB = await this.call(rpc, 'command_exchange.query', { sessionId: 'ces-b' });
+            expect((queryB as any).result.records.length).toBe(0);
+            const replayB = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-b', sinceSeq: -1 });
+            expect((replayB as any).result.records.length).toBe(0);
+            const replayA = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-a', sinceSeq: -1 });
+            expect((replayA as any).result.records.length).toBe(1);
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('query and replay are ownership-enforced for a foreign principal')
+    async queryReplayForbidden() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-fp', 'user-1');
+        try {
+            await this.call(rpc, 'command_exchange.append', {
+                sessionId: 'ces-fp',
+                record: { id: 'r-fp', kind: 'command', key: 'bash', content: 'secret', sequence: 0 }
+            });
+            const query = await this.call(rpc, 'command_exchange.query', { sessionId: 'ces-fp' }, 'user-2');
+            expect((query as any).error).toBeDefined();
+            const replay = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-fp', sinceSeq: -1 }, 'user-2');
+            expect((replay as any).error).toBeDefined();
+        } finally {
+            await context.close();
+        }
+    }
+
+    @Test('replay fuzz: contiguous ascending seqs and cursor walk covers every record once')
+    async replayFuzzAndCursorWalk() {
+        const { owners, rpc, context } = await this.createHarness();
+        await owners.create('ces-fuzz', 'user-1');
+        try {
+            const total = 150;
+            for (let i = 0; i < total; i++) {
+                const append = await this.call(rpc, 'command_exchange.append', {
+                    sessionId: 'ces-fuzz',
+                    record: { id: `r-fuzz-${i}`, kind: 'command', key: 'bash', content: `step-${i}`, sequence: i }
+                });
+                expect((append as any).error).toBeUndefined();
+            }
+            const replay = await this.call(rpc, 'command_exchange.replay', { sessionId: 'ces-fuzz', sinceSeq: -1 });
+            const replayed = (replay as any).result.records;
+            expect(replayed.length).toBe(total);
+            expect(replayed.map((r: any) => r.seq)).toEqual(Array.from({ length: total }, (_, i) => i));
+
+            const seen: number[] = [];
+            let cursor: string | undefined;
+            let guard = 0;
+            do {
+                const page = await this.call(rpc, 'command_exchange.query', {
+                    sessionId: 'ces-fuzz',
+                    limit: 25,
+                    ...(cursor ? { cursor } : {})
+                });
+                expect((page as any).error).toBeUndefined();
+                const result = (page as any).result;
+                seen.push(...result.records.map((r: any) => r.seq));
+                cursor = result.nextCursor;
+                guard++;
+            } while (cursor && guard < 20);
+            expect(seen).toEqual(Array.from({ length: total }, (_, i) => i));
+        } finally {
+            await context.close();
+        }
+    }
 }
