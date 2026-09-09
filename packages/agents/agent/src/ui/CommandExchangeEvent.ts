@@ -1,27 +1,17 @@
 import { token } from '@tsdi/ioc';
+import { AgentExchangeFields, normalizeAgentExchangeFields } from './ThreadItemProjection';
 
 export type CommandExchangeKind = 'command' | 'tool' | 'output' | 'plan' | 'notify';
 export type CommandExchangeStatus = 'running' | 'success' | 'error' | 'cancelled' | 'pending';
 
-export interface CommandExchangeEnvelope {
+/** v19-B1: durable write envelope; unifies with ThreadItemEvent via AgentExchangeFields. */
+export interface CommandExchangeEnvelope extends AgentExchangeFields {
     kind: CommandExchangeKind;
+    status?: CommandExchangeStatus;
     sequence: number;
-    attempt?: number;
     receipt?: string;
     requestId?: string;
     sessionEpoch: number;
-    sessionId?: string;
-    key: string;
-    content: string;
-    status?: CommandExchangeStatus;
-    durationMs?: number;
-    toolCallId?: string;
-    command?: string;
-    args?: string;
-    outputIds?: string[];
-    error?: string;
-    retryable?: boolean;
-    source?: 'local' | 'remote' | 'replay';
 }
 
 export interface CommandExchangeProjectionPort {
@@ -36,13 +26,10 @@ export function commandExchangeKey(kind: CommandExchangeKind, identity: string):
 }
 
 export function normalizeCommandExchangeEnvelope(event: CommandExchangeEnvelope): CommandExchangeEnvelope {
+    const normalized = normalizeAgentExchangeFields(event);
     return {
-        ...event,
-        key: String(event.key || '').trim(),
-        content: String(event.content || '').trim(),
-        sessionId: event.sessionId ? String(event.sessionId).trim() : undefined,
-        sequence: Number.isFinite(event.sequence) ? event.sequence : 0,
-        attempt: Number.isFinite(event.attempt) ? event.attempt : undefined,
-        outputIds: event.outputIds?.slice()
+        ...normalized,
+        sequence: Number.isFinite(normalized.sequence) ? (normalized.sequence as number) : 0,
+        sessionEpoch: Number.isFinite(event.sessionEpoch) ? event.sessionEpoch : 0
     };
 }
