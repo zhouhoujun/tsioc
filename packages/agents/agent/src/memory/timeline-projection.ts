@@ -526,6 +526,24 @@ export abstract class CommandExchangeStore {
 export const COMMAND_EXCHANGE_STORE = token<CommandExchangeStore>('COMMAND_EXCHANGE_STORE');
 
 /**
+ * Thrown by CommandExchangeStore.append when the incoming record's
+ * sessionEpoch is older than the store's highest epoch for that session.
+ * The store counts it as a stale exchange and the gateway maps it to a
+ * typed RPC/REST error so clients can distinguish stale appends from
+ * duplicates.
+ */
+export class CommandExchangeStaleError extends Error {
+    constructor(
+        public readonly sessionId: string,
+        public readonly sessionEpoch: number,
+        public readonly maxEpoch: number
+    ) {
+        super(`command exchange append rejected: sessionEpoch ${sessionEpoch} < stored max ${maxEpoch} for session '${sessionId}'`);
+        this.name = 'CommandExchangeStaleError';
+    }
+}
+
+/**
  * Page command exchange records with cursor or sinceSeq dual-mode.
  * Shared by all CommandExchangeStore backends.
  */

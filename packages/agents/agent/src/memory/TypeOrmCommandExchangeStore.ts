@@ -1,15 +1,20 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentCommandExchangeEntity } from './entities';
 import {
     CommandExchangeRecord, CommandExchangeStore,
     CommandExchangeNoncePage, CommandExchangePageOptions,
+    CommandExchangeStaleError,
     compareCommandExchangeAsc, pageCommandExchangeRecords
 } from './timeline-projection';
+import { ExchangeMetrics } from './ExchangeMetrics';
 
 @Injectable()
 export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
-    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
+    constructor(
+        @Inject(TypeormAdapter) private adapter: TypeormAdapter,
+        @Optional() @Inject(ExchangeMetrics) private metrics?: ExchangeMetrics | null
+    ) {
         super();
     }
 
@@ -20,6 +25,8 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
     private readonly seqCounters = new Map<string, number>();
     /** Stored record by id per session, for idempotent append (dedup by record id). */
     private readonly byId = new Map<string, Map<string, CommandExchangeRecord>>();
+    /** Highest sessionEpoch appended per session, for stale-epoch rejection. */
+    private readonly maxEpochs = new Map<string, number>();
     private pending: Promise<unknown> = Promise.resolve();
 
     async append(record: Omit<CommandExchangeRecord, 'seq'>): Promise<CommandExchangeRecord> {
@@ -31,10 +38,17 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
                 ids = new Map(existing.map(r => [r.id, r]));
                 this.byId.set(record.sessionId, ids);
                 this.seqCounters.set(record.sessionId, existing.reduce((max, r) => Math.max(max, r.seq), -1) + 1);
+                this.maxEpochs.set(record.sessionId, existing.reduce((max, r) => Math.max(max, r.sessionEpoch), 0));
             }
             const duplicate = ids.get(record.id);
             if (duplicate) {
+                this.metrics?.record('duplicate');
                 return duplicate;
+            }
+            const maxEpoch = this.maxEpochs.get(record.sessionId) ?? 0;
+            if (record.sessionEpoch < maxEpoch) {
+                this.metrics?.record('stale');
+                throw new CommandExchangeStaleError(record.sessionId, record.sessionEpoch, maxEpoch);
             }
             const seq = this.seqCounters.get(record.sessionId)!;
             this.seqCounters.set(record.sessionId, seq + 1);
@@ -63,6 +77,7 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
             }));
             const saved = { ...record, seq } as CommandExchangeRecord;
             ids.set(record.id, saved);
+            this.maxEpochs.set(record.sessionId, Math.max(maxEpoch, record.sessionEpoch));
             return saved;
         });
         this.pending = run.catch(() => undefined);
@@ -96,6 +111,7 @@ export class TypeOrmCommandExchangeStore extends CommandExchangeStore {
         await this.repo.remove(toDelete);
         this.seqCounters.delete(sessionId);
         this.byId.delete(sessionId);
+        this.maxEpochs.delete(sessionId);
         return toDelete.length;
     }
 }

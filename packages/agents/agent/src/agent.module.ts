@@ -19,6 +19,7 @@ import { TypeOrmSessionStore } from './memory/TypeOrmSessionStore';
 import { TIMELINE_HISTORY_STORE, COMMAND_EXCHANGE_STORE } from './memory/timeline-projection';
 import { TypeOrmTimelineHistoryStore } from './memory/TypeOrmTimelineHistoryStore';
 import { TypeOrmCommandExchangeStore } from './memory/TypeOrmCommandExchangeStore';
+import { ExchangeMetrics } from './memory/ExchangeMetrics';
 import { BACKGROUND_TASK_HISTORY_STORE } from './memory/background-task-store';
 import { TypeOrmBackgroundTaskStore } from './memory/TypeOrmBackgroundTaskStore';
 import { MemoryStore } from './memory/MemoryStore';
@@ -143,6 +144,7 @@ import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
         { provide: TIMELINE_HISTORY_STORE, useExisting: TypeOrmTimelineHistoryStore, asDefault: true },
         TypeOrmCommandExchangeStore,
         { provide: COMMAND_EXCHANGE_STORE, useExisting: TypeOrmCommandExchangeStore, asDefault: true },
+        ExchangeMetrics,
         TypeOrmBackgroundTaskStore,
         { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: TypeOrmBackgroundTaskStore, asDefault: true },
         TypeOrmMemoryStore,
