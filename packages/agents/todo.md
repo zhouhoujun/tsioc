@@ -2494,6 +2494,29 @@ Turn: Fix session restore                                      running  01:42
 4. 将完成项、测试数字、环境限制和未决风险写回本文件；
 5. 独立提交，提交信息包含 plan 编号；未满足门禁不得标记完成。
 
+### v19-A1 · 统一可配置限制的第一批（待执行）
+
+- **范围**：先迁移 command-output、timeline/background-task 分页、approval timeout/上限、HTTP RPC timeout 四类互不耦合的限制；暂不改变默认值。
+- **共享契约**：在 `agent/src/options.ts` 增加 `AgentPolicyConfig.limits`（`commandOutputHistoryCap`、`commandOutputPageSize`、`timelinePageSize`、`backgroundTaskPageSize`、`approvalTimeoutMs`、`approvalMaxPending`、`rpcTimeoutMs`），提供 `resolveAgentPolicy(base, ...overrides)` 深合并与来源标记 `default/workspace/session/request`。
+- **IoC/跨端**：agent 持有纯 schema 与解析函数；agent-ui 只通过 `AgentConsoleOptions`/port 读取解析结果，gateway/CLI 负责注入 workspace/session 覆盖，禁止 UI 直接读取环境变量或 node API。
+- **迁移清单**：`ToolApprovalManager`、`CommandOutputHistory`、`timeline-projection`、`background-task-store`、`HttpAgentConsoleAppRpc` 改读 policy；保留导出常量作为 deprecated alias，避免破坏外部消费者。
+- **验收**：默认值与现有行为完全一致；四级覆盖优先级和序列化 round-trip 有单测；agent、agent-ui、agent-gateway 全量测试与 tsc 通过；完成后按固定门禁独立提交。
+
+### v19-A2 · Clock/Scheduler 可替换化（待执行）
+
+- 定义跨平台 `Clock`、`TimerScheduler` port；迁移模型 retry、approval expiry、remote reconnect、IntervalAgentScheduler，生产适配器使用真实 timer，测试适配器提供 deterministic advance。
+- 验收无真实等待的重试/过期/重连测试，禁止将 timer 用于 UI 主动刷新。
+
+### v19-B1 · AgentExchangeEnvelope 统一化（待执行）
+
+- 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。
+- 先覆盖 command-exchange 与 timeline 两条链路，再扩展 tools/questions；新增乱序、重复、跨 session/principal fuzz 用例。
+
+### v19-C1 · ThreadItem 统一展示预算（待执行）
+
+- 将 plan/tool/file-change/question/command-output 映射为统一 `ThreadItemProjection`，集中定义摘要长度、异常优先级、窄终端/CJK 折叠策略。
+- 对齐 Codex 线性 turn 流与 opencode task block：默认 inline summary，Enter inspector，异常/审批固定展开，重连保持稳定 key/顺序。
+
 ### v19-D 收尾复核（2026-09-09）✅
 
 - 完成工作区、临时文件与差异检查；`git diff --check` 通过。agent-ui 跨平台扫描仅命中 `globalThis` 守卫形式的 Buffer 适配，无直接 Node/console import。
