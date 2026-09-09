@@ -705,7 +705,7 @@ export class AppRpcServer {
     private createCommandOutputStore(params: any, context: AppRpcRequestContext, sessionId: string): MemoryCommandOutputStore {
         const workspace = this.resolveHistoryRequestWorkspace(params);
         const principalId = this.resolveHistoryPrincipalId(context);
-        return new MemoryCommandOutputStore(this.memory, this.createCommandOutputRecordId(workspace, principalId, sessionId));
+        return new MemoryCommandOutputStore(this.memory, this.createCommandOutputRecordId(workspace, principalId, sessionId), undefined, this.options.policy);
     }
 
     private redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry {

@@ -36,7 +36,8 @@ export class CommandOutputRpcTest {
             }
         } as any;
         const sessions = new SessionHandler(runtime, store, owners);
-        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const options = runtimeOverrides?.options ?? undefined;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, options);
         return { store, memory, owners, rpc, context };
     }
 
@@ -127,6 +128,43 @@ export class CommandOutputRpcTest {
         expect(second.items.length).toEqual(5);
         expect(second.nextCursor).toBeUndefined();
         expect(second.total).toEqual(25);
+    }
+
+    @Test('command_output.list default page size follows injected policy limits')
+    async listDefaultPageFollowsPolicy() {
+        const harness = await this.createHarness({
+            options: { policy: { source: 'workspace', limits: { commandOutputPageSize: 100 } } }
+        });
+        const { owners, rpc } = harness;
+        await owners.create('co-policy-page', 'user-1');
+        for (let index = 0; index < 30; index++) {
+            await this.call(rpc, 'command_output.append', { sessionId: 'co-policy-page', workspace: WORKSPACE, entry: { id: `p-${index}`, command: `cmd ${index}`, text: `out ${index}`, kind: 'result' } });
+        }
+
+        const list = await this.call(rpc, 'command_output.list', { sessionId: 'co-policy-page', workspace: WORKSPACE });
+        const result = (list as any).result;
+        expect(result.total).toEqual(30);
+        expect(result.items.length).toEqual(30);
+        // policy pageSize (100) overrides the 20 default, so all 30 fit on one page
+        expect(result.nextCursor).toBeUndefined();
+    }
+
+    @Test('command_output history cap follows injected policy limits')
+    async listHistoryCapFollowsPolicy() {
+        const harness = await this.createHarness({
+            options: { policy: { source: 'workspace', limits: { commandOutputHistoryCap: 3 } } }
+        });
+        const { owners, rpc } = harness;
+        await owners.create('co-policy-cap', 'user-1');
+        for (let index = 0; index < 10; index++) {
+            await this.call(rpc, 'command_output.append', { sessionId: 'co-policy-cap', workspace: WORKSPACE, entry: { id: `cap-${index}`, command: `cmd ${index}`, text: `out ${index}`, kind: 'result' } });
+        }
+
+        const list = await this.call(rpc, 'command_output.list', { sessionId: 'co-policy-cap', workspace: WORKSPACE });
+        const result = (list as any).result;
+        // policy cap (3) trims history, newest first
+        expect(result.total).toEqual(3);
+        expect(result.items.length).toEqual(3);
     }
 
     @Test('command_output.get returns a single entry and null for unknown id')

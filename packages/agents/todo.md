@@ -2494,7 +2494,7 @@ Turn: Fix session restore                                      running  01:42
 4. 将完成项、测试数字、环境限制和未决风险写回本文件；
 5. 独立提交，提交信息包含 plan 编号；未满足门禁不得标记完成。
 
-### v19-A1 · 统一可配置限制的第一批（待执行）
+### v19-A1 · 统一可配置限制的第一批（2026-09-09 ✅）
 
 - **范围**：先迁移 command-output、timeline/background-task 分页、approval timeout/上限、HTTP RPC timeout 四类互不耦合的限制；暂不改变默认值。
 - **共享契约**：在 `agent/src/options.ts` 增加 `AgentPolicyConfig.limits`（`commandOutputHistoryCap`、`commandOutputPageSize`、`timelinePageSize`、`backgroundTaskPageSize`、`approvalTimeoutMs`、`approvalMaxPending`、`rpcTimeoutMs`），提供 `resolveAgentPolicy(base, ...overrides)` 深合并与来源标记 `default/workspace/session/request`。
@@ -2507,6 +2507,7 @@ Turn: Fix session restore                                      running  01:42
 - **切片 4 进度（2026-09-09）**：`BoundedFileCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，同时保留旧 cap/默认值兼容。agent-ui 全量 **1117 passing**、`tsc --noEmit` 通过；gateway/RPC store 的 policy 注入留待下一切片。
 - **切片 5 进度（2026-09-09）**：`MemoryCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，保留旧 cap 构造兼容。agent-gateway 全量 **276 passing**（提升权限宿主）、`tsc --noEmit` 通过；gateway composition root 注入 policy 与 HTTP/RPC 端到端覆盖留待下一切片。
 - **切片 6 / v19-A1 收尾（2026-09-09）**：CLI `run-console` composition root 将 `runtimeAgentOptions.policy` 注入 `BoundedFileCommandOutputStore`；agent-cli 全量 **74 passing**、`tsc --noEmit` 通过。A1 已完成 policy schema、approval、timeline/background-task、command-output 与 RPC timeout 的 seam/消费接线；后续覆盖测试与其他宿主扩展归入 v19-A2/B1。
+- **切片 7 / v19-A1 正式关闭（2026-09-09）✅**：agent-gateway composition root 注入收口——`AppRpcServer.createCommandOutputStore` 将 `this.options.policy` 透传 `MemoryCommandOutputStore`（网关唯一直接创建的 command-output store；timeline/background-task/approval 均为宿主注入、已由切片 1/6 消费 policy，网关无其他直创 store 未接线）。新增 2 条 HTTP/RPC 端到端策略覆盖（`rpc-command-output.spec.ts`）：注入 `commandOutputPageSize: 100` 时 `command_output.list` 无 limit 默认页放大到 100（30 条一页全回），注入 `commandOutputHistoryCap: 3` 时 history 被裁剪到最新 3 条。门禁：agent-gateway 全量 **278 passing / 0 failed**（基线 276 +2）、`npx tsc --noEmit` EXIT=0、`git diff --check` 通过。**v19-A1 达成 ✅。**
 
 ### v19-A2 · Clock/Scheduler 可替换化（2026-09-09 ✅）
 
