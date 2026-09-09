@@ -170,3 +170,18 @@ export function redactCommandOutputSecret(value: string): string {
 export function shouldRedactCommandOutputKey(key: string): boolean {
     return SECRET_KEY.test(String(key || ''));
 }
+
+/**
+ * v19-B2: redact the secret-bearing text fields of a command-output history
+ * entry before it leaves the gateway (write/read path). Replaces the
+ * duplicated per-entry redaction previously inlined in `AppRpcServer`.
+ */
+export function redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry {
+    const text = redactCommandOutputSecret(entry.text);
+    const command = redactCommandOutputSecret(entry.command);
+    const argsSummary = entry.argsSummary != null ? redactCommandOutputSecret(entry.argsSummary) : entry.argsSummary;
+    if (text === entry.text && command === entry.command && argsSummary === entry.argsSummary) {
+        return entry;
+    }
+    return { ...entry, text, command, argsSummary };
+}
