@@ -2544,3 +2544,12 @@ Turn: Fix session restore                                      running  01:42
 - 完成工作区、临时文件与差异检查；`git diff --check` 通过。agent-ui 跨平台扫描仅命中 `globalThis` 守卫形式的 Buffer 适配，无直接 Node/console import。
 - packages/agents 全量矩阵全部 EXIT=0：`agent` 797、`agent-ui` 1117、`agent-channels` 59、`agent-cli` 74、`agent-gateway` 276、`agent-tools` 478、`agent-providers` 13、`agent-ssh` 8、`agent-desktop` 20、`agent-vscode` 7。
 - `agent`、`agent-ui`、`agent-gateway`、`agent-tools` `tsc --noEmit` 全部通过；本轮无源码缺口，可靠性基线完成记录。
+
+### v19-B2 · command-exchange 记录构造与 command-output 脱敏统一（2026-09-09 ✅）
+
+- **范围**：消除 gateway REST/RPC 两条 append 链路与 `AppRpcServer` command-output 读写的字段构造/脱敏重复实现，收敛到 agent 共享层单一来源。
+- **共享构造**：`agent/src/ui/CommandExchangeEvent.ts` 新增 `CommandExchangeRecordSource` 接口与 `parseCommandExchangeRecord(sessionId, source)`——对不可信入站 payload 做与原先两处内联完全一致的字段强制（`sessionEpoch`/`timestamp` 数值回退、`attempt`/`durationMs` 数字、`outputIds` 数组→String、`id` 空值回退 `cmdex:${sessionId}:${Date.now()}`）；`CommandExchangeHandler`（REST）与 `AppRpcServer.appendCommandExchange`（RPC）改为消费该函数，各自删除约 20 行重复解构。
+- **共享脱敏**：`agent/src/ui/CommandOutputHistory.ts` 新增 `redactCommandOutputEntry(entry)`（基于既有 `redactCommandOutputSecret`，覆盖 text/command/argsSummary，无变化时返回原 entry）；`AppRpcServer` 私有同名方法改为委托共享函数，删除静态 `commandOutputRedactor = new RedactionFilter()` 实例与 `RedactionFilter` import。`redactCommandExchangeRecord`（responded：`command-exchange-redact.ts`）保持 gateway 本地不变。
+- **未纳入**：`FakeAgentGateway.appendCommandExchange` 是刻意宽松的测试门 fixture（直接展开 raw record 并自动补 seq/id/sessionEpoch），与传输层严格构造目的不同，保持不动以保护 1117 条 agent-ui 门禁。
+- 测试：新增 `agent/test/thread-item-projection.spec.ts` 2 断言（`parseRecord`/`parseDefaults`）+ 新文件 `agent/test/command-output-history.spec.ts` 4 断言（`redactsEntry`/`noop`/`preservesUndefined`/`secret`）。
+- 门禁：`agent` 全量 **811 passing / 0 failed / EXIT=0**（基线 805 +6）；`agent-gateway` 全量 **278 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1117 passing / 0 failed / EXIT=0**；`agent`、`agent-gateway`、`agent-ui` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理。
