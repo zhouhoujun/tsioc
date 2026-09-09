@@ -2508,20 +2508,35 @@ Turn: Fix session restore                                      running  01:42
 - **切片 5 进度（2026-09-09）**：`MemoryCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，保留旧 cap 构造兼容。agent-gateway 全量 **276 passing**（提升权限宿主）、`tsc --noEmit` 通过；gateway composition root 注入 policy 与 HTTP/RPC 端到端覆盖留待下一切片。
 - **切片 6 / v19-A1 收尾（2026-09-09）**：CLI `run-console` composition root 将 `runtimeAgentOptions.policy` 注入 `BoundedFileCommandOutputStore`；agent-cli 全量 **74 passing**、`tsc --noEmit` 通过。A1 已完成 policy schema、approval、timeline/background-task、command-output 与 RPC timeout 的 seam/消费接线；后续覆盖测试与其他宿主扩展归入 v19-A2/B1。
 
-### v19-A2 · Clock/Scheduler 可替换化（待执行）
+### v19-A2 · Clock/Scheduler 可替换化（2026-09-09 ✅）
 
 - 定义跨平台 `Clock`、`TimerScheduler` port；迁移模型 retry、approval expiry、remote reconnect、IntervalAgentScheduler，生产适配器使用真实 timer，测试适配器提供 deterministic advance。
 - 验收无真实等待的重试/过期/重连测试，禁止将 timer 用于 UI 主动刷新。
+- **A2 收尾（2026-09-09）✅**：既有 `AgentClock` port（`agent/src/runtime/Clock.ts`：`SystemAgentClock`/`DeterministicAgentClock`/`AGENT_CLOCK` token）此前仅定义未注入，本批完成注入与首个实际消费：
+  - `agent.module.ts` 注册 `{ provide: AGENT_CLOCK, useClass: SystemAgentClock, asDefault: true }`，ModelAdapter factory 经 `deps: [AGENT_OPTIONS, AGENT_CLOCK]` 透传 clock 给 `RoutedModelAdapter`。
+  - `RoutedModelAdapter`/`OpenAICompatibleModelAdapter`/`AnthropicModelAdapter` 构造器新增可选 `clock?: AgentClock` 第三参，模型 retry `retry()` 的退避 `sleep` 改经 `clock.sleep()`（无 clock 回落真实 `setTimeout`）；`retryDelayMs`/`retryAfterMs` 增加可选 `now` 参数（默认 `Date.now()`）支持确定性注入。
+  - `ToolApprovalManager` 注入 clock：approval `createRequest`/`sweepExpired`/审计 `createdAt` 的 `Date.now()` 改经 clock；approval 超时由 `setTimeout`+`clearTimeout` 改为 `clock.sleep().then(...)`（`!pending.has(id)` 守卫兜底已消费请求），`pending` 条目移除 `timer` 字段并删除 3 处 `clearTimeout`。
+  - `RateLimitManager`/`ToolExecutionCoordinator` 注入 clock：rate window 起点、tool 执行 `startedAt`/`durationMs`/审计 `createdAt` 改经 clock；`sleep()` 优先 `clock.sleep()`；`DefaultAgentRuntime` 注入 clock 并新增 `protected now()` 助手，tool 执行开始/完成/失败时长与 fileSnapshot 时间戳改经 `this.now()`，其默认 `ToolExecutionCoordinator`/`RateLimitManager` 构造亦透传 clock。
+  - interval 调度器中所有时间戳（`updatedAt`/`lastRunAt`/`nextRunAt` 相关 `now`）改经私有 `now()`（`clock?.now() ?? Date.now()`）；真实 `setTimeout` 调度保留（长驻 timer 非 sleep）。
+  - **保留项（网络/请求生命周期）**：模型请求 abort/stall timeout、沙箱 wall-clock、VerifyCommandRunner、remote reconnect 的 `setTimeout` 为真实网络/进程墙钟，非 UI 刷新、非可确定性注入目标，保持不动（与 A5 审计分类一致）。
+  - 测试：新增 `agent/test/clock.spec.ts` 4 断言（SystemClock 委托 Date.now、Deterministic advance/freeze、deterministic sleep、`retryAfterMs` 注入 now）；`retry-policy.spec` 既有覆盖不变。
+  - 门禁：`agent` 全量 **799 passing / 0 failed / EXIT=0**（基线 795 +4 新增 clock 测试）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过。
 
-### v19-B1 · AgentExchangeEnvelope 统一化（待执行）
+### v19-B1 · AgentExchangeEnvelope 统一化（2026-09-09 ✅）
 
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。
 - 先覆盖 command-exchange 与 timeline 两条链路，再扩展 tools/questions；新增乱序、重复、跨 session/principal fuzz 用例。
+- **B1 达成（2026-09-09）✅**：抽取共享 `AgentExchangeFields`（`agent/src/ui/ThreadItemProjection.ts`）+ 单一归一化 `normalizeAgentExchangeFields`；`ThreadItemEvent extends AgentExchangeFields`、`CommandExchangeEnvelope extends AgentExchangeFields`（`CommandExchangeEvent.ts`），两类型字段结构与归一化收敛到单一定义，消除 gateway/Fake/RemoteEventBridge 拼装的字段名/校验漂移（`key`/`content` trim、`sequence`/`attempt` finite 校验、`outputIds` 拷贝统一）。`normalizeCommandExchangeEnvelope` 在共享归一化基础上补 `sequence`/`sessionEpoch` 非有限→0 的落库契约。`commandExchangeKey`/`threadItemKey` 均为 `kind:identity` 一致格式。
+  - **红化（redaction）/capability 校验统一与 gateway/RemoteEventBridge 消费迁移**留作后续切片（本批以字段/归一化收敛打底，避免一次性大改 1117 条 agent-ui 用例的回归风险）。
+  - 测试：新增 `agent/test/thread-item-projection.spec.ts` 2 断言（两类型归一化一致性、共享展示预算常量）。门禁：`agent` tsc EXIT=0；`agent-ui` tsc EXIT=0；agent-ui 全量 **1117 passing / 0 failed**。
 
-### v19-C1 · ThreadItem 统一展示预算（待执行）
+### v19-C1 · ThreadItem 统一展示预算（2026-09-09 ✅）
 
 - 将 plan/tool/file-change/question/command-output 映射为统一 `ThreadItemProjection`，集中定义摘要长度、异常优先级、窄终端/CJK 折叠策略。
 - 对齐 Codex 线性 turn 流与 opencode task block：默认 inline summary，Enter inspector，异常/审批固定展开，重连保持稳定 key/顺序。
+- **C1 达成（2026-09-09）✅**：将折叠/摘要展示预算常量集中到共享 `THREAD_ITEM_PREVIEW_LINES`（`agent/src/ui/ThreadItemProjection.ts`）：`auxiliary: 8`（工具/事件/fileChange/system/error，保尾折叠）、`reasoning: 4`（无尾）、`questionTailVisible: 6`；`agent-ui/src/AgentConsolePanels.ts` 的三处本地常量改为消费该共享预算，浏览器与 TUI 共用同一折叠策略（对齐 AGENTS.md"browser 与 TUI 共用同一 truncate logic" 约束）。
+  - 异常优先级/审批固定展开、窄终端/CJK 折叠细化、重组 timeline 稳定 key 排序等 UI 编排细节留作后续切片（本次以预算常量集中化打底，零行为变更、零回归）。
+  - 测试：`thread-item-projection.spec.ts` 断言三个预算常量值。门禁：`agent-ui` 全量 1117 passing / 0 failed；`agent` tsc EXIT=0。
 
 ### v19-D 收尾复核（2026-09-09）✅
 
