@@ -2504,6 +2504,7 @@ Turn: Fix session restore                                      running  01:42
 - **切片 1 进度（2026-09-09）**：共享 `AgentPolicyConfig`/`AgentPolicyLimits` 与 `resolveAgentPolicy` 已落地，默认值集中声明；runtime approval timeout 已优先消费 policy 并保留旧 tools 配置兼容。新增四级覆盖与输入不可变测试，`agent` 全量 **799 passing**、`tsc --noEmit` 通过。其余分页/RPC 消费迁移未完成，本项保持待执行。
 - **切片 2 进度（2026-09-09）**：`pageTimelineEntries` 与 `pageBackgroundTaskRecords` 增加显式 `defaultLimit` seam，未传时保持 100/50 既有行为，输入 limit 仍受 1..500 约束；同时删除“内存实现为默认”的过时注释，明确生产与测试均通过抽象契约使用 TypeORM。`agent` 全量 **799 passing**、`tsc --noEmit` 与 `git diff --check` 通过。TypeORM store/gateway 注入 policy 尚待下一切片。
 - **切片 3 进度（2026-09-09）**：`AbstractCommandOutputStore` 的 page size 从 `list()` 内部常量提升为可注入构造参数，默认仍为 20、上限仍为 100；现有 File/Memory/RPC store 行为不变。`agent` 全量 **799 passing**；下一切片接入 `policy.limits.commandOutputHistoryCap/pageSize` 到各宿主 composition root。
+- **切片 4 进度（2026-09-09）**：`BoundedFileCommandOutputStore` 新增可选 `AgentPolicyConfig`，从 policy 读取 command-output cap/page size，同时保留旧 cap/默认值兼容。agent-ui 全量 **1117 passing**、`tsc --noEmit` 通过；gateway/RPC store 的 policy 注入留待下一切片。
 
 ### v19-A2 · Clock/Scheduler 可替换化（待执行）
 
