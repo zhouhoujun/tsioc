@@ -1,4 +1,5 @@
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { ExchangeMetrics } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { GatewayServer } from '../gateway/GatewayServer';
 
@@ -8,7 +9,10 @@ import { GatewayServer } from '../gateway/GatewayServer';
  */
 @Injectable()
 export class HealthHandler {
-    constructor(private gateway: GatewayServer) {
+    constructor(
+        private gateway: GatewayServer,
+        @Optional() @Inject(ExchangeMetrics) private metrics?: ExchangeMetrics | null
+    ) {
     }
 
     getRoutes(): GatewayRoute[] {
@@ -24,7 +28,8 @@ export class HealthHandler {
                     gateway: 'running',
                     uptime: process.uptime(),
                     address: addr,
-                    node: process.version
+                    node: process.version,
+                    exchange: this.metrics?.snapshot() ?? { dropped: 0, stale: 0, duplicate: 0, unauthorized: 0 }
                 }));
         };
 

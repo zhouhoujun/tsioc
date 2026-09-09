@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, parseCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { redactCommandExchangeRecord } from '../api/command-exchange-redact';
 import { SessionHandler } from '../api/SessionHandler';
@@ -44,7 +44,8 @@ export class AppRpcServer {
         @Optional() private commandExchange?: CommandExchangeStore | null,
         @Optional() private questionStore?: QuestionStore | null,
         @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null,
-        @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null
+        @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null,
+        @Optional() private exchangeMetrics?: ExchangeMetrics | null
     ) {
     }
 
@@ -237,6 +238,7 @@ export class AppRpcServer {
                         'command_exchange.query',
                         'command_exchange.replay',
                         'command_exchange.append',
+                        'command_exchange.metrics',
                         'audit.list',
                         'todo.get',
                         'coding_task.list',
@@ -456,6 +458,8 @@ export class AppRpcServer {
                 return this.replayCommandExchange(params, context);
             case 'command_exchange.append':
                 return this.appendCommandExchange(params, context);
+            case 'command_exchange.metrics':
+                return this.getExchangeMetrics(params);
             case 'audit.list':
                 return this.listAudit(params, context);
             case 'todo.get':
@@ -2082,7 +2086,7 @@ export class AppRpcServer {
 
     private async queryCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
-        await this.ensureSessionAccess(sessionId, context);
+        await this.ensureExchangeSessionAccess(sessionId, context);
         if (!this.commandExchange) {
             return { sessionId, records: [], hasMore: false };
         }
@@ -2101,7 +2105,7 @@ export class AppRpcServer {
 
     private async replayCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
-        await this.ensureSessionAccess(sessionId, context);
+        await this.ensureExchangeSessionAccess(sessionId, context);
         if (!this.commandExchange) {
             return { sessionId, records: [] };
         }
@@ -2113,17 +2117,42 @@ export class AppRpcServer {
 
     private async appendCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
-        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        await this.ensureExchangeSessionAccess(sessionId, context, { createIfMissing: true });
         if (!this.commandExchange) {
             throw new AppRpcError(-32603, 'command_exchange.append: command exchange store not configured');
         }
         const source = params?.record;
         if (!source || typeof source !== 'object') {
+            this.exchangeMetrics?.record('dropped');
             throw new AppRpcError(-32602, 'command_exchange.append: record is required');
         }
         const record: Omit<CommandExchangeRecord, 'seq'> = parseCommandExchangeRecord(sessionId, source);
-        const saved = await this.commandExchange.append(record);
+        let saved: CommandExchangeRecord;
+        try {
+            saved = await this.commandExchange.append(record);
+        } catch (error) {
+            if (error instanceof CommandExchangeStaleError) {
+                throw new AppRpcError(-32005, error.message, { sessionId: error.sessionId, sessionEpoch: error.sessionEpoch, maxEpoch: error.maxEpoch });
+            }
+            throw error;
+        }
         return { sessionId, record: redactCommandExchangeRecord(saved) };
+    }
+
+    private async getExchangeMetrics(params: any): Promise<ExchangeMetricsSnapshot> {
+        return this.exchangeMetrics?.snapshot() ?? { dropped: 0, stale: 0, duplicate: 0, unauthorized: 0 };
+    }
+
+    /** Ensure session access, counting a forbidden principal as an unauthorized exchange. */
+    private async ensureExchangeSessionAccess(sessionId: string, context: AppRpcRequestContext, options?: { createIfMissing?: boolean }): Promise<void> {
+        try {
+            await this.ensureSessionAccess(sessionId, context, options);
+        } catch (error) {
+            if (error instanceof AppRpcError && error.code === -32003) {
+                this.exchangeMetrics?.record('unauthorized');
+            }
+            throw error;
+        }
     }
 
     private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {
