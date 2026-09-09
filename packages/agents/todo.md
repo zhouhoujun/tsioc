@@ -2502,6 +2502,7 @@ Turn: Fix session restore                                      running  01:42
 - **迁移清单**：`ToolApprovalManager`、`CommandOutputHistory`、`timeline-projection`、`background-task-store`、`HttpAgentConsoleAppRpc` 改读 policy；保留导出常量作为 deprecated alias，避免破坏外部消费者。
 - **验收**：默认值与现有行为完全一致；四级覆盖优先级和序列化 round-trip 有单测；agent、agent-ui、agent-gateway 全量测试与 tsc 通过；完成后按固定门禁独立提交。
 - **切片 1 进度（2026-09-09）**：共享 `AgentPolicyConfig`/`AgentPolicyLimits` 与 `resolveAgentPolicy` 已落地，默认值集中声明；runtime approval timeout 已优先消费 policy 并保留旧 tools 配置兼容。新增四级覆盖与输入不可变测试，`agent` 全量 **799 passing**、`tsc --noEmit` 通过。其余分页/RPC 消费迁移未完成，本项保持待执行。
+- **切片 2 进度（2026-09-09）**：`pageTimelineEntries` 与 `pageBackgroundTaskRecords` 增加显式 `defaultLimit` seam，未传时保持 100/50 既有行为，输入 limit 仍受 1..500 约束；同时删除“内存实现为默认”的过时注释，明确生产与测试均通过抽象契约使用 TypeORM。`agent` 全量 **799 passing**、`tsc --noEmit` 与 `git diff --check` 通过。TypeORM store/gateway 注入 policy 尚待下一切片。
 
 ### v19-A2 · Clock/Scheduler 可替换化（待执行）
 

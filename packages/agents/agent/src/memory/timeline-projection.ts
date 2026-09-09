@@ -378,9 +378,9 @@ export function compareTimelineEventsAsc(left: TimelineEventRecord, right: Timel
  * (in-memory, TypeOrm, ...). `cursor` points at the last entry seen; the next
  * page starts strictly after it. `limit` is normalized to [1, ABSOLUTE_MAX_LIMIT].
  */
-export function pageTimelineEntries(entries: TimelineEntry[], options?: TimelinePageOptions): TimelineNoncePage {
+export function pageTimelineEntries(entries: TimelineEntry[], options?: TimelinePageOptions, defaultLimit = DEFAULT_PAGE_LIMIT): TimelineNoncePage {
     const anchor = options?.cursor ? decodeTimelineCursor(options.cursor) : undefined;
-    const pageSize = normalizeLimit(options?.limit);
+    const pageSize = normalizeLimit(options?.limit, defaultLimit);
     const startIndex = anchor ? entries.findIndex(entry => (entry.lastSeq ?? entry.startedAt ?? 0) === anchor.seq) : -1;
     const begin = anchor ? (startIndex >= 0 ? startIndex + 1 : 0) : 0;
     const items = entries.slice(begin, begin + pageSize);
@@ -396,9 +396,8 @@ export function pageTimelineEntries(entries: TimelineEntry[], options?: Timeline
  * ------------------------------------------------------------------ */
 
 /**
- * Durable, cursor-paged timeline store. The in-memory implementation is the
- * default (and test baseline); a TypeOrm-backed implementation can be registered
- * under TIMELINE_HISTORY_STORE for cross-restart/remote-host consistency (Part B).
+ * Durable, cursor-paged timeline store. Production and tests use the registered
+ * TypeOrm implementation; consumers depend only on this abstract contract.
  *
  * The store holds RAW `TimelineEventRecord`s (append-only per session). The
  * projection is derived via `reduceTimelineEvents`/`applyTimelineEvent` on read,
@@ -425,9 +424,10 @@ export const TIMELINE_HISTORY_STORE = token<TimelineHistoryStore>('TIMELINE_HIST
 const DEFAULT_PAGE_LIMIT = 100;
 const ABSOLUTE_MAX_LIMIT = 500;
 
-function normalizeLimit(limit?: number): number {
-    const value = Math.floor(Number(limit) || DEFAULT_PAGE_LIMIT);
-    if (value < 1) return DEFAULT_PAGE_LIMIT;
+function normalizeLimit(limit?: number, defaultLimit = DEFAULT_PAGE_LIMIT): number {
+    const fallback = Math.max(1, Math.min(Math.floor(Number(defaultLimit) || DEFAULT_PAGE_LIMIT), ABSOLUTE_MAX_LIMIT));
+    const value = Math.floor(Number(limit) || fallback);
+    if (value < 1) return fallback;
     return Math.min(value, ABSOLUTE_MAX_LIMIT);
 }
 
@@ -548,4 +548,3 @@ export function pageCommandExchangeRecords(records: CommandExchangeRecord[], opt
     const nextCursor = hasMore && last ? encodeCommandExchangeCursor({ seq: last.seq, id: last.id }) : undefined;
     return { records: items, ...(nextCursor ? { nextCursor } : {}), hasMore };
 }
-

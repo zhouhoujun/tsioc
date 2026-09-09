@@ -124,9 +124,9 @@ export function cloneBackgroundTaskRecord(record: BackgroundTaskRecord): Backgro
     return next;
 }
 
-export function pageBackgroundTaskRecords(sorted: BackgroundTaskRecord[], options?: BackgroundTaskPageOptions): BackgroundTaskPage {
+export function pageBackgroundTaskRecords(sorted: BackgroundTaskRecord[], options?: BackgroundTaskPageOptions, defaultLimit = DEFAULT_PAGE_LIMIT): BackgroundTaskPage {
     const anchor = decodeBackgroundTaskCursor(options?.cursor);
-    const pageSize = normalizeLimit(options?.limit);
+    const pageSize = normalizeLimit(options?.limit, defaultLimit);
     const startIndex = anchor ? sorted.findIndex(record => record.startedAt === anchor.startedAt && record.id === anchor.id) : -1;
     const begin = anchor ? startIndex + 1 : 0;
     const effectiveBegin = anchor && startIndex < 0 ? 0 : begin;
@@ -138,10 +138,8 @@ export function pageBackgroundTaskRecords(sorted: BackgroundTaskRecord[], option
 }
 
 /**
- * Durable cursor-paged history store for background tasks. The in-memory
- * implementation is the default (and test baseline); a TypeOrm-backed
- * implementation can be registered under BACKGROUND_TASK_HISTORY_STORE for
- * cross-restart/remote-host consistency.
+ * Durable cursor-paged history store for background tasks. Production and tests
+ * use the registered TypeOrm implementation behind this abstract contract.
  */
 @Abstract()
 export abstract class BackgroundTaskHistoryStore {
@@ -179,9 +177,9 @@ export const BACKGROUND_TASK_HISTORY_STORE = token<BackgroundTaskHistoryStore>('
 const DEFAULT_PAGE_LIMIT = 50;
 const ABSOLUTE_MAX_LIMIT = 500;
 
-function normalizeLimit(limit?: number): number {
-    const value = Math.floor(Number(limit) || DEFAULT_PAGE_LIMIT);
-    if (value < 1) return DEFAULT_PAGE_LIMIT;
+function normalizeLimit(limit?: number, defaultLimit = DEFAULT_PAGE_LIMIT): number {
+    const fallback = Math.max(1, Math.min(Math.floor(Number(defaultLimit) || DEFAULT_PAGE_LIMIT), ABSOLUTE_MAX_LIMIT));
+    const value = Math.floor(Number(limit) || fallback);
+    if (value < 1) return fallback;
     return Math.min(value, ABSOLUTE_MAX_LIMIT);
 }
-
