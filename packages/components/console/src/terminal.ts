@@ -238,6 +238,7 @@ export interface TuiTerminalSurfaceOptions {
     footerRegionId?: string;
     placeCursor?: boolean | (() => boolean);
     cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
+    nativeScrollback?: boolean | (() => boolean);
     stablePrefixRows?: number | ((lines: string[]) => number);
     stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
@@ -298,6 +299,7 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     shouldEnableTerminalMouseTracking?(): boolean;
     shouldPlaceTerminalCursor?(): boolean;
     resolveTerminalCursorMode?(): 'prompt' | 'bottom';
+    shouldUseNativeScrollback?(): boolean;
 }
 
 @Abstract()
@@ -571,6 +573,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.mouseTrackingEnabled) {
             this.output.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
         }
+        // Clear the viewport for the TUI without deleting the user's terminal
+        // scrollback. ESC[3J would erase shell output from before startup.
         this.output.write(buildClearScreenSequence(false));
     }
 
@@ -598,6 +602,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
+            nativeScrollback: () => lifecycle?.shouldUseNativeScrollback?.() === true,
             mouseTrackingEnabled: this.mouseTrackingEnabled
         });
         this.surface.render();
@@ -922,7 +927,10 @@ export class TuiTerminalSurface {
     } {
         const allLines = layout.lines || [];
         const allRegions = layout.regions || [];
-        const height = this.resolveHeight();
+        const nativeScrollback = typeof this.options.nativeScrollback === 'function'
+            ? this.options.nativeScrollback()
+            : this.options.nativeScrollback === true;
+        const height = nativeScrollback ? undefined : this.resolveHeight();
         const scrollRegionId = this.options.scrollRegionId || 'transcript';
         const footerRegionId = this.options.footerRegionId || 'footer';
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);

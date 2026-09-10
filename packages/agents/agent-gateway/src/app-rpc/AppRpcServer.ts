@@ -562,9 +562,11 @@ export class AppRpcServer {
     }
 
     private async createSession(params: any, context: AppRpcRequestContext): Promise<any> {
+        // CLI-compatible generated IDs: no '-' characters. They can be passed
+        // back verbatim as `--session <id>` across shells and transports.
         const requested = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
-            : `rpc-${this.uuid.generate()}`;
+            : `chat${this.uuid.generate().replace(/-/g, '')}`;
         await this.ensureSessionAccess(requested, context, { createIfMissing: true });
         this.sessionHandler.track(requested);
         await this.setSessionWorkspace(requested);

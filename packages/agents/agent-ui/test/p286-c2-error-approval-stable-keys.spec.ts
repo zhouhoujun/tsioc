@@ -90,28 +90,32 @@ export class C2FixedExpandStableKeysTest {
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
     }
 
-    @Test('C2-1 focused: approval/error stay expanded but plain assistant folds')
+    @Test('C2-1 focused: conversation, approval and error stay expanded while auxiliary content folds')
     async focusedApprovalErrorFixedExpand() {
         const ref = await this.bootRef();
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'dynamic' });
         ref.instance.sessionState.setMessages([
-            // 对照：普通 assistant 长消息在 focused 模式下折叠到 8 行
+            // 普通对话正文不因 dynamic/focused 布局而折叠。
             { id: 'plain1', role: 'assistant', content: longContent(12), createdAt: 1 } as any,
             { id: 'appr1', role: 'assistant', content: longContent(12), createdAt: 2, metadata: { uiEventType: 'approval' } } as any,
-            { id: 'err1', role: 'assistant', content: longContent(12), createdAt: 3, metadata: { error: 'boom' } } as any
+            { id: 'err1', role: 'assistant', content: longContent(12), createdAt: 3, metadata: { error: 'boom' } } as any,
+            { id: 'sys1', role: 'system', content: longContent(12), createdAt: 4 } as any
         ]);
         ref.instance.sessionState.setMessagesFocused(true);
+        ref.instance.sessionState.setSelectedMessageId('plain1');
         await ref.render();
         await Promise.resolve();
 
         const lines = this.panelLines(ref);
         const collapsedIds = lines.filter(line => line.previewCollapsed).map(line => line.messageId);
-        expect(collapsedIds).toContain('plain1');
+        expect(collapsedIds).not.toContain('plain1');
         expect(collapsedIds).not.toContain('appr1');
         expect(collapsedIds).not.toContain('err1');
+        expect(collapsedIds).toContain('sys1');
+        expect(lines.filter(line => line.messageId === 'plain1')).toHaveLength(12);
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
         expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(12);
-        // 对照项确实被截断
-        expect(lines.filter(line => line.messageId === 'plain1').length).toBeLessThan(12);
+        expect(lines.filter(line => line.messageId === 'sys1').length).toBeLessThan(12);
     }
 
     @Test('C2-2 estimateRows counts CJK display width, not char count')

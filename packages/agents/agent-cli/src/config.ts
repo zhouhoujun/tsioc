@@ -617,7 +617,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     });
 
     return {
-        sessionId: options.session || settings.session || `session-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        sessionId: options.session || `session-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
         root: resolved.root,
         settingsPath: resolved.settingsPath,
         workspace,

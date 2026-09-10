@@ -1633,7 +1633,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return [];
     }
 
-    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean }): Promise<void> {
+    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }): Promise<void> {
         if (this.isTurnInProgress()) {
             this.notifyBusyState('Wait for the current turn to finish before switching sessions.');
             return;
@@ -1700,8 +1700,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
         }
-        const projectSessions = this.resolveProjectSessionsFor(target.id);
-        const projectSessionIds = this.resolveProjectSessionIdsFor(target.id);
+        // A plain startup owns a new session. Project aggregation is useful
+        // after an explicit resume/switch, but on a fresh launch it would pull
+        // old plans and task summaries from sibling sessions into the empty UI.
+        const projectSessions = options?.fresh
+            ? [{ ...target, current: true, updatedAt: target.lastActiveAt }]
+            : this.resolveProjectSessionsFor(target.id);
+        const projectSessionIds = options?.fresh ? [target.id] : this.resolveProjectSessionIdsFor(target.id);
         const [page] = await Promise.all([
             this.loadSessionPage(target.id),
             this.refreshTools(target.id),
@@ -1713,9 +1718,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
             return;
         }
-        this.state.setMessages(page.messages);
-        this.state.setSections(page.sections);
-        this.state.setGoalSummary(page.goalSummary || null);
+        // A fresh startup must never render a transcript returned by stale
+        // host/app state. Explicit resume and interactive session switching
+        // continue to load their persisted page normally.
+        this.state.setMessages(options?.fresh ? [] : page.messages);
+        this.state.setSections(options?.fresh ? [] : page.sections);
+        this.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
         await this.restoreSessionModes(target.id);
     }
 
@@ -2257,16 +2265,34 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.restoreSettings();
         this.updateTerminalTitle();
         await this.resolveGitBranch();
-        await this.bootstrapStateFromAppRpc();
-        await this.initializeInputHistory();
+        // Do not ask app.state for an implicit session: that RPC creates and
+        // tracks a session (and can replay its transcript through the bridge).
+        // Startup session contract: only --session may resume.
         const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
-        // undefined would silently create a new session and discard the current conversation.
-        await this.openSession(explicitSessionId || this.state.sessionId || undefined, { persistCurrentHistory: false });
+        const freshStartup = this.options.bootstrapTurn?.enabled === false && !explicitSessionId;
+        if (!freshStartup) {
+            await this.bootstrapStateFromAppRpc();
+        }
+        await this.initializeInputHistory();
+        // No explicit session means a fresh conversation. Resuming the state
+        // default here replays the previous transcript on every console start.
+        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, {
+            persistCurrentHistory: false,
+            fresh: freshStartup
+        });
         // Subscribe only after the initial session is selected. Subscribing
         // earlier lets the remote bridge seed the default session's timeline
         // into a new, non-resumed chat.
         this.bridge.bindState(this.sessionState);
-        this.bridge.subscribe();
+        // Await remote seed/replay before declaring startup complete. Without
+        // this, a fresh-session clear races async replay and old project
+        // transcript can be appended after the clear.
+        await Promise.resolve(this.bridge.subscribe());
+        if (freshStartup) {
+            // Local bridge subscription can synchronously project retained
+            // host events. A plain chat start owns an empty transcript.
+            this.state.setMessages([]);
+        }
         this.scheduleInputHistoryRestore();
         await this.refreshTools();
         await this.refreshMentionCatalog();
@@ -2557,8 +2583,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (typeof meta.title === 'string' && meta.title.trim()) {
             this.state.setTitle(meta.title.trim());
         }
+        const configuredSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
         this.state.configure({
-            sessionId: typeof meta.sessionId === 'string' ? meta.sessionId : undefined,
+            // CLI fresh startup skips app.state entirely. Other hosts retain
+            // their established current-session bootstrap behavior.
+            sessionId: configuredSessionId || (typeof meta.sessionId === 'string' ? meta.sessionId : undefined),
             provider: typeof meta.provider === 'string' ? meta.provider : undefined,
             model: typeof meta.model === 'string' ? meta.model : undefined,
             modelProfile: typeof meta.modelProfile === 'string' ? meta.modelProfile : undefined,
@@ -3702,6 +3731,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     resolveTerminalCursorMode(): 'prompt' | 'bottom' {
         return this.state.resolveTerminalCursorMode();
+    }
+
+    // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback; only
+    // explicit dynamic mode may be constrained to the viewport height.
+    shouldUseNativeScrollback(): boolean {
+        return this.state.consoleOptions.messageLayout !== 'dynamic';
     }
 
     getTerminalRenderedLines(): string[] {

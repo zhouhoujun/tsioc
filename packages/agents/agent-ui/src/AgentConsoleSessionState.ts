@@ -365,6 +365,8 @@ export interface AgentConsoleOptions {
     statusVisibleLines?: number;
     sessionsVisibleItems?: number;
     messagesVisibleItems?: number;
+    /** Transcript layout: stream keeps conversation rows flowing; dynamic windows them. */
+    messageLayout?: 'stream' | 'dynamic';
     messageDetailVisibleLines?: number;
     messageSelectionPageSize?: number;
     messageDetailPageSize?: number;
@@ -422,6 +424,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     statusVisibleLines: 8,
     sessionsVisibleItems: 6,
     messagesVisibleItems: 7,
+    messageLayout: 'stream',
     messageDetailVisibleLines: 6,
     messageSelectionPageSize: 6,
     messageDetailPageSize: 5,
@@ -1377,7 +1380,7 @@ export class AgentConsoleSessionState {
         // one setMessages per entry (600 reactive cascades = minutes of sync
         // work). Replicates upsertUiEventMessage dedup on a working array.
         const pending = this.messages.slice();
-        for (const entry of sortTimelineEntries(entries)) {
+        for (const entry of sortTimelineEntries(entries).filter(item => !item.sessionId || item.sessionId === this.sessionId)) {
             const key = this.qualifyUiEventKey(projectTimelineKey(entry));
             if (!key) {
                 continue;
@@ -1431,7 +1434,7 @@ export class AgentConsoleSessionState {
         if (!list.length) {
             return;
         }
-        const ordered = list.slice().sort(compareCommandExchangeAsc);
+        const ordered = list.filter(record => !record.sessionId || record.sessionId === this.sessionId).sort(compareCommandExchangeAsc);
         let seedCount = 0;
         const accepted: CommandExchangeRecord[] = [];
         for (const record of ordered) {

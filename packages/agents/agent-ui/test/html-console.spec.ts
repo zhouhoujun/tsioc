@@ -345,7 +345,7 @@ export class HtmlConsoleTest {
     @Test('expanding a folded auxiliary message refreshes and restores the visible window')
     async expandingFoldedAuxiliaryMessageRefreshesVisibleWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 },
             { id: 'a1', role: 'assistant', content: 'middle marker', createdAt: 2 },

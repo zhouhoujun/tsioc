@@ -2275,6 +2275,94 @@ export class AgentConsoleComponentTest {
         expect(component.title).toEqual('Rpc Console');
     }
 
+    @Test('plain startup keeps a fresh session empty when the workspace has historical sessions')
+    async plainStartupDoesNotRestoreWorkspaceHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const appRpc = new AppRpcStub();
+        sessionService.sessions = [{
+            id: 'historical-session',
+            current: true,
+            workspace: '/tmp/history-workspace',
+            lastActiveAt: 10
+        }];
+        appRpc.pageResults = {
+            messages: [{ id: 'old-message', role: 'user', content: 'historical transcript', createdAt: 1 }],
+            sections: [{ id: 'old-section', label: 'Historical section', createdAt: 1 }],
+            goalSummary: { summary: 'historical goal' }
+        };
+        appRpc.todoPlanBySession.set('historical-session', [{
+            id: 'old-plan',
+            content: 'historical plan',
+            status: 'in_progress'
+        }]);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            appRpc,
+            {
+                bootstrapTurn: { enabled: false, sessionId: '' },
+                ui: { title: 'Console', console: { workspace: '/tmp/history-workspace' } }
+            }
+        );
+
+        await component.onInit();
+
+        expect(component.sessionId).toEqual('session-1');
+        expect(component.sessionId).not.toEqual('historical-session');
+        expect(component.sessionState.messages).toEqual([]);
+        expect(component.sessionState.planTodos).toEqual([]);
+        expect(component.sessionState.sections).toEqual([]);
+        expect(component.sessionState.goalSummary).toEqual(null);
+        const todoSessionIds = appRpc.calls
+            .filter(call => call.method === 'todo.get')
+            .map(call => call.params?.sessionId);
+        expect(todoSessionIds).toEqual(['session-1']);
+    }
+
+    @Test('explicit startup session still restores its transcript and plan')
+    async explicitStartupSessionRestoresHistory() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const appRpc = new AppRpcStub();
+        sessionService.sessions = [{ id: 'resume-session', current: true, workspace: '/tmp/history-workspace' }];
+        appRpc.pageResults = {
+            messages: [{ id: 'resume-message', role: 'user', content: 'resume transcript', createdAt: 1 }]
+        };
+        appRpc.todoPlanBySession.set('resume-session', [{
+            id: 'resume-plan',
+            content: 'resume plan',
+            status: 'in_progress'
+        }]);
+        const component = createConsole(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            appRpc,
+            {
+                bootstrapTurn: { sessionId: 'resume-session' },
+                ui: { title: 'Console', console: { workspace: '/tmp/history-workspace' } }
+            }
+        );
+
+        await component.onInit();
+
+        expect(component.sessionId).toEqual('resume-session');
+        expect(component.sessionState.messages.map(message => message.content)).toContain('resume transcript');
+        expect(component.sessionState.planTodos.map(todo => todo.content)).toContain('resume plan');
+    }
+
     @Test('loads persisted input history on init and filters pure commands for selection')
     async loadsPersistedInputHistoryOnInit() {
         const runtime = new RuntimeStub();

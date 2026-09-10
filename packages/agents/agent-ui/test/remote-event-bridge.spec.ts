@@ -54,6 +54,14 @@ export class RemoteEventBridgeParsingTest {
 
 @Suite('AgentConsoleRemoteEventBridge mapping')
 export class RemoteEventBridgeMappingTest {
+    @Test('seedTimeline ignores events from another session')
+    seedTimelineIsSessionScoped() {
+        const state = makeState();
+        state.sessionId = 's1';
+        state.seedTimeline([{ sessionId: 's2', sequence: 2, kind: 'tool_invoked', status: 'running', content: 'drop' } as any]);
+        expect(state.messages.length).toEqual(0);
+    }
+
     @Test('turn_started sets status running and activity')
     turnStarted() {
         const state = makeState();

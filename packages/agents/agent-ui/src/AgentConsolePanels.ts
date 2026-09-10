@@ -2572,6 +2572,11 @@ export class AgentConsoleMessagesPanelComponent {
             return this.resolveTimelineVisibleMessages(messages);
         }
         const visibleCount = this.state.consoleOptions.messagesVisibleItems;
+        // MESSAGE LAYOUT CONTRACT (todo.md 2026-09-10): stream is the default
+        // and must remain an unbounded transcript; dynamic is opt-in.
+        if (this.state.consoleOptions.messageLayout !== 'dynamic') {
+            return messages;
+        }
         if (this.state.messageDetailOpen) {
             return messages;
         }
@@ -2724,10 +2729,11 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
+        const streamLayout = this.state.consoleOptions.messageLayout !== 'dynamic';
         if (this.state.rawMode || this.state.showCriticalMarks) {
             return this.messageItems;
         }
-        if (this.state.messagesFocused) {
+        if (this.state.messagesFocused && !streamLayout) {
             return this.messageItems.map(item => {
                 if (this.state.messageDetailOpen
                     && item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
@@ -2738,12 +2744,16 @@ export class AgentConsoleMessagesPanelComponent {
                     || this.isApprovalMessageItem(item)) {
                     return item;
                 }
-                const reasoning = this.isReasoningMessageItem(item);
-                return this.truncateMessageItem(
-                    item,
-                    reasoning ? REASONING_MESSAGE_PREVIEW_LINES : COLLAPSED_MESSAGE_PREVIEW_LINES,
-                    !reasoning
-                );
+                if (this.isReasoningMessageItem(item)) {
+                    return this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES, false);
+                }
+                if (this.isEventRowMessageItem(item)) {
+                    return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+                }
+                if (item.templateKind === 'assistant' || item.templateKind === 'user') {
+                    return item;
+                }
+                return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
             });
         }
         if (this.state.messageDetailOpen) {

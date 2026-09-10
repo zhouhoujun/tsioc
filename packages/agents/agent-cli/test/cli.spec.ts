@@ -259,7 +259,7 @@ export class AgentCliTest {
         expect(resolved.channels.defaultChannel).toBe('local');
     }
 
-    @Test('resolves workspace skill roots and tools root from settings as configuration only')
+    @Test('resolves workspace settings without implicitly resuming the configured session')
     async resolvesWorkspaceSkillRootsAndToolsRootFromSettingsAsConfigurationOnly() {
         const root = await this.createRoot();
         const settingsPath = path.join(root, 'settings.json');
@@ -278,7 +278,8 @@ export class AgentCliTest {
             }
         }), 'utf8');
         const resolved = resolveCliConfig({ root });
-        expect(resolved.sessionId).toBe('s-from-settings');
+        expect(resolved.sessionId).toMatch(/^session-\d+-[0-9a-f]+$/);
+        expect(resolved.sessionId).not.toBe('s-from-settings');
         expect(resolved.root).toBe(path.resolve(root));
         expect(resolved.settingsPath).toBe(settingsPath);
         expect(resolved.workspace).toBe(path.resolve(root, 'custom-workspace'));

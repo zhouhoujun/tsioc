@@ -114,7 +114,8 @@ export function buildConsoleAgentOptions(
                 workingPresentation: 'compact',
                 showStatusline: false,
                 showMessageTimestamps: false,
-                messageToggleInteraction: 'enter'
+                messageToggleInteraction: 'enter',
+                messageLayout: 'stream'
             }
         }
     });

@@ -1496,6 +1496,28 @@ export class ConsoleRendererTest {
         })).toBe('\x1b[1B\r\x1b[4C');
     }
 
+    @Test('terminal startup clears the viewport without deleting shell scrollback')
+    terminalStartupPreservesShellScrollback() {
+        const writes: string[] = [];
+        const service = new ConsoleTerminalSurfaceLifecycleService({} as any);
+        Object.defineProperty(service, 'output', {
+            value: {
+                isTTY: true,
+                write(value: string) {
+                    writes.push(value);
+                }
+            },
+            configurable: true
+        });
+        Object.defineProperty(service, 'useAlternateScreen', { value: false, configurable: true });
+        Object.defineProperty(service, 'mouseTrackingEnabled', { value: false, configurable: true });
+
+        (service as any).prepare();
+
+        expect(writes).toEqual(['\x1b[2J\x1b[H']);
+        expect(writes.join('')).not.toContain('\x1b[3J');
+    }
+
     @Test('centers terminal brand title while keeping metadata left aligned')
     centersTerminalBrandTitle() {
         const lines = buildTerminalBrandBlock(40, 'TSDI Agent', 'gpt-5.4', '/home/zhouyou/workspace/core')

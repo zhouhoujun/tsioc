@@ -462,6 +462,31 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
     }
 
+    @Test('stream layout keeps focused assistant replies fully visible')
+    async streamLayoutKeepsFocusedAssistantRepliesFull() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+        ref.instance.sessionState.setMessages([{
+            id: 'a-stream',
+            role: 'assistant',
+            content: Array.from({ length: 42 }, (_, index) => `focused line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        ref.instance.sessionState.setMessagesFocused(true);
+        ref.instance.sessionState.setSelectedMessageId('a-stream');
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('focused line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('focused line 42'))).toBe(true);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
+        expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
+    }
+
     @Test('shows very long assistant replies in full in default mode (opencode-style)')
     async showsVeryLongAssistantRepliesInFullWhenUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
@@ -626,7 +651,8 @@ export class AgentConsoleMessagesRendererTest {
     @Test('keeps the latest substantive user request visible while showing latest messages when unfocused')
     async keepsLatestSubstantiveUserRequestVisibleWhileUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setMessagesFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,
@@ -647,7 +673,8 @@ export class AgentConsoleMessagesRendererTest {
     @Test('replaces the pinned root request when a newer substantive user request appears')
     async replacesPinnedRootRequestWhenNewerSubstantiveUserRequestAppears() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setMessagesFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,

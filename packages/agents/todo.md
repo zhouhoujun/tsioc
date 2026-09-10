@@ -2444,6 +2444,27 @@ Turn: Fix session restore                                      running  01:42
 
 ## v19 · 完成计划归并与下一阶段重构路线（2026-09-09）
 
+### agent-ui 启动与消息布局契约（2026-09-10，必须保持）
+
+- 未提供 `--session <id>` 时必须创建全新会话；启动流程不得回退使用默认 `state.sessionId`，否则会自动恢复并输出历史对话。只有显式 session 才允许加载既有 transcript。
+- 自动生成的 session ID 必须使用 `chat` + 无连字符十六进制 UUID（`chat[0-9a-f]{32}`），保证可直接传给 CLI 的 `--session` 参数。
+- 回放契约：timeline/command-exchange seed 必须再次按 `record.sessionId === state.sessionId` 过滤；RPC 层过滤不能替代 UI 侧防串会话校验。
+- 回归测试要求：`console-platform.spec.ts` 固定覆盖无 `--session` 时 `bootstrapTurn.enabled=false`、sessionId 为空、默认 `messageLayout=stream`，以及显式无连字符 session 可恢复；改动启动/布局/session ID 时必须保持这些测试通过。
+- agent-ui 支持两种消息布局，由 `ui.console.messageLayout` 配置：`stream`（默认，展示完整消息流，不按 `messagesVisibleItems` 截取消息集合）与 `dynamic`（仅对消息集合按可见条数窗口化，保留选择、翻页和 pinned root request）。**布局模式只控制显示哪些消息，不控制单条消息正文是否折叠。**
+- **正文默认不折叠（两种布局一致）**：普通 `user` / `assistant` 对话必须全文显示，包括方案、问询、长回复；不得因为 `dynamic`、focused/unfocused、TUI/browser 或终端高度而折叠正文。`plan`、审批、错误同样固定展开。
+- **仅按内容类型折叠辅助信息**：reasoning、timeline/event row、普通 system/辅助输出等可按各自 preview budget 折叠；展开/收起不得改变消息窗口选择语义。禁止以 `messageLayout === 'dynamic'` 作为折叠普通 user/assistant 正文的条件。
+- `stream` 与 `dynamic` 均须跨 TUI/browser 共用；禁止通过定时器驱动刷新。默认 `stream` 的完整消息流使用终端原生 scrollback；启动仅清当前 viewport（`ESC[2J ESC[H]`），**禁止发送 `ESC[3J` 删除用户启动前的 shell scrollback**；显式 Ctrl+L 清 scrollback 不受此限制。
+- 修改启动会话或消息渲染逻辑时，必须保持以下成对回归：无 `--session` 且 workspace 存在历史 session/messages/plan/sections/goal 时新会话仍为空；显式 session 恢复历史；stream 在 focused/unfocused 下普通 assistant 全文；dynamic 只窗口化消息集合且普通 user/assistant 全文；dynamic 下辅助/system 可折叠而 plan/error/approval 固定展开；browser 展开/收起后恢复原窗口；终端启动控制序列不含 `ESC[3J`。
+- **本轮修复（2026-09-10）**：CLI 用 `bootstrapTurn.enabled=false` 显式标识 fresh startup，仅 `--session` 可恢复；fresh session 隔离项目内旧 transcript/plan/tasks/sections/goal，timeline/command-exchange seed 再按 session 过滤。双布局收敛为“集合布局与正文折叠正交”：两种布局的普通对话均不折叠，dynamic 仅窗口化集合，辅助内容按类型折叠。新增 fresh/resume、stream focused 全文、dynamic 内容类型、browser dynamic、启动 scrollback 控制序列回归；`agent-ui` **1141 passing / EXIT=0**，`components/console` **74 passing / EXIT=0**，`agent-ui npx tsc --noEmit` 与 `git diff --check` 通过。
+
+### v19 启动会话与双布局契约收尾（2026-09-10）✅
+
+- **真实历史项目验收**：在真实 `~/.tsdi-agent/agent.db` 与已有历史会话的 `/home/zhouyou/workspace/sleep-mlt` 上执行 `npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`；创建新会话 `chat7d8fe07dba5f10268d6a27101213eccb`，首屏仅品牌、空输入框与 `0 tokens`，未出现旧 transcript/plan/tool/summary。启动序列为 `ESC[2J ESC[H`，不含 `ESC[3J`，保留启动前 shell scrollback。
+- **双布局显示结论**：`stream` 与 `dynamic` 均默认完整显示普通 user/assistant 正文；`stream` 展示完整消息集合并使用原生 scrollback，`dynamic` 仅窗口化消息集合。reasoning/event/system 等辅助内容可按类型折叠，plan/error/approval 固定展开；focused/unfocused 与 TUI/browser 不得改变上述正文规则。
+- **回归锁定**：新增 fresh workspace 历史隔离、显式 session 恢复、跨 session timeline/command-exchange 丢弃、stream focused 长回复全文、dynamic pinned/window 与内容类型、browser dynamic 展开恢复、终端启动禁止 `ESC[3J` 等测试；旧窗口化测试显式声明 `messageLayout: 'dynamic'`，避免依赖默认布局。
+- **agents 全量**：`agent` **811**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **289**、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1141**、`agent-desktop` **20**、`agent-vscode` **7**，全部 0 failed / EXIT=0。
+- **框架与静态门禁**：`components` **136**、`components/console` **74**、`components/html` **117**，全部 EXIT=0；`agent`、`agent-gateway`、`agent-ui` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过。
+
 ### 已完成能力归并（单一索引）
 
 - **运行时与模型**：turn/stream、上下文压缩重放、prompt cache、多 provider/routing/retry、sandbox 策略、计划与 archetype 门控。
