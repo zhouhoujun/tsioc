@@ -2558,7 +2558,7 @@ Turn: Fix session restore                                      running  01:42
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。
 - 先覆盖 command-exchange 与 timeline 两条链路，再扩展 tools/questions；新增乱序、重复、跨 session/principal fuzz 用例。
 - **B1 达成（2026-09-09）✅**：抽取共享 `AgentExchangeFields`（`agent/src/ui/ThreadItemProjection.ts`）+ 单一归一化 `normalizeAgentExchangeFields`；`ThreadItemEvent extends AgentExchangeFields`、`CommandExchangeEnvelope extends AgentExchangeFields`（`CommandExchangeEvent.ts`），两类型字段结构与归一化收敛到单一定义，消除 gateway/Fake/RemoteEventBridge 拼装的字段名/校验漂移（`key`/`content` trim、`sequence`/`attempt` finite 校验、`outputIds` 拷贝统一）。`normalizeCommandExchangeEnvelope` 在共享归一化基础上补 `sequence`/`sessionEpoch` 非有限→0 的落库契约。`commandExchangeKey`/`threadItemKey` 均为 `kind:identity` 一致格式。
-  - **红化（redaction）/capability 校验统一与 gateway/RemoteEventBridge 消费迁移**留作后续切片（本批以字段/归一化收敛打底，避免一次性大改 1117 条 agent-ui 用例的回归风险）。
+  - **红化（redaction）/capability 校验统一与 gateway/RemoteEventBridge 消费迁移**留作后续切片（本批以字段/归一化收敛打底，避免一次性大改 1117 条 agent-ui 用例的回归风险）。红化统一已由 v19-B6 落地；capability 语义保持不动（见 v19-B6）。
   - 测试：新增 `agent/test/thread-item-projection.spec.ts` 2 断言（两类型归一化一致性、共享展示预算常量）。门禁：`agent` tsc EXIT=0；`agent-ui` tsc EXIT=0；agent-ui 全量 **1117 passing / 0 failed**。
 
 ### v19-C1 · ThreadItem 统一展示预算（2026-09-09 ✅）
@@ -2579,7 +2579,7 @@ Turn: Fix session restore                                      running  01:42
 
 - **范围**：消除 gateway REST/RPC 两条 append 链路与 `AppRpcServer` command-output 读写的字段构造/脱敏重复实现，收敛到 agent 共享层单一来源。
 - **共享构造**：`agent/src/ui/CommandExchangeEvent.ts` 新增 `CommandExchangeRecordSource` 接口与 `parseCommandExchangeRecord(sessionId, source)`——对不可信入站 payload 做与原先两处内联完全一致的字段强制（`sessionEpoch`/`timestamp` 数值回退、`attempt`/`durationMs` 数字、`outputIds` 数组→String、`id` 空值回退 `cmdex:${sessionId}:${Date.now()}`）；`CommandExchangeHandler`（REST）与 `AppRpcServer.appendCommandExchange`（RPC）改为消费该函数，各自删除约 20 行重复解构。
-- **共享脱敏**：`agent/src/ui/CommandOutputHistory.ts` 新增 `redactCommandOutputEntry(entry)`（基于既有 `redactCommandOutputSecret`，覆盖 text/command/argsSummary，无变化时返回原 entry）；`AppRpcServer` 私有同名方法改为委托共享函数，删除静态 `commandOutputRedactor = new RedactionFilter()` 实例与 `RedactionFilter` import。`redactCommandExchangeRecord`（responded：`command-exchange-redact.ts`）保持 gateway 本地不变。
+- **共享脱敏**：`agent/src/ui/CommandOutputHistory.ts` 新增 `redactCommandOutputEntry(entry)`（基于既有 `redactCommandOutputSecret`，覆盖 text/command/argsSummary，无变化时返回原 entry）；`AppRpcServer` 私有同名方法改为委托共享函数，删除静态 `commandOutputRedactor = new RedactionFilter()` 实例与 `RedactionFilter` import。`redactCommandExchangeRecord`（responded：`command-exchange-redact.ts`）保持 gateway 本地不变——已于 v19-B6 统一进共享层并删除本地副本。
 - **未纳入**：`FakeAgentGateway.appendCommandExchange` 是刻意宽松的测试门 fixture（直接展开 raw record 并自动补 seq/id/sessionEpoch），与传输层严格构造目的不同，保持不动以保护 1117 条 agent-ui 门禁。
 - 测试：新增 `agent/test/thread-item-projection.spec.ts` 2 断言（`parseRecord`/`parseDefaults`）+ 新文件 `agent/test/command-output-history.spec.ts` 4 断言（`redactsEntry`/`noop`/`preservesUndefined`/`secret`）。
 - 门禁：`agent` 全量 **811 passing / 0 failed / EXIT=0**（基线 805 +6）；`agent-gateway` 全量 **278 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1117 passing / 0 failed / EXIT=0**；`agent`、`agent-gateway`、`agent-ui` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理。
@@ -2633,3 +2633,13 @@ Turn: Fix session restore                                      running  01:42
   - 阶段 C：子进程 B `replay(sinceSeq=1)` → seenSeqs [2,3]（看到父进程的 p-3）、queryCount 4；
   - 阶段 D：父进程新 store `cleanup(beforeSeq=2)` 移除 3 条、`replay(-1)`=[3]、续 append `p-4` → **seq 4**（cleanup 后再次从文件 re-seed）、finalReplay [3,4]。
 - 门禁：agent-gateway 全量 **290 passing / 0 failed / EXIT=0**（基线 289 +1）；`agent` 全量 **812 passing / 0 failed / EXIT=0**（无回归）；`agent`、`agent-gateway` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理（子进程脚本留在 test/ 作为 spec 的固定 fixture，不以 `.spec.ts` 结尾不被 glob 收集）。
+
+### v19-B6 · command-exchange 记录红化统一 + gateway 消费迁移（2026-09-11 ✅）
+
+- **范围**：兑现 v19-B1 遗留切片中的红化统一部分——删除 gateway 本地 `command-exchange-redact.ts`，`redactCommandExchangeRecord` 上移到 `agent/src/ui/CommandOutputHistory.ts` 共享层，REST/RPC 两条 append 链路统一消费 `@tsdi/agent` 单一实现（对齐 AGENTS.md"共享逻辑覆盖优先于重复实现"）。capability 校验（REST `isOwner` / RPC `ensureSessionAccess`）语义**保持不动**。
+- **共享实现**：`agent/src/ui/CommandOutputHistory.ts` 新增 `redactCommandExchangeRecord(record)`，内部复用既有 `redactCommandOutputSecret`（与 `RedactionFilter.redactText` 逐字节同正则 `/(Bearer\s+)[A-Za-z0-9._-]+|\b(sk-[A-Za-z0-9_-]{8,})\b/gi`）；`content` 必红化，`command`/`args`/`error` 走 `!= null` 守卫（无值保持 undefined），无变化返回原 record 引用。类型 `CommandExchangeRecord` 从 `../memory/timeline-projection` 导入（该模块仅 import `@tsdi/ioc`，无循环依赖风险），并经 agent `index.ts` 导出。
+- **消费迁移**：`CommandExchangeHandler.ts`（REST）与 `AppRpcServer.ts`（RPC，并入既有 `@tsdi/agent` import 块）改为消费共享函数；删除 `agent-gateway/src/api/command-exchange-redact.ts`（含其模块级 `new RedactionFilter()` 实例）。行为零变化（原有本地实现即同一函数体的拷贝）。
+- **capability 保持说明**：REST `SessionOwnerStore.isOwner` 无 principal 返回 false → 403；RPC `ensureSessionAccess` `if (!context.principalId) return;` 无 principal 放行。该差异对本地模式承重（`agent-cli/src/run-command.ts:215` 默认 `principalId = 'local-system'`；gateway RPC 测试 `call()` 默认 `'user-1'`），不在本切片改动，仅记录差异事实。
+- **未纳入**：v19-C2 遗留的模板 v-for 按 key trackBy 复用（todo.md 2610 行）与 AGENTS.md 约束 #1 冲突（P63 曾有 2 个 agent-ui 回归并回退），判定跳过不实施。
+- 测试：`agent/test/command-output-history.spec.ts` 新增 3 断言——`redactsRecord`（content/command/args/error 均红化，非敏感字段保持）、`recordNoop`（无可红化内容返回同一 record 引用）、`recordPreservesOptional`（缺省 command/args/error 保持 undefined）。
+- 门禁：`agent` 全量 **815 passing / 0 failed / EXIT=0**（基线 812 +3）；`agent-gateway` 全量 **290 passing / 0 failed / EXIT=0**（无回归）；`agent-ui` 全量 **1141 passing / 0 failed / EXIT=0**（无回归）；`agent`、`agent-gateway` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理（单文件 runner 在 agent 包不采集用例，门禁以全量 glob runner 为准）。

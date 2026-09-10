@@ -3,12 +3,11 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import {
     COMMAND_EXCHANGE_STORE, CommandExchangeStore,
     CommandExchangeRecord, CommandExchangePageOptions, CommandExchangeStaleError,
-    ExchangeMetrics, ExchangeMetricsSnapshot, parseCommandExchangeRecord
+    ExchangeMetrics, ExchangeMetricsSnapshot, parseCommandExchangeRecord, redactCommandExchangeRecord
 } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
-import { redactCommandExchangeRecord } from './command-exchange-redact';
 
 @Injectable()
 export class CommandExchangeHandler {

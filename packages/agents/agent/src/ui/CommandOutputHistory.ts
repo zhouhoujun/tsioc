@@ -22,6 +22,8 @@
  * or any node API (`node:`, `process`, `Buffer`, `fs`, `__dirname`).
  */
 
+import { CommandExchangeRecord } from '../memory/timeline-projection';
+
 export interface AgentConsoleCommandOutputHistoryEntry {
     id: string;
     command: string;
@@ -184,4 +186,21 @@ export function redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistory
         return entry;
     }
     return { ...entry, text, command, argsSummary };
+}
+
+/**
+ * v19-B1: redact the secret-bearing text fields of a command-exchange record
+ * before it leaves the gateway. Same token rules as the rest of the agent
+ * (`redactCommandOutputSecret` mirrors `RedactionFilter.redactText`); no
+ * change returns the original record reference.
+ */
+export function redactCommandExchangeRecord(record: CommandExchangeRecord): CommandExchangeRecord {
+    const content = redactCommandOutputSecret(record.content);
+    const command = record.command != null ? redactCommandOutputSecret(record.command) : undefined;
+    const args = record.args != null ? redactCommandOutputSecret(record.args) : undefined;
+    const error = record.error != null ? redactCommandOutputSecret(record.error) : undefined;
+    if (content === record.content && command === record.command && args === record.args && error === record.error) {
+        return record;
+    }
+    return { ...record, content, command, args, error };
 }
