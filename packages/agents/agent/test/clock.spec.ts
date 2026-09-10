@@ -28,6 +28,16 @@ export class AgentClockSpec {
         expect(clock.now()).toBe(300);
     }
 
+    @Test('system clock sleep can be cancelled without waiting for its timeout')
+    async cancellableSystemSleep() {
+        const clock = new SystemAgentClock();
+        const controller = new AbortController();
+        const sleep = clock.sleep(30000, controller.signal);
+        controller.abort();
+        await sleep;
+        expect(controller.signal.aborted).toBe(true);
+    }
+
     @Test('retryAfterMs accepts an injected clock now')
     retryAfterUsesInjectedClock() {
         expect(retryAfterMs('2', 5000)).toBe(2000);

@@ -6,11 +6,14 @@ export function classifyModelError(status?: number, error?: unknown): ModelError
     if (status === 529) return 'capacity';
     if (typeof status === 'number' && status >= 500) return 'server';
     const message = String((error as any)?.message ?? error ?? '').toLowerCase();
-    if (message.includes('timeout') || message.includes('aborted')) return 'timeout';
     if (message.includes('overloaded') || message.includes('capacity')
         || message.includes('insufficient_quota') || message.includes('insufficient quota')) {
         return 'capacity';
     }
+    // A received non-retryable HTTP response is not a transport failure merely
+    // because its response body contains an error message.
+    if (typeof status === 'number') return 'unknown';
+    if (message.includes('timeout') || message.includes('aborted')) return 'timeout';
     // Match both snake_case and kebab-case forms that providers emit.
     if (message.includes('network_error') || message.includes('network-error')
         || message.includes('econnrefused') || message.includes('econnreset')

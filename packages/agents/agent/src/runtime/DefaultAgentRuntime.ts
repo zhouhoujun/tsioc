@@ -3100,7 +3100,10 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     ?? defaultAgentOptions.tools?.approvalTimeoutMs,
                 autoDeny: false,
                 autoReview: this.options.tools?.approvalAutoReview ?? defaultAgentOptions.tools?.approvalAutoReview
-            }
+            },
+            undefined,
+            undefined,
+            this.clock
         );
     }
 

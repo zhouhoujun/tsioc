@@ -179,6 +179,7 @@ export class ToolApprovalManager extends ApprovalManager {
     private pending = new Map<string, {
         request: ApprovalRequest;
         resolve: (decision: ApprovalDecision) => void;
+        abortController: AbortController;
     }>();
 
     constructor(
@@ -257,11 +258,20 @@ export class ToolApprovalManager extends ApprovalManager {
         }
 
         const decision = await new Promise<ApprovalDecision>((resolve) => {
-            this.pending.set(request.id, { request, resolve });
+            const abortController = new AbortController();
+            this.pending.set(request.id, { request, resolve, abortController });
             this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
                 .catch(() => {});
             // v19-A2: use clock.sleep() for deterministic timeout in tests
-            const sleep = this.clock?.sleep ?? (ms => new Promise(r => setTimeout(r, Math.max(0, ms))));
+            const sleep = this.clock
+                ? (ms: number) => this.clock!.sleep(ms, abortController.signal)
+                : (ms: number) => new Promise<void>(resolve => {
+                    const timer = setTimeout(resolve, Math.max(0, ms));
+                    abortController.signal.addEventListener('abort', () => {
+                        clearTimeout(timer);
+                        resolve();
+                    }, { once: true });
+                });
             sleep(request.timeoutMs).then(() => {
                 if (!this.pending.has(request.id)) return;
                 this.pending.delete(request.id);
@@ -320,6 +330,7 @@ export class ToolApprovalManager extends ApprovalManager {
         const pending = this.pending.get(requestId);
         if (!pending) return false;
         this.pending.delete(requestId);
+        pending.abortController.abort();
         pending.resolve(ApprovalDecision.APPROVED);
         return true;
     }
@@ -328,6 +339,7 @@ export class ToolApprovalManager extends ApprovalManager {
         const pending = this.pending.get(requestId);
         if (!pending) return false;
         this.pending.delete(requestId);
+        pending.abortController.abort();
         pending.resolve(ApprovalDecision.DENIED);
         return true;
     }
@@ -345,6 +357,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 continue;
             }
             this.pending.delete(requestId);
+            pending.abortController.abort();
             pending.resolve(ApprovalDecision.CANCELLED);
             this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval cancelled by turn cancellation')))
                 .catch(() => {});
@@ -378,6 +391,7 @@ export class ToolApprovalManager extends ApprovalManager {
                 continue;
             }
             this.pending.delete(requestId);
+            pending.abortController.abort();
             pending.resolve(ApprovalDecision.TIMEOUT);
             this.app.publishEvent(new AgentApprovalFailedEvent(this, this.toRequestRef(pending.request), new Error('Approval timeout')))
                 .catch(() => {});

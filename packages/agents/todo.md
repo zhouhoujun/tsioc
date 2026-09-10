@@ -2544,6 +2544,15 @@ Turn: Fix session restore                                      running  01:42
   - 测试：新增 `agent/test/clock.spec.ts` 4 断言（SystemClock 委托 Date.now、Deterministic advance/freeze、deterministic sleep、`retryAfterMs` 注入 now）；`retry-policy.spec` 既有覆盖不变。
   - 门禁：`agent` 全量 **799 passing / 0 failed / EXIT=0**（基线 795 +4 新增 clock 测试）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过。
 
+### v19-A2 性能回归收尾（2026-09-10 ✅）
+
+- **根因**：`DefaultAgentRuntime.resolveApprovalManager()` 临时创建 `ToolApprovalManager` 时未透传已注入的 `AgentClock`；审批门控用例因此走真实墙钟。该用例同时由 `policy.limits.approvalTimeoutMs=30000` 覆盖 legacy `tools.approvalTimeoutMs=1000`，两个需审批工具按契约串行执行，累计等待约 60 秒。
+- **Clock 链路修复**：runtime 创建审批管理器时透传 clock；`AgentClock.sleep(ms, signal?)` 增加标准 `AbortSignal` 取消能力，`SystemAgentClock` 在 abort 时清理 timer 并完成 Promise，`DeterministicAgentClock` 保持同步推进逻辑时间。审批 approve/reject/cancel/防御性 expiry sweep 均取消未完成 sleep，避免已完成审批遗留 30/60 秒 timer 阻止 Node 进程退出；无 clock 的兼容 fallback 同样可取消。
+- **重试分类修复**：`classifyModelError` 不再把带错误正文的普通 HTTP 4xx 误判为 network；除 429、529/容量信号外，已收到的非 5xx HTTP 响应归类为 `unknown` 且不重试。修复前 400 用例错误执行 1s/2s/4s 退避，修复后直接返回包含 API error body 的错误。
+- **回归锁定**：runtime 审批门控测试注入 `DeterministicAgentClock` 并断言两个串行超时推进 60000ms 逻辑时间；clock spec 覆盖 30 秒 sleep 可立即 abort；retry-policy spec 覆盖带正文的 HTTP 400 不可重试。慢审批用例由约 **1.002min** 降至 **47.593ms**，HTTP 400 用例由约 **7.8s** 降至 **618.202us**；`agent` 独立全量 **812 passing / 23.332s / EXIT=0**（原 811 +1）。命令总墙钟仍包含 `ts-node` 整库类型检查启动成本，不计入测试框架执行耗时；未修改全仓统一 test script。
+- **固定规范**：所有 runtime/tool/model 的延迟测试必须注入 deterministic clock，禁止用生产级 timeout 做真实等待；新增可提前完成的 timer 必须具备取消/清理路径，测试结束后不得残留 event-loop handle；已知 HTTP status 与 transport error 必须分开分类，普通 4xx 不得按 network retry。
+- **收尾门禁**：packages/agents 全量均 EXIT=0：`agent` 812、`agent-ui` 1141、`agent-channels` 59、`agent-cli` 74、`agent-gateway` 289、`agent-tools` 478、`agent-providers` 13、`agent-ssh` 8、`agent-desktop` 20、`agent-vscode` 7；监听类 gateway/tools/ssh 在具备本地端口权限的宿主复跑。框架回归 `components` 136、`components/console` 74、`components/html` 117，全部 EXIT=0。`agent` `npm run build`、`npx tsc --noEmit`、`git diff --check` 与 Node API 边界扫描通过；临时 runner 已清理。
+
 ### v19-B1 · AgentExchangeEnvelope 统一化（2026-09-09 ✅）
 
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。

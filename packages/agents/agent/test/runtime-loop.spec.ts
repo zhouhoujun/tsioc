@@ -26,6 +26,7 @@ import { AgentTool } from '../src/tools/AgentTool';
 import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent } from '../src/runtime/AgentEvents';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { provideAgentOrm } from '../src/orm.module';
+import { AGENT_CLOCK, DeterministicAgentClock } from '../src/runtime/Clock';
 
 const RUNTIME_LOOP_EVENTS = [
     AgentContextPreparedEvent,
@@ -1924,6 +1925,7 @@ export class RuntimeLoopTest {
 
     @Test('forces sequential execution when a tool requires approval')
     async forcesSequentialExecutionForApprovalGatedTools() {
+        const clock = new DeterministicAgentClock();
         const { runtime } = await createRuntime(
             new MultiToolLoopModelAdapter(),
             new EchoToolRegistry(),
@@ -1939,7 +1941,8 @@ export class RuntimeLoopTest {
                     requireApproval: ['echo'],
                     approvalTimeoutMs: 1000
                 }
-            }
+            },
+            [{ provide: AGENT_CLOCK, useValue: clock }]
         );
 
         const result = await runtime.runTurn('s1', 'hello');
@@ -1948,6 +1951,7 @@ export class RuntimeLoopTest {
         // Approval timeout error is fed back as a tool message, turn continues
         const toolMessages = messages.filter(m => m.role === 'tool');
         expect(toolMessages.length).toBeGreaterThan(0);
+        expect(clock.now()).toEqual(60000);
     }
 
     @Test('runtime keeps builtin tools callable by default')

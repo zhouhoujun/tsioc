@@ -7,6 +7,7 @@ export class RetryPolicySpec {
     classify() {
         expect(classifyModelError(429)).toBe('rate-limit');
         expect(classifyModelError(503)).toBe('server');
+        expect(classifyModelError(400, new Error('invalid request'))).toBe('unknown');
         expect(classifyModelError(undefined, new Error('fetch failed'))).toBe('network');
         expect(classifyModelError(undefined, new Error('request timeout'))).toBe('timeout');
     }
