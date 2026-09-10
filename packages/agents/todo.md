@@ -2621,3 +2621,15 @@ Turn: Fix session restore                                      running  01:42
 - 测试：新增 `agent-ui/test/p287-command-schema-form-echo.spec.ts` 13 断言——form 行（/search `query...: string (required)`、/mcp `mode: enum(verbose|-v)`、/permissions 双行、/model variadic、/help 与 undefined 空）、echo 行（missing 三行、invalid enum expected/maybe、多诊断 flatMap expected`a|b`/`<none>`）、palette detail（/search 有、/status 无）、面板（string detail 进 JSON、object detail 空、cap=1 截断）、handleCommand 集成（/search notice 精确三行 + draft 保留 + 无 overlay、/yolo maybe 精确三行、/vim maybe x 多诊断开 notice overlay 且 lines 与 echo 一致）。
 - **兼容性验证**：p282 断言全为 toContain（'Missing required argument'/'maybe'/'Unexpected'/'Invalid'/'reset'），echo 首行即 message 子串不变；view-model palette/label 精确串、description detail JSON、overlay-presenter、html-console 面板存在性均不受影响；renderSelectMenuInRootTree 结构 hint 仍不泄漏（object detail 路径空渲染）。
 - 门禁：agent-ui 全量 **1135 passing / 0 failed / EXIT=0**（基线 1122 +13）；components/console 全量 **73 passing / EXIT=0**；`tsc --noEmit` EXIT=0；`git diff --check` 通过；临时 runner 已清理。
+
+### v19-B5 · 跨进程 SQLite append→query→replay 验收（2026-09-11 ✅）
+
+- **范围**：兑现 v19-B3 "未纳入" 中的跨进程 SQLite 验收（exchange 指标已于 v19-B4 完成）——用**真实子进程**证明 `TypeOrmCommandExchangeStore` 的持久化语义跨进程边界成立（网关重启 / 断线重连回放幂等），弥补此前所有测试都在同一进程内换 store 模拟的不足。
+- **验收模型**：`agent-gateway/test/cross-process-sqlite.spec.ts` 通过 `spawnSync(process.execPath, ['-r','ts-node/register','-r','tsconfig-paths/register', child, dbPath, sessionId, epoch, mode, resultFile])` 启动**真实独立 Node 进程**（cwd=包根目录），子进程 `cross-process-sqlite.child.ts` 用全新空的 `seqCounters`/`byId`/`maxEpochs` 内存索引打开**与父进程同一 sqljs 文件**，写 JSON result 文件后 exit 0。
+- **持久化事实依据**（与生产一致）：`provideAgentOrmStorage(root, fileName)`（orm.module.ts:104）即 `type:'sqljs' + location + autoSave: true`；TypeORM 0.3.20 `SqljsDriver.createDatabaseConnection` 在设置 location 时调 `load(location, false)` 把文件载入内存，`SqljsQueryRunner.flush()` 每次 commit/release 后经 `autoSave()` 写回文件（`PlatformTools.writeFile` 异步但 append 均 `await` 完成）；故顺序进程交接天然成立。
+- **四段断言**：
+  - 阶段 A：子进程 A append 3 条（epoch 7）→ result `{kind:'append', seqs:[0,1,2]}`；
+  - 阶段 B：父进程新 store `replay(-1)` = [0,1,2]（content child-0/1/2）；续 append `p-3` → **seq 3**（seq 计数器从文件 re-seed）；跨进程幂等重放 `xp-0` → seq 0 且 content 保持 'child-0'（不动新 payload，query 仍 4 条）；epoch 2 被拒（`CommandExchangeStaleError`，maxEpochs 从文件 re-seed=7）；cursor 分页 limit=2 走完 [0,1,2,3] 恰 2 页；
+  - 阶段 C：子进程 B `replay(sinceSeq=1)` → seenSeqs [2,3]（看到父进程的 p-3）、queryCount 4；
+  - 阶段 D：父进程新 store `cleanup(beforeSeq=2)` 移除 3 条、`replay(-1)`=[3]、续 append `p-4` → **seq 4**（cleanup 后再次从文件 re-seed）、finalReplay [3,4]。
+- 门禁：agent-gateway 全量 **290 passing / 0 failed / EXIT=0**（基线 289 +1）；`agent` 全量 **812 passing / 0 failed / EXIT=0**（无回归）；`agent`、`agent-gateway` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理（子进程脚本留在 test/ 作为 spec 的固定 fixture，不以 `.spec.ts` 结尾不被 glob 收集）。
