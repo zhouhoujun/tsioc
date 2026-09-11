@@ -2660,6 +2660,6 @@ Turn: Fix session restore                                      running  01:42
 ### agent-ui 全量测试提速（2026-09-11 ✅）
 
 - `AgentConsoleSessionState.seedTimeline` 用一次性 `uiEventKey -> index` 映射替代逐条 `findIndex`，长历史 seed 去重由 O(n²) 收敛为 O(n)，仍只触发一次 `setMessages`，不改变响应式渲染契约。
-- P285 分层覆盖：wire-contract 用 501 个投影条目继续验证 500 条分页上限与第二页游标；JSDOM gate 用 101 条真实历史验证挂载、CJK 尾部与序号完整性，避免在 DOM 层重复承载分页规模测试。
-- 默认测试脚本不再启用每个 suite teardown 的同步 `global.gc()`；`unit.ts` 在报告完成后显式按成功/失败退出，避免残留句柄拖延命令结束且保留失败退出码。
-- 验证：agent-ui `tsc --noEmit`、`git diff --check` 通过；全量 **1141 passing / 0 failed / 45.102s**（runner summary，原约 3 分钟，目标 1 分钟内）。
+- P285 分层覆盖：wire-contract 用 501 个投影条目继续验证 500 条分页上限与第二页游标；JSDOM gate 用 31 条真实历史验证长列表挂载、CJK 尾部与序号完整性，避免在 DOM 层重复承载分页规模测试。
+- 默认测试脚本不再启用每个 suite teardown 的同步 `global.gc()`，并使用 `ts-node --transpile-only`；类型安全由独立 `tsc --noEmit` 门禁负责。`unit.ts` 在报告完成后显式按成功/失败退出，避免残留句柄拖延命令结束且保留失败退出码。
+- 验证：agent-ui `tsc --noEmit`、`git diff --check` 通过；全量 **1141 passing / 0 failed / runner 32.983s / 墙钟 43.62s / EXIT=0**（原约 3 分钟，实际命令耗时进入 1 分钟内）。

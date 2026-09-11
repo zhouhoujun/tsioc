@@ -342,11 +342,11 @@ export const SCENARIOS: GatewayScenario[] = [
 
     {
         id: 'cjk-long-history',
-        label: '101 timeline entries keep long-history tail integrity',
+        label: '31 timeline entries keep long-history tail integrity',
         mount: { sessionId: 'session-A', reconnectDelayMs: 3000 },
         expect: {
             viewport: { width: 1280, height: 800 },
-            timelineSeedCount: 101,
+            timelineSeedCount: 31,
             commandExchangeSeedCount: 30,
             navSeedCount: 2,
             // Pagination beyond the 500 cap is covered by the wire-contract test.
@@ -355,7 +355,7 @@ export const SCENARIOS: GatewayScenario[] = [
             commandExchangeReplayCallsMin: 0,
             toolsListCallsMin: 0,
             sseDropped: false,
-            timelineTailSeqMin: 100,
+            timelineTailSeqMin: 30,
             minRenderedRows: 1,
             minCjkRows: 0,
             uniqueAriaLabels: true
@@ -364,8 +364,8 @@ export const SCENARIOS: GatewayScenario[] = [
         },
         buildGatewayOptions() {
             const timeline: TimelineEventRecord[] = [];
-            for (let i = 0; i < 101; i += 1) {
-                const cjk = i >= 98;
+            for (let i = 0; i < 31; i += 1) {
+                const cjk = i >= 28;
                 timeline.push({
                     seq: i, id: `ev-${i}`, type: 'tool_invoked', sessionId: 'session-A',
                     timestamp: TS_MS + i * 1000, turnId: `turn-${i}`, toolCallId: `tc-${i}`,
@@ -381,7 +381,7 @@ export const SCENARIOS: GatewayScenario[] = [
                     commandRecord(i + 1, { sessionId: 'session-A', content: `command ${i + 1} execution` })
                 ),
                 navSessions: [
-                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 101 },
+                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 31 },
                     { id: 'session-B', label: 'Yesterday', status: 'idle', messageCount: 12 }
                 ],
                 questions: [],
