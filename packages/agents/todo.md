@@ -2643,3 +2643,9 @@ Turn: Fix session restore                                      running  01:42
 - **未纳入**：v19-C2 遗留的模板 v-for 按 key trackBy 复用（todo.md 2610 行）与 AGENTS.md 约束 #1 冲突（P63 曾有 2 个 agent-ui 回归并回退），判定跳过不实施。
 - 测试：`agent/test/command-output-history.spec.ts` 新增 3 断言——`redactsRecord`（content/command/args/error 均红化，非敏感字段保持）、`recordNoop`（无可红化内容返回同一 record 引用）、`recordPreservesOptional`（缺省 command/args/error 保持 undefined）。
 - 门禁：`agent` 全量 **815 passing / 0 failed / EXIT=0**（基线 812 +3）；`agent-gateway` 全量 **290 passing / 0 failed / EXIT=0**（无回归）；`agent-ui` 全量 **1141 passing / 0 failed / EXIT=0**（无回归）；`agent`、`agent-gateway` `tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；临时 runner 已清理（单文件 runner 在 agent 包不采集用例，门禁以全量 glob runner 为准）。
+
+### 2026-09-11 收尾复核与提交
+
+- 工作区、临时文件及差异检查完成：`git status` 干净，`git diff --check` 通过；未发现新的源码缺口或跨平台边界违规。
+- 按固定门禁启动 agents 目录 10 个包的全量测试与 agent/agent-ui TypeScript 检查；本沙箱在 30 秒窗口内未返回进程摘要（监听/TypeORM 类测试需完整宿主权限），不据此伪造新的通过数字。最近已记录的宿主验收基线仍为：agent 815、agent-gateway 290、agent-ui 1141，均 EXIT=0；其余包基线见 v19-D。
+- v19-A1/A2、v19-B1–B6、v19-C1–C3、v19-D 均已在前置提交完成；剩余长期事项保留在 v19 规划，不在本次收尾扩大范围。
