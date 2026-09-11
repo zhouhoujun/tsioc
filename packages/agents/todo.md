@@ -2655,3 +2655,4 @@ Turn: Fix session restore                                      running  01:42
 - `SessionOwnerStore.authorize(sessionId, principalId, options)` 提供统一会话授权入口，集中处理创建、匿名访问、owner 校验与 forbidden/not-found 语义。
 - `AppRpcServer.ensureSessionAccess` 改为消费该 seam，并将共享错误映射回既有 RPC 错误码 `-32003/-32004`；REST `isOwner` 行为保持兼容，未扩大本切片范围。
 - 验证：gateway `tsc --noEmit` 通过，`git diff --check` 通过；测试命令已启动但受当前沙箱执行窗口限制未返回摘要，未伪造通过数字。
+- 追加回归：`session-lifecycle.spec.ts` 新增 `authorize` seam 四态覆盖（create/anonymous/owned/forbidden），gateway `tsc --noEmit` 与 `git diff --check` 继续通过。
