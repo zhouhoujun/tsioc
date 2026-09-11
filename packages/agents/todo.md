@@ -2669,7 +2669,8 @@ Turn: Fix session restore                                      running  01:42
 - 修复未聚焦 plan 面板仍输出完整 `projectSummary` 的问题：默认视图只保留内联计划，避免旧天气/旧任务摘要被误认为本轮工具结果；仅在任务面板聚焦时展示详情。
 - 聚焦详情中的 project summary 统一受 `summaryMaxLength` 限制，防止长历史占满终端；新增 console renderer 回归覆盖未聚焦隐藏行为。
 - active plan 默认仅以内联消息显示一次；Tasks 面板只在用户主动聚焦时展开完整计划与 project/session 信息，消除上下两处计划重复占屏，plan 状态与 `/tasks` 交互保持不变。
-- 验证：agent-ui `tsc --noEmit` 通过；最新全量 **1144 passing / 0 failed / EXIT=0**。
+- **fresh workspace 隔离**：CLI 仅传 `--workspace`、未传 `--session` 时统一视为新会话，不调用 app state 恢复旧会话，也不聚合同 workspace 兄弟 session 的 plan；只有显式 `--session` 才恢复 transcript/plan。新增 workspace-only 集成回归，断言 `todo.get` 仅请求新 session。
+- 验证：agent-ui `tsc --noEmit` 通过；最新全量 **1145 passing / 0 failed / EXIT=0**。
 
 ### agent-ui 退出画面保留（2026-09-11 ✅）
 

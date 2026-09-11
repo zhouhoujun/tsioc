@@ -184,6 +184,25 @@ export class VmCommandsTest {
         expect(todoSessionIds).toEqual(['session-1']);
     }
 
+    @Test('workspace-only startup does not restore a sibling session plan')
+    async workspaceOnlyStartupDoesNotRestoreSiblingPlan() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        const appRpc = new AppRpcStub();
+        sessionService.sessions = [{ id: 'historical-session', current: true, workspace: '/tmp/history-workspace' }];
+        appRpc.todoPlanBySession.set('historical-session', [{ id: 'old-plan', content: 'old project plan', status: 'in_progress' }]);
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc, {
+            ui: { title: 'Console', console: { workspace: '/tmp/history-workspace' } }
+        });
+
+        await component.onInit();
+
+        expect(component.sessionId).toEqual('session-1');
+        expect(component.sessionState.planTodos).toEqual([]);
+        expect(appRpc.calls.filter(call => call.method === 'todo.get').map(call => call.params?.sessionId)).toEqual(['session-1']);
+    }
+
     @Test('explicit startup session still restores its transcript and plan')
     async explicitStartupSessionRestoresHistory() {
         const runtime = new RuntimeStub();

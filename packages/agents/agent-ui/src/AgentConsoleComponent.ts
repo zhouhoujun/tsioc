@@ -2269,7 +2269,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         // tracks a session (and can replay its transcript through the bridge).
         // Startup session contract: only --session may resume.
         const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
-        const freshStartup = this.options.bootstrapTurn?.enabled === false && !explicitSessionId;
+        const freshStartup = !explicitSessionId
+            && (this.options.bootstrapTurn?.enabled === false || !!this.startupWorkspace);
         if (!freshStartup) {
             await this.bootstrapStateFromAppRpc();
         }
@@ -6404,8 +6405,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return;
         }
         this.surfaceAccessor?.stopTerminal?.();
-        const wroteExitMessage = !!exitMessage
-            && this.surfaceAccessor?.writeRawTerminalData?.(`${exitMessage}\n`) === true;
+        const rawWriter = this.surfaceAccessor?.writeRawTerminalData;
+        const wroteExitMessage = !!exitMessage && typeof rawWriter === 'function';
+        if (wroteExitMessage) {
+            rawWriter.call(this.surfaceAccessor, `${exitMessage}\n`);
+        }
         try {
             await this.app.close();
         } catch {
