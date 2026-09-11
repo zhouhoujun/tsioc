@@ -195,6 +195,11 @@ export class VmCommandsTest {
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc, {
             ui: { title: 'Console', console: { workspace: '/tmp/history-workspace' } }
         });
+        (component as any).bridge.subscribe = () => {
+            component.sessionState.setPlanTodos([
+                { id: 'replayed-plan', content: 'plan replayed during subscribe', status: 'in_progress' }
+            ] as any, 'historical-session', 'project');
+        };
 
         await component.onInit();
 

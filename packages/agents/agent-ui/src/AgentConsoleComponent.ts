@@ -2291,8 +2291,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await Promise.resolve(this.bridge.subscribe());
         if (freshStartup) {
             // Local bridge subscription can synchronously project retained
-            // host events. A plain chat start owns an empty transcript.
+            // host events, including a plan from a previous workspace session.
+            // A plain workspace start owns a clean conversation unless the
+            // caller explicitly supplied --session.
             this.state.setMessages([]);
+            this.state.clearPlanTodos();
+            this.state.setGoalSummary(null);
+            this.state.clearActivities();
         }
         this.scheduleInputHistoryRestore();
         await this.refreshTools();

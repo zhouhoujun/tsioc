@@ -2670,6 +2670,7 @@ Turn: Fix session restore                                      running  01:42
 - 聚焦详情中的 project summary 统一受 `summaryMaxLength` 限制，防止长历史占满终端；新增 console renderer 回归覆盖未聚焦隐藏行为。
 - active plan 默认仅以内联消息显示一次；Tasks 面板只在用户主动聚焦时展开完整计划与 project/session 信息，消除上下两处计划重复占屏，plan 状态与 `/tasks` 交互保持不变。
 - **fresh workspace 隔离**：CLI 仅传 `--workspace`、未传 `--session` 时统一视为新会话，不调用 app state 恢复旧会话，也不聚合同 workspace 兄弟 session 的 plan；只有显式 `--session` 才恢复 transcript/plan。新增 workspace-only 集成回归，断言 `todo.get` 仅请求新 session。
+- **bridge 回灌隔离**：fresh workspace 在 event bridge 完成订阅后再次清理 messages/plan/goal/activities，覆盖本地 bridge 同步投影宿主保留 plan 事件的路径；回归测试显式在 `subscribe()` 中注入旧 session plan，确认新会话仍保持空计划。
 - 验证：agent-ui `tsc --noEmit` 通过；最新全量 **1145 passing / 0 failed / EXIT=0**。
 
 ### agent-ui timeline 单状态点（2026-09-11 ✅）
