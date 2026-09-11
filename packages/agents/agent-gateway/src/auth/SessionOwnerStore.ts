@@ -31,6 +31,30 @@ export class SessionOwnerStore {
         return (await this.getOwner(sessionId)) === principalId;
     }
 
+    /** Enforce session ownership for RPC/transport callers using one shared policy. */
+    async authorize(sessionId: string, principalId?: string, options?: { createIfMissing?: boolean }): Promise<'created' | 'owned' | 'anonymous'> {
+        const exists = await this.sessions.has(sessionId);
+        if (!exists && options?.createIfMissing) {
+            await this.create(sessionId, principalId);
+            return 'created';
+        }
+        if (!exists) {
+            throw new Error(`Session '${sessionId}' not found`);
+        }
+        if (!principalId) {
+            return 'anonymous';
+        }
+        const owner = await this.getOwner(sessionId);
+        if (!owner) {
+            await this.create(sessionId, principalId);
+            return 'created';
+        }
+        if (owner !== principalId) {
+            throw new Error('Forbidden');
+        }
+        return 'owned';
+    }
+
     async canResume(sessionId: string, principalId?: string): Promise<boolean> {
         if (!principalId) {
             return false;

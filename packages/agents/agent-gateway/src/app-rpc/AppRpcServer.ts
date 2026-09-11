@@ -3195,24 +3195,17 @@ export class AppRpcServer {
         context: AppRpcRequestContext,
         options?: { createIfMissing?: boolean; }
     ): Promise<void> {
-        const exists = await this.sessions.has(sessionId);
-        if (!exists && options?.createIfMissing) {
-            await this.owners.create(sessionId, context.principalId);
-            return;
-        }
-        if (!exists) {
-            throw new AppRpcError(-32004, `Session '${sessionId}' not found`);
-        }
-        if (!context.principalId) {
-            return;
-        }
-        const owner = await this.owners.getOwner(sessionId);
-        if (!owner) {
-            await this.owners.create(sessionId, context.principalId);
-            return;
-        }
-        if (owner !== context.principalId) {
-            throw new AppRpcError(-32003, 'Forbidden', { sessionId });
+        try {
+            await this.owners.authorize(sessionId, context.principalId, options);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message === 'Forbidden') {
+                throw new AppRpcError(-32003, 'Forbidden', { sessionId });
+            }
+            if (message.includes('not found')) {
+                throw new AppRpcError(-32004, `Session '${sessionId}' not found`);
+            }
+            throw error;
         }
     }
 
