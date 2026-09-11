@@ -280,7 +280,7 @@ export function renderAgentConsoleMessageItem(
     const timelineEvent = message?.metadata?.uiKind === 'event';
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
     const criticalMark = context.showCriticalMarks ? '★ ' : '';
-    const effectiveRoleLabel = (context.timelineMode && timelineEvent)
+    const effectiveRoleLabel = timelineEvent
         // Timeline rows use the status column as the single state marker.
         // Keep only indentation here so glyphs never appear twice.
         ? `  ${criticalMark}`

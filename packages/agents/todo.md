@@ -2672,6 +2672,12 @@ Turn: Fix session restore                                      running  01:42
 - **fresh workspace 隔离**：CLI 仅传 `--workspace`、未传 `--session` 时统一视为新会话，不调用 app state 恢复旧会话，也不聚合同 workspace 兄弟 session 的 plan；只有显式 `--session` 才恢复 transcript/plan。新增 workspace-only 集成回归，断言 `todo.get` 仅请求新 session。
 - 验证：agent-ui `tsc --noEmit` 通过；最新全量 **1145 passing / 0 failed / EXIT=0**。
 
+### agent-ui timeline 单状态点（2026-09-11 ✅）
+
+- timeline/event 行统一由 status 列承担唯一状态 glyph；移除 event 行 role 列的默认 `·`，运行态由 `● ·` 收敛为 `●`，成功/失败状态同样避免双 marker。
+- 普通 user/assistant/system 消息的 role marker 保持不变；新增 P237 回归断言 event role 为空。
+- 验证：agent-ui `tsc --noEmit` 通过；定向 **29 passing**，全量 **1145 passing / 0 failed / 40.446s / EXIT=0**。
+
 ### agent-ui 退出画面保留（2026-09-11 ✅）
 
 - 退出时先停止 terminal 输入/渲染并保留最后一屏，再通过 terminal 原始输出在输入框与状态栏下方追加 closing/resume 行，随后关闭应用；避免异步销毁覆盖提示，也不清除用户希望保留的最终界面。
