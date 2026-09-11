@@ -278,6 +278,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
     protected commandPaletteQuery = '';
     protected startupWorkspace = '';
+    protected freshSessionScoped = false;
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
     protected activeTurnRun?: Promise<void> | null = null;
@@ -1656,6 +1657,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             await this.sessionService.setSessionArchived(target.id, false);
             target.archived = false;
         }
+        this.freshSessionScoped = options?.fresh === true;
         const configuredWorkspace = String(this.startupWorkspace || this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
         const nextWorkspace = requestId === 1 && configuredWorkspace
             ? configuredWorkspace
@@ -2768,8 +2770,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return buildCodingTaskSelectOptionFn(task, tasks);
     }
 
-    protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds = this.resolveProjectSessionIdsFor(sessionId)): Promise<any[]> {
-        return loadCodingTasksFn(this.codingTaskCtx(), sessionId, sessionIds);
+    protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds?: string[]): Promise<any[]> {
+        const resolvedSessionIds = sessionIds
+            ?? (this.freshSessionScoped ? [sessionId] : this.resolveProjectSessionIdsFor(sessionId));
+        return loadCodingTasksFn(this.codingTaskCtx(), sessionId, resolvedSessionIds);
     }
 
     protected async openCodingTaskReviewSelector(): Promise<boolean> {
@@ -4133,9 +4137,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async refreshTodoPlan(
         sessionId = this.state.sessionId,
-        sessions = this.resolveProjectSessionsFor(sessionId)
+        sessions?: Array<{ id: string; updatedAt?: number }>
     ): Promise<void> {
-        const merged = await this.mergeTodoPlanForSessions(sessionId, sessions);
+        const resolvedSessions = sessions
+            ?? (this.freshSessionScoped ? [{ id: sessionId }] : this.resolveProjectSessionsFor(sessionId));
+        const merged = await this.mergeTodoPlanForSessions(sessionId, resolvedSessions);
         if (!merged) {
             return;
         }

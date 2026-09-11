@@ -206,6 +206,11 @@ export class VmCommandsTest {
         expect(component.sessionId).toEqual('session-1');
         expect(component.sessionState.planTodos).toEqual([]);
         expect(appRpc.calls.filter(call => call.method === 'todo.get').map(call => call.params?.sessionId)).toEqual(['session-1']);
+
+        appRpc.calls.length = 0;
+        await (component as any).refreshTurnArtifacts();
+        expect(component.sessionState.planTodos).toEqual([]);
+        expect(appRpc.calls.filter(call => call.method === 'todo.get').map(call => call.params?.sessionId)).toEqual(['session-1']);
     }
 
     @Test('explicit startup session still restores its transcript and plan')
