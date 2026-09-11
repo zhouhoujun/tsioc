@@ -131,6 +131,23 @@ export class AgentConsoleDashboardRendererTest {
         expect(lines.some(line => line.includes('plan 2 · active 2 · thread'))).toBe(true);
     }
 
+    @Test('unfocused plan panel does not expose persisted project summary')
+    async unfocusedPlanPanelHidesProjectSummary() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Answer the current request', status: 'in_progress' }
+        ] as any);
+        ref.instance.sessionState.setProjectContext({
+            projectSummary: `old weather ${'history '.repeat(40)}`
+        });
+        ref.instance.sessionState.setTasksFocused(false);
+        await Promise.resolve();
+
+        const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+        expect(tasksPanel.instance.planListLabel.includes('Answer the current request')).toBe(true);
+        expect(tasksPanel.instance.selectedTaskDetailLabel).toEqual('');
+    }
+
     @Test('hides completed plan panel from root output')
     async hideCompletedPlanPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

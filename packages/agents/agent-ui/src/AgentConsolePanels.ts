@@ -1350,7 +1350,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get selectedTaskDetailLabel(): string {
-        if (!this.shouldShow) {
+        if (!this.shouldShow || !this.state.tasksFocused) {
             return '';
         }
         if (this.shouldShowPlanTodos) {
@@ -1358,7 +1358,7 @@ export class AgentConsoleTasksPanelComponent {
             if (planDetail) {
                 return planDetail;
             }
-            return this.state.projectSummary ? `summary ${this.state.projectSummary}` : '';
+            return this.projectSummaryDetail;
         }
         if (!this.state.selectedTask) {
             if (this.state.reviewTaskChoices.length && !this.tasks.length) {
@@ -1400,7 +1400,7 @@ export class AgentConsoleTasksPanelComponent {
             ? `worker failures ${aggregate.isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`
             : '';
         const parts = [
-            this.state.projectSummary ? `summary ${this.state.projectSummary}` : '',
+            this.projectSummaryDetail,
             `title ${task.title || task.id}`,
             task?.sourceSessionId ? `session ${task.sourceSessionId}` : '',
             task.status ? `status ${task.status}` : '',
@@ -1431,6 +1431,13 @@ export class AgentConsoleTasksPanelComponent {
         });
 
         return [...parts, ...actionLines].join('\n');
+    }
+
+    protected get projectSummaryDetail(): string {
+        const summary = String(this.state.projectSummary || '').trim();
+        if (!summary) return '';
+        const limit = Math.max(1, this.state.consoleOptions.summaryMaxLength);
+        return `summary ${summary.length > limit ? `${summary.slice(0, limit - 1).trimEnd()}…` : summary}`;
     }
 
     get shouldShow(): boolean {

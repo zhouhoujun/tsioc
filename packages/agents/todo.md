@@ -2663,3 +2663,9 @@ Turn: Fix session restore                                      running  01:42
 - P285 分层覆盖：wire-contract 用 501 个投影条目继续验证 500 条分页上限与第二页游标；JSDOM gate 用 31 条真实历史验证长列表挂载、CJK 尾部与序号完整性，避免在 DOM 层重复承载分页规模测试。
 - 默认测试脚本不再启用每个 suite teardown 的同步 `global.gc()`，并使用 `ts-node --transpile-only`；类型安全由独立 `tsc --noEmit` 门禁负责。`unit.ts` 在报告完成后显式按成功/失败退出，避免残留句柄拖延命令结束且保留失败退出码。
 - 验证：agent-ui `tsc --noEmit`、`git diff --check` 通过；全量 **1141 passing / 0 failed / runner 32.983s / 墙钟 43.62s / EXIT=0**（原约 3 分钟，实际命令耗时进入 1 分钟内）。
+
+### agent-ui plan 面板历史摘要隔离（2026-09-11 ✅）
+
+- 修复未聚焦 plan 面板仍输出完整 `projectSummary` 的问题：默认视图只保留当前计划步骤，避免旧天气/旧任务摘要被误认为本轮工具结果；仅在任务面板聚焦时展示详情。
+- 聚焦详情中的 project summary 统一受 `summaryMaxLength` 限制，防止长历史占满终端；新增 console renderer 回归覆盖未聚焦隐藏行为。
+- 验证：agent-ui `tsc --noEmit` 通过；全量 **1142 passing / 0 failed / runner 33.677s / 墙钟 44.54s / EXIT=0**。
