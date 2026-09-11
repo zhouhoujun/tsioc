@@ -9,6 +9,23 @@ import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 
 @Suite('Gateway session lifecycle RPCs (P124)')
 export class SessionLifecycleRpcTest {
+    @Test('SessionOwnerStore authorize enforces create, anonymous, owner and forbidden semantics')
+    async ownerAuthorizeSemantics() {
+        const records = new Map<string, any>();
+        const store = {
+            async has(id: string) { return records.has(id); },
+            async get(id: string) { return records.get(id); },
+            async setOwner(id: string, owner?: string) { const value = records.get(id) || { id }; value.ownerPrincipalId = owner; records.set(id, value); }
+        } as any;
+        const owners = new SessionOwnerStore(store);
+        expect(await owners.authorize('new', 'alice', { createIfMissing: true })).toEqual('created');
+        expect(await owners.authorize('new')).toEqual('anonymous');
+        expect(await owners.authorize('new', 'alice')).toEqual('owned');
+        let forbidden = false;
+        try { await owners.authorize('new', 'bob'); } catch { forbidden = true; }
+        expect(forbidden).toEqual(true);
+    }
+
     protected async createHarness() {
         const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         const store = context.get(SessionStore);
