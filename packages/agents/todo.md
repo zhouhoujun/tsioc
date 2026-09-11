@@ -2649,3 +2649,9 @@ Turn: Fix session restore                                      running  01:42
 - 工作区、临时文件及差异检查完成：`git status` 干净，`git diff --check` 通过；未发现新的源码缺口或跨平台边界违规。
 - 按固定门禁启动 agents 目录 10 个包的全量测试与 agent/agent-ui TypeScript 检查；本沙箱在 30 秒窗口内未返回进程摘要（监听/TypeORM 类测试需完整宿主权限），不据此伪造新的通过数字。最近已记录的宿主验收基线仍为：agent 815、agent-gateway 290、agent-ui 1141，均 EXIT=0；其余包基线见 v19-D。
 - v19-A1/A2、v19-B1–B6、v19-C1–C3、v19-D 均已在前置提交完成；剩余长期事项保留在 v19 规划，不在本次收尾扩大范围。
+
+### v19-B7 · Session capability authorization seam（2026-09-11 ✅）
+
+- `SessionOwnerStore.authorize(sessionId, principalId, options)` 提供统一会话授权入口，集中处理创建、匿名访问、owner 校验与 forbidden/not-found 语义。
+- `AppRpcServer.ensureSessionAccess` 改为消费该 seam，并将共享错误映射回既有 RPC 错误码 `-32003/-32004`；REST `isOwner` 行为保持兼容，未扩大本切片范围。
+- 验证：gateway `tsc --noEmit` 通过，`git diff --check` 通过；测试命令已启动但受当前沙箱执行窗口限制未返回摘要，未伪造通过数字。
