@@ -2669,3 +2669,9 @@ Turn: Fix session restore                                      running  01:42
 - 修复未聚焦 plan 面板仍输出完整 `projectSummary` 的问题：默认视图只保留当前计划步骤，避免旧天气/旧任务摘要被误认为本轮工具结果；仅在任务面板聚焦时展示详情。
 - 聚焦详情中的 project summary 统一受 `summaryMaxLength` 限制，防止长历史占满终端；新增 console renderer 回归覆盖未聚焦隐藏行为。
 - 验证：agent-ui `tsc --noEmit` 通过；全量 **1142 passing / 0 failed / runner 33.677s / 墙钟 44.54s / EXIT=0**。
+
+### agent-ui 退出画面保留（2026-09-11 ✅）
+
+- 修复关闭会话后 resume 提示被最后一帧输入框（`Ask code or files`）和状态栏覆盖：退出时先停止 terminal 输入/渲染，由通用 cleanup 原子清除已绘制区域并写入唯一的 closing/resume 行，再关闭应用，杜绝异步组件销毁重绘。
+- `ConsoleTerminalSurfaceAccessor.stopTerminal` 新增可选 retained lines；无参数调用仍保留原屏幕，其他 consumer 行为不变。`buildTerminalCleanupSequence` 补充 retained line 字节序列测试。
+- 验证：components/console `tsc --noEmit`、全量 **74 passing / EXIT=0**；agent-ui `tsc --noEmit`、全量 **1142 passing / 0 failed / EXIT=0**；`git diff --check` 通过。

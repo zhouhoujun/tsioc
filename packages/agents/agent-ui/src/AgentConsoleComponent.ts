@@ -6403,6 +6403,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.surfaceAccessor?.stopTerminal?.();
             return;
         }
+        this.surfaceAccessor?.stopTerminal?.(exitMessage ? [exitMessage] : undefined);
         try {
             await this.app.close();
         } catch {
@@ -6411,11 +6412,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             // destroy() fix guarantees super.destroy() (component onDestroy:
             // terminal restore + history persist) still runs even when a
             // @Shutdown handler throws during runners.stop().
-        } finally {
-            this.surfaceAccessor?.stopTerminal?.();
-        }
-        if (exitMessage && typeof globalThis.console?.log === 'function') {
-            globalThis.console.log(exitMessage);
         }
     }
 
