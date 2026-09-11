@@ -306,7 +306,7 @@ export class P285InteractionGateMountTest {
         return this.runScenario(scenarioById('mobile-320'));
     }
 
-    @Test('cjk-long-history: 510 tool pairs page through the timeline with tail integrity')
+    @Test('cjk-long-history: 101 timeline entries mount with tail integrity')
     cjkLongHistory() {
         return this.runScenario(scenarioById('cjk-long-history'));
     }

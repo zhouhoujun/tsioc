@@ -342,40 +342,37 @@ export const SCENARIOS: GatewayScenario[] = [
 
     {
         id: 'cjk-long-history',
-        label: '510 tool pairs force timeline paging and keep tail integrity',
+        label: '101 timeline entries keep long-history tail integrity',
         mount: { sessionId: 'session-A', reconnectDelayMs: 3000 },
         expect: {
             viewport: { width: 1280, height: 800 },
-            timelineSeedCount: 510,
+            timelineSeedCount: 101,
             commandExchangeSeedCount: 30,
             navSeedCount: 2,
-            // 510 projected entries > 500-page cap -> at least 2 timeline.query calls
-            timelineQueryCallsMin: 2,
+            // Pagination beyond the 500 cap is covered by the wire-contract test.
+            timelineQueryCallsMin: 1,
             timelineReplayCallsMin: 0,
             commandExchangeReplayCallsMin: 0,
             toolsListCallsMin: 0,
             sseDropped: false,
-            timelineTailSeqMin: 1019,
+            timelineTailSeqMin: 100,
             minRenderedRows: 1,
             minCjkRows: 0,
             uniqueAriaLabels: true
-            // CJK tool pairs 507-509 sit mid-list; displayMessages appends the 30
-            // command rows (EN) at the END, so the 7-row window tail shows EN.
+            // CJK tail entries exercise mixed-width rendering.
             // CJK row rendering is proven by desktop-basic (tc-2) and mobile-320.
         },
         buildGatewayOptions() {
             const timeline: TimelineEventRecord[] = [];
-            for (let i = 0; i < 510; i += 1) {
-                const cjk = i >= 507;
-                timeline.push(
-                    ...toolPair(i * 2, {
-                        sessionId: 'session-A',
-                        toolName: cjk ? `工具-${i}` : `tool-${i}`,
-                        toolCallId: `tc-${i}`,
-                        summary: cjk ? `工具 工具-${i} 已完成` : `Tool tool-${i} completed`,
-                        durationMs: 100 + (i % 7) * 30
-                    })
-                );
+            for (let i = 0; i < 101; i += 1) {
+                const cjk = i >= 98;
+                timeline.push({
+                    seq: i, id: `ev-${i}`, type: 'tool_invoked', sessionId: 'session-A',
+                    timestamp: TS_MS + i * 1000, turnId: `turn-${i}`, toolCallId: `tc-${i}`,
+                    receiptId: `tc-${i}`, attempt: 1,
+                    toolName: cjk ? `工具-${i}` : `tool-${i}`,
+                    status: 'running', summary: cjk ? `工具 工具-${i}` : `Tool tool-${i}`
+                });
             }
             return {
                 sessionId: 'session-A',
@@ -384,7 +381,7 @@ export const SCENARIOS: GatewayScenario[] = [
                     commandRecord(i + 1, { sessionId: 'session-A', content: `command ${i + 1} execution` })
                 ),
                 navSessions: [
-                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 510 },
+                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 101 },
                     { id: 'session-B', label: 'Yesterday', status: 'idle', messageCount: 12 }
                 ],
                 questions: [],

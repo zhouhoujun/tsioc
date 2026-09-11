@@ -2656,3 +2656,10 @@ Turn: Fix session restore                                      running  01:42
 - `AppRpcServer.ensureSessionAccess` 改为消费该 seam，并将共享错误映射回既有 RPC 错误码 `-32003/-32004`；REST `isOwner` 行为保持兼容，未扩大本切片范围。
 - 验证：gateway `tsc --noEmit` 通过，`git diff --check` 通过；测试命令已启动但受当前沙箱执行窗口限制未返回摘要，未伪造通过数字。
 - 追加回归：`session-lifecycle.spec.ts` 新增 `authorize` seam 四态覆盖（create/anonymous/owned/forbidden），gateway `tsc --noEmit` 与 `git diff --check` 继续通过。
+
+### agent-ui 全量测试提速（2026-09-11 ✅）
+
+- `AgentConsoleSessionState.seedTimeline` 用一次性 `uiEventKey -> index` 映射替代逐条 `findIndex`，长历史 seed 去重由 O(n²) 收敛为 O(n)，仍只触发一次 `setMessages`，不改变响应式渲染契约。
+- P285 分层覆盖：wire-contract 用 501 个投影条目继续验证 500 条分页上限与第二页游标；JSDOM gate 用 101 条真实历史验证挂载、CJK 尾部与序号完整性，避免在 DOM 层重复承载分页规模测试。
+- 默认测试脚本不再启用每个 suite teardown 的同步 `global.gc()`；`unit.ts` 在报告完成后显式按成功/失败退出，避免残留句柄拖延命令结束且保留失败退出码。
+- 验证：agent-ui `tsc --noEmit`、`git diff --check` 通过；全量 **1141 passing / 0 failed / 45.102s**（runner summary，原约 3 分钟，目标 1 分钟内）。

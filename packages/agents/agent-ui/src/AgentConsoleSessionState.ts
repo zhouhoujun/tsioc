@@ -1380,6 +1380,11 @@ export class AgentConsoleSessionState {
         // one setMessages per entry (600 reactive cascades = minutes of sync
         // work). Replicates upsertUiEventMessage dedup on a working array.
         const pending = this.messages.slice();
+        const eventIndexes = new Map<string, number>();
+        pending.forEach((message, index) => {
+            const eventKey = message?.metadata?.uiKind === 'event' ? message.metadata.uiEventKey : undefined;
+            if (eventKey) eventIndexes.set(eventKey, index);
+        });
         for (const entry of sortTimelineEntries(entries).filter(item => !item.sessionId || item.sessionId === this.sessionId)) {
             const key = this.qualifyUiEventKey(projectTimelineKey(entry));
             if (!key) {
@@ -1399,8 +1404,8 @@ export class AgentConsoleSessionState {
             };
             const text = String(projectTimelineContent(entry) || '').trim();
             if (text) {
-                const existingIndex = pending.findIndex(message => message?.metadata?.uiKind === 'event' && message?.metadata?.uiEventKey === key);
-                if (existingIndex >= 0) {
+                const existingIndex = eventIndexes.get(key);
+                if (existingIndex !== undefined) {
                     const existing = pending[existingIndex];
                     const nextMessage = this.createUiEventMessage(text, {
                         ...options,
@@ -1413,6 +1418,7 @@ export class AgentConsoleSessionState {
                     }
                 } else {
                     pending.push(this.createUiEventMessage(text, options));
+                    eventIndexes.set(key, pending.length - 1);
                     changed = true;
                 }
             }
