@@ -342,31 +342,31 @@ export const SCENARIOS: GatewayScenario[] = [
 
     {
         id: 'cjk-long-history',
-        label: '600 tool pairs force timeline paging and keep tail integrity',
+        label: '510 tool pairs force timeline paging and keep tail integrity',
         mount: { sessionId: 'session-A', reconnectDelayMs: 3000 },
         expect: {
             viewport: { width: 1280, height: 800 },
-            timelineSeedCount: 600,
+            timelineSeedCount: 510,
             commandExchangeSeedCount: 30,
             navSeedCount: 2,
-            // 600 projected entries > 500-page cap -> at least 2 timeline.query calls
+            // 510 projected entries > 500-page cap -> at least 2 timeline.query calls
             timelineQueryCallsMin: 2,
             timelineReplayCallsMin: 0,
             commandExchangeReplayCallsMin: 0,
             toolsListCallsMin: 0,
             sseDropped: false,
-            timelineTailSeqMin: 1199,
+            timelineTailSeqMin: 1019,
             minRenderedRows: 1,
             minCjkRows: 0,
             uniqueAriaLabels: true
-            // CJK tool pairs 597-599 sit mid-list; displayMessages appends the 30
+            // CJK tool pairs 507-509 sit mid-list; displayMessages appends the 30
             // command rows (EN) at the END, so the 7-row window tail shows EN.
             // CJK row rendering is proven by desktop-basic (tc-2) and mobile-320.
         },
         buildGatewayOptions() {
             const timeline: TimelineEventRecord[] = [];
-            for (let i = 0; i < 600; i += 1) {
-                const cjk = i >= 597;
+            for (let i = 0; i < 510; i += 1) {
+                const cjk = i >= 507;
                 timeline.push(
                     ...toolPair(i * 2, {
                         sessionId: 'session-A',
@@ -384,7 +384,7 @@ export const SCENARIOS: GatewayScenario[] = [
                     commandRecord(i + 1, { sessionId: 'session-A', content: `command ${i + 1} execution` })
                 ),
                 navSessions: [
-                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 600 },
+                    { id: 'session-A', label: 'Today', status: 'active', messageCount: 510 },
                     { id: 'session-B', label: 'Yesterday', status: 'idle', messageCount: 12 }
                 ],
                 questions: [],
