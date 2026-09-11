@@ -247,4 +247,33 @@ export class RuntimeMousePipelineReproTest {
         expect(formatAgentUiSessionClosingMessage('en', 'chat-123'))
             .toEqual('Closing session. Resume with: tsdi-agent chat --session chat-123');
     }
+
+    @Test('terminal exit preserves the final screen before appending the resume message')
+    async terminalExitPreservesFinalScreen() {
+        const instance = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!.instance as any;
+        const originalApp = instance.app;
+        const originalSurface = instance.surfaceAccessor;
+        const calls: string[] = [];
+        instance.app = { close: async () => { calls.push('close'); } };
+        instance.surfaceAccessor = {
+            stopTerminal: () => { calls.push('stop'); },
+            writeRawTerminalData: (text: string) => {
+                calls.push(`write:${text}`);
+                return true;
+            }
+        };
+        instance.closing = false;
+        try {
+            await instance.requestTerminalExit('Closing session. Resume later.');
+            expect(calls).toEqual([
+                'stop',
+                'write:Closing session. Resume later.\n',
+                'close'
+            ]);
+        } finally {
+            instance.app = originalApp;
+            instance.surfaceAccessor = originalSurface;
+            instance.closing = false;
+        }
+    }
 }

@@ -61,6 +61,7 @@ export class P270OverlayAccessibilityTest {
             { id: 'one', content: 'Inspect implementation', status: 'in_progress' },
             { id: 'two', content: 'Run tests', status: 'pending' }
         ] as any);
+        state.setTasksFocused(true);
         expect(new AgentConsoleTasksPanelComponent(state).accessibilityLabel).toContain('Current step: Inspect implementation');
     }
 }

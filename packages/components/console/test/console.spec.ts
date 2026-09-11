@@ -1473,12 +1473,6 @@ export class ConsoleRendererTest {
             paintedLineCount: 2,
             terminalRows: 1
         })).toBe('\x1b[0m\x1b[1;1H\x1b[2K\x1b[2;1H\x1b[2K\x1b[1;1H');
-        expect(buildTerminalCleanupSequence({
-            reset: '\x1b[0m',
-            paintedLineCount: 2,
-            terminalRows: 1,
-            retainedLines: ['Closing session. Resume later.']
-        })).toBe('\x1b[0m\x1b[1;1H\x1b[2K\x1b[2;1H\x1b[2K\x1b[1;1HClosing session. Resume later.\n');
         expect(buildTerminalCursorSequence({
             target: { row: 2, column: 4 },
             width: 80

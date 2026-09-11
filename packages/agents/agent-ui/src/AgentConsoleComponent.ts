@@ -1854,7 +1854,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showTasksPanel(): boolean {
-        return this.state.tasksFocused || this.state.hasActivePlanTodos();
+        return this.state.tasksFocused;
     }
 
     get showJobsPanel(): boolean {
@@ -6403,7 +6403,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.surfaceAccessor?.stopTerminal?.();
             return;
         }
-        this.surfaceAccessor?.stopTerminal?.(exitMessage ? [exitMessage] : undefined);
+        this.surfaceAccessor?.stopTerminal?.();
+        const wroteExitMessage = !!exitMessage
+            && this.surfaceAccessor?.writeRawTerminalData?.(`${exitMessage}\n`) === true;
         try {
             await this.app.close();
         } catch {
@@ -6412,6 +6414,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             // destroy() fix guarantees super.destroy() (component onDestroy:
             // terminal restore + history persist) still runs even when a
             // @Shutdown handler throws during runners.stop().
+        }
+        if (exitMessage && !wroteExitMessage && typeof globalThis.console?.log === 'function') {
+            globalThis.console.log(exitMessage);
         }
     }
 

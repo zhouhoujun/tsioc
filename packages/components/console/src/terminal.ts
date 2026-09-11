@@ -305,7 +305,7 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
 @Abstract()
 export abstract class ConsoleTerminalSurfaceAccessor {
     [noReact] = true;
-    stopTerminal?(retainedLines?: string[]): void;
+    stopTerminal?(): void;
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract getClickTargets(): TerminalClickTarget[];
@@ -474,8 +474,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         super();
     }
 
-    stopTerminal(retainedLines?: string[]): void {
-        this.stopRendering(retainedLines);
+    stopTerminal(): void {
+        this.stopRendering();
         this.inputLifecycle?.stop();
     }
 
@@ -489,10 +489,11 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         this.attach();
     }
 
-    stopRendering(retainedLines?: string[]): void {
-        this.cleanup(retainedLines
-            ? { preserveScreen: false, retainedLines }
-            : { preserveScreen: true, retainedLines: this.surface?.lastRenderedLines || [] });
+    stopRendering(): void {
+        this.cleanup({
+            preserveScreen: true,
+            retainedLines: this.surface?.lastRenderedLines || []
+        });
     }
 
     getLastRenderedLines(): string[] {
@@ -1463,7 +1464,7 @@ export function buildTerminalCleanupSequence(options: TerminalCleanupOptions = {
     for (let index = 0; index < clearRows; index++) {
         clearCommands.push(`\x1b[${index + 1};1H\x1b[2K`);
     }
-    return `${reset}${clearCommands.join('')}\x1b[1;1H${retainedLines.length ? `${retainedLines.join('\n')}\n` : ''}`;
+    return `${reset}${clearCommands.join('')}\x1b[1;1H`;
 }
 
 export function buildTerminalCursorSequence(options: TerminalCursorSequenceOptions): string {

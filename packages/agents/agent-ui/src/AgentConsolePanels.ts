@@ -1441,7 +1441,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return this.state.tasksFocused || this.state.hasActivePlanTodos();
+        return this.state.tasksFocused;
     }
 
     protected get shouldShowPlanTodos(): boolean {

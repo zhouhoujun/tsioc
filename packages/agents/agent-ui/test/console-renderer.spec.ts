@@ -91,6 +91,7 @@ export class AgentConsoleDashboardRendererTest {
     @Test('renders message history before plan panel in root output')
     async renderMessagesBeforePlanPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTasksFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: 'design exam system', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: 'Analyzing request', createdAt: 2 } as any
@@ -105,7 +106,7 @@ export class AgentConsoleDashboardRendererTest {
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const lines = renderer.renderToLines(root);
         const messageIndex = lines.findIndex(line => line.includes('design exam system'));
-        const planIndex = lines.findIndex(line => line.includes('plan 2 · active 2'));
+        const planIndex = lines.findIndex(line => line.includes('plan 1/2'));
 
         expect(messageIndex).toBeGreaterThanOrEqual(0);
         expect(planIndex).toBeGreaterThanOrEqual(0);
@@ -122,6 +123,7 @@ export class AgentConsoleDashboardRendererTest {
             { id: 'p1', content: 'Design architecture', status: 'in_progress' },
             { id: 'p2', content: 'Generate project structure', status: 'pending' }
         ] as any, 'chat-a', 'thread');
+        ref.instance.sessionState.setTasksFocused(true);
         await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -129,6 +131,27 @@ export class AgentConsoleDashboardRendererTest {
         const lines = renderer.renderToLines(root);
 
         expect(lines.some(line => line.includes('plan 2 · active 2 · thread'))).toBe(true);
+    }
+
+    @Test('active plan renders once until the tasks panel is focused')
+    async activePlanDoesNotDuplicateTheDefaultTranscript() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTasksFocused(false);
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'current request', createdAt: 1 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Current plan step', status: 'in_progress' },
+            { id: 'p2', content: 'Verify result', status: 'pending' }
+        ] as any);
+        await Promise.resolve();
+
+        expect(ref.instance.showTasksPanel).toBe(false);
+        expect(ref.instance.sessionState.displayMessages.filter(message => message.id === '__plan_todo_inline__').length).toBe(1);
+
+        ref.instance.sessionState.setTasksFocused(true);
+        await Promise.resolve();
+        expect(ref.instance.showTasksPanel).toBe(true);
     }
 
     @Test('unfocused plan panel does not expose persisted project summary')
@@ -144,7 +167,7 @@ export class AgentConsoleDashboardRendererTest {
         await Promise.resolve();
 
         const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
-        expect(tasksPanel.instance.planListLabel.includes('Answer the current request')).toBe(true);
+        expect(ref.instance.showTasksPanel).toBe(false);
         expect(tasksPanel.instance.selectedTaskDetailLabel).toEqual('');
     }
 

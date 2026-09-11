@@ -2666,12 +2666,13 @@ Turn: Fix session restore                                      running  01:42
 
 ### agent-ui plan 面板历史摘要隔离（2026-09-11 ✅）
 
-- 修复未聚焦 plan 面板仍输出完整 `projectSummary` 的问题：默认视图只保留当前计划步骤，避免旧天气/旧任务摘要被误认为本轮工具结果；仅在任务面板聚焦时展示详情。
+- 修复未聚焦 plan 面板仍输出完整 `projectSummary` 的问题：默认视图只保留内联计划，避免旧天气/旧任务摘要被误认为本轮工具结果；仅在任务面板聚焦时展示详情。
 - 聚焦详情中的 project summary 统一受 `summaryMaxLength` 限制，防止长历史占满终端；新增 console renderer 回归覆盖未聚焦隐藏行为。
-- 验证：agent-ui `tsc --noEmit` 通过；全量 **1142 passing / 0 failed / runner 33.677s / 墙钟 44.54s / EXIT=0**。
+- active plan 默认仅以内联消息显示一次；Tasks 面板只在用户主动聚焦时展开完整计划与 project/session 信息，消除上下两处计划重复占屏，plan 状态与 `/tasks` 交互保持不变。
+- 验证：agent-ui `tsc --noEmit` 通过；最新全量 **1144 passing / 0 failed / EXIT=0**。
 
 ### agent-ui 退出画面保留（2026-09-11 ✅）
 
-- 修复关闭会话后 resume 提示被最后一帧输入框（`Ask code or files`）和状态栏覆盖：退出时先停止 terminal 输入/渲染，由通用 cleanup 原子清除已绘制区域并写入唯一的 closing/resume 行，再关闭应用，杜绝异步组件销毁重绘。
-- `ConsoleTerminalSurfaceAccessor.stopTerminal` 新增可选 retained lines；无参数调用仍保留原屏幕，其他 consumer 行为不变。`buildTerminalCleanupSequence` 补充 retained line 字节序列测试。
-- 验证：components/console `tsc --noEmit`、全量 **74 passing / EXIT=0**；agent-ui `tsc --noEmit`、全量 **1142 passing / 0 failed / EXIT=0**；`git diff --check` 通过。
+- 退出时先停止 terminal 输入/渲染并保留最后一屏，再通过 terminal 原始输出在输入框与状态栏下方追加 closing/resume 行，随后关闭应用；避免异步销毁覆盖提示，也不清除用户希望保留的最终界面。
+- 新增退出顺序回归，锁定 `stop -> write resume -> app.close`，确保提示不会与 terminal 光标定位冲突。
+- 验证：components/console `tsc --noEmit`、全量 **74 passing / EXIT=0**；agent-ui `tsc --noEmit`、全量 **1144 passing / 0 failed / EXIT=0**；`git diff --check` 通过。
