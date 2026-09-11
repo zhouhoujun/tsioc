@@ -2582,7 +2582,11 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
             Math.max(0, previous.paintedLines.length - 1)
         ));
         const commands: string[] = [];
-        if (previous.renderKey.startsWith('inline:') && previous.paintedLines.length) {
+        if (!previous.renderKey) {
+            // Fresh-surface takeover must clear: re-attach paths (e.g. resetTerminalRenderState)
+            // create a new surface without prepare(), so paint starts from unknown screen content.
+            commands.push(buildClearScreenSequence(false));
+        } else if (previous.renderKey.startsWith('inline:') && previous.paintedLines.length) {
             commands.push('\r');
             if (previousAnchorRow > 0) {
                 commands.push(`\x1b[${previousAnchorRow}A`);

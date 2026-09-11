@@ -2017,3 +2017,54 @@ export class AgentConsoleTuiRendererTest {
     }
 
 }
+
+@Suite('Agent Console Surface Re-attach Regression')
+export class AgentConsoleSurfaceReattachRegressionTest {
+
+    @Test('each fresh surface first paint clears the viewport so re-attach cannot stack the brand box')
+    async freshSurfaceFirstPaintClearsViewport() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+
+            const firstWrites: string[] = [];
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 80,
+                output: { write: value => firstWrites.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const brandCount = (lines: string[]) => lines.filter(line => line.includes('TSDI-AGENT')).length;
+            expect(brandCount(surface.lastRenderedLines)).toBe(1);
+            expect(firstWrites.join('').startsWith('\x1b[2J\x1b[H')).toBe(true);
+
+            surface.destroy();
+            surface = undefined;
+
+            const reattachedWrites: string[] = [];
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 80,
+                output: { write: value => reattachedWrites.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(brandCount(surface.lastRenderedLines)).toBe(1);
+            expect(reattachedWrites.join('').startsWith('\x1b[2J\x1b[H')).toBe(true);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+}

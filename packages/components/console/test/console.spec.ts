@@ -1596,6 +1596,28 @@ export class ConsoleRendererTest {
         expect(second.output).toBe('');
     }
 
+    @Test('fresh primary render clears the viewport so it cannot stack over previous content')
+    freshPrimaryRenderClearsViewport() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', '> hi'],
+            width: 20
+        });
+        expect(first.output.startsWith('\x1b[2J\x1b[H')).toBe(true);
+        expect(first.output.indexOf('\x1b[2J')).toBe(0);
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', '> hi'],
+            width: 20
+        });
+        expect(second.output).toBe('');
+        const third = renderPrimaryTerminalScreen({
+            state: second.state,
+            lines: ['logo', 'Working', '> hi'],
+            width: 20
+        });
+        expect(third.output).not.toContain('\x1b[2J');
+    }
+
     @Test('does not emit cursor-only output for unchanged primary screen')
     doesNotEmitCursorOnlyOutputForUnchangedPrimaryScreen() {
         const first = renderPrimaryTerminalScreen({
