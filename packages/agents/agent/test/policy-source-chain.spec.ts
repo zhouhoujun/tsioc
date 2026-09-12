@@ -8,7 +8,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
-import { AgentOptions, defaultAgentOptions, resolveAgentPolicy } from '../src/options';
+import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, resolveAgentPolicy } from '../src/options';
 import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../src/harness/VerificationGate';
 import { AGENT_OPTIONS } from '../src/tokens';
 import { AgentModule } from '../src/agent.module';
@@ -145,6 +145,81 @@ export class AgentPolicySourceChainTest {
         const { runtime, ctx } = await createRuntime(options);
         try {
             expect(runtime.resolveVerificationWriteTools()).toEqual({ value: ['write_file', 'delete_file'], source: 'request' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('default layer: schema approval rules resolve with source default')
+    async approvalDefaultSource() {
+        const { runtime, ctx } = await createRuntime();
+        try {
+            expect(runtime.resolveApprovalRequired()).toEqual({ value: DEFAULT_APPROVAL_REQUIRED_RULES, source: 'default' });
+            expect(runtime.resolveApprovalAutoReview()).toEqual({ value: false, source: 'default' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('workspace layer: policy approval requireApproval wins with source workspace')
+    async approvalWorkspacePolicyWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', approval: { requireApproval: ['fs.write'], autoReview: true } })
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveApprovalRequired()).toEqual({ value: ['fs.write'], source: 'workspace' });
+            expect(runtime.resolveApprovalAutoReview()).toEqual({ value: true, source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('legacy tools.requireApproval still work, labeled workspace when divergent from schema default')
+    async approvalLegacyAliasDivergent() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            tools: { ...defaultAgentOptions.tools, requireApproval: ['fs.write', 'deploy'] }
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveApprovalRequired()).toEqual({ value: ['fs.write', 'deploy'], source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('legacy tools.requireApproval equal to schema default resolve with source default')
+    async approvalLegacyAliasEqualToDefault() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            tools: { ...defaultAgentOptions.tools, requireApproval: [...DEFAULT_APPROVAL_REQUIRED_RULES] }
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveApprovalRequired()).toEqual({ value: DEFAULT_APPROVAL_REQUIRED_RULES, source: 'default' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('legacy tools.approvalAutoReview false resolves as default, true as workspace')
+    async approvalLegacyAutoReviewLabeling() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            tools: { ...defaultAgentOptions.tools, approvalAutoReview: true }
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveApprovalAutoReview()).toEqual({ value: true, source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('request layer: request approval of policy wins with source request')
+    async approvalRequestLayerWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(
+                defaultAgentOptions.policy,
+                { source: 'workspace', approval: { requireApproval: ['fs.write'] } },
+                { source: 'request', approval: { requireApproval: ['sudo.exec', 'deploy'], autoReview: false } }
+            )
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveApprovalRequired()).toEqual({ value: ['sudo.exec', 'deploy'], source: 'request' });
+            expect(runtime.resolveApprovalAutoReview()).toEqual({ value: false, source: 'request' });
         } finally { await ctx.close(); }
     }
 

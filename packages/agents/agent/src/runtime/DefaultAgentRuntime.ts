@@ -16,13 +16,13 @@ import { StreamChunk } from '../model/StreamChunk';
 import { PromptCacheRuntimeMetadata } from '../model/ModelProviderOptions';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
-import { ApprovalDecision, ApprovalManager, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
+import { ApprovalDecision, ApprovalManager, ApprovalRule, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
 import { AGENT_OPTIONS } from '../tokens';
-import { AgentOptions, AgentPolicyResolution, defaultAgentOptions } from '../options';
+import { AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentClock, AGENT_CLOCK } from './Clock';
@@ -120,6 +120,19 @@ const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls witho
 
 function sameStringList(left: string[], right: string[]): boolean {
     return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function sameApprovalRule(left: ApprovalRule, right: ApprovalRule): boolean {
+    if (typeof left === 'string' || typeof right === 'string') {
+        return left === right;
+    }
+    return left.category === right.category
+        && left.mode === right.mode
+        && sameStringList(left.names ?? [], right.names ?? []);
+}
+
+function sameApprovalRules(left: ApprovalRule[], right: ApprovalRule[]): boolean {
+    return left.length === right.length && left.every((rule, index) => sameApprovalRule(rule, right[index]));
 }
 
 @Injectable()
@@ -1991,6 +2004,38 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { value: DEFAULT_VERIFICATION_WRITE_TOOLS.slice(), source: 'default' };
     }
 
+    /** A5: approval rule list with observable source; policy `approval.requireApproval` wins over the legacy `tools.requireApproval`, then `DEFAULT_APPROVAL_REQUIRED_RULES`. */
+    resolveApprovalRequired(): AgentPolicyResolution<ApprovalRule[]> {
+        const policyRules = this.options.policy?.approval?.requireApproval;
+        if (policyRules?.length) {
+            return { value: policyRules.slice(), source: this.options.policy?.source ?? 'workspace' };
+        }
+        const legacyRules = this.options.tools?.requireApproval;
+        if (legacyRules?.length) {
+            return {
+                value: legacyRules.slice(),
+                source: sameApprovalRules(legacyRules, DEFAULT_APPROVAL_REQUIRED_RULES) ? 'default' : 'workspace'
+            };
+        }
+        return { value: DEFAULT_APPROVAL_REQUIRED_RULES.slice(), source: 'default' };
+    }
+
+    /** A5: approval auto-review flag with observable source; policy `approval.autoReview` wins over the legacy `tools.approvalAutoReview`, then false. */
+    resolveApprovalAutoReview(): AgentPolicyResolution<boolean> {
+        const policyAutoReview = this.options.policy?.approval?.autoReview;
+        if (policyAutoReview !== undefined) {
+            return { value: policyAutoReview, source: this.options.policy?.source ?? 'workspace' };
+        }
+        const legacyAutoReview = this.options.tools?.approvalAutoReview;
+        if (legacyAutoReview !== undefined) {
+            return {
+                value: legacyAutoReview,
+                source: legacyAutoReview === false ? 'default' : 'workspace'
+            };
+        }
+        return { value: false, source: 'default' };
+    }
+
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
             this.setSessionArchetype(sessionId, 'plan');
@@ -3159,7 +3204,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         if (approvalManager?.isConfigured()) {
             return approvalManager;
         }
-        const required = this.options.tools?.requireApproval ?? defaultAgentOptions.tools?.requireApproval ?? [];
+        const required = this.resolveApprovalRequired().value;
         if (!required.length) {
             return undefined;
         }
@@ -3173,7 +3218,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     ?? defaultAgentOptions.policy?.limits?.approvalTimeoutMs
                     ?? defaultAgentOptions.tools?.approvalTimeoutMs,
                 autoDeny: false,
-                autoReview: this.options.tools?.approvalAutoReview ?? defaultAgentOptions.tools?.approvalAutoReview
+                autoReview: this.resolveApprovalAutoReview().value
             },
             undefined,
             undefined,

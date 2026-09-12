@@ -2569,6 +2569,16 @@ Turn: Fix session restore                                      running  01:42
 - **测试覆盖**：`policy-options.spec.ts` +3（writeTools 四级合并 last-wins + limits 保留、未设置层省略 verification、写数组输入不可变）；`policy-source-chain.spec.ts` +5（default/workspace-policy/legacy-divergent/legacy-equal-default/request 各层 value+source 断言）。
 - **门禁**：`agent` 全量 **835 passing / 0 failed / EXIT=0**（基线 827 +8）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过；本次改动仅 `agent` 包内（runtime 消费点 + schema + gate 常量注释 + 测试），agent-gateway/agent-ui 无消费面变更，未复跑跨端。临时 runner 已清理。
 
+### v19-A5 · approval 纳入 policy 来源链（2026-09-12 ✅）
+
+- **范围**：兑现 v19-A 规划中"verification/approval/sandbox"的 approval 部分——`AgentPolicyConfig` 增加 `approval { requireApproval?: ApprovalRule[]; autoReview?: boolean }`，`resolveAgentPolicy` 对其按 `default < workspace < session < request` 四级 last-wins 合并（写数组 `.slice()` 保输入不可变；`autoReview` 用 `typeof value === 'boolean'` 过滤而非 `filter(Boolean)`，`false` 是合法设置值；未设置层省略该字段）。
+- **来源链语义**：runtime 侧新增公开 `resolveApprovalRequired(): AgentPolicyResolution<ApprovalRule[]>` 与 `resolveApprovalAutoReview(): AgentPolicyResolution<boolean>`——policy 字段（`source: policy.source ?? 'workspace'`）→ legacy `tools.requireApproval` / `tools.approvalAutoReview`（规则数组与 `DEFAULT_APPROVAL_REQUIRED_RULES` 深度等值时报 `'default'`，`autoReview === false` 报 `'default'`，否则 `'workspace'`）→ 常量/`false`（`'default'`）；返回 `.slice()` 防外部变异。
+- **单一来源重构**：`defaultAgentOptions.tools.requireApproval`（6 项：shell.exec/fs.write/fs.delete/sudo.exec/deploy/playwright_browser）改为引用新导出常量 `DEFAULT_APPROVAL_REQUIRED_RULES`（置于 `resolveAgentPolicy` 之后、`defaultAgentOptions` 之前）；`resolveApprovalManager` 改为消费两个 resolver 的 `.value`，`defaultTimeoutMs` 链沿用 v19-A1 的 `policy.limits.approvalTimeoutMs` 优先。
+- **深度比较**：新增模块级 `sameApprovalRule`/`sameApprovalRules`（`ApprovalRule` 为 `string | ApprovalRuleObject` 联合，对象态比较 category/mode/names），对齐 A4 的 `sameStringList` 模式。
+- **不可触碰边界**：HarnessProfile snapshot/apply 通道保持读 legacy 顶层 `tools.requireApproval`/`approvalAutoReview`（policy 之下已文档化兜底，不破坏 profile diff 序列化）；`DefaultApprovalStrategy` 内部默认 blocked 列表（8 项）与 `DEFAULT_APPROVAL_REQUIRED_RULES`（6 项）不同，但 `resolveApprovalManager` 显式传 rules，行为不变，未改动；`ApprovalRule` 类型沿用 `ToolApprovalManager` 导出，未复制定义。
+- **测试覆盖**：`policy-options.spec.ts` +3（requireApproval/autoReview 四级合并 last-wins + limits 保留含 `approvalTimeoutMs=30000` 与 source 传播、未设置层省略 approval、写数组输入不可变 + autoReview 保留）+ `omitsNewFieldsWhenUnset` 补 approval 断言；`policy-source-chain.spec.ts` +6（default 规则与 autoReview 均 `'default'`、workspace-policy 胜出、legacy-divergent→`'workspace'`、legacy-equal-default→`'default'`、`approvalAutoReview: true`→`'workspace'`、request 层胜出）。
+- **门禁**：`agent` 全量 **844 passing / 0 failed / EXIT=0**（基线 835 +9）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过；本次改动仅 `agent` 包内，agent-gateway/agent-ui 无消费面变更，未复跑跨端。临时 runner 未使用。
+
 ### v19-B1 · AgentExchangeEnvelope 统一化（2026-09-09 ✅）
 
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。

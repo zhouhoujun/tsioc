@@ -87,12 +87,46 @@ export class AgentPolicyOptionsTest {
         expect(workspace.verification.writeTools).toEqual(['edit_file']);
     }
 
+    @Test('merges approval requireApproval and autoReview in default workspace session request order')
+    mergesApproval() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', approval: { requireApproval: ['fs.write'], autoReview: true } },
+            { source: 'session', approval: { requireApproval: ['sudo.exec', 'deploy'] } },
+            { source: 'request', approval: { requireApproval: ['dns.exec'], autoReview: false } }
+        );
+
+        expect(policy.source).toEqual('request');
+        expect(policy.approval?.requireApproval).toEqual(['dns.exec']);
+        expect(policy.approval?.autoReview).toEqual(false);
+        expect(policy.limits?.approvalTimeoutMs).toEqual(30000);
+    }
+
+    @Test('omits approval when no layer sets it')
+    omitsApprovalWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.approval).toBeUndefined();
+    }
+
+    @Test('does not mutate source approval requireApproval inputs')
+    preservesApprovalInputs() {
+        const workspace = { source: 'workspace' as const, approval: { requireApproval: ['fs.write'], autoReview: true } };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', approval: { requireApproval: ['sudo.exec'] } });
+
+        expect(resolved.approval?.requireApproval).toEqual(['sudo.exec']);
+        resolved.approval!.requireApproval!.push('deploy');
+        expect(workspace.approval.requireApproval).toEqual(['fs.write']);
+        expect(workspace.approval.autoReview).toEqual(true);
+    }
+
     @Test('omits new fields when no layer sets them')
     omitsNewFieldsWhenUnset() {
         const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
 
         expect(merged.defaultArchetype).toBeUndefined();
         expect(merged.delegationMode).toBeUndefined();
+        expect(merged.approval).toBeUndefined();
         expect(merged.limits?.timelinePageSize).toEqual(10);
     }
 

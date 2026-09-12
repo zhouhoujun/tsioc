@@ -314,6 +314,14 @@ export interface AgentPolicyVerification {
     writeTools?: string[];
 }
 
+/** A5: approval-gate settings folded into the policy source chain (default < workspace < session < request). */
+export interface AgentPolicyApproval {
+    /** Tool names/patterns or category rules requiring approval (falls back to `AgentToolOptions.requireApproval`, then the schema default list). */
+    requireApproval?: ApprovalRule[];
+    /** Whether an injected ApprovalReviewer may resolve approval requests without a human (falls back to `AgentToolOptions.approvalAutoReview`, then false). */
+    autoReview?: boolean;
+}
+
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
     /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
@@ -322,6 +330,8 @@ export interface AgentPolicyConfig {
     delegationMode?: AgentDelegationMode;
     /** B2: verification-gate settings (tool names treated as write operations). */
     verification?: AgentPolicyVerification;
+    /** A5: approval-gate settings (required tool rules and automatic review flag). */
+    approval?: AgentPolicyApproval;
     source?: AgentPolicySource;
 }
 
@@ -339,15 +349,41 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.verification?.writeTools)
         .filter((tools): tools is string[] => !!tools && tools.length > 0)
         .pop();
+    const approvalRequireApproval = overrides
+        .map(item => item?.approval?.requireApproval)
+        .filter((rules): rules is ApprovalRule[] => !!rules && rules.length > 0)
+        .pop();
+    const approvalAutoReview = overrides
+        .map(item => item?.approval?.autoReview)
+        .filter((value): value is boolean => typeof value === 'boolean')
+        .pop();
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
         ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(delegationMode ? { delegationMode } : {}),
         ...(verificationWriteTools ? { verification: { writeTools: verificationWriteTools.slice() } } : {}),
+        ...(approvalRequireApproval || approvalAutoReview !== undefined
+            ? {
+                approval: {
+                    ...(approvalRequireApproval ? { requireApproval: approvalRequireApproval.slice() } : {}),
+                    ...(approvalAutoReview !== undefined ? { autoReview: approvalAutoReview } : {})
+                }
+            }
+            : {}),
         ...(source ? { source } : {})
     };
 }
+
+/** A5: schema-default approval rule list (surfaced as the policy fallback; source of truth for `defaultAgentOptions.tools.requireApproval`). */
+export const DEFAULT_APPROVAL_REQUIRED_RULES: ApprovalRule[] = [
+    'shell.exec',
+    'fs.write',
+    'fs.delete',
+    'sudo.exec',
+    'deploy',
+    'playwright_browser'
+];
 
 /** A4: default deepseek connection settings reference the provider registry (single source of truth). */
 const DEFAULT_DEEPSEEK_PROVIDER = BUILTIN_AGENT_PROVIDERS.find(provider => provider.id === 'deepseek');
@@ -380,7 +416,7 @@ export const defaultAgentOptions: AgentOptions = {
         parallelExecution: false,
         maxParallelTools: 5,
         parallelSafeTools: ['memory.search', 'time', 'echo', 'web_search', 'session_search'],
-        requireApproval: ['shell.exec', 'fs.write', 'fs.delete', 'sudo.exec', 'deploy', 'playwright_browser'],
+        requireApproval: DEFAULT_APPROVAL_REQUIRED_RULES,
         approvalTimeoutMs: 30000
     },
     scheduler: {
