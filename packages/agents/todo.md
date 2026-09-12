@@ -2772,3 +2772,10 @@ Turn: Fix session restore                                      running  01:42
   - 26 处调用点迁移：UsageHandler:33、AuditHandler:26、ReviewHandler:26/48、TurnDiagnosticsHandler:26/65/95、CompactionHistoryHandler:26/68/94、MemoryHandler:36、ApprovalHandler:37/74、ShareHandler:14/31、DelegationHandler:24/44/62/78、StatsHandler:146、CommandExchangeHandler:41/79/107/130（保留 `this.owners &&` 守卫与 unauthorized 指标计数）、EventHandler:581 / SessionHandler:645（`ensureAccess` 正逻辑）——全部 `this.owners.isOwner(` → `this.owners.isAuthorized(`，`src/` 内 `isOwner` 已无调用者。
 - **测试**（`agent-gateway/test/session-lifecycle.spec.ts` 追加 2 用例）：`ownerAuthorizeStrictOptions`（requirePrincipal 拒绝 `'anonymous'`；allowClaim:false 拒绝且不写 owner；默认 authorize 仍 auto-claim 保 RPC 行为）；`isAuthorizedMapsStrictContract`（同主 true / 异主 false / 无 principal false / 无主 false / 缺会话 false，且 strict 检查不产生认领副作用）。
 - 门禁：agent-gateway 全量 **293 passing / 0 failed / EXIT=0**（基线 291 +2）；`tsc --noEmit` EXIT=0；`git diff --check` 通过；临时 runner 已清理。
+
+### v19-A 系列收尾补录（A3–A8，2026-09-12 ✅）
+
+- **补录缘由**：上文 "2026-09-12 收尾复核与全量验证" 登记批次清单（A1/A2、B1–B7、C1–C3、D）早于 A3–A8 落地时间点。A3–A8 六个 policy 来源链切片（defaultArchetype/delegationMode、verification writeTools、approval、retry、sandbox、render budgets）各自已在独立提交中闭合并登记，本块补录系列整体状态，避免后续阅读者从收尾复核记录误判 A 系列未完成。
+- **系列闭合状态**：v19-A 规划（策略集中化）四个 facet 全部达成——① `AgentPolicyConfig` 覆盖 limits/timeouts/retry/render budgets/verification/approval/sandbox/defaultArchetype/delegationMode，来源链 `default < workspace < session < request` 四级 last-wins（A1、A3–A8）；② 可替换 `Clock`/`Scheduler` port 注入与确定性测试（A2 + 性能回归收尾）；③ 迁移顺序 options/schema → runtime/tools → agent-ui ports 沿各切片逐层落地（A1 切片 1–7、A2、A8）；④ 验收：来源可观测（policy-source-chain.spec 逐字段 source 断言）、确定性重试/过期（clock.spec + 审批/重试门控回归）、`agent` + 受影响包全量测试与 tsc 每切片通过。
+- **HEAD 复验（本批次，无源码改动）**：`agent` 全量 **876 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1148 passing / 0 failed / EXIT=0**；两包 `npx tsc --noEmit` EXIT=0（A8 门禁已跑）；`git diff --check` 通过；工作区基线干净。A3–A8 改动仅触及 `agent` + `agent-ui` 两包（agent-gateway/agent-tools/agent-cli 等无消费面变更，沿用各自既有全量基线）。
+- 结论：v19-A 全系列（A1–A8）闭合，与 B/C/D 系列一并构成 v19 完整收尾；本批仅本文档追加补录块，独立提交。
