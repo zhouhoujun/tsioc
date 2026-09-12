@@ -5,7 +5,12 @@ Drives scenarios from P190's manual acceptance list against a real PTY:
 
   1. tail-visibility : long streamed reply keeps its trailing question visible
   2. keymap overlay  : ctrl+alt+k toggles the which-key overlay
-  3. plan checkbox   : scripted `todo` tool calls flip [ ] -> [x] live
+  3. plan checkbox   : scripted `todo` tool calls flip the plan todo row
+     pending -> completed live (the pending `☐` row is transient and caught on
+     sight; completion is asserted on the persistent `1 item · 1 completed`
+     receipt, because the completed planTodo frame collapses rows away)
+  5. command-outputs (P262): /usage result reviewable via the /outputs panel
+     (the default keymap no longer binds Ctrl+O to this toggle)
   6. slash-command (P282): invalid verb shows diagnostic + preserves draft,
      corrected retry succeeds and consumes the draft
 
@@ -138,12 +143,30 @@ def spawn_agent(port: int):
 
 
 def wait_for(fd: int, screen: Screen, patterns, timeout: float = TIMEOUT,
-             settle: float = 0.6, quiet_window: float = 1.5) -> Optional[str]:
+             settle: float = 0.6, quiet_window: float = 1.5,
+             on_sight: bool = False, tail_from: Optional[int] = None) -> Optional[str]:
     """Poll the viewport for any regex pattern; returns the matched pattern or None.
 
     Before each check the output is allowed to go quiet for `quiet_window`
-    seconds so streaming bursts don't hide the final frame.
+    seconds so streaming bursts don't hide the final frame. With on_sight=True
+    a match is returned the moment it renders (no quiet gate), for short-lived
+    frames that are rewritten in place before the stream quiets down; matching
+    spans everything that arrived since the call started, because a full-screen
+    TUI redraw can push a transient frame out of the 40-line viewport window in
+    the same read that delivered it. With tail_from set (a byte offset into
+    screen.raw) matching is restricted to output that arrived after that offset,
+    for asserting frames that render after a specific keystroke.
     """
+    start_mark = len(bytes(screen.raw))
+
+    def view() -> str:
+        if tail_from is None and not on_sight:
+            return screen.viewport()
+        start = tail_from if tail_from is not None else start_mark
+        tail = bytes(screen.raw)[start:].decode('utf-8', errors='replace')
+        return '\n'.join(ln.rstrip() for ln in
+                         ANSI_RE.sub('', tail).replace('\r\n', '\n').replace('\r', '\n').split('\n'))
+
     deadline = time.time() + timeout
     last_data = time.time()
     while time.time() < deadline:
@@ -156,18 +179,29 @@ def wait_for(fd: int, screen: Screen, patterns, timeout: float = TIMEOUT,
                 break
             screen.feed(chunk)
             last_data = time.time()
+            if on_sight:
+                v = view()
+                for pat in patterns:
+                    if _match(pat, v):
+                        return pat
             continue
         quiet = time.time() - last_data
-        view = screen.viewport()
+        v = view()
         for pat in patterns:
-            if re.search(pat, view, re.IGNORECASE):
-                if quiet >= min(settle, quiet_window) or quiet >= quiet_window:
+            if _match(pat, v):
+                if on_sight or quiet >= min(settle, quiet_window) or quiet >= quiet_window:
                     return pat
-        if quiet >= quiet_window + settle:
-            # idle long enough and nothing matched — keep waiting until timeout
-            pass
         time.sleep(0.2)
     return None
+
+
+def _match(pat, view: str):
+    """Match `pat` (string or compiled regex) against the viewport.
+
+    compiled patterns carry their own flags, so re.search cannot be called
+    with an extra flags argument on them.
+    """
+    return pat.search(view) if hasattr(pat, 'search') else re.search(pat, view, re.IGNORECASE)
 
 
 def send(fd: int, data: bytes) -> None:
@@ -225,24 +259,43 @@ def scenario_plan_checkbox(pid: int, fd: int, screen: Screen) -> bool:
     # a new turn. Otherwise this text is consumed as the pending answer and
     # the scripted todo tool calls are never requested from the fake model.
     send(fd, '继续\r'.encode())
-    time.sleep(0.8)
+    # The 'continue' turn must finish before we send the next message;
+    # otherwise the TUI cancels the active turn ("Cancelling current
+    # turn...") and the new request is silently dropped — the fake model
+    # never receives the plan command and no checkbox renders.
+    cb = wait_for(fd, screen, [re.escape('Turn completed')], timeout=TIMEOUT, on_sight=True)
+    if not cb:
+        print('[WARN] scenario 3: "continue" turn completion not detected, '
+              'proceeding anyway')
+    time.sleep(0.3)
     drain(fd, screen)
     send(fd, '帮我建个计划并完成它。\r'.encode())
-    pending = wait_for(fd, screen, [rf'(?:\[\s*\]|☐|▸)[^\n]*{esc}', rf'{esc}[^\n]*(?:pending|待处理)'], timeout=TIMEOUT)
+    # The planTodo frame only renders the pending row `1. ☐ 计划项 A` while an
+    # item is active; when completed the frame collapses (visibleContent='')
+    # instead of flipping that row to a checked glyph. The row is also
+    # short-lived against the quiet gate because the Working indicator keeps
+    # streaming, so it is matched on sight. Completion is asserted on the
+    # persistent `1 item · 1 completed` tool receipt and the collapsed
+    # `Plan completed` summary.
+    pending = wait_for(fd, screen, [rf'☐[^\n]*{esc}', rf'{esc}[^\n]*(?:pending|待处理)'],
+                       timeout=TIMEOUT, on_sight=True)
     if not pending:
         print(f'[FAIL] scenario 3: pending plan item "{TODO_LABEL}" never rendered')
         return False
-    done = wait_for(fd, screen, [rf'(?:\[[xX✓]\]|✓)[^\n]*{esc}', rf'{esc}[^\n]*(?:completed|完成)'], timeout=TIMEOUT)
+    done = wait_for(fd, screen, [re.escape('1 item · 1 completed'),
+                                 re.escape('Plan completed: 1/1 steps, 0 failures')],
+                    timeout=TIMEOUT)
     if not done:
-        print(f'[FAIL] scenario 3: plan item "{TODO_LABEL}" never flipped to completed')
+        print(f'[FAIL] scenario 3: plan item "{TODO_LABEL}" never completed')
         return False
-    print(f'[PASS] scenario 3: plan item "{TODO_LABEL}" flipped [ ] -> [x] live')
+    print(f'[PASS] scenario 3: plan item "{TODO_LABEL}" flipped pending -> completed live')
     return True
 
 
 def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
-    """P262: /usage pushes a transient result into the outputs ring, Ctrl+O opens
-    the command-outputs panel, Esc closes it.
+    """P262: /usage pushes a transient result into the outputs ring; the
+    command-outputs panel opens via the `/outputs` command (the default keymap
+    no longer binds Ctrl+O to this toggle) and Esc closes it.
 
     Runs after the default plan scenario so turn diagnostics exist and `/usage`
     produces a real summary (turns/tokens), which is what gets pushed to the ring.
@@ -256,7 +309,7 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
     # /usage pushes to the command-outputs ring (post-P262); give agent time to
     # process the command before opening the panel.
     time.sleep(0.5)
-    send(fd, b'\x0f')  # Ctrl+O -> command-outputs toggle
+    send(fd, '/outputs\r'.encode())  # opens the outputs panel (no Ctrl+O keymap binding)
     opened = wait_for(fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')], timeout=20)
     if not opened:
         # Close the panel on failure so its focus does not leak into the next
@@ -264,7 +317,7 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
         send(fd, b'\x1b')
         time.sleep(0.5)
         drain(fd, screen)
-        print('[FAIL] scenario 5 (P262): outputs panel not detected after Ctrl+O')
+        print('[FAIL] scenario 5 (P262): outputs panel not detected after /outputs')
         return False
     view = screen.viewport()
     if '/usage' not in view:
@@ -291,7 +344,7 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
     if not probe:
         print('[FAIL] scenario 5 (P262): panel did not close on Esc (composer swallowed probe char)')
         return False
-    print('[PASS] scenario 5 (P262): /usage output reviewable via Ctrl+O panel and Esc-closable')
+    print('[PASS] scenario 5 (P262): /usage output reviewable via /outputs panel and Esc-closable')
     return True
 
 
@@ -299,7 +352,7 @@ def scenario_slash_command_p282(pid: int, fd: int, screen: Screen) -> bool:
     """P282: invalid slash-command verb renders a diagnostic and preserves the
     composer draft; the corrected retry executes and consumes the draft."""
     err_text = 'Invalid verb "bork". Expected: list, set, unset.'
-    ok_text = 'Statusline set to model, context.'
+    ok_text = '/statusline set model,context completed'  # persistent tool receipt
 
     send(fd, '\r'.encode())
     time.sleep(0.5)
@@ -417,25 +470,40 @@ def scenario_plan_lifecycle(pid: int, fd: int, screen: Screen) -> bool:
 
     send(fd, '帮我建个计划并并行执行。\r'.encode())
 
-    # 1. plan creation: all four steps visible. Record first-screen visibility after
-    #    the plan first appears (the fake model's turn 2 runs steps 1+2 in parallel).
-    created = wait_for(fd, screen, [patterns[1], re.escape('步骤 1')], timeout=TIMEOUT)
+    # 1. plan creation: steps appear in the planTodo box (pending rows). Matched
+    #    on sight so the anchor for step 2's start_mark lands BEFORE the parallel
+    #    ▸ rows render; a quiet-gated match can return after they have scrolled
+    #    out (Working timer keystream keeps the quiet gate open past the frame).
+    #    The "first screen" metric is measured after the parallel frame settles
+    #    below (step 2), where both running rows are guaranteed in the viewport.
+    created = wait_for(fd, screen, [patterns[1], re.escape('步骤 1')],
+                       timeout=TIMEOUT, on_sight=True)
     if not created:
         print('[FAIL] scenario 4: plan lifecycle - plan steps never rendered')
         return False
-    # after turn 2 (parallel in_progress) the first rendered screen should show steps 1/2
-    _ = wait_for(fd, screen, [patterns[2], re.escape('步骤 2')], timeout=TIMEOUT)
+
+    # 2. parallel execution markers: the planTodo box re-renders the running
+    #    rows with a `▸` mark *before* the label (observed frame:
+    #    `  1. ▸ 步骤 1：解析需求`). The Working status line only names the
+    #    current step, so it cannot prove step 2 is active; matching BOTH ▸ rows
+    #    in one viewport is the real "both steps in_progress together" signal.
+    #    The rows are transient (Working timers keep streaming and push them out
+    #    of the 40-line viewport before the quiet gate clears), so they are
+    #    matched on sight.
+    running = wait_for(fd, screen, [
+        rf'▸[^\n]*{re.escape("步骤 1：解析需求")}[^\n]*\n[^\n]*▸[^\n]*{re.escape("步骤 2：设计接口")}',
+        rf'▸[^\n]*{re.escape("步骤 2：设计接口")}[^\n]*\n[^\n]*▸[^\n]*{re.escape("步骤 1：解析需求")}'],
+        timeout=TIMEOUT, on_sight=True)
+    if not running:
+        print('[FAIL] scenario 4: parallel execution markers never rendered')
+        ok = False
+    # first-screen current-step visibility: fraction of the in_progress steps
+    # (1 and 2) whose row appears in the settled viewport. Measured immediately
+    # after the on-sight match, when both ▸ rows are still in the window.
     visible_rate = first_screen_step_visibility(screen.viewport(), [1, 2])
     print(f'[metric] first-screen current-step visibility rate = {visible_rate:.2f}')
     if visible_rate < 0.5:
         print('[FAIL] scenario 4: current running steps not visible in first screen')
-        ok = False
-
-    # 2. parallel execution markers (running) for steps 1/2.
-    running = wait_for(fd, screen, [r'步骤 1[^\n]*(?:in_progress|running|▶|●)',
-                                    r'步骤 2[^\n]*(?:in_progress|running|▶|●)'], timeout=TIMEOUT)
-    if not running:
-        print('[FAIL] scenario 4: parallel execution markers never rendered')
         ok = False
 
     # 3. failure of step 1 + retry confirmation prompt.
@@ -452,10 +520,16 @@ def scenario_plan_lifecycle(pid: int, fd: int, screen: Screen) -> bool:
     #    operator presses y + Enter to confirm retry.
     keys = fail_loc_keypresses(1, 1)
     print(f'[metric] failure-location keypress count = {keys}')
+    retry_at = len(bytes(screen.raw))
     send(fd, b'y\r')
 
-    # 5. recovery: step 1 flips back to running after confirmed retry.
-    recovered = wait_for(fd, screen, [r'步骤 1[^\n]*(?:in_progress|running|▶|●)'], timeout=TIMEOUT)
+    # 5. recovery: after the confirmed retry, the fake model emits an in_progress
+    #    Update plan receipt and the box re-renders step 1 as running. The
+    #    `▸` row is ambiguous (it also rendered pre-retry and stays in the rolling
+    #    buffer), so match is restricted to output that arrived after the retry.
+    recovered = wait_for(fd, screen, [
+        rf'▸[^\n]*{re.escape("步骤 1：解析需求")}',
+        re.escape('Update plan completed')], timeout=TIMEOUT, tail_from=retry_at)
     if not recovered:
         print('[FAIL] scenario 4: step-1 recovery after confirmed retry never rendered')
         ok = False
