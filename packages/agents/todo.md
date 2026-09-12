@@ -2700,3 +2700,10 @@ Turn: Fix session restore                                      running  01:42
 - **复验范围**：在 HEAD `329383497`（上述收尾提交）之上、无任何源码改动，独立重跑全部 10 个 agent 子包与双端门禁，逐一对照收尾记录基线。
 - **结果（全部与记录一致，均 EXIT=0）**：`agent` **815**、`agent-ui` **1146**、`agent-gateway` **291**、`agent-tools` **478**、`agent-cli` **74**、`agent-channels` **59**、`agent-providers` **13**、`agent-ssh` **8**、`agent-desktop` **20**、`agent-vscode` **7**；`run-dom-gate.ts` 与 `run-tui-gate.ts` 均 **PASS (4 scenarios)**。
 - **结论**：收尾记录的数字为可复现基线，无新回归；本批仅本文档追加复验条目，独立提交。
+
+### v19-C4 · `/status` 消费 exchange 指标（v19-B4 展示侧兑现，2026-09-12 ✅）
+
+- **范围**：兑现 v19-B4 "供客户端诊断与 /status 展示" 中的 **UI 展示侧**——此前 RPC `command_exchange.metrics`、REST `/api/command-exchange/metrics`、`/api/health` 三处已暴露指标，但 agent-ui `runStatusCommand`（AgentConsoleComponent.ts）未消费，`/status` 面板缺 exchange 行。
+- **实现**（`agent-ui/src/AgentConsoleComponent.ts:6993`）：`runStatusCommand` 在 `this.appRpc` 存在时并行补发 `command_exchange.metrics`（`.catch(() => null)` 兜底，网关不可用静默降级）；`metrics?.dropped != null` 时（快照完整）① overlay 面板追加 `exchange: dropped N · stale N · duplicate N · unauthorized N` 行（`ExchangeMetricsSnapshot` 类型自 `@tsdi/agent` 导入），② notice 单行追加紧凑计数 ` · exchange dN sN dupN uN`；无网关（本地 runtime）时零改动，overlay 仍六行。
+- 测试：`agent-ui/test/_helpers.ts` `AppRpcStub` 新增 `exchangeMetrics` 字段与 `command_exchange.metrics` 分支（未设置时返回零值快照）；`vm-review-tasks.spec.ts` 新增 `statusCommandReportsExchangeMetrics`——appRpc 注入 `{dropped:1, stale:2, duplicate:3, unauthorized:4}` 后 `/status`，断言 notice 含 `exchange d1 s2 dup3 u4`、overlay 含完整 exchange 行。
+- 门禁：agent-ui 全量 **1147 passing / 0 failed / EXIT=0**（基线 1146 +1）；`tsc --noEmit` EXIT=0；`git diff --check` 通过；临时 runner 已清理。

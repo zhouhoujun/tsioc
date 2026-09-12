@@ -190,7 +190,7 @@ import {
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 import {
@@ -6996,6 +6996,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         let sandboxMode = await this.getSessionSandboxMode(sessionId).catch(() => 'default');
         let delegationMode = await this.getSessionDelegationMode(sessionId).catch(() => 'explicit');
         let archetype = (this.runtime as any).getSessionArchetype?.(sessionId) ?? 'build';
+        let exchangeText = '';
+        let exchangeCounts: ExchangeMetricsSnapshot | null = null;
         if (this.appRpc) {
             const result = await this.appRpc.request('session.plan_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
             planMode = result?.enabled === true;
@@ -7003,10 +7005,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (archetypeResult?.archetype) {
                 archetype = String(archetypeResult.archetype);
             }
+            const metrics = await this.appRpc.request('command_exchange.metrics', {}, this.rpcRequestContext()).catch(() => null);
+            if (metrics?.dropped != null) {
+                exchangeCounts = { dropped: metrics.dropped, stale: metrics.stale, duplicate: metrics.duplicate, unauthorized: metrics.unauthorized };
+                exchangeText = ` · exchange d${metrics.dropped} s${metrics.stale} dup${metrics.duplicate} u${metrics.unauthorized}`;
+            }
         }
         const model = this.state.modelProfile || this.state.model || 'default';
         const planModeText = planMode ? 'ON (read-only)' : 'off';
-        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planModeText} · sandbox ${sandboxMode} · delegation ${delegationMode}`);
+        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planModeText} · sandbox ${sandboxMode} · delegation ${delegationMode}${exchangeText}`);
         this.state.openTextOverlay('status', [
             `session: ${sessionId}`,
             `model: ${model}`,
@@ -7014,6 +7021,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             `plan mode: ${planModeText}`,
             `sandbox: ${sandboxMode}`,
             `delegation: ${delegationMode}`,
+            ...(exchangeCounts ? [`exchange: dropped ${exchangeCounts.dropped} · stale ${exchangeCounts.stale} · duplicate ${exchangeCounts.duplicate} · unauthorized ${exchangeCounts.unauthorized}`] : []),
         ]);
     }
 

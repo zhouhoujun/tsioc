@@ -442,6 +442,7 @@ export class AppRpcStub {
     turnDiagnosticsTrend: any[] = [];
     sandboxModes = new Map<string, string>();
     delegationModes = new Map<string, string>();
+    exchangeMetrics: { dropped: number; stale: number; duplicate: number; unauthorized: number } | null = null;
     audioStatesBySession = new Map<string, { bufferedBytes: number; chunks: string[] }>();
     audioStatusOverride: Record<string, any> | null = null;
     gitStepSnapshots: any[] = [];
@@ -585,6 +586,9 @@ export class AppRpcStub {
         if (method === 'session.delegation_mode.get') {
             const sessionId = String(params?.sessionId || 'console');
             return { sessionId, mode: this.delegationModes.get(sessionId) || 'explicit' };
+        }
+        if (method === 'command_exchange.metrics') {
+            return this.exchangeMetrics || { dropped: 0, stale: 0, duplicate: 0, unauthorized: 0 };
         }
         if (method === 'todo.get') {
             if (this.todoFailuresBySession.has(params?.sessionId)) {

@@ -2483,6 +2483,22 @@ export class VmReviewTasksTest {
         expect(state.textOverlay?.lines).toContain('delegation: explicit');
     }
 
+    @Test('status command reports exchange metrics via RPC')
+    async statusCommandReportsExchangeMetrics() {
+        const runtime = new RuntimeStub();
+        const appRpc = new AppRpcStub();
+        appRpc.exchangeMetrics = { dropped: 1, stale: 2, duplicate: 3, unauthorized: 4 };
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        state.sessionId = 'st-1';
+        state.setModelProfile('fast');
+
+        await (component as any).handleCommand('/status');
+
+        expect(state.notice).toContain('exchange d1 s2 dup3 u4');
+        expect(state.textOverlay?.title).toBe('status');
+        expect(state.textOverlay?.lines).toContain('exchange: dropped 1 · stale 2 · duplicate 3 · unauthorized 4');
+    }
+
     @Test('settings providers tab opens the model switcher')
     async settingsProvidersTabOpensModelSwitcher() {
         const runtime = new RuntimeStub();
