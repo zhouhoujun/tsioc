@@ -23,7 +23,7 @@ export class TurnDiagnosticsHandler {
                 return;
             }
             const principalId = getRequestPrincipalId(req);
-            if (!await this.owners.isOwner(sessionId, principalId)) {
+            if (!await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -62,7 +62,7 @@ export class TurnDiagnosticsHandler {
             const sessionId = url.searchParams.get('sessionId')?.trim();
             const principalId = getRequestPrincipalId(req);
             if (sessionId) {
-                if (!await this.owners.isOwner(sessionId, principalId)) {
+                if (!await this.owners.isAuthorized(sessionId, principalId)) {
                     res.writeHead(403, { 'Content-Type': 'application/json' })
                         .end(JSON.stringify({ error: 'forbidden' }));
                     return;
@@ -92,7 +92,7 @@ export class TurnDiagnosticsHandler {
                 ? Math.min(parseInt(maxBucketsRaw, 10), 90)
                 : undefined;
             if (sessionId) {
-                if (!await this.owners.isOwner(sessionId, principalId)) {
+                if (!await this.owners.isAuthorized(sessionId, principalId)) {
                     res.writeHead(403, { 'Content-Type': 'application/json' })
                         .end(JSON.stringify({ error: 'forbidden' }));
                     return;

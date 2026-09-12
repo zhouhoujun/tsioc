@@ -30,7 +30,7 @@ export class UsageHandler {
             const principalId = getRequestPrincipalId(req);
             let sessionIds: string[] = [];
             if (sessionId) {
-                if (!await this.owners.isOwner(sessionId, principalId)) {
+                if (!await this.owners.isAuthorized(sessionId, principalId)) {
                     res.writeHead(403, { 'Content-Type': 'application/json' })
                         .end(JSON.stringify({ error: 'forbidden' }));
                     return;

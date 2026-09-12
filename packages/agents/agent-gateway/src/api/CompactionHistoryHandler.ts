@@ -23,7 +23,7 @@ export class CompactionHistoryHandler {
                 return;
             }
             const principalId = getRequestPrincipalId(req);
-            if (!await this.owners.isOwner(sessionId, principalId)) {
+            if (!await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -65,7 +65,7 @@ export class CompactionHistoryHandler {
             const url = new URL(req.url ?? '/api/compaction-history/stats', `http://${host}`);
             const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
             const principalId = getRequestPrincipalId(req);
-            if (sessionId && !await this.owners.isOwner(sessionId, principalId)) {
+            if (sessionId && !await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -91,7 +91,7 @@ export class CompactionHistoryHandler {
             const url = new URL(req.url ?? '/api/compaction-history/trend', `http://${host}`);
             const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
             const principalId = getRequestPrincipalId(req);
-            if (sessionId && !await this.owners.isOwner(sessionId, principalId)) {
+            if (sessionId && !await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;

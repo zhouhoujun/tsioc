@@ -33,7 +33,7 @@ export class MemoryHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'sessionId, key, value required' }));
                 return;
             }
-            if (!await this.owners.isOwner(body.sessionId, getRequestPrincipalId(req))) {
+            if (!await this.owners.isAuthorized(body.sessionId, getRequestPrincipalId(req))) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;

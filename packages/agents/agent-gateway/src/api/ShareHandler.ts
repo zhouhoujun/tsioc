@@ -11,7 +11,7 @@ export class ShareHandler {
     getRoutes(): GatewayRoute[] {
         const create: RouteHandler = async (req, res, params) => {
             const sessionId = params.id;
-            if (!sessionId || !await this.owners.isOwner(sessionId, getRequestPrincipalId(req))) {
+            if (!sessionId || !await this.owners.isAuthorized(sessionId, getRequestPrincipalId(req))) {
                 res.writeHead(403, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'forbidden' })); return;
             }
             try {
@@ -28,7 +28,7 @@ export class ShareHandler {
         };
         const revoke: RouteHandler = async (req, res, params) => {
             const snapshot = this.shares.get(params.token || '');
-            if (!snapshot || !await this.owners.isOwner(snapshot.sessionId, getRequestPrincipalId(req))) {
+            if (!snapshot || !await this.owners.isAuthorized(snapshot.sessionId, getRequestPrincipalId(req))) {
                 res.writeHead(403, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'forbidden' })); return;
             }
             this.shares.revoke(params.token); res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ status: 'revoked' }));

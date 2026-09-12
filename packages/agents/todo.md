@@ -2707,3 +2707,13 @@ Turn: Fix session restore                                      running  01:42
 - **实现**（`agent-ui/src/AgentConsoleComponent.ts:6993`）：`runStatusCommand` 在 `this.appRpc` 存在时并行补发 `command_exchange.metrics`（`.catch(() => null)` 兜底，网关不可用静默降级）；`metrics?.dropped != null` 时（快照完整）① overlay 面板追加 `exchange: dropped N · stale N · duplicate N · unauthorized N` 行（`ExchangeMetricsSnapshot` 类型自 `@tsdi/agent` 导入），② notice 单行追加紧凑计数 ` · exchange dN sN dupN uN`；无网关（本地 runtime）时零改动，overlay 仍六行。
 - 测试：`agent-ui/test/_helpers.ts` `AppRpcStub` 新增 `exchangeMetrics` 字段与 `command_exchange.metrics` 分支（未设置时返回零值快照）；`vm-review-tasks.spec.ts` 新增 `statusCommandReportsExchangeMetrics`——appRpc 注入 `{dropped:1, stale:2, duplicate:3, unauthorized:4}` 后 `/status`，断言 notice 含 `exchange d1 s2 dup3 u4`、overlay 含完整 exchange 行。
 - 门禁：agent-ui 全量 **1147 passing / 0 failed / EXIT=0**（基线 1146 +1）；`tsc --noEmit` EXIT=0；`git diff --check` 通过；临时 runner 已清理。
+
+### v19-C5 · REST `isOwner` → `isAuthorized` 共享授权 seam 迁移（2026-09-12 ✅）
+
+- **范围**：兑现 v19-B6/B7 已两次记录的 seam 差异事实（REST `isOwner` 无 principal → false → 403；RPC `authorize` 无 principal → `'anonymous'` 放行）——将 13 个 REST handler 的 26 处 `isOwner` 调用点统一迁移到共享 `authorize` seam 的严格布尔映射，消除"两处鉴权实现分叉"，REST 403 语义**行为零变更**。
+- **实现**（`agent-gateway/src/auth/SessionOwnerStore.ts`）：
+  - `authorize()` 新增 `SessionAuthorizeOptions`：`requirePrincipal`（无 principal 抛 `Forbidden`，替代 `'anonymous'` 放行）与 `allowClaim: false`（ownerless 会话不自动认领，抛 `Forbidden`）——**仅加 `requirePrincipal` 不够**，`authorize` 默认会对 ownerless 会话 auto-claim，直接套用会引入"任意 principal 认领无主会话"的语义变更；两个 strict 选项叠加后四态（缺会话/无 principal/无主/异主）与 `isOwner` 完全等价。
+  - 新增 `isAuthorized(sessionId, principalId)`：`authorize(…, { requirePrincipal: true, allowClaim: false })` 的布尔映射，即共享 seam 的 REST 严格入口；`isOwner` 保留为 `@deprecated` 别名（`SessionOwnerStore` 为 README 公开导出，不得删 API）。
+  - 26 处调用点迁移：UsageHandler:33、AuditHandler:26、ReviewHandler:26/48、TurnDiagnosticsHandler:26/65/95、CompactionHistoryHandler:26/68/94、MemoryHandler:36、ApprovalHandler:37/74、ShareHandler:14/31、DelegationHandler:24/44/62/78、StatsHandler:146、CommandExchangeHandler:41/79/107/130（保留 `this.owners &&` 守卫与 unauthorized 指标计数）、EventHandler:581 / SessionHandler:645（`ensureAccess` 正逻辑）——全部 `this.owners.isOwner(` → `this.owners.isAuthorized(`，`src/` 内 `isOwner` 已无调用者。
+- **测试**（`agent-gateway/test/session-lifecycle.spec.ts` 追加 2 用例）：`ownerAuthorizeStrictOptions`（requirePrincipal 拒绝 `'anonymous'`；allowClaim:false 拒绝且不写 owner；默认 authorize 仍 auto-claim 保 RPC 行为）；`isAuthorizedMapsStrictContract`（同主 true / 异主 false / 无 principal false / 无主 false / 缺会话 false，且 strict 检查不产生认领副作用）。
+- 门禁：agent-gateway 全量 **293 passing / 0 failed / EXIT=0**（基线 291 +2）；`tsc --noEmit` EXIT=0；`git diff --check` 通过；临时 runner 已清理。

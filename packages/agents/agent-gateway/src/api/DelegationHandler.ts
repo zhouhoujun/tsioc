@@ -21,7 +21,7 @@ export class DelegationHandler {
                 return;
             }
             const principalId = getRequestPrincipalId(req);
-            if (!await this.owners.isOwner(sessionId, principalId)) {
+            if (!await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -41,7 +41,7 @@ export class DelegationHandler {
                 return;
             }
             const principalId = getRequestPrincipalId(req);
-            if (!await this.owners.isOwner(sessionId, principalId)) {
+            if (!await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -59,7 +59,7 @@ export class DelegationHandler {
                 return;
             }
             const principalId = getRequestPrincipalId(req);
-            if (!await this.owners.isOwner(sessionId, principalId)) {
+            if (!await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;
@@ -75,7 +75,7 @@ export class DelegationHandler {
             const url = new URL(req.url ?? '/api/delegation', `http://${host}`);
             const sessionId = url.searchParams.get('sessionId')?.trim() || undefined;
             const principalId = getRequestPrincipalId(req);
-            if (sessionId && !await this.owners.isOwner(sessionId, principalId)) {
+            if (sessionId && !await this.owners.isAuthorized(sessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;

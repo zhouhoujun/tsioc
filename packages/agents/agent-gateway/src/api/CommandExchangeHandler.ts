@@ -38,7 +38,7 @@ export class CommandExchangeHandler {
                 return;
             }
             const principal = getRequestPrincipalId(req);
-            if (this.owners && !await this.owners.isOwner(sessionId, principal)) {
+            if (this.owners && !await this.owners.isAuthorized(sessionId, principal)) {
                 this.metrics?.record('unauthorized');
                 res.writeHead(403, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'forbidden' }));
@@ -76,7 +76,7 @@ export class CommandExchangeHandler {
                 return;
             }
             const principal = getRequestPrincipalId(req);
-            if (this.owners && !await this.owners.isOwner(sessionId, principal)) {
+            if (this.owners && !await this.owners.isAuthorized(sessionId, principal)) {
                 this.metrics?.record('unauthorized');
                 res.writeHead(403, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'forbidden' }));
@@ -104,7 +104,7 @@ export class CommandExchangeHandler {
                 return;
             }
             const principal = getRequestPrincipalId(req);
-            if (this.owners && !await this.owners.isOwner(sessionId, principal)) {
+            if (this.owners && !await this.owners.isAuthorized(sessionId, principal)) {
                 this.metrics?.record('unauthorized');
                 res.writeHead(403, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'forbidden' }));
@@ -127,7 +127,7 @@ export class CommandExchangeHandler {
                 return;
             }
             const principal = getRequestPrincipalId(req);
-            if (this.owners && !await this.owners.isOwner(sessionId, principal)) {
+            if (this.owners && !await this.owners.isAuthorized(sessionId, principal)) {
                 this.metrics?.record('unauthorized');
                 res.writeHead(403, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'forbidden' }));

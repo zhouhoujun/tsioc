@@ -642,7 +642,7 @@ export class SessionHandler {
 
     private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {
         const principalId = getRequestPrincipalId(req);
-        if (await this.owners.isOwner(sessionId, principalId)) {
+        if (await this.owners.isAuthorized(sessionId, principalId)) {
             return true;
         }
         res.writeHead(403, { 'Content-Type': 'application/json' })

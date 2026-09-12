@@ -26,6 +26,55 @@ export class SessionLifecycleRpcTest {
         expect(forbidden).toEqual(true);
     }
 
+    @Test('SessionOwnerStore authorize requirePrincipal and allowClaim reject REST strict paths')
+    async ownerAuthorizeStrictOptions() {
+        const records = new Map<string, any>();
+        records.set('claimed', { id: 'claimed', ownerPrincipalId: 'alice' });
+        records.set('ownerless', { id: 'ownerless' });
+        const store = {
+            async has(id: string) { return records.has(id); },
+            async get(id: string) { return records.get(id); },
+            async setOwner(id: string, owner?: string) { const value = records.get(id) || { id }; value.ownerPrincipalId = owner; records.set(id, value); }
+        } as any;
+        const owners = new SessionOwnerStore(store);
+
+        // requirePrincipal: no principal rejects instead of resolving 'anonymous'.
+        let rejected = false;
+        try { await owners.authorize('claimed', undefined, { requirePrincipal: true }); } catch { rejected = true; }
+        expect(rejected).toEqual(true);
+
+        // allowClaim:false refuses to auto-claim ownerless sessions.
+        rejected = false;
+        try { await owners.authorize('ownerless', 'bob', { allowClaim: false }); } catch { rejected = true; }
+        expect(rejected).toEqual(true);
+        expect(await owners.getOwner('ownerless')).toBeUndefined();
+
+        // Default authorize still auto-claims ownerless sessions (RPC behavior).
+        expect(await owners.authorize('ownerless', 'bob')).toEqual('created');
+        expect(await owners.getOwner('ownerless')).toEqual('bob');
+    }
+
+    @Test('SessionOwnerStore isAuthorized maps REST strict authorize to the 403 boolean contract')
+    async isAuthorizedMapsStrictContract() {
+        const records = new Map<string, any>();
+        records.set('owned', { id: 'owned', ownerPrincipalId: 'alice' });
+        records.set('ownerless', { id: 'ownerless' });
+        const store = {
+            async has(id: string) { return records.has(id); },
+            async get(id: string) { return records.get(id); },
+            async setOwner(id: string, owner?: string) { const value = records.get(id) || { id }; value.ownerPrincipalId = owner; records.set(id, value); }
+        } as any;
+        const owners = new SessionOwnerStore(store);
+
+        expect(await owners.isAuthorized('owned', 'alice')).toEqual(true);
+        expect(await owners.isAuthorized('owned', 'bob')).toEqual(false);
+        expect(await owners.isAuthorized('owned')).toEqual(false);
+        expect(await owners.isAuthorized('ownerless', 'alice')).toEqual(false);
+        expect(await owners.isAuthorized('missing', 'alice')).toEqual(false);
+        // Strict check never claims: the ownerless session stays ownerless.
+        expect(await owners.getOwner('ownerless')).toBeUndefined();
+    }
+
     protected async createHarness() {
         const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
         const store = context.get(SessionStore);

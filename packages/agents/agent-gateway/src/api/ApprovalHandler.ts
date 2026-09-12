@@ -34,7 +34,7 @@ export class ApprovalHandler {
             if (this.owners && req) {
                 const principalId = getRequestPrincipalId(req);
                 if (sessionId) {
-                    if (!await this.owners.isOwner(sessionId, principalId)) {
+                    if (!await this.owners.isAuthorized(sessionId, principalId)) {
                         res.writeHead(403, { 'Content-Type': 'application/json' })
                             .end(JSON.stringify({ error: 'forbidden' }));
                         return;
@@ -71,7 +71,7 @@ export class ApprovalHandler {
             }
             if (this.owners) {
                 const principalId = getRequestPrincipalId(req);
-                if (!await this.owners.isOwner(request.sessionId, principalId)) {
+                if (!await this.owners.isAuthorized(request.sessionId, principalId)) {
                     res.writeHead(403, { 'Content-Type': 'application/json' })
                         .end(JSON.stringify({ error: 'forbidden' }));
                     return;
