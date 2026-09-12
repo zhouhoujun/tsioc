@@ -13,9 +13,13 @@
  *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts
  * Running a single scenario by id:
  *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts desktop-basic
+ * Writing the per-scenario metrics (v20-B) for the regression runner:
+ *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts --json /tmp/dom-metrics.json
  *
  * Exit 0 = all scenarios PASS, 1 = any FAIL.
  */
+
+import { writeFileSync } from 'node:fs';
 
 import { JSDOM } from 'jsdom';
 
@@ -24,6 +28,7 @@ import { mountAgentWebConsole } from '../web-console';
 import { FakeAgentGateway } from './FakeAgentGateway';
 import { GatewayScenario, SCENARIOS, applyPipelineSteps, scenarioById } from './scenarios';
 import { collectGatewayMetrics, GatewayDomMetrics } from './metrics';
+import { GateScenarioMetrics, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
     const deadline = Date.now() + timeoutMs;
@@ -45,15 +50,25 @@ function rpcCount(gateway: FakeAgentGateway, method: string): number {
 interface ScenarioRunResult {
     scenario: GatewayScenario;
     failures: string[];
+    metrics: GateScenarioMetrics;
 }
 
 async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<ScenarioRunResult> {
+    const startedAt = Date.now();
     const failures: string[] = [];
     const check = (name: string, pass: boolean, detail = ''): void => {
         if (!pass) {
             failures.push(`${name}${detail ? ` (${detail})` : ''}`);
         }
     };
+
+    // Captured inside the try: dispose() in the finally makes metadata unreadable after it.
+    let settledAt = 0;
+    let sseFrameCount = 0;
+    let sseConsumed = 0;
+    let layoutMeasured = false;
+    let firstScreenVisibleRate: number | null = null;
+    let postSettleStartedAt: number | null = null;
 
     const gateway = new FakeAgentGateway(scenario.buildGatewayOptions());
     const state = new AgentConsoleSessionState();
@@ -87,6 +102,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
         }
 
         if (scenario.postSettlePush) {
+            postSettleStartedAt = Date.now();
             await waitUntil(() =>
                 gateway.metadata.sseDropped &&
                 state.timelineSeedCount === scenario.expect.timelineSeedCount &&
@@ -108,7 +124,13 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
                 && settled.duplicateLabels.length === 0;
         });
 
+        settledAt = Date.now();
+
         const metrics = collectGatewayMetrics(dom.window.document);
+        sseFrameCount = gateway.metadata.sseFrameCount;
+        sseConsumed = gateway.metadata.sseConsumed;
+        layoutMeasured = metrics.layout.measured;
+        firstScreenVisibleRate = metrics.layout.firstScreenVisibleRate;
         check('panel found', metrics.panelFound);
         check('row count', metrics.rowCount >= scenario.expect.minRenderedRows, `rows=${metrics.rowCount}`);
         check('cjk rows', metrics.cjkLineCount >= scenario.expect.minCjkRows, `cjk=${metrics.cjkLineCount}`);
@@ -132,12 +154,23 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
             await mounted.dispose();
         }
     }
-    return { scenario, failures };
+    const gateMetrics: GateScenarioMetrics = {
+        scenarioId: scenario.id,
+        gate: 'dom',
+        elapsedMs: Date.now() - startedAt,
+        sseFrameCount,
+        sseConsumed,
+        sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
+        replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
+        firstScreenVisibleRate,
+        measured: layoutMeasured
+    };
+    return { scenario, failures, metrics: gateMetrics };
 }
 
 async function main(): Promise<number> {
-    const only = process.argv[2]?.trim();
-    const scenarios = only ? [scenarioById(only)] : SCENARIOS;
+    const cli = parseGateCliArgs(process.argv.slice(2));
+    const scenarios = cli.only ? [scenarioById(cli.only)] : SCENARIOS;
 
     const dom = new JSDOM('<!DOCTYPE html><html><body><div id="agent-console"></div></body></html>', {
         runScripts: 'dangerously',
@@ -157,14 +190,22 @@ async function main(): Promise<number> {
     (globalThis as unknown as { document: Document }).document = dom.window.document;
 
     let allOk = true;
+    const gateMetrics: GateScenarioMetrics[] = [];
     for (const scenario of scenarios) {
         const result = await runScenario(dom, scenario);
+        gateMetrics.push(result.metrics);
         const ok = result.failures.length === 0;
         allOk = allOk && ok;
         console.log(`[${ok ? 'PASS' : 'FAIL'}] ${scenario.id}: ${scenario.label}`);
         for (const failure of result.failures) {
             console.log(`      - ${failure}`);
         }
+        console.log(`      [METRICS] ${scenarioKey(result.metrics)} ${metricsSummary(result.metrics)}`);
+    }
+
+    if (cli.jsonPath) {
+        writeFileSync(cli.jsonPath, `${JSON.stringify(gateMetrics, null, 2)}\n`, 'utf8');
+        console.log(`[METRICS] wrote ${gateMetrics.length} scenario metrics -> ${cli.jsonPath}`);
     }
 
     delete (globalThis as unknown as { document?: Document }).document;

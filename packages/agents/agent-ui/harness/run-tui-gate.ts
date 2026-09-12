@@ -21,6 +21,8 @@
  *   npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts
  * Running a single scenario by id:
  *   npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts desktop-basic
+ * Writing the per-scenario metrics (v20-B) for the regression runner:
+ *   npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts --json /tmp/tui-metrics.json
  *
  * Exit 0 = all scenarios PASS, 1 = any FAIL.
  *
@@ -28,6 +30,8 @@
  * not in `src/`, so node APIs are allowed here. It imports app code from the
  * package's own `../src` entry (never the installed `@tsdi/agent-ui` dist).
  */
+
+import { writeFileSync } from 'node:fs';
 
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentRef, ComponentsModule } from '@tsdi/components';
@@ -46,6 +50,7 @@ import {
 } from '../src';
 import { FakeAgentGateway } from './FakeAgentGateway';
 import { GatewayScenario, SCENARIOS, applyPipelineSteps, scenarioById } from './scenarios';
+import { GateScenarioMetrics, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
     const deadline = Date.now() + timeoutMs;
@@ -81,15 +86,23 @@ function countStatusGlyphs(line: string): number {
 interface ScenarioRunResult {
     scenario: GatewayScenario;
     failures: string[];
+    metrics: GateScenarioMetrics;
 }
 
 async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult> {
+    const startedAt = Date.now();
     const failures: string[] = [];
     const check = (name: string, pass: boolean, detail = ''): void => {
         if (!pass) {
             failures.push(`${name}${detail ? ` (${detail})` : ''}`);
         }
     };
+
+    // Captured inside the try: dispose() in the finally makes metadata unreadable after it.
+    let settledAt = 0;
+    let sseFrameCount = 0;
+    let sseConsumed = 0;
+    let postSettleStartedAt: number | null = null;
 
     const gateway = new FakeAgentGateway(scenario.buildGatewayOptions());
     const rawState = new AgentConsoleSessionState();
@@ -173,6 +186,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         }
 
         if (scenario.postSettlePush) {
+            postSettleStartedAt = Date.now();
             await waitUntil(() =>
                 gateway.metadata.sseDropped &&
                 state.timelineSeedCount === scenario.expect.timelineSeedCount &&
@@ -195,6 +209,10 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         };
 
         await waitUntil(() => getLines().length >= scenario.expect.minRenderedRows);
+
+        settledAt = Date.now();
+        sseFrameCount = gateway.metadata.sseFrameCount;
+        sseConsumed = gateway.metadata.sseConsumed;
 
         const lines = getLines();
         const cjkLineCount = lines.filter(line => CJK_RE.test(line)).length;
@@ -246,22 +264,41 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             await ctx.close().catch(() => null);
         }
     }
-    return { scenario, failures };
+    const gateMetrics: GateScenarioMetrics = {
+        scenarioId: scenario.id,
+        gate: 'tui',
+        elapsedMs: Date.now() - startedAt,
+        sseFrameCount,
+        sseConsumed,
+        sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
+        replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
+        firstScreenVisibleRate: null,
+        measured: false
+    };
+    return { scenario, failures, metrics: gateMetrics };
 }
 
 async function main(): Promise<number> {
-    const only = process.argv[2]?.trim();
-    const scenarios = only ? [scenarioById(only)] : SCENARIOS;
+    const cli = parseGateCliArgs(process.argv.slice(2));
+    const scenarios = cli.only ? [scenarioById(cli.only)] : SCENARIOS;
 
     let allOk = true;
+    const gateMetrics: GateScenarioMetrics[] = [];
     for (const scenario of scenarios) {
         const result = await runScenario(scenario);
+        gateMetrics.push(result.metrics);
         const ok = result.failures.length === 0;
         allOk = allOk && ok;
         console.log(`[${ok ? 'PASS' : 'FAIL'}] ${scenario.id}: ${scenario.label}`);
         for (const failure of result.failures) {
             console.log(`      - ${failure}`);
         }
+        console.log(`      [METRICS] ${scenarioKey(result.metrics)} ${metricsSummary(result.metrics)}`);
+    }
+
+    if (cli.jsonPath) {
+        writeFileSync(cli.jsonPath, `${JSON.stringify(gateMetrics, null, 2)}\n`, 'utf8');
+        console.log(`[METRICS] wrote ${gateMetrics.length} scenario metrics -> ${cli.jsonPath}`);
     }
 
     console.log(`\n=== tui gate summary: ${allOk ? 'PASS' : 'FAIL'} (${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'}) ===`);

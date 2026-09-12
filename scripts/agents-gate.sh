@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# v20-A — Unified CI gate entry for @tsdi agents + framework layer.
+# v20-B — Unified CI gate entry for @tsdi agents + framework layer.
 #
 # Chains every reproducible acceptance carrier into one gate:
 #   1. unit tests: 10 agent subpackages (each must EXIT=0)
@@ -8,9 +8,10 @@
 #   3. tsc --noEmit: agent / agent-ui / agent-gateway / agent-tools
 #   4. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 4 scenarios)
 #   5. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 4 scenarios)
-#   6. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
+#   6. gate regression: gate metrics vs harness/gate-baseline.json ([REGRESSION]/[OK])
+#   7. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
 #      when python3/pty/agent-cli artifact unavailable — never fake a pass)
-#   7. git diff --check (workspace cleanliness)
+#   8. git diff --check (workspace cleanliness)
 #
 # Each stage prints `[GATE-PASS]/[GATE-FAIL]/[GATE-SKIP] <id>: <label>` so CI
 # output is greppable. The script exits non-zero when ANY executed stage FAILed.
@@ -18,13 +19,13 @@
 # Usage:
 #   bash scripts/agents-gate.sh                  # all stages
 #   bash scripts/agents-gate.sh agent agent-ui   # named stages only
-#   SKIP_PTY=1 bash scripts/agents-gate.sh       # skip PTY acceptance
+#   RUN_PTY=1 bash scripts/agents-gate.sh        # include PTY acceptance
 #
 # Stage ids: agent agent-channels agent-cli agent-gateway agent-providers
 #            agent-ssh agent-tools agent-ui agent-desktop agent-vscode
 #            components components-console components-html
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
-#            dom-gate tui-gate pty-acceptance diff-check
+#            dom-gate tui-gate gate-regression pty-acceptance diff-check
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -68,11 +69,12 @@ run_tsc() {
     fi
 }
 
-# run_harness <id> <label> <gate-ts>
+# run_harness <id> <label> <gate-ts> [extra args...]
 run_harness() {
     local id="$1" label="$2" gate="$3"
+    shift 3
     local log="$LOG_DIR/$id.log"
-    if (cd packages/agents/agent-ui && npx ts-node -r tsconfig-paths/register "harness/$gate" >"$log" 2>&1); then
+    if (cd packages/agents/agent-ui && npx ts-node -r tsconfig-paths/register "harness/$gate" "$@" >"$log" 2>&1); then
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"
@@ -114,6 +116,30 @@ run_pty() {
     fi
 }
 
+# run_gate_regression — compare gate metrics JSON against committed baseline.
+# Skips when neither dom-gate nor tui-gate produced a metrics JSON (partial runs).
+run_gate_regression() {
+    local id="gate-regression" label="gate metrics regression vs baseline"
+    local dom_json="$LOG_DIR/dom-gate-metrics.json"
+    local tui_json="$LOG_DIR/tui-gate-metrics.json"
+    if [ ! -f "$dom_json" ] && [ ! -f "$tui_json" ]; then
+        stage_skip "$id" "$label (no metrics JSON — run dom-gate/tui-gate first)"
+        return
+    fi
+    local baseline="$ROOT_DIR/packages/agents/agent-ui/harness/gate-baseline.json"
+    local runner_args=()
+    [ -f "$dom_json" ] && runner_args+=(--dom "$dom_json")
+    [ -f "$tui_json" ] && runner_args+=(--tui "$tui_json")
+    runner_args+=(--baseline "$baseline")
+    local log="$LOG_DIR/$id.log"
+    if (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-gate-regression.ts "${runner_args[@]}" >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        cat "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -145,8 +171,9 @@ run_stage() {
         tsc-agent-ui)     run_tsc tsc-agent-ui 'tsc --noEmit @tsdi/agent-ui' packages/agents/agent-ui ;;
         tsc-agent-gateway) run_tsc tsc-agent-gateway 'tsc --noEmit @tsdi/agent-gateway' packages/agents/agent-gateway ;;
         tsc-agent-tools)  run_tsc tsc-agent-tools 'tsc --noEmit @tsdi/agent-tools' packages/agents/agent-tools ;;
-        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 4 scenarios)' run-dom-gate.ts ;;
-        tui-gate)         run_harness tui-gate 'TUI gate (text stream, 4 scenarios)' run-tui-gate.ts ;;
+        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 4 scenarios)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;;
+        tui-gate)         run_harness tui-gate 'TUI gate (text stream, 4 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
+        gate-regression)  run_gate_regression ;;
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;
         diff-check)       run_diff_check ;;
         *)
@@ -160,7 +187,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             agent-ssh agent-tools agent-ui agent-desktop agent-vscode
             components components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
-            dom-gate tui-gate pty-acceptance diff-check"
+            dom-gate tui-gate gate-regression pty-acceptance diff-check"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"
