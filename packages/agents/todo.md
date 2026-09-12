@@ -2685,3 +2685,12 @@ Turn: Fix session restore                                      running  01:42
 - 退出时先停止 terminal 输入/渲染并保留最后一屏，再通过 terminal 原始输出在输入框与状态栏下方追加 closing/resume 行，随后关闭应用；避免异步销毁覆盖提示，也不清除用户希望保留的最终界面。
 - 新增退出顺序回归，锁定 `stop -> write resume -> app.close`，确保提示不会与 terminal 光标定位冲突。
 - 验证：components/console `tsc --noEmit`、全量 **74 passing / EXIT=0**；agent-ui `tsc --noEmit`、全量 **1144 passing / 0 failed / EXIT=0**；`git diff --check` 通过。
+
+### 2026-09-12 收尾复核与全量验证 ✅
+
+- **完成项检查**：工作区基线干净（`git status` 无未提交改动），v19 全部批次（A1/A2、B1–B7、C1–C3、D）与 v17 全部批次（A1–A5、B1–B7、C、D、E、F）均已在前置提交闭合；无临时 runner 残留、无遗漏源码缺口。
+- **packages/agents 全量测试（10 包，均 EXIT=0）**：`agent` **815**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **291**（基线 290 +1）、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1146**（基线 1145 +1）、`agent-desktop` **20**、`agent-vscode` **7**，0 failed。
+- **框架层回归**：`components` **136**、`components/console` **75**（基线 74 +1）、`components/html` **117**，全部 EXIT=0。
+- **跨端门禁**：`run-dom-gate.ts` 与 `run-tui-gate.ts` 均 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）。
+- **类型/静态门禁**：`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；跨平台边界扫描 CLEAN——`agent-ui/src` 无 `@tsdi/components/console` 或 node 库实际 import（命中均为注释），`agent`/`agent-ui`/`components/console` 的 `src/` 无 `node:` 直接引用。
+- **结论**：计划全部闭合，全量验证通过；本批次仅本文档更新，独立提交。
