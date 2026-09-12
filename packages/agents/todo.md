@@ -2553,6 +2553,13 @@ Turn: Fix session restore                                      running  01:42
 - **固定规范**：所有 runtime/tool/model 的延迟测试必须注入 deterministic clock，禁止用生产级 timeout 做真实等待；新增可提前完成的 timer 必须具备取消/清理路径，测试结束后不得残留 event-loop handle；已知 HTTP status 与 transport error 必须分开分类，普通 4xx 不得按 network retry。
 - **收尾门禁**：packages/agents 全量均 EXIT=0：`agent` 812、`agent-ui` 1141、`agent-channels` 59、`agent-cli` 74、`agent-gateway` 289、`agent-tools` 478、`agent-providers` 13、`agent-ssh` 8、`agent-desktop` 20、`agent-vscode` 7；监听类 gateway/tools/ssh 在具备本地端口权限的宿主复跑。框架回归 `components` 136、`components/console` 74、`components/html` 117，全部 EXIT=0。`agent` `npm run build`、`npx tsc --noEmit`、`git diff --check` 与 Node API 边界扫描通过；临时 runner 已清理。
 
+### v19-A3 · defaultArchetype/delegationMode 纳入 policy 来源链（2026-09-12 ✅）
+
+- **范围**：兑现 v19-A 规划中"来源可观测"的 archetype/delegationMode 部分——`AgentPolicyConfig` 增加 `defaultArchetype`/`delegationMode`，`resolveAgentPolicy` 对其按 `default < workspace < session < request` 四级 last-wins 合并；`DefaultAgentRuntime` 四处决策点（`setPlanMode(false)`、`setSessionArchetype(null)`、`getSessionArchetype`、`getSessionDelegationMode`）改为消费 policy 并暴露来源（`AgentPolicyResolution<T> = { value, source }`）；导出常量 `DEFAULT_ARCHETYPE`/`DEFAULT_DELEGATION_MODE` 保留为 deprecated alias（对齐 v19-A1"保留导出常量作 deprecated alias"模式，`options.defaultArchetype`/`options.delegationMode` 顶层字段保留作已文档化的 legacy 兜底层）。
+- **来源链语义**：runtime 侧 `resolveSessionArchetype/resolveSessionDelegationMode`（公开）+ `resolveDefaultArchetype/resolveDefaultDelegationMode`（protected）——session map 命中（`'session'`）→ policy 字段（`source: policy.source ?? 'workspace'`）→ legacy 顶层字段（值 === 常量时为 `'default'` 否则 `'workspace'`）→ 常量（`'default'`）；delegation 每层经 `normalizeDelegationMode` 守卫，非法值跳过该层。per-turn `resolveDelegationMode` 语义保持不变（非法 per-turn 值回落到 `DEFAULT_DELEGATION_MODE`）。
+- **测试覆盖**：`policy-options.spec.ts` +4（defaultArchetype/delegationMode 四级合并 last-wins + source 传播、未设置字段省略、新字段输入不可变）；新 `policy-source-chain.spec.ts` +8（default/workspace-policy/legacy-alias/session/request 各层的 value+source 断言、非法 delegationMode 回落、`setPlanMode(false)`/`setSessionArchetype(null)` 恢复到 policy 默认而非 schema 常量）。
+- **门禁**：`agent` 全量 **827 passing / 0 failed / EXIT=0**（基线 815 +12）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过；回归 `agent-gateway` **293 passing**、`agent-ui` **1147 passing** 均 EXIT=0。临时 runner 已清理。
+
 ### v19-B1 · AgentExchangeEnvelope 统一化（2026-09-09 ✅）
 
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。

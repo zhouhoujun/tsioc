@@ -306,15 +306,34 @@ export interface AgentPolicyLimits {
     rpcTimeoutMs?: number;
 }
 
+export type AgentPolicySource = 'default' | 'workspace' | 'session' | 'request';
+
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
-    source?: 'default' | 'workspace' | 'session' | 'request';
+    /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
+    defaultArchetype?: string;
+    /** G29: schema default session delegation mode used when a session has no explicit override (falls back to `AgentOptions.delegationMode`, then `'explicit'`). */
+    delegationMode?: AgentDelegationMode;
+    source?: AgentPolicySource;
+}
+
+/** P70/G29: a resolved policy value plus the policy layer that supplied it. */
+export interface AgentPolicyResolution<T> {
+    value: T;
+    source: AgentPolicySource;
 }
 
 export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undefined>): AgentPolicyConfig {
     const limits = overrides.reduce<AgentPolicyLimits>((merged, item) => ({ ...merged, ...(item?.limits ?? {}) }), {});
-    const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicyConfig['source'];
-    return { limits, ...(source ? { source } : {}) };
+    const defaultArchetype = overrides.map(item => item?.defaultArchetype).filter(Boolean).pop();
+    const delegationMode = overrides.map(item => item?.delegationMode).filter(Boolean).pop();
+    const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
+    return {
+        limits,
+        ...(defaultArchetype ? { defaultArchetype } : {}),
+        ...(delegationMode ? { delegationMode } : {}),
+        ...(source ? { source } : {})
+    };
 }
 
 /** A4: default deepseek connection settings reference the provider registry (single source of truth). */

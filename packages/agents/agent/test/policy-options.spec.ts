@@ -28,4 +28,51 @@ export class AgentPolicyOptionsTest {
         expect(workspace.limits.commandOutputPageSize).toEqual(12);
         expect(resolved.limits?.rpcTimeoutMs).toEqual(900);
     }
+
+    @Test('merges defaultArchetype in default workspace session request order')
+    mergesDefaultArchetype() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', defaultArchetype: 'review' },
+            { source: 'session', defaultArchetype: 'plan' },
+            { source: 'request', defaultArchetype: 'coder' }
+        );
+
+        expect(policy.defaultArchetype).toEqual('coder');
+        expect(policy.source).toEqual('request');
+        expect(policy.limits?.commandOutputHistoryCap).toEqual(500);
+    }
+
+    @Test('merges delegationMode in default workspace session request order')
+    mergesDelegationMode() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', delegationMode: 'proactive' },
+            { source: 'session', delegationMode: 'disabled' },
+            { source: 'request', delegationMode: 'explicit' }
+        );
+
+        expect(policy.delegationMode).toEqual('explicit');
+        expect(policy.source).toEqual('request');
+    }
+
+    @Test('omits new fields when no layer sets them')
+    omitsNewFieldsWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.defaultArchetype).toBeUndefined();
+        expect(merged.delegationMode).toBeUndefined();
+        expect(merged.limits?.timelinePageSize).toEqual(10);
+    }
+
+    @Test('does not mutate source defaultArchetype or delegationMode')
+    preservesNewFieldInputs() {
+        const workspace = { source: 'workspace' as const, defaultArchetype: 'review', delegationMode: 'proactive' as const };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', defaultArchetype: 'coder' });
+
+        expect(resolved.defaultArchetype).toEqual('coder');
+        resolved.defaultArchetype = 'plan';
+        expect(workspace.defaultArchetype).toEqual('review');
+        expect(workspace.delegationMode).toEqual('proactive');
+    }
 }

@@ -14,6 +14,11 @@ export type AgentDelegationMode = 'disabled' | 'explicit' | 'proactive';
 
 export const DELEGATION_MODES: AgentDelegationMode[] = ['disabled', 'explicit', 'proactive'];
 
+/**
+ * Built-in fallback delegation mode.
+ * @deprecated schema-default alias — prefer `AgentPolicyConfig.delegationMode`
+ * (or `AgentOptions.delegationMode`) for the configured default.
+ */
 export const DEFAULT_DELEGATION_MODE: AgentDelegationMode = 'explicit';
 
 /**

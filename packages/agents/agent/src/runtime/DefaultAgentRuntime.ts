@@ -22,7 +22,7 @@ import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
 import { AGENT_OPTIONS } from '../tokens';
-import { AgentOptions, defaultAgentOptions } from '../options';
+import { AgentOptions, AgentPolicyResolution, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentClock, AGENT_CLOCK } from './Clock';
@@ -1942,11 +1942,36 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionDelegationModes = new Map<string, AgentDelegationMode>();
     protected pendingArchetypeSwitches = new Map<string, Promise<void>>();
 
+    /** P70: default archetype with the policy layer that supplied it (policy > legacy option > schema). */
+    protected resolveDefaultArchetype(): AgentPolicyResolution<string> {
+        const policyArchetype = this.options.policy?.defaultArchetype;
+        if (policyArchetype) {
+            return { value: policyArchetype, source: this.options.policy?.source ?? 'workspace' };
+        }
+        const legacyArchetype = this.options.defaultArchetype;
+        if (legacyArchetype) {
+            return {
+                value: legacyArchetype,
+                source: legacyArchetype === DEFAULT_ARCHETYPE ? 'default' : 'workspace'
+            };
+        }
+        return { value: DEFAULT_ARCHETYPE, source: 'default' };
+    }
+
+    /** P70: session archetype with observable source; falls back to the default chain when no session override exists. */
+    resolveSessionArchetype(sessionId: string): AgentPolicyResolution<string> {
+        const sessionArchetype = this.sessionArchetypes.get(sessionId);
+        if (sessionArchetype) {
+            return { value: sessionArchetype, source: 'session' };
+        }
+        return this.resolveDefaultArchetype();
+    }
+
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
             this.setSessionArchetype(sessionId, 'plan');
         } else {
-            this.setSessionArchetype(sessionId, this.options.defaultArchetype ?? DEFAULT_ARCHETYPE);
+            this.setSessionArchetype(sessionId, this.resolveDefaultArchetype().value);
         }
     }
 
@@ -1958,7 +1983,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const previous = this.getSessionArchetype(sessionId);
         const next = archetype
             ? this.normalizeArchetypeName(archetype)
-            : (this.options.defaultArchetype ?? DEFAULT_ARCHETYPE);
+            : this.resolveDefaultArchetype().value;
         if (!next) {
             this.sessionArchetypes.delete(sessionId);
         } else {
@@ -1991,7 +2016,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     getSessionArchetype(sessionId: string): string {
-        return this.sessionArchetypes.get(sessionId) ?? this.options.defaultArchetype ?? DEFAULT_ARCHETYPE;
+        return this.resolveSessionArchetype(sessionId).value;
     }
 
     listArchetypes(): string[] {
@@ -2059,8 +2084,33 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.sessionDelegationModes.set(sessionId, normalized);
     }
 
+    /** G29: default delegation mode with the policy layer that supplied it (policy > legacy option > schema). */
+    protected resolveDefaultDelegationMode(): AgentPolicyResolution<AgentDelegationMode> {
+        const policyMode = normalizeDelegationMode(this.options.policy?.delegationMode);
+        if (policyMode) {
+            return { value: policyMode, source: this.options.policy?.source ?? 'workspace' };
+        }
+        const legacyMode = normalizeDelegationMode(this.options.delegationMode);
+        if (legacyMode) {
+            return {
+                value: legacyMode,
+                source: legacyMode === DEFAULT_DELEGATION_MODE ? 'default' : 'workspace'
+            };
+        }
+        return { value: DEFAULT_DELEGATION_MODE, source: 'default' };
+    }
+
+    /** G29: session delegation mode with observable source; falls back to the default chain when no session override exists. */
+    resolveSessionDelegationMode(sessionId: string): AgentPolicyResolution<AgentDelegationMode> {
+        const sessionMode = this.sessionDelegationModes.get(sessionId);
+        if (sessionMode) {
+            return { value: sessionMode, source: 'session' };
+        }
+        return this.resolveDefaultDelegationMode();
+    }
+
     override getSessionDelegationMode(sessionId: string): AgentDelegationMode {
-        return this.sessionDelegationModes.get(sessionId) ?? this.options.delegationMode ?? DEFAULT_DELEGATION_MODE;
+        return this.resolveSessionDelegationMode(sessionId).value;
     }
 
     /**

@@ -43,7 +43,11 @@ export interface AgentArchetype {
     steps?: string[];
 }
 
-/** Archetype applied when a session has no explicit override. */
+/**
+ * Archetype applied when a session has no explicit override.
+ * @deprecated schema-default alias — prefer `AgentPolicyConfig.defaultArchetype`
+ * (or `AgentOptions.defaultArchetype`) for the configured default.
+ */
 export const DEFAULT_ARCHETYPE = 'build';
 
 /** Built-in archetypes. Custom archetypes may override these by name. */
