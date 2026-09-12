@@ -8,7 +8,8 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
-import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, resolveAgentPolicy } from '../src/options';
+import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, resolveAgentPolicy, resolveAgentRetryPolicy } from '../src/options';
+import { DEFAULT_RETRY_POLICY } from '../src/model/RetryPolicy';
 import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../src/harness/VerificationGate';
 import { AGENT_OPTIONS } from '../src/tokens';
 import { AgentModule } from '../src/agent.module';
@@ -281,5 +282,41 @@ export class AgentPolicySourceChainTest {
             runtime.setSessionArchetype('s1', null);
             expect(runtime.getSessionArchetype('s1')).toEqual('review');
         } finally { await ctx.close(); }
+    }
+
+    @Test('default layer: retry resolves schema defaults with source default')
+    retryDefaultSource() {
+        expect(resolveAgentRetryPolicy(defaultAgentOptions)).toEqual({ value: DEFAULT_RETRY_POLICY, source: 'default' });
+    }
+
+    @Test('workspace layer: policy retry wins with source workspace')
+    retryWorkspacePolicyWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', retry: { maxRetries: 5 } })
+        };
+        expect(resolveAgentRetryPolicy(options)).toEqual({ value: { ...DEFAULT_RETRY_POLICY, maxRetries: 5 }, source: 'workspace' });
+    }
+
+    @Test('partial policy retry fills unset fields from schema defaults')
+    retryPartialFillsDefaults() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', retry: { baseDelayMs: 250 } })
+        };
+        expect(resolveAgentRetryPolicy(options)).toEqual({ value: { ...DEFAULT_RETRY_POLICY, baseDelayMs: 250 }, source: 'workspace' });
+    }
+
+    @Test('request layer: request retry wins with source request')
+    retryRequestLayerWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(
+                defaultAgentOptions.policy,
+                { source: 'workspace', retry: { maxRetries: 7, baseDelayMs: 500 } },
+                { source: 'request', retry: { maxRetries: 1, maxDelayMs: 8000 } }
+            )
+        };
+        expect(resolveAgentRetryPolicy(options)).toEqual({ value: { maxRetries: 1, baseDelayMs: 500, maxDelayMs: 8000, jitterMs: 500 }, source: 'request' });
     }
 }

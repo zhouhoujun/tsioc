@@ -43,8 +43,27 @@ export function retryAfterMs(value: string | null | undefined, now: number = Dat
     return Number.isFinite(date) ? Math.max(0, date - now) : undefined;
 }
 
-export function retryDelayMs(attempt: number, retryAfter?: string | null): number {
+/** A6: model retry backoff policy surface (optional fields default to DEFAULT_RETRY_POLICY). */
+export interface AgentRetryPolicy {
+    maxRetries?: number;
+    baseDelayMs?: number;
+    maxDelayMs?: number;
+    jitterMs?: number;
+}
+
+/** A6: schema-default model retry backoff (previously module-level constants in the adapters). */
+export const DEFAULT_RETRY_POLICY: Required<AgentRetryPolicy> = {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 15000,
+    jitterMs: 500
+};
+
+export function retryDelayMs(attempt: number, retryAfter?: string | null, policy: AgentRetryPolicy = DEFAULT_RETRY_POLICY): number {
     const hinted = retryAfterMs(retryAfter);
-    if (hinted !== undefined) return Math.min(hinted, 15000);
-    return Math.min(1000 * Math.pow(2, Math.max(0, attempt - 1)) + Math.random() * 500, 15000);
+    const maxDelayMs = policy.maxDelayMs ?? DEFAULT_RETRY_POLICY.maxDelayMs;
+    if (hinted !== undefined) return Math.min(hinted, maxDelayMs);
+    const baseDelayMs = policy.baseDelayMs ?? DEFAULT_RETRY_POLICY.baseDelayMs;
+    const jitterMs = policy.jitterMs ?? DEFAULT_RETRY_POLICY.jitterMs;
+    return Math.min(baseDelayMs * Math.pow(2, Math.max(0, attempt - 1)) + Math.random() * jitterMs, maxDelayMs);
 }

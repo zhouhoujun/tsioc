@@ -269,6 +269,7 @@ export class RoutedModelAdapter extends ModelAdapter {
             apiKeyEnv: source.apiKeyEnv,
             baseUrl: source.baseUrl,
             timeoutMs: source.timeoutMs,
+            retry: source.retry ? { ...source.retry } : undefined,
             temperature: source.temperature,
             maxTokens: source.maxTokens,
             headers: source.headers ? { ...source.headers } : undefined,
@@ -292,6 +293,10 @@ export class RoutedModelAdapter extends ModelAdapter {
             headers: {
                 ...(base?.headers ?? {}),
                 ...(override?.headers ?? {})
+            },
+            retry: {
+                ...(base?.retry ?? {}),
+                ...(override?.retry ?? {})
             }
         };
     }

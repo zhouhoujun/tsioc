@@ -1,7 +1,7 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { ConfigModule } from '@tsdi/microservices/config';
-import { AgentOptions, defaultAgentOptions } from './options';
+import { AgentOptions, defaultAgentOptions, resolveAgentRetryPolicy } from './options';
 import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
 import { ModelAdapter } from './model/ModelAdapter';
 import { RoutedModelAdapter } from './model/RoutedModelAdapter';
@@ -85,7 +85,10 @@ import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
         { provide: AGENT_CLOCK, useClass: SystemAgentClock, asDefault: true },
         {
             provide: ModelAdapter,
-            useFactory: (options: AgentOptions, clock: AgentClock) => new RoutedModelAdapter(options.model ?? defaultAgentOptions.model!, undefined, clock),
+            useFactory: (options: AgentOptions, clock: AgentClock) => new RoutedModelAdapter({
+                ...(options.model ?? defaultAgentOptions.model!),
+                retry: resolveAgentRetryPolicy(options).value
+            }, undefined, clock),
             deps: [AGENT_OPTIONS, AGENT_CLOCK],
             asDefault: true
         },

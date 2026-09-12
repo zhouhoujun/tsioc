@@ -1,6 +1,6 @@
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -115,8 +115,6 @@ type AnthropicSSEEvent =
     | { type: 'ping' };
 
 const ANTHROPIC_VERSION = '2023-06-01';
-const MAX_RETRIES = 3;
-const BASE_RETRY_MS = 1000;
 
 export class AnthropicModelAdapter extends ModelAdapter {
     protected appArgs?: ApplicationArguments;
@@ -149,7 +147,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             if (!response.ok) {
                 cleanup();
                 const errorBody = await response.text().catch(() => '');
-                if (this.isRetryable(response.status, errorBody) && attempt <= MAX_RETRIES) {
+                if (this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
                 throw new Error(`Anthropic request failed: ${response.status} ${errorBody}`);
@@ -182,7 +180,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const errorBody = await response.text().catch(() => '');
-                if (this.isRetryable(response.status, errorBody) && attempt <= MAX_RETRIES) {
+                if (this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;
@@ -620,7 +618,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
     }
 
     private async retry(request: ModelRequest, attempt: number, _status: number, retryAfter?: string | null): Promise<ModelResponse> {
-        const delay = retryDelayMs(attempt, retryAfter);
+        const delay = retryDelayMs(attempt, retryAfter, this.options.retry);
         if (this.clock) {
             await this.clock.sleep(delay);
         } else {

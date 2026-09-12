@@ -1,7 +1,8 @@
 import expect = require('expect');
-import { Test } from '@tsdi/unit';
-import { classifyModelError, isRetryableError, retryAfterMs, retryDelayMs } from '../src/model/RetryPolicy';
+import { Suite, Test } from '@tsdi/unit';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryAfterMs, retryDelayMs } from '../src/model/RetryPolicy';
 
+@Suite('Model retry policy')
 export class RetryPolicySpec {
     @Test('classifies model failures by status and error')
     classify() {
@@ -46,5 +47,24 @@ export class RetryPolicySpec {
     retryAfter() {
         expect(retryAfterMs('2')).toBe(2000);
         expect(retryDelayMs(1, '30')).toBe(15000);
+    }
+
+    @Test('honors a custom retry policy backoff parameters')
+    customPolicy() {
+        const policy = { maxRetries: 5, baseDelayMs: 250, maxDelayMs: 4000, jitterMs: 0 };
+        expect(retryDelayMs(1, null, policy)).toBe(250);
+        expect(retryDelayMs(2, null, policy)).toBe(500);
+        expect(retryDelayMs(5, null, policy)).toBe(4000);
+        expect(retryDelayMs(10, null, policy)).toBe(4000);
+        expect(retryDelayMs(1, '2', policy)).toBe(2000);
+    }
+
+    @Test('default retry policy matches the legacy hardcoded adapter constants')
+    defaultPolicy() {
+        expect(DEFAULT_RETRY_POLICY).toEqual({ maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 15000, jitterMs: 500 });
+        const noJitter = { ...DEFAULT_RETRY_POLICY, jitterMs: 0 };
+        expect(retryDelayMs(1, null, noJitter)).toBe(1000);
+        expect(retryDelayMs(2, null, noJitter)).toBe(2000);
+        expect(retryDelayMs(5, null, noJitter)).toBe(15000);
     }
 }

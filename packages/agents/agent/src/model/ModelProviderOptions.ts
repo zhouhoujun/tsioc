@@ -1,3 +1,5 @@
+import type { AgentRetryPolicy } from './RetryPolicy';
+
 export type AgentModelComplexity = 'simple' | 'moderate' | 'complex';
 
 export type AgentPromptCacheStrategy = 'auto' | 'ephemeral' | 'persistent';
@@ -41,6 +43,8 @@ export interface AgentModelConfig {
     apiKeyEnv?: string;
     baseUrl?: string;
     timeoutMs?: number;
+    /** A6: model retry backoff overrides (falls back to the schema-default retry policy when unset). */
+    retry?: AgentRetryPolicy;
     temperature?: number;
     maxTokens?: number;
     headers?: Record<string, string>;

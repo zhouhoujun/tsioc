@@ -1,5 +1,6 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
 import { BUILTIN_AGENT_PROVIDERS } from './model/provider-registry';
+import { AgentRetryPolicy, DEFAULT_RETRY_POLICY } from './model/RetryPolicy';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
@@ -332,6 +333,8 @@ export interface AgentPolicyConfig {
     verification?: AgentPolicyVerification;
     /** A5: approval-gate settings (required tool rules and automatic review flag). */
     approval?: AgentPolicyApproval;
+    /** A6: model retry backoff policy (max retries and backoff delay; falls back to the schema defaults). */
+    retry?: AgentRetryPolicy;
     source?: AgentPolicySource;
 }
 
@@ -357,6 +360,22 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.approval?.autoReview)
         .filter((value): value is boolean => typeof value === 'boolean')
         .pop();
+    const retryMaxRetries = overrides
+        .map(item => item?.retry?.maxRetries)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
+    const retryBaseDelayMs = overrides
+        .map(item => item?.retry?.baseDelayMs)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
+    const retryMaxDelayMs = overrides
+        .map(item => item?.retry?.maxDelayMs)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
+    const retryJitterMs = overrides
+        .map(item => item?.retry?.jitterMs)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
@@ -371,7 +390,34 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
                 }
             }
             : {}),
+        ...(retryMaxRetries !== undefined || retryBaseDelayMs !== undefined || retryMaxDelayMs !== undefined || retryJitterMs !== undefined
+            ? {
+                retry: {
+                    ...(retryMaxRetries !== undefined ? { maxRetries: retryMaxRetries } : {}),
+                    ...(retryBaseDelayMs !== undefined ? { baseDelayMs: retryBaseDelayMs } : {}),
+                    ...(retryMaxDelayMs !== undefined ? { maxDelayMs: retryMaxDelayMs } : {}),
+                    ...(retryJitterMs !== undefined ? { jitterMs: retryJitterMs } : {})
+                }
+            }
+            : {}),
         ...(source ? { source } : {})
+    };
+}
+
+/** A6: resolved model retry policy merged over the schema defaults, with its winning policy layer. */
+export function resolveAgentRetryPolicy(options: Pick<AgentOptions, 'policy'>): AgentPolicyResolution<Required<AgentRetryPolicy>> {
+    const retry = options.policy?.retry;
+    if (!retry) {
+        return { value: { ...DEFAULT_RETRY_POLICY }, source: 'default' };
+    }
+    return {
+        value: {
+            maxRetries: retry.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries,
+            baseDelayMs: retry.baseDelayMs ?? DEFAULT_RETRY_POLICY.baseDelayMs,
+            maxDelayMs: retry.maxDelayMs ?? DEFAULT_RETRY_POLICY.maxDelayMs,
+            jitterMs: retry.jitterMs ?? DEFAULT_RETRY_POLICY.jitterMs
+        },
+        source: options.policy?.source ?? 'workspace'
     };
 }
 

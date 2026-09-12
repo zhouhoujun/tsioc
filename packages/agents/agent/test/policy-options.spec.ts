@@ -120,6 +120,38 @@ export class AgentPolicyOptionsTest {
         expect(workspace.approval.autoReview).toEqual(true);
     }
 
+    @Test('merges retry backoff fields in default workspace session request order')
+    mergesRetry() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', retry: { maxRetries: 5 } },
+            { source: 'session', retry: { baseDelayMs: 2000 } },
+            { source: 'request', retry: { maxDelayMs: 30000, jitterMs: 100 } }
+        );
+
+        expect(policy.source).toEqual('request');
+        expect(policy.retry).toEqual({ maxRetries: 5, baseDelayMs: 2000, maxDelayMs: 30000, jitterMs: 100 });
+        expect(policy.limits?.commandOutputHistoryCap).toEqual(500);
+    }
+
+    @Test('omits retry when no layer sets it')
+    omitsRetryWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.retry).toBeUndefined();
+    }
+
+    @Test('does not mutate source retry inputs')
+    preservesRetryInputs() {
+        const workspace = { source: 'workspace' as const, retry: { maxRetries: 5, jitterMs: 200 } };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', retry: { maxRetries: 9 } });
+
+        expect(resolved.retry?.maxRetries).toEqual(9);
+        resolved.retry!.maxRetries = 2;
+        expect(workspace.retry.maxRetries).toEqual(5);
+        expect(workspace.retry.jitterMs).toEqual(200);
+    }
+
     @Test('omits new fields when no layer sets them')
     omitsNewFieldsWhenUnset() {
         const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
@@ -127,6 +159,7 @@ export class AgentPolicyOptionsTest {
         expect(merged.defaultArchetype).toBeUndefined();
         expect(merged.delegationMode).toBeUndefined();
         expect(merged.approval).toBeUndefined();
+        expect(merged.retry).toBeUndefined();
         expect(merged.limits?.timelinePageSize).toEqual(10);
     }
 

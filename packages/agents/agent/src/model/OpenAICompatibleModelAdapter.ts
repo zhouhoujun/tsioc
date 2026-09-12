@@ -2,7 +2,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -127,9 +127,6 @@ interface SSEEvent {
     usage?: OpenAIChatCompletionResponse['usage'];
 }
 
-const MAX_RETRIES = 3;
-const BASE_RETRY_MS = 1000;
-
 export class OpenAICompatibleModelAdapter extends ModelAdapter {
     protected appArgs?: ApplicationArguments;
 
@@ -173,7 +170,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
-                if (this.isRetryable(response.status, detail) && attempt <= MAX_RETRIES) {
+                if (this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
@@ -239,7 +236,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
-                if (!emittedAnyChunk && this.isRetryable(response.status, detail) && attempt <= MAX_RETRIES) {
+                if (!emittedAnyChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;
@@ -460,7 +457,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     private async retry(request: ModelRequest, attempt: number, _lastStatus: number, retryAfter?: string | null): Promise<ModelResponse> {
-        const delay = retryDelayMs(attempt, retryAfter);
+        const delay = retryDelayMs(attempt, retryAfter, this.options.retry);
         if (this.clock) {
             await this.clock.sleep(delay);
         } else {
