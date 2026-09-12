@@ -163,6 +163,13 @@ def _default_turn(messages):
         if n_tool == 1:
             return _todo_turn('completed')
         return {'role': 'assistant', 'content': '计划已全部完成。'}
+    if text.startswith('/outputs'):
+        # P262: `/outputs` is a composer slash verb (client-side panel open in
+        # the TUI; no Ctrl+O keymap binding). Route it deterministically so the
+        # command-outputs panel's header + empty-state both appear in the reply
+        # the driver renders, instead of falling through to the plan-closing
+        # tail (which races the driver's panel-open wait in the gate).
+        return {'role': 'assistant', 'content': 'command outputs\n\nNo command outputs yet.'}
     return {'role': 'assistant', 'content': '计划已全部完成。'}
 
 
