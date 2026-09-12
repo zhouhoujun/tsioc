@@ -2694,3 +2694,9 @@ Turn: Fix session restore                                      running  01:42
 - **跨端门禁**：`run-dom-gate.ts` 与 `run-tui-gate.ts` 均 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）。
 - **类型/静态门禁**：`agent`、`agent-ui`、`agent-gateway` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；跨平台边界扫描 CLEAN——`agent-ui/src` 无 `@tsdi/components/console` 或 node 库实际 import（命中均为注释），`agent`/`agent-ui`/`components/console` 的 `src/` 无 `node:` 直接引用。
 - **结论**：计划全部闭合，全量验证通过；本批次仅本文档更新，独立提交。
+
+### 2026-09-12 独立复验（接续会话）✅
+
+- **复验范围**：在 HEAD `329383497`（上述收尾提交）之上、无任何源码改动，独立重跑全部 10 个 agent 子包与双端门禁，逐一对照收尾记录基线。
+- **结果（全部与记录一致，均 EXIT=0）**：`agent` **815**、`agent-ui` **1146**、`agent-gateway` **291**、`agent-tools` **478**、`agent-cli` **74**、`agent-channels` **59**、`agent-providers` **13**、`agent-ssh` **8**、`agent-desktop` **20**、`agent-vscode` **7**；`run-dom-gate.ts` 与 `run-tui-gate.ts` 均 **PASS (4 scenarios)**。
+- **结论**：收尾记录的数字为可复现基线，无新回归；本批仅本文档追加复验条目，独立提交。
