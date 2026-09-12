@@ -9,6 +9,7 @@ import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
 import { AgentOptions, defaultAgentOptions, resolveAgentPolicy } from '../src/options';
+import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../src/harness/VerificationGate';
 import { AGENT_OPTIONS } from '../src/tokens';
 import { AgentModule } from '../src/agent.module';
 import { provideAgentOrm } from '../src/orm.module';
@@ -84,6 +85,66 @@ export class AgentPolicySourceChainTest {
             runtime.setSessionDelegationMode('s1', 'disabled');
             expect(runtime.resolveSessionDelegationMode('s1')).toEqual({ value: 'disabled', source: 'session' });
             expect(runtime.resolveSessionDelegationMode('s2')).toEqual({ value: 'proactive', source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('default layer: schema verification write tools resolve with source default')
+    async verificationDefaultSource() {
+        const { runtime, ctx } = await createRuntime();
+        try {
+            expect(runtime.resolveVerificationWriteTools()).toEqual({ value: DEFAULT_VERIFICATION_WRITE_TOOLS, source: 'default' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('workspace layer: policy verification writeTools win with source workspace')
+    async verificationWorkspacePolicyWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', verification: { writeTools: ['edit_file'] } })
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveVerificationWriteTools()).toEqual({ value: ['edit_file'], source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('legacy top-level verificationWriteTools still work, labeled workspace when divergent from schema default')
+    async verificationLegacyAliasDivergent() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            verificationWriteTools: ['edit_file', 'apply_patch']
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveVerificationWriteTools()).toEqual({ value: ['edit_file', 'apply_patch'], source: 'workspace' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('legacy verificationWriteTools equal to schema default resolve with source default')
+    async verificationLegacyAliasEqualToDefault() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            verificationWriteTools: [...DEFAULT_VERIFICATION_WRITE_TOOLS]
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveVerificationWriteTools()).toEqual({ value: DEFAULT_VERIFICATION_WRITE_TOOLS, source: 'default' });
+        } finally { await ctx.close(); }
+    }
+
+    @Test('request layer: request verification writeTools win with source request')
+    async verificationRequestLayerWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(
+                defaultAgentOptions.policy,
+                { source: 'workspace', verification: { writeTools: ['edit_file'] } },
+                { source: 'request', verification: { writeTools: ['write_file', 'delete_file'] } }
+            )
+        };
+        const { runtime, ctx } = await createRuntime(options);
+        try {
+            expect(runtime.resolveVerificationWriteTools()).toEqual({ value: ['write_file', 'delete_file'], source: 'request' });
         } finally { await ctx.close(); }
     }
 

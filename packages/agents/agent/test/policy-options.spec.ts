@@ -56,6 +56,37 @@ export class AgentPolicyOptionsTest {
         expect(policy.source).toEqual('request');
     }
 
+    @Test('merges verification writeTools in default workspace session request order')
+    mergesVerificationWriteTools() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', verification: { writeTools: ['edit_file'] } },
+            { source: 'session', verification: { writeTools: ['apply_patch', 'delete_file'] } },
+            { source: 'request', verification: { writeTools: ['write_file'] } }
+        );
+
+        expect(policy.source).toEqual('request');
+        expect(policy.verification?.writeTools).toEqual(['write_file']);
+        expect(policy.limits?.commandOutputHistoryCap).toEqual(500);
+    }
+
+    @Test('omits verification when no layer sets writeTools')
+    omitsVerificationWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.verification).toBeUndefined();
+    }
+
+    @Test('does not mutate source verification writeTools inputs')
+    preservesVerificationWriteToolsInputs() {
+        const workspace = { source: 'workspace' as const, verification: { writeTools: ['edit_file'] } };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', verification: { writeTools: ['write_file'] } });
+
+        expect(resolved.verification?.writeTools).toEqual(['write_file']);
+        resolved.verification!.writeTools!.push('mkdir');
+        expect(workspace.verification.writeTools).toEqual(['edit_file']);
+    }
+
     @Test('omits new fields when no layer sets them')
     omitsNewFieldsWhenUnset() {
         const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });

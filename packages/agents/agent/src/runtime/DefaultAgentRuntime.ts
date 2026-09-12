@@ -118,6 +118,10 @@ const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use t
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
+function sameStringList(left: string[], right: string[]): boolean {
+    return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
@@ -1480,7 +1484,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         await this.runVerificationCommands(sessionId, turnContext);
-        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        const writeTools = this.resolveVerificationWriteTools().value;
         const gate = new VerificationGate({ writeTools });
         const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
         recovery.writeHints = [];
@@ -1540,7 +1544,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!recovery || !fileSnapshot?.filePath) {
             return;
         }
-        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        const writeTools = this.resolveVerificationWriteTools().value;
         if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
             return;
         }
@@ -1638,7 +1642,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!recovery || !fileSnapshot || fileSnapshot.before === null) {
             return;
         }
-        const writeTools = this.options.verificationWriteTools ?? DEFAULT_VERIFICATION_WRITE_TOOLS;
+        const writeTools = this.resolveVerificationWriteTools().value;
         if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
             return;
         }
@@ -1965,6 +1969,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return { value: sessionArchetype, source: 'session' };
         }
         return this.resolveDefaultArchetype();
+    }
+
+    /**
+     * B2: verification write-tool list with observable source. Mirrors the
+     * default chain (policy > legacy option > schema defaults); a legacy list
+     * identical to the schema default is reported as 'default'.
+     */
+    resolveVerificationWriteTools(): AgentPolicyResolution<string[]> {
+        const policyWriteTools = this.options.policy?.verification?.writeTools;
+        if (policyWriteTools?.length) {
+            return { value: policyWriteTools.slice(), source: this.options.policy?.source ?? 'workspace' };
+        }
+        const legacyWriteTools = this.options.verificationWriteTools;
+        if (legacyWriteTools?.length) {
+            return {
+                value: legacyWriteTools.slice(),
+                source: sameStringList(legacyWriteTools, DEFAULT_VERIFICATION_WRITE_TOOLS) ? 'default' : 'workspace'
+            };
+        }
+        return { value: DEFAULT_VERIFICATION_WRITE_TOOLS.slice(), source: 'default' };
     }
 
     setPlanMode(sessionId: string, enabled: boolean): void {

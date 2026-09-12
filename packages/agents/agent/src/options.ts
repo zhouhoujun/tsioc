@@ -308,12 +308,20 @@ export interface AgentPolicyLimits {
 
 export type AgentPolicySource = 'default' | 'workspace' | 'session' | 'request';
 
+/** B2: verification-gate settings folded into the policy source chain (default < workspace < session < request). */
+export interface AgentPolicyVerification {
+    /** Tool names treated as write operations for the declared-vs-actual diff check (falls back to `AgentOptions.verificationWriteTools`, then the B2 defaults). */
+    writeTools?: string[];
+}
+
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
     /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
     defaultArchetype?: string;
     /** G29: schema default session delegation mode used when a session has no explicit override (falls back to `AgentOptions.delegationMode`, then `'explicit'`). */
     delegationMode?: AgentDelegationMode;
+    /** B2: verification-gate settings (tool names treated as write operations). */
+    verification?: AgentPolicyVerification;
     source?: AgentPolicySource;
 }
 
@@ -327,11 +335,16 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
     const limits = overrides.reduce<AgentPolicyLimits>((merged, item) => ({ ...merged, ...(item?.limits ?? {}) }), {});
     const defaultArchetype = overrides.map(item => item?.defaultArchetype).filter(Boolean).pop();
     const delegationMode = overrides.map(item => item?.delegationMode).filter(Boolean).pop();
+    const verificationWriteTools = overrides
+        .map(item => item?.verification?.writeTools)
+        .filter((tools): tools is string[] => !!tools && tools.length > 0)
+        .pop();
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
         ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(delegationMode ? { delegationMode } : {}),
+        ...(verificationWriteTools ? { verification: { writeTools: verificationWriteTools.slice() } } : {}),
         ...(source ? { source } : {})
     };
 }

@@ -2560,6 +2560,15 @@ Turn: Fix session restore                                      running  01:42
 - **测试覆盖**：`policy-options.spec.ts` +4（defaultArchetype/delegationMode 四级合并 last-wins + source 传播、未设置字段省略、新字段输入不可变）；新 `policy-source-chain.spec.ts` +8（default/workspace-policy/legacy-alias/session/request 各层的 value+source 断言、非法 delegationMode 回落、`setPlanMode(false)`/`setSessionArchetype(null)` 恢复到 policy 默认而非 schema 常量）。
 - **门禁**：`agent` 全量 **827 passing / 0 failed / EXIT=0**（基线 815 +12）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过；回归 `agent-gateway` **293 passing**、`agent-ui` **1147 passing** 均 EXIT=0。临时 runner 已清理。
 
+### v19-A4 · verification writeTools 纳入 policy 来源链（2026-09-12 ✅）
+
+- **范围**：兑现 v19-A 规划中"verification/approval/sandbox"的 verification 部分（本轮仅折叠被真实消费的 `writeTools`）——`AgentPolicyConfig` 增加 `verification.writeTools`，`resolveAgentPolicy` 对其按 `default < workspace < session < request` 四级 last-wins 合并（写数组 `.slice()` 保输入不可变，未设置层省略该字段）。
+- **来源链语义**：runtime 侧新增公开 `resolveVerificationWriteTools(): AgentPolicyResolution<string[]>`——policy 字段（`source: policy.source ?? 'workspace'`）→ legacy 顶层 `options.verificationWriteTools`（与 `DEFAULT_VERIFICATION_WRITE_TOOLS` 逐元素等值时报 `'default'`，否则 `'workspace'`）→ 常量（`'default'`）；返回 `.slice()` 防外部变异。三处消费点（`runVerificationGate`/`trackEditedFile`/`captureWriteFalsificationHint`）改走 resolver 取值。
+- **deprecated 保留**：`DEFAULT_VERIFICATION_WRITE_TOOLS` 加 `@deprecated` 指引指向 `AgentPolicyConfig.verification.writeTools`，仍作 schema fallback 与 HarnessProfile strict 默认（对齐 v19-A3 对 `DEFAULT_ARCHETYPE`/`DEFAULT_DELEGATION_MODE` 的先例）；HarnessProfile snapshot/apply 通道保持读 legacy 顶层字段（policy 之下兜底，不破坏 profile diff 序列化）。
+- **死字段调查**：`maxEvidenceSummary`/`DEFAULT_VERIFICATION_MAX_EVIDENCE_SUMMARY` 全仓零消费（`VerificationGate.verify()` 从不读 `this.options`），本次不折叠进 policy（避免 schema 灰垢），原声明保留（向后兼容序列化）；后续接入 repair-prompt 摘要时再随实际消费点一并迁移。
+- **测试覆盖**：`policy-options.spec.ts` +3（writeTools 四级合并 last-wins + limits 保留、未设置层省略 verification、写数组输入不可变）；`policy-source-chain.spec.ts` +5（default/workspace-policy/legacy-divergent/legacy-equal-default/request 各层 value+source 断言）。
+- **门禁**：`agent` 全量 **835 passing / 0 failed / EXIT=0**（基线 827 +8）；`npx tsc --noEmit` EXIT=0；`git diff --check` 通过；本次改动仅 `agent` 包内（runtime 消费点 + schema + gate 常量注释 + 测试），agent-gateway/agent-ui 无消费面变更，未复跑跨端。临时 runner 已清理。
+
 ### v19-B1 · AgentExchangeEnvelope 统一化（2026-09-09 ✅）
 
 - 抽取共享 envelope codec、事件序列与 redaction/capability 校验，逐步替换 gateway/Fake/RemoteEventBridge 重复拼装。

@@ -29,6 +29,7 @@ export interface VerificationGateOptions {
 }
 
 /** Default tool names that capture file snapshots and are expected to change file content. */
+/** @deprecated Use `AgentPolicyConfig.verification.writeTools` (policy source chain); kept as the schema-default fallback. */
 export const DEFAULT_VERIFICATION_WRITE_TOOLS = ['write_file', 'edit_file', 'apply_patch', 'move_file', 'copy_file', 'delete_file', 'mkdir'];
 
 export const DEFAULT_VERIFICATION_MAX_EVIDENCE_SUMMARY = 8;
