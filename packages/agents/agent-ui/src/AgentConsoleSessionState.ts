@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -368,6 +368,12 @@ export interface AgentConsoleOptions {
     /** Transcript layout: stream keeps conversation rows flowing; dynamic windows them. */
     messageLayout?: 'stream' | 'dynamic';
     messageDetailVisibleLines?: number;
+    /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
+    auxiliaryPreviewLines?: number;
+    /** v19-A8: reasoning content preview lines (policy render, default 4). */
+    reasoningPreviewLines?: number;
+    /** v19-A8: trailing question lines kept visible when a question tail is present (policy render, default 6). */
+    questionTailVisibleLines?: number;
     messageSelectionPageSize?: number;
     messageDetailPageSize?: number;
     sessionSelectionPageSize?: number;
@@ -426,6 +432,9 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesVisibleItems: 7,
     messageLayout: 'stream',
     messageDetailVisibleLines: 6,
+    auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
+    reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
+    questionTailVisibleLines: DEFAULT_RENDER_POLICY.questionTailVisibleLines,
     messageSelectionPageSize: 6,
     messageDetailPageSize: 5,
     sessionSelectionPageSize: 5,

@@ -197,6 +197,7 @@ export class AgentPolicyOptionsTest {
         expect(merged.approval).toBeUndefined();
         expect(merged.retry).toBeUndefined();
         expect(merged.sandbox).toBeUndefined();
+        expect(merged.render).toBeUndefined();
         expect(merged.limits?.timelinePageSize).toEqual(10);
     }
 
@@ -209,5 +210,40 @@ export class AgentPolicyOptionsTest {
         resolved.defaultArchetype = 'plan';
         expect(workspace.defaultArchetype).toEqual('review');
         expect(workspace.delegationMode).toEqual('proactive');
+    }
+
+    @Test('merges render budgets in default workspace session request order')
+    mergesRenderBudgets() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', render: { auxiliaryPreviewLines: 10 } },
+            { source: 'session', render: { reasoningPreviewLines: 6 } },
+            { source: 'request', render: { questionTailVisibleLines: 3 } }
+        );
+
+        expect(policy.source).toEqual('request');
+        expect(policy.render?.auxiliaryPreviewLines).toEqual(10);
+        expect(policy.render?.reasoningPreviewLines).toEqual(6);
+        expect(policy.render?.questionTailVisibleLines).toEqual(3);
+        expect(policy.limits?.commandOutputHistoryCap).toEqual(500);
+    }
+
+    @Test('omits render when no layer sets it')
+    omitsRenderWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.render).toBeUndefined();
+    }
+
+    @Test('does not mutate source render inputs')
+    preservesRenderInputs() {
+        const workspace = { source: 'workspace' as const, render: { auxiliaryPreviewLines: 10, reasoningPreviewLines: 6 } };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', render: { auxiliaryPreviewLines: 2 } });
+
+        expect(resolved.render?.auxiliaryPreviewLines).toEqual(2);
+        expect(resolved.render?.reasoningPreviewLines).toEqual(6);
+        resolved.render!.auxiliaryPreviewLines = 1;
+        expect(workspace.render.auxiliaryPreviewLines).toEqual(10);
+        expect(workspace.render.reasoningPreviewLines).toEqual(6);
     }
 }

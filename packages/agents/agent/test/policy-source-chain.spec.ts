@@ -8,7 +8,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
-import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, DEFAULT_SANDBOX_POLICY, resolveAgentPolicy, resolveAgentRetryPolicy, resolveAgentSandboxPolicy } from '../src/options';
+import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, DEFAULT_RENDER_POLICY, DEFAULT_SANDBOX_POLICY, resolveAgentPolicy, resolveAgentRenderPolicy, resolveAgentRetryPolicy, resolveAgentSandboxPolicy } from '../src/options';
 import { DEFAULT_RETRY_POLICY } from '../src/model/RetryPolicy';
 import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../src/harness/VerificationGate';
 import { AGENT_OPTIONS } from '../src/tokens';
@@ -373,5 +373,41 @@ export class AgentPolicySourceChainTest {
             )
         };
         expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { mode: 'off', proxy: { http: 'http://proxy.local:8080' } }, source: 'request' });
+    }
+
+    @Test('default layer: render resolves schema defaults with source default')
+    renderDefaultSource() {
+        expect(resolveAgentRenderPolicy(defaultAgentOptions)).toEqual({ value: { ...DEFAULT_RENDER_POLICY }, source: 'default' });
+    }
+
+    @Test('workspace layer: policy render wins with source workspace')
+    renderWorkspacePolicyWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', render: { auxiliaryPreviewLines: 10 } })
+        };
+        expect(resolveAgentRenderPolicy(options)).toEqual({ value: { ...DEFAULT_RENDER_POLICY, auxiliaryPreviewLines: 10 }, source: 'workspace' });
+    }
+
+    @Test('partial policy render fills unset fields from schema defaults')
+    renderPartialFillsDefaults() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', render: { reasoningPreviewLines: 6 } })
+        };
+        expect(resolveAgentRenderPolicy(options)).toEqual({ value: { ...DEFAULT_RENDER_POLICY, reasoningPreviewLines: 6 }, source: 'workspace' });
+    }
+
+    @Test('request layer: request render wins with source request')
+    renderRequestLayerWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(
+                defaultAgentOptions.policy,
+                { source: 'workspace', render: { auxiliaryPreviewLines: 10, reasoningPreviewLines: 6 } },
+                { source: 'request', render: { questionTailVisibleLines: 3 } }
+            )
+        };
+        expect(resolveAgentRenderPolicy(options)).toEqual({ value: { auxiliaryPreviewLines: 10, reasoningPreviewLines: 6, questionTailVisibleLines: 3 }, source: 'request' });
     }
 }

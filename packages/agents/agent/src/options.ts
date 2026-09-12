@@ -333,6 +333,16 @@ export interface AgentPolicySandbox {
     proxy?: AgentSandboxOptions['proxy'];
 }
 
+/** A8: render budgets folded into the policy source chain (default < workspace < session < request). */
+export interface AgentPolicyRender {
+    /** Auxiliary tool/event/file-change/system/error content preview lines, folded with tail preserved (falls back to the schema default, then 8). */
+    auxiliaryPreviewLines?: number;
+    /** Reasoning content preview lines, folded without tail (falls back to the schema default, then 4). */
+    reasoningPreviewLines?: number;
+    /** Trailing question lines kept visible when a question tail is present (falls back to the schema default, then 6). */
+    questionTailVisibleLines?: number;
+}
+
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
     /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
@@ -347,6 +357,8 @@ export interface AgentPolicyConfig {
     retry?: AgentRetryPolicy;
     /** A7: OS sandbox settings (mode, network allowlist, proxy; falls back to `AgentOptions.sandbox`, then 'off'). */
     sandbox?: AgentPolicySandbox;
+    /** A8: render budgets (console collapse preview lines; falls back to the schema defaults). */
+    render?: AgentPolicyRender;
     source?: AgentPolicySource;
 }
 
@@ -397,6 +409,18 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.sandbox?.proxy)
         .filter((proxy): proxy is NonNullable<AgentSandboxOptions['proxy']> => !!proxy && Object.keys(proxy).length > 0)
         .pop();
+    const renderAuxiliaryPreviewLines = overrides
+        .map(item => item?.render?.auxiliaryPreviewLines)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
+    const renderReasoningPreviewLines = overrides
+        .map(item => item?.render?.reasoningPreviewLines)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
+    const renderQuestionTailVisibleLines = overrides
+        .map(item => item?.render?.questionTailVisibleLines)
+        .filter((value): value is number => typeof value === 'number')
+        .pop();
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
@@ -427,6 +451,15 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
                     ...(sandboxMode ? { mode: sandboxMode } : {}),
                     ...(sandboxNetworkAllowlist ? { networkAllowlist: sandboxNetworkAllowlist.slice() } : {}),
                     ...(sandboxProxy ? { proxy: { ...sandboxProxy } } : {})
+                }
+            }
+            : {}),
+        ...(renderAuxiliaryPreviewLines !== undefined || renderReasoningPreviewLines !== undefined || renderQuestionTailVisibleLines !== undefined
+            ? {
+                render: {
+                    ...(renderAuxiliaryPreviewLines !== undefined ? { auxiliaryPreviewLines: renderAuxiliaryPreviewLines } : {}),
+                    ...(renderReasoningPreviewLines !== undefined ? { reasoningPreviewLines: renderReasoningPreviewLines } : {}),
+                    ...(renderQuestionTailVisibleLines !== undefined ? { questionTailVisibleLines: renderQuestionTailVisibleLines } : {})
                 }
             }
             : {}),
@@ -501,6 +534,29 @@ export function resolveAgentSandboxPolicy(options?: Pick<AgentOptions, 'policy' 
         };
     }
     return { value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' };
+}
+
+/** A8: schema-default render budgets (surfaced as the policy fallback; exactly the v19-C1 console collapse budgets). */
+export const DEFAULT_RENDER_POLICY: Required<AgentPolicyRender> = {
+    auxiliaryPreviewLines: 8,
+    reasoningPreviewLines: 4,
+    questionTailVisibleLines: 6
+};
+
+/** A8: resolved render budgets with observable source; policy `render` wins over the schema defaults. */
+export function resolveAgentRenderPolicy(options: Pick<AgentOptions, 'policy'>): AgentPolicyResolution<Required<AgentPolicyRender>> {
+    const render = options.policy?.render;
+    if (!render) {
+        return { value: { ...DEFAULT_RENDER_POLICY }, source: 'default' };
+    }
+    return {
+        value: {
+            auxiliaryPreviewLines: render.auxiliaryPreviewLines ?? DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
+            reasoningPreviewLines: render.reasoningPreviewLines ?? DEFAULT_RENDER_POLICY.reasoningPreviewLines,
+            questionTailVisibleLines: render.questionTailVisibleLines ?? DEFAULT_RENDER_POLICY.questionTailVisibleLines
+        },
+        source: options.policy?.source ?? 'workspace'
+    };
 }
 
 /** A5: schema-default approval rule list (surfaced as the policy fallback; source of truth for `defaultAgentOptions.tools.requireApproval`). */

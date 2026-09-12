@@ -479,6 +479,28 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
+    @Test('consoleOptions render budget overrides default auxiliary folding')
+    async consoleOptionsRenderBudgetOverridesFolding() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ auxiliaryPreviewLines: 2 });
+        ref.instance.sessionState.setMessages([{
+            id: 'a1',
+            role: 'system',
+            content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 11 more lines'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 3'))).toBe(false);
+    }
+
     @Test('shows assistant replies in full in default unfocused mode (opencode-style)')
     async showsAssistantRepliesInFullWhenUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

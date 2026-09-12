@@ -2,7 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { AgentMessage, basenameAgentPath, ScheduledAgentTask, THREAD_ITEM_PREVIEW_LINES } from '@tsdi/agent';
+import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -51,11 +51,9 @@ import {
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
 
-const COLLAPSED_MESSAGE_PREVIEW_LINES = THREAD_ITEM_PREVIEW_LINES.auxiliary;
-const REASONING_MESSAGE_PREVIEW_LINES = THREAD_ITEM_PREVIEW_LINES.reasoning;
-const QUESTION_TAIL_VISIBLE_BUDGET = THREAD_ITEM_PREVIEW_LINES.questionTailVisible;
 // 折叠策略（对标 opencode/codex UI）：对话内容（assistant/user 普通回复、方案询问）永不折叠，全文展示；
 // 仅辅助过程内容折叠：reasoning（4 行无尾）、工具事件/输出、fileChange、system、error、timelineBoundary（8 行保尾）
+// 预算数值来自 policy render（this.state.consoleOptions.*，默认 auxiliary 8 / reasoning 4 / questionTailVisible 6）
 
 function escapeFollowUpTerm(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2752,15 +2750,15 @@ export class AgentConsoleMessagesPanelComponent {
                     return item;
                 }
                 if (this.isReasoningMessageItem(item)) {
-                    return this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES, false);
+                    return this.truncateMessageItem(item, this.state.consoleOptions.reasoningPreviewLines, false);
                 }
                 if (this.isEventRowMessageItem(item)) {
-                    return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+                    return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
                 }
                 if (item.templateKind === 'assistant' || item.templateKind === 'user') {
                     return item;
                 }
-                return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+                return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
             });
         }
         if (this.state.messageDetailOpen) {
@@ -2797,16 +2795,16 @@ export class AgentConsoleMessagesPanelComponent {
                 return item;
             }
             if (this.isReasoningMessageItem(item)) {
-                return this.truncateMessageItem(item, REASONING_MESSAGE_PREVIEW_LINES, false);
+                return this.truncateMessageItem(item, this.state.consoleOptions.reasoningPreviewLines, false);
             }
             if (this.isEventRowMessageItem(item)) {
-                return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+                return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
             }
             if (item.templateKind === 'assistant' || item.templateKind === 'user') {
                 // 对话内容（含方案+询问的最终回复）永不折叠：对标 opencode/codex 普通回复全文展示
                 return item;
             }
-            return this.truncateMessageItem(item, COLLAPSED_MESSAGE_PREVIEW_LINES, true);
+            return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
         });
     }
 
@@ -2844,7 +2842,7 @@ export class AgentConsoleMessagesPanelComponent {
 
     protected truncateMessageItem(
         item: AgentConsoleRenderedMessageItem,
-        previewLines: number = COLLAPSED_MESSAGE_PREVIEW_LINES,
+        previewLines: number = this.state.consoleOptions.auxiliaryPreviewLines,
         preserveTail = false
     ): AgentConsoleRenderedMessageItem {
         if (item.lines.length <= previewLines) {
@@ -2854,7 +2852,7 @@ export class AgentConsoleMessagesPanelComponent {
         const tailLines = questionTail > 0
             ? questionTail
             : preserveTail ? Math.min(2, previewLines - 2) : 0;
-        const visibleBudget = questionTail > 0 ? QUESTION_TAIL_VISIBLE_BUDGET : previewLines;
+        const visibleBudget = questionTail > 0 ? this.state.consoleOptions.questionTailVisibleLines : previewLines;
         const headCount = preserveTail
             ? Math.max(visibleBudget - tailLines - 1, 1)
             : previewLines;

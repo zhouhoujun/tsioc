@@ -4,7 +4,7 @@
  * This module owns the TUI orchestration that was previously in agent-cli.
  * agent-cli now calls these functions directly.
  */
-import { mergeAgentOptions, AgentHookCommandExecutor } from '@tsdi/agent';
+import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor } from '@tsdi/agent';
 import { TuiConsoleModule } from '@tsdi/components/console';
 import {
     AgentConsoleComponent,
@@ -109,6 +109,7 @@ export function buildConsoleAgentOptions(
             terminalTitle: tui?.terminalTitle ?? agentOptions?.ui?.terminalTitle,
             rawMode: tui?.rawMode ?? agentOptions?.ui?.rawMode,
             console: {
+                ...resolveAgentRenderPolicy(agentOptions).value,
                 ...(agentOptions?.ui?.console || {}),
                 workspace: agentOptions?.ui?.console?.workspace || resolved.workspace,
                 workingPresentation: 'compact',

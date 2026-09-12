@@ -1,4 +1,5 @@
 import { token } from '@tsdi/ioc';
+import { DEFAULT_RENDER_POLICY } from '../options';
 
 export type ThreadItemKind = 'command' | 'tool' | 'plan' | 'turn' | 'file-change';
 export type ThreadItemStatus = 'running' | 'success' | 'error' | 'cancelled' | 'pending';
@@ -46,17 +47,18 @@ export function threadItemKey(kind: ThreadItemKind, identity: string): string {
 }
 
 /**
- * v19-C1: unified cross-platform display budget for thread-item transcripts.
- * Browser (ConsoleRenderer) and TUI (TuiRenderer) share the same collapse
- * constants so the two surfaces fold auxiliary content identically.
+ * @deprecated v19-A8: use `AgentPolicyConfig.render` / `resolveAgentRenderPolicy`
+ * (schema source chain) instead of this constant. Values are derived from
+ * `DEFAULT_RENDER_POLICY` so any future budget change stays in one place.
+ * @see DEFAULT_RENDER_POLICY
  */
 export const THREAD_ITEM_PREVIEW_LINES = {
     /** auxiliary tool/event/file-change/system/error content (fold with tail preserved) */
-    auxiliary: 8,
+    auxiliary: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
     /** reasoning content (fold without tail) */
-    reasoning: 4,
+    reasoning: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
     /** trailing question lines kept visible when a question tail is present */
-    questionTailVisible: 6
+    questionTailVisible: DEFAULT_RENDER_POLICY.questionTailVisibleLines
 } as const;
 
 /** v19-B1: shared normalization reused by command-exchange and thread-item. */
