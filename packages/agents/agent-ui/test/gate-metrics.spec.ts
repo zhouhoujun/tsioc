@@ -9,7 +9,8 @@ import {
     mergeGateMetrics,
     parseGateCliArgs,
     renderGateRegression,
-    runGateRegression
+    runGateRegression,
+    scenarioKey
 } from '../harness/gate-metrics';
 
 function makeMetrics(overrides: Partial<GateScenarioMetrics> & Pick<GateScenarioMetrics, 'scenarioId' | 'gate'>): GateScenarioMetrics {
@@ -166,5 +167,49 @@ export class GateMetricsBenchTest {
         expect(parseGateCliArgs(['--json', '/tmp/m.json'])).toEqual({ jsonPath: '/tmp/m.json' });
         expect(parseGateCliArgs(['desktop-basic', '--json', '/tmp/m.json'])).toEqual({ only: 'desktop-basic', jsonPath: '/tmp/m.json' });
         expect(parseGateCliArgs(['--json', '/tmp/m.json', 'desktop-basic'])).toEqual({ only: 'desktop-basic', jsonPath: '/tmp/m.json' });
+    }
+
+    @Test('parseGateCliArgs handles --viewport (single, comma list, combined, malformed)')
+    async cliParsingViewport() {
+        expect(parseGateCliArgs(['--viewport', '320x480'])).toEqual({ viewports: [{ width: 320, height: 480 }] });
+        expect(parseGateCliArgs(['--viewport', '320x480,1280x800'])).toEqual({
+            viewports: [{ width: 320, height: 480 }, { width: 1280, height: 800 }]
+        });
+        expect(parseGateCliArgs(['desktop-basic', '--viewport', '320x480', '--json', '/tmp/m.json'])).toEqual({
+            only: 'desktop-basic',
+            viewports: [{ width: 320, height: 480 }],
+            jsonPath: '/tmp/m.json'
+        });
+        expect(() => parseGateCliArgs(['--viewport', 'abc'])).toThrow();
+        expect(() => parseGateCliArgs(['--viewport'])).toThrow();
+    }
+
+    @Test('scenarioKey encodes the viewport suffix when present, plain key otherwise')
+    async scenarioKeyWithViewport() {
+        const plain = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const viewed = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom', viewport: { width: 1280, height: 800 } });
+        expect(scenarioKey(plain)).toBe('dom/desktop-basic');
+        expect(scenarioKey(viewed)).toBe('dom/desktop-basic@1280x800');
+    }
+
+    @Test('mergeGateMetrics keeps viewport-matrix rows distinct from the single run')
+    async mergeWithViewportRows() {
+        const plain = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const viewed = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom', viewport: { width: 320, height: 480 }, elapsedMs: 777 });
+        const merged = mergeGateMetrics([plain, viewed]);
+        expect(merged).toHaveLength(2);
+        expect(merged.find(m => m.viewport)?.elapsedMs).toBe(777);
+    }
+
+    @Test('regression: matrix row is a new scenario, plain row still matches the baseline')
+    async regressionKeepsViewportRowsIndependent() {
+        const base = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const plain = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const viewed = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom', viewport: { width: 320, height: 480 } });
+        const result = runGateRegression([plain, viewed], [base]);
+        expect(result.scenarios).toHaveLength(2);
+        expect(result.scenarios.find(s => s.scenarioKey === 'dom/desktop-basic')?.reason).toBeUndefined();
+        expect(result.scenarios.find(s => s.scenarioKey === 'dom/desktop-basic@320x480')?.reason).toBe('new-scenario');
+        expect(result.regressed).toBe(false);
     }
 }

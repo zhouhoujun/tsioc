@@ -15,8 +15,13 @@
  *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts desktop-basic
  * Writing the per-scenario metrics (v20-B) for the regression runner:
  *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts --json /tmp/dom-metrics.json
+ * Viewport matrix run (v20-C): each selected scenario runs once per viewport;
+ * the cell's viewport is recorded in the [METRICS] key (`dom/desktop-basic@1280x800`)
+ * and in the metrics JSON rows (acceptance-only, not the regression baseline input):
+ *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts \
+ *     --viewport 320x480,768x600,1280x800,1920x1080
  *
- * Exit 0 = all scenarios PASS, 1 = any FAIL.
+ * Exit 0 = all scenarios PASS, 1 = any FAIL (matrix mode: all scenario x viewport cells).
  */
 
 import { writeFileSync } from 'node:fs';
@@ -28,7 +33,7 @@ import { mountAgentWebConsole } from '../web-console';
 import { FakeAgentGateway } from './FakeAgentGateway';
 import { GatewayScenario, SCENARIOS, applyPipelineSteps, scenarioById } from './scenarios';
 import { collectGatewayMetrics, GatewayDomMetrics } from './metrics';
-import { GateScenarioMetrics, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
+import { GateScenarioMetrics, GateViewport, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
     const deadline = Date.now() + timeoutMs;
@@ -53,7 +58,7 @@ interface ScenarioRunResult {
     metrics: GateScenarioMetrics;
 }
 
-async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<ScenarioRunResult> {
+async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: GateViewport): Promise<ScenarioRunResult> {
     const startedAt = Date.now();
     const failures: string[] = [];
     const check = (name: string, pass: boolean, detail = ''): void => {
@@ -61,6 +66,8 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
             failures.push(`${name}${detail ? ` (${detail})` : ''}`);
         }
     };
+    const collect = (): GatewayDomMetrics =>
+        collectGatewayMetrics(dom.window.document, undefined, viewport ? { viewport } : undefined);
 
     // Captured inside the try: dispose() in the finally makes metadata unreadable after it.
     let settledAt = 0;
@@ -116,7 +123,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
         }
 
         await waitUntil(() => {
-            const settled = collectGatewayMetrics(dom.window.document);
+            const settled = collect();
             return settled.rowCount >= scenario.expect.minRenderedRows
                 && settled.ariaLabels.length >= scenario.expect.minRenderedRows
                 && settled.cjkLineCount >= scenario.expect.minCjkRows
@@ -126,7 +133,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
 
         settledAt = Date.now();
 
-        const metrics = collectGatewayMetrics(dom.window.document);
+        const metrics = collect();
         sseFrameCount = gateway.metadata.sseFrameCount;
         sseConsumed = gateway.metadata.sseConsumed;
         layoutMeasured = metrics.layout.measured;
@@ -163,7 +170,8 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario): Promise<Scena
         sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
         replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
         firstScreenVisibleRate,
-        measured: layoutMeasured
+        measured: layoutMeasured,
+        ...(viewport ? { viewport } : {})
     };
     return { scenario, failures, metrics: gateMetrics };
 }
@@ -191,25 +199,37 @@ async function main(): Promise<number> {
 
     let allOk = true;
     const gateMetrics: GateScenarioMetrics[] = [];
+    const viewports = cli.viewports ?? null;
     for (const scenario of scenarios) {
-        const result = await runScenario(dom, scenario);
-        gateMetrics.push(result.metrics);
-        const ok = result.failures.length === 0;
-        allOk = allOk && ok;
-        console.log(`[${ok ? 'PASS' : 'FAIL'}] ${scenario.id}: ${scenario.label}`);
-        for (const failure of result.failures) {
-            console.log(`      - ${failure}`);
+        // [{}] = single viewport-less cell so single-run keys/JSON stay baseline-compatible.
+        const cells: Array<{ viewport?: GateViewport }> = viewports === null
+            ? [{}]
+            : viewports.map(viewport => ({ viewport }));
+        for (const cell of cells) {
+            const result = await runScenario(dom, scenario, cell.viewport);
+            gateMetrics.push(result.metrics);
+            const ok = result.failures.length === 0;
+            allOk = allOk && ok;
+            const at = cell.viewport ? ` @ ${cell.viewport.width}x${cell.viewport.height}` : '';
+            console.log(`[${ok ? 'PASS' : 'FAIL'}] ${scenario.id}${at}: ${scenario.label}`);
+            for (const failure of result.failures) {
+                console.log(`      - ${failure}`);
+            }
+            console.log(`      [METRICS] ${scenarioKey(result.metrics)} ${metricsSummary(result.metrics)}`);
         }
-        console.log(`      [METRICS] ${scenarioKey(result.metrics)} ${metricsSummary(result.metrics)}`);
     }
 
     if (cli.jsonPath) {
         writeFileSync(cli.jsonPath, `${JSON.stringify(gateMetrics, null, 2)}\n`, 'utf8');
-        console.log(`[METRICS] wrote ${gateMetrics.length} scenario metrics -> ${cli.jsonPath}`);
+        console.log(`[METRICS] wrote ${gateMetrics.length} scenario metrics -> ${cli.jsonPath}${viewports !== null ? ' (matrix rows carry @<W>x<H> keys; acceptance-only, not the regression baseline input)' : ''}`);
     }
 
     delete (globalThis as unknown as { document?: Document }).document;
-    console.log(`\n=== dom gate summary: ${allOk ? 'PASS' : 'FAIL'} (${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'}) ===`);
+    if (viewports !== null) {
+        console.log(`\n=== dom gate matrix summary: ${allOk ? 'PASS' : 'FAIL'} (${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'} x ${viewports.length} viewport${viewports.length === 1 ? '' : 's'}, ${gateMetrics.length} cells) ===`);
+    } else {
+        console.log(`\n=== dom gate summary: ${allOk ? 'PASS' : 'FAIL'} (${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'}) ===`);
+    }
     return allOk ? 0 : 1;
 }
 

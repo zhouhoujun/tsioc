@@ -32,9 +32,16 @@
 
 export type GateLens = 'dom' | 'tui';
 
+export interface GateViewport {
+    width: number;
+    height: number;
+}
+
 export interface GateScenarioMetrics {
     scenarioId: string;
     gate: GateLens;
+    /** Viewport the scenario ran at (v20-C matrix mode); absent in single-run mode. */
+    viewport?: GateViewport;
     /** Full scenario wall time (mount + settle + dispose), ms. */
     elapsedMs: number;
     /** Frames the fake gateway pushed on the SSE wire. */
@@ -108,7 +115,8 @@ const DEFAULT_THRESHOLDS: Required<GateRegressionThresholds> = {
 const HIGHER_IS_BETTER: GateMetricsKey[] = ['firstScreenVisibleRate'];
 
 export function scenarioKey(metrics: GateScenarioMetrics): string {
-    return `${metrics.gate}/${metrics.scenarioId}`;
+    const base = `${metrics.gate}/${metrics.scenarioId}`;
+    return metrics.viewport ? `${base}@${metrics.viewport.width}x${metrics.viewport.height}` : base;
 }
 
 /** The scalar field of a metric used for regression comparison. */
@@ -315,9 +323,34 @@ export interface GateCliArgs {
     only?: string;
     /** `--json <path>` — write the collected metrics to this file. */
     jsonPath?: string;
+    /**
+     * `--viewport <W>x<H>` (repeatable; comma-separated lists accepted) — DOM-gate
+     * matrix mode: each scenario runs once per viewport. The TUI gate rejects it.
+     */
+    viewports?: GateViewport[];
 }
 
-/** Shared CLI arg parsing for both gates: positional scenario id + `--json <path>`. */
+const VIEWPORT_RE = /^(\d+)x(\d+)$/;
+
+function parseViewportList(raw: string): GateViewport[] {
+    const parts = raw.split(',').map(part => part.trim()).filter(Boolean);
+    if (parts.length === 0) {
+        throw new Error(`[gate-metrics] --viewport requires "<W>x<H>" (e.g. 320x480), got "${raw}"`);
+    }
+    return parts.map(part => {
+        // Strict format so a typo'd width is never silently dropped from the matrix.
+        const match = VIEWPORT_RE.exec(part);
+        if (!match) {
+            throw new Error(`[gate-metrics] invalid --viewport "${part}", expected "<W>x<H>" (e.g. 320x480)`);
+        }
+        return { width: Number(match[1]), height: Number(match[2]) };
+    });
+}
+
+/**
+ * Shared CLI arg parsing for both gates: positional scenario id,
+ * `--json <path>`, and `--viewport <W>x<H>` (DOM-gate matrix mode).
+ */
 export function parseGateCliArgs(args: string[]): GateCliArgs {
     const out: GateCliArgs = {};
     for (let i = 0; i < args.length; i += 1) {
@@ -325,6 +358,13 @@ export function parseGateCliArgs(args: string[]): GateCliArgs {
         if (arg === '--json') {
             out.jsonPath = args[i + 1];
             i += 1;
+        } else if (arg === '--viewport') {
+            const value = args[i + 1];
+            if (value === undefined) {
+                throw new Error('[gate-metrics] --viewport requires a value like "320x480"');
+            }
+            i += 1;
+            out.viewports = [...(out.viewports ?? []), ...parseViewportList(value)];
         } else if (!arg.startsWith('--') && !out.only) {
             out.only = arg;
         }

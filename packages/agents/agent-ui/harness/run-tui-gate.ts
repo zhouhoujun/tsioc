@@ -280,6 +280,10 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
 
 async function main(): Promise<number> {
     const cli = parseGateCliArgs(process.argv.slice(2));
+    if (cli.viewports && cli.viewports.length > 0) {
+        console.error('[tui-gate] --viewport is DOM-gate only: the console renderer streams rows without viewport geometry (measured=false by design).');
+        return 1;
+    }
     const scenarios = cli.only ? [scenarioById(cli.only)] : SCENARIOS;
 
     let allOk = true;
