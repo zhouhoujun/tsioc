@@ -2779,3 +2779,17 @@ Turn: Fix session restore                                      running  01:42
 - **系列闭合状态**：v19-A 规划（策略集中化）四个 facet 全部达成——① `AgentPolicyConfig` 覆盖 limits/timeouts/retry/render budgets/verification/approval/sandbox/defaultArchetype/delegationMode，来源链 `default < workspace < session < request` 四级 last-wins（A1、A3–A8）；② 可替换 `Clock`/`Scheduler` port 注入与确定性测试（A2 + 性能回归收尾）；③ 迁移顺序 options/schema → runtime/tools → agent-ui ports 沿各切片逐层落地（A1 切片 1–7、A2、A8）；④ 验收：来源可观测（policy-source-chain.spec 逐字段 source 断言）、确定性重试/过期（clock.spec + 审批/重试门控回归）、`agent` + 受影响包全量测试与 tsc 每切片通过。
 - **HEAD 复验（本批次，无源码改动）**：`agent` 全量 **876 passing / 0 failed / EXIT=0**；`agent-ui` 全量 **1148 passing / 0 failed / EXIT=0**；两包 `npx tsc --noEmit` EXIT=0（A8 门禁已跑）；`git diff --check` 通过；工作区基线干净。A3–A8 改动仅触及 `agent` + `agent-ui` 两包（agent-gateway/agent-tools/agent-cli 等无消费面变更，沿用各自既有全量基线）。
 - 结论：v19-A 全系列（A1–A8）闭合，与 B/C/D 系列一并构成 v19 完整收尾；本批仅本文档追加补录块，独立提交。
+
+### 2026-09-12 追加审计复验（v19 全系列 HEAD，无源码改动）✅
+
+- **审计范围**：在 HEAD `0ab3ecf86`（v19-A 系列补录提交）之上，无任何源码改动，重跑 agents 全量矩阵 + 框架层 + 双端门禁 + 静态门禁 + 跨平台边界 + deprecated alias，逐项对照 v19 各切片收尾记录。
+- **packages/agents 全量测试（10 包，均 EXIT=0）**：`agent` **876**、`agent-channels` **59**、`agent-cli` **74**、`agent-gateway` **293**（v19-C5 基线）、`agent-providers` **13**、`agent-ssh` **8**、`agent-tools` **478**、`agent-ui` **1148**（v19-A 补录基线）、`agent-desktop` **20**、`agent-vscode` **7**，0 failed——与 v19-A8/A3-A8 收尾块登记数字一致。
+- **框架层回归**：`components` **136**、`components/console` **75**、`components/html` **117**，全部 EXIT=0。
+- **跨端门禁**：`run-dom-gate.ts` 与 `run-tui-gate.ts` 均 **PASS (4 scenarios) EXIT=0**（desktop-basic / mobile-320 / cjk-long-history / disconnect-retry）。
+- **类型/静态门禁**：`agent`、`agent-ui`、`agent-gateway`、`agent-tools` `npx tsc --noEmit` 均 EXIT=0；`git diff --check` 通过；工作区基线干净。
+- **跨平台边界扫描 CLEAN**：`agent-ui/src` 无 `@tsdi/components/console` 直接 import；`agent`/`agent-ui`/`components/console` 的 `src/` 无 `node:` 直接引用；无残留临时 runner 文件。
+- **deprecated alias 一致性**（4 项均指向 policy schema 真源，业务代码零裸值）：
+  - `THREAD_ITEM_PREVIEW_LINES`（ThreadItemProjection.ts）`@deprecated v19-A8`，值派生自 `DEFAULT_RENDER_POLICY`，src/ 内无使用点；
+  - `DEFAULT_VERIFICATION_WRITE_TOOLS`（VerificationGate.ts）`@deprecated` 指向 `AgentPolicyConfig.verification.writeTools`，仅 HarnessProfile/DefaultAgentRuntime 作 schema 默认回退引用；
+  - `DEFAULT_DELEGATION_MODE`、`DEFAULT_ARCHETYPE` `@deprecated` schema-default alias，仅在 options.ts schema 默认值处引用。
+- **结论**：v19 全系列（A1–A8、B1–B7、C1–C5、D）在 HEAD 的测试数字为可复现基线，无新回归；仅本文档追加审计条目，独立提交。
