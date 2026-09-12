@@ -323,6 +323,16 @@ export interface AgentPolicyApproval {
     autoReview?: boolean;
 }
 
+/** A7: OS sandbox settings folded into the policy source chain (default < workspace < session < request). */
+export interface AgentPolicySandbox {
+    /** OS-level sandbox mode for process-executing tools (falls back to `AgentOptions.sandbox.mode`, then 'off'). */
+    mode?: import('./harness/sandbox-exec').SandboxMode;
+    /** A3: when `mode` is 'network-block', commands that reference one of these hostnames / URL prefixes run without network blocking (falls back to `AgentOptions.sandbox.networkAllowlist`, then none). */
+    networkAllowlist?: string[];
+    /** Proxy enforcement for sandboxed child processes (falls back to `AgentOptions.sandbox.proxy`, then none). */
+    proxy?: AgentSandboxOptions['proxy'];
+}
+
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
     /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
@@ -335,6 +345,8 @@ export interface AgentPolicyConfig {
     approval?: AgentPolicyApproval;
     /** A6: model retry backoff policy (max retries and backoff delay; falls back to the schema defaults). */
     retry?: AgentRetryPolicy;
+    /** A7: OS sandbox settings (mode, network allowlist, proxy; falls back to `AgentOptions.sandbox`, then 'off'). */
+    sandbox?: AgentPolicySandbox;
     source?: AgentPolicySource;
 }
 
@@ -376,6 +388,15 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.retry?.jitterMs)
         .filter((value): value is number => typeof value === 'number')
         .pop();
+    const sandboxMode = overrides.map(item => item?.sandbox?.mode).filter(Boolean).pop();
+    const sandboxNetworkAllowlist = overrides
+        .map(item => item?.sandbox?.networkAllowlist)
+        .filter((list): list is string[] => !!list && list.length > 0)
+        .pop();
+    const sandboxProxy = overrides
+        .map(item => item?.sandbox?.proxy)
+        .filter((proxy): proxy is NonNullable<AgentSandboxOptions['proxy']> => !!proxy && Object.keys(proxy).length > 0)
+        .pop();
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
@@ -400,6 +421,15 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
                 }
             }
             : {}),
+        ...(sandboxMode || sandboxNetworkAllowlist || sandboxProxy
+            ? {
+                sandbox: {
+                    ...(sandboxMode ? { mode: sandboxMode } : {}),
+                    ...(sandboxNetworkAllowlist ? { networkAllowlist: sandboxNetworkAllowlist.slice() } : {}),
+                    ...(sandboxProxy ? { proxy: { ...sandboxProxy } } : {})
+                }
+            }
+            : {}),
         ...(source ? { source } : {})
     };
 }
@@ -419,6 +449,58 @@ export function resolveAgentRetryPolicy(options: Pick<AgentOptions, 'policy'>): 
         },
         source: options.policy?.source ?? 'workspace'
     };
+}
+
+/** A7: schema-default OS sandbox settings (surfaced as the policy fallback; source of truth for the executor's default effective mode). */
+export const DEFAULT_SANDBOX_POLICY: AgentSandboxOptions = {
+    mode: 'off'
+};
+
+/** A7: resolved OS sandbox policy with observable source; policy `sandbox` wins over the legacy `AgentOptions.sandbox`, then `DEFAULT_SANDBOX_POLICY`. A legacy sandbox identical to the schema default is reported as 'default'. */
+export function resolveAgentSandboxPolicy(options?: Pick<AgentOptions, 'policy' | 'sandbox'> | undefined): AgentPolicyResolution<AgentSandboxOptions> {
+    const opts = options ?? {};
+    const policySandbox = opts.policy?.sandbox;
+    const hasPolicy = !!policySandbox?.mode
+        || (policySandbox?.networkAllowlist?.length ?? 0) > 0
+        || (policySandbox?.proxy ? Object.keys(policySandbox.proxy).length > 0 : false);
+    if (hasPolicy) {
+        return {
+            value: {
+                mode: policySandbox?.mode ?? opts.sandbox?.mode ?? DEFAULT_SANDBOX_POLICY.mode,
+                ...(policySandbox?.networkAllowlist?.length
+                    ? { networkAllowlist: policySandbox.networkAllowlist.slice() }
+                    : opts.sandbox?.networkAllowlist?.length
+                    ? { networkAllowlist: opts.sandbox.networkAllowlist.slice() }
+                    : {}),
+                ...(policySandbox?.proxy && Object.keys(policySandbox.proxy).length > 0
+                    ? { proxy: { ...policySandbox.proxy } }
+                    : opts.sandbox?.proxy
+                    ? { proxy: { ...opts.sandbox.proxy } }
+                    : {})
+            },
+            source: opts.policy?.source ?? 'workspace'
+        };
+    }
+    const legacySandbox = opts.sandbox;
+    if (legacySandbox && (
+        legacySandbox.mode
+        || (legacySandbox.networkAllowlist?.length ?? 0) > 0
+        || (legacySandbox.proxy ? Object.keys(legacySandbox.proxy).length > 0 : false)
+    )) {
+        return {
+            value: {
+                mode: legacySandbox.mode ?? DEFAULT_SANDBOX_POLICY.mode,
+                ...(legacySandbox.networkAllowlist?.length ? { networkAllowlist: legacySandbox.networkAllowlist.slice() } : {}),
+                ...(legacySandbox.proxy ? { proxy: { ...legacySandbox.proxy } } : {})
+            },
+            source: (legacySandbox.mode ?? DEFAULT_SANDBOX_POLICY.mode) === DEFAULT_SANDBOX_POLICY.mode
+                && !legacySandbox.networkAllowlist?.length
+                && !(legacySandbox.proxy && Object.keys(legacySandbox.proxy).length > 0)
+                ? 'default'
+                : 'workspace'
+        };
+    }
+    return { value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' };
 }
 
 /** A5: schema-default approval rule list (surfaced as the policy fallback; source of truth for `defaultAgentOptions.tools.requireApproval`). */

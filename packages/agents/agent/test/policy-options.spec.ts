@@ -152,6 +152,42 @@ export class AgentPolicyOptionsTest {
         expect(workspace.retry.jitterMs).toEqual(200);
     }
 
+    @Test('merges sandbox fields in default workspace session request order')
+    mergesSandbox() {
+        const policy = resolveAgentPolicy(
+            defaultAgentOptions.policy,
+            { source: 'workspace', sandbox: { mode: 'workspace' } },
+            { source: 'session', sandbox: { networkAllowlist: ['api.example.com'] } },
+            { source: 'request', sandbox: { mode: 'network-block', proxy: { http: 'http://proxy.local:8080', required: true } } }
+        );
+
+        expect(policy.source).toEqual('request');
+        expect(policy.sandbox?.mode).toEqual('network-block');
+        expect(policy.sandbox?.networkAllowlist).toEqual(['api.example.com']);
+        expect(policy.sandbox?.proxy).toEqual({ http: 'http://proxy.local:8080', required: true });
+        expect(policy.limits?.commandOutputHistoryCap).toEqual(500);
+    }
+
+    @Test('omits sandbox when no layer sets it')
+    omitsSandboxWhenUnset() {
+        const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
+
+        expect(merged.sandbox).toBeUndefined();
+    }
+
+    @Test('does not mutate source sandbox inputs')
+    preservesSandboxInputs() {
+        const workspace = { source: 'workspace' as const, sandbox: { mode: 'workspace' as const, networkAllowlist: ['api.example.com'] } };
+        const resolved = resolveAgentPolicy(workspace, { source: 'request', sandbox: { mode: 'network-block' as const, networkAllowlist: ['other.example.com'] } });
+
+        expect(resolved.sandbox?.networkAllowlist).toEqual(['other.example.com']);
+        resolved.sandbox!.networkAllowlist!.push('third.example.com');
+        resolved.sandbox!.proxy = { http: 'http://proxy.local' };
+        expect(resolved.sandbox?.proxy).toEqual({ http: 'http://proxy.local' });
+        expect(workspace.sandbox.networkAllowlist).toEqual(['api.example.com']);
+        expect(workspace.sandbox).toEqual({ mode: 'workspace', networkAllowlist: ['api.example.com'] });
+    }
+
     @Test('omits new fields when no layer sets them')
     omitsNewFieldsWhenUnset() {
         const merged = resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', limits: { timelinePageSize: 10 } });
@@ -160,6 +196,7 @@ export class AgentPolicyOptionsTest {
         expect(merged.delegationMode).toBeUndefined();
         expect(merged.approval).toBeUndefined();
         expect(merged.retry).toBeUndefined();
+        expect(merged.sandbox).toBeUndefined();
         expect(merged.limits?.timelinePageSize).toEqual(10);
     }
 

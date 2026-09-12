@@ -8,7 +8,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { SessionSummarizer } from '../src/memory/SessionSummarizer';
-import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, resolveAgentPolicy, resolveAgentRetryPolicy } from '../src/options';
+import { AgentOptions, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions, DEFAULT_SANDBOX_POLICY, resolveAgentPolicy, resolveAgentRetryPolicy, resolveAgentSandboxPolicy } from '../src/options';
 import { DEFAULT_RETRY_POLICY } from '../src/model/RetryPolicy';
 import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../src/harness/VerificationGate';
 import { AGENT_OPTIONS } from '../src/tokens';
@@ -318,5 +318,60 @@ export class AgentPolicySourceChainTest {
             )
         };
         expect(resolveAgentRetryPolicy(options)).toEqual({ value: { maxRetries: 1, baseDelayMs: 500, maxDelayMs: 8000, jitterMs: 500 }, source: 'request' });
+    }
+
+    @Test('default layer: sandbox resolves schema defaults with source default')
+    sandboxDefaultSource() {
+        expect(resolveAgentSandboxPolicy(defaultAgentOptions)).toEqual({ value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' });
+    }
+
+    @Test('workspace layer: policy sandbox mode wins with source workspace')
+    sandboxWorkspacePolicyWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', sandbox: { mode: 'network-block' } })
+        };
+        expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { ...DEFAULT_SANDBOX_POLICY, mode: 'network-block' }, source: 'workspace' });
+    }
+
+    @Test('legacy AgentOptions.sandbox still works, labeled workspace when divergent from schema default')
+    sandboxLegacyAliasDivergent() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            sandbox: { mode: 'workspace', networkAllowlist: ['api.example.com'] }
+        };
+        expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { mode: 'workspace', networkAllowlist: ['api.example.com'] }, source: 'workspace' });
+    }
+
+    @Test('legacy sandbox equal to schema default resolves with source default')
+    sandboxLegacyAliasEqualToDefault() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            sandbox: { mode: 'off' }
+        };
+        expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' });
+    }
+
+    @Test('partial policy sandbox fills unset mode from legacy and schema defaults')
+    sandboxPartialFillsDefaults() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            sandbox: { mode: 'workspace' },
+            policy: resolveAgentPolicy(defaultAgentOptions.policy, { source: 'workspace', sandbox: { networkAllowlist: ['api.example.com'] } })
+        };
+        expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { mode: 'workspace', networkAllowlist: ['api.example.com'] }, source: 'workspace' });
+    }
+
+    @Test('request layer: request sandbox wins with source request')
+    sandboxRequestLayerWins() {
+        const options: AgentOptions = {
+            ...defaultAgentOptions,
+            policy: resolveAgentPolicy(
+                defaultAgentOptions.policy,
+                { source: 'workspace', sandbox: { mode: 'workspace' } },
+                { source: 'request', sandbox: { mode: 'off', proxy: { http: 'http://proxy.local:8080' } } }
+            )
+        };
+        expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { mode: 'off', proxy: { http: 'http://proxy.local:8080' } }, source: 'request' });
     }
 }

@@ -1,6 +1,6 @@
 import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments } from '@tsdi/core';
-import { AgentOptions } from '../options';
+import { AgentOptions, AgentSandboxOptions, resolveAgentSandboxPolicy } from '../options';
 import { AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME } from '../tokens';
 import {
     buildSandboxExecCommand,
@@ -461,11 +461,13 @@ export class NoopSandboxExecutor extends SandboxExecutor {
 }
 
 /**
- * OS-sandbox-aware executor. When the effective sandbox mode (policy
- * `osSandbox` or configured `AgentOptions.sandbox.mode`) is 'workspace' or
- * 'network-block' and an OS sandbox tool is detected, commands are wrapped
- * with the tool before running; otherwise it degrades to the
- * `NodeChildProcessSandboxExecutor` behavior (env filtering + resource limits).
+ * OS-sandbox-aware executor. When the effective sandbox mode (runtime sandbox
+ * policy `osSandbox`, or the resolved policy-chain mode from
+ * `resolveAgentSandboxPolicy`: policy `sandbox` > legacy `AgentOptions.sandbox`
+ * > 'off') is 'workspace' or 'network-block' and an OS sandbox tool is
+ * detected, commands are wrapped with the tool before running; otherwise it
+ * degrades to the `NodeChildProcessSandboxExecutor` behavior (env filtering +
+ * resource limits).
  */
 @Injectable()
 export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
@@ -480,8 +482,12 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
         super(appArgs);
     }
 
+    private get sandboxPolicy(): AgentSandboxOptions {
+        return resolveAgentSandboxPolicy(this.agentOptions).value;
+    }
+
     private get configuredMode(): SandboxMode {
-        return this.agentOptions?.sandbox?.mode ?? 'off';
+        return this.sandboxPolicy.mode ?? 'off';
     }
 
     private detectTool(): Promise<SandboxExecProbe> {
@@ -517,7 +523,7 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
         }
     ): Promise<SandboxExecutionResult> {
         const resolved = resolvePlatformShellCommand(command, args, this.resolveRuntimeContext());
-        const proxy = this.agentOptions?.sandbox?.proxy;
+        const proxy = this.sandboxPolicy.proxy;
         const proxyUrl = proxy?.https || proxy?.http;
         if (proxy?.required && options.policy.networkAccess !== 'none' && !proxyUrl) {
             return {
@@ -541,7 +547,7 @@ export class OsSandboxExecutor extends NodeChildProcessSandboxExecutor {
         const effectiveMode = mode === 'network-block'
             && commandReferencesAllowlistedDestination(
                 [resolved.command, ...resolved.args].join(' '),
-                this.agentOptions?.sandbox?.networkAllowlist
+                this.sandboxPolicy.networkAllowlist
             )
             ? 'workspace'
             : mode;

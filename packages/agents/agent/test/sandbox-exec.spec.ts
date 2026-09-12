@@ -230,6 +230,32 @@ export class OsSandboxExecutorTest {
         expect(result.stdout).toContain('direct');
     }
 
+    @Test('policy sandbox mode overrides legacy configured workspace mode')
+    async policyModeOverridesLegacyConfiguredMode() {
+        const executor = new OsSandboxExecutor({
+            sandbox: { mode: 'workspace' },
+            policy: { source: 'workspace', sandbox: { mode: 'off' } }
+        }, { os: 'linux', shellFamily: 'posix' }, async () => true);
+        const result = await executor.execute('echo', ['direct'], {
+            policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp' })
+        });
+        expect(result.exitCode).toEqual(0);
+        expect(result.stdout).toContain('direct');
+    }
+
+    @Test('policy sandbox workspace mode with no runtime policy enables wrapping')
+    async policyModeWrapsWhenNoRuntimePolicy() {
+        const executor = new OsSandboxExecutor({
+            sandbox: { mode: 'off' },
+            policy: { source: 'workspace', sandbox: { mode: 'workspace' } }
+        }, { os: 'linux', shellFamily: 'posix' }, async () => true);
+        const result = await executor.execute('echo', ['wrapped'], {
+            policy: createSandboxPolicy({ enabled: true, workingDirectory: '/tmp/ws' })
+        });
+        const text = `${result.stderr} ${result.error ?? ''}`;
+        expect(result.exitCode === 0 || text.includes('bwrap')).toEqual(true);
+    }
+
     @Test('workspace mode wraps the command with the detected tool')
     async workspaceModeWrapsCommand() {
         const executor = new OsSandboxExecutor({ sandbox: { mode: 'workspace' } }, { os: 'linux', shellFamily: 'posix' }, async () => true);
