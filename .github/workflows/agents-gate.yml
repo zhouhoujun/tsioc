@@ -19,4 +19,6 @@ jobs:
       - name: Build agent-cli (for PTY acceptance)
         run: cd packages/agents/agent-cli && npm run build
       - name: Run agents gate
+        env:
+          RUN_PTY: '1'
         run: bash scripts/agents-gate.sh

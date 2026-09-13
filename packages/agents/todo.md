@@ -2878,3 +2878,16 @@ Turn: Fix session restore                                      running  01:42
 - **全量测试（HEAD `22b1696bd`，RUN_PTY=1）**：`bash scripts/agents-gate.sh` → **22 passed / 0 skipped / 22 total, PASS**——13 单测阶段（agent 876 / agent-channels 59 / agent-cli 74 / agent-gateway 293 / agent-providers 13 / agent-ssh 8 / agent-tools 478 / agent-ui 1165 / agent-desktop 20 / agent-vscode 7 / components 136 / components-console 75 / components-html 117）+ 4 包 tsc（agent/agent-ui/agent-gateway/agent-tools）+ dom-gate + tui-gate（4 scenarios each）+ gate-regression（`[OK] gate metrics within baseline tolerance`）+ **pty-acceptance [GATE-PASS]**（真实终端 5 场景 + plan-lifecycle）+ diff-check，与 v20-D 关闭记录登记链完全一致（源码自 `e43d30306` 起零改动，`22b1696bd` 仅本文档）。
 - **结论**：v20 规划（验收载体 + CI 门禁落地，含 v19-D 三项顺延）全部兑现且重复验证通过；计划无未闭合批次，不再立项新打磨，等待用户下一步指令（新批次立项或收束）。
 - **验证命令**：`RUN_PTY=1 bash scripts/agents-gate.sh`（PASS）。**复验达成 ✅。**
+
+---
+
+### 2026-09-13 v20-E · CI pty 阶段启用（RUN_PTY=1 入 workflow）✅
+
+- **范围**：兑现 v20-D 记录"阈值回填后 CI 可随时开启"——`.github/workflows/agents-gate.yml` 的 `Run agents gate` 步骤增加 `env: RUN_PTY: '1'`，使 CI（ubuntu-latest + node 22 + `npm ci`）实际执行 `run_pty` 真实终端验收阶段，不再输出 `[GATE-SKIP]`。
+- **必要前提已具备**（此前 workflow 已含、无需改动）：`npm ci` 根安装 + `Build agent-cli (for PTY acceptance)` 步骤产物 `packages/agents/agent-cli/bin/tsdi-agent.js`（`run_pty` 依赖该 artifact 存在，缺失则 skip）；CI 为 Linux 宿主，Python 标准库 `pty` 可用（`run_pty` 对缺 `python3/pty` 有 skip 守卫）。
+- **验证**：
+  - workflow YAML 语法校验：`python3 -c "import yaml; yaml.safe_load(open('.github/workflows/agents-gate.yml'))"` → `YAML-OK`，`Run agents gate` 步骤含 `env: {RUN_PTY: '1'}`。
+  - 全量门禁与本轮复验共享同一证据：源码自 `e43d30306` 起零改动（`22b1696bd`/`40d131216` 均为 docs-only），本地 `RUN_PTY=1 bash scripts/agents-gate.sh` 本轮实测 **22 passed / 0 skipped / 22 total, PASS**（pt-acceptance [GATE-PASS]）——workflow 文件不被本地 gate 消费，行内改动不影响 source 证据。
+  - `git diff --check` 通过。
+- **风险显式记录**：CI 首次 Actions 实跑的 pty 时序敏感阶段尚未在真机观测（v20-D 已注明）；若首次 CI 出现 pty 偶发失败，回退手段为删除该行 env（恢复 opt-in），不涉及源码。
+- **验证命令**：`python3 -c "import yaml; yaml.safe_load(open('.github/workflows/agents-gate.yml'))"`（YAML-OK）；`RUN_PTY=1 bash scripts/agents-gate.sh`（PASS）。**v20-E 达成 ✅。**
