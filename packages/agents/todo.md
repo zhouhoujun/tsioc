@@ -2868,3 +2868,13 @@ Turn: Fix session restore                                      running  01:42
   - `RUN_PTY=1 bash scripts/agents-gate.sh` 全量门禁：**22 passed / 0 skipped / 22 total, GATE-EXIT=0**——10 子包（agent 876 / agent-ui 1165 / agent-gateway 293 / agent-tools 478 / agent-cli 74 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 20 / agent-vscode 7）+ components 三包（136/75/117）+ 4 包 tsc + dom/tui gate PASS (4 scenarios) + `[OK] gate metrics within baseline tolerance` + **pty-acceptance [GATE-PASS]** + diff-check。
 - **沙箱限制显式记录**：PTY 为真实终端最接近载体，时序敏感；`RUN_PTY=1` 全量门禁在本沙箱一次通过，但 CI 真机环境仍需观察首次 Actions 跑的 pty 阶段稳定性。门禁默认 pty opt-in 策略不变（`RUN_PTY=1` 才执行），阈值回填后 CI 可随时开启。
 - **验证命令**：`python3 packages/agents/acceptance/run_acceptance.py`（EXIT=0）；`FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.py`（EXIT=0）；`RUN_PTY=1 bash scripts/agents-gate.sh`（EXIT=0）。**v20-D 达成 ✅。**
+
+---
+
+### 2026-09-13 独立复验（v20-D HEAD 全量门禁重跑）✅
+
+- **范围**：接续会话接用户同款收尾指令（"按计划继续打磨优化agents; 收尾：检查完成 + 全量测试 + 更新todo.md + 提交"）独立复验 v20 系列闭合态；本批次无源码改动，仅复核 + 本文档登记。
+- **检查完成**：todo.md 全量扫描——v17（A1–A5/B1–B7/C/D/E/F）、v18-A、v19（A1–A8/B1–B7/C1–C5/D）、v20（A/B/C/D）全部闭合 ✅；文件止于 v20-D 达成记录（2870 行）；2026-09-03/04 两条历史"未完成"复核记录（:1989/:2083）属 TypeORM fixture 迁移途中进度登记，其阻断项（agent-tools InMemory* fixture、agent-gateway EPERM 监听、agent sandbox receipt）已由 v17–v19 批次实际关闭（全量门禁计数证明：agent-tools 478 / agent-gateway 293 / agent 876 全绿），无遗留开放批次。
+- **全量测试（HEAD `22b1696bd`，RUN_PTY=1）**：`bash scripts/agents-gate.sh` → **22 passed / 0 skipped / 22 total, PASS**——13 单测阶段（agent 876 / agent-channels 59 / agent-cli 74 / agent-gateway 293 / agent-providers 13 / agent-ssh 8 / agent-tools 478 / agent-ui 1165 / agent-desktop 20 / agent-vscode 7 / components 136 / components-console 75 / components-html 117）+ 4 包 tsc（agent/agent-ui/agent-gateway/agent-tools）+ dom-gate + tui-gate（4 scenarios each）+ gate-regression（`[OK] gate metrics within baseline tolerance`）+ **pty-acceptance [GATE-PASS]**（真实终端 5 场景 + plan-lifecycle）+ diff-check，与 v20-D 关闭记录登记链完全一致（源码自 `e43d30306` 起零改动，`22b1696bd` 仅本文档）。
+- **结论**：v20 规划（验收载体 + CI 门禁落地，含 v19-D 三项顺延）全部兑现且重复验证通过；计划无未闭合批次，不再立项新打磨，等待用户下一步指令（新批次立项或收束）。
+- **验证命令**：`RUN_PTY=1 bash scripts/agents-gate.sh`（PASS）。**复验达成 ✅。**
