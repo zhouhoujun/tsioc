@@ -2853,3 +2853,18 @@ Turn: Fix session restore                                      running  01:42
 - **测试** `test/gate-metrics.spec.ts` 新增 5 例：`cliParsingViewport`（单 viewport / 逗号列表 / 与 `only`+`--json` 组合 / `abc` 与缺值均抛错）、`scenarioKeyWithViewport`（`dom/desktop-basic` vs `dom/desktop-basic@1280x800`）、`mergeWithViewportRows`（矩阵行与单跑行互斥保留）、`regressionKeepsViewportRowsIndependent`（viewport 行判 `new-scenario` 不回归、plain 行照常比对）。
 - **验证链**：① 4 改动文件 LSP 全绿；② 单 spec（GateMetricsBench）EXIT=0；③ 矩阵 `--viewport 320x480,768x600,1280x800,1920x1080` → 16 cells 全 PASS、`=== dom gate matrix summary: PASS (4 scenarios x 4 viewports, 16 cells) ===` EXIT=0；④ 单跑 `--json` 全 PASS 且 4 dom rows 漂移全 PASS（单跑不回归；单独 `--dom` 跑 regression 时 tui rows 报 MISSING 属预期——部分跑非完整比对输入）；⑤ TUI 守卫 `--viewport` → exit 1 清晰报错；⑥ 全量 `bash scripts/agents-gate.sh` → **21 passed / 1 skipped / 22 total, GATE-EXIT=0**（pty-acceptance 因 opt-in 输出 `[GATE-SKIP]`，修复归 v20-D）。
 - **验证命令**：`cd packages/agents/agent-ui && npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts --viewport 320x480,768x600,1280x800,1920x1080`（EXIT=0）；`bash scripts/agents-gate.sh`（EXIT=0）。**v20-C 达成 ✅。**
+
+---
+
+#### v20-D 正式关闭（2026-09-13）✅
+- **范围**：兑现 v20-A 顺延记录——"PTY 验收 3/6 场景 FAIL（scenario 3 计划项 pending 帧未捕获、scenario 5 输出面板未捕获）修复与阈值回填归 v20-D"。根因两条：① scenario 5 的 composer `/outputs` slash verb 是客户端打开面板（默认 keymap 已不再绑定 Ctrl+O），但提交的假模型服务器 content-keyed router 无该 verb 的确定性路由，回复落入 plan-completion 尾巴，驾驶员 20s 面板等待超时（门禁 pty 阶段一度挂到 900s stage kill）；② scenario 3 的 pending `☐` 计划行是瞬时帧，静默窗 keepalive 流使 40 行视口窗口将其折叠推出，quiet-gate 前已离开视口。
+- **实现**（两提交，`a52b4dd20` + `e43d30306`）：
+  - `acceptance/fake_model_server.py`：`_default_turn` 增加 content-keyed `/outputs` 确定性路由 → 渲染 `command outputs` 面板标题 + `No command outputs yet.` 空态，替代落入 plan 收尾尾巴。
+  - `acceptance/run_acceptance.py`：`wait_for` 新增 `on_sight=True`（匹配即刻返回，不过静默门，用于瞬时帧）与 `tail_from`（字节偏移限定匹配范围，用于断言特定按键后的帧）；`scenario_3` 改为 on_sight 捕获 pending `☐` 行（帧折叠趋势下完成态不翻转行）并以持久工具回执 `1 item · 1 completed` / `Plan completed: 1/1 steps, 0 failures` 断言完成；`scenario_5` 从 `Ctrl+O` 改发 `/outputs\r` verb；`scenario_6` 断言改为持久工具回执 `/statusline set model,context completed`。
+  - `acceptance/CHECKLIST.md`：三类度量阈值登记表回填（2026-09-12 真实终端验收）：首屏可见率 ≥ 1.0（实测 1.00）、失败定位按键数 ≤ 1（实测 1）、event-to-UI 延迟 ≤ 3000ms（实测 2026ms）。
+- **验证链（HEAD `e43d30306` 之上，无源码改动）**：
+  - 默认 PTY 套件（scenarios 1/2/3/5/6）：**5/5 PASS EXIT=0**（含 P262 scenario 5 `/outputs` 面板打开 + Esc 关闭、P282 scenario 6 草稿保留+重试成功）。
+  - `FAKE_SCENARIO=plan-lifecycle`（scenario 4 全生命周期）：**PASS EXIT=0**，实测度量 **首屏可见率 1.00 / 失败定位按键 1 / event-to-UI 延迟 1952ms**（均达阈值）。
+  - `RUN_PTY=1 bash scripts/agents-gate.sh` 全量门禁：**22 passed / 0 skipped / 22 total, GATE-EXIT=0**——10 子包（agent 876 / agent-ui 1165 / agent-gateway 293 / agent-tools 478 / agent-cli 74 / agent-channels 59 / agent-providers 13 / agent-ssh 8 / agent-desktop 20 / agent-vscode 7）+ components 三包（136/75/117）+ 4 包 tsc + dom/tui gate PASS (4 scenarios) + `[OK] gate metrics within baseline tolerance` + **pty-acceptance [GATE-PASS]** + diff-check。
+- **沙箱限制显式记录**：PTY 为真实终端最接近载体，时序敏感；`RUN_PTY=1` 全量门禁在本沙箱一次通过，但 CI 真机环境仍需观察首次 Actions 跑的 pty 阶段稳定性。门禁默认 pty opt-in 策略不变（`RUN_PTY=1` 才执行），阈值回填后 CI 可随时开启。
+- **验证命令**：`python3 packages/agents/acceptance/run_acceptance.py`（EXIT=0）；`FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.py`（EXIT=0）；`RUN_PTY=1 bash scripts/agents-gate.sh`（EXIT=0）。**v20-D 达成 ✅。**
