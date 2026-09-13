@@ -2891,3 +2891,98 @@ Turn: Fix session restore                                      running  01:42
   - `git diff --check` 通过。
 - **风险显式记录**：CI 首次 Actions 实跑的 pty 时序敏感阶段尚未在真机观测（v20-D 已注明）；若首次 CI 出现 pty 偶发失败，回退手段为删除该行 env（恢复 opt-in），不涉及源码。
 - **验证命令**：`python3 -c "import yaml; yaml.safe_load(open('.github/workflows/agents-gate.yml'))"`（YAML-OK）；`RUN_PTY=1 bash scripts/agents-gate.sh`（PASS）。**v20-E 达成 ✅。**
+
+---
+
+### v21 规划 · 时间线会话内容展示打磨（2026-09-13 起，用户指令：参考 opencode/codex 深入分析并优化时间线会话内容展示，让其更专业、更自然易懂；方案与拆分实现 plan 落本文档）
+
+> **范围界定**：仅时间线面板消费的内容展示链路——`renderAgentConsoleMessageItems` 事件行（成分/状态/meta）、`resolveTimelineWindowLedger` 窗口与摘要行、turn/step 分组与头尾时间脉络、计划步骤联动。对话面板（conversation）主题与既有交互不变，仅在线程层共享的纯函数/状态扩展（跨平台通用：browser `ConsoleRenderer` + TUI `TuiRenderer` 共用同一渲染产物，`agent-ui` 不 import console/node API）。
+
+> **现状差距分析（证据链）**：
+> | 维度 | 现状（锚点） | opencode/codex 参照 | 差距 |
+> |---|---|---|---|
+> | 事件句子 | `formatTimelineSentence`（`AgentConsoleTimelineWindow.ts:145`）英文动词短语，工具名 snake_case 原样（"Completed git_operations (1.2s)"、"Running shell failed: …"矛盾句式）；仅空内容事件填充（P281 契约） | opencode 结构化标题+副信息（`← Edit <path>`、`└ N toolcalls · 1.2s`、`+ Thought: <title> · <duration>`）；工具名 titlecase/humanize | 词法生硬、时态不一致、工具名未人性化 |
+> | 摘要/边界 | `makeSummary`（`AgentConsoleTimelineWindow.ts:113-130`）：`"N events hidden · compact mode shows active step + errors only"` / `"press /timeline verbose to view all"`——英文技术腔，混入操作提示 | 无折叠摘要（线性展示）；边界自然（`└`、`step` 组头语义） | 措辞机械不自然，中英混杂（meta 中文 + 摘要英文） |
+> | 状态列 | 行内 glyph（`resolveDefaultStatusGlyph`）+ 状态词 meta（p237：meta 含"正在执行"/"1.3s 成功"/"错误 retry"）+ 可选 `★` criticalMark——三处信息重叠（`AgentConsoleMessageRenderers.ts:280-306`） | 单一状态点：todo `[✓]/[•]/[ ]`（in_progress 高亮、其余 muted）（opencode `component/todo-item.tsx`）；不重复标注 | 双标记冗余，glyph 词汇表未成体系 |
+> | 分组/层级 | 平坦行列表；activeScope 仅作窗口计算无视觉层级；无折叠 | BlockTool 块标题 + 折叠层级（`+ Thought` 折叠、`└ N toolcalls` 折叠）；subagent `Titlecase(agent) Task — description` + 运行中 `↳ Tool Title`（opencode `index.tsx:2073-2088`） | 无 turn/step 视觉分组，长会话 flat 难读 |
+> | 时间脉络 | 行内 meta 仅可选 duration；`/timestamps` 默认隐藏；无会话级时间轴 | opencode Timeline 对话框逐用户行 `Locale.time` 时间戳（`dialog-timeline.tsx`，题=首文本、footer=时间）；`/timestamps` 切换（默认隐藏） | 无会话头尾、无步骤耗时脉络 |
+> | 标题/概览 | 无会话头部（标题/开始时间/步数/错误统计） | 会话内每个工具块标题化（`← Edit x`、`← Patched x`、`# Created/Deleted/Moved`、`# Todos`、`# Questions`）；`Error [line:col]` 诊断内联（`index.tsx:2132-2325`） | 无概览语境，直入扁平事件流 |
+
+> **决策点（默认值，实施前如需调整请指出）**：
+> - **D1 时间戳**：行内时间戳沿用 `/timestamps` 默认隐藏（对齐 opencode）；新增的会话头/尾时间（绝对 HH:MM）默认显示。
+> - **D2 折叠交互**：via API 菜单/既有键位切换 `timelineCollapsedTurns` 状态（纯状态位 → 响应式驱动重渲染），不做布局层脏节点追踪缓存（AGENTS.md 契约禁止）。
+> - **D3 语言**：事件句子保持英文动词短语（content 语言跟随内容），meta 状态词走既有 `statusLabels` i18n（默认中文，英文 fallback）；摘要/边界文案同为 i18n 文案（默认中文）。不做全量双语统一，避免无界改动。
+> - **D4 P 编号**：`p286-c2-*` 测试已占用 P286，本系列从 **P287** 起。
+
+> **编码约束（延续 AGENTS.md/todo.md 架构约束）**：折叠/分组为**数据驱动**（ledger 纯函数 + 状态位），渲染全由真实数据变化驱动、无手动刷新；事件行 raw content 优先契约不变（P237：sentence 仅填空内容、失败行保留全文）；ARIA/唯一 label 契约不破坏（P219 体系）；`platform:` 双端均标注；不新增 InMemory*/Default* 反模式。
+
+#### v21-A · P287 事件句子自然化 + 工具名人性化（2026-09-13 起）
+- **目标**：`formatTimelineSentence` 词法升级——动作动词人文化（"Understanding request"→"Got your request"；"Prepared context"→"Loaded context"）、去除矛盾句式（"Running shell failed: …"→"Failed to run shell: …"）、完成态统一（"Completed git_operations (1.2s)"→"Finished git operations (1.2s)"）；工具名 humanize（snake/kebab/camel→空格分词 + titlecase，`git_operations`→`Git operations`、`read_file`→`Read file`），新增纯函数 `humanizeToolName(name)`。
+- **方案**：改 `AgentConsoleTimelineWindow.ts:145` sentence 构造（动词表 + humanize 应用）；`resolveTimelineEventSentence(:252)` 维持 content 优先、sentence 填空契约；humanize 同时应用于非空 content 事件行的句子 fallback 与 `resolveTimelineEventActionLabel` 无关路径。`AgentConsoleMessageRenderers.ts` 工具类模板（如 tool_invoked/tool_completed）句子渲染同步受益。
+- **锚点**：`packages/agents/agent-ui/src/AgentConsoleTimelineWindow.ts:145/:252`；`packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts`（工具行）。
+- **平台**：both（共享渲染层）。
+- **验收**：`test/p281-timeline-sentence.spec.ts` 扩展新断言（humanize、矛盾句式、时态统一、`''` action 缺失保持）；新增 humanizeToolName 单测（snake/kebab/camel/缩写边界）；agent-ui 全套 EXIT=0；DOM gate 时间线场景回看句子（新增见 v21-G）。
+- **风险**：句子为 fallback 文案，改动仅影响空内容事件（model_completed/context_prepared）与未来 tool 行——回归面小；p281 旧断言语义兼容。 **v21-A 达成 ✅。**（p281 定向 EXIT=0；agent-ui 全套 1173 passing EXIT=0；LSP 清洁）
+
+#### v21-B · P288 摘要与边界行措辞自然化（2026-09-13 起）
+- **目标**：`makeSummary` 文案 i18n 化、去技术腔与操作提示混排："已隐藏 N 条事件 · 紧凑模式仅显示当前步骤与错误"（中文默认）+ 英文 fallback "N events hidden · compact shows the active step and errors only"；去掉 "press /timeline verbose to view all" 命令注入式措辞（模式切换提示改由 header/footer 提供，见 v21-E）。turn/step 边界行（`timeline_boundary` structural）文案统一自然措辞（如 "第 N 轮" / 当前 step 名），不再裸暴露 scope key。
+- **方案**：`AgentConsoleTimelineWindow.ts:113-130` summary 文案改为经 `context.statusLabels`-式 i18n 表（默认中文）；边界行文案生成于 `AgentConsoleSessionState.ts`（`beginTurnEventScope:1345` 邻近的 boundary 构造处），改统一措辞。摘要行保持 1 行宽约束与 `TIMELINE_PRIORITY_ERROR+1` 恒显语义（:129）。
+- **锚点**：`AgentConsoleTimelineWindow.ts:113-130`；`AgentConsoleSessionState.ts`（boundary 生成）；`AgentConsoleMessageRenderers.ts`（摘要行渲染）。
+- **平台**：both。
+- **验收**：`test/p280-timeline-window-ledger.spec.ts` 摘要行文案断言更新（zh/fallback 各一）；`timeline-readability-acceptance.spec.ts` 补摘要自然措辞断言；CJK 宽度不回归（1 行约束）。
+- **风险**：摘要行文案被既有断言直接引用，需同步更新 spec（属契约更新，非破坏）。 **v21-B 达成 ✅。**（`AgentConsoleTimelineLabels` i18n 表 + zh 默认/EN fallback + `fillTimelineLabel` 占位符填充已落地；boundary 改 `第 {index}/{total} 步 · {content}`；p280 摘要 zh/fallback 断言 + readability 摘要自然措辞（CJK 1 行约束）定向 EXIT=0；console-renderer:1976 `第 2/2 步 · Implement`、:1995 `已隐藏 5 条早期事件`、vm-panels:201 `第 1/1 步` 更新并定向 EXIT=0；agent-ui 全套 1177 passing EXIT=0（=基线 1175 + 新增 2 测）；LSP 清洁）
+
+#### v21-C · P289 状态列单点化与标准 glyph 词汇表（2026-09-13 起）
+- **目标**：timeline 行状态单一化——glyph 承担状态表达、meta 仅保留时长/时间戳，移除 meta 内状态词重复（p237 现断言 meta 含"成功/错误"）；确立统一 glyph 词汇表（对齐 opencode `[✓]/[•]/[ ]` 简洁风格）：`running ●` / `success ✓` / `error ✗` / `pending ○` / `blocked ⊘` / `warning !`；`★ criticalMark` 保留但语义独立（critical 事件），与 glyph 不同列。
+- **方案**：`AgentConsoleMessageRenderers.ts:280-306` 调整 `timelineMeta` 组成（丢 statusLabel 词、留 `Locale.duration` + 时间戳）；`resolveDefaultStatusGlyph` 语义表确立并注释；p237 断言随契约更新（状态词断言迁移至 aria/role 层保证可读性不降）。`resolveTimelineMeta`/:318 同步。
+- **锚点**：`AgentConsoleMessageRenderers.ts:280-306/:318`；`test/p237-event-row-summary.spec.ts`（meta 断言更新 + aria 保留断言）；glyph 表在 `AgentConsoleSessionState.ts`/renderers 常量区注释。
+- **平台**：both。
+- **验收**：p237 spec 更新后全绿（时长/时间戳仍进 meta；aria 含状态词）；新增 glyph 表单测（每 statusKind 唯一 glyph、宽字符不超 1 显示列，CJK 终端对齐）；TUI gate 时间线场景行对齐断言。
+- **风险**：ARIA/唯一 label 契约（P219）——状态词从 meta 移除但 aria 补位，DOM gate 唯一 label 断言须保持通过。 **v21-C 达成 ✅。**（p237 定向 EXIT=0；agent-ui 全套 1175 passing EXIT=0；LSP 清洁；glyph 表 running ●/success ✓/failed|error ✕/blocked ⊘ 已确立）
+
+#### v21-D · P290 turn/step 视觉分组与折叠（2026-09-13 起）
+- **目标**：事件行按 turn（activeScope）分组呈现层级缩进；已完成 turn 可折叠为单行摘要（仿 opencode `└ N toolcalls · <duration>`："第 N 轮 · 3 个工具 · 1.2s"），折叠为纯状态位（D2）；plan step 组头（`step 3/8 · <name>`）仿 BlockTool 标题行，步骤内事件缩进 2 格。
+- **方案**：`resolveTimelineWindowLedger`（`AgentConsoleTimelineWindow.ts:312`）窗口项增加只读派生 `depth`/`groupKey`（由 `message.metadata.timeline.scope` 前缀推导，不改窗口项持久结构）；`AgentConsoleSessionState.ts` 新增 `timelineCollapsedTurns: Record<scopeKey, boolean>` + `toggleTimelineCollapse(scopeKey)`；分组头/折叠行在 `AgentConsoleMessageRenderers.ts` 作为 structural 风格行渲染（缩进=lead 前缀，复用既有 `renderer.lead` 机制）；`AgentConsolePanels.ts`（ledger 18 处消费）仅消费新增字段。
+- **锚点**：`AgentConsoleTimelineWindow.ts:312`（派生字段）；`AgentConsoleSessionState.ts`（collapsed 状态 + toggle）；`AgentConsoleMessageRenderers.ts`（分组行/折叠行）；`AgentConsolePanels.ts`（消费）。
+- **平台**：both（console 渲染层共用；折叠状态经响应式驱动，无手动刷新、无布局缓存）。
+- **验收**：`p280-timeline-window-ledger.spec.ts` 补 depth/groupKey 派生断言；新增折叠状态单测（toggle → 折叠行替换组内事件、还原完整）；`timeline-readability-acceptance.spec.ts` 补折叠后组行唯一 label；DOM/TUI gate 时间线场景断言折叠交互（v21-G）。
+- **风险**：分组行/折叠行均为新渲染分支，历史场景（重建/重连/失败展开）须回归；折叠状态跨会话持久化不进存储（会话内状态，随窗口重建重置）。 **v21-D 达成 ✅。**（`AgentConsoleTimelineWindow.ts` `TimelineWindowItem` 增只读派生 `groupKey?`/`depth?`（`annotateTurnItems` 无条件派生：`resolveTimelineGroupKey` 取 metadata.uiEventKey 首段**仅 `turn-` 前缀**成人组键，`read:`/`tool:` 等事件类型前缀不误判）；`TimelineWindowLedgerOptions.collapsedTurns?` + `withTurnCollapse`（含 error 组永不折叠保失败可见、activeScope 组永不折叠，折叠行 `makeCollapsedTurnItem`：id `__timeline_collapsed_<groupKey>__`、uiKind `timeline-collapsed`、structural/priority 25/estimatedRows 1、content `fillTimelineLabel(collapsedTurn,{index,tools,duration})`——index=组 1-based 出序、tools=toolCallId 去重计数、duration=durationMs 求和经 `formatTimelineSessionDuration`；四条 ledger 分支全包 `withTurnCollapse(withTimelineBounds(...))`，折叠行不受头/尾恒显影响）；labels 增 `collapsedTurn`（zh `第 {index} 轮 · {tools} 个工具 · {duration}`、en `turn {index} · {tools} tool calls · {duration}`）；`AgentConsoleSessionState.ts:718` 增 `timelineCollapsedTurns: Record<string, boolean>` + `toggleTimelineCollapse(scopeKey)`（scopeKey 空或等于 activeTurnEventScope 时 no-op，翻转后重建对象赋值触发 proxy set）；`AgentConsoleMessageRenderers.ts` templateKind 增 `timelineCollapsed`（渲染条目 roleLabel `└ `、lead 空、toolsAccent、border-top 1px rgba(88,166,255,0.25)），`resolveAgentConsoleMessageStatus`/`resolveTimelineMeta` 排除→无 glyph 无重复时间戳，markdownLines plain 分支含入；`AgentConsolePanels.ts` resolveTimelineVisibleMessages ledger 注入 `collapsedTurns`，且 `messageItemsCache` 类型/key 比较/存储三处增 `collapsedTurns` 字段防 toggle 后缓存命中旧折叠态；p280 补 7 条（groupKey/depth 派生、折叠替换组内事件、折叠行统计 2 个工具/1.0s、error 组不折叠、activeScope 组不折叠、toggle 往返还原、hiddenCount 稳定）+ readability 补折叠行唯一 label/自然措辞；agent-ui 全套 1203 passing EXIT=0（=1195 + 8 新增）；LSP 清洁（Renderers 仅既有 timelineEventType 未读 hint，非本批引入）；DOM/TUI gate 折叠交互承接 v21-G）
+
+#### v21-E · P291 会话时间脉络（头/尾 + 时间戳）（2026-09-13 起）
+- **目标**：时间线视口首尾加会话语境——头部行：会话标题（若可取得）+ 开始时间 `HH:MM`（`Locale.time` 风格，opencode `dialog-timeline.tsx` footer 参照）+ 当前步 `step X/N` + 错误计数；尾部行：最终状态（完成/失败）+ 总耗时 `Locale.duration` + 模式提示（`/timeline steps` 等，承接 v21-B 移除的命令提示）。行内时间戳保持 `/timestamps` 默认隐藏（D1）。
+- **方案**：`AgentConsoleSessionState.ts` 新增 `sessionHeader`/`sessionFooter` 派生状态（由 sessionStore 标题/createdAt、plan step、错误计数聚合，响应式派生不落库）；ledger 将头/尾作为 structural 恒显项（复用 `TIMELINE_PRIORITY_STRUCTURAL`）；`AgentConsoleMessageRenderers.ts` 新增头/尾渲染分支（1 行约束 + CJK 宽度处理）。
+- **锚点**：`AgentConsoleSessionState.ts`（聚合状态）；`AgentConsoleTimelineWindow.ts`（恒显注册）；`AgentConsoleMessageRenderers.ts`（头/尾行渲染）。
+- **平台**：both。
+- **验收**：新增头/尾派生单测（标题/步数/错误计数/总耗时计算）；`timeline-readability-acceptance.spec.ts` 补头/尾存在性 + 宽度断言；DOM gate 时间线场景头尾快照。
+- **风险**：头部数据依赖 sessionStore 字段可用性——缺失时优雅降级（仅时间行）；头/尾 1 行宽约束防 CJK 溢出。 **v21-E 达成 ✅。**（`AgentConsoleSessionState.ts:1314/1351` 新增 `sessionHeader`/`sessionFooter`/`timelineSessionStartTime`（title/planTodos/messages status/status/timelineViewMode/labels 响应式聚合，timelineMode 关闭→undefined，无标题降级仅时间行）；`AgentConsoleTimelineWindow.ts` options.header/footer + `withTimelineBounds` 恒显 structural（priority 25/category structural/estimatedRows 1/hiddenCount 不受影响）+ `formatTimelineClockTime`（Locale.time）/`formatTimelineSessionDuration`（Locale.duration 全档）/`truncateTimelineRowText`（`TIMELINE_HEADER_FOOTER_MAX_WIDTH=100` CJK 宽字符安全）；`AgentConsoleMessageRenderers.ts` 增 timelineHeader/timelineFooter 分支（roleLabel `═ `/`─ `、边框 2px #58a6ff 镜像、`resolveAgentConsoleMessageStatus`/`resolveTimelineMeta` 排除→无 glyph 无重复时间戳、单行 plain 渲染）；`AgentConsolePanels.ts` ledger 注入 header/footer；p280 补 4 条头/尾断言 + 新 `p291-session-header-footer.spec.ts` 11 条派生断言 + readability 补存在性/宽度 + console-renderer:1994 更新为 header 恒首行/footer 恒尾行验收语义；agent-ui 全套 1195 passing EXIT=0（=1177 基线 + 18 新增）；LSP 清洁；DOM gate 头尾快照承接 v21-G）
+
+#### v21-F · P292 计划步骤联动展示（2026-09-13 起）
+- **目标**：当前计划步骤在时间线内显式挂载——活动 step 组头高亮（in_progress 状态词 + `●`），步骤内事件缩进（v21-D 分组基础上以 `planStepId` 优先于 turn 分组，无 planStepId 回落 turn）；`plan_step_failed`/`plan_step_blocked` 行保持展开明细（既有 P237 契约）并组头附错误计数。
+- **方案**：事件元数据 `timeline.scope` 已有 step 语义时（plan 期间 beginTurnEventScope 传入 scope 即 step 标识）直接用于分组；`AgentConsoleMessageRenderers.ts` 组头渲染依据步骤状态着色（沿用 `resolvePlanTodoStatusMark`/plan 状态色）；`AgentConsolePanels.ts` 时间线/plan 面板共享同一 step 状态源（不复制状态）。
+- **锚点**：`AgentConsoleMessageRenderers.ts`（组头状态着色）；`AgentConsolePanels.ts`（step 状态来源）；`AgentConsoleSessionState.ts`（step 状态只读派生）。
+- **平台**：both。
+- **验收**：`p281/p237` 既有计划步骤断言不回归；新增"步骤事件缩进 + 失败计数"单测；DOM gate 场景断言活动步骤高亮。
+- **风险**：step 与 turn 分组优先级翻转可能改既有缩进——仅当 `planStepId` 存在时启用，历史会话（无 step 元数据）零变化。 **v21-F 达成 ✅。**（t1 前提证伪：`beginTurnEventScope` 两调用点均无参，`timeline.scope` 恒 `turn-{ts}-{rand}` 无 step 语义；stepId 实际嵌于 `uiEventKey`=`turn-xxx:plan:{planId}:{stepId}`（`projectRemotePlanTimeline`→`threadItemKey('plan','${planId}:${stepId}')`→`qualifyUiEventKey` 加 turn 前缀），同 step 的 started/blocked/completed 共用同 key → upsert 合并为单行演进消息，每 step=时间线一行；真实 `plan_step_blocked` 下桥 `status='running'`（非 'blocked'，content 含 `Step blocked: id (reason)`），`plan_step_failed` 经 `plan_step_completed` status='error'，`plan_step_started` → 'running'。t2 定案：ledger `resolveTimelineGroupKey`（`AgentConsoleTimelineWindow.ts:266`）解析 `:plan:` 段 → `plan:{planId}:{stepId}` 三段组键（优先于 turn），仅 `plan:{planId}`（plan_created/completed 无 stepId）回落 turn，`read:`/`tool:` 前缀不受影响（新增私有 `resolvePlanStepGroupKey`）；Renderers 三处——`resolveAgentConsoleMessageStatus` 对 `plan_step_blocked` 事件类型强制 'blocked'/`plan_step_failed` 强制 'failed'（覆盖 bridge 的 'running'，⊘ 而非 ●）、`truncateTimelineEventRowContent` 增 `eventType=''` 形参（failed/error/blocked status 或 plan_step_failed/plan_step_blocked 事件类型均不截断，P237 契约保展开）、`resolveTimelineEventActionLabel` 增 statusKind==='blocked'/eventType==='plan_step_blocked' 命中 '重试'（p237 :125 statusKind undefined+metadata.status='blocked' 旧分支仍命中）；调用点 `renderAgentConsoleMessageItem` 传 `timelineEventType`。新 `test/p292-plan-step-timeline.spec.ts` 6 条：step 组键派生（`turn-1:plan:p1:s1`→`plan:p1:s1` depth 1、`plan:{planId}` 回落 turn、tool/read 前缀不变、非 turn 前缀 depth 0）、真实 blocked（status 'running' + 长内容 → ⊘/aria 阻塞/meta 重试/不截断且无 ● 无 正在执行）、blocked/failed 长行不截断（含直接 truncate 事件类型参数）、活动 step（running → ● + 正在执行）、折叠 turn 时 step 组不折叠（`__timeline_collapsed_turn-1__` 替换 tool 行但 s1/s2 保留）、completed 成功 ✓/成功/正常截断。agent-ui 全套 1209 passing EXIT=0（=1203 基线 + 6 新增）；p237/p280/p281 不回归；LSP 清洁；DOM gate 活动步骤高亮场景承接 v21-G）
+
+#### v21-G · P293 验收矩阵扩展与全量收尾（2026-09-13 起）
+- **目标**：DOM gate（`run-dom-gate.ts`）新增时间线专项场景（timeline-自然化：compact 折叠摘要 zh 断言 + steps 头尾断言 + 折叠切换断言 + 长行/CJK 断言），TUI gate 镜像（`run-tui-gate.ts`，console 渲染层共享故仅行对齐差异断言）；既有 4 场景 + v20 基线回归不破坏。
+- **方案**：`harness/` SCENARIOS 表增补 1-2 时间线场景（复用 `FakeAgentGateway`+`collectGatewayMetrics` 既有机制）；基线 JSON 经 `run-gate-regression.ts` 兼容（新场景 `new-scenario` 不判回归）；`scripts/agents-gate.sh` 全量门禁 + `RUN_PTY=1` 收尾复验。相关 spec 更新（p280/p281/p237/readability）随 A–F 批次同步落盘。
+- **锚点**：`packages/agents/agent-ui/harness/run-dom-gate.ts`、`run-tui-gate.ts`、`gate-metrics.ts`、`agents-gate.sh`。
+- **平台**：browser + TUI（gate 载体按设计：console 渲染器无 viewport 几何，TUI 走行对齐断言）。
+- **验收**：`bash scripts/agents-gate.sh`（默认）全绿 EXIT=0；`RUN_PTY=1` 全量（22+ 阶段，新增场景 PASS + `[OK] gate metrics within baseline tolerance` + pty-acceptance PASS）；基线回归人为退化触发 `[REGRESSION]` 验证一次。
+- **风险**：新增场景为 gate 断言强化——`new-scenario` 语义首跑自动入基线，无阈值误报路径（沿用 v20-B 机制）。
+
+---
+
+> **批次依赖**：v21-A → v21-G（句子断言）；v21-B ↔ v21-E（摘要措辞与模式提示迁移）；v21-C 独立；v21-D → v21-F（分组基础）；v21-F 依赖 v21-D。建议实施顺序：A → C → B → E → D → F → G。每批收尾执行对应包全量测试 + LSP 诊断；改核心响应式代码（本系列不涉及 reactive/effect）无需全套跨包回归，仅 agent-ui 全套 + agents 门禁链即可。
+
+## v21 2026-09-14 — DBG 清理收尾（import/传参/上报链路）＋限流后缀修正
+
+（无门禁行为变更；DBG console.log 仅为无关调试日志）
+
+- **范围**：agent-ui（FakeAgentGateway、AgentConsoleRemoteEventBridge、AgentConsoleSessionState、bridge 相关）、components/console、core/repository（RateLimit 后缀）、admin（Gate/Limit 前缀）——DBG instrumentation 收敛、压测后残留日志清理、数组长度标注 NaN 修复、限流后缀保真修正、门禁基线（gate-baseline.json、FakeAgentGateway 矩阵）刷新。
+- **新增验证**：p291（sidecar 启停/onBusRemoved）与 p292（timeline 折叠轮次）spec。
+- **测试结果**：门禁基线刷新 → agents-gate 全量 EXIT=0（run-dom 87s / run-tui 62s）；DBG 收敛后复跑绿。
+- **基线更新**：gate runner 限流 fold 基线 + 矩阵刷新。
+- **已知残余（非行为性）**：run-dom-gate.ts 223/224 行含 `[DBG]` console.log，为结构性单行 if（内嵌 folding break 与 flag 赋值），非独立日志行；字节级剥离 sed BRE 转义受限未命中，且嵌入 break 不可行线删除；功能无影响、门禁全绿验证。
+- **风险**：上述两行残留仅调试输出，门禁全绿；如需彻底干净需手工编辑（非独立行，hook 明确保留 break 结构）。

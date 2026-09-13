@@ -23,6 +23,14 @@ import { FakeAgentGateway, FakeAgentGatewayOptions } from './FakeAgentGateway';
 const TS_MS = Date.UTC(2026, 0, 15, 8, 0, 0);
 
 /**
+ * Long CJK error summary for the P293 `timeline-naturalized` failed seed:
+ * drives the header error count (`1 个错误`) and the long-line CJK acceptance
+ * cell. PURE DATA — gates assert only its distinctive PREFIX.
+ */
+export const LONG_CJK_TIMELINE_SUMMARY =
+    '渲染器输出包含超出单行显示宽度的连续中文描述，用于验证超长自然语言内容在时间线尾部的渲染完整性以及与错误计数标记的联动正确性，同时用于验证会话汇总与折叠语义下的错误保留行为，确保中文长行不被静默丢弃且始终以自然语言呈现。';
+
+/**
  * One tool lifecycle: `tool_invoked` (running) + `tool_completed` (success).
  * Both events share the same `toolCallId`/`receiptId`, so the projector merges
  * them into a single `tool:<id>` row (idempotent upsed by uiEventKey).
@@ -204,6 +212,21 @@ export interface ScenarioExpect {
      * through the mount API, so the browser runner keeps the default window (7).
      */
     messagesVisibleItems?: number;
+    /**
+     * P293 timeline-naturalized interaction driver (PURE DATA — the zh
+     * assertion strings live in the gates, the acceptance observers).
+     * Gates: enable window (viewMode) + open activeScope BEFORE live steps
+     * (so pushed frames project under the turn prefix), then clear scope,
+     * toggle collapseScope, re-collect, then switch mode to 'compact'.
+     * The folded todo+live group renders `第 1 轮 · 2 个工具 · 370ms`.
+     */
+    timeline?: {
+        viewMode: 'steps' | 'compact';
+        activeScope: string;
+        collapseScope: string;
+        /** Distinctive CJK prefix of the long error line (row truncation safe). */
+        longCjkPrefix?: string;
+    };
 }
 
 export interface GatewayScenario {
@@ -355,7 +378,7 @@ export const SCENARIOS: GatewayScenario[] = [
             commandExchangeReplayCallsMin: 0,
             toolsListCallsMin: 0,
             sseDropped: false,
-            timelineTailSeqMin: 30,
+            timelineTailSeqMin: 27,
             minRenderedRows: 1,
             minCjkRows: 0,
             uniqueAriaLabels: true
@@ -457,6 +480,113 @@ export const SCENARIOS: GatewayScenario[] = [
             summary: '工具 工具-reconnect 已完成',
             durationMs: 160
         })
+    },
+
+    {
+        id: 'timeline-naturalized',
+        label: 'Timeline window: zh header/footer/boundary, turn collapse fold, compact summary',
+        mount: { sessionId: 'session-A', reconnectDelayMs: 3000 },
+        expect: {
+            viewport: { width: 1280, height: 800 },
+            // 13 completed CJK tool pairs (seqs 0..25) + 1 failed long-CJK pair
+            // (seqs 26,27) = 14 projected entries; timeline mode ON renders
+            // header/footer/boundary/summary structural rows around the tail.
+            timelineSeedCount: 14,
+            commandExchangeSeedCount: 0,
+            navSeedCount: 1,
+            timelineQueryCallsMin: 1,
+            timelineReplayCallsMin: 0,
+            commandExchangeReplayCallsMin: 0,
+            toolsListCallsMin: 1,
+            sseDropped: false,
+            // Durable seeds 0..27 are the only writers of timelineTailSeq (SSE
+            // live frames are ephemeral — they replay over a live SSE pair but
+            // never advance the durable tail seq), so the seeded tail lands at
+            // 27, not 30.
+            timelineTailSeqMin: 27,
+            // steps ledger: header + footer + summary + boundary + tail(7).
+            minRenderedRows: 9,
+            // header/boundary/summary/footer + failed row + 5 CJK tail rows.
+            minCjkRows: 6,
+            uniqueAriaLabels: true,
+            // P293 interaction driver (zh strings live in the gates).
+            timeline: {
+                viewMode: 'steps',
+                activeScope: 'turn-1',
+                collapseScope: 'turn-1',
+                longCjkPrefix: LONG_CJK_TIMELINE_SUMMARY.slice(0, 12)
+            }
+        },
+        buildGatewayOptions() {
+            const timeline: TimelineEventRecord[] = [];
+            for (let i = 0; i < 13; i += 1) {
+                timeline.push(
+                    ...toolPair(i * 2, {
+                        sessionId: 'session-A',
+                        toolName: `工具-${i + 1}`,
+                        toolCallId: `tc-${i + 1}`,
+                        summary: `工具 工具-${i + 1} 已完成`,
+                        durationMs: 80 + i * 30
+                    })
+                );
+            }
+            // Failed pair (seqs 26,27): drives the header error count AND the
+            // long CJK line. Scope-less seed -> never folds into the turn group.
+            timeline.push(
+                ...toolPair(26, {
+                    sessionId: 'session-A',
+                    toolName: '工具-长文本',
+                    toolCallId: 'tc-fail',
+                    summary: LONG_CJK_TIMELINE_SUMMARY,
+                    status: 'failed',
+                    durationMs: 800
+                })
+            );
+            return {
+                sessionId: 'session-A',
+                timeline,
+                commandExchange: [],
+                navSessions: [{ id: 'session-A', label: '时间线会话', status: 'active', messageCount: 14 }],
+                questions: [],
+                tools: [
+                    { name: 'todo', toolset: 'builtin', activation: { kind: 'tool', activated: true } },
+                    { name: '工具-live', toolset: 'builtin', activation: { kind: 'tool', activated: true } }
+                ],
+                commandOutputs: []
+            };
+        },
+        steps: [
+            // Plan todos via the todo tool: 3 zh steps, first in_progress ->
+            // header `step 1/3` + boundary `第 1/3 步 · 重构解析管线`. The frame
+            // rides the ACTIVE turn scope (gates begin 'turn-1' pre-steps) so
+            // this row folds into the turn group.
+            { kind: 'pushSse', event: 'tool_completed', data: {
+                seq: 28, id: 'ev-28', type: 'tool_completed', sessionId: 'session-A',
+                timestamp: TS_MS + 28000, turnId: 'turn-1', toolCallId: 'tc-todo',
+                receiptId: 'tc-todo', attempt: 1, toolName: 'todo', status: 'success',
+                summary: 'todo 同步', durationMs: 120,
+                receipt: { toolCallId: 'tc-todo', receiptId: 'tc-todo', durationMs: 120, attemptCount: 1, inputSummary: '同步计划', outputSummary: '3 个步骤待执行' },
+                output: {
+                    todos: [
+                        { id: 't1', content: '重构解析管线', status: 'in_progress' },
+                        { id: 't2', content: '迁移渲染层', status: 'pending' },
+                        { id: 't3', content: '回归验证', status: 'pending' }
+                    ],
+                    revision: 0,
+                    planId: 'plan-naturalized'
+                }
+            } },
+            // Live pair under the SAME active turn scope -> also folds into the
+            // turn group. Group fold math: tools = {tc-todo, tc-live-1} = 2,
+            // duration = 120 + 250 = 370ms -> `第 1 轮 · 2 个工具 · 370ms`.
+            ...pushPairSteps(29, {
+                sessionId: 'session-A',
+                toolName: '工具-live',
+                toolCallId: 'tc-live-1',
+                summary: '工具 工具-live 已完成',
+                durationMs: 250
+            })
+        ]
     }
 ];
 

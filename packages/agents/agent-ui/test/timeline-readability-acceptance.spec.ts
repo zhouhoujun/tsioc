@@ -2,6 +2,7 @@ import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
+import { resolveTimelineWindowLedger } from '../src/AgentConsoleTimelineWindow';
 
 function eventMsg(id: string, topOverrides: Record<string, any> = {}, metaOverrides: Record<string, any> = {}): any {
     return {
@@ -241,11 +242,86 @@ export class TimelineReadabilityAcceptanceTest {
         expect(visible.some(m => m.id === 'local-2')).toBe(true);
     }
 
+    @Test('hidden summary uses natural wording and stays single-line')
+    testSummaryNaturalWording() {
+        const events = Array.from({ length: 5 }, (_, i) =>
+            eventMsg(`s-${i + 1}`, { content: CJK_TEXT }, { uiEventKey: `scope:t:s-${i + 1}` })
+        );
+        const result = resolveTimelineWindowLedger({
+            messages: events,
+            limit: 3,
+            mode: 'compact',
+            activeScope: ''
+        });
+        const summary = result.items[0];
+        expect(result.hiddenCount).toBe(5);
+        expect(summary.category).toBe('summary');
+        expect(summary.estimatedRows).toBe(1);
+        expect(summary.message.content).toContain('已隐藏 5 条事件');
+        expect(summary.message.content).not.toContain('/timeline');
+    }
+
     @Test('timelineViewMode change is synchronous')
     testSyncModeChange() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         expect(state.timelineViewMode).toBe('off');
         state.setTimelineMode('steps');
         expect(state.timelineViewMode).toBe('steps');
+    }
+
+    @Test('collapsed turn row uses natural wording and stays unique single-line (P290)')
+    testCollapsedTurnNaturalWording() {
+        const events = [
+            eventMsg('r-1', {}, {
+                uiEventKey: 'turn-1:tool:r-1',
+                timeline: { source: 'local', sequence: 1, toolCallId: 'tc1', receiptId: 'rc1', attempt: 1 }
+            }),
+            eventMsg('r-2', {}, {
+                uiEventKey: 'turn-1:tool:r-2',
+                timeline: { source: 'local', sequence: 2, toolCallId: 'tc2', receiptId: 'rc2', attempt: 1 }
+            }),
+            eventMsg('keep-1', {}, {
+                uiEventKey: 'turn-2:tool:keep-1',
+                timeline: { source: 'local', sequence: 3, toolCallId: 'tc3', receiptId: 'rc3', attempt: 1 }
+            })
+        ];
+        const folded = resolveTimelineWindowLedger({
+            messages: events,
+            limit: 3,
+            mode: 'steps',
+            activeScope: '',
+            collapsedTurns: { 'turn-1': true }
+        });
+        const row = folded.items.find(i => i.message.id === '__timeline_collapsed_turn-1__')!;
+        expect(row.estimatedRows).toBe(1);
+        expect(row.message.content).toContain('第 1 轮');
+        expect(row.message.content).toContain('2 个工具');
+        expect(row.message.content).not.toContain('/timeline');
+        const ids = folded.items.map(i => i.message.id);
+        expect(ids.filter(id => id === row.message.id).length).toBe(1);
+        expect(folded.items.some(i => i.message.id === 'keep-1')).toBe(true);
+    }
+
+    @Test('session header and footer pin the ledger bounds')
+    testHeaderFooterBounds() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.setConsoleOptions({ messagesVisibleItems: 5 });
+        state.setTitle('重构用户模块');
+        state.setTimelineMode('steps');
+        state.setMessages([userMsg('u1'), eventMsg('e1'), eventMsg('e2')]);
+        const result = resolveTimelineWindowLedger({
+            messages: state.displayMessages,
+            limit: 5,
+            mode: 'steps',
+            activeScope: '',
+            header: state.sessionHeader,
+            footer: state.sessionFooter
+        });
+        expect(result.items[0].message.id).toBe('__timeline_session_header__');
+        expect(result.items[result.items.length - 1].message.id).toBe('__timeline_session_footer__');
+        expect(result.items[0].message.content).toContain('重构用户模块');
+        expect(result.items[result.items.length - 1].message.content).toContain('完成');
+        expect(result.items[0].message.metadata?.uiKind).toBe('timeline-header');
+        expect(result.items[result.items.length - 1].message.metadata?.uiKind).toBe('timeline-footer');
     }
 }

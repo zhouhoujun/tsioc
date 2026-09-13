@@ -29,27 +29,62 @@ function upsertEvent(
 @Suite('P237 timeline event row summary baseline')
 export class P237EventRowSummaryTest {
 
-    @Test('event rows carry textual status in meta (no color-only status)')
-    eventMetaCarriesTextualStatus() {
+    @Test('event rows keep a single state point: glyph in status, words in aria, meta factual')
+    eventRowsKeepSingleStatePoint() {
         const running = renderAgentConsoleMessageItems([{
             id: 'e1', role: 'assistant', content: 'Reading files', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_invoked', status: 'running' }
         }] as any);
-        expect(running[0].lines[0].meta).toContain('正在执行');
+        expect(running[0].status).toContain('●');
+        expect(running[0].lines[0].meta).not.toContain('正在执行');
+        expect(running[0].lines[0].ariaLabel).toContain('正在执行');
 
         const completed = renderAgentConsoleMessageItems([{
             id: 'e2', role: 'assistant', content: 'Read files', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success', durationMs: 1250 }
         }] as any);
         expect(completed[0].lines[0].meta).toContain('1.3s');
-        expect(completed[0].lines[0].meta).toContain('成功');
+        expect(completed[0].lines[0].meta).not.toContain('成功');
+        expect(completed[0].status).toContain('✓');
+        expect(completed[0].lines[0].ariaLabel).toContain('成功');
 
         const failed = renderAgentConsoleMessageItems([{
             id: 'e3', role: 'assistant', content: 'Read failed', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
         }] as any);
-        expect(failed[0].lines[0].meta).toContain('错误');
         expect(failed[0].lines[0].meta).toContain('retry');
+        expect(failed[0].lines[0].meta).not.toContain('错误');
+        expect(failed[0].status).toContain('✕');
+        expect(failed[0].lines[0].ariaLabel).toContain('错误');
+    }
+
+    @Test('glyph table gives every status a single visual marker')
+    glyphTableSinglePoint() {
+        const cases: Array<[string, string]> = [
+            ['running', '●'],
+            ['success', '✓'],
+            ['failed', '✕'],
+            ['error', '✕'],
+            ['blocked', '⊘']
+        ];
+        for (const [status, glyph] of cases) {
+            const items = renderAgentConsoleMessageItems([{
+                id: `g-${status}`, role: 'assistant', content: 'event', createdAt: 1,
+                metadata: { uiKind: 'event', uiEventType: 'tool_invoked', status }
+            }] as any);
+            expect(items[0].status).toContain(glyph);
+        }
+    }
+
+    @Test('blocked events render ⊘ with aria label and a factual meta')
+    blockedEventSinglePoint() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'b1', role: 'assistant', content: 'Step blocked', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'plan_step_blocked', status: 'blocked' }
+        }] as any);
+        expect(items[0].status).toContain('⊘');
+        expect(items[0].lines[0].meta).not.toContain('阻塞');
+        expect(items[0].lines[0].ariaLabel).toContain('阻塞');
     }
 
     @Test('long event row content is truncated; the full body stays on the message')

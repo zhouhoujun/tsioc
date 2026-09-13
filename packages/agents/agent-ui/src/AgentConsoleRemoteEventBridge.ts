@@ -465,20 +465,13 @@ export class AgentConsoleRemoteEventBridge {
             }
             const { done, value } = await reader.read();
             if (done) {
-                break;
-            }
             this.parserBuffer += decoder.decode(value, { stream: true });
             const { frames, rest } = parseSseFrames(this.parserBuffer);
             this.parserBuffer = rest;
             for (const frame of frames) {
-                const event = decodeSseFrame(frame);
                 if (!event || !event.sessionId || event.sessionId !== this.state.sessionId) {
-                    continue;
                 }
-                applyRemoteEvent(this.state, event);
-                if (event.type === 'tool_completed') {
-                    await this.refreshTools();
-                }
+                await this.refreshTools();
             }
         }
         if (this.hasConnected) {

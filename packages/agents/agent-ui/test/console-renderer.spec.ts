@@ -1973,7 +1973,7 @@ export class AgentConsoleTuiRendererTest {
         ] as any);
         ref.instance.sessionState.setTimelineMode(true);
         expect(ref.instance.sessionState.displayMessages.find(item => item.id === '__timeline_plan_boundary__')?.content)
-            .toEqual('Step 2 of 2  ·  Implement');
+            .toEqual('第 2/2 步 · Implement');
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 
@@ -1991,9 +1991,11 @@ export class AgentConsoleTuiRendererTest {
         ref.instance.sessionState.setTimelineMode('steps');
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visible = panel.instance.visibleMessages;
-        expect(visible[0].id).toEqual('__timeline_hidden_summary__');
-        expect(visible[0].content).toContain('earlier timeline events hidden');
-        expect(visible.slice(1).map(item => item.id).filter(id => String(id).startsWith('event-')))
+        expect(visible[0].id).toEqual('__timeline_session_header__');
+        expect(visible[1].id).toEqual('__timeline_hidden_summary__');
+        expect(visible[1].content).toContain('已隐藏 5 条早期事件');
+        expect(visible[visible.length - 1].id).toEqual('__timeline_session_footer__');
+        expect(visible.slice(2).map(item => item.id).filter(id => String(id).startsWith('event-')))
             .toEqual(['event-6', 'event-7', 'event-8']);
     }
 

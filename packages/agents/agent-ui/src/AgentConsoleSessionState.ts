@@ -47,6 +47,15 @@ import {
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import {
+    AgentConsoleTimelineLabels,
+    DEFAULT_TIMELINE_LABELS,
+    fillTimelineLabel,
+    formatTimelineClockTime,
+    formatTimelineSessionDuration,
+    TimelineWindowMessage,
+    truncateTimelineRowText
+} from './AgentConsoleTimelineWindow';
+import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
     applyAgentConsoleSuggestion,
@@ -407,6 +416,7 @@ export interface AgentConsoleOptions {
     brandWidth?: number;
     messageStatusLabels?: AgentConsoleMessageStatusLabels;
     messageStatusSymbol?: string;
+    timelineLabels?: AgentConsoleTimelineLabels;
     username?: string;
     shareBaseUrl?: string;
     workingPresentation?: 'compact' | 'dashboard';
@@ -473,6 +483,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
         error: '错误'
     },
     messageStatusSymbol: '',
+    timelineLabels: DEFAULT_TIMELINE_LABELS,
     username: 'you',
     shareBaseUrl: '',
     workingPresentation: 'dashboard',
@@ -706,6 +717,8 @@ export class AgentConsoleSessionState {
     }
     timelineReconnecting = false;
     timelineStale = false;
+    /** Collapsed turn groups (P290): turn scope key -> collapsed. Session state only, never persisted. */
+    timelineCollapsedTurns: Record<string, boolean> = {};
     timelineSeedCount = 0;
     timelineTailSeq = -1;
     commandExchangeTailSeq = -1;
@@ -1263,7 +1276,14 @@ export class AgentConsoleSessionState {
                 filtered.push({
                     id: '__timeline_plan_boundary__',
                     role: 'assistant',
-                    content: `Step ${index} of ${this.planTodos.length}  ·  ${active.content}`,
+                    content: fillTimelineLabel(
+                        this.consoleOptions.timelineLabels.boundaryStep || DEFAULT_TIMELINE_LABELS.boundaryStep,
+                        {
+                            index,
+                            total: this.planTodos.length,
+                            content: active.content
+                        }
+                    ),
                     createdAt: Date.now(),
                     metadata: {
                         uiKind: 'timeline-boundary',
@@ -1277,6 +1297,86 @@ export class AgentConsoleSessionState {
             }
         }
         return filtered;
+    }
+
+    /** Earliest session timestamp: first message createdAt → turn start → now. */
+    private get timelineSessionStartTime(): number {
+        const created = this.messages
+            .map(message => Number(message?.createdAt))
+            .filter(ts => Number.isFinite(ts) && ts > 0);
+        if (created.length) {
+            return Math.min(...created);
+        }
+        if (this.turnStartedAt > 0) {
+            return this.turnStartedAt;
+        }
+        return Date.now();
+    }
+
+    get sessionHeader(): TimelineWindowMessage | undefined {
+        if (!this.timelineMode) {
+            return undefined;
+        }
+        const labels = this.consoleOptions.timelineLabels;
+        const start = this.timelineSessionStartTime;
+        const parts: string[] = [];
+        const title = String(this.title || '').trim();
+        if (title) {
+            parts.push(title);
+        }
+        parts.push(fillTimelineLabel(labels?.headerStart || DEFAULT_TIMELINE_LABELS.headerStart, {
+            time: formatTimelineClockTime(start)
+        }));
+        const active = this.planTodos.find(todo => todo.status === 'in_progress')
+            || this.planTodos.find(todo => todo.status === 'pending');
+        if (active) {
+            parts.push(fillTimelineLabel(labels?.headerStep || DEFAULT_TIMELINE_LABELS.headerStep, {
+                index: this.planTodos.indexOf(active) + 1,
+                total: this.planTodos.length
+            }));
+        }
+        const errors = this.messages.filter(message =>
+            message?.metadata?.status === 'error' || message?.metadata?.status === 'failed'
+        ).length;
+        if (errors > 0) {
+            parts.push(fillTimelineLabel(labels?.headerErrors || DEFAULT_TIMELINE_LABELS.headerErrors, { count: errors }));
+        }
+        return {
+            id: '__timeline_session_header__',
+            role: 'assistant',
+            content: truncateTimelineRowText(parts.join(' · ')),
+            createdAt: start,
+            metadata: { uiKind: 'timeline-header' }
+        };
+    }
+
+    get sessionFooter(): TimelineWindowMessage | undefined {
+        if (!this.timelineMode) {
+            return undefined;
+        }
+        const labels = this.consoleOptions.timelineLabels;
+        const start = this.timelineSessionStartTime;
+        const statusWord = this.status === 'error'
+            ? labels?.footerFailed || DEFAULT_TIMELINE_LABELS.footerFailed
+            : this.status === 'running' || this.status === 'reasoning'
+                ? labels?.footerRunning || DEFAULT_TIMELINE_LABELS.footerRunning
+                : labels?.footerDone || DEFAULT_TIMELINE_LABELS.footerDone;
+        const parts: string[] = [statusWord];
+        parts.push(fillTimelineLabel(labels?.footerDuration || DEFAULT_TIMELINE_LABELS.footerDuration, {
+            duration: formatTimelineSessionDuration(Math.max(0, Date.now() - start))
+        }));
+        if (this.timelineViewMode === 'compact') {
+            parts.push(fillTimelineLabel(labels?.footerMode || DEFAULT_TIMELINE_LABELS.footerMode, { mode: 'steps' }));
+        } else if (this.timelineViewMode === 'steps') {
+            parts.push(fillTimelineLabel(labels?.footerMode || DEFAULT_TIMELINE_LABELS.footerMode, { mode: 'verbose' }));
+        }
+        return {
+            id: '__timeline_session_footer__',
+            role: 'assistant',
+            content: truncateTimelineRowText(parts.join(' · ')),
+            createdAt: Date.now(),
+            metadata: { uiKind: 'timeline-footer' }
+        };
     }
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
@@ -1352,6 +1452,20 @@ export class AgentConsoleSessionState {
         if (!resolvedScope || this.activeTurnEventScope === resolvedScope) {
             this.activeTurnEventScope = '';
         }
+    }
+
+    toggleTimelineCollapse(scopeKey: string): void {
+        const key = String(scopeKey || '').trim();
+        if (!key || key === this.activeTurnEventScope) {
+            return;
+        }
+        const next = { ...this.timelineCollapsedTurns };
+        if (next[key]) {
+            delete next[key];
+        } else {
+            next[key] = true;
+        }
+        this.timelineCollapsedTurns = next;
     }
 
     qualifyUiEventKey(key: string): string {

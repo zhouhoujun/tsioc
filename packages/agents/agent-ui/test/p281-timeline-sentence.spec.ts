@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     formatTimelineSentence,
+    humanizeToolName,
     resolveTimelineEventSentence,
     TimelineSentenceParts
 } from '../src/AgentConsoleTimelineWindow';
@@ -81,14 +82,14 @@ export class ResolveTimelineEventSentenceTest {
         })).toBeUndefined();
     }
 
-    @Test('turn_started produces Understanding request')
+    @Test('turn_started produces a natural request acknowledgement')
     testTurnStarted() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
             uiEventType: 'turn_started',
             status: 'running'
         });
-        expect(result).toBe('Understanding request');
+        expect(result).toBe('Got your request');
     }
 
     @Test('turn_cancelled produces Turn cancelled')
@@ -122,7 +123,7 @@ export class ResolveTimelineEventSentenceTest {
         expect(result).toBe('Error: something went wrong');
     }
 
-    @Test('tool_invoked uses Running + label')
+    @Test('tool_invoked uses Running + humanized label')
     testToolInvoked() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -130,10 +131,10 @@ export class ResolveTimelineEventSentenceTest {
             status: 'running',
             label: 'read_file'
         });
-        expect(result).toBe('Running read_file');
+        expect(result).toBe('Running read file');
     }
 
-    @Test('tool_succeeded uses Completed + label + duration')
+    @Test('tool_succeeded uses Finished + humanized label + duration')
     testToolSucceeded() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -142,10 +143,10 @@ export class ResolveTimelineEventSentenceTest {
             label: 'git_operations',
             durationMs: 1234
         });
-        expect(result).toBe('Completed git_operations (1.2s)');
+        expect(result).toBe('Finished git operations (1.2s)');
     }
 
-    @Test('tool_failed uses Running + label + error')
+    @Test('tool_failed uses a natural failure sentence (no running/failed contradiction)')
     testToolFailed() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -154,7 +155,19 @@ export class ResolveTimelineEventSentenceTest {
             label: 'shell',
             error: 'command not found'
         });
-        expect(result).toBe('Running shell failed: command not found');
+        expect(result).toBe('Failed to run shell: command not found');
+    }
+
+    @Test('tool_failed humanizes multi-word tool names and keeps the colon cause')
+    testToolFailedHumanizedColon() {
+        const result = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'tool_failed',
+            status: 'error',
+            label: 'git_operations',
+            error: 'permission denied'
+        });
+        expect(result).toBe('Failed to run git operations: permission denied');
     }
 
     @Test('reads uiEventLabel fallback when label is absent')
@@ -165,7 +178,7 @@ export class ResolveTimelineEventSentenceTest {
             status: 'running',
             uiEventLabel: 'write_file'
         });
-        expect(result).toBe('Running write_file');
+        expect(result).toBe('Running write file');
     }
 
     @Test('plan_created produces Created plan')
@@ -189,7 +202,7 @@ export class ResolveTimelineEventSentenceTest {
         expect(result).toBe('Executing step Implement P281 formatter');
     }
 
-    @Test('context_prepared produces Prepared context')
+    @Test('context_prepared produces Loaded context')
     testContextPrepared() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -197,7 +210,7 @@ export class ResolveTimelineEventSentenceTest {
             status: 'success',
             durationMs: 50
         });
-        expect(result).toBe('Prepared context (50ms)');
+        expect(result).toBe('Loaded context (50ms)');
     }
 
     @Test('model_completed produces Model responded')
@@ -243,7 +256,56 @@ export class ResolveTimelineEventSentenceTest {
             error: longError
         });
         expect(result!.length).toBeLessThan(longError.length + 30);
-        expect(result).toContain('failed:');
+        expect(result).toContain('Failed to run');
+        expect(result).toContain('shell:');
+    }
+}
+
+@Suite('humanizeToolName (P287)')
+export class HumanizeToolNameTest {
+
+    @Test('snake_case becomes space-separated sentence case')
+    testSnakeCase() {
+        expect(humanizeToolName('git_operations')).toBe('git operations');
+        expect(humanizeToolName('read_file')).toBe('read file');
+    }
+
+    @Test('kebab-case becomes space-separated sentence case')
+    testKebabCase() {
+        expect(humanizeToolName('create-issue')).toBe('create issue');
+        expect(humanizeToolName('apply-patch')).toBe('apply patch');
+    }
+
+    @Test('camelCase and PascalCase boundaries split into words')
+    testCamelCase() {
+        expect(humanizeToolName('readFile')).toBe('read file');
+        expect(humanizeToolName('WriteFile')).toBe('write file');
+    }
+
+    @Test('common acronyms stay uppercase')
+    testAcronyms() {
+        expect(humanizeToolName('http_server')).toBe('HTTP server');
+        expect(humanizeToolName('ssh_session')).toBe('SSH session');
+        expect(humanizeToolName('HTTPServer')).toBe('HTTP server');
+    }
+
+    @Test('digit-letter boundaries split into words')
+    testDigitBoundary() {
+        expect(humanizeToolName('fileVersion2')).toBe('file version2');
+    }
+
+    @Test('empty and whitespace names return empty string')
+    testEmpty() {
+        expect(humanizeToolName('')).toBe('');
+        expect(humanizeToolName('   ')).toBe('');
+        expect(humanizeToolName(undefined)).toBe('');
+        expect(humanizeToolName(null)).toBe('');
+    }
+
+    @Test('plain single-word names pass through sentence-cased')
+    testPlainWord() {
+        expect(humanizeToolName('shell')).toBe('shell');
+        expect(humanizeToolName('tests')).toBe('tests');
     }
 }
 

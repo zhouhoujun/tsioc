@@ -182,6 +182,13 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         );
 
         if (scenario.steps) {
+            // P293: enable the window + open the turn scope BEFORE the live
+            // steps so pushed frames project under the turn-1: prefix (foldable
+            // group when the scope is cleared and the turn is toggled below).
+            if (scenario.expect.timeline) {
+                state.setTimelineMode(scenario.expect.timeline.viewMode);
+                state.beginTurnEventScope(scenario.expect.timeline.activeScope);
+            }
             applyPipelineSteps(gateway, scenario.steps);
         }
 
@@ -251,6 +258,52 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             lines.length >= expectedVisible,
             `lines=${lines.length}, visible messages=${expectedVisible} (state=${state.messages.length}, window=${visibleWindow})`
         );
+
+        // ---- P293 timeline-naturalized acceptance cells (zh rows) -------------
+        const timelineExpect = scenario.expect.timeline;
+        if (timelineExpect) {
+            const stepLines = lines.slice();
+            check('timeline header zh', stepLines.some(line => /开始 .*?step 1\/3 · 1 个错误/.test(line)),
+                stepLines.filter(line => /开始/.test(line)).join(' | ') || 'none');
+            check('timeline footer zh', stepLines.some(line => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(line)),
+                stepLines.filter(line => /耗时/.test(line)).join(' | ') || 'none');
+            check('timeline boundary zh', stepLines.some(line => /第 1\/3 步 · 重构解析管线/.test(line)),
+                stepLines.filter(line => /第 \d+\/\d+ 步/.test(line)).join(' | ') || 'none');
+            check('timeline steps summary zh', stepLines.some(line => /已隐藏 \d+ 条早期事件/.test(line)),
+                stepLines.filter(line => /已隐藏/.test(line)).join(' | ') || 'none');
+            check('timeline long cjk row', stepLines.some(line => line.includes(timelineExpect.longCjkPrefix ?? '')),
+                stepLines.filter(line => (timelineExpect.longCjkPrefix?.slice(0, 6) ?? '') && line.includes((timelineExpect.longCjkPrefix as string).slice(0, 6))).join(' | ') || 'none');
+
+            // Clear the scope BEFORE the toggle (toggle refuses the active
+            // scope key), then fold the turn-1 group (todo + live pair rows ->
+            // single `第 1 轮 · 2 个工具 · 370ms` row).
+            // Drain the SSE channel BEFORE clearing the scope: the bridge
+            // consumes one SSE frame per reader.read() and awaits an RPC
+            // round-trip (refreshTools) after each tool_completed, so live
+            // frames may still be in flight when we reach the toggle. If we
+            // clear the scope first, the live pair lands with an unqualified
+            // key and never joins the fold. Drain (consume >= pushed), then
+            // let one macrotask finish so the final frame's decode->apply
+            // chain runs while the scope is still active.
+            if (gateway.metadata.sseFrameCount > 0) {
+                await waitUntil(() => gateway.metadata.sseConsumed >= gateway.metadata.sseFrameCount);
+                await new Promise<void>(resolve => setTimeout(resolve, 0));
+            }
+            state.clearTurnEventScope(timelineExpect.activeScope);
+            state.toggleTimelineCollapse(timelineExpect.collapseScope);
+            await waitUntil(() => getLines().some(line => /第 1 轮 · 2 个工具 · 370ms/.test(line)));
+            const foldedLines = getLines();
+            check('timeline collapse fold zh', foldedLines.some(line => /第 1 轮 · 2 个工具 · 370ms/.test(line)),
+                foldedLines.filter(line => /第 \d+ 轮 · \d+ 个工具/.test(line)).join(' | ') || 'none');
+
+            // Compact mode summarizes overflow with the naturalized zh label
+            // instead of dropping rows (data-driven, no timers).
+            state.setTimelineMode('compact');
+            await waitUntil(() => getLines().some(line => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(line)));
+            const compactLines = getLines();
+            check('timeline compact summary zh', compactLines.some(line => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(line)),
+                compactLines.filter(line => /已隐藏/.test(line)).join(' | ') || 'none');
+        }
     } finally {
         // gateway.dispose() closes the SSE stream so the reader in connectOnce
         // yields done=true; only then does subscribe() settle and expose the
@@ -310,8 +363,8 @@ async function main(): Promise<number> {
 }
 
 main()
-    .then(code => process.exit(code))
+    .then(code => { process.exitCode = code; })
     .catch(err => {
         console.error('[tui-gate] unexpected failure:', err);
-        process.exit(1);
+        process.exitCode = 1;
     });

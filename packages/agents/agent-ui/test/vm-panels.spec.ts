@@ -198,7 +198,7 @@ export class VmPanelsTest {
         state.setPlanTodos([{ id: 's1', content: 'write tests', status: 'in_progress' } as any]);
         state.setTimelineMode('steps');
         const boundary = state.displayMessages.find(message => message.metadata?.uiKind === 'timeline-boundary');
-        expect(boundary?.content).toContain('Step 1 of 1');
+        expect(boundary?.content).toContain('第 1/1 步');
         expect(boundary?.content).toContain('write tests');
         expect(boundary?.content).not.toContain('-- step');
     }

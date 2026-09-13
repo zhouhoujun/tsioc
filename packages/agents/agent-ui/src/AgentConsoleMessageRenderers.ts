@@ -11,7 +11,7 @@ import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
-export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary';
+export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
 
 export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
     style: Record<string, string>;
@@ -56,13 +56,14 @@ export interface AgentConsoleRenderedMessageItem {
     lines: AgentConsoleRenderedLine[];
 }
 
-export type AgentConsoleMessageStatus = 'running' | 'success' | 'failed' | 'error';
+export type AgentConsoleMessageStatus = 'running' | 'success' | 'failed' | 'error' | 'blocked';
 
 export interface AgentConsoleMessageStatusLabels {
     running?: string;
     success?: string;
     failed?: string;
     error?: string;
+    blocked?: string;
 }
 
 type AgentConsoleInlineRowStyle = Partial<Record<'background' | 'background-color' | 'color' | 'font-weight', string>>;
@@ -246,6 +247,53 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         continuationLead: () => ''
     },
     {
+        templateKind: 'timelineHeader',
+        roleLabel: '═ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            'font-weight': 'bold',
+            'border-top': rowSelected ? '2px solid transparent' : '2px solid #58a6ff',
+            'border-bottom': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.15)'
+        }),
+        lead: () => '',
+        continuationLead: () => ''
+    },
+    {
+        templateKind: 'timelineFooter',
+        roleLabel: '─ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            'font-weight': 'bold',
+            'border-top': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.15)',
+            'border-bottom': rowSelected ? '2px solid transparent' : '2px solid #58a6ff'
+        }),
+        lead: () => '',
+        continuationLead: () => ''
+    },
+    {
+        templateKind: 'timelineCollapsed',
+        roleLabel: '└ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            'font-weight': 'bold',
+            'border-top': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.25)'
+        }),
+        lead: () => '',
+        continuationLead: () => ''
+    },
+    {
         templateKind: 'system',
         roleLabel: resolveMessageRoleLabel('system'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'system'),
@@ -302,13 +350,15 @@ export function renderAgentConsoleMessageItem(
     // long rows also keep the detail toggle); the sentence only fills empty
     // content events like model_completed.
     const eventRowContent = timelineEvent
-        ? truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind)
+        ? truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind, timelineEventType)
         : displayContent;
     const messageStreaming = !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
     const markdownLines = hideToolOutput
         ? []
         : context.rawMode || templateKind === 'planTodo'
+            || templateKind === 'timelineHeader' || templateKind === 'timelineFooter'
+            || templateKind === 'timelineCollapsed'
             ? renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
@@ -433,6 +483,15 @@ export function resolveMessageTemplateKind(message?: AgentMessage | null): Agent
     if (message?.metadata?.uiKind === 'timeline-boundary') {
         return 'timelineBoundary';
     }
+    if (message?.metadata?.uiKind === 'timeline-header') {
+        return 'timelineHeader';
+    }
+    if (message?.metadata?.uiKind === 'timeline-footer') {
+        return 'timelineFooter';
+    }
+    if (message?.metadata?.uiKind === 'timeline-collapsed') {
+        return 'timelineCollapsed';
+    }
     // Shell messages stay in the 'tool' template even on failure; their
     // failed/error state is carried by the status, not by the template.
     if (message?.metadata?.error && message?.metadata?.type !== 'shell') {
@@ -454,7 +513,8 @@ export function resolveAgentConsoleMessageStatus(
     message?: AgentMessage | null,
     templateKind: AgentConsoleMessageTemplateKind = resolveMessageTemplateKind(message)
 ): AgentConsoleMessageStatus | undefined {
-    if (!message || templateKind === 'user') {
+    if (!message || templateKind === 'user' || templateKind === 'timelineHeader'
+        || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
         return undefined;
     }
     if (message?.metadata?.uiKind === 'plan-todo') {
@@ -463,8 +523,19 @@ export function resolveAgentConsoleMessageStatus(
         return hasActive ? 'running' : 'success';
     }
     if (message?.metadata?.uiKind === 'event') {
+        const eventType = String(message.metadata.uiEventType || '').trim();
+        // P292: the remote bridge reports plan_step_blocked with status
+        // 'running' (the step id is in the content); the event type is the
+        // authoritative state so the row shows ⊘ 阻塞 instead of a running ●.
+        // Same for a failed step that arrives without an explicit error status.
+        if (eventType === 'plan_step_blocked') {
+            return 'blocked';
+        }
+        if (eventType === 'plan_step_failed') {
+            return 'failed';
+        }
         const status = String(message.metadata.status || '').trim();
-        if (status === 'running' || status === 'success' || status === 'failed' || status === 'error') {
+        if (status === 'running' || status === 'success' || status === 'failed' || status === 'error' || status === 'blocked') {
             return status as AgentConsoleMessageStatus;
         }
     }
@@ -491,6 +562,8 @@ export function resolveAgentConsoleMessageStatusLabel(
             return labels?.failed || '失败';
         case 'error':
             return labels?.error || '错误';
+        case 'blocked':
+            return labels?.blocked || '阻塞';
         case 'success':
             return labels?.success || '成功';
         default:
@@ -686,6 +759,9 @@ function resolveTimelineMeta(
 ): string {
     const parts: string[] = [];
     const uiKind = String(message?.metadata?.uiKind || '').trim();
+    if (templateKind === 'timelineHeader' || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
+        return '';
+    }
     if (uiKind === 'event') {
         const durationMs = Number(message?.metadata?.durationMs);
         if (Number.isFinite(durationMs) && durationMs >= 0) {
@@ -704,7 +780,9 @@ function resolveTimelineMeta(
             parts.push(label);
         }
     }
-    if (statusLabel && (templateKind !== 'assistant' || uiKind === 'event')) {
+    // Event rows keep meta purely factual (duration/label/action); the glyph
+    // column is the single state point (P289), textual status stays in aria.
+    if (statusLabel && templateKind !== 'assistant' && uiKind !== 'event') {
         parts.push(statusLabel);
     }
     if (uiKind === 'event') {
@@ -720,13 +798,17 @@ export const TIMELINE_EVENT_ROW_CONTENT_MAX = 200;
 
 // Long stdout/diff bodies belong to the event inspector; rows keep a bounded
 // summary. CJK/emoji count as 2 columns so the row stays within a stable
-// display width. Failed/error rows stay expanded by default so the cause is visible.
+// display width. Failed/error rows stay expanded by default so the cause is
+// visible; plan-step failed/blocked rows stay expanded by event type because
+// the bridge pins their status to 'running' (P237/P292).
 export function truncateTimelineEventRowContent(
     content: string,
-    statusKind?: AgentConsoleMessageStatus
+    statusKind?: AgentConsoleMessageStatus,
+    eventType = ''
 ): string {
     const text = String(content || '');
-    if (statusKind === 'failed' || statusKind === 'error') {
+    if (statusKind === 'failed' || statusKind === 'error' || statusKind === 'blocked'
+        || eventType === 'plan_step_failed' || eventType === 'plan_step_blocked') {
         return text;
     }
     if (getDisplayWidth(text) <= TIMELINE_EVENT_ROW_CONTENT_MAX) {
@@ -748,7 +830,8 @@ export function resolveTimelineEventActionLabel(
     if ((eventType.startsWith('tool_') || eventType === 'tool_call') && failed) {
         return 'retry';
     }
-    if (eventType.startsWith('plan_step_') && (failed || String(metadata.status || '') === 'blocked')) {
+    if (eventType.startsWith('plan_step_') && (failed || statusKind === 'blocked'
+        || eventType === 'plan_step_blocked' || String(metadata.status || '') === 'blocked')) {
         return '重试';
     }
     if (eventType === 'approval' || eventType === 'approval_request') {
@@ -765,6 +848,8 @@ function formatTimelineDuration(durationMs: number): string {
     return `${seconds >= 10 ? Math.round(seconds) : seconds.toFixed(1).replace(/\.0$/, '')}s`;
 }
 
+// Timeline status glyphs — the single visual state point of an event row
+// (P289). running ● / success ✓ / failed|error ✕ / blocked ⊘.
 function resolveDefaultStatusGlyph(status?: AgentConsoleMessageStatus): string {
     switch (status) {
         case 'running':
@@ -774,6 +859,8 @@ function resolveDefaultStatusGlyph(status?: AgentConsoleMessageStatus): string {
         case 'failed':
         case 'error':
             return '✕';
+        case 'blocked':
+            return '⊘';
         default:
             return '';
     }
@@ -863,6 +950,8 @@ function resolveAgentConsoleMessageStatusStyle(
         case 'failed':
         case 'error':
             return styleTextToObject(theme.statusErrorValue);
+        case 'blocked':
+            return styleTextToObject(theme.statusBusyValue);
         default:
             return styleTextToObject(theme.statusIdleValue);
     }

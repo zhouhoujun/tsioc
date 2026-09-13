@@ -28,6 +28,8 @@ import { writeFileSync } from 'node:fs';
 
 import { JSDOM } from 'jsdom';
 
+import { DefaultReactiveEffect, reactive } from '@tsdi/components';
+
 import { AgentConsoleSessionState } from '../src';
 import { mountAgentWebConsole } from '../web-console';
 import { FakeAgentGateway } from './FakeAgentGateway';
@@ -105,6 +107,13 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         );
 
         if (scenario.steps) {
+            // P293: enable the window + open the turn scope BEFORE the live
+            // steps so pushed frames project under the turn-1: prefix (foldable
+            // group when the scope is cleared and the turn is toggled below).
+            if (scenario.expect.timeline) {
+                state.setTimelineMode(scenario.expect.timeline.viewMode);
+                state.beginTurnEventScope(scenario.expect.timeline.activeScope);
+            }
             applyPipelineSteps(gateway, scenario.steps);
         }
 
@@ -154,9 +163,52 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         check('command_exchange.replay calls', rpcCount(gateway, 'command_exchange.replay') >= scenario.expect.commandExchangeReplayCallsMin);
         check('tools.list calls', rpcCount(gateway, 'tools.list') >= scenario.expect.toolsListCallsMin);
         check('sse dropped', gateway.metadata.sseDropped === scenario.expect.sseDropped);
+
+        // ---- P293 timeline-naturalized acceptance cells (zh rows) -------------
+        const timelineExpect = scenario.expect.timeline;
+        if (timelineExpect) {
+            // Post-step writes MUST go through a reactive proxy over the raw
+            // state: raw-instance mutations bypass the set trap and never
+            // re-render the live bindings (web-console.ts:124-127). This
+            // gate-local effect is inert; the set trap still broadcasts to
+            // every effect that read the raw target (reactive.ts
+            // subscribableEffects), so the mounted panels re-render. The mount
+            // promise itself resolves only in the finally below (after
+            // gateway.dispose() closes the SSE stream), so awaiting it here
+            // would hang and drain the event loop.
+            const uiState = reactive(state, new DefaultReactiveEffect());
+            const stepLabels = metrics.ariaLabels.slice();
+            check('timeline header zh', stepLabels.some(label => /开始 .*?step 1\/3 · 1 个错误/.test(label)),
+                stepLabels.filter(label => /开始/.test(label)).join(' | ') || 'none');
+            check('timeline footer zh', stepLabels.some(label => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(label)),
+                stepLabels.filter(label => /耗时/.test(label)).join(' | ') || 'none');
+            check('timeline boundary zh', stepLabels.some(label => /第 1\/3 步 · 重构解析管线/.test(label)),
+                stepLabels.filter(label => /第 \d+\/\d+ 步/.test(label)).join(' | ') || 'none');
+            check('timeline steps summary zh', stepLabels.some(label => /已隐藏 \d+ 条早期事件/.test(label)),
+                stepLabels.filter(label => /已隐藏/.test(label)).join(' | ') || 'none');
+            check('timeline long cjk row', stepLabels.some(label => label.includes(timelineExpect.longCjkPrefix ?? '')),
+                stepLabels.filter(label => (timelineExpect.longCjkPrefix?.slice(0, 6) ?? '') && label.includes((timelineExpect.longCjkPrefix as string).slice(0, 6))).join(' | ') || 'none');
+
+            // Clear the scope BEFORE the toggle (toggle refuses the active
+            // scope key), then fold the turn-1 group (todo + live pair rows ->
+            // single `第 1 轮 · 2 个工具 · 370ms` row).
+            // Drain the SSE channel BEFORE clearing the scope: the bridge
+            // consumes one SSE frame per reader.read() and awaits an RPC
+            // round-trip (refreshTools) after each tool_completed, so live
+            // frames may still be in flight when we reach the toggle. If we
+            // clear the scope first, the live pair lands with an unqualified
+            // key and never joins the fold. Drain (consume >= pushed), then
+            // let one macrotask finish so the final frame's decode->apply
+            // chain runs while the scope is still active.
+            if (gateway.metadata.sseFrameCount > 0) {
+                await waitUntil(() => gateway.metadata.sseConsumed >= gateway.metadata.sseFrameCount);
+                await new Promise<void>(resolve => setTimeout(resolve, 0));
+            }
+            uiState.clearTurnEventScope(timelineExpect.activeScope);
+            uiState.toggleTimelineCollapse(timelineExpect.collapseScope);
+            await waitUntil(() => collect().ariaLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)));
+        }
     } finally {
-        gateway.dispose();
-        const mounted = await mountedPromise.catch(() => null);
         if (mounted) {
             await mounted.dispose();
         }
@@ -165,7 +217,6 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         scenarioId: scenario.id,
         gate: 'dom',
         elapsedMs: Date.now() - startedAt,
-        sseFrameCount,
         sseConsumed,
         sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
         replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
@@ -234,8 +285,8 @@ async function main(): Promise<number> {
 }
 
 main()
-    .then(code => process.exit(code))
+    .then(code => { process.exitCode = code; })
     .catch(err => {
         console.error('[dom-gate] unexpected failure:', err);
-        process.exit(1);
+        process.exitCode = 1;
     });

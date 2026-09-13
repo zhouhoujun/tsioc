@@ -2453,6 +2453,7 @@ const messageItemsCache = new WeakMap<object, {
     showUsername: boolean;
     timelineMode: boolean;
     messageDetailOpen: boolean;
+    collapsedTurns: Record<string, boolean>;
     items: AgentConsoleRenderedMessageItem[];
 }>();
 
@@ -2606,7 +2607,11 @@ export class AgentConsoleMessagesPanelComponent {
             messages,
             limit: Math.max(1, this.state.consoleOptions.messagesVisibleItems),
             mode: this.state.timelineViewMode as TimelineWindowMode,
-            activeScope: String(this.state.activeTurnEventScope || '').trim()
+            activeScope: String(this.state.activeTurnEventScope || '').trim(),
+            summaryLabels: this.state.consoleOptions.timelineLabels,
+            header: this.state.sessionHeader,
+            footer: this.state.sessionFooter,
+            collapsedTurns: this.state.timelineCollapsedTurns
         });
         return result.items.map(item => item.message);
     }
@@ -2625,6 +2630,7 @@ export class AgentConsoleMessagesPanelComponent {
         const showUsername = this.state.showUsername;
         const timelineMode = this.state.timelineMode;
         const messageDetailOpen = this.state.messageDetailOpen;
+        const collapsedTurns = this.state.timelineCollapsedTurns;
         const cached = messageItemsCache.get(this);
 
         if (cached
@@ -2640,7 +2646,8 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.showToolOutput === showToolOutput
             && cached.showUsername === showUsername
             && cached.timelineMode === timelineMode
-            && cached.messageDetailOpen === messageDetailOpen) {
+            && cached.messageDetailOpen === messageDetailOpen
+            && cached.collapsedTurns === collapsedTurns) {
             return cached.items;
         }
 
@@ -2673,6 +2680,7 @@ export class AgentConsoleMessagesPanelComponent {
             showUsername,
             timelineMode,
             messageDetailOpen,
+            collapsedTurns,
             items
         });
         return items;
