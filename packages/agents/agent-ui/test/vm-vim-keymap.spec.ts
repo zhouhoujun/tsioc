@@ -838,6 +838,18 @@ export class VmVimKeymapTest {
         expect(cancellations).toEqual(2);
     }
 
+    @Test('raw ETX Ctrl+C interrupts a running turn even with focused input')
+    async rawCtrlCInterruptsRunningTurn() {
+        const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        let cancellations = 0;
+        (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };
+        await component.onInit();
+        state.setStatus('running');
+        state.setInputMode('insert');
+        await (component as any).handleTerminalInput({ text: '\u0003', partial: false }, '\u0003');
+        expect(cancellations).toEqual(1);
+    }
+
     @Test('terminal input intercepts vim normal mode keys before insertion')
     async terminalInputInterceptsVimNormalMode() {
         const runtime = new RuntimeStub();
