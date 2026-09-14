@@ -6,6 +6,7 @@ import { join } from 'path';
 import {
     GateScenarioMetrics,
     baselineFromMetrics,
+    calculateSseLossRate,
     mergeGateMetrics,
     parseGateCliArgs,
     renderGateRegression,
@@ -37,6 +38,15 @@ async function withTempBaseline(run: (path: string) => Promise<void>): Promise<v
 
 @Suite('GateMetricsBench')
 export class GateMetricsBenchTest {
+    @Test('SSE loss stays within its 0..1 metric domain')
+    async sseLossDomain() {
+        expect(calculateSseLossRate(10, 8)).toBe(0.2);
+        expect(calculateSseLossRate(10, 12)).toBe(0);
+        expect(calculateSseLossRate(10, -2)).toBe(1);
+        expect(calculateSseLossRate(0, 5)).toBe(0);
+        expect(calculateSseLossRate(Number.NaN, Number.POSITIVE_INFINITY)).toBe(0);
+    }
+
     @Test('identical-to-baseline run reports no regression')
     async noRegressionOnIdentical() {
         const metrics = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });

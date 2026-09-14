@@ -3021,3 +3021,9 @@ Turn: Fix session restore                                      running  01:42
 - **范围与契约**：继续审计发现 `mobile-320` 与 v25 相同，正常连接下 2 个 live frames 尚在途时渲染条件已满足，历史基线因而长期接受 2/1、loss 0.5。DOM/TUI 现对 `expect.sseDropped === false` 且存在 live frames 的所有场景，在结构断言和指标采样前统一等待 `sseConsumed >= sseFrameCount`；正常 SSE 链路由此明确要求零丢帧，不再把调度时差写成允许基线。
 - **断线语义保留**：`mobile-320` 双端基线收紧为 2/2/loss 0；`timeline-naturalized` 保持 3/3/loss 0。`disconnect-retry` 不走正常流 drain，仍实测并保留 4/3/loss 0.25 + replay latency，确保真正的断线/重放信号未被抹平。定向 DOM/TUI + regression 3/3 PASS，所有 loss/replay 指标逐项 PASS并输出 `[OK]`。
 - **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包（agent 876、agent-ui 1210、agent-gateway 293、agent-tools 478 等）、framework 三包（136/75/117）、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check 全部通过。计划保持无开放批次。
+
+## v27 2026-09-14 — SSE 指标域与计数不变量收尾 ✅
+
+- **指标纯函数**：`gate-metrics.ts` 新增 `calculateSseLossRate(frameCount, consumedCount)`，对非有限/负计数归一并将 loss 严格限制在 `[0,1]`；`pushed=0` 返回 0，缺帧按比例计算。DOM/TUI 删除重复内联公式并统一消费该纯函数。
+- **重复消费门禁**：仅钳制负 loss 会把 `consumed > pushed` 误报为改善，因此双端场景在最终采样后新增明确结构断言 `sse consumed does not exceed pushed`，失败详情携带 pushed/consumed 原始值；loss 负责度量丢失，invariant 负责检测重复消费，职责分离。GateMetricsBench 新增正常缺帧、过量消费、负值、零 pushed 与非有限输入 5 个边界断言；DOM/TUI 文件头的场景数同步为 5。
+- **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：agent-ui **1211 passing**；统一门禁 **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check。计划保持无开放批次。

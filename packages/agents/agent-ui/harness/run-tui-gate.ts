@@ -16,7 +16,7 @@
  * same single-status-glyph / natural-sentence / duplicate-free structure rules
  * (P281) that the DOM gate enforces structurally.
  *
- * Running all 4 scenarios:
+ * Running all 5 scenarios:
  *   cd packages/agents/agent-ui
  *   npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts
  * Running a single scenario by id:
@@ -50,7 +50,7 @@ import {
 } from '../src';
 import { FakeAgentGateway } from './FakeAgentGateway';
 import { GatewayScenario, SCENARIOS, applyPipelineSteps, scenarioById } from './scenarios';
-import { GateScenarioMetrics, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
+import { calculateSseLossRate, GateScenarioMetrics, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
     const deadline = Date.now() + timeoutMs;
@@ -315,6 +315,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         // records an artificial loss even though every frame was consumed.
         sseFrameCount = gateway.metadata.sseFrameCount;
         sseConsumed = gateway.metadata.sseConsumed;
+        check('sse consumed does not exceed pushed', sseConsumed <= sseFrameCount, `pushed=${sseFrameCount}, consumed=${sseConsumed}`);
     } finally {
         // gateway.dispose() closes the SSE stream so the reader in connectOnce
         // yields done=true; only then does subscribe() settle and expose the
@@ -334,7 +335,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         elapsedMs: Date.now() - startedAt,
         sseFrameCount,
         sseConsumed,
-        sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
+        sseLossRate: calculateSseLossRate(sseFrameCount, sseConsumed),
         replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
         firstScreenVisibleRate: null,
         measured: false

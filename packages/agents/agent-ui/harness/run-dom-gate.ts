@@ -8,7 +8,7 @@
  * records on the gateway, and rendered DOM metrics (rows, CJK, duplicate
  * labels). No Playwright/Chrome download is required.
  *
- * Running all 4 scenarios:
+ * Running all 5 scenarios:
  *   cd packages/agents/agent-ui
  *   npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts
  * Running a single scenario by id:
@@ -35,7 +35,7 @@ import { mountAgentWebConsole } from '../web-console';
 import { FakeAgentGateway } from './FakeAgentGateway';
 import { GatewayScenario, SCENARIOS, applyPipelineSteps, scenarioById } from './scenarios';
 import { collectGatewayMetrics, GatewayDomMetrics } from './metrics';
-import { GateScenarioMetrics, GateViewport, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
+import { calculateSseLossRate, GateScenarioMetrics, GateViewport, metricsSummary, parseGateCliArgs, scenarioKey } from './gate-metrics';
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
     const deadline = Date.now() + timeoutMs;
@@ -228,6 +228,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         // records an artificial loss even though every frame was consumed.
         sseFrameCount = gateway.metadata.sseFrameCount;
         sseConsumed = gateway.metadata.sseConsumed;
+        check('sse consumed does not exceed pushed', sseConsumed <= sseFrameCount, `pushed=${sseFrameCount}, consumed=${sseConsumed}`);
     } finally {
         gateway.dispose();
         const mounted = await mountedPromise.catch(() => null);
@@ -241,7 +242,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         elapsedMs: Date.now() - startedAt,
         sseFrameCount,
         sseConsumed,
-        sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
+        sseLossRate: calculateSseLossRate(sseFrameCount, sseConsumed),
         replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,
         firstScreenVisibleRate,
         measured: layoutMeasured,

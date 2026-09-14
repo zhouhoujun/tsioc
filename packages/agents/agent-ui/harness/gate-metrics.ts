@@ -71,6 +71,16 @@ export const GATE_METRICS_KEYS: GateMetricsKey[] = [
     'firstScreenVisibleRate'
 ];
 
+/** Loss ratio for non-negative wire counters, constrained to the metric's 0..1 domain. */
+export function calculateSseLossRate(frameCount: number, consumedCount: number): number {
+    const pushed = Number.isFinite(frameCount) ? Math.max(0, frameCount) : 0;
+    const consumed = Number.isFinite(consumedCount) ? Math.max(0, consumedCount) : 0;
+    if (pushed === 0) {
+        return 0;
+    }
+    return Math.max(0, Math.min(1, (pushed - consumed) / pushed));
+}
+
 /**
  * Per-metric allowed drift from a stored baseline before a CI regression is
  * flagged. Timing values are absolute ms drifts (generous: they catch REAL
