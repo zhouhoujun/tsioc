@@ -792,6 +792,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
             expect(workingLines.some(line => line.includes('• Working'))).toBe(true);
             expect(workingLines.some(line => line.includes('esc to interrupt'))).toBe(true);
+        expect(workingPanel.instance.workingLineStyle.padding).toBe('1em 1ch 1em');
         expect(workingLines.some(line => line.includes('Preparing the response'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
         expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(false);

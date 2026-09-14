@@ -616,7 +616,8 @@ export class AgentConsoleWorkingPanelComponent {
     get workingLineStyle(): Record<string, string> {
         return {
             ...this.activeThemeStyles.workingValue,
-            padding: '0.6em 1ch 1em'
+            // Keep the status bar visually separated from the transcript.
+            padding: '1em 1ch 1em'
         };
     }
 

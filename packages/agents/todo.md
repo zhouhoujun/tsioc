@@ -3061,3 +3061,9 @@ Turn: Fix session restore                                      running  01:42
 - **ESC 实际控制**：`esc to interrupt` 对应既有 `interruptTurn()` 取消路径；即使用户通过 keymap unset 取消默认绑定，running turn 下的 ESC fallback 仍调用 `sessionService.cancelTurn`，已有行为测试覆盖。Working 文案与行为保持同一契约。
 - **自然回答契约**：Identity prompt 要求匹配用户语言和详细度；详细问题需覆盖关键事实、影响、限制与实用建议；工具结果综合为一段连贯自然答案，避免机械 bullet、原始工具输出复述和调用前后重复回答；标题/列表/表格按内容需要选择。
 - **验证**：新增中间 tool-call 正文去重与 timeline 恢复测试；agent-ui **1215 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**（包含 agents 10 包、framework 三包、4 包 tsc、DOM/TUI、回归、真实 PTY、diff-check）。
+
+## v33 2026-09-14 — Working 控制栏顶部留白修正 ✅
+
+- **问题**：Working 状态栏原有顶部内边距不足，视觉上紧贴上方内容，尤其在 TUI 中缺少状态栏分隔感。
+- **改进**：共用 `AgentConsoleWorkingPanelComponent.workingLineStyle` 将 padding 统一为 `1em 1ch 1em`，浏览器与命令行渲染同时生效；新增 renderer 样式断言，确保 top padding 不被回归覆盖。未引入定时刷新，Working 时长仍由 `Date.now()` 派生。
+- **验证**：agent-ui **1215 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，包含 DOM/TUI、真实 PTY 与 `git diff --check`。
