@@ -114,8 +114,8 @@ export interface GateScenarioRegression {
     /** Per-metric boolean: true = drift exceeded the tolerance threshold. */
     regressions: Partial<Record<GateMetricsKey, boolean>>;
     regressed: boolean;
-    /** 'missing-current' : baselined scenario absent from the current run. */
-    reason?: 'missing-current' | 'new-scenario';
+    /** Structural result that is not represented by a metric delta. */
+    reason?: 'missing-current' | 'new-scenario' | 'invalid-current-sse' | 'invalid-baseline-sse';
 }
 
 export interface GateRegressionResult {
@@ -132,6 +132,13 @@ const DEFAULT_THRESHOLDS: Required<GateRegressionThresholds> = {
 
 /** Higher-is-better metrics regress when drift < -threshold; the rest when drift > threshold. */
 const HIGHER_IS_BETTER: GateMetricsKey[] = ['firstScreenVisibleRate'];
+
+function hasValidSseCounters(metrics: GateScenarioMetrics): boolean {
+    const pushed = metrics.sseFrameCount;
+    const consumed = metrics.sseConsumed;
+    return Number.isInteger(pushed) && pushed >= 0 &&
+        Number.isInteger(consumed) && consumed >= 0 && consumed <= pushed;
+}
 
 export function scenarioKey(metrics: GateScenarioMetrics): string {
     const base = `${metrics.gate}/${metrics.scenarioId}`;
@@ -161,6 +168,17 @@ function compareScenario(
     thresholds: Required<GateRegressionThresholds>
 ): GateScenarioRegression {
     const key = scenarioKey(metrics);
+    if (!hasValidSseCounters(metrics)) {
+        return {
+            scenarioKey: key,
+            metrics,
+            baseline: baseline || null,
+            deltas: {},
+            regressions: {},
+            regressed: true,
+            reason: 'invalid-current-sse'
+        };
+    }
     if (!baseline) {
         return {
             scenarioKey: key,
@@ -170,6 +188,17 @@ function compareScenario(
             regressions: {},
             regressed: false,
             reason: 'new-scenario'
+        };
+    }
+    if (!hasValidSseCounters(baseline)) {
+        return {
+            scenarioKey: key,
+            metrics,
+            baseline,
+            deltas: {},
+            regressions: {},
+            regressed: true,
+            reason: 'invalid-baseline-sse'
         };
     }
 
@@ -316,6 +345,13 @@ export function renderGateRegression(result: GateRegressionResult): string {
             continue;
         }
         const m = scenario.metrics;
+        if (scenario.reason === 'invalid-current-sse' || scenario.reason === 'invalid-baseline-sse') {
+            const invalid = scenario.reason === 'invalid-current-sse' ? m : scenario.baseline!;
+            const source = scenario.reason === 'invalid-current-sse' ? 'current' : 'baseline';
+            lines.push(`  [METRICS] ${scenario.scenarioKey} INVALID ${source} SSE counters ` +
+                `(pushed=${invalid.sseFrameCount}, consumed=${invalid.sseConsumed})`);
+            continue;
+        }
         if (scenario.reason === 'new-scenario') {
             lines.push(`  [METRICS] ${scenario.scenarioKey} NEW (no baseline yet)`);
             continue;

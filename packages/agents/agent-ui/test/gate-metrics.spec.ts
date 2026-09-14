@@ -61,6 +61,24 @@ export class GateMetricsBenchTest {
         expect(baselineFromMetrics([falsified])[0].sseLossRate).toBe(0.2);
     }
 
+    @Test('invalid raw SSE counters regress even when normalized loss is zero')
+    async invalidSseCountersRegress() {
+        const healthy = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const duplicate = makeMetrics({
+            scenarioId: 'desktop-basic', gate: 'dom',
+            sseFrameCount: 10, sseConsumed: 12, sseLossRate: 0
+        });
+        const invalidCurrent = runGateRegression([duplicate], [healthy]);
+        expect(invalidCurrent.regressed).toBe(true);
+        expect(invalidCurrent.scenarios[0].reason).toBe('invalid-current-sse');
+        expect(renderGateRegression(invalidCurrent)).toContain('INVALID current SSE counters (pushed=10, consumed=12)');
+
+        const invalidBaseline = runGateRegression([healthy], [duplicate]);
+        expect(invalidBaseline.regressed).toBe(true);
+        expect(invalidBaseline.scenarios[0].reason).toBe('invalid-baseline-sse');
+        expect(renderGateRegression(invalidBaseline)).toContain('INVALID baseline SSE counters (pushed=10, consumed=12)');
+    }
+
     @Test('identical-to-baseline run reports no regression')
     async noRegressionOnIdentical() {
         const metrics = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });

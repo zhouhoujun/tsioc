@@ -3033,3 +3033,9 @@ Turn: Fix session restore                                      running  01:42
 - **派生指标可信化**：`gate-metrics.ts` 新增 `normalizeGateMetrics`，统一从 `sseFrameCount`/`sseConsumed` 原始计数重算 `sseLossRate`；回归比较、基线快照与多端指标合并均先归一化，持久化或外部 JSON 中陈旧/伪造的 loss 值不再能绕过回归门禁。新增反例覆盖：原始 `10/8` 即使声明 loss=0，也会归一为 0.2 并判定回归；agent-ui 全套增至 **1212 passing**。
 - **PTY 输入与最终帧稳定性**：scenario 5 的 `/usage`、`/outputs` 均改为文本与 Enter 分两次 PTY write，避免同一 raw chunk 被输入层仅按文本处理而拼成 `/usage/outputs`。scenario 1 不再从全屏重绘的历史 raw 内容匹配 `Turn completed`/问句，而是等待当前 viewport 同时出现尾部问句与 ready composer，并在输出静默后检查最后 6 行；连续两轮真实 PTY 均 **5/5 PASS**。
 - **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。
+
+## v29 2026-09-14 — 外部 SSE 原始计数不变量门禁收尾 ✅
+
+- **回归读取边界闭环**：v27 的 `consumed <= pushed` 断言位于 DOM/TUI 采集端，但回归模块读取外部或持久化 JSON 时仍可能收到 `consumed > pushed`，并因 loss 被钳为 0 而误判健康。`gate-metrics.ts` 现统一要求 pushed/consumed 均为有限非负整数且 `consumed <= pushed`；当前指标或基线任一侧非法都直接判为 regression，并输出 `INVALID current|baseline SSE counters (pushed=..., consumed=...)`，避免不可能的原始计数进入比较。
+- **新增验证**：GateMetricsBench 新增 current/baseline 双向非法计数反例及 CI 文案断言；agent-ui 全套 **1213 passing / EXIT=0**，`tsc --noEmit` 通过。
+- **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。
