@@ -51,8 +51,8 @@ import {
     AgentConsoleToolsPanelComponent,
     AgentConsoleToolMessageItemComponent,
     AgentConsoleUserMessageItemComponent,
-    AgentConsoleWorkingPanelComponent
-    ,AgentConsoleElapsedTimerComponent
+    AgentConsoleWorkingPanelComponent,
+    AgentConsoleElapsedTimerComponent
 } from './AgentConsolePanels';
 
 @Module({

@@ -5754,6 +5754,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const ctrlKey = !!(modifiers.ctrlKey || modifiers.metaKey);
         const altKey = !!modifiers.altKey;
         const rawKey = String(key || '').toLowerCase();
+        // TUI raw mode delivers Ctrl+C as the ETX control character rather
+        // than a `c` key with ctrlKey metadata.
+        if (rawKey === '\u0003' && this.isTurnInProgress()) {
+            await this.interruptTurn();
+            return true;
+        }
         const normalizedKey = ctrlKey
             ? (altKey ? `ctrl+alt+${rawKey}` : `ctrl+${rawKey}`)
             : /^f\d{1,2}$/.test(rawKey)
