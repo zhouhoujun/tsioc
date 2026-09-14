@@ -15,8 +15,8 @@
     "gate": "dom",
     "elapsedMs": 1224,
     "sseFrameCount": 2,
-    "sseConsumed": 1,
-    "sseLossRate": 0.5,
+    "sseConsumed": 2,
+    "sseLossRate": 0,
     "replayLatencyMs": null,
     "firstScreenVisibleRate": null,
     "measured": false
@@ -70,8 +70,8 @@
     "gate": "tui",
     "elapsedMs": 852,
     "sseFrameCount": 2,
-    "sseConsumed": 1,
-    "sseLossRate": 0.5,
+    "sseConsumed": 2,
+    "sseLossRate": 0,
     "replayLatencyMs": null,
     "firstScreenVisibleRate": null,
     "measured": false

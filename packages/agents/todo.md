@@ -3015,3 +3015,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题与修复**：v24 首次入库的 `timeline-naturalized` SSE loss 为 2/3，但场景在 fold 前会明确 drain 全部 live frames。审计发现 DOM/TUI 都在该 drain 之前缓存 `sseFrameCount/sseConsumed`，最终指标使用了中途的 3/1 快照，违背 `gate-metrics.ts` 的真实 wire metadata 契约。两端现统一在所有场景专属交互与断言完成后重新采集最终计数，不改变投影、渲染或响应式链路。
 - **基线收紧**：时间线双端基线由 `3 pushed / 1 consumed / loss 0.6667` 修正为 `3/3/loss 0`；定向 DOM/TUI 实测均为 3/3/0，gate regression 对两条 timeline elapsed/loss 指标逐项 PASS 并输出 `[OK]`，不再容忍假丢帧。
 - **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包（agent 876、agent-ui 1210、agent-gateway 293、agent-tools 478 等）、framework 三包（136/75/117）、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check 全部通过。计划保持无开放批次。
+
+## v26 2026-09-14 — 正常 SSE 链路零丢帧门禁收尾 ✅
+
+- **范围与契约**：继续审计发现 `mobile-320` 与 v25 相同，正常连接下 2 个 live frames 尚在途时渲染条件已满足，历史基线因而长期接受 2/1、loss 0.5。DOM/TUI 现对 `expect.sseDropped === false` 且存在 live frames 的所有场景，在结构断言和指标采样前统一等待 `sseConsumed >= sseFrameCount`；正常 SSE 链路由此明确要求零丢帧，不再把调度时差写成允许基线。
+- **断线语义保留**：`mobile-320` 双端基线收紧为 2/2/loss 0；`timeline-naturalized` 保持 3/3/loss 0。`disconnect-retry` 不走正常流 drain，仍实测并保留 4/3/loss 0.25 + replay latency，确保真正的断线/重放信号未被抹平。定向 DOM/TUI + regression 3/3 PASS，所有 loss/replay 指标逐项 PASS并输出 `[OK]`。
+- **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包（agent 876、agent-ui 1210、agent-gateway 293、agent-tools 478 等）、framework 三包（136/75/117）、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check 全部通过。计划保持无开放批次。

@@ -205,6 +205,12 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         if (scenario.expect.toolsListCallsMin > 0) {
             await waitUntil(() => rpcCount(gateway, 'tools.list') >= scenario.expect.toolsListCallsMin);
         }
+        // A healthy, non-disconnecting stream must consume every frame pushed
+        // by the scenario. Do not let an early render condition normalize
+        // in-flight frames into the loss baseline.
+        if (!scenario.expect.sseDropped && gateway.metadata.sseFrameCount > 0) {
+            await waitUntil(() => gateway.metadata.sseConsumed >= gateway.metadata.sseFrameCount);
+        }
 
         const renderer = ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent> | undefined;

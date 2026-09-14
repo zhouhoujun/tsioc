@@ -130,6 +130,12 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         if (scenario.expect.toolsListCallsMin > 0) {
             await waitUntil(() => rpcCount(gateway, 'tools.list') >= scenario.expect.toolsListCallsMin);
         }
+        // A healthy, non-disconnecting stream must consume every frame pushed
+        // by the scenario. Do not let an early render condition normalize
+        // in-flight frames into the loss baseline.
+        if (!scenario.expect.sseDropped && gateway.metadata.sseFrameCount > 0) {
+            await waitUntil(() => gateway.metadata.sseConsumed >= gateway.metadata.sseFrameCount);
+        }
 
         await waitUntil(() => {
             const settled = collect();
