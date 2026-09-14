@@ -2970,7 +2970,7 @@ Turn: Fix session restore                                      running  01:42
 - **锚点**：`packages/agents/agent-ui/harness/run-dom-gate.ts`、`run-tui-gate.ts`、`gate-metrics.ts`、`agents-gate.sh`。
 - **平台**：browser + TUI（gate 载体按设计：console 渲染器无 viewport 几何，TUI 走行对齐断言）。
 - **验收**：`bash scripts/agents-gate.sh`（默认）全绿 EXIT=0；`RUN_PTY=1` 全量（22+ 阶段，新增场景 PASS + `[OK] gate metrics within baseline tolerance` + pty-acceptance PASS）；基线回归人为退化触发 `[REGRESSION]` 验证一次。
-- **风险**：新增场景为 gate 断言强化——`new-scenario` 语义首跑自动入基线，无阈值误报路径（沿用 v20-B 机制）。
+- **风险**：新增场景为 gate 断言强化——`new-scenario` 语义首跑自动入基线，无阈值误报路径（沿用 v20-B 机制）。 **v21-G 达成 ✅。**（`SCENARIOS` 新增 `timeline-naturalized`，DOM/TUI 共用同一数据场景并分别断言 zh 头尾/step boundary、steps 摘要、CJK 长错误、turn fold 与 compact 摘要；双端各 **5 scenarios PASS**，回归比较器对新场景报告 `NEW (no baseline yet)`、既有 8 条 baseline 指标全部 PASS 并输出 `[OK] gate metrics within baseline tolerance`。2026-09-14 收尾复核发现 `509e1b5` 的 DBG 清理误删三段非日志功能代码：RemoteEventBridge SSE decode/apply 循环、FakeAgentGateway SSE enqueue/cancel、DOM gate dispose/metrics/fold→compact 断言；已精确恢复且未恢复 DBG。统一脚本场景标签同步由 4 更新为 5。）
 
 ---
 
@@ -2996,3 +2996,9 @@ Turn: Fix session restore                                      running  01:42
 - **测试结果**：无新测试（记录更正）；门禁状态绿色保持。
 - **基线更新**：无（门禁基线已由 509e1b5 刷新）。
 - **风险**：无。v21 声称的残余实为历史快照，磁盘已净。
+
+## v23 2026-09-14 — v21-G 独立收尾复核与全量验证 ✅
+
+- **检查完成**：v21-A–F 的源码/单测与 v21-G 双端场景均已落盘；无开放批次。无掩码扫描 `agent-ui/src`、`harness`、`test` 的 `[DBG`/`TRIGGER-DEBUG` 为 0。修复收尾检查发现的三处 DBG 清理误伤后，`agent-ui` TypeScript 编译恢复，SSE 远程事件 decode/apply、Fake gateway 帧投递与 DOM gate 生命周期/度量/交互断言完整。
+- **全量测试（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**。agents 10 包：agent 876、agent-channels 59、agent-cli 74、agent-gateway 293、agent-providers 13、agent-ssh 8、agent-tools 478、agent-ui 1209、agent-desktop 20、agent-vscode 7 passing；framework：components 136、components/console 75、components/html 117 passing；agent/agent-ui/agent-gateway/agent-tools `tsc --noEmit` 全部通过。
+- **端到端验收**：DOM/TUI 各 **5 scenarios PASS**（含 `timeline-naturalized`）；gate regression `[OK]`；真实 PTY 5 个场景全部 PASS；`git diff --check` 通过。v21 时间线展示计划至此闭合。

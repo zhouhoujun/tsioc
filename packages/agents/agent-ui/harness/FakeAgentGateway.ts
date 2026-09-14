@@ -236,11 +236,15 @@ export class FakeSseChannel {
                     if (channel.consumed < channel.frames.length) {
                         const frame = channel.frames[channel.consumed];
                         channel.consumed += 1;
-                        return { frame };
+                        served += 1;
+                        controller.enqueue(encoder.encode(encodeSseFrame(encodeSession, frame)));
+                        return;
+                    }
                     // Drained: park until a push arrives or the channel closes.
                     await new Promise<void>(resolve => channel.waiters.push(resolve));
                 }
             },
+            cancel() {
                 if (streamController) {
                     const index = channel.controllers.indexOf(streamController);
                     if (index >= 0) {

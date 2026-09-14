@@ -206,9 +206,20 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             }
             uiState.clearTurnEventScope(timelineExpect.activeScope);
             uiState.toggleTimelineCollapse(timelineExpect.collapseScope);
+            await waitUntil(() => collect().ariaLabels.some(label => /第 1 轮 · 2 个工具 · 370ms/.test(label)));
+            const foldedLabels = collect().ariaLabels;
+            check('timeline collapse fold zh', foldedLabels.some(label => /第 1 轮 · 2 个工具 · 370ms/.test(label)),
+                foldedLabels.filter(label => /第 \d+ 轮 · \d+ 个工具/.test(label)).join(' | ') || 'none');
+
+            uiState.setTimelineMode('compact');
             await waitUntil(() => collect().ariaLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)));
+            const compactLabels = collect().ariaLabels;
+            check('timeline compact summary zh', compactLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)),
+                compactLabels.filter(label => /已隐藏/.test(label)).join(' | ') || 'none');
         }
     } finally {
+        gateway.dispose();
+        const mounted = await mountedPromise.catch(() => null);
         if (mounted) {
             await mounted.dispose();
         }
@@ -217,6 +228,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         scenarioId: scenario.id,
         gate: 'dom',
         elapsedMs: Date.now() - startedAt,
+        sseFrameCount,
         sseConsumed,
         sseLossRate: sseFrameCount > 0 ? (sseFrameCount - sseConsumed) / sseFrameCount : 0,
         replayLatencyMs: postSettleStartedAt !== null && settledAt > 0 ? settledAt - postSettleStartedAt : null,

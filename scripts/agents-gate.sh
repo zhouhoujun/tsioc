@@ -6,8 +6,8 @@
 #   1. unit tests: 10 agent subpackages (each must EXIT=0)
 #   2. unit tests: components / components/console / components/html
 #   3. tsc --noEmit: agent / agent-ui / agent-gateway / agent-tools
-#   4. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 4 scenarios)
-#   5. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 4 scenarios)
+#   4. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios)
+#   5. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 5 scenarios)
 #   6. gate regression: gate metrics vs harness/gate-baseline.json ([REGRESSION]/[OK])
 #   7. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
 #      when python3/pty/agent-cli artifact unavailable — never fake a pass)
@@ -171,8 +171,8 @@ run_stage() {
         tsc-agent-ui)     run_tsc tsc-agent-ui 'tsc --noEmit @tsdi/agent-ui' packages/agents/agent-ui ;;
         tsc-agent-gateway) run_tsc tsc-agent-gateway 'tsc --noEmit @tsdi/agent-gateway' packages/agents/agent-gateway ;;
         tsc-agent-tools)  run_tsc tsc-agent-tools 'tsc --noEmit @tsdi/agent-tools' packages/agents/agent-tools ;;
-        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 4 scenarios)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;;
-        tui-gate)         run_harness tui-gate 'TUI gate (text stream, 4 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
+        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 5 scenarios)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;;
+        tui-gate)         run_harness tui-gate 'TUI gate (text stream, 5 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
         gate-regression)  run_gate_regression ;;
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;
         diff-check)       run_diff_check ;;
