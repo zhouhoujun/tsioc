@@ -1,4 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
+import { AnimatedTextLifecycleService } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -563,6 +564,50 @@ export class AgentConsoleInputPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-elapsed-timer',
+    template: `<span>{{elapsedLabel}}</span>`
+})
+export class AgentConsoleElapsedTimerComponent {
+    protected _startedAt = 0;
+    protected elapsedMs = 0;
+    protected listener: () => void;
+
+    constructor(@Optional() protected lifecycle?: AnimatedTextLifecycleService) {
+        this.listener = () => this.refresh();
+        this.lifecycle?.subscribe(this.listener);
+    }
+
+    @Attribute()
+    set startedAt(value: number | undefined) {
+        this._startedAt = Number(value) || 0;
+        this.refresh();
+    }
+
+    get startedAt(): number { return this._startedAt; }
+
+    get elapsedLabel(): string {
+        const totalSeconds = Math.max(0, Math.floor(this.elapsedMs / 1000));
+        if (totalSeconds < 60) return `${totalSeconds}s`;
+        return `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
+    }
+
+    protected refresh(): void {
+        if (!this._startedAt) {
+            this.elapsedMs = 0;
+            return;
+        }
+        const next = Math.max(0, Date.now() - this._startedAt);
+        if (Math.floor(next / 1000) !== Math.floor(this.elapsedMs / 1000)) {
+            this.elapsedMs = next;
+        }
+    }
+
+    onDestroy(): void {
+        this.lifecycle?.unsubscribe(this.listener);
+    }
+}
+
+@Component({
     selector: 'agent-console-working-panel',
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
@@ -574,7 +619,7 @@ export class AgentConsoleInputPanelComponent {
                 :active-style="accentStyle"
                 :trail-style="labelStyle"
                 :base-style="labelStyle">{{animatedLabel}}</span>
-            <span v-style="labelStyle"> {{workingDetail}}</span>
+            <span v-style="labelStyle"> (<agent-console-elapsed-timer :started-at="state.turnStartedAt"></agent-console-elapsed-timer> • {{interruptHint}}){{workingDetail}}</span>
         </label>
     </div>
     `
@@ -687,7 +732,7 @@ export class AgentConsoleWorkingPanelComponent {
         }
         const translate = (key: string, params?: Record<string, any>, fallback?: string) =>
             this.translator?.translate(key, params) || fallback || key;
-        const parts = [`(${this.elapsedLabel} • ${translate('agent.turn.interruptHint', undefined, 'esc to interrupt')})`];
+        const parts = [] as string[];
         if (this.state.runningTools.length) {
             const background = this.state.runningTools.filter(tool => this.isTerminalTool(tool)).length;
             if (background) {
@@ -723,6 +768,11 @@ export class AgentConsoleWorkingPanelComponent {
         }
         return ` ${parts.join(' · ')}`;
     }
+
+    get interruptHint(): string {
+        return this.translator?.translate('agent.turn.interruptHint') || 'esc to interrupt';
+    }
+
 
     protected get hasWorkingState(): boolean {
         return this.state.status === 'running' || this.state.status === 'reasoning';

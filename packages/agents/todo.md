@@ -3085,3 +3085,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题**：中文界面 Working 栏仍混用硬编码英文（`esc to interrupt`、`background terminal(s) running`、`to view/close`），与已有 Translator 和中文过程输出风格不一致。
 - **改进**：新增 `agent.turn.interruptHint`、`backgroundRunning`、`backgroundView`、`backgroundStop` 中英文翻译；Working 控制栏统一通过 Translator 渲染，英文保持 opencode 风格，中文显示“按 esc 中断 / N 个后台终端运行中 /ps 查看 /ps stop 关闭”。
 - **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；改动仅限共用 i18n/Working 渲染层，上一轮完整门禁已 **22 passed / 0 skipped / EXIT=0**。
+
+## v37 2026-09-14 — Working 耗时计时组件响应式更新 ✅
+
+- **问题**：Working 栏耗时仅在其他状态变化时重新计算，长时间运行时不会稳定按秒跳动。
+- **改进**：新增 `AgentConsoleElapsedTimerComponent`，订阅 components 公共动画生命周期 tick，将每秒变化写入自身响应式 `elapsedMs`；Working 模板仅绑定计时组件文本，不改变会话状态或业务流程，也不在组件内创建独立定时器。浏览器与 TUI 共用同一响应式更新链路。
+- **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过。
