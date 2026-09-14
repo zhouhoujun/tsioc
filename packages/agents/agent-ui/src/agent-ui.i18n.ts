@@ -30,7 +30,11 @@ export const agentUiEnglish: TranslationBundle = {
                 working: 'Working',
                 running: 'Running',
                 toolsRunning: 'Running {count} operations',
-                backgroundCommand: 'Running a background command'
+                backgroundCommand: 'Running a background command',
+                interruptHint: 'esc to interrupt',
+                backgroundRunning: '{count} background terminal(s) running',
+                backgroundView: '/ps to view',
+                backgroundStop: '/ps stop to close'
             },
             dashboard: {
                 approvals: 'approvals {count}',
@@ -70,7 +74,11 @@ export const agentUiChinese: TranslationBundle = {
                 working: '处理中',
                 running: '执行中',
                 toolsRunning: '正在执行 {count} 项操作',
-                backgroundCommand: '后台命令执行中'
+                backgroundCommand: '后台命令执行中',
+                interruptHint: '按 esc 中断',
+                backgroundRunning: '{count} 个后台终端运行中',
+                backgroundView: '/ps 查看',
+                backgroundStop: '/ps stop 关闭'
             },
             dashboard: {
                 approvals: '审批 {count}',

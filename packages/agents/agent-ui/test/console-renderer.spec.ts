@@ -1899,7 +1899,7 @@ export class AgentConsoleTuiRendererTest {
         await Promise.resolve();
 
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
-        expect(workingPanel.instance.workingDetail).toContain('1 background terminal running');
+        expect(workingPanel.instance.workingDetail).toContain('1 background terminal(s) running');
         expect(workingPanel.instance.workingDetail).toContain('/ps to view');
         expect(workingPanel.instance.workingDetail).toContain('/ps stop to close');
     }

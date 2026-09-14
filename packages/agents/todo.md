@@ -3079,3 +3079,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题**：状态栏提示 `/stop to close`，但命令注册表实际提供的是 `/ps stop <taskId>`；用户照提示输入会得到未知命令或缺少任务 ID 的诊断。
 - **改进**：提示统一改为 `/ps stop to close`，与 `/ps` 的真实 handler、参数契约和既有后台任务控制链一致；新增/更新 renderer 断言防止文案漂移。
 - **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；上一轮完整 `RUN_PTY=1 bash scripts/agents-gate.sh` 已 **22 passed / 0 skipped / EXIT=0**，本次仅补充命令文案一致性修复。
+
+## v36 2026-09-14 — Working 控制栏中英文文案本地化 ✅
+
+- **问题**：中文界面 Working 栏仍混用硬编码英文（`esc to interrupt`、`background terminal(s) running`、`to view/close`），与已有 Translator 和中文过程输出风格不一致。
+- **改进**：新增 `agent.turn.interruptHint`、`backgroundRunning`、`backgroundView`、`backgroundStop` 中英文翻译；Working 控制栏统一通过 Translator 渲染，英文保持 opencode 风格，中文显示“按 esc 中断 / N 个后台终端运行中 /ps 查看 /ps stop 关闭”。
+- **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；改动仅限共用 i18n/Working 渲染层，上一轮完整门禁已 **22 passed / 0 skipped / EXIT=0**。

@@ -685,13 +685,15 @@ export class AgentConsoleWorkingPanelComponent {
         if (!this.hasWorkingState) {
             return '';
         }
-        const parts = [`(${this.elapsedLabel} • esc to interrupt)`];
+        const translate = (key: string, params?: Record<string, any>, fallback?: string) =>
+            this.translator?.translate(key, params) || fallback || key;
+        const parts = [`(${this.elapsedLabel} • ${translate('agent.turn.interruptHint', undefined, 'esc to interrupt')})`];
         if (this.state.runningTools.length) {
             const background = this.state.runningTools.filter(tool => this.isTerminalTool(tool)).length;
             if (background) {
-                parts.push(`${background} background terminal${background === 1 ? '' : 's'} running`);
-                parts.push('/ps to view');
-                parts.push('/ps stop to close');
+                parts.push(translate('agent.turn.backgroundRunning', { count: background }, `${background} background terminal${background === 1 ? '' : 's'} running`));
+                parts.push(translate('agent.turn.backgroundView', undefined, '/ps to view'));
+                parts.push(translate('agent.turn.backgroundStop', undefined, '/ps stop to close'));
             } else {
                 parts.push(this.runningLabel);
             }
