@@ -508,6 +508,7 @@ export class VmPanelsTest {
         state.setMessages([
             { id: 'u1', role: 'user', content: '查天气', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '', createdAt: 2, metadata: { toolCalls: [{ id: 'tc1', name: 'weather' }] } } as any,
+            { id: 'a-mid', role: 'assistant', content: '你当前所在位置约为成都。今天整体是阴天。', createdAt: 2, metadata: { toolCalls: [{ id: 'tc2', name: 'weather' }] } } as any,
             { id: 'a-stream', role: 'assistant', content: '', createdAt: 2, metadata: { streaming: true } } as any,
             { id: 't1', role: 'tool', content: '{"location":"成都"}', createdAt: 3 } as any,
             { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
@@ -519,6 +520,9 @@ export class VmPanelsTest {
         state.setMessagesFocused(true);
         state.moveMessageSelection(-1);
         expect(state.selectedMessage?.id).toEqual('u1');
+
+        state.setTimelineMode('steps');
+        expect(state.displayMessages.map(message => message.id)).toEqual(['u1', 'a-mid', 'a2']);
     }
 
     @Test('session state hides reasoning messages when showThinking is disabled')

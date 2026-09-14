@@ -3053,3 +3053,11 @@ Turn: Fix session restore                                      running  01:42
 - **自然回答通用契约（非天气硬编码）**：`IdentitySection` 要求匹配用户语言和请求的详细度；“详细”回答应覆盖关键事实、影响、限制与实用建议；工具结果必须综合为一段连贯自然的用户回答，禁止在工具调用前后重复同一答案或机械复述原始输出；标题、列表、表格仅在提升可读性时采用，避免碎片化状态式 bullet。对应 system prompt 契约已加入 agent 单测。
 - **测试迁移与新增覆盖**：旧测试中直接要求默认显示 `Analyzing request` 的断言改为验证高价值工具事件；turn 事件去重/跨 turn key 隔离改查完整 session messages，确保降噪不等于丢数据；新增“默认隐藏 routine turn、保留工具与取消、steps 模式恢复全量”的状态测试。agent **876 passing**，agent-ui **1215 passing**，两包 `tsc --noEmit` 均通过。
 - **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。
+
+## v32 2026-09-14 — 过程信息结构化、回答去重与 Working 控制栏收尾 ✅
+
+- **过程展示原则**：过程信息不是全部删除，而是按 opencode 风格分层——默认流保留 Thought/reasoning、Questions/ask_user、工具调用摘要、错误、取消和审批；低价值的 turn 生命周期行隐藏；显式 `/timeline compact|steps|verbose` 仍提供完整过程审阅。中间 assistant tool-call 消息即使带有预备正文，默认流也隐藏，避免“工具前半段回答 + 工具后完整回答”重复；原始消息仍保存在会话中供持久化、重放和 timeline 查看。
+- **Working 控制栏**：运行中状态收敛为单行 `• Working (elapsed • esc to interrupt)`；检测到后台 terminal 时追加 `N background terminal(s) running · /ps to view · /stop to close`，不再把过程碎片散落在回答正文。时长沿用 `Date.now()` 派生 getter，不增加定时刷新，符合响应式渲染约束。
+- **ESC 实际控制**：`esc to interrupt` 对应既有 `interruptTurn()` 取消路径；即使用户通过 keymap unset 取消默认绑定，running turn 下的 ESC fallback 仍调用 `sessionService.cancelTurn`，已有行为测试覆盖。Working 文案与行为保持同一契约。
+- **自然回答契约**：Identity prompt 要求匹配用户语言和详细度；详细问题需覆盖关键事实、影响、限制与实用建议；工具结果综合为一段连贯自然答案，避免机械 bullet、原始工具输出复述和调用前后重复回答；标题/列表/表格按内容需要选择。
+- **验证**：新增中间 tool-call 正文去重与 timeline 恢复测试；agent-ui **1215 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**（包含 agents 10 包、framework 三包、4 包 tsc、DOM/TUI、回归、真实 PTY、diff-check）。

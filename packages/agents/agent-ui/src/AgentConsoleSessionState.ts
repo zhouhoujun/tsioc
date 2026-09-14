@@ -2263,7 +2263,7 @@ export class AgentConsoleSessionState {
         if (String(message.role || '').toLowerCase() === 'assistant'
             && Array.isArray(message.metadata?.toolCalls)
             && message.metadata.toolCalls.length
-            && !String(message.content || '').trim()) {
+            && (!this.timelineMode || !String(message.content || '').trim())) {
             return false;
         }
         if (String(message.role || '').toLowerCase() === 'assistant'

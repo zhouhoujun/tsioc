@@ -684,11 +684,16 @@ export class AgentConsoleWorkingPanelComponent {
         if (!this.hasWorkingState) {
             return '';
         }
-        const parts = [this.elapsedLabel];
+        const parts = [`(${this.elapsedLabel} • esc to interrupt)`];
         if (this.state.runningTools.length) {
-            const progress = this.toolRunProgressBar;
-            parts.push(progress);
-            parts.push(this.runningLabel);
+            const background = this.state.runningTools.filter(tool => this.isTerminalTool(tool)).length;
+            if (background) {
+                parts.push(`${background} background terminal${background === 1 ? '' : 's'} running`);
+                parts.push('/ps to view');
+                parts.push('/stop to close');
+            } else {
+                parts.push(this.runningLabel);
+            }
         } else {
             const activePlan = this.state.planTodos.find(todo => todo.status === 'in_progress')
                 || this.state.planTodos.find(todo => todo.status === 'pending');

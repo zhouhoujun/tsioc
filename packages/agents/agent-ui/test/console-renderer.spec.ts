@@ -790,7 +790,8 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const renderer = this.ctx.get(ConsoleRenderer);
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
-        expect(workingLines.some(line => line.includes('• Working'))).toBe(true);
+            expect(workingLines.some(line => line.includes('• Working'))).toBe(true);
+            expect(workingLines.some(line => line.includes('esc to interrupt'))).toBe(true);
         expect(workingLines.some(line => line.includes('Preparing the response'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
         expect(workingLines.some(line => line.includes('request: Design an exam system'))).toBe(false);
