@@ -111,7 +111,24 @@ export class QuestionStore {
         return { result: existing, duplicate: false, expired: false };
     }
 
+    /**
+     * Mark any pending question past its expiresAt as expired in-place. Called
+     * lazily on every read/list path so stale pending questions are never
+     * surfaced to clients (same outcome as answer() rejecting late answers,
+     * but without requiring an answer attempt).
+     */
+    private expireStalePending(): void {
+        const now = Date.now();
+        for (const item of this.questions.values()) {
+            if (item.status === 'pending' && now > item.expiresAt) {
+                item.status = 'expired';
+                item.updatedAt = now;
+            }
+        }
+    }
+
     list(sessionId: string): GatewayQuestionState[] {
+        this.expireStalePending();
         return Array.from(this.questions.values())
             .filter(item => item.sessionId === sessionId)
             .sort((a, b) => a.createdAt - b.createdAt);

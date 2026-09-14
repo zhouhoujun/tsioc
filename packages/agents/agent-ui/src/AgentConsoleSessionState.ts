@@ -510,6 +510,7 @@ export interface AgentConsolePendingQuestion {
     severity: 'low' | 'medium' | 'high';
     createdAt?: number;
     updatedAt: number;
+    expiresAt?: number;
     status?: 'pending' | 'submitting' | 'answered' | 'dismissed' | 'expired';
     answer?: string;
     error?: string;
@@ -3276,6 +3277,13 @@ export class AgentConsoleSessionState {
         if (!question) return false;
         // Standalone/legacy hosts retain the previous compose-only behavior.
         if (!this.questionAction) {
+            this.setInputFocused(true);
+            return true;
+        }
+        if (question.expiresAt && Date.now() > question.expiresAt) {
+            question.status = 'expired';
+            question.error = undefined;
+            this.finishPendingQuestion();
             this.setInputFocused(true);
             return true;
         }

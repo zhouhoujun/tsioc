@@ -1,6 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { QuestionStore } from '../src/app-rpc/QuestionStore';
+import { SessionHandler } from '../src/api/SessionHandler';
+import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
+import { setRequestAuth } from '../src/auth/AuthMiddleware';
 
 @Suite('gateway QuestionStore (P234)')
 export class QuestionStoreTest {
@@ -82,5 +85,60 @@ export class QuestionStoreTest {
         expect(removed).toEqual(2);
         expect(store.list('s1').length).toEqual(0);
         expect(store.list('s2').length).toEqual(1);
+    }
+
+    @Test('list lazily expires stale pending questions before surfacing them')
+    async listLazilyExpiresStalePending() {
+        const store = new QuestionStore();
+        store.register({ questionId: 'q1', sessionId: 's1', question: 'Old?', options: ['a'], severity: 'medium', createdAt: Date.now() - 60_000, timeoutMs: 1_000 });
+        store.register({ questionId: 'q2', sessionId: 's1', question: 'Fresh?', options: ['b'], severity: 'medium' });
+
+        const listed = store.list('s1');
+        expect(listed.find(item => item.questionId === 'q1')?.status).toEqual('expired');
+        expect(listed.find(item => item.questionId === 'q2')?.status).toEqual('pending');
+        expect(store.listPending('s1').map(item => item.questionId)).toEqual(['q2']);
+        store.register({ questionId: 'q3', sessionId: 's2', question: 'Other', options: [], severity: 'medium', createdAt: Date.now() - 60_000, timeoutMs: 1_000 });
+        expect(store.list('s2')[0].status).toEqual('expired');
+    }
+
+    @Test('SessionHandler.onTurnStarted clears the session pending-question store')
+    async onTurnStartedClearsQuestions() {
+        const store = new QuestionStore();
+        store.register({ questionId: 'q1', sessionId: 's1', question: 'One', options: [], severity: 'medium' });
+        const sessions = { has: async () => false, get: async () => ({ messages: [] }), setOwner: async () => {}, delete: async () => {} } as any;
+        const owners = new SessionOwnerStore(sessions);
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, sessions, owners, undefined, store);
+
+        handler.onTurnStarted({ sessionId: 's1' } as any);
+        expect(store.list('s1').length).toEqual(0);
+    }
+
+    @Test('SessionHandler deleteSession route clears the session pending-question store')
+    async deleteSessionRouteClearsQuestions() {
+        const store = new QuestionStore();
+        const records = new Map<string, any>();
+        records.set('s1', { id: 's1', messages: [] });
+        const sessions = {
+            async has(id: string) { return records.has(id); },
+            async get(id: string) { return records.get(id); },
+            async setOwner(id: string, owner?: string) { const value = records.get(id); if (value) { value.ownerPrincipalId = owner; } },
+            async delete(id: string) { records.delete(id); }
+        } as any;
+        store.register({ questionId: 'q1', sessionId: 's1', question: 'One', options: [], severity: 'medium' });
+        const owners = new SessionOwnerStore(sessions);
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, sessions, owners, undefined, store);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id' && route.method === 'DELETE')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, { id: 's1' });
+        expect(store.list('s1').length).toEqual(0);
+        expect(records.has('s1')).toEqual(false);
     }
 }

@@ -2148,6 +2148,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
+        <label v-style="metaStyle" v-show="pendingQuestionExpiryHint">{{pendingQuestionExpiryHint}}</label>
         <div role="listbox" aria-label="Question options">
             <div id="{{item.id}}" v-style="listStyle" role="option" aria-selected="{{item.selected}}" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</div>
         </div>
@@ -2194,6 +2195,21 @@ export class AgentConsolePendingQuestionPanelComponent {
 
     get pendingQuestionContext(): string {
         return this.state.pendingQuestion?.context || '';
+    }
+
+    get pendingQuestionExpiryHint(): string {
+        const expiresAt = this.state.pendingQuestion?.expiresAt;
+        if (!expiresAt) {
+            return '';
+        }
+        if (Date.now() > expiresAt) {
+            return 'Expired';
+        }
+        const remainingMs = expiresAt - Date.now();
+        const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+        return minutes >= 60
+            ? `Expires in ${Math.floor(minutes / 60)}h${minutes % 60 ? ` ${minutes % 60}m` : ''}`
+            : `Expires in ${minutes}m`;
     }
 
     get pendingQuestionOptionItems(): Array<{ id: string; label: string; value: string; selected: string }> {

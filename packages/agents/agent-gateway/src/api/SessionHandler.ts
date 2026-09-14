@@ -6,6 +6,7 @@ import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo, SessionProjectGroup, SessionThreadGroup, AgentSessionSectionInfo } from '../contracts/SessionInfo';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
+import { QuestionStore } from '../app-rpc/QuestionStore';
 
 /**
  * Session management API — GET /api/sessions, GET /api/sessions/projects, GET /api/sessions/:id/messages, DELETE /api/sessions/:id.
@@ -20,7 +21,8 @@ export class SessionHandler {
         private runtime: AgentRuntime,
         private sessions: SessionStore,
         private owners: SessionOwnerStore,
-        @Optional() private memory?: MemoryStore | null
+        @Optional() private memory?: MemoryStore | null,
+        @Optional() private questionStore?: QuestionStore | null
     ) {
     }
 
@@ -33,6 +35,7 @@ export class SessionHandler {
     onTurnStarted(event: AgentTurnStartedEvent): void {
         this.track(event.sessionId);
         this.activeSessionIds.add(event.sessionId);
+        this.questionStore?.clearSession(event.sessionId);
     }
 
     @EventHandler(AgentTurnCompletedEvent)
@@ -158,6 +161,7 @@ export class SessionHandler {
             if (this.memory) {
                 await this.memory.deleteBySession(sessionId);
             }
+            this.questionStore?.clearSession(sessionId);
             this.sessionIds.delete(sessionId);
             this.activeSessionIds.delete(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })

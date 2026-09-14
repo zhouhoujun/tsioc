@@ -432,6 +432,7 @@ export class AgentConsoleEventBridge {
             severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
             createdAt: Number(output?.createdAt) || Date.now(),
             updatedAt: Number(output?.updatedAt) || Date.now(),
+            expiresAt: Number(output?.expiresAt) || undefined,
             status: 'pending'
         };
     }

@@ -317,6 +317,7 @@ function normalizePendingQuestion(output: any): AgentConsolePendingQuestion | nu
         severity: ['low', 'medium', 'high'].includes(output?.severity) ? output.severity : 'medium',
         createdAt: Number(output?.createdAt) || Date.now(),
         updatedAt: Number(output?.updatedAt) || Date.now(),
+        expiresAt: Number(output?.expiresAt) || undefined,
         status: 'pending'
     };
 }
@@ -633,7 +634,11 @@ export class AgentConsoleRemoteEventBridge {
                 return;
             }
             const items = Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
-            const pending = items.filter((item: any) => item?.status === 'pending' || item?.status == null);
+            const now = Date.now();
+            const pending = items.filter((item: any) =>
+                (item?.status === 'pending' || item?.status == null) &&
+                !(Number(item?.expiresAt) && now > Number(item?.expiresAt))
+            );
             if (!pending.length) {
                 return;
             }
