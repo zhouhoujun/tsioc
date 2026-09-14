@@ -2,7 +2,7 @@ import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
-import { EN_TIMELINE_LABELS, TIMELINE_HEADER_FOOTER_MAX_WIDTH } from '../src/AgentConsoleTimelineWindow';
+import { EN_TIMELINE_LABELS, TIMELINE_HEADER_FOOTER_MAX_WIDTH, truncateTimelineRowText } from '../src/AgentConsoleTimelineWindow';
 import { getDisplayWidth } from '../src/AgentConsoleTextWidth';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -183,6 +183,17 @@ export class SessionHeaderFooterTest {
         ]);
         expect(getDisplayWidth(state.sessionHeader!.content)).toBeLessThanOrEqual(TIMELINE_HEADER_FOOTER_MAX_WIDTH);
         expect(getDisplayWidth(state.sessionFooter!.content)).toBeLessThanOrEqual(TIMELINE_HEADER_FOOTER_MAX_WIDTH);
+    }
+
+    @Test('row truncation includes the ellipsis in its display-width budget')
+    testTruncationBudget() {
+        const ascii = truncateTimelineRowText('123456', 5);
+        const cjk = truncateTimelineRowText('中文中文', 5);
+        expect(ascii).toEqual('1234…');
+        expect(cjk).toEqual('中文…');
+        expect(getDisplayWidth(ascii)).toEqual(5);
+        expect(getDisplayWidth(cjk)).toEqual(5);
+        expect(truncateTimelineRowText('x', 0)).toEqual('');
     }
 
     @Test('header and footer carry distinct timeline metadata kinds')

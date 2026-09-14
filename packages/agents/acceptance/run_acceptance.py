@@ -305,12 +305,23 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
     time.sleep(0.5)
     drain(fd, screen)
 
+    usage_mark = len(bytes(screen.raw))
     send(fd, '/usage\r'.encode())
-    # /usage pushes to the command-outputs ring (post-P262); give agent time to
-    # process the command before opening the panel.
-    time.sleep(0.5)
+    # Wait for the composer-ready frame emitted after /usage is consumed. A
+    # fixed delay races with command dispatch and can concatenate the next verb
+    # into `/usage/outputs` on a loaded host.
+    usage_consumed = wait_for(
+        fd, screen, [r'>\s+Ask code or files'], timeout=20,
+        on_sight=True, tail_from=usage_mark)
+    if not usage_consumed:
+        print('[FAIL] scenario 5 (P262): composer did not reset after /usage')
+        return False
+
+    outputs_mark = len(bytes(screen.raw))
     send(fd, '/outputs\r'.encode())  # opens the outputs panel (no Ctrl+O keymap binding)
-    opened = wait_for(fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')], timeout=20)
+    opened = wait_for(
+        fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')],
+        timeout=20, on_sight=True, tail_from=outputs_mark)
     if not opened:
         # Close the panel on failure so its focus does not leak into the next
         # scenario (an open command-outputs panel swallows composer keystrokes).

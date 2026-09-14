@@ -3002,3 +3002,10 @@ Turn: Fix session restore                                      running  01:42
 - **检查完成**：v21-A–F 的源码/单测与 v21-G 双端场景均已落盘；无开放批次。无掩码扫描 `agent-ui/src`、`harness`、`test` 的 `[DBG`/`TRIGGER-DEBUG` 为 0。修复收尾检查发现的三处 DBG 清理误伤后，`agent-ui` TypeScript 编译恢复，SSE 远程事件 decode/apply、Fake gateway 帧投递与 DOM gate 生命周期/度量/交互断言完整。
 - **全量测试（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**。agents 10 包：agent 876、agent-channels 59、agent-cli 74、agent-gateway 293、agent-providers 13、agent-ssh 8、agent-tools 478、agent-ui 1209、agent-desktop 20、agent-vscode 7 passing；framework：components 136、components/console 75、components/html 117 passing；agent/agent-ui/agent-gateway/agent-tools `tsc --noEmit` 全部通过。
 - **端到端验收**：DOM/TUI 各 **5 scenarios PASS**（含 `timeline-naturalized`）；gate regression `[OK]`；真实 PTY 5 个场景全部 PASS；`git diff --check` 通过。v21 时间线展示计划至此闭合。
+
+## v24 2026-09-14 — 时间线基线入库与验收稳定性收尾 ✅
+
+- **回归基线闭环**：将 v21-G 的 `timeline-naturalized` 实测指标正式加入 `gate-baseline.json`（DOM 805ms、TUI 552ms，SSE 3 帧消费 1 帧、loss 2/3）；旧 8 条场景指标保持不变。最终 gate regression 不再报告 `NEW`，而是对 `dom/timeline-naturalized` 与 `tui/timeline-naturalized` 的 elapsed/loss 全部执行比较并 PASS，末端输出 `[OK] gate metrics within baseline tolerance`。
+- **PTY 稳定性修复**：全量复验捕获 scenario 5 偶发将相邻命令拼为 `/usage/outputs`。`run_acceptance.py` 删除命令间固定 `sleep(0.5)`，改为从 `/usage` 发送后的新增终端字节中等待 composer-ready 帧，再发送 `/outputs`；面板断言同样限定到该次发送后的新输出，避免历史帧误命中。定向 PTY 与最终全量轮次均 PASS。
+- **严格宽度预算**：全量复验捕获 P291 CJK 会话头偶发 101 列。根因是 `truncateTimelineRowText` 先切到 100 列再追加 1 列省略号；现将省略号显示宽度计入预算，并处理非正预算。新增 ASCII/CJK 精确边界与零预算测试，agent-ui 基线由 1209 增至 **1210 passing**。
+- **最终全量测试（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**。agents 10 包：agent 876、agent-channels 59、agent-cli 74、agent-gateway 293、agent-providers 13、agent-ssh 8、agent-tools 478、agent-ui 1210、agent-desktop 20、agent-vscode 7 passing；framework 三包：136/75/117 passing；4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景、`git diff --check` 全部通过。计划保持无开放批次。

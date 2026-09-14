@@ -222,7 +222,12 @@ export function truncateTimelineRowText(
     if (getDisplayWidth(text) <= maxWidth) {
         return text;
     }
-    return `${sliceByDisplayWidth(text, maxWidth).replace(/\s+$/, '')}…`;
+    if (maxWidth <= 0) {
+        return '';
+    }
+    const ellipsis = '…';
+    const contentWidth = Math.max(0, maxWidth - getDisplayWidth(ellipsis));
+    return `${sliceByDisplayWidth(text, contentWidth).replace(/\s+$/, '')}${ellipsis}`;
 }
 
 function withTimelineBounds(

@@ -44,6 +44,17 @@
     "measured": false
   },
   {
+    "scenarioId": "timeline-naturalized",
+    "gate": "dom",
+    "elapsedMs": 805,
+    "sseFrameCount": 3,
+    "sseConsumed": 1,
+    "sseLossRate": 0.6666666666666666,
+    "replayLatencyMs": null,
+    "firstScreenVisibleRate": null,
+    "measured": false
+  },
+  {
     "scenarioId": "desktop-basic",
     "gate": "tui",
     "elapsedMs": 2999,
@@ -84,6 +95,17 @@
     "sseConsumed": 3,
     "sseLossRate": 0.25,
     "replayLatencyMs": 135,
+    "firstScreenVisibleRate": null,
+    "measured": false
+  },
+  {
+    "scenarioId": "timeline-naturalized",
+    "gate": "tui",
+    "elapsedMs": 552,
+    "sseFrameCount": 3,
+    "sseConsumed": 1,
+    "sseLossRate": 0.6666666666666666,
+    "replayLatencyMs": null,
     "firstScreenVisibleRate": null,
     "measured": false
   }
