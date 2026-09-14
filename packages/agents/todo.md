@@ -3039,3 +3039,9 @@ Turn: Fix session restore                                      running  01:42
 - **回归读取边界闭环**：v27 的 `consumed <= pushed` 断言位于 DOM/TUI 采集端，但回归模块读取外部或持久化 JSON 时仍可能收到 `consumed > pushed`，并因 loss 被钳为 0 而误判健康。`gate-metrics.ts` 现统一要求 pushed/consumed 均为有限非负整数且 `consumed <= pushed`；当前指标或基线任一侧非法都直接判为 regression，并输出 `INVALID current|baseline SSE counters (pushed=..., consumed=...)`，避免不可能的原始计数进入比较。
 - **新增验证**：GateMetricsBench 新增 current/baseline 双向非法计数反例及 CI 文案断言；agent-ui 全套 **1213 passing / EXIT=0**，`tsc --noEmit` 通过。
 - **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。
+
+## v30 2026-09-14 — Gate 指标行运行时校验与基线写入保护收尾 ✅
+
+- **指标行完整性**：回归比较不再把外部 JSON 中缺失、非有限或越界的必填值静默降级为 `n/a`。现校验非空 `scenarioId`、`dom|tui` gate、非负有限 `elapsedMs`、可空且非负有限 `replayLatencyMs`、可空且位于 `[0,1]` 的 `firstScreenVisibleRate`、布尔 `measured`，以及正整数 viewport 尺寸；current/baseline 任一侧非法均直接 regression，并在 CI 输出具体字段原因。
+- **基线写入保护**：`baselineFromMetrics` 在快照前执行 SSE 计数与整行校验，`--write-baseline` 不能再将非法采集结果固化为新基线。GateMetricsBench 新增缺失 elapsed、越界首屏率、current/baseline 双向诊断与非法基线拒写断言；agent-ui 全套 **1214 passing / EXIT=0**，`tsc --noEmit` 通过。
+- **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。

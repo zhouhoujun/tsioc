@@ -72,11 +72,34 @@ export class GateMetricsBenchTest {
         expect(invalidCurrent.regressed).toBe(true);
         expect(invalidCurrent.scenarios[0].reason).toBe('invalid-current-sse');
         expect(renderGateRegression(invalidCurrent)).toContain('INVALID current SSE counters (pushed=10, consumed=12)');
+        expect(() => baselineFromMetrics([duplicate])).toThrow();
 
         const invalidBaseline = runGateRegression([healthy], [duplicate]);
         expect(invalidBaseline.regressed).toBe(true);
         expect(invalidBaseline.scenarios[0].reason).toBe('invalid-baseline-sse');
         expect(renderGateRegression(invalidBaseline)).toContain('INVALID baseline SSE counters (pushed=10, consumed=12)');
+    }
+
+    @Test('malformed required metric values cannot silently become non-comparable')
+    async invalidMetricRowsRegress() {
+        const healthy = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const missingElapsed = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        delete (missingElapsed as Partial<GateScenarioMetrics>).elapsedMs;
+        const invalidCurrent = runGateRegression([missingElapsed], [healthy]);
+        expect(invalidCurrent.regressed).toBe(true);
+        expect(invalidCurrent.scenarios[0].reason).toBe('invalid-current-metrics');
+        expect(renderGateRegression(invalidCurrent)).toContain(
+            'INVALID current metrics: elapsedMs must be a non-negative finite number');
+        expect(() => baselineFromMetrics([missingElapsed])).toThrow();
+
+        const invalidBaselineRow = makeMetrics({
+            scenarioId: 'desktop-basic', gate: 'dom', firstScreenVisibleRate: 2
+        });
+        const invalidBaseline = runGateRegression([healthy], [invalidBaselineRow]);
+        expect(invalidBaseline.regressed).toBe(true);
+        expect(invalidBaseline.scenarios[0].reason).toBe('invalid-baseline-metrics');
+        expect(renderGateRegression(invalidBaseline)).toContain(
+            'INVALID baseline metrics: firstScreenVisibleRate must be null or within 0..1');
     }
 
     @Test('identical-to-baseline run reports no regression')

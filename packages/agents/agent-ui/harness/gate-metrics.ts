@@ -115,7 +115,10 @@ export interface GateScenarioRegression {
     regressions: Partial<Record<GateMetricsKey, boolean>>;
     regressed: boolean;
     /** Structural result that is not represented by a metric delta. */
-    reason?: 'missing-current' | 'new-scenario' | 'invalid-current-sse' | 'invalid-baseline-sse';
+    reason?: 'missing-current' | 'new-scenario' | 'invalid-current-sse' | 'invalid-baseline-sse' |
+        'invalid-current-metrics' | 'invalid-baseline-metrics';
+    /** Human-readable validation failure for malformed external metric rows. */
+    validationIssue?: string;
 }
 
 export interface GateRegressionResult {
@@ -138,6 +141,36 @@ function hasValidSseCounters(metrics: GateScenarioMetrics): boolean {
     const consumed = metrics.sseConsumed;
     return Number.isInteger(pushed) && pushed >= 0 &&
         Number.isInteger(consumed) && consumed >= 0 && consumed <= pushed;
+}
+
+function metricValidationIssue(metrics: GateScenarioMetrics): string | undefined {
+    if (typeof metrics.scenarioId !== 'string' || metrics.scenarioId.trim().length === 0) {
+        return 'scenarioId must be a non-empty string';
+    }
+    if (metrics.gate !== 'dom' && metrics.gate !== 'tui') {
+        return 'gate must be dom or tui';
+    }
+    if (!Number.isFinite(metrics.elapsedMs) || metrics.elapsedMs < 0) {
+        return 'elapsedMs must be a non-negative finite number';
+    }
+    if (metrics.replayLatencyMs !== null &&
+        (!Number.isFinite(metrics.replayLatencyMs) || metrics.replayLatencyMs < 0)) {
+        return 'replayLatencyMs must be null or a non-negative finite number';
+    }
+    if (metrics.firstScreenVisibleRate !== null &&
+        (!Number.isFinite(metrics.firstScreenVisibleRate) ||
+            metrics.firstScreenVisibleRate < 0 || metrics.firstScreenVisibleRate > 1)) {
+        return 'firstScreenVisibleRate must be null or within 0..1';
+    }
+    if (typeof metrics.measured !== 'boolean') {
+        return 'measured must be boolean';
+    }
+    if (metrics.viewport &&
+        (!Number.isInteger(metrics.viewport.width) || metrics.viewport.width <= 0 ||
+            !Number.isInteger(metrics.viewport.height) || metrics.viewport.height <= 0)) {
+        return 'viewport width and height must be positive integers';
+    }
+    return undefined;
 }
 
 export function scenarioKey(metrics: GateScenarioMetrics): string {
@@ -179,6 +212,19 @@ function compareScenario(
             reason: 'invalid-current-sse'
         };
     }
+    const currentIssue = metricValidationIssue(metrics);
+    if (currentIssue) {
+        return {
+            scenarioKey: key,
+            metrics,
+            baseline: baseline || null,
+            deltas: {},
+            regressions: {},
+            regressed: true,
+            reason: 'invalid-current-metrics',
+            validationIssue: currentIssue
+        };
+    }
     if (!baseline) {
         return {
             scenarioKey: key,
@@ -199,6 +245,19 @@ function compareScenario(
             regressions: {},
             regressed: true,
             reason: 'invalid-baseline-sse'
+        };
+    }
+    const baselineIssue = metricValidationIssue(baseline);
+    if (baselineIssue) {
+        return {
+            scenarioKey: key,
+            metrics,
+            baseline,
+            deltas: {},
+            regressions: {},
+            regressed: true,
+            reason: 'invalid-baseline-metrics',
+            validationIssue: baselineIssue
         };
     }
 
@@ -277,7 +336,17 @@ export function runGateRegression(
 
 /** Snapshot taken for storage: no threshold applied, the raw metric rows. */
 export function baselineFromMetrics(metrics: GateScenarioMetrics[]): GateScenarioMetrics[] {
-    return metrics.map(normalizeGateMetrics);
+    return metrics.map(metric => {
+        const normalized = normalizeGateMetrics(metric);
+        if (!hasValidSseCounters(normalized)) {
+            throw new Error(`[gate-metrics] invalid SSE counters for ${scenarioKey(normalized)}`);
+        }
+        const issue = metricValidationIssue(normalized);
+        if (issue) {
+            throw new Error(`[gate-metrics] invalid metrics for ${scenarioKey(normalized)}: ${issue}`);
+        }
+        return normalized;
+    });
 }
 
 /** Merge multiple metric sets (e.g. dom + tui JSON files) keyed by scenario. */
@@ -350,6 +419,11 @@ export function renderGateRegression(result: GateRegressionResult): string {
             const source = scenario.reason === 'invalid-current-sse' ? 'current' : 'baseline';
             lines.push(`  [METRICS] ${scenario.scenarioKey} INVALID ${source} SSE counters ` +
                 `(pushed=${invalid.sseFrameCount}, consumed=${invalid.sseConsumed})`);
+            continue;
+        }
+        if (scenario.reason === 'invalid-current-metrics' || scenario.reason === 'invalid-baseline-metrics') {
+            const source = scenario.reason === 'invalid-current-metrics' ? 'current' : 'baseline';
+            lines.push(`  [METRICS] ${scenario.scenarioKey} INVALID ${source} metrics: ${scenario.validationIssue}`);
             continue;
         }
         if (scenario.reason === 'new-scenario') {
