@@ -3096,3 +3096,5 @@ Turn: Fix session restore                                      running  01:42
 
 - **问题**：raw mode 下 Ctrl+C 以 ETX 控制字符到达，且 Esc 可能先被焦点面板吞掉，导致运行中的 turn 无法取消。
 - **改进**：在全局终端输入分发最前端识别 ETX；运行中 Esc 优先调用 `interruptTurn()`，不再受当前输入焦点或选择菜单拦截。
+- **实现链**（三提交 `8c1653831`/`a580adb2f`/`d7ac20947`）：`AgentConsoleComponent.handleTerminalInput`（:5754 前）与 `handleGlobalKeyInput`（:5659 前）双入口在 keymap/focus 路由前识别 `raw === '\u0003'`（ETX）→ 运行中直接 `interruptTurn()` 返回 true；`handleGlobalKeyInput` 另在 Esc 被面板吞掉之前（focus 菜单分支之先）优先 `interruptTurn()`（:5693），空闲态 Esc 行为不变；`agent-ui.module.ts` import 格式整理；新增 `vm-vim-keymap.spec.ts` `rawCtrlCInterruptsRunningTurn`（insert mode + `\u0003` → cancelTurn 命中 1 次）。
+- **验证**：agent-ui **1217 passing / 0 failed / EXIT=0**（基线 1216 +1 新增 raw ctrl-c 中断测试）；`npx tsc --noEmit` EXIT=0；`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / GATE-EXIT=0**——agents 10 包、framework 三包、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 及 `git diff --check` 全部通过。
