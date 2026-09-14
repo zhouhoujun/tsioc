@@ -101,6 +101,9 @@ export class AgentExtensionHooksTest {
         expect(identityPrompt).toContain('inspect the resulting git diff');
         expect(identityPrompt).toContain('Do not stop after only a plan');
         expect(identityPrompt).toContain('one concise clarification question');
+        expect(identityPrompt).toContain('requested level of detail');
+        expect(identityPrompt).toContain('one coherent, natural user-facing answer');
+        expect(identityPrompt).toContain('Choose formatting to fit the content');
         expect(toolsPrompt).toContain('prefer `coding_task`');
         expect(toolsPrompt).toContain('use `git_operations` with `action: "diff"`');
         expect(toolsPrompt).toContain('do not stop at a bare summary');

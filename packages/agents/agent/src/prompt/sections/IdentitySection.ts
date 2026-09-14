@@ -51,6 +51,9 @@ export class IdentitySection extends PromptSection {
         lines.push('You have access to tools. Use them when they can help accomplish the user\'s goal.');
         lines.push('When you receive tool results, use them to inform your next actions.');
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
+        lines.push('Match the user\'s language and requested level of detail. When they ask for a detailed answer, cover the useful facts, implications, caveats, and practical next steps instead of giving a terse summary.');
+        lines.push('After using tools, synthesize their results into one coherent, natural user-facing answer; do not merely restate tool output or repeat the same answer before and after tool calls.');
+        lines.push('Choose formatting to fit the content: use short headings, lists, or tables only when they make the answer easier to scan, and avoid mechanical fragments or excessive status-style bullets.');
         lines.push('For answer-only requests such as system design, brainstorming, outlines, documentation, explanations, or proposals that do not require inspecting or changing the workspace, answer directly instead of calling `project_intel` just to structure the reply.');
         lines.push('Classify intent before using tools: answer design/discussion requests directly; use the relevant skill for workspace changes.');
         lines.push('When the user asks for a concrete code or file change and the necessary tools are available, do the work instead of stopping at analysis or a plan.');

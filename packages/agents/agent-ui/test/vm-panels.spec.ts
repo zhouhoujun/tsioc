@@ -540,7 +540,37 @@ export class VmPanelsTest {
 
         state.setShowThinking(false);
         expect(state.displayMessages.some(message => message.metadata?.uiEventType === 'reasoning')).toEqual(false);
-        expect(state.displayMessages.map(message => message.content)).toEqual(['Working']);
+        expect(state.displayMessages).toEqual([]);
+    }
+
+    @Test('default stream hides routine turn lifecycle rows but keeps useful events')
+    sessionStateHidesRoutineTurnLifecycleRows() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.upsertUiEventMessage('turn-start', 'Analyzing request', {
+            eventType: 'turn_started', label: 'state', status: 'running'
+        });
+        state.upsertUiEventMessage('tool-weather', 'weather completed · Hangzhou', {
+            eventType: 'tool_completed', label: 'tool', status: 'success'
+        });
+        state.upsertUiEventMessage('turn-complete', 'Turn completed', {
+            eventType: 'turn', label: 'turn', status: 'success'
+        });
+        state.upsertUiEventMessage('turn-cancel', 'Turn cancelled', {
+            eventType: 'turn_cancelled', label: 'state', status: 'failed'
+        });
+
+        expect(state.displayMessages.map(message => message.content)).toEqual([
+            'weather completed · Hangzhou',
+            'Turn cancelled'
+        ]);
+
+        state.setTimelineMode('steps');
+        expect(state.displayMessages.map(message => message.content)).toEqual([
+            'Analyzing request',
+            'weather completed · Hangzhou',
+            'Turn completed',
+            'Turn cancelled'
+        ]);
     }
 
     @Test('session state dedupes identical ui event upserts')
@@ -563,8 +593,10 @@ export class VmPanelsTest {
             status: 'running'
         });
 
-        expect(state.displayMessages.length).toEqual(1);
-        expect(state.displayMessages[0].content).toEqual('Working');
+        const storedEvents = state.messages.filter(message => message.metadata?.uiKind === 'event');
+        expect(storedEvents.length).toEqual(1);
+        expect(storedEvents[0].content).toEqual('Working');
+        expect(state.displayMessages).toEqual([]);
     }
 
     @Test('session state supports message detail open and scroll')

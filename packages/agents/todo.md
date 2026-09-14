@@ -3045,3 +3045,11 @@ Turn: Fix session restore                                      running  01:42
 - **指标行完整性**：回归比较不再把外部 JSON 中缺失、非有限或越界的必填值静默降级为 `n/a`。现校验非空 `scenarioId`、`dom|tui` gate、非负有限 `elapsedMs`、可空且非负有限 `replayLatencyMs`、可空且位于 `[0,1]` 的 `firstScreenVisibleRate`、布尔 `measured`，以及正整数 viewport 尺寸；current/baseline 任一侧非法均直接 regression，并在 CI 输出具体字段原因。
 - **基线写入保护**：`baselineFromMetrics` 在快照前执行 SSE 计数与整行校验，`--write-baseline` 不能再将非法采集结果固化为新基线。GateMetricsBench 新增缺失 elapsed、越界首屏率、current/baseline 双向诊断与非法基线拒写断言；agent-ui 全套 **1214 passing / EXIT=0**，`tsc --noEmit` 通过。
 - **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。
+
+## v31 2026-09-14 — 对齐 opencode 的默认输出降噪与自然回答质量收尾 ✅
+
+- **对比问题（天气问答仅为复现场景，非城市定位问题）**：opencode 将过程压缩为少量高价值节点（Thought / Questions / 工具调用），随后给出一段连贯、详细且按内容自然分节的最终回答；当前项目默认输出把 `Analyzing request`、工具完成、`Turn completed` 等生命周期状态插入正文流，流式回答开头与最终完整回答在终端重绘记录中形成重复观感，回答被过程状态切断。同时最终回答偏机械短句与连续 bullet，对用户明确要求“详细说明”时，事实展开、影响解释、注意事项和版式层级不足。
+- **默认输出降噪（browser + TUI 共用）**：`AgentConsoleSessionState.isDisplayMessage` 在 timeline off 的默认消息流中隐藏成功/运行中的 turn 生命周期事件（`turn_started`、`turn_completed` 及普通 `turn` running/success），保留工具摘要、reasoning/Thought、ask_user/Questions、错误、取消、审批等有信息量节点。事件仍完整保存在 session messages 中，不影响持久化、重放、去重与诊断；用户显式开启 `/timeline`（compact/steps/verbose）后恢复完整 turn 过程，取消/失败在默认流也始终可见。
+- **自然回答通用契约（非天气硬编码）**：`IdentitySection` 要求匹配用户语言和请求的详细度；“详细”回答应覆盖关键事实、影响、限制与实用建议；工具结果必须综合为一段连贯自然的用户回答，禁止在工具调用前后重复同一答案或机械复述原始输出；标题、列表、表格仅在提升可读性时采用，避免碎片化状态式 bullet。对应 system prompt 契约已加入 agent 单测。
+- **测试迁移与新增覆盖**：旧测试中直接要求默认显示 `Analyzing request` 的断言改为验证高价值工具事件；turn 事件去重/跨 turn key 隔离改查完整 session messages，确保降噪不等于丢数据；新增“默认隐藏 routine turn、保留工具与取消、steps 模式恢复全量”的状态测试。agent **876 passing**，agent-ui **1215 passing**，两包 `tsc --noEmit` 均通过。
+- **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。

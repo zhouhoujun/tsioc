@@ -2248,6 +2248,15 @@ export class AgentConsoleSessionState {
         if (String(message.role || '').toLowerCase() === 'tool') {
             return false;
         }
+        if (!this.timelineMode && message.metadata?.uiKind === 'event') {
+            const eventType = String(message.metadata?.uiEventType || '').toLowerCase();
+            const status = String(message.metadata?.status || '').toLowerCase();
+            const routineTurn = eventType === 'turn_started' || eventType === 'turn_completed' ||
+                (eventType === 'turn' && status !== 'failed' && status !== 'error' && status !== 'cancelled');
+            if (routineTurn) {
+                return false;
+            }
+        }
         if (!this.showThinking && message?.metadata?.uiEventType === 'reasoning') {
             return false;
         }

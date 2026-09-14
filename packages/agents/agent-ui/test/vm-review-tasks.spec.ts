@@ -78,9 +78,10 @@ export class VmReviewTasksTest {
         component.input = 'next task';
         await component.submit();
 
-        const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
-        expect(eventMessages.map(message => message.content)).toContain('Analyzing request');
-        expect(eventMessages.map(message => message.content)).toContain('weather · Chengdu, Sichuan, CN 41.3°C Mainly clear');
+        const storedEvents = component.sessionState.messages.filter(message => message.metadata?.uiKind === 'event');
+        expect(storedEvents.map(message => message.content)).toContain('Analyzing request');
+        const visibleEvents = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(visibleEvents.map(message => message.content)).toEqual(['weather · Chengdu, Sichuan, CN 41.3°C Mainly clear']);
     }
 
     @Test('schedulePrompt adds task and updates tasks count')

@@ -219,7 +219,7 @@ export class VmSubmitTest {
         component.input = 'fix it again';
         await component.submit();
 
-        const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        const eventMessages = component.sessionState.messages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
             'Analyzing request',
             'read file completed · src/index.ts',
