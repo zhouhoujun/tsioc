@@ -5659,6 +5659,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
+        // Raw terminals encode Ctrl+C as ETX. Handle it before keymap/focus
+        // routing so an active turn is always cancellable.
+        if (raw === '\u0003' || raw === '\u0003'.toString()) {
+            if (this.isTurnInProgress()) {
+                await this.interruptTurn();
+                return true;
+            }
+        }
         if (this.keymapRecording) {
             if (raw === '\u001b') {
                 this.keymapRecording = undefined;
@@ -5680,6 +5688,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (raw === '\u001b' && this.state.whichKeyVisible) {
             this.state.setWhichKeyVisible(false);
+            return true;
+        }
+        // Escape must cancel an active turn even when an input/focus panel is
+        // currently active; focus dismissal is only for idle consoles.
+        if (raw === '\u001b' && this.isTurnInProgress()) {
+            await this.interruptTurn();
             return true;
         }
         if (raw === '\u001b' && (this.state.selectMenu || this.state.isAnyFocusActive())) return false;

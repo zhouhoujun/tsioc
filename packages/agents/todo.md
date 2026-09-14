@@ -3091,3 +3091,8 @@ Turn: Fix session restore                                      running  01:42
 - **问题**：Working 栏耗时仅在其他状态变化时重新计算，长时间运行时不会稳定按秒跳动。
 - **改进**：新增 `AgentConsoleElapsedTimerComponent`，订阅 components 公共动画生命周期 tick，将每秒变化写入自身响应式 `elapsedMs`；Working 模板仅绑定计时组件文本，不改变会话状态或业务流程，也不在组件内创建独立定时器。浏览器与 TUI 共用同一响应式更新链路。
 - **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过。
+
+## v38 2026-09-14 — TUI Ctrl+C / Esc 强制中断 ✅
+
+- **问题**：raw mode 下 Ctrl+C 以 ETX 控制字符到达，且 Esc 可能先被焦点面板吞掉，导致运行中的 turn 无法取消。
+- **改进**：在全局终端输入分发最前端识别 ETX；运行中 Esc 优先调用 `interruptTurn()`，不再受当前输入焦点或选择菜单拦截。
