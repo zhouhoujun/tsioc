@@ -1891,6 +1891,19 @@ export class AgentConsoleTuiRendererTest {
         expect(workingPanel.instance.workingDetail).toContain('plan 2/3: Implement API');
     }
 
+    @Test('working detail exposes background terminal controls')
+    async workingDetailExposesBackgroundTerminalControls() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setRunningTool('shell_exec');
+        await Promise.resolve();
+
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        expect(workingPanel.instance.workingDetail).toContain('1 background terminal running');
+        expect(workingPanel.instance.workingDetail).toContain('/ps to view');
+        expect(workingPanel.instance.workingDetail).toContain('/stop to close');
+    }
+
     @Test('clearPlanTodos removes inline plan message from displayMessages')
     async clearPlanTodosRemovesInlineMessage() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

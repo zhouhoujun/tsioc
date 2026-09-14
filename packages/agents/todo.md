@@ -3067,3 +3067,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题**：Working 状态栏原有顶部内边距不足，视觉上紧贴上方内容，尤其在 TUI 中缺少状态栏分隔感。
 - **改进**：共用 `AgentConsoleWorkingPanelComponent.workingLineStyle` 将 padding 统一为 `1em 1ch 1em`，浏览器与命令行渲染同时生效；新增 renderer 样式断言，确保 top padding 不被回归覆盖。未引入定时刷新，Working 时长仍由 `Date.now()` 派生。
 - **验证**：agent-ui **1215 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，包含 DOM/TUI、真实 PTY 与 `git diff --check`。
+
+## v34 2026-09-14 — Working 控制栏后台终端操作提示补齐 ✅
+
+- **问题**：Working 状态虽然展示 `esc to interrupt`，但后台 terminal 场景缺少可发现的查看与停止入口，用户无法从状态栏确认后台命令数量及控制方式。
+- **改进**：Working 单行在检测到 terminal/process/shell/exec/command 类运行工具时追加 `N background terminal(s) running · /ps to view · /stop to close`；控制动作复用既有命令处理链，不新增 Node/平台分支或定时器。新增 renderer 行为测试覆盖后台 terminal 文案；ESC 取消行为继续由既有 `interruptTurn`/fallback 测试保证。
+- **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**（该门禁在本轮测试前已完成，随后仅补充同层行为测试）。
