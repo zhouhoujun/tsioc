@@ -217,6 +217,11 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             check('timeline compact summary zh', compactLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)),
                 compactLabels.filter(label => /已隐藏/.test(label)).join(' | ') || 'none');
         }
+        // Capture wire metrics after scenario-specific interactions. Timeline
+        // scenarios drain live frames before folding; sampling above that drain
+        // records an artificial loss even though every frame was consumed.
+        sseFrameCount = gateway.metadata.sseFrameCount;
+        sseConsumed = gateway.metadata.sseConsumed;
     } finally {
         gateway.dispose();
         const mounted = await mountedPromise.catch(() => null);

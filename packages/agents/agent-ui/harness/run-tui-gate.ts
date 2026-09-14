@@ -304,6 +304,11 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             check('timeline compact summary zh', compactLines.some(line => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(line)),
                 compactLines.filter(line => /已隐藏/.test(line)).join(' | ') || 'none');
         }
+        // Capture wire metrics after scenario-specific interactions. Timeline
+        // scenarios drain live frames before folding; sampling above that drain
+        // records an artificial loss even though every frame was consumed.
+        sseFrameCount = gateway.metadata.sseFrameCount;
+        sseConsumed = gateway.metadata.sseConsumed;
     } finally {
         // gateway.dispose() closes the SSE stream so the reader in connectOnce
         // yields done=true; only then does subscribe() settle and expose the

@@ -3009,3 +3009,9 @@ Turn: Fix session restore                                      running  01:42
 - **PTY 稳定性修复**：全量复验捕获 scenario 5 偶发将相邻命令拼为 `/usage/outputs`。`run_acceptance.py` 删除命令间固定 `sleep(0.5)`，改为从 `/usage` 发送后的新增终端字节中等待 composer-ready 帧，再发送 `/outputs`；面板断言同样限定到该次发送后的新输出，避免历史帧误命中。定向 PTY 与最终全量轮次均 PASS。
 - **严格宽度预算**：全量复验捕获 P291 CJK 会话头偶发 101 列。根因是 `truncateTimelineRowText` 先切到 100 列再追加 1 列省略号；现将省略号显示宽度计入预算，并处理非正预算。新增 ASCII/CJK 精确边界与零预算测试，agent-ui 基线由 1209 增至 **1210 passing**。
 - **最终全量测试（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**。agents 10 包：agent 876、agent-channels 59、agent-cli 74、agent-gateway 293、agent-providers 13、agent-ssh 8、agent-tools 478、agent-ui 1210、agent-desktop 20、agent-vscode 7 passing；framework 三包：136/75/117 passing；4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景、`git diff --check` 全部通过。计划保持无开放批次。
+
+## v25 2026-09-14 — 时间线 SSE 指标最终态采样收尾 ✅
+
+- **问题与修复**：v24 首次入库的 `timeline-naturalized` SSE loss 为 2/3，但场景在 fold 前会明确 drain 全部 live frames。审计发现 DOM/TUI 都在该 drain 之前缓存 `sseFrameCount/sseConsumed`，最终指标使用了中途的 3/1 快照，违背 `gate-metrics.ts` 的真实 wire metadata 契约。两端现统一在所有场景专属交互与断言完成后重新采集最终计数，不改变投影、渲染或响应式链路。
+- **基线收紧**：时间线双端基线由 `3 pushed / 1 consumed / loss 0.6667` 修正为 `3/3/loss 0`；定向 DOM/TUI 实测均为 3/3/0，gate regression 对两条 timeline elapsed/loss 指标逐项 PASS 并输出 `[OK]`，不再容忍假丢帧。
+- **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包（agent 876、agent-ui 1210、agent-gateway 293、agent-tools 478 等）、framework 三包（136/75/117）、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check 全部通过。计划保持无开放批次。
