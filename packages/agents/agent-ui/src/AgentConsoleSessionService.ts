@@ -873,6 +873,32 @@ export class AgentConsoleSessionService {
         return Array.isArray(result?.edges) ? result.edges : [];
     }
 
+    /**
+     * Lists background tasks over RPC. Pass `delegationRoot` to aggregate every
+     * task in the delegation tree below that session, or `sessionId` to scope to
+     * one session. Returns the gateway page shape.
+     */
+    async listBackgroundTasks(options?: { sessionId?: string; delegationRoot?: string; cursor?: string; limit?: number }, context?: any): Promise<Record<string, any> | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        return this.appRpc.request('background.list', options ?? {}, context) ?? null;
+    }
+
+    /**
+     * Cancels background tasks by id (batch, best-effort) over RPC. Returns
+     * `{ taskIds, cancelled }` from the gateway.
+     */
+    async cancelBackgroundTasks(taskIds: string[], context?: any): Promise<{ taskIds: string[]; cancelled: string[] } | null> {
+        if (!this.appRpc) {
+            return null;
+        }
+        const result = await this.appRpc.request('background.cancel', { taskIds }, context);
+        return result && Array.isArray(result.cancelled)
+            ? { taskIds: Array.isArray(result.taskIds) ? result.taskIds : taskIds, cancelled: result.cancelled }
+            : null;
+    }
+
     async getVoiceStatus(sessionId?: string, context?: any): Promise<Record<string, any>> {
         if (!this.appRpc) {
             return { available: false, active: false, bufferedBytes: 0 };

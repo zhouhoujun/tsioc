@@ -190,7 +190,7 @@ import {
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 import {
@@ -653,6 +653,95 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async openHarnessProfile(sub?: string): Promise<boolean> {
         return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
+    }
+
+    /**
+     * Opens `/harness tree [sessionId]`: renders the delegation tree of the
+     * resolved session overlaid with live background-task status via the
+     * shared harness projection, and caches the projection on `harnessState`
+     * so TUI and browser renderers draw from the same data.
+     */
+    protected async openHarnessTree(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Harness projection is unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
+        if (!resolvedSessionId) {
+            this.notify('No session selected. Run /harness tree <sessionId>.');
+            return true;
+        }
+        const tree = await this.sessionService.getDelegationTree(resolvedSessionId);
+        if (!tree) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        const tasks = await this.sessionService.listBackgroundTasks({ delegationRoot: resolvedSessionId });
+        const projection = buildHarnessProjection(tree as DelegationTreeNode, (tasks?.items ?? []) as BackgroundTaskRecord[]);
+        this.state.setHarnessState(projection);
+        const lines = formatHarnessTreeLines(tree as DelegationTreeNode);
+        if (!lines.length) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        this.pushCommandOutput('/harness tree', lines.join(' | '));
+        return true;
+    }
+
+    /**
+     * Opens `/harness list [sessionId]`: renders a flat delegation digest with
+     * per-session worker status and plan/step aggregate summary from the shared
+     * harness projection, then caches it on `harnessState`.
+     */
+    protected async openHarnessList(sessionId?: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Harness projection is unavailable without app RPC.');
+            return true;
+        }
+        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
+        if (!resolvedSessionId) {
+            this.notify('No session selected. Run /harness list <sessionId>.');
+            return true;
+        }
+        const tree = await this.sessionService.getDelegationTree(resolvedSessionId);
+        if (!tree) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        const tasks = await this.sessionService.listBackgroundTasks({ delegationRoot: resolvedSessionId });
+        const projection = buildHarnessProjection(tree as DelegationTreeNode, (tasks?.items ?? []) as BackgroundTaskRecord[]);
+        this.state.setHarnessState(projection);
+        const lines = formatHarnessListLines(projection);
+        if (!lines.length) {
+            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+            return true;
+        }
+        this.pushCommandOutput('/harness list', lines.join(' | '));
+        return true;
+    }
+
+    /**
+     * Handles `/harness stop <taskId>`: cancels the referenced background task
+     * over RPC and reports the outcome inline.
+     */
+    protected async runHarnessStopCommand(taskId: string): Promise<boolean> {
+        if (!this.sessionService) {
+            this.notify('Background task cancellation is unavailable without app RPC.');
+            return true;
+        }
+        const id = (taskId || '').trim();
+        if (!id) {
+            this.notify('Usage: /harness stop <taskId>');
+            return true;
+        }
+        const result = await this.sessionService.cancelBackgroundTasks([id]);
+        const cancelled = result?.cancelled ?? [];
+        if (cancelled.includes(id)) {
+            this.notify(`Cancelled background task '${id}'.`);
+        } else {
+            this.notify(`Background task '${id}' was not found or is already finished.`);
+        }
+        return true;
     }
 
     private voiceCtx(): VoiceHandlerContext {
@@ -2981,6 +3070,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runDelegationModeCommand: (a) => self.runDelegationModeCommand(a),
             openHarnessAudit: (s) => self.openHarnessAudit(s),
             openHarnessProfile: (s) => self.openHarnessProfile(s),
+            openHarnessTree: (s) => self.openHarnessTree(s),
+            openHarnessList: (s) => self.openHarnessList(s),
+            runHarnessStopCommand: (t) => self.runHarnessStopCommand(t),
             handleVoiceCommand: (a) => self.handleVoiceCommand(a),
             getPendingApprovals: (s) => self.getPendingApprovals(s),
             applyApprovalDecision: (d, r) => self.applyApprovalDecision(d, r),

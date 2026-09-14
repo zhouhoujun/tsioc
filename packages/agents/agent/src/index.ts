@@ -73,6 +73,7 @@ export * from './harness/SummaryQualityStore';
 
 export * from './harness/TypeOrmSummaryQualityStore';
 export * from './harness/DelegationGraphStore';
+export * from './harness/harness-projection';
 
 export * from './harness/TypeOrmDelegationGraphStore';
 export * from './harness/ToolExecutionCoordinator';

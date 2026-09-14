@@ -964,7 +964,10 @@ export class P282DraftRetryConsistencyTest {
             runDelegationModeCommand: async (cmd: string) => { received.push(`mode:${cmd}`); return true; },
             openDelegationList: async (sid?: string) => { received.push(`delegation-list:${sid}`); return true; },
             openHarnessAudit: async (sid?: string) => { received.push(`audit:${sid}`); return true; },
-            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; }
+            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; },
+            openHarnessTree: async (sid?: string) => { received.push(`harness-tree:${sid}`); return true; },
+            openHarnessList: async (sid?: string) => { received.push(`harness-list:${sid}`); return true; },
+            runHarnessStopCommand: async (id: string) => { received.push(`harness-stop:${id}`); return true; }
         } as any;
         const metaFor = (command: string, resolved: string[]) => ({
             command, matches: [command],
@@ -985,6 +988,9 @@ export class P282DraftRetryConsistencyTest {
         await COMMAND_HANDLERS['/delegation'](ctx, 'garbage', metaFor('/delegation', ['sess-filter']));
         await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['audit s1']));
         await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['profile list']));
+        await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['tree s1']));
+        await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['list s1']));
+        await COMMAND_HANDLERS['/harness'](ctx, 'garbage', metaFor('/harness', ['stop task-1']));
         expect(received).toEqual([
             'usage:daily s1',
             'quality-list:client-1',
@@ -996,7 +1002,8 @@ export class P282DraftRetryConsistencyTest {
             'diagnostics:sess-d',
             'diagnostics-trend-parse: s1 7 30', 'diagnostics-trend:s1:7:30',
             'tree:s1:2:', 'lineage:s1', 'mode:explicit', 'delegation-list:sess-filter',
-            'audit:s1', 'profile:list'
+            'audit:s1', 'profile:list',
+            'harness-tree:s1', 'harness-list:s1', 'harness-stop:task-1'
         ]);
     }
 
@@ -1027,7 +1034,10 @@ export class P282DraftRetryConsistencyTest {
             runDelegationModeCommand: async (cmd: string) => { received.push(`mode:${cmd}`); return true; },
             openDelegationList: async (sid?: string) => { received.push(`delegation-list:${sid}`); return true; },
             openHarnessAudit: async (sid?: string) => { received.push(`audit:${sid}`); return true; },
-            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; }
+            openHarnessProfile: async (s?: string) => { received.push(`profile:${s}`); return true; },
+            openHarnessTree: async (sid?: string) => { received.push(`harness-tree:${sid}`); return true; },
+            openHarnessList: async (sid?: string) => { received.push(`harness-list:${sid}`); return true; },
+            runHarnessStopCommand: async (id: string) => { received.push(`harness-stop:${id}`); return true; }
         } as any;
         await COMMAND_HANDLERS['/usage'](ctx, 'daily raw', { command: '/usage', matches: ['/usage'] });
         await COMMAND_HANDLERS['/quality'](ctx, 'list raw-provider', { command: '/quality', matches: ['/quality'] });
@@ -1042,6 +1052,9 @@ export class P282DraftRetryConsistencyTest {
         await COMMAND_HANDLERS['/delegation'](ctx, 'raw-filter', { command: '/delegation', matches: ['/delegation'] });
         await COMMAND_HANDLERS['/harness'](ctx, 'audit rs', { command: '/harness', matches: ['/harness'] });
         await COMMAND_HANDLERS['/harness'](ctx, 'profile current', { command: '/harness', matches: ['/harness'] });
+        await COMMAND_HANDLERS['/harness'](ctx, 'tree rs', { command: '/harness', matches: ['/harness'] });
+        await COMMAND_HANDLERS['/harness'](ctx, 'list rs', { command: '/harness', matches: ['/harness'] });
+        await COMMAND_HANDLERS['/harness'](ctx, 'stop task-9', { command: '/harness', matches: ['/harness'] });
         expect(received).toEqual([
             'usage:daily raw',
             'quality-list:raw-provider',
@@ -1051,7 +1064,8 @@ export class P282DraftRetryConsistencyTest {
             'compact:raw reason',
             'diagnostics:raw-sid',
             'tree:rs:3:', 'lineage:rs2', 'mode:proactive', 'delegation-list:raw-filter',
-            'audit:rs', 'profile:current'
+            'audit:rs', 'profile:current',
+            'harness-tree:rs', 'harness-list:rs', 'harness-stop:task-9'
         ]);
     }
 

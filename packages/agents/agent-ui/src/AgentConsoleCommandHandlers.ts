@@ -178,6 +178,9 @@ export interface CommandHandlerContext {
     runDelegationModeCommand(args: string): Promise<void>;
     openHarnessAudit(sessionId?: string): Promise<boolean>;
     openHarnessProfile(sub?: string): Promise<boolean>;
+    openHarnessTree(sessionId?: string): Promise<boolean>;
+    openHarnessList(sessionId?: string): Promise<boolean>;
+    runHarnessStopCommand(taskId: string): Promise<boolean>;
 
     // ── voice ──
     handleVoiceCommand(arg: string): Promise<boolean>;
@@ -1264,7 +1267,21 @@ async function handleHarness(ctx: CommandHandlerContext, args: string, _resolved
         if (arg === 'profile' || arg.startsWith('profile ')) {
             return ctx.openHarnessProfile(arg.slice(7).trim() || undefined);
         }
-        ctx.notify('Usage: /harness audit [sessionId] | /harness profile [list|current|diff <from> <to>]');
+        if (arg === 'tree' || arg.startsWith('tree ')) {
+            return ctx.openHarnessTree(arg.slice(4).trim() || undefined);
+        }
+        if (arg === 'list' || arg.startsWith('list ')) {
+            return ctx.openHarnessList(arg.slice(4).trim() || undefined);
+        }
+        if (arg === 'stop' || arg.startsWith('stop ')) {
+            const taskId = arg.slice(4).trim();
+            if (!taskId) {
+                ctx.notify('Usage: /harness stop <taskId>');
+                return true;
+            }
+            return ctx.runHarnessStopCommand(taskId);
+        }
+        ctx.notify('Usage: /harness [audit [sessionId]] | [profile [list|current|diff <from> <to>]] | [tree [sessionId]] | [list [sessionId]] | stop <taskId>');
         return true;
     }
 }

@@ -5,7 +5,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
-import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY } from '@tsdi/agent';
+import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY, HarnessProjection } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
     AgentConsoleTheme,
@@ -632,6 +632,7 @@ export class AgentConsoleSessionState {
     backgroundTaskFeed: BackgroundTaskRecord[] = [];
     backgroundTaskFilter: 'all' | 'running' | 'completed' | 'failed' | 'cancelled' = 'all';
     backgroundTaskQuery = '';
+    harnessState: HarnessProjection | null = null;
     planTodos: AgentConsolePlanTodoItem[] = [];
     planTodoSourceSessionId = '';
     planTodoExpanded = false;
@@ -2767,6 +2768,10 @@ export class AgentConsoleSessionState {
 
     setBackgroundTaskFeed(tasks: BackgroundTaskRecord[]): void {
         this.backgroundTaskFeed = tasks.slice().sort((a, b) => b.startedAt - a.startedAt);
+    }
+
+    setHarnessState(projection: HarnessProjection | null): void {
+        this.harnessState = projection;
     }
 
     upsertBackgroundTask(record: BackgroundTaskRecord): void {
