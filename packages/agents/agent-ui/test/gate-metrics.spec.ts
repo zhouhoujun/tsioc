@@ -8,6 +8,7 @@ import {
     baselineFromMetrics,
     calculateSseLossRate,
     mergeGateMetrics,
+    normalizeGateMetrics,
     parseGateCliArgs,
     renderGateRegression,
     runGateRegression,
@@ -45,6 +46,19 @@ export class GateMetricsBenchTest {
         expect(calculateSseLossRate(10, -2)).toBe(1);
         expect(calculateSseLossRate(0, 5)).toBe(0);
         expect(calculateSseLossRate(Number.NaN, Number.POSITIVE_INFINITY)).toBe(0);
+    }
+
+    @Test('raw SSE counters override stale or falsified derived loss values')
+    async sseLossNormalization() {
+        const healthy = makeMetrics({ scenarioId: 'desktop-basic', gate: 'dom' });
+        const falsified = makeMetrics({
+            scenarioId: 'desktop-basic', gate: 'dom',
+            sseFrameCount: 10, sseConsumed: 8, sseLossRate: 0
+        });
+        const normalized = normalizeGateMetrics(falsified);
+        expect(normalized.sseLossRate).toBe(0.2);
+        expect(runGateRegression([falsified], [healthy]).regressed).toBe(true);
+        expect(baselineFromMetrics([falsified])[0].sseLossRate).toBe(0.2);
     }
 
     @Test('identical-to-baseline run reports no regression')

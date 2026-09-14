@@ -3027,3 +3027,9 @@ Turn: Fix session restore                                      running  01:42
 - **指标纯函数**：`gate-metrics.ts` 新增 `calculateSseLossRate(frameCount, consumedCount)`，对非有限/负计数归一并将 loss 严格限制在 `[0,1]`；`pushed=0` 返回 0，缺帧按比例计算。DOM/TUI 删除重复内联公式并统一消费该纯函数。
 - **重复消费门禁**：仅钳制负 loss 会把 `consumed > pushed` 误报为改善，因此双端场景在最终采样后新增明确结构断言 `sse consumed does not exceed pushed`，失败详情携带 pushed/consumed 原始值；loss 负责度量丢失，invariant 负责检测重复消费，职责分离。GateMetricsBench 新增正常缺帧、过量消费、负值、零 pushed 与非有限输入 5 个边界断言；DOM/TUI 文件头的场景数同步为 5。
 - **全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：agent-ui **1211 passing**；统一门禁 **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 diff-check。计划保持无开放批次。
+
+## v28 2026-09-14 — SSE 派生指标可信化与 PTY 最终帧稳定性收尾 ✅
+
+- **派生指标可信化**：`gate-metrics.ts` 新增 `normalizeGateMetrics`，统一从 `sseFrameCount`/`sseConsumed` 原始计数重算 `sseLossRate`；回归比较、基线快照与多端指标合并均先归一化，持久化或外部 JSON 中陈旧/伪造的 loss 值不再能绕过回归门禁。新增反例覆盖：原始 `10/8` 即使声明 loss=0，也会归一为 0.2 并判定回归；agent-ui 全套增至 **1212 passing**。
+- **PTY 输入与最终帧稳定性**：scenario 5 的 `/usage`、`/outputs` 均改为文本与 Enter 分两次 PTY write，避免同一 raw chunk 被输入层仅按文本处理而拼成 `/usage/outputs`。scenario 1 不再从全屏重绘的历史 raw 内容匹配 `Turn completed`/问句，而是等待当前 viewport 同时出现尾部问句与 ready composer，并在输出静默后检查最后 6 行；连续两轮真实 PTY 均 **5/5 PASS**。
+- **最终全量验证（授权宿主，`RUN_PTY=1 bash scripts/agents-gate.sh`）**：**22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。

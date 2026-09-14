@@ -223,10 +223,16 @@ def scenario_tail_visibility(pid: int, fd: int, screen: Screen) -> bool:
     send(fd, b'\r')  # ensure composer focused / dismiss any banner
     time.sleep(0.5)
     drain(fd, screen)
-    send(fd, '请写一篇长文介绍，尽量详细。\r'.encode())
-    matched = wait_for(fd, screen, [re.escape('是否继续？')])
-    if not matched:
-        print('[FAIL] scenario 1: tail question 是否继续？ never visible in viewport')
+    send(fd, '请写一篇长文介绍，尽量详细。'.encode())
+    send(fd, b'\r')
+    # Full-screen redraws include prior timeline rows, so lifecycle labels in
+    # the raw tail cannot identify this turn. Require the question and the
+    # ready composer in the current viewport after output has gone quiet.
+    settled = wait_for(
+        fd, screen, [r'是否继续？[\s\S]*>\s+Ask code or files'],
+        settle=2.5, quiet_window=2.5)
+    if not settled:
+        print('[FAIL] scenario 1: long reply did not settle with its tail question visible')
         return False
     view = screen.viewport().strip().splitlines()
     tail = '\n'.join(view[-6:])
@@ -306,10 +312,12 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
     drain(fd, screen)
 
     usage_mark = len(bytes(screen.raw))
-    send(fd, '/usage\r'.encode())
-    # Wait for the composer-ready frame emitted after /usage is consumed. A
-    # fixed delay races with command dispatch and can concatenate the next verb
-    # into `/usage/outputs` on a loaded host.
+    # Send text and Enter as distinct terminal writes. When both arrive in one
+    # raw chunk the input layer may take the text branch without emitting a
+    # separate submit action, leaving `/usage` in the composer.
+    send(fd, '/usage'.encode())
+    send(fd, b'\r')
+    # Wait for the composer-ready frame emitted after /usage is consumed.
     usage_consumed = wait_for(
         fd, screen, [r'>\s+Ask code or files'], timeout=20,
         on_sight=True, tail_from=usage_mark)
@@ -318,7 +326,8 @@ def scenario_command_outputs(pid: int, fd: int, screen: Screen) -> bool:
         return False
 
     outputs_mark = len(bytes(screen.raw))
-    send(fd, '/outputs\r'.encode())  # opens the outputs panel (no Ctrl+O keymap binding)
+    send(fd, '/outputs'.encode())
+    send(fd, b'\r')  # opens the outputs panel (no Ctrl+O keymap binding)
     opened = wait_for(
         fd, screen, [re.escape('command outputs'), re.escape('No command outputs yet.')],
         timeout=20, on_sight=True, tail_from=outputs_mark)

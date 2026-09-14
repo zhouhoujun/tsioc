@@ -81,6 +81,15 @@ export function calculateSseLossRate(frameCount: number, consumedCount: number):
     return Math.max(0, Math.min(1, (pushed - consumed) / pushed));
 }
 
+/** Rebuild derived fields so persisted or external JSON cannot override raw wire counters. */
+export function normalizeGateMetrics(metrics: GateScenarioMetrics): GateScenarioMetrics {
+    return {
+        ...metrics,
+        sseLossRate: calculateSseLossRate(metrics.sseFrameCount, metrics.sseConsumed),
+        ...(metrics.viewport ? { viewport: { ...metrics.viewport } } : {})
+    };
+}
+
 /**
  * Per-metric allowed drift from a stored baseline before a CI regression is
  * flagged. Timing values are absolute ms drifts (generous: they catch REAL
@@ -207,15 +216,17 @@ export function runGateRegression(
     thresholds: GateRegressionThresholds = {}
 ): GateRegressionResult {
     const merged = { ...DEFAULT_THRESHOLDS, ...thresholds };
-    const baselineByKey = new Map(baseline.map(metrics => [scenarioKey(metrics), metrics] as const));
-    const currentByKey = new Map(current.map(metrics => [scenarioKey(metrics), metrics] as const));
+    const normalizedBaseline = baseline.map(normalizeGateMetrics);
+    const normalizedCurrent = current.map(normalizeGateMetrics);
+    const baselineByKey = new Map(normalizedBaseline.map(metrics => [scenarioKey(metrics), metrics] as const));
+    const currentByKey = new Map(normalizedCurrent.map(metrics => [scenarioKey(metrics), metrics] as const));
 
     const scenarios: GateScenarioRegression[] = [];
-    for (const metrics of current) {
+    for (const metrics of normalizedCurrent) {
         scenarios.push(compareScenario(metrics, baselineByKey.get(scenarioKey(metrics)), merged));
     }
     // A baselined scenario that the current run no longer produces = regression.
-    for (const base of baseline) {
+    for (const base of normalizedBaseline) {
         if (!currentByKey.has(scenarioKey(base))) {
             scenarios.push({
                 scenarioKey: scenarioKey(base),
@@ -237,7 +248,7 @@ export function runGateRegression(
 
 /** Snapshot taken for storage: no threshold applied, the raw metric rows. */
 export function baselineFromMetrics(metrics: GateScenarioMetrics[]): GateScenarioMetrics[] {
-    return metrics.map(metrics => ({ ...metrics }));
+    return metrics.map(normalizeGateMetrics);
 }
 
 /** Merge multiple metric sets (e.g. dom + tui JSON files) keyed by scenario. */
@@ -245,7 +256,8 @@ export function mergeGateMetrics(...groups: Array<GateScenarioMetrics | GateScen
     const byKey = new Map<string, GateScenarioMetrics>();
     for (const group of groups) {
         for (const metrics of Array.isArray(group) ? group : [group]) {
-            byKey.set(scenarioKey(metrics), metrics);
+            const normalized = normalizeGateMetrics(metrics);
+            byKey.set(scenarioKey(normalized), normalized);
         }
     }
     return [...byKey.values()];
