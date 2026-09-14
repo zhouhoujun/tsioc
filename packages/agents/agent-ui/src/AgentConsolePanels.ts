@@ -691,7 +691,7 @@ export class AgentConsoleWorkingPanelComponent {
             if (background) {
                 parts.push(`${background} background terminal${background === 1 ? '' : 's'} running`);
                 parts.push('/ps to view');
-                parts.push('/stop to close');
+                parts.push('/ps stop to close');
             } else {
                 parts.push(this.runningLabel);
             }

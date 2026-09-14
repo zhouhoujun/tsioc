@@ -3073,3 +3073,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题**：Working 状态虽然展示 `esc to interrupt`，但后台 terminal 场景缺少可发现的查看与停止入口，用户无法从状态栏确认后台命令数量及控制方式。
 - **改进**：Working 单行在检测到 terminal/process/shell/exec/command 类运行工具时追加 `N background terminal(s) running · /ps to view · /stop to close`；控制动作复用既有命令处理链，不新增 Node/平台分支或定时器。新增 renderer 行为测试覆盖后台 terminal 文案；ESC 取消行为继续由既有 `interruptTurn`/fallback 测试保证。
 - **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**（该门禁在本轮测试前已完成，随后仅补充同层行为测试）。
+
+## v35 2026-09-14 — Working 控制栏命令提示与实际命令对齐 ✅
+
+- **问题**：状态栏提示 `/stop to close`，但命令注册表实际提供的是 `/ps stop <taskId>`；用户照提示输入会得到未知命令或缺少任务 ID 的诊断。
+- **改进**：提示统一改为 `/ps stop to close`，与 `/ps` 的真实 handler、参数契约和既有后台任务控制链一致；新增/更新 renderer 断言防止文案漂移。
+- **验证**：agent-ui **1216 passing / EXIT=0**，`tsc --noEmit` 通过；上一轮完整 `RUN_PTY=1 bash scripts/agents-gate.sh` 已 **22 passed / 0 skipped / EXIT=0**，本次仅补充命令文案一致性修复。

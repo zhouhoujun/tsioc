@@ -1901,7 +1901,7 @@ export class AgentConsoleTuiRendererTest {
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         expect(workingPanel.instance.workingDetail).toContain('1 background terminal running');
         expect(workingPanel.instance.workingDetail).toContain('/ps to view');
-        expect(workingPanel.instance.workingDetail).toContain('/stop to close');
+        expect(workingPanel.instance.workingDetail).toContain('/ps stop to close');
     }
 
     @Test('clearPlanTodos removes inline plan message from displayMessages')
