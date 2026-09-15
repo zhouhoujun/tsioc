@@ -3141,3 +3141,9 @@ Turn: Fix session restore                                      running  01:42
 - **共享层审计**：按 agent-ui 的跨平台依赖边界扩展检查 `@tsdi/components` 与 `@tsdi/components/console`，发现两个被跟踪但零引用的历史文件：一次性 console 树打印程序 `dbg-panel.ts`，以及比正式实现落后 45 行 diff 的 `template.ts.bak`。两者均未被 package scripts、exports、源码或测试引用，已删除。
 - **调试噪声清理**：删除 `for.dir.ts` 中 5 条注释掉的 `console.log` 与 `component.ts` 中 1 条注释调试输出；`.gitignore` 将 acceptance 局部 `*.bak` 规则提升为仓库级 `*.bak`，防止其他共享包再次引入同类备份。未改变响应式、渲染或计时行为。
 - **验证**：定向 components **137 passing**、components/console **75 passing**；随后 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。计划保持无开放批次。
+
+## v44 2026-09-15 — Gate 失败产物与 PTY 运行契约收尾 ✅
+
+- **失败产物清理**：仓库卫生扫描发现 `agent-ui/harness/.gate-artifacts/` 中 5 个被跟踪的 2026-09-07 失败现场文件（body、console/page errors、RPC calls 与 76KB 截图）。它们零引用、不属于基线或 fixture，已删除；`.gitignore` 新增对该运行产物目录的忽略，acceptance 失败日志目录的既有忽略保持有效。
+- **Gate 契约更正**：`scripts/agents-gate.sh` 中 PTY opt-in 注释与 skip 文案仍声称 v20-D 阈值工作尚未落地，与 v20-D/v41 完成态矛盾。现明确 opt-in 仅因为需要 Unix PTY 与预构建 agent-cli artifact；`bash -n` 及默认 skip 分支实测通过。
+- **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。计划保持无开放批次。

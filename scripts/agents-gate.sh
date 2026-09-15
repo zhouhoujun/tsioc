@@ -85,13 +85,12 @@ run_harness() {
 
 # run_pty <id> <label>
 #
-# PTY acceptance is opt-in (RUN_PTY=1): metric thresholds are manually backfilled
-# (acceptance/CHECKLIST.md) and lifecycle threshold work lands in v20-D, so the
-# stage stays out of the default gate until then.
+# PTY acceptance is opt-in (RUN_PTY=1) because it requires a Unix PTY and a
+# prebuilt agent-cli artifact. CI environments that provide both should enable it.
 run_pty() {
     local id="$1" label="$2"
     if [ "${RUN_PTY:-0}" != "1" ]; then
-        stage_skip "$id" "$label (opt-in; set RUN_PTY=1 — metric thresholds backfilled in v20-D)"
+        stage_skip "$id" "$label (opt-in; set RUN_PTY=1 when Unix PTY and agent-cli artifact are available)"
         return
     fi
     if ! command -v python3 >/dev/null 2>&1; then
