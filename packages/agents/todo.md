@@ -3123,3 +3123,9 @@ Turn: Fix session restore                                      running  01:42
 - **Ctrl+C / Esc 真正中断**：根因是终端 Enter 分支 `await submit()` 占住 `ConsoleTerminalInputController` 的串行 dispatch 队列，后续 ETX/Escape 只能等 turn 完成后到达。终端 submit 现非阻塞启动，输入链在 turn 运行期间保持可用；真实 input controller 回归在同一未完成 submit 上分别发送 Ctrl+C 与 bare Esc，均立即命中 `run.cancel` 路径。
 - **Working 每秒稳定跳动**：删除在组件实例内部维护 elapsed 状态的失效实现；新增 components 公共 `elapsed-time` 指令，复用 `AnimatedTextLifecycleService` 共享 200ms tick，以 `Date.now()` 派生秒数且仅在秒值变化时直接更新 renderer 文本节点。共享 lifecycle 在首次订阅时惰性启动，应用 Shutdown/onDestroy 继续统一停止；未在组件层新增定时器。components 单测覆盖 0s→1s→1m1s，agent-ui ConsoleRenderer 集成测试验证真实共享 tick 后 Working 从 0s 进入下一秒。
 - **最终验证**：agent-ui `npm run build:web` EXIT=0；`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**。agents 10 包：agent **890**、agent-channels **59**、agent-cli **74**、agent-gateway **296**、agent-providers **13**、agent-ssh **8**、agent-tools **478**、agent-ui **1223**、agent-desktop **20**、agent-vscode **7** passing；framework：components **137**、components/console **75**、components/html **117** passing；4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景、跨平台边界扫描与 `git diff --check` 全部通过。
+
+## v41 2026-09-15 — 真实 PTY 中断与 Working 秒跳验收闭环 ✅
+
+- **真实链路覆盖**：默认 PTY acceptance 新增第 7 场景，假模型以 50ms 间隔持续流式输出 300 行，验证 Working 在真实 TUI 中依次显示 **0s → 1s → 2s**；随后分别通过 PTY 发送 ETX（`Ctrl+C`）与 bare Escape（`Esc`），两轮均观测到取消反馈且 composer 恢复可输入。
+- **验收文档同步**：`acceptance/CHECKLIST.md` 登记场景 6/7，将 Ctrl+C/Esc 人工项标记为自动验收，并清理“三场景”的过时描述。
+- **最终验证**：定向 `RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` **1 passed / 0 skipped / EXIT=0**；随后完整 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。agents 与 framework 测试数保持 v40 基线（agent **890**、agent-ui **1223**、components **137**、agent-gateway **296** 等）。计划无开放批次。

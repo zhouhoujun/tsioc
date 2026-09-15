@@ -1,6 +1,6 @@
-# Agent TUI · PTY 三场景验收（P200 / G123）
+# Agent TUI · PTY 验收（P200 / G123）
 
-针对 P190 遗留的三个人工验收场景提供可复用脚手架：真实 PTY 内驱动 `tsdi-agent` chat，
+针对 P190 遗留的人工验收场景提供可复用脚手架：真实 PTY 内驱动 `tsdi-agent` chat，
 用**假模型**（本地 OpenAI 兼容服务）注入脚本化回复，自动断言界面表现。
 
 ## 场景覆盖
@@ -12,6 +12,8 @@
 | 3 | plan 实时勾选 | 两次 `todo` 工具调用：pending → completed | `[ ] 计划项 A` 出现后翻转为 `[x]` |
 | 4 | plan 全生命周期（P232B） | `todo` 脚本：建计划(4 步并行)→运行→失败→确认 retry→恢复→review gate→完成 | 创建→并行→失败→恢复→门禁→完成各阶段依次出现；记录首屏步骤可见率/失败定位按键数/event-to-UI 延迟 |
 | 5 | 命令结果回看（P262） | `/usage` → `Ctrl+O` 打开 outputs 面板 → `Esc` 收起 | `/usage` 摘要出现；面板标题 `command outputs` + `/usage` 条目可见；Esc 后面板关闭 |
+| 6 | slash 命令修正（P282） | 无效 `/statusline` verb → 修正后重试 | 诊断保留 draft；修正后成功并清空 composer |
+| 7 | 运行中断与秒跳 | 慢速流式回复；观察 Working 后发送 `Ctrl+C`，再启动一轮发送 `Esc` | Working 依次出现 0s/1s/2s；两个按键均取消 turn 并恢复 composer |
 
 ## 运行
 
@@ -19,7 +21,7 @@
 # 前置：agent-cli 已构建（bin/tsdi-agent.js 存在）
 cd packages/agents/agent-cli && npm run build   # 如未构建
 
-# 全量三场景（P200 默认）
+# 全量默认场景
 python3 packages/agents/acceptance/run_acceptance.py
 
 # P232 part B 计划全生命周期场景（假模型与该驾驶员均切到 plan-lifecycle）
@@ -66,8 +68,8 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
 - [ ] 场景 1：滚动过程中**不闪跳**、无重影；问询行始终贴底不被截半
 - [ ] 场景 2：overlay 打开/关闭各一次；布局切换（layout-toggle）后对齐正常；关闭后焦点回到输入框
 - [ ] 场景 3：勾选翻转**由数据变化驱动**（无定时器轮询痕迹）；pending→completed 颜色/删除线符合主题
-- [ ] 三场景全程状态栏（statusline）与终端标题随运行状态更新
-- [ ] `Ctrl+C` 中断流式回复后界面恢复干净、可继续输入
+- [ ] 全场景运行期间状态栏（statusline）与终端标题随运行状态更新
+- [x] `Ctrl+C` / `Esc` 中断慢速流式回复后界面恢复干净、可继续输入（场景 7 自动验收）
 
 ## 已知边界
 

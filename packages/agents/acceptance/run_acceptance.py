@@ -13,6 +13,8 @@ Drives scenarios from P190's manual acceptance list against a real PTY:
      (the default keymap no longer binds Ctrl+O to this toggle)
   6. slash-command (P282): invalid verb shows diagnostic + preserves draft,
      corrected retry succeeds and consumes the draft
+  7. interrupt/timer: Working advances by second and Ctrl+C/Esc cancel a
+     genuinely pending streamed turn through the real PTY input path
 
 Usage (repo root):
   python3 packages/agents/acceptance/run_acceptance.py
@@ -424,6 +426,51 @@ def scenario_slash_command_p282(pid: int, fd: int, screen: Screen) -> bool:
     return True
 
 
+def scenario_interrupt_and_timer(pid: int, fd: int, screen: Screen) -> bool:
+    """Drive slow streamed turns to verify elapsed ticks and both interrupt keys."""
+    first_mark = len(bytes(screen.raw))
+    send(fd, '中断测试：请持续输出直到我取消。'.encode())
+    send(fd, b'\r')
+    for second in range(3):
+        matched = wait_for(
+            fd, screen, [rf'Working\s*\(\s*{second}s'], timeout=10,
+            on_sight=True, tail_from=first_mark)
+        if not matched:
+            print(f'[FAIL] scenario 7: Working did not reach {second}s')
+            return False
+    cancel_mark = len(bytes(screen.raw))
+    send(fd, b'\x03')
+    cancelled = wait_for(
+        fd, screen, [re.escape('Cancelling current turn...'), re.escape('Turn cancelled')],
+        timeout=10, on_sight=True, tail_from=cancel_mark)
+    ready = wait_for(fd, screen, [r'>\s+Ask code or files'], timeout=10,
+                     on_sight=True, tail_from=cancel_mark)
+    if not (cancelled and ready):
+        print('[FAIL] scenario 7: Ctrl+C did not cancel the slow turn and restore the composer')
+        return False
+
+    second_mark = len(bytes(screen.raw))
+    send(fd, '中断测试：再次持续输出。'.encode())
+    send(fd, b'\r')
+    running = wait_for(fd, screen, [r'Working\s*\(\s*0s'], timeout=10,
+                       on_sight=True, tail_from=second_mark)
+    if not running:
+        print('[FAIL] scenario 7: second slow turn never entered Working state')
+        return False
+    esc_mark = len(bytes(screen.raw))
+    send(fd, b'\x1b')
+    esc_cancelled = wait_for(
+        fd, screen, [re.escape('Cancelling current turn...'), re.escape('Turn cancelled')],
+        timeout=10, on_sight=True, tail_from=esc_mark)
+    esc_ready = wait_for(fd, screen, [r'>\s+Ask code or files'], timeout=10,
+                         on_sight=True, tail_from=esc_mark)
+    if not (esc_cancelled and esc_ready):
+        print('[FAIL] scenario 7: Esc did not cancel the slow turn and restore the composer')
+        return False
+    print('[PASS] scenario 7: Working advanced 0s -> 1s -> 2s; Ctrl+C and Esc cancelled pending turns')
+    return True
+
+
 # --- P232 part B: plan-lifecycle scenario + UX metrics ----------------------
 #
 # Metrics required by the P232 spec (recorded as acceptance evidence):
@@ -593,6 +640,7 @@ def main() -> int:
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
+            results.append(('7-interrupt-timer', scenario_interrupt_and_timer(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))

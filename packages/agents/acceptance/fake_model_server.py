@@ -31,6 +31,7 @@ import json
 import os
 import re
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get('FAKE_PORT', '0'))
@@ -151,6 +152,10 @@ def _default_turn(messages):
     global total_tokens
     text = _last_user_text(messages)
     n_tool = _tool_result_count(messages)
+    if '中断测试' in text:
+        content = '\n'.join(f'慢速输出 {n}：等待用户中断。' for n in range(1, 301))
+        total_tokens += len(content) // 4
+        return {'role': 'assistant', 'content': content + '\n'}
     if '长文' in text:
         lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
                  for n in range(1, 121)]
@@ -256,6 +261,8 @@ class Handler(BaseHTTPRequestHandler):
                                    ensure_ascii=False)
                 self.wfile.write(f'data: {chunk}\n\n'.encode())
                 self.wfile.flush()
+                if content and '慢速输出' in content:
+                    time.sleep(0.05)
             done = dict(base, choices=[dict(base['choices'][0], delta={}, finish_reason='stop')])
             self.wfile.write(f"data: {json.dumps(done, ensure_ascii=False)}\n\n".encode())
             self.wfile.write(b'data: [DONE]\n\n')
