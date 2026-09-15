@@ -103,7 +103,6 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         }
         const directives = this.injector.get(DIRECTIVES) || [];
         const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
-        // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
         const components = this.injector.get(COMPONENTS) || [];
         
         const compiler = this.injector.get(TemplateCompiler);

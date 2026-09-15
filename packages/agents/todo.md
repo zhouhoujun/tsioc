@@ -3135,3 +3135,9 @@ Turn: Fix session restore                                      running  01:42
 - **完成性复核**：扫描 `todo.md` 的未完成/TODO/FIXME/开放批次标记，命中项均为历史阶段记录、示例文案或已由后续批次闭合的陈述；当前 P0–P291 及 v17–v41 无开放实现批次。`packages/agents` 临时文件扫描仅发现一个被跟踪的 `acceptance/fake_model_server.py.bak`。
 - **验收单源**：删除零引用、已落后现行实现 151 行差异的假模型备份，验收脚本只保留 `fake_model_server.py` 一个真实来源；`.gitignore` 新增 `packages/agents/acceptance/*.bak`，防止本地备份再次进入版本库。
 - **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY（含中断/秒跳场景）与 `git diff --check` 全部通过。计划保持无开放批次。
+
+## v43 2026-09-15 — Agents 共享渲染层调试残留收尾 ✅
+
+- **共享层审计**：按 agent-ui 的跨平台依赖边界扩展检查 `@tsdi/components` 与 `@tsdi/components/console`，发现两个被跟踪但零引用的历史文件：一次性 console 树打印程序 `dbg-panel.ts`，以及比正式实现落后 45 行 diff 的 `template.ts.bak`。两者均未被 package scripts、exports、源码或测试引用，已删除。
+- **调试噪声清理**：删除 `for.dir.ts` 中 5 条注释掉的 `console.log` 与 `component.ts` 中 1 条注释调试输出；`.gitignore` 将 acceptance 局部 `*.bak` 规则提升为仓库级 `*.bak`，防止其他共享包再次引入同类备份。未改变响应式、渲染或计时行为。
+- **验证**：定向 components **137 passing**、components/console **75 passing**；随后 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。计划保持无开放批次。
