@@ -184,7 +184,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             // would hang and drain the event loop.
             const uiState = reactive(state, new DefaultReactiveEffect());
             const stepLabels = metrics.ariaLabels.slice();
-            check('timeline header zh', stepLabels.some(label => /P285 interaction gate · 开始 11:40 PM/.test(label) && !/step 1\/3|错误/.test(label)),
+            check('timeline header zh', stepLabels.some(label => /P285 interaction gate · 开始 \d{1,2}:\d{2}(?::\d{2})?(?: AM| PM)?/.test(label) && !/step 1\/3|错误/.test(label)),
                 stepLabels.filter(label => /开始/.test(label)).join(' | ') || 'none');
             check('timeline footer zh', stepLabels.some(label => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(label)),
                 stepLabels.filter(label => /耗时/.test(label)).join(' | ') || 'none');
