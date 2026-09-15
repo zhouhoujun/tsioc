@@ -77,6 +77,31 @@ export class P237B2WidthGlyphAriaTest {
         expect(failed[0].lines[0].status?.trim()).toEqual('✕');
     }
 
+    @Test('timeline events form a compact rail while failures keep emphasis')
+    timelineEventCompactRail() {
+        const completed = renderAgentConsoleMessageItems([{
+            id: 'e1', role: 'assistant', content: 'Read files', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        }] as any)[0].lines[0];
+        expect(completed.itemStyle?.padding).toEqual('0 1ch');
+        expect(completed.itemStyle?.margin).toEqual('0');
+        expect(completed.itemStyle?.['border-left']).toEqual('1px solid #30363d');
+
+        const failed = renderAgentConsoleMessageItems([{
+            id: 'e2', role: 'assistant', content: 'Tests failed', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
+        }] as any)[0].lines[0];
+        expect(failed.itemStyle?.padding).toEqual('0 1ch');
+        expect(failed.itemStyle?.margin).toEqual('0');
+        expect(failed.itemStyle?.['border-left']).toEqual('2px solid #f85149');
+
+        const answer = renderAgentConsoleMessageItems([{
+            id: 'a1', role: 'assistant', content: 'Done', createdAt: 1
+        }] as any)[0].lines[0];
+        expect(answer.itemStyle?.padding).toEqual('1em 1ch 1em 1ch');
+        expect(answer.itemStyle?.margin).toEqual('0 0 0.25em 0');
+    }
+
     @Test('custom status symbol wins over the default glyph')
     customSymbolWinsOverGlyph() {
         const items = renderAgentConsoleMessageItems([{

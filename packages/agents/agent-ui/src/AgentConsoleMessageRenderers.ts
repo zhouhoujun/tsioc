@@ -319,8 +319,7 @@ export function renderAgentConsoleMessageItem(
     const renderer = resolveMessageRenderer(templateKind);
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
-    const itemStyle = renderer.itemStyle(theme, rowSelected);
-    const inlineRowStyle = resolveInlineRowStyle(itemStyle);
+    const baseItemStyle = renderer.itemStyle(theme, rowSelected);
     const baseRoleLabel = resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
     const roleLabel = context.showUsername
         ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
@@ -334,6 +333,10 @@ export function renderAgentConsoleMessageItem(
         ? `  ${criticalMark}`
         : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
+    const itemStyle = timelineEvent
+        ? resolveTimelineEventItemStyle(baseItemStyle, statusKind, rowSelected)
+        : baseItemStyle;
+    const inlineRowStyle = resolveInlineRowStyle(itemStyle);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const statusSymbol = context.statusSymbol
         || ((timelineEvent || context.timelineMode) ? resolveDefaultStatusGlyph(statusKind) : '');
@@ -407,7 +410,9 @@ export function renderAgentConsoleMessageItem(
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
             itemStyle: {
                 ...itemStyle,
-                padding: `${isFirst ? '1em' : '0'} 1ch ${isLast ? '1em' : '0'} 1ch`
+                padding: timelineEvent
+                    ? '0 1ch'
+                    : `${isFirst ? '1em' : '0'} 1ch ${isLast ? '1em' : '0'} 1ch`
             },
             lineStyle: {
                 ...(rendered.lineStyle || {}),
@@ -934,6 +939,23 @@ function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlin
         inlineStyle['font-weight'] = style['font-weight'];
     }
     return inlineStyle;
+}
+
+function resolveTimelineEventItemStyle(
+    style: Record<string, string>,
+    status: AgentConsoleMessageStatus | undefined,
+    rowSelected: boolean
+): Record<string, string> {
+    const failed = status === 'failed' || status === 'error';
+    return {
+        ...style,
+        margin: '0',
+        'border-left': rowSelected
+            ? style['border-left']
+            : failed
+                ? '2px solid #f85149'
+                : '1px solid #30363d'
+    };
 }
 
 function resolveAgentConsoleMessageStatusStyle(
