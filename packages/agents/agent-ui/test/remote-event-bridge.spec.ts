@@ -158,7 +158,7 @@ export class RemoteEventBridgeMappingTest {
 
         const events = state.displayMessages.filter(message => message.metadata?.uiKind === 'event');
         expect(events.length).toEqual(1);
-        expect(events[0].content).toContain('completed');
+        expect(events[0].content).toContain('Read');
         expect(events[0].metadata?.timeline).toEqual({
             source: 'remote', sequence: 5, toolCallId: 'call-1', receiptId: 'receipt-1', attempt: 1
         });

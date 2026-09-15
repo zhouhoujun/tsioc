@@ -5,6 +5,7 @@ import {
     AgentConsoleSessionState,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
+import { formatTimelineEventLine, presentTimelineToolEvent } from './AgentConsoleTimelineEventPresenter';
 
 export interface RemoteAgentConsoleEvent {
     type: string;
@@ -138,7 +139,12 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('tool', describeToolInvoked(String(data.toolName || '')));
-            projectRemoteToolTimeline(state, data, 'tool_invoked', 'running', describeToolInvoked(String(data.toolName || '')));
+            projectRemoteToolTimeline(state, data, 'tool_invoked', 'running', formatTimelineEventLine(presentTimelineToolEvent({
+                toolName: String(data.toolName || ''),
+                eventType: 'tool_invoked',
+                inputSummary: String(data.inputSummary || data.receipt?.inputSummary || ''),
+                status: 'running'
+            })));
             break;
         case 'tool_completed':
             state.clearRunningTool(String(data.toolName || ''));
@@ -158,7 +164,13 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('tool', describeToolCompleted(String(data.toolName || '')));
-            projectRemoteToolTimeline(state, data, 'tool_completed', 'success', describeToolCompleted(String(data.toolName || '')));
+            projectRemoteToolTimeline(state, data, 'tool_completed', 'success', formatTimelineEventLine(presentTimelineToolEvent({
+                toolName: String(data.toolName || ''),
+                eventType: 'tool_completed',
+                inputSummary: String(data.receipt?.inputSummary || data.inputSummary || ''),
+                outputSummary: String(data.receipt?.outputSummary || ''),
+                status: 'success'
+            })));
             break;
         case 'tool_failed':
             state.clearRunningTool(String(data.toolName || ''));
@@ -171,7 +183,14 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 updatedAt: Date.now()
             }));
             state.pushActivity('error', `${data.toolName || 'tool'} failed: ${data.error || 'unknown error'}`);
-            projectRemoteToolTimeline(state, data, 'tool_failed', 'error', `${data.toolName || 'tool'} failed: ${data.error || 'unknown error'}`);
+            projectRemoteToolTimeline(state, data, 'tool_failed', 'error', formatTimelineEventLine(presentTimelineToolEvent({
+                toolName: String(data.toolName || 'tool'),
+                eventType: 'tool_failed',
+                inputSummary: String(data.receipt?.inputSummary || data.inputSummary || ''),
+                outputSummary: String(data.receipt?.outputSummary || ''),
+                error: String(data.error || ''),
+                status: 'error'
+            })));
             break;
         case 'approval_requested': {
             const request = data.request && typeof data.request === 'object' ? data.request : {};

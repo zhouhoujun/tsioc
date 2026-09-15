@@ -32,6 +32,7 @@ import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
+import { presentTimelineToolEvent, formatTimelineEventLine } from './AgentConsoleTimelineEventPresenter';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -195,7 +196,7 @@ export class AgentConsoleEventBridge {
                         kind: 'tool',
                         key: threadItemKey('tool', event.receipt?.toolCallId || event.receipt?.receiptId || event.toolName),
                         sessionId: event.sessionId,
-                        content: this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary),
+                        content: this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary, event.receipt?.outputSummary),
                         status: 'success',
                         durationMs: event.receipt?.durationMs,
                         toolCallId: event.receipt?.toolCallId,
@@ -275,7 +276,7 @@ export class AgentConsoleEventBridge {
                         kind: 'tool',
                         key: threadItemKey('tool', event.receipt?.toolCallId || event.receipt?.receiptId || event.toolName),
                         sessionId: event.sessionId,
-                        content: `${event.toolName} failed: ${event.error.message}`,
+                        content: this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary, event.receipt?.outputSummary, event.error.message),
                         status: 'error',
                         durationMs: event.receipt?.durationMs,
                         toolCallId: event.receipt?.toolCallId,
@@ -453,10 +454,9 @@ export class AgentConsoleEventBridge {
         }
     }
 
-    protected describeToolTimelineEvent(toolName: string, summary?: string): string {
-        const resolvedSummary = this.summarizeToolEventDetail(toolName, summary);
-        const label = this.describeToolName(toolName);
-        return resolvedSummary ? `${label} · ${resolvedSummary}` : label;
+    protected describeToolTimelineEvent(toolName: string, inputSummary?: string, outputSummary?: string, error?: string): string {
+        const presentation = presentTimelineToolEvent({ toolName, inputSummary, outputSummary, error });
+        return formatTimelineEventLine(presentation);
     }
 
     protected describeToolName(toolName: string): string {
@@ -468,86 +468,6 @@ export class AgentConsoleEventBridge {
         return status === 'running'
             ? (this.translator?.translate('agent.tool.invoked', { label: name }) || `Running ${name}`)
             : (this.translator?.translate('agent.tool.completed', { label: name }) || `${name} completed`);
-    }
-
-    protected summarizeToolEventDetail(toolName: string, summary?: string): string {
-        const text = String(summary || '').trim();
-        if (!text || text === '{}' || text === '[]') {
-            return '';
-        }
-        const payload = this.parseToolSummary(text);
-        if (!payload) {
-            return text;
-        }
-
-        const pathSummary = this.pickPathSummary(payload);
-        if (pathSummary) {
-            if (toolName === 'read_file' && payload.truncated === true) {
-                return `${pathSummary} (truncated)`;
-            }
-            return pathSummary;
-        }
-
-        if (toolName === 'location') {
-            const label = this.pickString(payload.label)
-                || [this.pickString(payload.city), this.pickString(payload.region), this.pickString(payload.countryCode) || this.pickString(payload.country)]
-                    .filter(Boolean)
-                    .join(', ');
-            return label || '';
-        }
-
-        if (toolName === 'weather') {
-            const location = this.pickString(payload.location) || this.pickString(payload.label);
-            const temperature = typeof payload.temperature === 'number' ? payload.temperature : undefined;
-            const description = this.pickString(payload.description);
-            const unit = payload.units === 'imperial' ? 'F' : 'C';
-            return [location, temperature !== undefined ? `${temperature}°${unit}` : '', description].filter(Boolean).join(' ');
-        }
-
-        const url = this.pickString(payload.url) || this.pickString(payload.href);
-        if (url) {
-            return url;
-        }
-
-        const location = this.pickString(payload.location) || this.pickString(payload.label) || this.pickString(payload.name);
-        if (location) {
-            return location;
-        }
-
-        return text;
-    }
-
-    protected parseToolSummary(text: string): Record<string, any> | undefined {
-        try {
-            const payload = JSON.parse(text);
-            return payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : undefined;
-        } catch {
-            return undefined;
-        }
-    }
-
-    protected pickPathSummary(payload: Record<string, any>): string {
-        const single = this.pickString(payload.path)
-            || this.pickString(payload.file)
-            || this.pickString(payload.filePath)
-            || this.pickString(payload.dir)
-            || this.pickString(payload.directory)
-            || this.pickString(payload.from)
-            || this.pickString(payload.to);
-        if (single) {
-            return single;
-        }
-        if (Array.isArray(payload.paths)) {
-            const values = payload.paths.map((value: unknown) => this.pickString(value)).filter(Boolean);
-            if (values.length) {
-                return values.join(', ');
-            }
-        }
-        return '';
-    }
-
-    protected pickString(value: unknown): string {
-        return typeof value === 'string' && value.trim() ? value.trim() : '';
     }
 
     protected truncateNotification(value: string): string {
