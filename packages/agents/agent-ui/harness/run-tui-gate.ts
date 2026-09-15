@@ -269,7 +269,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         const timelineExpect = scenario.expect.timeline;
         if (timelineExpect) {
             const stepLines = lines.slice();
-            check('timeline header zh', stepLines.some(line => /开始 .*?step 1\/3 · 1 个错误/.test(line)),
+            check('timeline header zh', stepLines.some(line => /会话语境·开始 11:40 PM/.test(line) && !/step 1\/3 · 1 个错误/.test(line)),
                 stepLines.filter(line => /开始/.test(line)).join(' | ') || 'none');
             check('timeline footer zh', stepLines.some(line => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(line)),
                 stepLines.filter(line => /耗时/.test(line)).join(' | ') || 'none');

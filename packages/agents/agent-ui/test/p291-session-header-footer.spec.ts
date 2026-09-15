@@ -56,7 +56,7 @@ export class SessionHeaderFooterTest {
         expect(header!.content).not.toContain('错误');
     }
 
-    @Test('header shows current step when a plan todo is active')
+    @Test('header excludes step position even when a plan todo is active (P302)')
     testHeaderStep() {
         const state = createState();
         state.setTimelineMode('steps');
@@ -66,10 +66,11 @@ export class SessionHeaderFooterTest {
         ]);
         const header = state.sessionHeader;
         expect(header).toBeDefined();
-        expect(header!.content).toContain('step 1/2');
+        expect(header!.content).not.toContain('step');
+        expect(header!.content).not.toContain('步');
     }
 
-    @Test('header counts error and failed messages')
+    @Test('header excludes error count even when messages failed (P302)')
     testHeaderErrorCount() {
         const state = createState();
         state.setTimelineMode('steps');
@@ -80,7 +81,8 @@ export class SessionHeaderFooterTest {
         ]);
         const header = state.sessionHeader;
         expect(header).toBeDefined();
-        expect(header!.content).toContain('2 个错误');
+        expect(header!.content).not.toContain('错误');
+        expect(header!.content).not.toContain('error');
     }
 
     @Test('header degrades to a time-only row when no title is set')

@@ -8,7 +8,7 @@ import {
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
-import { resolveTimelineEventSentence, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
+import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
@@ -552,6 +552,19 @@ export function resolveAgentConsoleMessageStatus(
     if (String(message.role || '').toLowerCase() === 'tool' && message?.metadata?.error) {
         return 'failed';
     }
+    if (templateKind === 'timelineBoundary') {
+        // P302: the step boundary shows the active step's own state as its
+        // glyph — the boundary is a state point, not a static divider.
+        switch (String(message?.metadata?.planStepStatus || '').trim()) {
+            case 'in_progress':
+            case 'pending':
+                return 'running';
+            case 'failed':
+                return 'failed';
+            default:
+                return 'success';
+        }
+    }
     if (templateKind === 'error') {
         return 'error';
     }
@@ -768,6 +781,16 @@ function resolveTimelineMeta(
     const uiKind = String(message?.metadata?.uiKind || '').trim();
     if (templateKind === 'timelineHeader' || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
         return '';
+    }
+    if (templateKind === 'timelineBoundary') {
+        // P302: step boundary meta carries the optional step duration only;
+        // the glyph column is the single state point (P289), timestamps and
+        // textual status stay out of the row so it reads as a short title.
+        const elapsedMs = Number(message?.metadata?.planStepElapsedMs);
+        if (Number.isFinite(elapsedMs) && elapsedMs >= 0) {
+            parts.push(formatTimelineSessionDuration(elapsedMs));
+        }
+        return parts.join(' · ');
     }
     if (uiKind === 'event') {
         const durationMs = Number(message?.metadata?.durationMs);

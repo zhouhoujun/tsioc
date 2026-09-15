@@ -1279,14 +1279,14 @@ export class AgentConsoleSessionState {
                 filtered.push({
                     id: '__timeline_plan_boundary__',
                     role: 'assistant',
-                    content: fillTimelineLabel(
+                    content: truncateTimelineRowText(fillTimelineLabel(
                         this.consoleOptions.timelineLabels.boundaryStep || DEFAULT_TIMELINE_LABELS.boundaryStep,
                         {
                             index,
                             total: this.planTodos.length,
                             content: active.content
                         }
-                    ),
+                    )),
                     createdAt: Date.now(),
                     metadata: {
                         uiKind: 'timeline-boundary',
@@ -1294,7 +1294,10 @@ export class AgentConsoleSessionState {
                         planTotal: this.planTodos.length,
                         planStepId: active.id,
                         planStepStatus: active.status,
-                        planStepContent: active.content
+                        planStepContent: active.content,
+                        planStepElapsedMs: typeof active.elapsedMs === 'number' && Number.isFinite(active.elapsedMs)
+                            ? active.elapsedMs
+                            : undefined
                     }
                 } as AgentMessage);
             }
@@ -1330,20 +1333,9 @@ export class AgentConsoleSessionState {
         parts.push(fillTimelineLabel(labels?.headerStart || DEFAULT_TIMELINE_LABELS.headerStart, {
             time: formatTimelineClockTime(start)
         }));
-        const active = this.planTodos.find(todo => todo.status === 'in_progress')
-            || this.planTodos.find(todo => todo.status === 'pending');
-        if (active) {
-            parts.push(fillTimelineLabel(labels?.headerStep || DEFAULT_TIMELINE_LABELS.headerStep, {
-                index: this.planTodos.indexOf(active) + 1,
-                total: this.planTodos.length
-            }));
-        }
-        const errors = this.messages.filter(message =>
-            message?.metadata?.status === 'error' || message?.metadata?.status === 'failed'
-        ).length;
-        if (errors > 0) {
-            parts.push(fillTimelineLabel(labels?.headerErrors || DEFAULT_TIMELINE_LABELS.headerErrors, { count: errors }));
-        }
+        // P302: the turn header carries session context and start time only.
+        // Current step position/status lives on the step boundary row, and the
+        // error count on the session footer (P303) / event rows — not here.
         return {
             id: '__timeline_session_header__',
             role: 'assistant',
