@@ -6,12 +6,13 @@
 #   1. unit tests: 10 agent subpackages (each must EXIT=0)
 #   2. unit tests: components / components/console / components/html
 #   3. tsc --noEmit: agent / agent-ui / agent-gateway / agent-tools
-#   4. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios)
-#   5. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 5 scenarios)
-#   6. gate regression: gate metrics vs harness/gate-baseline.json ([REGRESSION]/[OK])
-#   7. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
+#   4. production build: agent-ui browser bundle + markdown worker
+#   5. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios)
+#   6. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 5 scenarios)
+#   7. gate regression: gate metrics vs harness/gate-baseline.json ([REGRESSION]/[OK])
+#   8. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
 #      when python3/pty/agent-cli artifact unavailable — never fake a pass)
-#   8. git diff --check (workspace cleanliness)
+#   9. git diff --check (workspace cleanliness)
 #
 # Each stage prints `[GATE-PASS]/[GATE-FAIL]/[GATE-SKIP] <id>: <label>` so CI
 # output is greppable. The script exits non-zero when ANY executed stage FAILed.
@@ -25,7 +26,8 @@
 #            agent-ssh agent-tools agent-ui agent-desktop agent-vscode
 #            components components-console components-html
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
-#            dom-gate tui-gate gate-regression pty-acceptance diff-check
+#            build-agent-ui-web dom-gate tui-gate gate-regression
+#            pty-acceptance diff-check
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -63,6 +65,19 @@ run_tsc() {
     local id="$1" label="$2" dir="$3"
     local log="$LOG_DIR/$id.log"
     if (cd "$dir" && npx tsc --noEmit >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        echo "--- $id tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+    fi
+}
+
+# run_npm_script <id> <label> <pkg-dir> <script>
+run_npm_script() {
+    local id="$1" label="$2" dir="$3" script="$4"
+    local log="$LOG_DIR/$id.log"
+    if (cd "$dir" && npm run "$script" >"$log" 2>&1); then
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"
@@ -178,6 +193,7 @@ run_stage() {
         tsc-agent-ui)     run_tsc tsc-agent-ui 'tsc --noEmit @tsdi/agent-ui' packages/agents/agent-ui ;;
         tsc-agent-gateway) run_tsc tsc-agent-gateway 'tsc --noEmit @tsdi/agent-gateway' packages/agents/agent-gateway ;;
         tsc-agent-tools)  run_tsc tsc-agent-tools 'tsc --noEmit @tsdi/agent-tools' packages/agents/agent-tools ;;
+        build-agent-ui-web) run_npm_script build-agent-ui-web 'agent-ui browser production bundle' packages/agents/agent-ui build:web ;;
         dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 5 scenarios)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;;
         tui-gate)         run_harness tui-gate 'TUI gate (text stream, 5 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
         gate-regression)  run_gate_regression ;;
@@ -194,7 +210,8 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             agent-ssh agent-tools agent-ui agent-desktop agent-vscode
             components components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
-            dom-gate tui-gate gate-regression pty-acceptance diff-check"
+            build-agent-ui-web dom-gate tui-gate gate-regression
+            pty-acceptance diff-check"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"

@@ -3153,3 +3153,9 @@ Turn: Fix session restore                                      running  01:42
 - **问题复现**：`agents-gate.sh` 的 `GATE_LOG_DIR` 默认固定为 `/tmp/agents-gate-logs`，`run_gate_regression` 仅根据 JSON 是否存在决定输入。在本轮 DOM/TUI 未运行时单独执行 `gate-regression`，实际读取 11 分钟前的双端 metrics 并错误报 PASS，存在 CI/本地部分门禁假绿。
 - **本轮证据隔离**：脚本新增 `DOM_METRICS_READY`/`TUI_METRICS_READY` 进程内标志，仅在对应 harness 本轮成功退出后置位；regression 只传入已置位端的 JSON。历史文件存在但本轮无指标时明确 SKIP；本轮仅 DOM 时严格因 TUI baseline 缺失而 FAIL，不再偷用旧 TUI 指标补齐。
 - **验证**：`bash -n` 通过；预置陈旧双 JSON 后单跑 regression 为 **0 passed / 1 skipped**；本轮 DOM-only + regression 按契约 FAIL（TUI MISSING）；本轮 DOM+TUI+regression **3 passed / 0 skipped**；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**。计划保持无开放批次。
+
+## v46 2026-09-15 — Agent UI 生产 Web bundle 门禁补齐 ✅
+
+- **覆盖缺口**：历史计划一直将 agent-ui `build:web` 列为浏览器/VS Code/Electron 交付必要验证，但统一 `agents-gate.sh` 仅执行单测与 `tsc --noEmit`，无法捕获 esbuild、browser shim 和 markdown worker 打包回归。
+- **门禁实现**：新增通用 `run_npm_script` 与 `build-agent-ui-web` stage，接入默认全量序列；失败时聚合输出末 30 行日志，生成的 `web/dist/` 保持已忽略。脚本头部阶段说明与 stage id 同步。
+- **验证**：受限沙箱内准确捕获 `spawnSync /bin/sh EPERM`；授权宿主定向 build + diff-check **2 passed**；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` 由 22 阶段增至 **23 passed / 0 skipped / EXIT=0**，生产 bundle、DOM/TUI、metrics regression 与真实 PTY 均通过。
