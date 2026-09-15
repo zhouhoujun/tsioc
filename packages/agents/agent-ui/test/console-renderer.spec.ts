@@ -88,6 +88,20 @@ export class AgentConsoleDashboardRendererTest {
         expect(inputLines.some(line => line.includes('deepseek-v4-flash · 1.2K tokens'))).toBe(true);
     }
 
+    @Test('working elapsed time advances on the shared lifecycle tick')
+    async workingElapsedAdvancesOnSharedTick() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.turnStartedAt = Date.now();
+        await Promise.resolve();
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+
+        expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => line.includes('(0s'))).toBe(true);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => /\((1|2)s/.test(line))).toBe(true);
+    }
+
     @Test('renders message history before plan panel in root output')
     async renderMessagesBeforePlanPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

@@ -168,6 +168,37 @@ export class UiInputInteractionRegressionTest {
         expect(cancelCalls).toEqual([state.sessionId]);
     }
 
+    @Test('Ctrl+C and Esc reach cancellation while the submitted turn is still pending')
+    async interruptKeysCancelPendingSubmittedTurn() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        const cancelCalls: string[] = [];
+        (instance as any).sessionService = {
+            cancelTurn: async (sessionId: string) => {
+                cancelCalls.push(sessionId);
+                return true;
+            }
+        };
+
+        for (const interrupt of ['\u0003', '\u001b']) {
+            state.setInput('run a long task', 15);
+            let releaseTurn!: () => void;
+            const pendingTurn = new Promise<void>(resolve => { releaseTurn = resolve; });
+            (instance as any).submit = async () => {
+                state.setStatus('running');
+                await pendingTurn;
+                state.setStatus('idle');
+            };
+            try {
+                await this.press('\r', interrupt);
+            } finally {
+                releaseTurn();
+                await pendingTurn;
+            }
+        }
+        expect(cancelCalls).toEqual([state.sessionId, state.sessionId]);
+    }
+
     @Test('Esc while idle dismisses focus surfaces and does not cancel anything')
     async escapeIdleDoesNotCancel() {
         const instance = this.console();

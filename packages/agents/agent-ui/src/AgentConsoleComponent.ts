@@ -679,7 +679,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const tasks = await this.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
         const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
         this.state.setHarnessState(projection);
-        const lines = formatHarnessTreeLines(tree as DelegationTreeNode);
+        const lines = formatHarnessTreeLines(tree as DelegationTreeNode, projection);
         if (!lines.length) {
             this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
             return true;
@@ -6466,7 +6466,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         switch (outcome.action) {
             case 'submit':
-                await this.submit();
+                // Keep terminal input dispatch available while the turn runs so
+                // Esc/Ctrl+C can reach the cancellation path immediately.
+                void this.submit();
                 return;
             case 'cancelTurn':
                 if (this.isTurnInProgress()) {

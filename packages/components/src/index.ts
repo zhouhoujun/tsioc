@@ -43,5 +43,6 @@ export * from './components';
 
 export * from './directives/animation';
 export * from './directives/animated-text';
+export * from './directives/elapsed-time';
 
 export * from './impl/html';

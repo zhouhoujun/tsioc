@@ -16,6 +16,7 @@ import { VShowDirective } from './directives/show.dir';
 import { VBindDirective, VOnDirective } from './directives/bind.dir';
 import { AnimatedFrameDirective } from './directives/animation';
 import { AnimatedTextDirective, AnimatedTextLifecycleService } from './directives/animated-text';
+import { ElapsedTimeDirective } from './directives/elapsed-time';
 import { componentResolvers } from './impl/resolvers';
 
 
@@ -50,6 +51,7 @@ import { componentResolvers } from './impl/resolvers';
         VOnDirective,
         AnimatedFrameDirective,
         AnimatedTextDirective,
+        ElapsedTimeDirective,
         AnimatedTextLifecycleService
     ]
 })

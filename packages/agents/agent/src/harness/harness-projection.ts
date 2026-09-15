@@ -388,15 +388,20 @@ export function formatHarnessDelegationLine(d: HarnessDelegation): string {
  * Render a delegation tree as indented lines with branch prefixes
  * (`├─`, `└─`, `│`). The root node is rendered without a prefix.
  */
-export function formatHarnessTreeLines(root: DelegationTreeNode): string[] {
-    const lines: string[] = [shortenHarnessSessionId(root.sessionId)];
+export function formatHarnessTreeLines(root: DelegationTreeNode, projection?: HarnessProjection): string[] {
+    const formatNode = (node: DelegationTreeNode): string => {
+        const projected = projection?.delegations.get(node.sessionId);
+        const id = shortenHarnessSessionId(node.sessionId);
+        const kind = (projected?.kind ?? node.kind) ? ` ${projected?.kind ?? node.kind}` : '';
+        const status = statusIcon(projected?.status ?? node.status);
+        const goal = projected?.goal ? ` · ${projected.goal}` : '';
+        return `${id}${kind} ${status}${goal}`;
+    };
+    const lines: string[] = [formatNode(root)];
     const visit = (node: DelegationTreeNode, prefix: string, isLast: boolean) => {
         const branch = isLast ? '└─' : '├─';
         const connector = isLast ? '   ' : '│ ';
-        const id = shortenHarnessSessionId(node.sessionId);
-        const status = statusIcon(node.status);
-        const kind = node.kind ? ` ${node.kind}` : '';
-        lines.push(`${prefix}${branch} ${id}${kind} ${status}`);
+        lines.push(`${prefix}${branch} ${formatNode(node)}`);
         for (let i = 0; i < node.children.length; i++) {
             visit(node.children[i], prefix + connector, i === node.children.length - 1);
         }

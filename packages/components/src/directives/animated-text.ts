@@ -46,6 +46,10 @@ export class AnimatedTextLifecycleService {
     }
 
     subscribe(listener: () => void): void {
+        // The service is usually resolved lazily by a directive rather than as
+        // an application runner, so the first consumer must activate the
+        // shared lifecycle tick.
+        this.start();
         this.listeners.add(listener);
     }
 

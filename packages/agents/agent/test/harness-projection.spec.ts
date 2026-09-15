@@ -220,6 +220,25 @@ export class HarnessProjectionTest {
         expect(lines[3]).toContain('grandchild');
     }
 
+    @Test('formatHarnessTreeLines: renders merged background task status and goal')
+    formatTreeLinesFromProjection() {
+        const root = treeNode({
+            sessionId: 'root',
+            status: 'active',
+            children: [
+                treeNode({ sessionId: 'worker', kind: 'spawn_agent', status: 'active', children: [] })
+            ]
+        });
+        const projection = buildHarnessProjection(root, [
+            task({ id: 'task-1', sessionId: 'worker', status: 'failed', goal: 'inspect failure' })
+        ]);
+
+        const lines = formatHarnessTreeLines(root, projection);
+
+        expect(lines[1]).toContain('worker spawn_agent ✗');
+        expect(lines[1]).toContain('inspect failure');
+    }
+
     @Test('formatHarnessListLines: renders flat list')
     formatListLines() {
         const root = treeNode({
