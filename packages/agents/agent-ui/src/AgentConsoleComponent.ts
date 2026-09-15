@@ -676,8 +676,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
             return true;
         }
-        const tasks = await this.sessionService.listBackgroundTasks({ delegationRoot: resolvedSessionId });
-        const projection = buildHarnessProjection(tree as DelegationTreeNode, (tasks?.items ?? []) as BackgroundTaskRecord[]);
+        const tasks = await this.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
+        const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
         this.state.setHarnessState(projection);
         const lines = formatHarnessTreeLines(tree as DelegationTreeNode);
         if (!lines.length) {
@@ -708,8 +708,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
             return true;
         }
-        const tasks = await this.sessionService.listBackgroundTasks({ delegationRoot: resolvedSessionId });
-        const projection = buildHarnessProjection(tree as DelegationTreeNode, (tasks?.items ?? []) as BackgroundTaskRecord[]);
+        const tasks = await this.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
+        const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
         this.state.setHarnessState(projection);
         const lines = formatHarnessListLines(projection);
         if (!lines.length) {

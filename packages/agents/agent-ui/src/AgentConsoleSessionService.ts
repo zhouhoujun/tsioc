@@ -885,6 +885,29 @@ export class AgentConsoleSessionService {
         return this.appRpc.request('background.list', options ?? {}, context) ?? null;
     }
 
+    /** Reads every background-task page needed by collaboration projections. */
+    async listAllBackgroundTasks(options: { sessionId?: string; delegationRoot?: string }, context?: any): Promise<Array<Record<string, any>>> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const items: Array<Record<string, any>> = [];
+        const seenCursors = new Set<string>();
+        let cursor: string | undefined;
+        for (let page = 0; page < 20; page += 1) {
+            const result = await this.listBackgroundTasks({ ...options, ...(cursor ? { cursor } : {}), limit: 500 }, context);
+            items.push(...(Array.isArray(result?.items) ? result.items : []));
+            const nextCursor = typeof result?.nextCursor === 'string' && result.nextCursor
+                ? result.nextCursor
+                : undefined;
+            if (!result?.hasMore || !nextCursor || seenCursors.has(nextCursor)) {
+                break;
+            }
+            seenCursors.add(nextCursor);
+            cursor = nextCursor;
+        }
+        return items;
+    }
+
     /**
      * Cancels background tasks by id (batch, best-effort) over RPC. Returns
      * `{ taskIds, cancelled }` from the gateway.

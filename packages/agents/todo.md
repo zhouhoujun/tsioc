@@ -3110,3 +3110,9 @@ Turn: Fix session restore                                      running  01:42
 - **改进**：在全局终端输入分发最前端识别 ETX；运行中 Esc 优先调用 `interruptTurn()`，不再受当前输入焦点或选择菜单拦截。
 - **实现链**（三提交 `8c1653831`/`a580adb2f`/`d7ac20947`）：`AgentConsoleComponent.handleTerminalInput`（:5754 前）与 `handleGlobalKeyInput`（:5659 前）双入口在 keymap/focus 路由前识别 `raw === '\u0003'`（ETX）→ 运行中直接 `interruptTurn()` 返回 true；`handleGlobalKeyInput` 另在 Esc 被面板吞掉之前（focus 菜单分支之先）优先 `interruptTurn()`（:5693），空闲态 Esc 行为不变；`agent-ui.module.ts` import 格式整理；新增 `vm-vim-keymap.spec.ts` `rawCtrlCInterruptsRunningTurn`（insert mode + `\u0003` → cancelTurn 命中 1 次）。
 - **验证**：agent-ui **1217 passing / 0 failed / EXIT=0**（基线 1216 +1 新增 raw ctrl-c 中断测试）；`npx tsc --noEmit` EXIT=0；`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / GATE-EXIT=0**——agents 10 包、framework 三包、4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 及 `git diff --check` 全部通过。
+
+## v39 2026-09-15 — P243 Harness 分页完整性与最终收尾 ✅
+
+- **完成项复核**：P243 的 projection、`/harness tree|list|stop`、共享状态与命令解析均已落地；P244–P246 属旧版重复规划，已分别由 P260–P266、P253/P264、P254/P257 承接完成，无需重复实施。跨平台边界扫描干净，无临时 runner 残留。
+- **分页缺口修复**：收尾审计发现 `background.list` 默认每页 50 条，而 `/harness tree|list` 仅读取第一页。`AgentConsoleSessionService.listAllBackgroundTasks` 现以 500 条/页聚合完整结果，最多 20 页，并用重复游标保护避免异常服务端响应导致死循环；两个 Harness 命令统一消费该跨平台 service seam。新增双页回归，agent-ui 全套由 **1220** 增至 **1221 passing**。
+- **构建与完整门禁**：agent-ui `npm run build:web`、`npx tsc --noEmit` 均 EXIT=0。授权宿主运行 `RUN_PTY=1 bash scripts/agents-gate.sh`：**22 passed / 0 skipped / EXIT=0**。agents 10 包分别为 agent **889**、agent-channels **59**、agent-cli **74**、agent-gateway **296**、agent-providers **13**、agent-ssh **8**、agent-tools **478**、agent-ui **1221**、agent-desktop **20**、agent-vscode **7** passing；framework 三包为 components **136**、components/console **75**、components/html **117** passing；4 包 tsc、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 5 场景及 `git diff --check` 全部通过。计划保持无开放批次。

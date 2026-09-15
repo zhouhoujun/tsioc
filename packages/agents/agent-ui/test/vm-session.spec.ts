@@ -366,6 +366,29 @@ export class VmSessionTest {
         expect(await service.listGitStepSnapshots('')).toEqual([]);
     }
 
+    @Test('session service reads all background task pages for harness projections')
+    async sessionServiceReadsAllBackgroundTaskPages() {
+        const calls: any[] = [];
+        const appRpc = {
+            async request(method: string, params: any) {
+                calls.push({ method, params });
+                if (!params.cursor) {
+                    return { items: [{ id: 'task-1' }], hasMore: true, nextCursor: 'page-2' };
+                }
+                return { items: [{ id: 'task-2' }], hasMore: false };
+            }
+        };
+        const service = new AgentConsoleSessionService(appRpc as any, undefined, undefined);
+
+        const tasks = await service.listAllBackgroundTasks({ delegationRoot: 'chat-1' });
+
+        expect(tasks.map(task => task.id)).toEqual(['task-1', 'task-2']);
+        expect(calls).toEqual([
+            { method: 'background.list', params: { delegationRoot: 'chat-1', limit: 500 } },
+            { method: 'background.list', params: { delegationRoot: 'chat-1', cursor: 'page-2', limit: 500 } }
+        ]);
+    }
+
     @Test('session service diffs a git step snapshot through app rpc')
     async sessionServiceDiffsGitStepSnapshotThroughAppRpc() {
         const appRpc = new AppRpcStub();
