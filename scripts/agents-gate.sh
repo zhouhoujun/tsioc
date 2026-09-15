@@ -38,6 +38,8 @@ PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
 FAILED_STAGES=""
+DOM_METRICS_READY=0
+TUI_METRICS_READY=0
 
 stage_pass() { PASS_COUNT=$((PASS_COUNT + 1)); echo "[GATE-PASS] $1: $2"; }
 stage_fail() { FAIL_COUNT=$((FAIL_COUNT + 1)); FAILED_STAGES="$FAILED_STAGES $1"; echo "[GATE-FAIL] $1: $2"; }
@@ -75,6 +77,11 @@ run_harness() {
     shift 3
     local log="$LOG_DIR/$id.log"
     if (cd packages/agents/agent-ui && npx ts-node -r tsconfig-paths/register "harness/$gate" "$@" >"$log" 2>&1); then
+        if [ "$id" = "dom-gate" ]; then
+            DOM_METRICS_READY=1
+        elif [ "$id" = "tui-gate" ]; then
+            TUI_METRICS_READY=1
+        fi
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"
@@ -116,19 +123,20 @@ run_pty() {
 }
 
 # run_gate_regression — compare gate metrics JSON against committed baseline.
-# Skips when neither dom-gate nor tui-gate produced a metrics JSON (partial runs).
+# Only consumes metrics produced successfully in this script invocation. Files
+# left in the persistent log directory by an earlier run are never evidence.
 run_gate_regression() {
     local id="gate-regression" label="gate metrics regression vs baseline"
     local dom_json="$LOG_DIR/dom-gate-metrics.json"
     local tui_json="$LOG_DIR/tui-gate-metrics.json"
-    if [ ! -f "$dom_json" ] && [ ! -f "$tui_json" ]; then
-        stage_skip "$id" "$label (no metrics JSON — run dom-gate/tui-gate first)"
+    if [ "$DOM_METRICS_READY" -ne 1 ] && [ "$TUI_METRICS_READY" -ne 1 ]; then
+        stage_skip "$id" "$label (no current-run metrics — run dom-gate/tui-gate first)"
         return
     fi
     local baseline="$ROOT_DIR/packages/agents/agent-ui/harness/gate-baseline.json"
     local runner_args=()
-    [ -f "$dom_json" ] && runner_args+=(--dom "$dom_json")
-    [ -f "$tui_json" ] && runner_args+=(--tui "$tui_json")
+    [ "$DOM_METRICS_READY" -eq 1 ] && runner_args+=(--dom "$dom_json")
+    [ "$TUI_METRICS_READY" -eq 1 ] && runner_args+=(--tui "$tui_json")
     runner_args+=(--baseline "$baseline")
     local log="$LOG_DIR/$id.log"
     if (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-gate-regression.ts "${runner_args[@]}" >"$log" 2>&1); then

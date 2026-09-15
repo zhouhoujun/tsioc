@@ -3147,3 +3147,9 @@ Turn: Fix session restore                                      running  01:42
 - **失败产物清理**：仓库卫生扫描发现 `agent-ui/harness/.gate-artifacts/` 中 5 个被跟踪的 2026-09-07 失败现场文件（body、console/page errors、RPC calls 与 76KB 截图）。它们零引用、不属于基线或 fixture，已删除；`.gitignore` 新增对该运行产物目录的忽略，acceptance 失败日志目录的既有忽略保持有效。
 - **Gate 契约更正**：`scripts/agents-gate.sh` 中 PTY opt-in 注释与 skip 文案仍声称 v20-D 阈值工作尚未落地，与 v20-D/v41 完成态矛盾。现明确 opt-in 仅因为需要 Unix PTY 与预构建 agent-cli artifact；`bash -n` 及默认 skip 分支实测通过。
 - **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。计划保持无开放批次。
+
+## v45 2026-09-15 — Gate metrics 跨运行污染防护 ✅
+
+- **问题复现**：`agents-gate.sh` 的 `GATE_LOG_DIR` 默认固定为 `/tmp/agents-gate-logs`，`run_gate_regression` 仅根据 JSON 是否存在决定输入。在本轮 DOM/TUI 未运行时单独执行 `gate-regression`，实际读取 11 分钟前的双端 metrics 并错误报 PASS，存在 CI/本地部分门禁假绿。
+- **本轮证据隔离**：脚本新增 `DOM_METRICS_READY`/`TUI_METRICS_READY` 进程内标志，仅在对应 harness 本轮成功退出后置位；regression 只传入已置位端的 JSON。历史文件存在但本轮无指标时明确 SKIP；本轮仅 DOM 时严格因 TUI baseline 缺失而 FAIL，不再偷用旧 TUI 指标补齐。
+- **验证**：`bash -n` 通过；预置陈旧双 JSON 后单跑 regression 为 **0 passed / 1 skipped**；本轮 DOM-only + regression 按契约 FAIL（TUI MISSING）；本轮 DOM+TUI+regression **3 passed / 0 skipped**；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**。计划保持无开放批次。
