@@ -3200,3 +3200,44 @@ Turn: Fix session restore                                      running  01:42
 - **架构边界**：全部改动位于 agent-ui 共享投影/渲染层，browser/TUI 共用；不引入 Node API 或 `@tsdi/components/console`；不用 timer 刷新、不做布局层脏节点缓存、不修改原始 timeline 持久化证据。
 - **非目标**：不复刻 Codex/opencode 品牌配色，不增加独立 dashboard，不用更多 glyph 补偿信息架构，不把 tool raw output 重新塞回主对话流。
 - **每批门禁**：定向 projection/presenter/renderer spec → agent-ui 全套（当前 **1225 passing**）→ `npx tsc --noEmit` → `bash scripts/agents-gate.sh dom-gate tui-gate gate-regression`。最终运行 `RUN_PTY=1 bash scripts/agents-gate.sh`（当前 **23 stages**）、更新基线/todo 并独立提交。
+
+## v50 规划 2026-09-15 — 会话内容语义分层与专业化呈现（P305–P312）
+
+> v49 聚焦 timeline event 自身的生命周期、文案和轨道层级；本轮扩大到完整会话。当前 `AgentConsoleMessageRenderers.ts` 虽已有 user/assistant/tool/error/system/planTodo/fileChange/timeline* 等模板，approval、question、reasoning、background task、review/diff、command output 又分别由消息、synthetic message 或独立 panel 承载，缺少统一的“内容为何出现、在主线占多大权重、详情去哪里”的语义契约。优化应先统一内容模型，再做视觉细节，不能仅依据 role 或 `uiKind` 增加分支。
+
+### 内容类型对照与取向
+
+| 会话内容 | Codex 的有效做法 | opencode 的有效做法 | agent-ui 当前问题 | 本项目取向 |
+|---|---|---|---|---|
+| 用户请求 | 作为 turn 的明确起点，与执行过程有稳定间距 | user message 是 message-part 分组锚点 | 普通 user 模板可读，但与 timeline header/turn boundary 的职责可能重复 | 用户原文是唯一 turn 主锚；附件、时间和上下文为次级 meta，不重复生成“开始处理”行 |
+| Assistant 最终回答 | 最终答复是 turn 中最高可读性内容，过程不会切碎正文 | 完成后的 assistant text 保持连续 Markdown | tool-call 前的 assistant 片段、最终正文与生命周期行可能形成重复观感 | 区分 preamble/partial/final；默认主线突出 final，preamble 仅在有独立信息时保留且降级 |
+| Reasoning / Thought | 过程可见但克制，不与最终答复争夺层级 | Thought 可折叠，以短标题和耗时概括 | reasoning 有独立区域，但与事件、assistant 内容的排序和折叠规则未形成统一契约 | 主线只放短 Thought 摘要；长 reasoning 进入详情，运行中可见、完成后弱化，绝不伪装成最终回答 |
+| Tool execution | 单次调用原地演进，动作、目标、结果清晰 | tool block 按 pending/running/completed/error 更新 | v49 已识别生命周期重复与 raw content 抢主行 | 承接 P299–P301：单工具单行，动作+目标为主，状态/耗时为 meta，raw input/output 进 inspector |
+| Shell / command output | 命令本身与结果摘要留在过程，完整 stdout 可深入查看 | 命令块保留关键尾部，长输出按需展开 | command-execution、tool event、commandOutputs panel 可能重复承载同一事实 | 主线保留命令摘要、exit/result；stdout/stderr 放统一 output detail，错误尾部和根因不可被截没 |
+| Plan / todo | 计划紧邻任务，状态变化原地更新 | todo 作为稳定结构块，当前项突出 | planTodo、plan timeline event、step boundary 可三次表达同一步 | plan 是 turn 内结构导航；step 事件只表达执行证据，不复述 todo 文案；完成项降噪、当前项突出 |
+| File changes / diff | 主线显示文件及 change summary，详细 diff 单独审阅 | Edit/Patched 以人类可读目标呈现 | fileChange synthetic message、tool 行和 review panel 可能重复 | 主线按文件聚合新增/修改/删除及计数；diff/hunk 留在 review inspector，避免重复卡片 |
+| Question / ask_user | 作为等待用户决策的显式 checkpoint | Questions 有独立交互与选项 | pending question 多在独立 panel，离因果事件和上下文较远 | 问题进入主时间顺序且保持唯一交互面；显示问题、必要上下文和选项，回答后折为“问题 + 已选答案” |
+| Approval | 风险、动作、目标和允许范围清楚，等待态醒目 | permission request 是独立阻塞步骤 | approval 与 generic system/error 行的边界不稳定 | 作为 decision checkpoint；突出待决而非做成错误，完成后紧凑记录决定、scope 与结果 |
+| Error / warning / cancel | 根因就地出现，诊断信息可展开 | tool error 留在对应 block，取消不等同失败 | error template 与 event failure 可能脱离因果对象；cancel 容易过度告警 | 错误附着 causal item，根因恒显、堆栈进详情；warning 次级；cancel 使用中性终止语义 |
+| Background / sub-agent | 显示 ownership、状态和最终产物，不倾倒内部过程 | subtask block 用标题、agent 与当前工具概括 | background task/history panel 能力完整，但主会话缺少稳定摘要边界 | 主线只显示任务名、执行者、状态、结果/失败；子任务细节进入 task inspector，完成后合并降噪 |
+| Attachment / media | 与用户请求或回答绑定，并提供可识别名称/预览状态 | message part 保持附件归属 | 附件与文本的顺序、失败/缺失状态尚未纳入 timeline 语法 | 附件附着所属消息；展示类型、名称、大小/状态，预览失败不破坏正文，TUI 给出等价文本表示 |
+| System / command notice | 仅保留会影响用户理解或下一步的状态 | transient notice 不污染长期会话 | system、notify、command output 的持久性和重要度边界模糊 | 分为 session fact、transient feedback、diagnostic；只有可追溯且影响结果的事实进入主线 |
+
+### 实施批次
+
+- [ ] **P305 · Session content taxonomy 与 presenter contract**：新增纯分类/呈现层，将原始 message、timeline event、command output 与交互状态归一为 `conversation`（user/final）、`execution`（thought/tool/command）、`decision`（question/approval）、`artifact`（plan/file/attachment）、`diagnostic`（warning/error/system）语义族，并派生稳定 `title/summary/meta/detailRef/priority/causalKey`。分类不得只依赖 role 或 `uiKind`，未知类型必须有可读降级；原始消息与持久化协议保持不变。先用表驱动测试固定每类的主线角色、默认展开性和详情路由。
+- [ ] **P306 · 用户请求与最终回答主线**：用户请求成为每个 turn 唯一视觉锚点，移除与 header/boundary 重复的启动措辞；assistant 内容明确区分 preamble、streaming partial 与 final，投影层保证最终正文只出现一次。final 使用连续、无卡片嵌套的 Markdown 排版，段落/列表/代码块保持自然节奏；长回答不被 tool status 穿插，附件仍归属原消息。补多轮、纯问答、先工具后回答、无 final、流式重放反例。
+- [ ] **P307 · Thought、tool 与 command 内容协同**：reasoning 完成后压缩为单个低权重 Thought 摘要，运行态保留当前进展；tool 接入 P299/P300 的单行 presenter；shell/command 主线仅保留命令、exit/result 和必要错误尾部，完整 stdout/stderr/raw payload 统一路由 detail inspector。规定 preamble → thought/tool → result 的稳定次序，去除 lifecycle/system 复述；不得泄露隐藏 reasoning 或把诊断字段当用户正文。
+- [ ] **P308 · Plan、文件变更与产物归并**：plan 作为紧邻根请求的结构化进度块，当前 step 强调、完成 step 降噪；以 `planId/stepId` 关联执行证据，避免 planTodo、boundary、event 三重复述。file change 按文件与 add/update/delete 聚合，主线只显示文件名、状态和统计，diff/hunk 保留于 review inspector；attachment/artifact 绑定产生它的消息或步骤。补同文件多次编辑、rename/delete、空 diff、计划修订与重放幂等测试。
+- [ ] **P309 · Question 与 approval 决策检查点**：统一两类等待用户输入的内容语法和焦点生命周期，但保留语义差异：question 展示问题/上下文/选项，approval 展示动作/目标/风险/scope。pending 态在主线因果位置唯一呈现并可操作，回答/批准/拒绝/过期后原地收敛为紧凑记录；browser/TUI 共用选择、Esc、焦点恢复和 ARIA 状态，不同时在 generic notice 或 error 中再播报。
+- [ ] **P310 · Error、取消与后台任务叙事**：通过 `causalKey` 将 tool/command/step error 放回触发项，主行恒显人类可读根因，stack、receipt、source 和 retry diagnostics 放详情；warning 不抢占 failure，用户取消/超时/中断采用中性结束态。background/sub-agent 只在主线保留 ownership、任务、状态和最终 outcome，连续内部工具折入 task inspector；失败任务不得被完成摘要吞掉。
+- [ ] **P311 · 跨内容视觉语法、响应式与可访问性**：为五类内容建立一致 token 规则：conversation 最大阅读权重，decision 明确待处理，artifact 稳定成组，execution 紧凑，diagnostic 按严重度；控制 rail、留白、标题、正文与 meta 的固定职责，不增加嵌套 card。状态/标题/meta 使用稳定列宽与 CJK 显示宽度预算，窄终端优先保留对象和根因；ARIA 从 semantic kind/presenter 生成。browser/TUI 共用实现，不加 timer、不引用 Node/console 私有层、不做布局脏节点缓存。
+- [ ] **P312 · 完整会话场景矩阵与双端验收**：在 v49 P304 的 event 场景上扩展 full-session fixture，覆盖 user → plan/thought → tool/command → question/approval → file/attachment → error/retry/background → final 的正常、阻塞、失败、取消和 replay 分支。DOM/TUI 断言顺序、唯一性、语义层级、detail routing、交互后原地收敛、80/100/120 列 CJK、Markdown 与 ARIA；真实 PTY 人工检查暗/亮主题和 80/120 列，截图仅作忽略的验收产物。P304 验证事件轨道，P312 验证完整内容组合，两者共享 fixture builder，避免重复维护。
+
+### 顺序、边界与完成标准
+
+- **执行顺序**：P305 → P306；P299/P300/P301 与 P307 汇合后，再并行推进 P308/P309/P310 → P311 → P304/P312。P305 是所有内容 presenter 的前置；不能先靠 CSS 固化尚未去重的消息投影。
+- **核心判据**：每条主线内容都能回答“谁发起、发生了什么、当前/最终状态、详情在哪里”；同一事实默认只出现一次；进行中和待决事项优先，完成过程降噪，错误根因与最终回答永不被折叠吞没。
+- **架构边界**：保留现有消息、事件与 store 作为事实源，新增层只做纯派生；browser/TUI 共用 agent-ui presenter/renderer；遵守响应式数据驱动，不以定时刷新驱动动画，不在布局层缓存脏节点，不从 `agent-ui/src` 引入 `@tsdi/components/console` 或 Node API。
+- **非目标**：不复制 Codex/opencode 品牌、配色或专有文案；不改造成 dashboard/card feed；不把完整 reasoning、stdout、payload、diff 或后台子任务流水倾倒到主会话；不以更多图标代替清晰的信息层级。
+- **每批门禁**：先跑新增 taxonomy/projection/presenter/renderer 定向 spec，再跑 agent-ui 全套与 `tsc --noEmit`；涉及跨组件响应式核心时按根 `AGENTS.md` 追加 components/components-console 回归。P312 收尾执行完整 `RUN_PTY=1 bash scripts/agents-gate.sh`、更新 baseline 与本节完成证据后独立提交。
