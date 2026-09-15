@@ -68,6 +68,7 @@ import {
     AGENT_CONSOLE_OVERLAY_HINTS,
     AGENT_CONSOLE_OVERLAY_TITLES,
 } from './AgentConsoleOverlayPresenter';
+import { findTimelineLifecycleMessageIndex, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -1725,9 +1726,16 @@ export class AgentConsoleSessionState {
             return;
         }
         const next = this.messages.slice();
-        const existingIndex = next.findIndex(message => message?.metadata?.uiKind === 'event' && message?.metadata?.uiEventKey === eventKey);
+        const existingIndex = findTimelineLifecycleMessageIndex(next, {
+            eventKey,
+            toolCallId: options.toolCallId,
+            receiptId: options.receiptId
+        });
         if (existingIndex >= 0) {
             const existing = next[existingIndex];
+            if (!shouldApplyTimelineLifecycleUpdate(existing, options)) {
+                return;
+            }
             const nextMessage = this.createUiEventMessage(text, {
                 ...options,
                 eventKey,
