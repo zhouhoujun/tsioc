@@ -33,6 +33,7 @@ export interface ThreadItemEvent extends AgentExchangeFields {
     kind: ThreadItemKind;
     status?: ThreadItemStatus;
     receiptId?: string;
+    category?: string;
 }
 
 export interface ThreadItemProjectionPort {

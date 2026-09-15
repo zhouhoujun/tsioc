@@ -372,3 +372,37 @@ export function formatTimelineEventLine(p: TimelineToolEventPresentation): strin
     }
     return parts.join(' · ');
 }
+
+/**
+ * Map a raw lifecycle status to a human-readable word, preferring the
+ * matching UI label.  Unknown statuses pass through unchanged.
+ *
+ * success  → footerDone            (e.g. 完成 / Done)
+ * failed / error → footerFailed    (e.g. 失败 / Failed)
+ * running / reasoning → footerRunning (e.g. 进行中 / Running)
+ * cancelled → collapsedOutcomeCancelled (e.g. 已取消 / Cancelled)
+ */
+export function resolveHumanStatusWord(
+    status: string | undefined,
+    labels?: {
+        footerDone?: string;
+        footerFailed?: string;
+        footerRunning?: string;
+        collapsedOutcomeCancelled?: string;
+    }
+): string {
+    switch (status) {
+        case 'success':
+            return labels?.footerDone || 'Done';
+        case 'failed':
+        case 'error':
+            return labels?.footerFailed || 'Failed';
+        case 'running':
+        case 'reasoning':
+            return labels?.footerRunning || 'Running';
+        case 'cancelled':
+            return labels?.collapsedOutcomeCancelled || 'Cancelled';
+        default:
+            return String(status || '');
+    }
+}

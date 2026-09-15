@@ -218,7 +218,7 @@ export interface ScenarioExpect {
      * Gates: enable window (viewMode) + open activeScope BEFORE live steps
      * (so pushed frames project under the turn prefix), then clear scope,
      * toggle collapseScope, re-collect, then switch mode to 'compact'.
-     * The folded todo+live group renders `第 1 轮 · 2 个工具 · 370ms`.
+     * The folded todo+live group renders `第 1 轮 · 完成 · 2 个工具 · 370ms`.
      */
     timeline?: {
         viewMode: 'steps' | 'compact';
@@ -578,7 +578,7 @@ export const SCENARIOS: GatewayScenario[] = [
             } },
             // Live pair under the SAME active turn scope -> also folds into the
             // turn group. Group fold math: tools = {tc-todo, tc-live-1} = 2,
-            // duration = 120 + 250 = 370ms -> `第 1 轮 · 2 个工具 · 370ms`.
+            // duration = 120 + 250 = 370ms -> `第 1 轮 · 完成 · 2 个工具 · 370ms`.
             ...pushPairSteps(29, {
                 sessionId: 'session-A',
                 toolName: '工具-live',

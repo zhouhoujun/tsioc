@@ -5,7 +5,7 @@ import {
     AgentConsoleSessionState,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
-import { formatTimelineEventLine, presentTimelineToolEvent } from './AgentConsoleTimelineEventPresenter';
+import { formatTimelineEventLine, presentTimelineToolEvent, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
 
 export interface RemoteAgentConsoleEvent {
     type: string;
@@ -370,7 +370,8 @@ function projectRemoteToolTimeline(
         attempt: Number(data?.receipt?.attemptCount) || undefined,
         source: 'remote',
         sequence: Number(data?.sequence) || undefined,
-        durationMs: Number(data?.durationMs ?? data?.receipt?.durationMs) || undefined
+        durationMs: Number(data?.durationMs ?? data?.receipt?.durationMs) || undefined,
+        category: toolName === 'tool' ? undefined : resolveTimelineToolCategory(toolName)
     });
 }
 

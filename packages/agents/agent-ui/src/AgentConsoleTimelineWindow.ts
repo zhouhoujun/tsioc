@@ -85,8 +85,8 @@ export interface AgentConsoleTimelineLabels {
     headerStart?: string;
     /** Session-header current-step template (P291); `{index}`, `{total}` placeholders. */
     headerStep?: string;
-    /** Session-header error-count template (P291); `{count}` placeholder. */
-    headerErrors?: string;
+    /** Session-footer error-count template (P303); `{count}` placeholder, shown only when > 0. */
+    footerErrors?: string;
     /** Session-footer terminal state word when the session completed (P291). */
     footerDone?: string;
     /** Session-footer terminal state word when the session errored (P291). */
@@ -95,10 +95,20 @@ export interface AgentConsoleTimelineLabels {
     footerRunning?: string;
     /** Session-footer duration template (P291); `{duration}` placeholder. */
     footerDuration?: string;
-    /** Session-footer mode-hint template (P291); `{mode}` is a /timeline subcommand. */
-    footerMode?: string;
-    /** Collapsed-turn summary template (P290); `{index}`, `{tools}`, `{duration}` placeholders. */
+    /** Collapsed-turn round prefix (P290/P303); `{index}` placeholder. */
     collapsedTurn?: string;
+    /** Collapsed-turn outcome word when the turn completed (P303). */
+    collapsedOutcomeDone?: string;
+    /** Collapsed-turn outcome word when the turn was cancelled (P303). */
+    collapsedOutcomeCancelled?: string;
+    /** Collapsed-turn outcome word when the turn errored (P303). */
+    collapsedOutcomeFailed?: string;
+    /** Collapsed-turn tool-count template (P303); `{tools}` placeholder. */
+    collapsedTools?: string;
+    /** Collapsed-turn change-count template (P303); `{changes}` placeholder, shown only when > 0. */
+    collapsedChanges?: string;
+    /** Collapsed-turn error-count template (P303); `{errors}` placeholder, shown only when > 0. */
+    collapsedErrors?: string;
     // ── P301: sentence action-verb i18n ──────────────────────────────────────
     /** Action verb for approval_request / approval events (P301). */
     actionApprovalRequested?: string;
@@ -143,13 +153,18 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     boundaryStep: '第 {index}/{total} 步 · {content}',
     headerStart: '开始 {time}',
     headerStep: 'step {index}/{total}',
-    headerErrors: '{count} 个错误',
+    footerErrors: '{count} 个错误',
     footerDone: '完成',
     footerFailed: '失败',
     footerRunning: '进行中',
     footerDuration: '耗时 {duration}',
-    footerMode: '/timeline {mode}',
-    collapsedTurn: '第 {index} 轮 · {tools} 个工具 · {duration}',
+    collapsedTurn: '第 {index} 轮',
+    collapsedOutcomeDone: '完成',
+    collapsedOutcomeCancelled: '已取消',
+    collapsedOutcomeFailed: '失败',
+    collapsedTools: '{tools} 个工具',
+    collapsedChanges: '{changes} 处变更',
+    collapsedErrors: '{errors} 个错误',
     actionApprovalRequested: '请求审批',
     actionFailedToRun: '运行失败',
     actionFinished: '已完成',
@@ -175,13 +190,18 @@ export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     boundaryStep: 'Step {index} of {total} · {content}',
     headerStart: 'started {time}',
     headerStep: 'step {index}/{total}',
-    headerErrors: '{count} error(s)',
+    footerErrors: '{count} error(s)',
     footerDone: 'Done',
     footerFailed: 'Failed',
     footerRunning: 'In progress',
     footerDuration: 'took {duration}',
-    footerMode: '/timeline {mode}',
-    collapsedTurn: 'turn {index} · {tools} tool calls · {duration}',
+    collapsedTurn: 'turn {index}',
+    collapsedOutcomeDone: 'Done',
+    collapsedOutcomeCancelled: 'Cancelled',
+    collapsedOutcomeFailed: 'Failed',
+    collapsedTools: '{tools} tool calls',
+    collapsedChanges: '{changes} change(s)',
+    collapsedErrors: '{errors} error(s)',
     actionApprovalRequested: 'Approval requested',
     actionFailedToRun: 'Failed to run',
     actionFinished: 'Finished',
@@ -213,7 +233,7 @@ function isCurrentScope(message: TimelineWindowMessage, scope: string): boolean 
     return scope !== '' && String(message.metadata?.uiEventKey || '').startsWith(`${scope}:`);
 }
 
-function isError(metadata?: Record<string, any>): boolean {
+export function isError(metadata?: Record<string, any>): boolean {
     return metadata?.status === 'error' || metadata?.status === 'failed';
 }
 
@@ -379,7 +399,10 @@ function annotateTurnItems(items: TimelineWindowItem[]): TimelineWindowItem[] {
 interface TurnGroupStats {
     members: TimelineWindowItem[];
     hasError: boolean;
+    hasCancelled: boolean;
     toolCallIds: Set<string>;
+    changeCallIds: Set<string>;
+    errorCount: number;
     durationMs: number;
 }
 
@@ -390,11 +413,24 @@ function makeCollapsedTurnItem(
     labels?: AgentConsoleTimelineLabels
 ): TimelineWindowItem {
     const first = stats.members[0]?.message;
-    const content = fillTimelineLabel(labels?.collapsedTurn || DEFAULT_TIMELINE_LABELS.collapsedTurn, {
-        index,
-        tools: stats.toolCallIds.size,
-        duration: formatTimelineSessionDuration(stats.durationMs)
-    });
+    const outcomeWord = stats.hasCancelled
+        ? labels?.collapsedOutcomeCancelled || DEFAULT_TIMELINE_LABELS.collapsedOutcomeCancelled
+        : stats.hasError
+            ? labels?.collapsedOutcomeFailed || DEFAULT_TIMELINE_LABELS.collapsedOutcomeFailed
+            : labels?.collapsedOutcomeDone || DEFAULT_TIMELINE_LABELS.collapsedOutcomeDone;
+    const parts: string[] = [
+        fillTimelineLabel(labels?.collapsedTurn || DEFAULT_TIMELINE_LABELS.collapsedTurn, { index }),
+        outcomeWord,
+        fillTimelineLabel(labels?.collapsedTools || DEFAULT_TIMELINE_LABELS.collapsedTools, { tools: stats.toolCallIds.size })
+    ];
+    if (stats.changeCallIds.size > 0) {
+        parts.push(fillTimelineLabel(labels?.collapsedChanges || DEFAULT_TIMELINE_LABELS.collapsedChanges, { changes: stats.changeCallIds.size }));
+    }
+    if (stats.errorCount > 0) {
+        parts.push(fillTimelineLabel(labels?.collapsedErrors || DEFAULT_TIMELINE_LABELS.collapsedErrors, { errors: stats.errorCount }));
+    }
+    parts.push(formatTimelineSessionDuration(stats.durationMs));
+    const content = parts.join(' · ');
     return {
         message: {
             id: `__timeline_collapsed_${groupKey}__`,
@@ -437,19 +473,30 @@ function withTurnCollapse(
         }
         let stats = groups.get(key);
         if (!stats) {
-            stats = { members: [], hasError: false, toolCallIds: new Set(), durationMs: 0 };
+            stats = { members: [], hasError: false, hasCancelled: false, toolCallIds: new Set(), changeCallIds: new Set(), errorCount: 0, durationMs: 0 };
             groups.set(key, stats);
             groupOrder.push(key);
         }
         stats.members.push(item);
-        if (isError(item.message?.metadata)) {
+        const metadata = item.message?.metadata || {};
+        if (isError(metadata)) {
             stats.hasError = true;
+            stats.errorCount += 1;
         }
-        const toolCallId = String(item.message?.metadata?.timeline?.toolCallId || '');
+        if (metadata.status === 'cancelled' || metadata.uiEventType === 'turn_cancelled') {
+            stats.hasCancelled = true;
+        }
+        const category = String(metadata.category || '');
+        const toolCallId = String(metadata.timeline?.toolCallId || '');
         if (toolCallId) {
             stats.toolCallIds.add(toolCallId);
+            if (category === 'edit' || category === 'write') {
+                stats.changeCallIds.add(toolCallId);
+            }
+        } else if (category === 'edit' || category === 'write') {
+            stats.changeCallIds.add(`${metadata.uiEventKey || ''}:${item.message?.id || ''}`);
         }
-        const duration = Number(item.message?.metadata?.durationMs || 0);
+        const duration = Number(metadata.durationMs || 0);
         if (Number.isFinite(duration) && duration >= 0) {
             stats.durationMs += duration;
         }

@@ -119,7 +119,7 @@ export class TimelineEventInspectorTest {
         expect(state.timelineEventInspectorOpen).toEqual(false);
     }
 
-    @Test('timelineEventDetailLines includes inspector header, metadata, content, keybindings')
+    @Test('timelineEventDetailLines shows content first, human status, and diagnostic ids (P303)')
     async detailLinesContent() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.configure({ sessionId: 's1' } as any);
@@ -130,17 +130,21 @@ export class TimelineEventInspectorTest {
         const lines = state.timelineEventDetailLines;
         expect(lines.length).toBeGreaterThan(0);
         expect(lines.some(l => l.includes('Event Inspector'))).toEqual(true);
-        expect(lines.some(l => l.includes('Type:'))).toEqual(true);
-        expect(lines.some(l => l.includes('tool_invoked'))).toEqual(true);
+        // content first (human-readable title/result), then status, then ids
+        expect(lines.findIndex(l => l.includes('tool output content')))
+            .toBeLessThan(lines.findIndex(l => l.includes('Status:')));
         expect(lines.some(l => l.includes('Status:'))).toEqual(true);
-        expect(lines.some(l => l.includes('success'))).toEqual(true);
+        expect(lines.some(l => l.includes('完成'))).toEqual(true);
         expect(lines.some(l => l.includes('Duration:'))).toEqual(true);
         expect(lines.some(l => l.includes('150ms'))).toEqual(true);
+        expect(lines.some(l => l.includes('Diagnostic'))).toEqual(true);
+        expect(lines.some(l => l.includes('Type:'))).toEqual(true);
+        expect(lines.some(l => l.includes('tool_invoked'))).toEqual(true);
+        expect(lines.some(l => l.includes('Sequence:'))).toEqual(true);
         expect(lines.some(l => l.includes('Source:'))).toEqual(true);
         expect(lines.some(l => l.includes('local'))).toEqual(true);
         expect(lines.some(l => l.includes('tc-evt-1'))).toEqual(true);
         expect(lines.some(l => l.includes('rc-evt-1'))).toEqual(true);
-        expect(lines.some(l => l.includes('Content'))).toEqual(true);
         expect(lines.some(l => l.includes('tool output content'))).toEqual(true);
         expect(lines.some(l => l.includes('Key Bindings'))).toEqual(true);
         expect(lines.some(l => l.includes('retry'))).toEqual(true);

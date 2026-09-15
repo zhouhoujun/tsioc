@@ -186,7 +186,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             const stepLabels = metrics.ariaLabels.slice();
             check('timeline header zh', stepLabels.some(label => /P285 interaction gate · 开始 \d{1,2}:\d{2}(?::\d{2})?(?: AM| PM)?/.test(label) && !/step 1\/3|错误/.test(label)),
                 stepLabels.filter(label => /开始/.test(label)).join(' | ') || 'none');
-            check('timeline footer zh', stepLabels.some(label => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(label)),
+            check('timeline footer zh', stepLabels.some(label => /(?:完成|失败|进行中).*耗时/.test(label) && !/\/timeline/.test(label)),
                 stepLabels.filter(label => /耗时/.test(label)).join(' | ') || 'none');
             check('timeline boundary zh', stepLabels.some(label => /第 1\/3 步 · 重构解析管线/.test(label)),
                 stepLabels.filter(label => /第 \d+\/\d+ 步/.test(label)).join(' | ') || 'none');
@@ -197,7 +197,7 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
 
             // Clear the scope BEFORE the toggle (toggle refuses the active
             // scope key), then fold the turn-1 group (todo + live pair rows ->
-            // single `第 1 轮 · 2 个工具 · 370ms` row).
+            // single `第 1 轮 · 完成 · 2 个工具 · 370ms` row).
             // Drain the SSE channel BEFORE clearing the scope: the bridge
             // consumes one SSE frame per reader.read() and awaits an RPC
             // round-trip (refreshTools) after each tool_completed, so live
@@ -212,10 +212,10 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             }
             uiState.clearTurnEventScope(timelineExpect.activeScope);
             uiState.toggleTimelineCollapse(timelineExpect.collapseScope);
-            await waitUntil(() => collect().ariaLabels.some(label => /第 1 轮 · 2 个工具 · 370ms/.test(label)));
+            await waitUntil(() => collect().ariaLabels.some(label => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(label)));
             const foldedLabels = collect().ariaLabels;
-            check('timeline collapse fold zh', foldedLabels.some(label => /第 1 轮 · 2 个工具 · 370ms/.test(label)),
-                foldedLabels.filter(label => /第 \d+ 轮 · \d+ 个工具/.test(label)).join(' | ') || 'none');
+            check('timeline collapse fold zh', foldedLabels.some(label => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(label)),
+                foldedLabels.filter(label => /第 \d+ 轮 · 完成 · \d+ 个工具/.test(label)).join(' | ') || 'none');
 
             uiState.setTimelineMode('compact');
             await waitUntil(() => collect().ariaLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)));

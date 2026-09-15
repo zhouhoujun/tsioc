@@ -271,7 +271,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             const stepLines = lines.slice();
             check('timeline header zh', stepLines.some(line => /P285 interaction gate · 开始 \d{1,2}:\d{2}(?::\d{2})?(?: AM| PM)?/.test(line) && !/step 1\/3 · 1 个错误/.test(line)),
                 stepLines.filter(line => /开始/.test(line)).join(' | ') || 'none');
-            check('timeline footer zh', stepLines.some(line => /(?:完成|失败|进行中).*耗时 .*?\/timeline verbose/.test(line)),
+            check('timeline footer zh', stepLines.some(line => /(?:完成|失败|进行中).*耗时/.test(line) && !/\/timeline/.test(line)),
                 stepLines.filter(line => /耗时/.test(line)).join(' | ') || 'none');
             check('timeline boundary zh', stepLines.some(line => /第 1\/3 步 · 重构解析管线/.test(line)),
                 stepLines.filter(line => /第 \d+\/\d+ 步/.test(line)).join(' | ') || 'none');
@@ -282,7 +282,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
 
             // Clear the scope BEFORE the toggle (toggle refuses the active
             // scope key), then fold the turn-1 group (todo + live pair rows ->
-            // single `第 1 轮 · 2 个工具 · 370ms` row).
+            // single `第 1 轮 · 完成 · 2 个工具 · 370ms` row).
             // Drain the SSE channel BEFORE clearing the scope: the bridge
             // consumes one SSE frame per reader.read() and awaits an RPC
             // round-trip (refreshTools) after each tool_completed, so live
@@ -297,10 +297,10 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             }
             state.clearTurnEventScope(timelineExpect.activeScope);
             state.toggleTimelineCollapse(timelineExpect.collapseScope);
-            await waitUntil(() => getLines().some(line => /第 1 轮 · 2 个工具 · 370ms/.test(line)));
+            await waitUntil(() => getLines().some(line => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(line)));
             const foldedLines = getLines();
-            check('timeline collapse fold zh', foldedLines.some(line => /第 1 轮 · 2 个工具 · 370ms/.test(line)),
-                foldedLines.filter(line => /第 \d+ 轮 · \d+ 个工具/.test(line)).join(' | ') || 'none');
+            check('timeline collapse fold zh', foldedLines.some(line => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(line)),
+                foldedLines.filter(line => /第 \d+ 轮 · 完成 · \d+ 个工具/.test(line)).join(' | ') || 'none');
 
             // Compact mode summarizes overflow with the naturalized zh label
             // instead of dropping rows (data-driven, no timers).

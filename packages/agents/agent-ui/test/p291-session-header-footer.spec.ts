@@ -138,19 +138,38 @@ export class SessionHeaderFooterTest {
         expect(footer!.content).toMatch(/\d+m \d+s|ms|\.\ds/);
     }
 
-    @Test('footer mode hint follows timeline mode')
+    @Test('footer omits the /timeline mode hint in every mode (P303)')
     testFooterModeHint() {
         const compact = createState();
         compact.setTimelineMode('compact');
-        expect(compact.sessionFooter!.content).toContain('/timeline steps');
+        expect(compact.sessionFooter!.content).not.toContain('/timeline');
 
         const steps = createState();
         steps.setTimelineMode('steps');
-        expect(steps.sessionFooter!.content).toContain('/timeline verbose');
+        expect(steps.sessionFooter!.content).not.toContain('/timeline');
 
         const verbose = createState();
         verbose.setTimelineMode('verbose');
         expect(verbose.sessionFooter!.content).not.toContain('/timeline');
+    }
+
+    @Test('footer shows error count only when events failed (P303)')
+    testFooterErrorCount() {
+        const noError = createState();
+        noError.setTimelineMode('steps');
+        noError.setMessages([eventMsg('e1')]);
+        expect(noError.sessionFooter!.content).not.toContain('错误');
+
+        const withError = createState();
+        withError.setTimelineMode('steps');
+        withError.setMessages([
+            eventMsg('e1'),
+            eventMsg('e2', { status: 'error', uiEventType: 'tool_failed' }),
+            eventMsg('e3', { status: 'error', uiEventType: 'tool_failed' })
+        ]);
+        const footer = withError.sessionFooter!;
+        expect(footer.content).toContain('2 个错误');
+        expect(footer.content).toContain('完成');
     }
 
     @Test('EN labels are honored when provided')
@@ -168,7 +187,7 @@ export class SessionHeaderFooterTest {
         expect(footer).toBeDefined();
         expect(footer!.content).toContain('Failed');
         expect(footer!.content).toContain('took');
-        expect(footer!.content).toContain('/timeline steps');
+        expect(footer!.content).not.toContain('/timeline');
     }
 
     @Test('header and footer rows stay within the single-line width budget')

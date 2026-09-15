@@ -52,9 +52,11 @@ import {
     fillTimelineLabel,
     formatTimelineClockTime,
     formatTimelineSessionDuration,
+    isError,
     TimelineWindowMessage,
     truncateTimelineRowText
 } from './AgentConsoleTimelineWindow';
+import { resolveHumanStatusWord } from './AgentConsoleTimelineEventPresenter';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -161,6 +163,7 @@ export interface AgentConsoleUiEventOptions {
     attempt?: number;
     source?: 'local' | 'remote' | 'stream';
     sequence?: number;
+    category?: string;
 }
 
 export interface AgentConsoleToolRun {
@@ -1360,10 +1363,9 @@ export class AgentConsoleSessionState {
         parts.push(fillTimelineLabel(labels?.footerDuration || DEFAULT_TIMELINE_LABELS.footerDuration, {
             duration: formatTimelineSessionDuration(Math.max(0, Date.now() - start))
         }));
-        if (this.timelineViewMode === 'compact') {
-            parts.push(fillTimelineLabel(labels?.footerMode || DEFAULT_TIMELINE_LABELS.footerMode, { mode: 'steps' }));
-        } else if (this.timelineViewMode === 'steps') {
-            parts.push(fillTimelineLabel(labels?.footerMode || DEFAULT_TIMELINE_LABELS.footerMode, { mode: 'verbose' }));
+        const errorCount = this.messages.filter(m => m.metadata?.uiKind === 'event' && isError(m.metadata)).length;
+        if (errorCount > 0) {
+            parts.push(fillTimelineLabel(labels?.footerErrors || DEFAULT_TIMELINE_LABELS.footerErrors, { count: errorCount }));
         }
         return {
             id: '__timeline_session_footer__',
@@ -1789,7 +1791,8 @@ export class AgentConsoleSessionState {
             attempt: normalized.attempt,
             durationMs: normalized.durationMs,
             source: normalized.source === 'remote' ? 'remote' : 'local',
-            sequence: normalized.sequence
+            sequence: normalized.sequence,
+            category: normalized.category
         });
     }
 
@@ -1839,6 +1842,7 @@ export class AgentConsoleSessionState {
                 uiEventKey: options.eventKey,
                 durationMs: options.durationMs,
                 status: options.status || 'running',
+                category: options.category,
                 timeline: {
                     source: options.source || 'local',
                     sequence: options.sequence,
@@ -1863,6 +1867,7 @@ export class AgentConsoleSessionState {
             && leftMetadata.uiEventKey === rightMetadata.uiEventKey
             && leftMetadata.durationMs === rightMetadata.durationMs
             && leftMetadata.status === rightMetadata.status
+            && leftMetadata.category === rightMetadata.category
             && leftMetadata.timeline?.source === rightMetadata.timeline?.source
             && leftMetadata.timeline?.sequence === rightMetadata.timeline?.sequence
             && leftMetadata.timeline?.toolCallId === rightMetadata.timeline?.toolCallId
@@ -2053,20 +2058,31 @@ export class AgentConsoleSessionState {
         const eventType = m.uiEventType || 'unknown';
         const durationMs = m.durationMs;
         const attempt = timeline.attempt;
+        const sequence = timeline.sequence;
         const source = timeline.source || 'local';
         const toolCallId = timeline.toolCallId || '';
         const receiptId = timeline.receiptId || '';
+        const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
 
         const lines: string[] = [];
         lines.push(`── Event Inspector ──────────────────────────`);
         lines.push('');
-        lines.push(`Type:       ${eventType}`);
-        lines.push(`Status:     ${status}`);
+        const content = String(event.content || '');
+        if (content) {
+            content.split('\n').forEach(line => lines.push(line));
+        } else {
+            lines.push('(no content)');
+        }
+        lines.push('');
+        lines.push(`Status:     ${resolveHumanStatusWord(status, labels)}`);
         if (durationMs != null) {
             lines.push(`Duration:   ${this.formatDuration(durationMs)}`);
         }
-        if (attempt != null && attempt > 1) {
-            lines.push(`Attempt:    ${attempt}`);
+        lines.push('');
+        lines.push(`── Diagnostic ──────────────────────────────`);
+        lines.push(`Type:       ${eventType}`);
+        if (sequence != null) {
+            lines.push(`Sequence:   ${sequence}`);
         }
         lines.push(`Source:     ${source}`);
         if (toolCallId) {
@@ -2075,14 +2091,8 @@ export class AgentConsoleSessionState {
         if (receiptId) {
             lines.push(`ReceiptID:  ${receiptId}`);
         }
-        lines.push('');
-        lines.push(`── Content ──────────────────────────────────`);
-        lines.push('');
-        const content = String(event.content || '');
-        if (content) {
-            content.split('\n').forEach(line => lines.push(line));
-        } else {
-            lines.push('(no content)');
+        if (attempt != null && attempt > 1) {
+            lines.push(`Attempt:    ${attempt}`);
         }
         lines.push('');
         lines.push(`── Key Bindings ─────────────────────────────`);

@@ -32,7 +32,7 @@ import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
-import { presentTimelineToolEvent, formatTimelineEventLine } from './AgentConsoleTimelineEventPresenter';
+import { presentTimelineToolEvent, formatTimelineEventLine, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -160,6 +160,7 @@ export class AgentConsoleEventBridge {
                         toolCallId: event.receipt?.toolCallId,
                         receiptId: event.receipt?.receiptId,
                         attempt: event.receipt?.attemptCount,
+                        category: resolveTimelineToolCategory(event.toolName),
                         source: 'local'
                     });
                 }
@@ -202,6 +203,7 @@ export class AgentConsoleEventBridge {
                         toolCallId: event.receipt?.toolCallId,
                         receiptId: event.receipt?.receiptId,
                         attempt: event.receipt?.attemptCount,
+                        category: resolveTimelineToolCategory(event.toolName),
                         source: 'local'
                     });
                 }
@@ -282,6 +284,7 @@ export class AgentConsoleEventBridge {
                         toolCallId: event.receipt?.toolCallId,
                         receiptId: event.receipt?.receiptId,
                         attempt: event.receipt?.attemptCount,
+                        category: resolveTimelineToolCategory(event.toolName),
                         source: 'local'
                     });
                 }
