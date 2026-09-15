@@ -3171,3 +3171,32 @@ Turn: Fix session restore                                      running  01:42
 - **对比判断**：Codex/opencode 的执行轨迹会降低已完成步骤的对比度，将当前运行和异常保留在主视觉层。v47 已解决行密度，但 timeline 成功事件正文仍与 running 同亮，长执行中的大量成功日志会抢占注意力。
 - **状态层级**：对 timeline event 的默认 Markdown tone 按状态着色：success 使用次级 `statusLabel`，running/无状态保持主文本 `statusValue`，blocked 使用 `statusBusyValue`，failed/error 使用 `statusErrorValue`。选中行仍由 selected theme 控制；inline code、heading、strong 等显式 Markdown tone 优先，不被状态色覆盖。四套主题继续通过现有 theme token 自动映射，无硬编码单主题正文色。
 - **验证**：新增 success/running/blocked/error 四态与 inline-code 优先级回归；agent-ui **1225 passing**、`tsc --noEmit` 通过；DOM/TUI + regression **3 passed / 0 skipped**；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **23 passed / 0 skipped / EXIT=0**，含生产 Web bundle 与真实 PTY。
+
+## v49 规划 2026-09-15 — Timeline 信息架构与交互语法精修（P299–P304）
+
+### 对比结论
+
+| 维度 | Codex | opencode | agent-ui 当前 | 后续取向 |
+|---|---|---|---|---|
+| 阅读主线 | 用户请求 → reasoning/执行 → 结果，低价值生命周期不抢主线 | message part 按 turn 聚合，tool 块原地变更状态 | 已有 turn/step 分组，但同一 tool 的 invoked/completed/failed 投影契约仍分散在多桥接层 | 先建立单工具单行状态机，再调整视觉 |
+| 工具表达 | 动作 + 目标，输出只保留决策有用的摘要 | `Read/Edit/Patched` 等人类可读标题，详情按需展开 | humanize 已有，但行正文优先 raw content，`label`/`action` 语言可混用 | 建立 tool presenter：稳定标题 + target + 结果摘要，raw 进 inspector |
+| 状态与时间 | 单点状态，完成态降噪，耗时是次级事实 | pending/running/completed/error 原地替换，时间不重复进正文 | glyph/状态色已收敛，但 sentence 可含 `(1.2s)`，meta 又显示 `1.2s` | duration 只保留在 meta，正文不重复；开始时间只在 turn/header |
+| 结构层级 | 少量边界，连续执行紧凑 | tool/todo/question 以语义 block 分节，不用每行卡片 | v47 已紧凑，但 turn、plan step、tool 仍共用近似 rail/缩进 | 定义三层语法：turn 分节、step 标题、event 轨道；最多 2 级缩进 |
+| 折叠与摘要 | 完成的历史过程弱化，异常与当前步骤恒显 | 详情按需打开，主流保留结论 | compact/steps/verbose 和 turn collapse 已有，collapsed summary 仅工具数+耗时 | 折叠摘要增加 outcome/异常数/变更数，不显示命令教程 |
+| 详情审阅 | 工具结果与 diff 可深入查看，主线不承载 raw payload | tool part 可展开，错误就地可读 | inspector 功能完整，但头部仍是 `eventType status | lines` 技术字段 | inspector 首屏改为标题/状态/耗时/目标/结果，IDs/source 放 diagnostic 区 |
+
+### 实施批次
+
+- [ ] **P299 · Tool lifecycle 单行归并**：在 timeline 投影层以 `toolCallId` 优先、稳定 event key 回退归并 invoked/running/completed/failed；状态原地转换，保留首次 `createdAt`、最终 duration/receipt/error，严禁丢失 retry attempt。local/SSE/replay 三条链统一纯函数，新增乱序、重放、重连与 retry 反例。
+- [ ] **P300 · Timeline event presenter**：新增纯 presenter，从 event type/tool name/inputSummary/outputSummary/error 派生 `{title, target, summary, detail}`；主行使用“动作 + 对象”，结果只保留一个短摘要，raw content/payload 只进 inspector。补齐 read/edit/write/search/shell/git/MCP/background task 的稳定词汇，未知工具使用 humanize fallback，不按具体工具硬编码业务结果。
+- [ ] **P301 · 文案与时间去重**：`resolveTimelineEventSentence` 不再把 duration 拼入正文，duration 唯一出现在 meta；`label` 仅作 target/category，不与 action/status 重复。retry/approval 从混合中英文字面量改为 timeline labels/i18n，中英输出分别做快照。
+- [ ] **P302 · Turn/step/event 三层视觉语法**：turn header 只显示会话语境和起始时间；step boundary 作为短标题，显示步骤状态与可选耗时；event 使用 v47/v48 紧凑轨道。缩进最多 2 级，狭窗/CJK 不换乱 glyph/meta；禁止嵌套 card、大面积背景块和每事件分隔线。
+- [ ] **P303 · 摘要与 inspector 专业化**：collapsed turn 摘要改为 outcome + tool/change/error counts + duration，异常 turn 不自动隐藏根因；footer 只呈现结果/耗时/错误数，移除 `/timeline ...` 命令提示。inspector 首屏用人类可读标题与结果，sequence/source/receipt IDs 下沉到 diagnostic section；保留键盘滚动、横向滚动和 copy 能力。
+- [ ] **P304 · 双端视觉验收与基线**：扩展 `timeline-naturalized` 为包含连续 tool lifecycle、plan step、retry、approval、error、file change 的稳定场景；DOM/TUI 同时断言主行数、状态原地替换、层级顺序、CJK 80/100 列宽度和 ARIA 状态文本。增加真实 PTY 人工截图清单（暗色/亮色、80/120 列），截图仅作验收产物不入库。
+
+### 顺序、边界与门禁
+
+- **执行顺序**：P299 → P300/P301 → P302 → P303 → P304。必须先消除重复投影，否则后续视觉样式会固化错误数据模型。
+- **架构边界**：全部改动位于 agent-ui 共享投影/渲染层，browser/TUI 共用；不引入 Node API 或 `@tsdi/components/console`；不用 timer 刷新、不做布局层脏节点缓存、不修改原始 timeline 持久化证据。
+- **非目标**：不复刻 Codex/opencode 品牌配色，不增加独立 dashboard，不用更多 glyph 补偿信息架构，不把 tool raw output 重新塞回主对话流。
+- **每批门禁**：定向 projection/presenter/renderer spec → agent-ui 全套（当前 **1225 passing**）→ `npx tsc --noEmit` → `bash scripts/agents-gate.sh dom-gate tui-gate gate-regression`。最终运行 `RUN_PTY=1 bash scripts/agents-gate.sh`（当前 **23 stages**）、更新基线/todo 并独立提交。
