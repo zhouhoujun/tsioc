@@ -416,7 +416,7 @@ export function renderAgentConsoleMessageItem(
             },
             lineStyle: {
                 ...(rendered.lineStyle || {}),
-                ...resolveRenderedLineToneStyle(theme, rendered, rowSelected, templateKind)
+                ...resolveRenderedLineToneStyle(theme, rendered, rowSelected, templateKind, timelineEvent)
             }
         };
     });
@@ -899,12 +899,27 @@ function resolveRenderedLineToneStyle(
     theme: AgentConsoleTheme,
     line: AgentConsoleRenderedLine,
     rowSelected: boolean,
-    templateKind: AgentConsoleMessageTemplateKind
+    templateKind: AgentConsoleMessageTemplateKind,
+    timelineEvent = false
 ): Record<string, string> {
     if (rowSelected) {
         return {};
     }
-    return resolveAgentConsoleMarkdownToneStyle(resolveRenderedLineTone(line), theme, templateKind);
+    const tone = resolveRenderedLineTone(line);
+    if (!timelineEvent || tone !== 'default') {
+        return resolveAgentConsoleMarkdownToneStyle(tone, theme, templateKind);
+    }
+    switch (line.statusKind) {
+        case 'success':
+            return styleTextToObject(theme.statusLabel);
+        case 'failed':
+        case 'error':
+            return styleTextToObject(theme.statusErrorValue);
+        case 'blocked':
+            return styleTextToObject(theme.statusBusyValue);
+        default:
+            return styleTextToObject(theme.statusValue);
+    }
 }
 
 function resolveRenderedLineTone(line: AgentConsoleRenderedLine): AgentConsoleMarkdownTone {

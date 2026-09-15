@@ -3165,3 +3165,9 @@ Turn: Fix session restore                                      running  01:42
 - **Codex/opencode 对比结论**：两者都将连续工具与过程事件视为一条高密度执行轨迹，视觉留白主要用于用户请求、turn/step 边界和最终回答。本项目已具备自然句子、单状态 glyph、折叠与会话头尾，但 renderer 对每个 event 仍统一施加上下 `1em` padding + `0.25em` margin + 2px 高对比 rail，造成“每条都是卡片”的松散与跳跃感。
 - **共享渲染改进**：`renderAgentConsoleMessageItem` 对 `uiKind=event` 采用连续轨道布局：上下 padding 与行间 margin 归零，普通/成功/运行事件使用低对比 1px rail，失败/错误保留 2px 红色强调 rail；选中态保留原有边框。非 event 的用户请求、最终回答、plan/file 卡与 timeline header/footer/boundary 仍保持原有分节留白，信息层级不被压平。实现位于 agent-ui 共享 renderer，浏览器与 TUI 同步生效，无定时刷新或平台 hack。
 - **验证**：新增紧凑轨道/失败强调/非 event 留白回归，agent-ui **1224 passing**、`tsc --noEmit` 通过；DOM/TUI 各 5 scenarios 通过，首轮 regression 仅 TUI desktop-basic 受当时机器负载超时，立即串行复跑 **3/3 PASS**；agent-tools MCP stdio 首轮时序失败后单包复跑 **478 passing**。最终完整 `RUN_PTY=1 bash scripts/agents-gate.sh` **23 passed / 0 skipped / EXIT=0**，含生产 Web bundle 与真实 PTY。
+
+## v48 2026-09-15 — Timeline 状态文本层级 ✅
+
+- **对比判断**：Codex/opencode 的执行轨迹会降低已完成步骤的对比度，将当前运行和异常保留在主视觉层。v47 已解决行密度，但 timeline 成功事件正文仍与 running 同亮，长执行中的大量成功日志会抢占注意力。
+- **状态层级**：对 timeline event 的默认 Markdown tone 按状态着色：success 使用次级 `statusLabel`，running/无状态保持主文本 `statusValue`，blocked 使用 `statusBusyValue`，failed/error 使用 `statusErrorValue`。选中行仍由 selected theme 控制；inline code、heading、strong 等显式 Markdown tone 优先，不被状态色覆盖。四套主题继续通过现有 theme token 自动映射，无硬编码单主题正文色。
+- **验证**：新增 success/running/blocked/error 四态与 inline-code 优先级回归；agent-ui **1225 passing**、`tsc --noEmit` 通过；DOM/TUI + regression **3 passed / 0 skipped**；最终 `RUN_PTY=1 bash scripts/agents-gate.sh` **23 passed / 0 skipped / EXIT=0**，含生产 Web bundle 与真实 PTY。

@@ -102,6 +102,26 @@ export class P237B2WidthGlyphAriaTest {
         expect(answer.itemStyle?.margin).toEqual('0 0 0.25em 0');
     }
 
+    @Test('timeline event text hierarchy mutes completion and emphasizes failures')
+    timelineEventTextHierarchy() {
+        const render = (status: string, content = 'event') => renderAgentConsoleMessageItems([{
+            id: status, role: 'assistant', content, createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status }
+        }] as any)[0].lines[0];
+
+        expect(render('success').lineStyle?.color).toEqual('#6e7681');
+        expect(render('running').lineStyle?.color).toEqual('#c9d1d9');
+        expect(render('blocked').lineStyle?.color).toEqual('#d29922');
+        expect(render('error').lineStyle?.color).toEqual('#ffa198');
+
+        const code = renderAgentConsoleMessageItems([{
+            id: 'code', role: 'assistant', content: '`npm test`', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        }] as any)[0].lines[0];
+        expect(code.lineStyle?.background).toEqual('#161b22');
+        expect(code.lineStyle?.color).toEqual('#79c0ff');
+    }
+
     @Test('custom status symbol wins over the default glyph')
     customSymbolWinsOverGlyph() {
         const items = renderAgentConsoleMessageItems([{
