@@ -99,6 +99,41 @@ export interface AgentConsoleTimelineLabels {
     footerMode?: string;
     /** Collapsed-turn summary template (P290); `{index}`, `{tools}`, `{duration}` placeholders. */
     collapsedTurn?: string;
+    // ── P301: sentence action-verb i18n ──────────────────────────────────────
+    /** Action verb for approval_request / approval events (P301). */
+    actionApprovalRequested?: string;
+    /** Action verb for tool_failed events (P301). */
+    actionFailedToRun?: string;
+    /** Action verb for tool_succeeded / tool_completed events (P301). */
+    actionFinished?: string;
+    /** Action verb for tool_invoked / tool_call / tool_running events (P301). */
+    actionRunning?: string;
+    /** Action verb for turn_started events (P301). */
+    actionGotRequest?: string;
+    /** Action verb for turn_cancelled events (P301). */
+    actionTurnCancelled?: string;
+    /** Action verb for plan_created events (P301). */
+    actionCreatedPlan?: string;
+    /** Action verb for plan_step_started / step_started events (P301). */
+    actionExecutingStep?: string;
+    /** Action verb for plan_step_completed / step_completed events (P301). */
+    actionCompletedStep?: string;
+    /** Action verb for plan_step_failed / step_failed events (P301). */
+    actionStepFailed?: string;
+    /** Action verb for plan_step_blocked / step_blocked events (P301). */
+    actionStepBlocked?: string;
+    /** Action verb for context_prepared events (P301). */
+    actionLoadedContext?: string;
+    /** Action verb for model_completed events (P301). */
+    actionModelResponded?: string;
+    /** Action verb for background_task_started events (P301). */
+    actionBackgroundTaskStarted?: string;
+    /** Action verb for background_task_completed events (P301). */
+    actionBackgroundTaskCompleted?: string;
+    /** Action verb for background_task_failed events (P301). */
+    actionBackgroundTaskFailed?: string;
+    /** Fallback action verb for unknown event types (P301). */
+    actionCompleted?: string;
 }
 
 /** zh 默认（对齐 messageStatusLabels 模式，P288）。 */
@@ -115,6 +150,23 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     footerDuration: '耗时 {duration}',
     footerMode: '/timeline {mode}',
     collapsedTurn: '第 {index} 轮 · {tools} 个工具 · {duration}',
+    actionApprovalRequested: '请求审批',
+    actionFailedToRun: '运行失败',
+    actionFinished: '已完成',
+    actionRunning: '运行中',
+    actionGotRequest: '已收到请求',
+    actionTurnCancelled: '轮次已取消',
+    actionCreatedPlan: '已创建计划',
+    actionExecutingStep: '执行步骤',
+    actionCompletedStep: '步骤已完成',
+    actionStepFailed: '步骤失败',
+    actionStepBlocked: '步骤阻塞',
+    actionLoadedContext: '已加载上下文',
+    actionModelResponded: '模型已响应',
+    actionBackgroundTaskStarted: '后台任务已启动',
+    actionBackgroundTaskCompleted: '后台任务已完成',
+    actionBackgroundTaskFailed: '后台任务失败',
+    actionCompleted: '已完成',
 };
 
 export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
@@ -130,6 +182,23 @@ export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     footerDuration: 'took {duration}',
     footerMode: '/timeline {mode}',
     collapsedTurn: 'turn {index} · {tools} tool calls · {duration}',
+    actionApprovalRequested: 'Approval requested',
+    actionFailedToRun: 'Failed to run',
+    actionFinished: 'Finished',
+    actionRunning: 'Running',
+    actionGotRequest: 'Got your request',
+    actionTurnCancelled: 'Turn cancelled',
+    actionCreatedPlan: 'Created plan',
+    actionExecutingStep: 'Executing step',
+    actionCompletedStep: 'Completed step',
+    actionStepFailed: 'Step failed',
+    actionStepBlocked: 'Step blocked',
+    actionLoadedContext: 'Loaded context',
+    actionModelResponded: 'Model responded',
+    actionBackgroundTaskStarted: 'Background task started',
+    actionBackgroundTaskCompleted: 'Background task completed',
+    actionBackgroundTaskFailed: 'Background task failed',
+    actionCompleted: 'Completed',
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -496,56 +565,56 @@ export function humanizeToolName(name: string | null | undefined): string {
 
 // ── Event semantic field extraction ──────────────────────────────────────────
 
-function resolveEventActionVerb(uiEventType: string): string {
+function resolveEventActionVerb(uiEventType: string, labels?: AgentConsoleTimelineLabels): string {
     switch (uiEventType) {
         case 'turn_started':
         case 'turn_start':
-            return 'Got your request';
+            return labels?.actionGotRequest ?? 'Got your request';
         case 'turn_cancelled':
         case 'turn_cancel':
-            return 'Turn cancelled';
+            return labels?.actionTurnCancelled ?? 'Turn cancelled';
         case 'error':
             return 'Error';
         case 'tool_call':
         case 'tool_invoked':
         case 'tool_running':
-            return 'Running';
+            return labels?.actionRunning ?? 'Running';
         case 'tool_succeeded':
         case 'tool_completed':
-            return 'Finished';
+            return labels?.actionFinished ?? 'Finished';
         case 'tool_failed':
-            return 'Failed to run';
+            return labels?.actionFailedToRun ?? 'Failed to run';
         case 'plan_created':
-            return 'Created plan';
+            return labels?.actionCreatedPlan ?? 'Created plan';
         case 'plan_step_started':
         case 'step_started':
-            return 'Executing step';
+            return labels?.actionExecutingStep ?? 'Executing step';
         case 'plan_step_completed':
         case 'step_completed':
-            return 'Completed step';
+            return labels?.actionCompletedStep ?? 'Completed step';
         case 'plan_step_failed':
         case 'step_failed':
-            return 'Step failed';
+            return labels?.actionStepFailed ?? 'Step failed';
         case 'plan_step_blocked':
         case 'step_blocked':
-            return 'Step blocked';
+            return labels?.actionStepBlocked ?? 'Step blocked';
         case 'approval':
         case 'approval_request':
-            return 'Approval requested';
+            return labels?.actionApprovalRequested ?? 'Approval requested';
         case 'context_prepared':
-            return 'Loaded context';
+            return labels?.actionLoadedContext ?? 'Loaded context';
         case 'model_completed':
-            return 'Model responded';
+            return labels?.actionModelResponded ?? 'Model responded';
         case 'background_task_started':
-            return 'Background task started';
+            return labels?.actionBackgroundTaskStarted ?? 'Background task started';
         case 'background_task_completed':
-            return 'Background task completed';
+            return labels?.actionBackgroundTaskCompleted ?? 'Background task completed';
         case 'background_task_failed':
-            return 'Background task failed';
+            return labels?.actionBackgroundTaskFailed ?? 'Background task failed';
         case 'timeline_summary':
             return '';
         default:
-            return 'Completed';
+            return labels?.actionCompleted ?? 'Completed';
     }
 }
 
@@ -556,11 +625,10 @@ function truncateError(error: string): string {
 function resolveEventResultPhrase(
     status?: string,
     error?: string,
-    durationMs?: number,
+    _durationMs?: number,
     failureInAction = false
 ): string {
     const parts: string[] = [];
-    const duration = formatEventDuration(durationMs);
 
     if (status === 'failed' || status === 'error') {
         if (error) {
@@ -571,16 +639,12 @@ function resolveEventResultPhrase(
         }
     }
 
-    if (duration) parts.push(duration);
     return parts.join(' ');
 }
 
-function resolveFailureOutcome(error?: string, durationMs?: number): string {
-    const parts: string[] = [];
-    if (error) parts.push(`: ${truncateError(error)}`);
-    const duration = formatEventDuration(durationMs);
-    if (duration) parts.push(duration);
-    return parts.join(' ');
+function resolveFailureOutcome(error?: string, _durationMs?: number): string {
+    if (!error) return '';
+    return `: ${truncateError(error)}`;
 }
 
 function formatEventDuration(durationMs?: number): string {
@@ -596,18 +660,41 @@ function formatEventDuration(durationMs?: number): string {
 function resolveEventObjectLabel(
     uiEventType: string,
     label?: string,
-    content?: string
+    content?: string,
+    action?: string,
+    status?: string
 ): string {
     const trimmedLabel = String(label || '').trim();
     const trimmedContent = String(content || '').trim();
     if (uiEventType.startsWith('tool_') || uiEventType === 'tool_call') return trimmedLabel || '';
     if (uiEventType.startsWith('plan_') || uiEventType.startsWith('step_')) return trimmedContent || trimmedLabel || '';
+    // P301: label only as target/category — drop it when it repeats the event
+    // category, the action verb or the status word (e.g. approval event with
+    // label 'approval').
+    if (trimmedLabel && isRedundantObjectLabel(uiEventType, trimmedLabel, action, status)) {
+        return trimmedContent || '';
+    }
     return trimmedLabel || trimmedContent || '';
+}
+
+function isRedundantObjectLabel(uiEventType: string, label: string, action?: string, status?: string): boolean {
+    const normalized = label.toLowerCase().trim();
+    if (!normalized) return false;
+    // Label is the bare event category (e.g. 'approval' for approval_request) —
+    // language-agnostic, since the action verb already conveys it.
+    if (normalized === uiEventType.toLowerCase() || uiEventType.startsWith(`${normalized}_`)) return true;
+    const actionWords = new Set(
+        String(action || '').toLowerCase().split(/\s+/).filter(word => word.length > 2)
+    );
+    if (actionWords.has(normalized)) return true;
+    const statusWord = String(status || '').toLowerCase().trim();
+    return !!statusWord && normalized === statusWord;
 }
 
 export function resolveTimelineEventSentence(
     metadata?: Record<string, any>,
-    fallbackContent?: string
+    fallbackContent?: string,
+    labels?: AgentConsoleTimelineLabels
 ): string | undefined {
     if (!metadata || metadata.uiKind !== 'event') return undefined;
 
@@ -618,7 +705,7 @@ export function resolveTimelineEventSentence(
     const error = String(metadata.error || '').trim();
     const durationMs = Number(metadata.durationMs);
 
-    const action = resolveEventActionVerb(uiEventType);
+    const action = resolveEventActionVerb(uiEventType, labels);
     if (!action) return undefined;
 
     if (uiEventType === 'turn_cancelled' || uiEventType === 'turn_cancel') return action;
@@ -638,18 +725,18 @@ export function resolveTimelineEventSentence(
         if (failed) {
             const outcome = resolveFailureOutcome(error, durationMs);
             return object
-                ? `Failed to run ${object}${outcome}`
-                : `Failed to run${outcome}`;
+                ? `${action} ${object}${outcome}`
+                : `${action}${outcome}`;
         }
         const result = resolveEventResultPhrase(status, error, durationMs);
         return formatTimelineSentence({ action, object, result });
     }
 
     if (uiEventType.startsWith('plan_') || uiEventType.startsWith('step_')) {
-        const object = resolveEventObjectLabel(uiEventType, label, content);
+        const object = resolveEventObjectLabel(uiEventType, label, content, action, status);
         if (failed) {
             const outcome = resolveFailureOutcome(error, durationMs);
-            return `Step failed${object ? ` ${object}` : ''}${outcome}`;
+            return `${action}${object ? ` ${object}` : ''}${outcome}`;
         }
         const result = resolveEventResultPhrase(status, error, durationMs);
         return formatTimelineSentence({ action, object, result });
@@ -660,7 +747,7 @@ export function resolveTimelineEventSentence(
         return formatTimelineSentence({ action, result });
     }
 
-    const object = resolveEventObjectLabel(uiEventType, label, content);
+    const object = resolveEventObjectLabel(uiEventType, label, content, action, status);
     const result = resolveEventResultPhrase(status, error, durationMs);
     return formatTimelineSentence({ action, object, result });
 }

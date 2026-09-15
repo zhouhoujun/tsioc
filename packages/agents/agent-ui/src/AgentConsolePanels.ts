@@ -2693,7 +2693,8 @@ export class AgentConsoleMessagesPanelComponent {
             showToolOutput,
             showUsername,
             username: this.state.consoleOptions.username,
-            timelineMode
+            timelineMode,
+            timelineLabels: this.state.consoleOptions.timelineLabels
         });
         messageItemsCache.set(this, {
             messages,

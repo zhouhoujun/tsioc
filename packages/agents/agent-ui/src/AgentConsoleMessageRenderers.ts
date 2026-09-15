@@ -8,7 +8,7 @@ import {
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
-import { resolveTimelineEventSentence } from './AgentConsoleTimelineWindow';
+import { resolveTimelineEventSentence, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
@@ -81,6 +81,8 @@ export interface AgentConsoleMessageRenderContext {
     showUsername?: boolean;
     username?: string;
     timelineMode?: boolean;
+    /** i18n labels for timeline event sentences (empty-content events like model_completed). */
+    timelineLabels?: AgentConsoleTimelineLabels;
     /** When true, all messages carry the critical mark (★) and render uncollapsed. */
     showCriticalMarks?: boolean;
     /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
@@ -347,7 +349,7 @@ export function renderAgentConsoleMessageItem(
         ? ''
         : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
     const timelineSentence = timelineEvent
-        ? resolveTimelineEventSentence(message?.metadata, displayContent)
+        ? resolveTimelineEventSentence(message?.metadata, displayContent, context.timelineLabels)
         : undefined;
     // Content stays the primary row text (P237 truncation/expansion contract;
     // long rows also keep the detail toggle); the sentence only fills empty

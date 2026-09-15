@@ -1,6 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
+    DEFAULT_TIMELINE_LABELS,
+    EN_TIMELINE_LABELS,
     formatTimelineSentence,
     humanizeToolName,
     resolveTimelineEventSentence,
@@ -134,7 +136,7 @@ export class ResolveTimelineEventSentenceTest {
         expect(result).toBe('Running read file');
     }
 
-    @Test('tool_succeeded uses Finished + humanized label + duration')
+    @Test('tool_succeeded uses Finished + humanized label, duration stays in meta only')
     testToolSucceeded() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -143,7 +145,7 @@ export class ResolveTimelineEventSentenceTest {
             label: 'git_operations',
             durationMs: 1234
         });
-        expect(result).toBe('Finished git operations (1.2s)');
+        expect(result).toBe('Finished git operations');
     }
 
     @Test('tool_failed uses a natural failure sentence (no running/failed contradiction)')
@@ -202,7 +204,7 @@ export class ResolveTimelineEventSentenceTest {
         expect(result).toBe('Executing step Implement P281 formatter');
     }
 
-    @Test('context_prepared produces Loaded context')
+    @Test('context_prepared produces Loaded context (duration stays in meta only)')
     testContextPrepared() {
         const result = resolveTimelineEventSentence({
             uiKind: 'event',
@@ -210,7 +212,7 @@ export class ResolveTimelineEventSentenceTest {
             status: 'success',
             durationMs: 50
         });
-        expect(result).toBe('Loaded context (50ms)');
+        expect(result).toBe('Loaded context');
     }
 
     @Test('model_completed produces Model responded')
@@ -338,5 +340,112 @@ export class EventRowContentPrecedenceTest {
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error', durationMs: 40 }
         }] as any);
         expect(items[0].lines[0].content).toBe(longContent);
+    }
+}
+
+@Suite('timeline sentence i18n labels (P301 zh snapshot)')
+export class TimelineSentenceZhSnapshotTest {
+
+    @Test('approval_request uses zh label, duration never in body')
+    testApprovalZh() {
+        const zh = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'approval_request',
+            status: 'pending',
+            durationMs: 987
+        }, '', DEFAULT_TIMELINE_LABELS);
+        expect(zh).toBe('请求审批');
+    }
+
+    @Test('tool_failed uses zh label with tool target and cause')
+    testToolFailedZh() {
+        const zh = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'tool_failed',
+            status: 'failed',
+            label: 'shell',
+            error: 'command not found'
+        }, '', DEFAULT_TIMELINE_LABELS);
+        expect(zh).toBe('运行失败 shell: command not found');
+    }
+
+    @Test('plan_step_failed uses zh label with step target and cause')
+    testStepFailedZh() {
+        const zh = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'plan_step_failed',
+            status: 'error',
+            label: 'step-1',
+            error: 'permission denied'
+        }, 'Implement P281 formatter', DEFAULT_TIMELINE_LABELS);
+        expect(zh).toBe('步骤失败 Implement P281 formatter: permission denied');
+    }
+
+    @Test('approval label is dropped when it duplicates the action verb')
+    testApprovalLabelDedupZh() {
+        const zh = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'approval_request',
+            status: 'pending',
+            label: 'approval'
+        }, '', DEFAULT_TIMELINE_LABELS);
+        expect(zh).toBe('请求审批');
+    }
+}
+
+@Suite('timeline sentence i18n labels (P301 en snapshot)')
+export class TimelineSentenceEnSnapshotTest {
+
+    @Test('approval_request keeps en label, duration never in body')
+    testApprovalEn() {
+        const en = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'approval_request',
+            status: 'pending',
+            durationMs: 987
+        }, '', EN_TIMELINE_LABELS);
+        expect(en).toBe('Approval requested');
+    }
+
+    @Test('tool_failed uses en label with tool target and cause')
+    testToolFailedEn() {
+        const en = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'tool_failed',
+            status: 'failed',
+            label: 'shell',
+            error: 'command not found'
+        }, '', EN_TIMELINE_LABELS);
+        expect(en).toBe('Failed to run shell: command not found');
+    }
+
+    @Test('plan_step_failed uses en label with step target and cause')
+    testStepFailedEn() {
+        const en = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'plan_step_failed',
+            status: 'error',
+            label: 'step-1',
+            error: 'permission denied'
+        }, 'Implement P281 formatter', EN_TIMELINE_LABELS);
+        expect(en).toBe('Step failed Implement P281 formatter: permission denied');
+    }
+
+    @Test('en labels leave plain English fallback identical to default behavior')
+    testEnFallbackParity() {
+        const withEn = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'tool_completed',
+            status: 'success',
+            label: 'git_operations'
+        }, '', EN_TIMELINE_LABELS);
+        const without = resolveTimelineEventSentence({
+            uiKind: 'event',
+            uiEventType: 'tool_completed',
+            status: 'success',
+            label: 'git_operations'
+        });
+        expect(withEn).toBe('Finished git operations');
+        expect(without).toBe('Finished git operations');
     }
 }
