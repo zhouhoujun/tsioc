@@ -3129,3 +3129,9 @@ Turn: Fix session restore                                      running  01:42
 - **真实链路覆盖**：默认 PTY acceptance 新增第 7 场景，假模型以 50ms 间隔持续流式输出 300 行，验证 Working 在真实 TUI 中依次显示 **0s → 1s → 2s**；随后分别通过 PTY 发送 ETX（`Ctrl+C`）与 bare Escape（`Esc`），两轮均观测到取消反馈且 composer 恢复可输入。
 - **验收文档同步**：`acceptance/CHECKLIST.md` 登记场景 6/7，将 Ctrl+C/Esc 人工项标记为自动验收，并清理“三场景”的过时描述。
 - **最终验证**：定向 `RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` **1 passed / 0 skipped / EXIT=0**；随后完整 `RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY 与 `git diff --check`。agents 与 framework 测试数保持 v40 基线（agent **890**、agent-ui **1223**、components **137**、agent-gateway **296** 等）。计划无开放批次。
+
+## v42 2026-09-15 — Agents 完成性复核与验收单源收尾 ✅
+
+- **完成性复核**：扫描 `todo.md` 的未完成/TODO/FIXME/开放批次标记，命中项均为历史阶段记录、示例文案或已由后续批次闭合的陈述；当前 P0–P291 及 v17–v41 无开放实现批次。`packages/agents` 临时文件扫描仅发现一个被跟踪的 `acceptance/fake_model_server.py.bak`。
+- **验收单源**：删除零引用、已落后现行实现 151 行差异的假模型备份，验收脚本只保留 `fake_model_server.py` 一个真实来源；`.gitignore` 新增 `packages/agents/acceptance/*.bak`，防止本地备份再次进入版本库。
+- **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` **22 passed / 0 skipped / EXIT=0**；agents 10 包、framework 三包、4 包 `tsc --noEmit`、DOM/TUI 各 5 scenarios、gate regression、真实 PTY（含中断/秒跳场景）与 `git diff --check` 全部通过。计划保持无开放批次。

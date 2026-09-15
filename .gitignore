@@ -25,5 +25,6 @@ packages/microservices/**/coverage/
 **/__pycache__/
 *.pyc
 packages/agents/acceptance/artifacts/
+packages/agents/acceptance/*.bak
 ### PTY acceptance residue (store writes <cwd>/.tsdi-agent/)
 .tsdi-agent/
