@@ -279,6 +279,9 @@ function diagnosticKey(message: AgentMessage): string {
 
 function diagnosticSeverity(message: AgentMessage): number {
     const metadata = message.metadata || {};
+    // Command failures stay in the execution family so their detail route can
+    // continue to target captured output instead of the summary message.
+    if (metadata.uiKind === 'command-execution' || metadata.type === 'shell') return 0;
     const eventType = String(metadata.uiEventType || '').toLowerCase();
     const status = String(metadata.status || '').toLowerCase();
     if (isCancelledDiagnostic(message)) return 1;

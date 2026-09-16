@@ -56,6 +56,19 @@ export class DiagnosticMainlineSuite {
         expect(message.metadata?.status).toEqual('failed');
     }
 
+    @Test('failed commands remain execution content with their output detail route')
+    failedCommandOwnership() {
+        const [message] = projectAgentConsoleDiagnosticMainline([{
+            id: 'command-1', role: 'assistant', content: 'raw output', createdAt: 1,
+            metadata: {
+                uiKind: 'command-execution', command: 'npm test', status: 'error',
+                error: 'test failed', outputIds: ['output-1']
+            }
+        } as any]);
+        expect(message.content).toEqual('raw output');
+        expect(message.metadata?.diagnosticSummary).toEqual(undefined);
+    }
+
     @Test('built-in diagnostic renderer resolves through the IoC registry')
     diagnosticRenderer() {
         const registry = new AgentConsoleMessageRendererRegistry([new AgentConsoleDiagnosticMessageRenderer()]);
