@@ -570,7 +570,6 @@ export class VmPanelsTest {
 
         state.setTimelineMode('steps');
         expect(state.displayMessages.map(message => message.content)).toEqual([
-            'Analyzing request',
             'weather completed · Hangzhou',
             'Turn completed',
             'Turn cancelled'
