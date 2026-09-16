@@ -1,12 +1,20 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
+import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
+import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleArtifactMessageRenderer,
     AgentConsoleConversationMessageRenderer,
     AgentConsoleDecisionMessageRenderer,
     AgentConsoleDiagnosticMessageRenderer,
     AgentConsoleExecutionMessageRenderer,
+    AgentConsoleComponent,
+    AgentConsoleMessagesPanelComponent,
     AgentConsoleMessageRendererRegistry,
+    AgentUiModule,
+    getDisplayWidth,
     projectAgentConsoleArtifactMainline,
     projectAgentConsoleConversationMainline,
     projectAgentConsoleDecisionMainline,
@@ -58,14 +66,38 @@ export class FullSessionMatrixSuite {
         expect(messages[messages.length - 1].content).toContain('```ts');
     }
 
-    @Test('shared DOM/TUI render model exposes semantic ARIA at 80 100 and 120 columns')
-    dualRendererWidths() {
+    @Test('shared DOM/TUI render model exposes semantic ARIA')
+    semanticAria() {
         const messages = project('failed');
-        for (const columns of [80, 100, 120]) {
-            const rendered = renderAgentConsoleMessageItems(messages, { rendererRegistry: registry(), timelineMode: true });
-            expect(rendered.every(item => item.semanticFamily && item.semanticKind)).toEqual(true);
-            expect(rendered.some(item => item.lines.some(line => line.ariaLabel?.includes('恢复索引写入失败')))).toEqual(true);
-            expect(rendered.every(item => item.lines.every(line => String(line.content).length <= columns * 4))).toEqual(true);
+        const rendered = renderAgentConsoleMessageItems(messages, { rendererRegistry: registry(), timelineMode: true });
+        expect(rendered.every(item => item.semanticFamily && item.semanticKind)).toEqual(true);
+        expect(rendered.some(item => item.lines.some(line => line.ariaLabel?.includes('恢复索引写入失败')))).toEqual(true);
+    }
+
+    @Test('real TUI renderer preserves CJK markdown and line bounds at 80 100 and 120 columns')
+    async tuiWidths() {
+        const ctx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 40 });
+            ref.instance.sessionState.setMessages(buildFullSessionFixture('failed'));
+            await Promise.resolve();
+            await Promise.resolve();
+            const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            for (const width of [80, 100, 120]) {
+                const lines = renderer.renderToTuiLines(panel.hostView.rootNodes[0], { width });
+                const plain = lines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+                expect(plain.every(line => getDisplayWidth(line) <= width)).toEqual(true);
+                expect(plain.some(line => line.includes('恢复索引写入失败'))).toEqual(true);
+                expect(plain.some(line => line.includes('Session restore is complete.'))).toEqual(true);
+                expect(plain.join('\n')).not.toContain('```');
+            }
+        } finally {
+            await ctx.close();
         }
     }
 
