@@ -1,17 +1,12 @@
 import expect = require('expect');
-import { Suite, Test } from '@tsdi/unit';
-import { Application } from '@tsdi/core';
+import { After, Before, Suite, Test } from '@tsdi/unit';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AgentModule } from '@tsdi/agent';
 import {
-    AgentConsoleArtifactMessageRenderer,
-    AgentConsoleConversationMessageRenderer,
-    AgentConsoleDecisionMessageRenderer,
-    AgentConsoleDiagnosticMessageRenderer,
-    AgentConsoleExecutionMessageRenderer,
     AgentConsoleComponent,
     AgentConsoleMessagesPanelComponent,
     AgentConsoleMessageRendererRegistry,
@@ -34,16 +29,22 @@ function project(branch: FullSessionBranch) {
     ));
 }
 
-function registry(): AgentConsoleMessageRendererRegistry {
-    return new AgentConsoleMessageRendererRegistry([
-        new AgentConsoleConversationMessageRenderer(), new AgentConsoleExecutionMessageRenderer(),
-        new AgentConsoleDecisionMessageRenderer(), new AgentConsoleArtifactMessageRenderer(),
-        new AgentConsoleDiagnosticMessageRenderer()
-    ]);
-}
-
 @Suite('P312 complete session matrix')
 export class FullSessionMatrixSuite {
+    private ctx!: ApplicationContext;
+    private registry!: AgentConsoleMessageRendererRegistry;
+
+    @Before()
+    async setup() {
+        this.ctx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        this.registry = this.ctx.get(AgentConsoleMessageRendererRegistry);
+    }
+
+    @After()
+    async teardown() { await this.ctx.close(); }
+
     @Test('normal blocked failed cancelled and replay branches preserve ordering and uniqueness')
     matrix() {
         for (const branch of ['normal', 'blocked', 'failed', 'cancelled', 'replay'] as FullSessionBranch[]) {
@@ -71,7 +72,7 @@ export class FullSessionMatrixSuite {
     @Test('shared DOM/TUI render model exposes semantic ARIA')
     semanticAria() {
         const messages = project('failed');
-        const rendered = renderAgentConsoleMessageItems(messages, { rendererRegistry: registry(), timelineMode: true });
+        const rendered = renderAgentConsoleMessageItems(messages, { rendererRegistry: this.registry, timelineMode: true });
         expect(rendered.every(item => item.semanticFamily && item.semanticKind)).toEqual(true);
         expect(rendered.some(item => item.lines.some(line => line.ariaLabel?.includes('恢复索引写入失败')))).toEqual(true);
     }
@@ -96,6 +97,13 @@ export class FullSessionMatrixSuite {
                 expect(plain.every(line => getDisplayWidth(line) <= width)).toEqual(true);
                 expect(plain.some(line => line.includes('恢复索引写入失败'))).toEqual(true);
                 expect(plain.some(line => line.includes('Session restore is complete.'))).toEqual(true);
+                expect(plain.some(line => line.includes('Thought ·') && line.includes('Inspecting restore state'))).toEqual(true);
+                const finalIndex = plain.findIndex(line => line.includes('Session restore is complete.'));
+                expect(finalIndex).toBeGreaterThan(0);
+                expect(plain[finalIndex]).not.toContain('•');
+                const resultHeadingIndex = plain.findIndex(line => line.includes('Result'));
+                expect(resultHeadingIndex).toBeGreaterThan(0);
+                expect(plain[resultHeadingIndex - 1].replace(/\u200b/g, '').trim()).toEqual('');
                 expect(plain.join('\n')).not.toContain('```');
             }
         } finally {

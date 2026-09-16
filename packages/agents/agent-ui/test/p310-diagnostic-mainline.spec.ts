@@ -1,8 +1,10 @@
 import expect = require('expect');
-import { Suite, Test } from '@tsdi/unit';
+import { After, Before, Suite, Test } from '@tsdi/unit';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { AgentModule } from '@tsdi/agent';
 import {
-    AgentConsoleDiagnosticMessageRenderer,
     AgentConsoleMessageRendererRegistry,
+    AgentUiModule,
     projectAgentConsoleDiagnosticMainline,
     renderAgentConsoleMessageItem
 } from '../src';
@@ -13,6 +15,18 @@ function event(id: string, content: string, metadata: Record<string, any>): any 
 
 @Suite('P310 diagnostic and background mainline')
 export class DiagnosticMainlineSuite {
+    private ctx!: ApplicationContext;
+    private registry!: AgentConsoleMessageRendererRegistry;
+
+    @Before()
+    async setup() {
+        this.ctx = await Application.run(AgentModule, { deps: [AgentUiModule] });
+        this.registry = this.ctx.get(AgentConsoleMessageRendererRegistry);
+    }
+
+    @After()
+    async teardown() { await this.ctx.close(); }
+
     @Test('failure replaces a warning for the same causal item and keeps detail routing')
     causalFailure() {
         const projected = projectAgentConsoleDiagnosticMainline([
@@ -71,9 +85,8 @@ export class DiagnosticMainlineSuite {
 
     @Test('built-in diagnostic renderer resolves through the IoC registry')
     diagnosticRenderer() {
-        const registry = new AgentConsoleMessageRendererRegistry([new AgentConsoleDiagnosticMessageRenderer()]);
         const message = event('e1', 'boom', { diagnosticSummary: true, status: 'error' });
-        expect(registry.resolve(message, 'assistant').roleLabel).toEqual('! ');
-        expect(renderAgentConsoleMessageItem(message, { rendererRegistry: registry }).lines).toHaveLength(1);
+        expect(this.registry.resolve(message, 'assistant').presentation.roleLabel).toEqual('Error · ');
+        expect(renderAgentConsoleMessageItem(message, { rendererRegistry: this.registry }).lines).toHaveLength(1);
     }
 }

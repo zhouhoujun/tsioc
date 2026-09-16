@@ -77,7 +77,7 @@ export class AgentConsoleDashboardRendererTest {
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
         expect(workingLines.some(line => line.includes('1200 tokens'))).toBe(true);
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
-        expect(messageLines.some(line => line.includes('•') && line.includes('world'))).toBe(true);
+        expect(messageLines.some(line => line.includes('world') && !line.includes('•'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleInputPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
@@ -469,7 +469,7 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('•') && line.includes('streaming response'))).toBe(true);
-        expect(messageLines.some(line => line.includes('!') && line.includes('Error: broken'))).toBe(true);
+        expect(messageLines.some(line => line.includes('Error ·') && line.includes('Error: broken'))).toBe(true);
     }
 
     @Test('truncates oversized unfocused messages in messages panel')
@@ -1432,9 +1432,10 @@ export class AgentConsoleTuiRendererTest {
             const lines = renderer.renderToTuiLines(messagesPanel.hostView.rootNodes[0], { width: 24 });
             const visibleLines = lines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, ''));
             const userLine = visibleLines.find((line: string) => line.includes('hello tui')) || '';
+            const styledUserLine = lines.find((line: string) => line.includes('hello tui')) || '';
 
             expect(userLine).toContain('hello tui');
-            expect(lines.some((line: string) => line.includes('\x1b[48;2;27;33;40m'))).toEqual(true);
+            expect(styledUserLine).toContain('\x1b[48;2;27;33;40m');
         } finally {
             await tuiCtx.close();
         }

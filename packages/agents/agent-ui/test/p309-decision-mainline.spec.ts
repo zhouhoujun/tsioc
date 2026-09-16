@@ -1,12 +1,26 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { AgentModule } from '@tsdi/agent';
+import { AgentConsoleQuestionTemplate } from '../src/AgentConsoleMessageTemplates';
 import {
-    AgentConsoleMessageRenderer,
+    AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
+    AgentConsoleKindRenderer,
+    AgentUiModule,
     AgentConsoleMessageRendererRegistry,
     presentAgentConsoleSessionContent,
     projectAgentConsoleDecisionMainline,
     renderAgentConsoleMessageItem
 } from '../src';
+
+@Injectable()
+class DecisionRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'question' as const;
+    readonly label = '? ';
+    readonly rail = '3px solid #d29922';
+    readonly component = AgentConsoleQuestionTemplate;
+}
 
 function decision(id: string, metadata: Record<string, any>, content = ''): any {
     return { id, role: 'assistant', content, createdAt: 1, metadata };
@@ -15,24 +29,27 @@ function decision(id: string, metadata: Record<string, any>, content = ''): any 
 @Suite('P309 decision mainline')
 export class DecisionMainlineSuite {
     @Test('IoC renderer registry dynamically overrides a supported content kind')
-    dynamicRendererRegistration() {
-        class DecisionRenderer extends AgentConsoleMessageRenderer {
-            override readonly priority = 100;
-            supports(message: any): boolean { return message.metadata?.uiKind === 'question'; }
-            resolve(): any {
-                return {
-                    templateKind: 'assistant', roleLabel: '? ',
-                    roleStyle: () => ({}), itemStyle: () => ({}),
-                    lead: () => '', continuationLead: () => ''
-                };
-            }
+    async dynamicRendererRegistration() {
+        const ctx = await Application.run(AgentModule, {
+            deps: [AgentUiModule],
+            providers: [
+                DecisionRenderer,
+                {
+                    provide: AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
+                    useValue: { question: DecisionRenderer }
+                }
+            ]
+        });
+        try {
+            const registry = ctx.get(AgentConsoleMessageRendererRegistry);
+            const rendered = renderAgentConsoleMessageItem(
+                decision('q1', { uiKind: 'question' }, 'Continue?'),
+                { rendererRegistry: registry }
+            );
+            expect(rendered.lines[0].role).toEqual('? ');
+        } finally {
+            await ctx.close();
         }
-        const registry = new AgentConsoleMessageRendererRegistry([new DecisionRenderer()]);
-        const rendered = renderAgentConsoleMessageItem(
-            decision('q1', { uiKind: 'question' }, 'Continue?'),
-            { rendererRegistry: registry }
-        );
-        expect(rendered.lines[0].role).toEqual('? ');
     }
 
     @Test('keeps the latest question state and folds its generic event')

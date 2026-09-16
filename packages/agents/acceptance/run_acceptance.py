@@ -36,6 +36,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import unicodedata
 import zlib
 from typing import Optional
 
@@ -122,6 +123,17 @@ def drain(fd: int, screen: Screen, seconds: float = 0.4) -> None:
         screen.feed(chunk)
 
 
+def resize_terminal(fd: int, columns: int, lines: int = 32) -> None:
+    import fcntl, termios, struct
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', lines, columns, 0, 0))
+
+
+def display_width(value: str) -> int:
+    return sum(0 if unicodedata.combining(char) or unicodedata.category(char) == 'Cf' else
+               2 if unicodedata.east_asian_width(char) in ('W', 'F') else 1
+               for char in value)
+
+
 def spawn_agent(port: int):
     import pty
     env = dict(os.environ)
@@ -139,8 +151,7 @@ def spawn_agent(port: int):
             os.execvpe('/bin/sh', ['/bin/sh', '-c', AGENT_CMD], env)
         finally:
             os._exit(127)
-    import fcntl, termios, struct
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', 32, 100, 0, 0))
+    resize_terminal(fd, 100)
     return pid, fd
 
 
@@ -471,6 +482,62 @@ def scenario_interrupt_and_timer(pid: int, fd: int, screen: Screen) -> bool:
     return True
 
 
+def scenario_theme_width_matrix(pid: int, fd: int, screen: Screen) -> bool:
+    """Verify dark/light themes at real 80/120-column PTY dimensions."""
+    theme_colors = {
+        'dark': b'\x1b[38;2;201;209;217m',
+        'light': b'\x1b[38;2;36;41;47m',
+    }
+    for theme in ('dark', 'light'):
+        for columns in (80, 120):
+            resize_terminal(fd, columns)
+            time.sleep(0.3)
+            drain(fd, screen)
+            # Force a real state transition for every matrix cell. Reapplying
+            # the already-active theme may short-circuit style updates.
+            primer = 'high-contrast'
+            send(fd, f'/theme {primer}'.encode())
+            send(fd, b'\r')
+            if not wait_for(fd, screen, [re.escape(f'Theme set to {primer}.')],
+                            timeout=20, on_sight=True):
+                print(f'[FAIL] scenario 8: failed to prime {primer} before {theme}/{columns}')
+                return False
+            theme_mark = len(bytes(screen.raw))
+            send(fd, f'/theme {theme}'.encode())
+            send(fd, b'\r')
+            changed = wait_for(fd, screen, [re.escape(f'Theme set to {theme}.')],
+                               timeout=20, on_sight=True, tail_from=theme_mark)
+            raw_tail = bytes(screen.raw)[theme_mark:]
+            if not changed or theme_colors[theme] not in raw_tail:
+                print(f'[FAIL] scenario 8: {theme}/{columns} theme confirmation or ANSI color missing')
+                return False
+
+            turn_mark = len(bytes(screen.raw))
+            send(fd, f'主题宽度矩阵 {theme} {columns}'.encode())
+            send(fd, b'\r')
+            completed = wait_for(
+                fd, screen, [re.escape('Session restore is complete.')], timeout=TIMEOUT,
+                settle=1.0, quiet_window=1.0, tail_from=turn_mark)
+            if not completed:
+                print(f'[FAIL] scenario 8: {theme}/{columns} final marker missing')
+                return False
+            if not wait_for(fd, screen, [r'>\s+Ask code or files'], timeout=20,
+                            on_sight=True, tail_from=turn_mark):
+                print(f'[FAIL] scenario 8: {theme}/{columns} composer did not recover')
+                return False
+            view = screen.viewport()
+            if '恢复索引写入失败：权限不足' not in view:
+                print(f'[FAIL] scenario 8: {theme}/{columns} CJK root cause missing')
+                return False
+            overflow = [line for line in view.splitlines() if display_width(line) > columns]
+            if overflow:
+                print(f'[FAIL] scenario 8: {theme}/{columns} line exceeds terminal width: {overflow[0]!r}')
+                return False
+            print(f'[PASS] scenario 8: {theme} theme at {columns} columns')
+    resize_terminal(fd, 100)
+    return True
+
+
 # --- P232 part B: plan-lifecycle scenario + UX metrics ----------------------
 #
 # Metrics required by the P232 spec (recorded as acceptance evidence):
@@ -641,6 +708,7 @@ def main() -> int:
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
             results.append(('7-interrupt-timer', scenario_interrupt_and_timer(pid, fd, screen)))
+            results.append(('8-theme-width-matrix', scenario_theme_width_matrix(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))

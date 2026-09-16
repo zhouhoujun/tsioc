@@ -2464,7 +2464,8 @@ export class AgentConsoleMessageLineComponent {
 }
 
 const MESSAGE_ITEM_TEMPLATE = `
-    <div class="message-item-block">
+    <div class="message-block-spacing" v-if="spacerBefore">​</div>
+    <div class="message-item-block" v-style="blockStyle">
         <agent-console-message-line v-for="line in lines" :line="line"></agent-console-message-line>
     </div>
 `;
@@ -2474,7 +2475,9 @@ const messageItemsCache = new WeakMap<object, {
     selectedMessageId: string;
     messagesFocused: boolean;
     theme: AgentConsoleTheme;
-    consoleOptions: AgentConsoleSessionState['consoleOptions'];
+    statusLabels: AgentConsoleSessionState['consoleOptions']['messageStatusLabels'];
+    statusSymbol: AgentConsoleSessionState['consoleOptions']['messageStatusSymbol'];
+    username: AgentConsoleSessionState['consoleOptions']['username'];
     visibleItems: number;
     rawMode: boolean;
     showTimestamps: boolean;
@@ -2492,6 +2495,19 @@ abstract class AgentConsoleMessageItemComponentBase {
 
     get lines(): AgentConsoleRenderedLine[] {
         return this.item?.lines || [];
+    }
+
+    get spacerBefore(): boolean {
+        return !!this.item?.spacerBefore;
+    }
+
+    get blockStyle(): Record<string, string> {
+        if (!this.item?.blockPadding) return {};
+        return {
+            ...(this.item.itemStyle || {}),
+            padding: '1em 0',
+            margin: '0'
+        };
     }
 }
 
@@ -2539,7 +2555,6 @@ export class AgentConsoleErrorMessageItemComponent extends AgentConsoleMessageIt
 export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageItemComponentBase {
     @Attribute() item?: AgentConsoleRenderedMessageItem;
 }
-
 @Component({
     selector: 'agent-console-messages-panel',
     imports: [
@@ -2669,7 +2684,9 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.selectedMessageId === selectedMessageId
             && cached.messagesFocused === messagesFocused
             && cached.theme === theme
-            && cached.consoleOptions === consoleOptions
+            && cached.statusLabels === consoleOptions.messageStatusLabels
+            && cached.statusSymbol === consoleOptions.messageStatusSymbol
+            && cached.username === consoleOptions.username
             && cached.visibleItems === visibleItems
             && cached.rawMode === rawMode
             && cached.showTimestamps === showTimestamps
@@ -2704,7 +2721,9 @@ export class AgentConsoleMessagesPanelComponent {
             selectedMessageId,
             messagesFocused,
             theme,
-            consoleOptions,
+            statusLabels: consoleOptions.messageStatusLabels,
+            statusSymbol: consoleOptions.messageStatusSymbol,
+            username: consoleOptions.username,
             visibleItems,
             rawMode,
             showTimestamps,
@@ -2738,12 +2757,23 @@ export class AgentConsoleMessagesPanelComponent {
         return this.renderedMessageItems.flatMap(item => {
             const itemKey = item.lines.find(line => line.messageId)?.messageId
                 || `${item.templateKind || 'message'}:${item.renderRegion || 'row'}`;
-            return item.lines.map((line, lineIndex) => ({
+            const lines = item.lines.map((line, lineIndex) => ({
                 ...line,
                 renderKey: line.messageId
                     ? `${line.messageId}:${lineIndex}`
                     : `${itemKey}:${lineIndex}`
             }));
+            if (item.spacerBefore) {
+                lines.unshift({
+                    renderKey: `${itemKey}:spacer`,
+                    content: '\u200b',
+                    tokens: [{ text: '\u200b', style: {} }],
+                    itemStyle: { display: 'block', padding: '0', margin: '0' },
+                    lineStyle: {},
+                    ariaLabel: ''
+                });
+            }
+            return lines;
         });
     }
 

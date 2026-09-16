@@ -162,6 +162,13 @@ def _default_turn(messages):
         content = '\n'.join(lines) + '\n\n是否继续？'
         total_tokens += len(content) // 4
         return {'role': 'assistant', 'content': content + '\n'}
+    if '主题宽度矩阵' in text:
+        content = (
+            '恢复索引写入失败：权限不足。正在保留可读根因并验证窄终端中文换行不会破坏列边界。\n\n'
+            '## Result\n\nSession restore is complete.\n'
+        )
+        total_tokens += len(content) // 4
+        return {'role': 'assistant', 'content': content}
     if '计划' in text:
         if n_tool == 0:
             return _todo_turn('pending')

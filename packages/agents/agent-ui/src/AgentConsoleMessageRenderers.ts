@@ -1,5 +1,5 @@
 import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
-import { Inject, Injectable, token } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, Token, Type, token } from '@tsdi/ioc';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -11,7 +11,18 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
-import { AgentConsoleContentFamily, AgentConsoleContentKind, presentAgentConsoleSessionContent } from './AgentConsoleSessionContentPresenter';
+import {
+    AgentConsoleContentFamily,
+    AgentConsoleContentKind,
+    AgentConsoleSessionContentPresentation,
+    presentAgentConsoleSessionContent
+} from './AgentConsoleSessionContentPresenter';
+import {
+    AgentConsoleApprovalTemplate, AgentConsoleCommandTemplate, AgentConsoleErrorTemplate,
+    AgentConsoleFilesTemplate, AgentConsolePlanTemplate, AgentConsoleQuestionTemplate,
+    AgentConsoleMarkdownComponent, AgentConsoleSystemTemplate, AgentConsoleThoughtTemplate,
+    AgentConsoleToolTemplate, AgentConsoleUserTemplate
+} from './AgentConsoleMessageTemplates';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
 
@@ -43,6 +54,7 @@ export interface AgentConsoleRenderedLine {
     lineStyle?: Record<string, string>;
     tone?: AgentConsoleMarkdownTone;
     renderRegion?: string;
+    spacing?: boolean;
     semanticFamily?: AgentConsoleContentFamily;
     semanticKind?: AgentConsoleContentKind;
 }
@@ -60,6 +72,11 @@ export interface AgentConsoleRenderedMessageItem {
     lines: AgentConsoleRenderedLine[];
     semanticFamily?: AgentConsoleContentFamily;
     semanticKind?: AgentConsoleContentKind;
+    component: Type<any>;
+    /** Major conversation blocks start after one visual row in DOM and TUI. */
+    spacerBefore?: boolean;
+    /** Vertical padding applies around the whole message block. */
+    blockPadding?: boolean;
 }
 
 export type AgentConsoleMessageStatus = 'running' | 'success' | 'failed' | 'error' | 'blocked';
@@ -107,92 +124,230 @@ export interface AgentConsoleResolvedMessageRenderer {
 
 /** IoC extension point for content-specific message display. */
 export abstract class AgentConsoleMessageRenderer {
-    readonly priority: number = 0;
-    abstract supports(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): boolean;
-    abstract resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer;
+    abstract resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse;
 }
 
-export const AGENT_CONSOLE_MESSAGE_RENDERERS = token<AgentConsoleMessageRenderer[]>('AGENT_CONSOLE_MESSAGE_RENDERERS');
+export interface AgentConsoleMessageRenderRequest {
+    message: AgentMessage;
+    templateKind: AgentConsoleMessageTemplateKind;
+}
+
+export interface AgentConsoleMessageRenderResponse {
+    presentation: AgentConsoleResolvedMessageRenderer;
+    component: Type<any>;
+}
+
+/** Route map follows the shared request router contract: request path -> handler token. */
+export type AgentConsoleMessageRendererRoutes = Partial<Record<AgentConsoleContentKind, Token<AgentConsoleMessageRenderer>>>;
+export const AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES = token<AgentConsoleMessageRendererRoutes>('AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES');
 
 @Injectable()
 export class AgentConsoleMessageRendererRegistry {
     constructor(
-        @Inject(AGENT_CONSOLE_MESSAGE_RENDERERS, { defaultValue: [] }) private renderers: AgentConsoleMessageRenderer[] = []
+        private injector: Injector,
+        @Inject(AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES, { defaultValue: {} })
+        private routes: AgentConsoleMessageRendererRoutes = {}
     ) {}
 
-    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
-        const renderer = this.renderers
-            .slice()
-            .sort((left, right) => right.priority - left.priority)
-            .find(item => item.supports(message, templateKind));
-        return renderer?.resolve(message, templateKind) || resolveBuiltinMessageRenderer(templateKind);
+    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        const request: AgentConsoleMessageRenderRequest = { message, templateKind };
+        const kind = presentAgentConsoleSessionContent(message).kind;
+        const route = this.routes[kind];
+        const renderer = route ? this.injector.get(route, undefined) : undefined;
+        return renderer?.resolve(request.message, request.templateKind) || {
+            presentation: resolveBuiltinMessageRenderer(request.templateKind),
+            component: AgentConsoleSystemTemplate
+        };
     }
 }
 
 abstract class AgentConsoleFamilyMessageRenderer extends AgentConsoleMessageRenderer {
-    abstract readonly family: AgentConsoleContentFamily;
-
-    supports(message: AgentMessage): boolean {
-        return presentAgentConsoleSessionContent(message).family === this.family;
-    }
-
-    resolve(_message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
-        return resolveBuiltinMessageRenderer(templateKind);
+    resolve(_message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        return {
+            presentation: resolveBuiltinMessageRenderer(templateKind),
+            component: AgentConsoleSystemTemplate
+        };
     }
 }
 
 @Injectable()
-export class AgentConsoleConversationMessageRenderer extends AgentConsoleFamilyMessageRenderer {
-    override readonly priority = 5;
-    readonly family = 'conversation' as const;
+export class AgentConsoleUserRenderer extends AgentConsoleFamilyMessageRenderer {
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        return { ...super.resolve(message, templateKind), component: AgentConsoleUserTemplate };
+    }
 }
 
 @Injectable()
-export class AgentConsoleExecutionMessageRenderer extends AgentConsoleFamilyMessageRenderer {
-    override readonly priority = 5;
-    readonly family = 'execution' as const;
+export class AgentConsoleAnswerRenderer extends AgentConsoleFamilyMessageRenderer {
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        const presentation = super.resolve(message, templateKind).presentation;
+        return { component: AgentConsoleMarkdownComponent, presentation: {
+            ...presentation,
+            roleLabel: '',
+            itemStyle: (theme, selected) => ({
+                ...presentation.itemStyle(theme, selected),
+                'border-left': '2px solid transparent',
+                margin: '0'
+            })
+        } };
+    }
+}
+
+@Injectable()
+export class AgentConsolePartialRenderer extends AgentConsoleFamilyMessageRenderer {
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        return { ...super.resolve(message, templateKind), component: AgentConsoleMarkdownComponent };
+    }
+}
+
+@Injectable()
+export class AgentConsolePreambleRenderer extends AgentConsoleFamilyMessageRenderer {
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        const response = super.resolve(message, templateKind);
+        return { component: AgentConsoleMarkdownComponent, presentation: { ...response.presentation, roleLabel: 'Context · ' } };
+    }
 }
 
 @Injectable()
 export class AgentConsoleDecisionMessageRenderer extends AgentConsoleFamilyMessageRenderer {
-    override readonly priority = 5;
-    readonly family = 'decision' as const;
-
-    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
-        const builtin = super.resolve(message, templateKind);
-        return { ...builtin, roleLabel: presentAgentConsoleSessionContent(message).kind === 'question' ? '? ' : '! ' };
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        const response = super.resolve(message, templateKind);
+        return { ...response, presentation: { ...response.presentation, roleLabel: 'Decision · ' } };
     }
 }
 
 @Injectable()
 export class AgentConsoleArtifactMessageRenderer extends AgentConsoleFamilyMessageRenderer {
-    override readonly priority = 5;
-    readonly family = 'artifact' as const;
+}
+
+type AgentConsoleKindRendererTone = 'muted' | 'accent' | 'attention' | 'error';
+
+/** IoC route handler for one semantic content kind. */
+export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRenderer {
+    abstract readonly kind: AgentConsoleContentKind;
+    abstract readonly label: string;
+    abstract readonly rail: string;
+    abstract readonly component: Type<any>;
+    readonly tone: AgentConsoleKindRendererTone = 'muted';
+
+    resolve(_message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
+        const builtin = resolveBuiltinMessageRenderer(templateKind);
+        return { component: this.component, presentation: {
+            ...builtin,
+            roleLabel: this.label,
+            roleStyle: theme => ({
+                ...styleTextToObject(this.tone === 'error' ? theme.statusErrorValue
+                    : this.tone === 'attention' ? theme.statusBusyValue
+                        : this.tone === 'accent' ? theme.toolsAccent : theme.statusLabel),
+                ...(this.tone === 'muted' ? {} : { 'font-weight': 'bold' })
+            }),
+            itemStyle: (theme, selected) => ({
+                ...builtin.itemStyle(theme, selected),
+                'border-left': selected ? `${this.rail.split(' ')[0]} solid transparent` : this.rail,
+                margin: '0'
+            })
+        } };
+    }
+}
+
+@Injectable()
+export class AgentConsoleThoughtMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'thought' as const;
+    readonly label = 'Thought · ';
+    readonly rail = '2px solid #6e7681';
+    readonly component = AgentConsoleThoughtTemplate;
+}
+
+@Injectable()
+export class AgentConsoleToolMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'tool' as const;
+    readonly label = 'Tool · ';
+    readonly rail = '2px solid #6e7681';
+    readonly component = AgentConsoleToolTemplate;
+}
+
+@Injectable()
+export class AgentConsoleCommandMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'command' as const;
+    readonly label = '$ ';
+    readonly rail = '2px solid #6e7681';
+    readonly component = AgentConsoleCommandTemplate;
+}
+
+@Injectable()
+export class AgentConsolePlanMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'plan' as const;
+    readonly label = 'Plan · ';
+    readonly rail = '2px solid #79c0ff';
+    readonly component = AgentConsolePlanTemplate;
+    override readonly tone = 'accent' as const;
+}
+
+@Injectable()
+export class AgentConsoleFilesMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'file-change' as const;
+    readonly label = 'Files · ';
+    readonly rail = '2px solid #79c0ff';
+    readonly component = AgentConsoleFilesTemplate;
+    override readonly tone = 'accent' as const;
+}
+
+@Injectable()
+export class AgentConsoleQuestionMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'question' as const;
+    readonly label = 'Question · ';
+    readonly rail = '3px solid #d29922';
+    readonly component = AgentConsoleQuestionTemplate;
+    override readonly tone = 'attention' as const;
+}
+
+@Injectable()
+export class AgentConsoleApprovalMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'approval' as const;
+    readonly label = 'Approval · ';
+    readonly rail = '3px solid #d29922';
+    readonly component = AgentConsoleApprovalTemplate;
+    override readonly tone = 'attention' as const;
+}
+
+@Injectable()
+export class AgentConsoleErrorMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'error' as const;
+    readonly label = 'Error · ';
+    readonly rail = '3px solid #f85149';
+    readonly component = AgentConsoleErrorTemplate;
+    override readonly tone = 'error' as const;
 }
 
 @Injectable()
 export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleFamilyMessageRenderer {
-    override readonly priority = 20;
-    readonly family = 'diagnostic' as const;
-
-    supports(message: AgentMessage): boolean {
-        const metadata = message.metadata || {};
-        const eventType = String(metadata.uiEventType || '').toLowerCase();
-        const status = String(metadata.status || '').toLowerCase();
-        return super.supports(message) || metadata.diagnosticSummary === true || metadata.backgroundSummary === true
-            || eventType.startsWith('background_task_') || status === 'cancelled';
-    }
-
-    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
         const builtin = resolveBuiltinMessageRenderer(templateKind);
         const metadata = message.metadata || {};
-        return {
-            ...builtin,
-            roleLabel: metadata.backgroundSummary === true ? '↳ '
-                : String(metadata.status || '').toLowerCase() === 'cancelled' ? '· ' : '! '
+        const kind = presentAgentConsoleSessionContent(message).kind;
+        const labels: Partial<Record<AgentConsoleContentKind, string>> = {
+            error: 'Error · ', warning: 'Warning · ', cancelled: 'Cancelled · ', system: 'System · '
         };
+        return { component: kind === 'error' || kind === 'warning' ? AgentConsoleErrorTemplate : AgentConsoleSystemTemplate, presentation: {
+            ...builtin,
+            roleLabel: metadata.backgroundSummary === true ? 'Background · ' : labels[kind] || 'Diagnostic · ',
+            roleStyle: theme => styleTextToObject(
+                kind === 'error' ? theme.statusErrorValue
+                    : kind === 'warning' ? theme.statusBusyValue : theme.statusLabel
+            ),
+            itemStyle: (theme, selected) => ({
+                ...builtin.itemStyle(theme, selected),
+                'border-left': selected ? '3px solid transparent'
+                    : kind === 'error' ? '3px solid #f85149'
+                        : kind === 'warning' ? '3px solid #d29922' : '2px solid #6e7681',
+                margin: '0.35em 0'
+            })
+        } };
     }
 }
+
+@Injectable()
+export class AgentConsoleAttachmentRenderer extends AgentConsoleFamilyMessageRenderer {}
 
 function resolveMessageRoleLabel(templateKind: AgentConsoleMessageTemplateKind): string {
     switch (templateKind) {
@@ -301,7 +456,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'user',
         roleLabel: resolveMessageRoleLabel('user'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'user'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser, 'user'),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.inputShell, 'user'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -405,7 +560,15 @@ export function renderAgentConsoleMessageItems(
     messages: AgentMessage[],
     context: AgentConsoleMessageRenderContext = {}
 ): AgentConsoleRenderedMessageItem[] {
-    return (messages || []).map(message => renderAgentConsoleMessageItem(message, context));
+    return (messages || []).map((message, index, source) => {
+        const item = renderAgentConsoleMessageItem(message, context);
+        const previous = index > 0 ? presentAgentConsoleSessionContent(source[index - 1]) : undefined;
+        if (previous?.kind === 'user' && item.semanticKind !== 'user') {
+            item.spacerBefore = true;
+            item.blockPadding = true;
+        }
+        return item;
+    });
 }
 
 export function renderAgentConsoleMessageItem(
@@ -415,11 +578,17 @@ export function renderAgentConsoleMessageItem(
     const theme = context.theme || defaultAgentConsoleTheme;
     const presentation = presentAgentConsoleSessionContent(message);
     const templateKind = resolveMessageTemplateKind(message);
-    const renderer = context.rendererRegistry?.resolve(message, templateKind) || resolveBuiltinMessageRenderer(templateKind);
+    const response = context.rendererRegistry?.resolve(message, templateKind) || {
+        presentation: resolveBuiltinMessageRenderer(templateKind),
+        component: AgentConsoleSystemTemplate
+    };
+    const renderer = response.presentation;
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
     const baseItemStyle = renderer.itemStyle(theme, rowSelected);
-    const baseRoleLabel = resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
+    const baseRoleLabel = context.rendererRegistry
+        ? renderer.roleLabel
+        : resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
     const roleLabel = context.showUsername
         ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
         : baseRoleLabel;
@@ -427,9 +596,9 @@ export function renderAgentConsoleMessageItem(
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
     const criticalMark = context.showCriticalMarks ? '★ ' : '';
     const effectiveRoleLabel = timelineEvent
-        // Timeline rows use the status column as the single state marker.
-        // Keep only indentation here so glyphs never appear twice.
-        ? `  ${criticalMark}`
+        // Status remains a single glyph column; the semantic renderer supplies
+        // the human-readable content type (Thought/Tool/Background/etc.).
+        ? `  ${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
         : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const itemStyle = timelineEvent
@@ -474,7 +643,7 @@ export function renderAgentConsoleMessageItem(
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
-    const lines = sourceLines.map((line, index) => {
+    const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
         const cursorTokens = messageStreaming && isLast && markdownLines.length
@@ -510,9 +679,8 @@ export function renderAgentConsoleMessageItem(
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
             itemStyle: {
                 ...itemStyle,
-                padding: timelineEvent
-                    ? '0 1ch'
-                    : `${isFirst ? '1em' : '0'} 1ch ${isLast ? '1em' : '0'} 1ch`
+                padding: resolveSemanticLinePadding(presentation, isFirst, isLast, timelineEvent),
+                margin: resolveSemanticLineMargin(presentation, isFirst, timelineEvent, String(itemStyle.margin || '0'))
             },
             lineStyle: {
                 ...(rendered.lineStyle || {}),
@@ -522,7 +690,6 @@ export function renderAgentConsoleMessageItem(
             semanticKind: presentation.kind
         };
     });
-
     return {
         kind: roleLabel,
         templateKind,
@@ -532,9 +699,12 @@ export function renderAgentConsoleMessageItem(
         status,
         statusStyle,
         itemStyle,
+        component: response.component,
         lines,
         semanticFamily: presentation.family,
-        semanticKind: presentation.kind
+        semanticKind: presentation.kind,
+        spacerBefore: !timelineEvent && presentation.kind === 'assistant-final',
+        blockPadding: !timelineEvent && (presentation.kind === 'user' || presentation.kind === 'assistant-final')
     };
 }
 
@@ -802,6 +972,36 @@ function resolveMessageRowStyle(
         'border-left': resolveMessageRailColor(templateKind),
         ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
     };
+}
+
+function resolveSemanticLinePadding(
+    presentation: AgentConsoleSessionContentPresentation,
+    isFirst: boolean,
+    isLast: boolean,
+    timelineEvent: boolean
+): string {
+    if (timelineEvent) return '0 1ch';
+    if (presentation.family === 'execution') {
+        return `${isFirst ? '0.2em' : '0'} 1ch ${isLast ? '0.2em' : '0'} 1ch`;
+    }
+    const vertical = presentation.kind === 'assistant-final' ? 1
+        : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
+            : presentation.family === 'artifact' ? 0.4 : 0.5;
+    return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;
+}
+
+function resolveSemanticLineMargin(
+    presentation: AgentConsoleSessionContentPresentation,
+    isFirst: boolean,
+    timelineEvent: boolean,
+    fallback: string
+): string {
+    if (!isFirst) return '0';
+    if (presentation.kind === 'user' || presentation.kind === 'assistant-final') return fallback;
+    if (timelineEvent) return '0';
+    if (presentation.family === 'execution') return '0.2em 0 0 0';
+    if (presentation.family === 'decision' || presentation.family === 'diagnostic') return '0.55em 0 0 0';
+    return '0.4em 0 0 0';
 }
 
 function buildRenderedLine(

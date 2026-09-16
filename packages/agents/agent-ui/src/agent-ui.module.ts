@@ -22,13 +22,24 @@ import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import {
-    AGENT_CONSOLE_MESSAGE_RENDERERS,
+    AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
+    AgentConsoleAnswerRenderer,
+    AgentConsoleApprovalMessageRenderer,
+    AgentConsoleAttachmentRenderer,
     AgentConsoleArtifactMessageRenderer,
-    AgentConsoleConversationMessageRenderer,
+    AgentConsoleCommandMessageRenderer,
+    AgentConsolePreambleRenderer,
+    AgentConsolePartialRenderer,
     AgentConsoleDecisionMessageRenderer,
     AgentConsoleDiagnosticMessageRenderer,
-    AgentConsoleExecutionMessageRenderer,
-    AgentConsoleMessageRendererRegistry
+    AgentConsoleErrorMessageRenderer,
+    AgentConsoleFilesMessageRenderer,
+    AgentConsoleMessageRendererRegistry,
+    AgentConsolePlanMessageRenderer,
+    AgentConsoleQuestionMessageRenderer,
+    AgentConsoleThoughtMessageRenderer,
+    AgentConsoleToolMessageRenderer
+    , AgentConsoleUserRenderer
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
@@ -62,6 +73,13 @@ import {
     AgentConsoleUserMessageItemComponent,
     AgentConsoleWorkingPanelComponent
 } from './AgentConsolePanels';
+import {
+    AgentConsoleApprovalTemplate, AgentConsoleCommandTemplate, AgentConsoleErrorTemplate,
+    AgentConsoleFilesTemplate, AgentConsolePlanTemplate, AgentConsoleQuestionTemplate,
+    AgentConsoleMarkdownComponent, AgentConsoleSystemTemplate, AgentConsoleThoughtTemplate,
+    AgentConsoleToolTemplate, AgentConsoleUserTemplate, AgentConsoleRoutedLineComponent,
+    AgentConsoleRoutedTokensComponent
+} from './AgentConsoleMessageTemplates';
 
 @Module({
     imports: [
@@ -92,6 +110,19 @@ import {
         AgentConsolePendingQuestionPanelComponent,
         AgentConsoleMessageTokensComponent,
         AgentConsoleMessageLineComponent,
+        AgentConsoleRoutedTokensComponent,
+        AgentConsoleRoutedLineComponent,
+        AgentConsoleUserTemplate,
+        AgentConsoleMarkdownComponent,
+        AgentConsoleThoughtTemplate,
+        AgentConsoleToolTemplate,
+        AgentConsoleCommandTemplate,
+        AgentConsolePlanTemplate,
+        AgentConsoleFilesTemplate,
+        AgentConsoleQuestionTemplate,
+        AgentConsoleApprovalTemplate,
+        AgentConsoleErrorTemplate,
+        AgentConsoleSystemTemplate,
         AgentConsoleUserMessageItemComponent,
         AgentConsoleAssistantMessageItemComponent,
         AgentConsoleToolMessageItemComponent,
@@ -112,16 +143,43 @@ import {
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleMessageRendererRegistry,
-        AgentConsoleConversationMessageRenderer,
-        AgentConsoleExecutionMessageRenderer,
+        AgentConsoleUserRenderer,
+        AgentConsoleAnswerRenderer,
+        AgentConsolePartialRenderer,
+        AgentConsolePreambleRenderer,
         AgentConsoleDecisionMessageRenderer,
         AgentConsoleArtifactMessageRenderer,
+        AgentConsoleAttachmentRenderer,
         AgentConsoleDiagnosticMessageRenderer,
-        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleConversationMessageRenderer, multi: true },
-        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleExecutionMessageRenderer, multi: true },
-        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleDecisionMessageRenderer, multi: true },
-        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleArtifactMessageRenderer, multi: true },
-        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleDiagnosticMessageRenderer, multi: true },
+        AgentConsoleThoughtMessageRenderer,
+        AgentConsoleToolMessageRenderer,
+        AgentConsoleCommandMessageRenderer,
+        AgentConsolePlanMessageRenderer,
+        AgentConsoleFilesMessageRenderer,
+        AgentConsoleQuestionMessageRenderer,
+        AgentConsoleApprovalMessageRenderer,
+        AgentConsoleErrorMessageRenderer,
+        {
+            provide: AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
+            useValue: {
+                user: AgentConsoleUserRenderer,
+                'assistant-final': AgentConsoleAnswerRenderer,
+                'assistant-partial': AgentConsolePartialRenderer,
+                'assistant-preamble': AgentConsolePreambleRenderer,
+                thought: AgentConsoleThoughtMessageRenderer,
+                tool: AgentConsoleToolMessageRenderer,
+                command: AgentConsoleCommandMessageRenderer,
+                question: AgentConsoleQuestionMessageRenderer,
+                approval: AgentConsoleApprovalMessageRenderer,
+                plan: AgentConsolePlanMessageRenderer,
+                'file-change': AgentConsoleFilesMessageRenderer,
+                attachment: AgentConsoleAttachmentRenderer,
+                error: AgentConsoleErrorMessageRenderer,
+                warning: AgentConsoleDiagnosticMessageRenderer,
+                cancelled: AgentConsoleDiagnosticMessageRenderer,
+                system: AgentConsoleDiagnosticMessageRenderer
+            }
+        },
         AgentConsoleEventBridge,
         AgentConsolePathProvider,
         AgentConsoleInputHistoryStore,

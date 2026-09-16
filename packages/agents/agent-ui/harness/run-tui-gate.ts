@@ -233,7 +233,8 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
 
         const lines = getLines();
         const cjkLineCount = lines.filter(line => CJK_RE.test(line)).length;
-        const uniqueLineCount = new Set(lines).size;
+        const semanticLines = lines.filter(line => line.replace(/\u200b/g, '').trim().length > 0);
+        const uniqueLineCount = new Set(semanticLines).size;
 
         // ---- wire assertions (same semantics as the DOM gate) -----------------
         check('timeline seed count', state.timelineSeedCount === scenario.expect.timelineSeedCount, `got ${state.timelineSeedCount}`);
@@ -250,7 +251,7 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
         check('panel found', Boolean(messagesPanel), messagesPanel ? '' : 'messages panel ref missing');
         check('row count', lines.length >= scenario.expect.minRenderedRows, `rows=${lines.length}`);
         check('cjk rows', cjkLineCount >= scenario.expect.minCjkRows, `cjk=${cjkLineCount}`);
-        check('unique lines', uniqueLineCount === lines.length, `unique=${uniqueLineCount}/${lines.length}`);
+        check('unique lines', uniqueLineCount === semanticLines.length, `unique=${uniqueLineCount}/${semanticLines.length}`);
         check(
             'single status glyph per line',
             lines.every(line => countStatusGlyphs(line) <= 1),

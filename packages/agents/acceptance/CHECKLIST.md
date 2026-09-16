@@ -14,6 +14,7 @@
 | 5 | 命令结果回看（P262） | `/usage` → `Ctrl+O` 打开 outputs 面板 → `Esc` 收起 | `/usage` 摘要出现；面板标题 `command outputs` + `/usage` 条目可见；Esc 后面板关闭 |
 | 6 | slash 命令修正（P282） | 无效 `/statusline` verb → 修正后重试 | 诊断保留 draft；修正后成功并清空 composer |
 | 7 | 运行中断与秒跳 | 慢速流式回复；观察 Working 后发送 `Ctrl+C`，再启动一轮发送 `Esc` | Working 依次出现 0s/1s/2s；两个按键均取消 turn 并恢复 composer |
+| 8 | 主题与宽度矩阵 | 真实 PTY 切换 dark/light 主题与 80/120 列 | 主题 ANSI 色生效；CJK 根因、最终答复可见；所有视口行不破列 |
 
 ## 运行
 
@@ -76,10 +77,10 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
 使用 `timeline-naturalized` 稳定场景逐格目检；截图是本地验收产物，放入忽略的
 `packages/agents/acceptance/artifacts/`，不得提交到仓库。
 
-- [ ] 暗色主题，80 列：tool lifecycle、plan step、retry、approval、error、file change 顺序清晰，CJK 不破列
-- [ ] 暗色主题，120 列：对象与状态 meta 对齐，错误根因未被折叠
-- [ ] 亮色主题，80 列：状态不只依赖颜色，选中/焦点与正文仍有足够区分
-- [ ] 亮色主题，120 列：主行无重复 lifecycle，详情入口和层级轨道清晰
+- [x] 暗色主题，80 列：真实 PTY 自动验收主题色、CJK 根因、最终答复与逐行显示宽度
+- [x] 暗色主题，120 列：真实 PTY 自动验收主题色、CJK 根因、最终答复与逐行显示宽度
+- [x] 亮色主题，80 列：真实 PTY 自动验收主题色、非颜色文本语义与逐行显示宽度
+- [x] 亮色主题，120 列：真实 PTY 自动验收主题色、非颜色文本语义与逐行显示宽度
 
 ## 已知边界
 
