@@ -11,6 +11,7 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
+import { AgentConsoleContentFamily, AgentConsoleContentKind, presentAgentConsoleSessionContent } from './AgentConsoleSessionContentPresenter';
 
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
 
@@ -42,6 +43,8 @@ export interface AgentConsoleRenderedLine {
     lineStyle?: Record<string, string>;
     tone?: AgentConsoleMarkdownTone;
     renderRegion?: string;
+    semanticFamily?: AgentConsoleContentFamily;
+    semanticKind?: AgentConsoleContentKind;
 }
 
 export interface AgentConsoleRenderedMessageItem {
@@ -55,6 +58,8 @@ export interface AgentConsoleRenderedMessageItem {
     itemStyle: Record<string, string>;
     renderRegion?: string;
     lines: AgentConsoleRenderedLine[];
+    semanticFamily?: AgentConsoleContentFamily;
+    semanticKind?: AgentConsoleContentKind;
 }
 
 export type AgentConsoleMessageStatus = 'running' | 'success' | 'failed' | 'error' | 'blocked';
@@ -124,15 +129,57 @@ export class AgentConsoleMessageRendererRegistry {
     }
 }
 
+abstract class AgentConsoleFamilyMessageRenderer extends AgentConsoleMessageRenderer {
+    abstract readonly family: AgentConsoleContentFamily;
+
+    supports(message: AgentMessage): boolean {
+        return presentAgentConsoleSessionContent(message).family === this.family;
+    }
+
+    resolve(_message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+        return resolveBuiltinMessageRenderer(templateKind);
+    }
+}
+
 @Injectable()
-export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleMessageRenderer {
+export class AgentConsoleConversationMessageRenderer extends AgentConsoleFamilyMessageRenderer {
+    override readonly priority = 5;
+    readonly family = 'conversation' as const;
+}
+
+@Injectable()
+export class AgentConsoleExecutionMessageRenderer extends AgentConsoleFamilyMessageRenderer {
+    override readonly priority = 5;
+    readonly family = 'execution' as const;
+}
+
+@Injectable()
+export class AgentConsoleDecisionMessageRenderer extends AgentConsoleFamilyMessageRenderer {
+    override readonly priority = 5;
+    readonly family = 'decision' as const;
+
+    override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+        const builtin = super.resolve(message, templateKind);
+        return { ...builtin, roleLabel: presentAgentConsoleSessionContent(message).kind === 'question' ? '? ' : '! ' };
+    }
+}
+
+@Injectable()
+export class AgentConsoleArtifactMessageRenderer extends AgentConsoleFamilyMessageRenderer {
+    override readonly priority = 5;
+    readonly family = 'artifact' as const;
+}
+
+@Injectable()
+export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleFamilyMessageRenderer {
     override readonly priority = 20;
+    readonly family = 'diagnostic' as const;
 
     supports(message: AgentMessage): boolean {
         const metadata = message.metadata || {};
         const eventType = String(metadata.uiEventType || '').toLowerCase();
         const status = String(metadata.status || '').toLowerCase();
-        return metadata.diagnosticSummary === true || metadata.backgroundSummary === true
+        return super.supports(message) || metadata.diagnosticSummary === true || metadata.backgroundSummary === true
             || eventType.startsWith('background_task_') || status === 'cancelled';
     }
 
@@ -366,6 +413,7 @@ export function renderAgentConsoleMessageItem(
     context: AgentConsoleMessageRenderContext = {}
 ): AgentConsoleRenderedMessageItem {
     const theme = context.theme || defaultAgentConsoleTheme;
+    const presentation = presentAgentConsoleSessionContent(message);
     const templateKind = resolveMessageTemplateKind(message);
     const renderer = context.rendererRegistry?.resolve(message, templateKind) || resolveBuiltinMessageRenderer(templateKind);
     const selected = message?.id === context.selectedMessageId;
@@ -454,6 +502,7 @@ export function renderAgentConsoleMessageItem(
             meta: isFirst ? timelineMeta : '',
             metaStyle: isFirst ? resolveTimelineMetaStyle(theme, rowSelected, templateKind) : {},
             ariaLabel: [
+                isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
                 isFirst ? timelineMeta : '',
                 rendered.prefix,
@@ -468,7 +517,9 @@ export function renderAgentConsoleMessageItem(
             lineStyle: {
                 ...(rendered.lineStyle || {}),
                 ...resolveRenderedLineToneStyle(theme, rendered, rowSelected, templateKind, timelineEvent)
-            }
+            },
+            semanticFamily: presentation.family,
+            semanticKind: presentation.kind
         };
     });
 
@@ -481,7 +532,9 @@ export function renderAgentConsoleMessageItem(
         status,
         statusStyle,
         itemStyle,
-        lines
+        lines,
+        semanticFamily: presentation.family,
+        semanticKind: presentation.kind
     };
 }
 

@@ -21,7 +21,15 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import { AGENT_CONSOLE_MESSAGE_RENDERERS, AgentConsoleDiagnosticMessageRenderer, AgentConsoleMessageRendererRegistry } from './AgentConsoleMessageRenderers';
+import {
+    AGENT_CONSOLE_MESSAGE_RENDERERS,
+    AgentConsoleArtifactMessageRenderer,
+    AgentConsoleConversationMessageRenderer,
+    AgentConsoleDecisionMessageRenderer,
+    AgentConsoleDiagnosticMessageRenderer,
+    AgentConsoleExecutionMessageRenderer,
+    AgentConsoleMessageRendererRegistry
+} from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
@@ -104,7 +112,15 @@ import {
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleMessageRendererRegistry,
+        AgentConsoleConversationMessageRenderer,
+        AgentConsoleExecutionMessageRenderer,
+        AgentConsoleDecisionMessageRenderer,
+        AgentConsoleArtifactMessageRenderer,
         AgentConsoleDiagnosticMessageRenderer,
+        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleConversationMessageRenderer, multi: true },
+        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleExecutionMessageRenderer, multi: true },
+        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleDecisionMessageRenderer, multi: true },
+        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleArtifactMessageRenderer, multi: true },
         { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleDiagnosticMessageRenderer, multi: true },
         AgentConsoleEventBridge,
         AgentConsolePathProvider,
