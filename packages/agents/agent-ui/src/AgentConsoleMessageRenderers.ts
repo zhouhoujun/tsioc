@@ -1,4 +1,5 @@
 import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
+import { Inject, Injectable, token } from '@tsdi/ioc';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -87,15 +88,40 @@ export interface AgentConsoleMessageRenderContext {
     showCriticalMarks?: boolean;
     /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
     markdownBridge?: MarkdownWorkerBridge;
+    rendererRegistry?: AgentConsoleMessageRendererRegistry;
 }
 
-interface AgentConsoleResolvedMessageRenderer {
+export interface AgentConsoleResolvedMessageRenderer {
     templateKind: AgentConsoleMessageTemplateKind;
     roleLabel: string;
     roleStyle: (theme: AgentConsoleTheme) => Record<string, string>;
     itemStyle: (theme: AgentConsoleTheme, rowSelected: boolean) => Record<string, string>;
     lead: (rowSelected: boolean) => string;
     continuationLead: (rowSelected: boolean) => string;
+}
+
+/** IoC extension point for content-specific message display. */
+export abstract class AgentConsoleMessageRenderer {
+    readonly priority: number = 0;
+    abstract supports(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): boolean;
+    abstract resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer;
+}
+
+export const AGENT_CONSOLE_MESSAGE_RENDERERS = token<AgentConsoleMessageRenderer[]>('AGENT_CONSOLE_MESSAGE_RENDERERS');
+
+@Injectable()
+export class AgentConsoleMessageRendererRegistry {
+    constructor(
+        @Inject(AGENT_CONSOLE_MESSAGE_RENDERERS, { defaultValue: [] }) private renderers: AgentConsoleMessageRenderer[] = []
+    ) {}
+
+    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+        const renderer = this.renderers
+            .slice()
+            .sort((left, right) => right.priority - left.priority)
+            .find(item => item.supports(message, templateKind));
+        return renderer?.resolve(message, templateKind) || resolveBuiltinMessageRenderer(templateKind);
+    }
 }
 
 function resolveMessageRoleLabel(templateKind: AgentConsoleMessageTemplateKind): string {
@@ -318,7 +344,7 @@ export function renderAgentConsoleMessageItem(
 ): AgentConsoleRenderedMessageItem {
     const theme = context.theme || defaultAgentConsoleTheme;
     const templateKind = resolveMessageTemplateKind(message);
-    const renderer = resolveMessageRenderer(templateKind);
+    const renderer = context.rendererRegistry?.resolve(message, templateKind) || resolveBuiltinMessageRenderer(templateKind);
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
     const baseItemStyle = renderer.itemStyle(theme, rowSelected);
@@ -651,7 +677,7 @@ export function resolveAgentConsoleMarkdownToneStyle(
     }
 }
 
-function resolveMessageRenderer(templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+function resolveBuiltinMessageRenderer(templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
     return agentConsoleMessageRenderers.find(renderer => renderer.templateKind === templateKind)
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }

@@ -157,6 +157,65 @@ export function projectAgentConsoleArtifactMainline(messages: AgentMessage[]): A
     }).map(message => bindArtifactCause(message));
 }
 
+/** Project each question or approval as one stable pending/resolved checkpoint. */
+export function projectAgentConsoleDecisionMainline(messages: AgentMessage[]): AgentMessage[] {
+    const input = Array.isArray(messages) ? messages : [];
+    const canonical = new Map<string, number>();
+    input.forEach((message, index) => {
+        const kind = decisionKind(message);
+        if (!kind || message.metadata?.uiKind === 'event') return;
+        canonical.set(decisionKey(message, kind), index);
+    });
+    return input.reduce<AgentMessage[]>((result, message, index) => {
+        const kind = decisionKind(message);
+        if (!kind) {
+            result.push(message);
+            return result;
+        }
+        const key = decisionKey(message, kind);
+        if (message.metadata?.uiKind === 'event') {
+            if (!canonical.has(key)) result.push(message);
+            return result;
+        }
+        if (canonical.get(key) !== index) return result;
+        const metadata = message.metadata || {};
+        const status = decisionStatus(metadata.status);
+        const subject = clean(metadata.question || metadata.summary || message.content) || (kind === 'question' ? 'Question' : 'Approval');
+        const answer = clean(metadata.answer || metadata.decision);
+        const scope = clean(metadata.scope);
+        const content = status === 'pending'
+            ? subject
+            : `${subject} - ${status}${answer ? `: ${answer}` : ''}${scope ? ` (${scope})` : ''}`;
+        result.push({
+            ...message,
+            content,
+            metadata: { ...metadata, uiKind: kind, status, decisionKey: key, causalKey: clean(metadata.causalKey) || `decision:${key}` }
+        });
+        return result;
+    }, []);
+}
+
+function decisionKind(message: AgentMessage): 'question' | 'approval' | undefined {
+    const metadata = message.metadata || {};
+    const uiKind = String(metadata.uiKind || '').toLowerCase();
+    const eventType = String(metadata.uiEventType || '').toLowerCase();
+    if (uiKind === 'question' || eventType === 'question' || eventType === 'ask_user') return 'question';
+    if (uiKind === 'approval' || eventType === 'approval' || eventType === 'approval_request') return 'approval';
+    return undefined;
+}
+
+function decisionKey(message: AgentMessage, kind: 'question' | 'approval'): string {
+    const metadata = message.metadata || {};
+    return clean(metadata.questionId || metadata.approvalId || metadata.requestId || metadata.uiEventKey) || `${kind}:${message.id}`;
+}
+
+function decisionStatus(value: unknown): 'pending' | 'answered' | 'approved' | 'denied' | 'expired' {
+    const status = String(value || '').toLowerCase();
+    if (status === 'answered' || status === 'approved' || status === 'denied' || status === 'expired') return status;
+    if (status === 'rejected') return 'denied';
+    return 'pending';
+}
+
 function bindArtifactCause(message: AgentMessage): AgentMessage {
     const metadata = message.metadata || {};
     if (metadata.uiKind !== 'file-change' && !hasAttachment(message)) return message;

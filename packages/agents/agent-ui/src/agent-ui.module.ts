@@ -21,6 +21,7 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleMessageRendererRegistry } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
@@ -102,6 +103,7 @@ import {
         ...I18N_PROVIDERS,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
+        AgentConsoleMessageRendererRegistry,
         AgentConsoleEventBridge,
         AgentConsolePathProvider,
         AgentConsoleInputHistoryStore,
@@ -146,6 +148,7 @@ import {
         AgentConsoleHealthPopoverComponent,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
+        AgentConsoleMessageRendererRegistry,
         AgentConsoleEventBridge,
         AgentConsoleInputHistoryStore,
         AgentConsoleWorkspaceMentionsProvider,

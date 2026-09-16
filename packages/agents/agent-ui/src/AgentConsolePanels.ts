@@ -31,6 +31,7 @@ import {
     AgentConsoleRenderedLine,
     AgentConsoleRenderedMessageItem,
     renderAgentConsoleMessageItems,
+    AgentConsoleMessageRendererRegistry,
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMessageRenderers';
 import {
@@ -2563,7 +2564,8 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 export class AgentConsoleMessagesPanelComponent {
     constructor(
         private state: AgentConsoleSessionState,
-        @Optional() private translator?: TranslatorService
+        @Optional() private translator?: TranslatorService,
+        @Optional() private messageRendererRegistry?: AgentConsoleMessageRendererRegistry
     ) {
     }
 
@@ -2681,6 +2683,7 @@ export class AgentConsoleMessagesPanelComponent {
         }
 
         const items = renderAgentConsoleMessageItems(this.visibleMessages as any, {
+            rendererRegistry: this.messageRendererRegistry,
             theme: this.activeTheme,
             selectedMessageId: this.state.selectedMessageId,
             messagesFocused: this.state.messagesFocused,

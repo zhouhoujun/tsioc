@@ -71,7 +71,7 @@ import {
     AGENT_CONSOLE_OVERLAY_TITLES,
 } from './AgentConsoleOverlayPresenter';
 import { findTimelineLifecycleMessageIndex, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
-import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleExecutionMainline } from './AgentConsoleSessionContentPresenter';
+import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleExecutionMainline } from './AgentConsoleSessionContentPresenter';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -1310,7 +1310,7 @@ export class AgentConsoleSessionState {
                 } as AgentMessage);
             }
         }
-        return projectAgentConsoleExecutionMainline(projectAgentConsoleArtifactMainline(filtered));
+        return projectAgentConsoleExecutionMainline(projectAgentConsoleDecisionMainline(projectAgentConsoleArtifactMainline(filtered)));
     }
 
     /** Earliest session timestamp: first message createdAt → turn start → now. */
