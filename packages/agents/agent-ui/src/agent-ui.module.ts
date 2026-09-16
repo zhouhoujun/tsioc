@@ -21,7 +21,7 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import { AgentConsoleMessageRendererRegistry } from './AgentConsoleMessageRenderers';
+import { AGENT_CONSOLE_MESSAGE_RENDERERS, AgentConsoleDiagnosticMessageRenderer, AgentConsoleMessageRendererRegistry } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
@@ -104,6 +104,8 @@ import {
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleMessageRendererRegistry,
+        AgentConsoleDiagnosticMessageRenderer,
+        { provide: AGENT_CONSOLE_MESSAGE_RENDERERS, useExisting: AgentConsoleDiagnosticMessageRenderer, multi: true },
         AgentConsoleEventBridge,
         AgentConsolePathProvider,
         AgentConsoleInputHistoryStore,

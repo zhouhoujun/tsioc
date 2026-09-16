@@ -124,6 +124,29 @@ export class AgentConsoleMessageRendererRegistry {
     }
 }
 
+@Injectable()
+export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleMessageRenderer {
+    override readonly priority = 20;
+
+    supports(message: AgentMessage): boolean {
+        const metadata = message.metadata || {};
+        const eventType = String(metadata.uiEventType || '').toLowerCase();
+        const status = String(metadata.status || '').toLowerCase();
+        return metadata.diagnosticSummary === true || metadata.backgroundSummary === true
+            || eventType.startsWith('background_task_') || status === 'cancelled';
+    }
+
+    resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleResolvedMessageRenderer {
+        const builtin = resolveBuiltinMessageRenderer(templateKind);
+        const metadata = message.metadata || {};
+        return {
+            ...builtin,
+            roleLabel: metadata.backgroundSummary === true ? '↳ '
+                : String(metadata.status || '').toLowerCase() === 'cancelled' ? '· ' : '! '
+        };
+    }
+}
+
 function resolveMessageRoleLabel(templateKind: AgentConsoleMessageTemplateKind): string {
     switch (templateKind) {
         case 'user':

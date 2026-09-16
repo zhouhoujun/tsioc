@@ -195,6 +195,104 @@ export function projectAgentConsoleDecisionMainline(messages: AgentMessage[]): A
     }, []);
 }
 
+/** Collapse diagnostic and background lifecycles while retaining causal detail metadata. */
+export function projectAgentConsoleDiagnosticMainline(messages: AgentMessage[]): AgentMessage[] {
+    const input = Array.isArray(messages) ? messages : [];
+    const latestBackground = new Map<string, { index: number; rank: number }>();
+    const strongestDiagnostic = new Map<string, { index: number; severity: number }>();
+    input.forEach((message, index) => {
+        const metadata = message.metadata || {};
+        const eventType = String(metadata.uiEventType || '').toLowerCase();
+        if (eventType.startsWith('background_task_')) {
+            const key = backgroundKey(message);
+            const rank = eventType.endsWith('_failed') ? 4 : eventType.endsWith('_cancelled') ? 3
+                : eventType.endsWith('_completed') ? 2 : 1;
+            const current = latestBackground.get(key);
+            if (!current || rank > current.rank || (rank === current.rank && index > current.index)) {
+                latestBackground.set(key, { index, rank });
+            }
+            return;
+        }
+        const severity = diagnosticSeverity(message);
+        if (!severity) return;
+        const key = diagnosticKey(message);
+        const current = strongestDiagnostic.get(key);
+        if (!current || severity > current.severity || (severity === current.severity && index > current.index)) {
+            strongestDiagnostic.set(key, { index, severity });
+        }
+    });
+    return input.reduce<AgentMessage[]>((result, message, index) => {
+        const metadata = message.metadata || {};
+        const eventType = String(metadata.uiEventType || '').toLowerCase();
+        const relatedTaskId = clean(metadata.taskId || metadata.backgroundTaskId);
+        if (!eventType.startsWith('background_task_') && relatedTaskId && latestBackground.has(relatedTaskId)) {
+            return result;
+        }
+        if (eventType.startsWith('background_task_')) {
+            const key = backgroundKey(message);
+            if (latestBackground.get(key)?.index !== index) return result;
+            const status = eventType.endsWith('_failed') ? 'failed'
+                : eventType.endsWith('_completed') ? 'completed'
+                    : eventType.endsWith('_cancelled') ? 'cancelled' : 'running';
+            const owner = clean(metadata.owner || metadata.agentId);
+            const goal = clean(metadata.goal || metadata.task || message.content) || 'Background task';
+            const outcome = clean(metadata.summary || metadata.error || metadata.result);
+            result.push({
+                ...message,
+                content: `${owner ? `${owner}: ` : ''}${goal} - ${status}${outcome ? `: ${outcome}` : ''}`,
+                metadata: { ...metadata, status, taskId: key, causalKey: clean(metadata.causalKey) || `background:${key}`,
+                    detailRef: clean(metadata.detailRef) || key, backgroundSummary: true }
+            });
+            return result;
+        }
+        const severity = diagnosticSeverity(message);
+        if (!severity) {
+            result.push(message);
+            return result;
+        }
+        const key = diagnosticKey(message);
+        if (strongestDiagnostic.get(key)?.index !== index) return result;
+        const cancelled = isCancelledDiagnostic(message);
+        const rootCause = clean(metadata.rootCause || (typeof metadata.error === 'string' ? metadata.error : '') || metadata.message || message.content)
+            || (cancelled ? 'Operation cancelled' : 'Unknown error');
+        result.push({
+            ...message,
+            content: rootCause,
+            metadata: { ...metadata, status: cancelled ? 'cancelled' : severity >= 3 ? 'error' : 'warning',
+                causalKey: clean(metadata.causalKey) || key, detailRef: clean(metadata.detailRef) || message.id,
+                diagnosticSummary: true }
+        });
+        return result;
+    }, []);
+}
+
+function backgroundKey(message: AgentMessage): string {
+    const metadata = message.metadata || {};
+    return clean(metadata.taskId || metadata.backgroundTaskId || metadata.uiEventKey) || message.id;
+}
+
+function diagnosticKey(message: AgentMessage): string {
+    const metadata = message.metadata || {};
+    return clean(metadata.causalKey || metadata.toolCallId || metadata.planStepId || metadata.stepId || metadata.requestId)
+        || `diagnostic:${message.id}`;
+}
+
+function diagnosticSeverity(message: AgentMessage): number {
+    const metadata = message.metadata || {};
+    const eventType = String(metadata.uiEventType || '').toLowerCase();
+    const status = String(metadata.status || '').toLowerCase();
+    if (isCancelledDiagnostic(message)) return 1;
+    if (metadata.error || status === 'error' || status === 'failed' || eventType === 'error' || eventType.endsWith('_failed')) return 3;
+    if (metadata.warning || status === 'warning' || eventType === 'warning') return 2;
+    return 0;
+}
+
+function isCancelledDiagnostic(message: AgentMessage): boolean {
+    const metadata = message.metadata || {};
+    const eventType = String(metadata.uiEventType || '').toLowerCase();
+    return String(metadata.status || '').toLowerCase() === 'cancelled' || eventType.endsWith('_cancelled');
+}
+
 function decisionKind(message: AgentMessage): 'question' | 'approval' | undefined {
     const metadata = message.metadata || {};
     const uiKind = String(metadata.uiKind || '').toLowerCase();

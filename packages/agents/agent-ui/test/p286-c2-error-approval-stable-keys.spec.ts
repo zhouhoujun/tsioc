@@ -66,7 +66,7 @@ export class C2FixedExpandStableKeysTest {
         return messagesPanel.instance.renderedLines;
     }
 
-    @Test('C2-1 default: error messages never collapse while system messages still do')
+    @Test('C2-1 default: error root cause stays visible while stack detail leaves the mainline')
     async defaultErrorFixedExpand() {
         const ref = await this.bootRef();
         ref.instance.sessionState.setMessages([
@@ -85,8 +85,9 @@ export class C2FixedExpandStableKeysTest {
         expect(collapsedIds).toContain('sys1');
         expect(collapsedIds).not.toContain('err1');
         expect(collapsedIds).not.toContain('appr1');
-        // 不折叠项保留全部 12 行
-        expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(12);
+        expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(1);
+        expect(lines.find(line => line.messageId === 'err1')?.content).toContain('boom');
+        expect(ref.instance.sessionState.displayMessages.find(message => message.id === 'err1')?.metadata?.detailRef).toEqual('err1');
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
     }
 
@@ -114,7 +115,7 @@ export class C2FixedExpandStableKeysTest {
         expect(collapsedIds).toContain('sys1');
         expect(lines.filter(line => line.messageId === 'plain1')).toHaveLength(12);
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
-        expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(12);
+        expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(1);
         expect(lines.filter(line => line.messageId === 'sys1').length).toBeLessThan(12);
     }
 
