@@ -54,6 +54,10 @@ function rpcCount(gateway: FakeAgentGateway, method: string): number {
     return gateway.metadata.rpcCalls.filter(call => call.method === method).length;
 }
 
+function projectedToolRows(state: AgentConsoleSessionState, toolCallId: string) {
+    return state.messages.filter(message => message.metadata?.timeline?.toolCallId === toolCallId);
+}
+
 interface ScenarioRunResult {
     scenario: GatewayScenario;
     failures: string[];
@@ -194,10 +198,30 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
                 stepLabels.filter(label => /已隐藏/.test(label)).join(' | ') || 'none');
             check('timeline long cjk row', stepLabels.some(label => label.includes(timelineExpect.longCjkPrefix ?? '')),
                 stepLabels.filter(label => (timelineExpect.longCjkPrefix?.slice(0, 6) ?? '') && label.includes((timelineExpect.longCjkPrefix as string).slice(0, 6))).join(' | ') || 'none');
+            for (const toolCallId of timelineExpect.stableToolCallIds ?? []) {
+                check(`timeline stable row ${toolCallId}`, projectedToolRows(state, toolCallId).length === 1,
+                    `rows=${projectedToolRows(state, toolCallId).length}`);
+            }
+            if (timelineExpect.retry) {
+                const retryRows = projectedToolRows(state, timelineExpect.retry.toolCallId);
+                check('timeline retry replaces in place', retryRows.length === 1
+                    && retryRows[0]?.metadata?.timeline?.attempt === timelineExpect.retry.attempt,
+                    `rows=${retryRows.length}, attempt=${retryRows[0]?.metadata?.timeline?.attempt ?? 'none'}`);
+            }
+            if (timelineExpect.approvalId) {
+                check('timeline approval checkpoint', state.pendingApprovals.some(item => item.id === timelineExpect.approvalId));
+            }
+            if (timelineExpect.orderedContent?.length) {
+                const positions = timelineExpect.orderedContent.map(content => stepLabels.findIndex(label => label.includes(content)));
+                check('timeline hierarchy order', positions.every(position => position >= 0)
+                    && positions.every((position, index) => index === 0 || positions[index - 1] < position), positions.join(','));
+            }
+            check('timeline aria status text', stepLabels.some(label => /(?:成功|完成)/.test(label))
+                && stepLabels.some(label => /(?:错误|失败)/.test(label)));
 
             // Clear the scope BEFORE the toggle (toggle refuses the active
-            // scope key), then fold the turn-1 group (todo + live pair rows ->
-            // single `第 1 轮 · 完成 · 2 个工具 · 370ms` row).
+            // scope key), then prove the error-bearing turn keeps its root
+            // cause visible instead of folding into a success summary.
             // Drain the SSE channel BEFORE clearing the scope: the bridge
             // consumes one SSE frame per reader.read() and awaits an RPC
             // round-trip (refreshTools) after each tool_completed, so live
@@ -212,10 +236,9 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
             }
             uiState.clearTurnEventScope(timelineExpect.activeScope);
             uiState.toggleTimelineCollapse(timelineExpect.collapseScope);
-            await waitUntil(() => collect().ariaLabels.some(label => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(label)));
             const foldedLabels = collect().ariaLabels;
-            check('timeline collapse fold zh', foldedLabels.some(label => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(label)),
-                foldedLabels.filter(label => /第 \d+ 轮 · 完成 · \d+ 个工具/.test(label)).join(' | ') || 'none');
+            check('timeline error remains visible after collapse request', foldedLabels.some(label => label.includes(timelineExpect.longCjkPrefix ?? '')),
+                'error-bearing turns must not hide their root cause');
 
             uiState.setTimelineMode('compact');
             await waitUntil(() => collect().ariaLabels.some(label => /已隐藏 \d+ 条事件 · 紧凑模式仅显示当前步骤与错误/.test(label)));

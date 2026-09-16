@@ -7,7 +7,8 @@
 #   2. unit tests: components / components/console / components/html
 #   3. tsc --noEmit: agent / agent-ui / agent-gateway / agent-tools
 #   4. production build: agent-ui browser bundle + markdown worker
-#   5. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios)
+#   5. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios +
+#      timeline acceptance at 80/100 terminal-equivalent columns)
 #   6. TUI gate: harness/run-tui-gate.ts (ConsoleRenderer text stream, 5 scenarios)
 #   7. gate regression: gate metrics vs harness/gate-baseline.json ([REGRESSION]/[OK])
 #   8. PTY acceptance: acceptance/run_acceptance.py (real terminal; skip+report
@@ -194,7 +195,8 @@ run_stage() {
         tsc-agent-gateway) run_tsc tsc-agent-gateway 'tsc --noEmit @tsdi/agent-gateway' packages/agents/agent-gateway ;;
         tsc-agent-tools)  run_tsc tsc-agent-tools 'tsc --noEmit @tsdi/agent-tools' packages/agents/agent-tools ;;
         build-agent-ui-web) run_npm_script build-agent-ui-web 'agent-ui browser production bundle' packages/agents/agent-ui build:web ;;
-        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 5 scenarios)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;;
+        dom-gate)         run_harness dom-gate 'DOM gate (JSDOM, 5 scenarios + 80/100-col timeline matrix)' run-dom-gate.ts --json "$LOG_DIR/dom-gate-metrics.json" ;
+                          run_harness dom-gate-matrix 'DOM timeline matrix (80/100 columns)' run-dom-gate.ts timeline-naturalized --viewport 640x800,800x800 ;;
         tui-gate)         run_harness tui-gate 'TUI gate (text stream, 5 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
         gate-regression)  run_gate_regression ;;
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;

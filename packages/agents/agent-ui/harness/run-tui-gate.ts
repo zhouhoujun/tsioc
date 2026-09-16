@@ -69,6 +69,10 @@ function rpcCount(gateway: FakeAgentGateway, method: string): number {
     return gateway.metadata.rpcCalls.filter(call => call.method === method).length;
 }
 
+function projectedToolRows(state: AgentConsoleSessionState, toolCallId: string) {
+    return state.messages.filter(message => message.metadata?.timeline?.toolCallId === toolCallId);
+}
+
 const CJK_RE = /[\u4e00-\u9fff]/;
 /** Decorative leading glyphs the message renderer may emit (see console-renderer.spec). */
 const STATUS_GLYPHS = ['✓', '✕', '●', '○', '…', '›', '•'];
@@ -279,10 +283,28 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
                 stepLines.filter(line => /已隐藏/.test(line)).join(' | ') || 'none');
             check('timeline long cjk row', stepLines.some(line => line.includes(timelineExpect.longCjkPrefix ?? '')),
                 stepLines.filter(line => (timelineExpect.longCjkPrefix?.slice(0, 6) ?? '') && line.includes((timelineExpect.longCjkPrefix as string).slice(0, 6))).join(' | ') || 'none');
+            for (const toolCallId of timelineExpect.stableToolCallIds ?? []) {
+                check(`timeline stable row ${toolCallId}`, projectedToolRows(state, toolCallId).length === 1,
+                    `rows=${projectedToolRows(state, toolCallId).length}`);
+            }
+            if (timelineExpect.retry) {
+                const retryRows = projectedToolRows(state, timelineExpect.retry.toolCallId);
+                check('timeline retry replaces in place', retryRows.length === 1
+                    && retryRows[0]?.metadata?.timeline?.attempt === timelineExpect.retry.attempt,
+                    `rows=${retryRows.length}, attempt=${retryRows[0]?.metadata?.timeline?.attempt ?? 'none'}`);
+            }
+            if (timelineExpect.approvalId) {
+                check('timeline approval checkpoint', state.pendingApprovals.some(item => item.id === timelineExpect.approvalId));
+            }
+            if (timelineExpect.orderedContent?.length) {
+                const positions = timelineExpect.orderedContent.map(content => stepLines.findIndex(line => line.includes(content)));
+                check('timeline hierarchy order', positions.every(position => position >= 0)
+                    && positions.every((position, index) => index === 0 || positions[index - 1] < position), positions.join(','));
+            }
 
             // Clear the scope BEFORE the toggle (toggle refuses the active
-            // scope key), then fold the turn-1 group (todo + live pair rows ->
-            // single `第 1 轮 · 完成 · 2 个工具 · 370ms` row).
+            // scope key), then prove the error-bearing turn keeps its root
+            // cause visible instead of folding into a success summary.
             // Drain the SSE channel BEFORE clearing the scope: the bridge
             // consumes one SSE frame per reader.read() and awaits an RPC
             // round-trip (refreshTools) after each tool_completed, so live
@@ -297,10 +319,9 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
             }
             state.clearTurnEventScope(timelineExpect.activeScope);
             state.toggleTimelineCollapse(timelineExpect.collapseScope);
-            await waitUntil(() => getLines().some(line => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(line)));
             const foldedLines = getLines();
-            check('timeline collapse fold zh', foldedLines.some(line => /第 1 轮 · 完成 · 2 个工具 · 370ms/.test(line)),
-                foldedLines.filter(line => /第 \d+ 轮 · 完成 · \d+ 个工具/.test(line)).join(' | ') || 'none');
+            check('timeline error remains visible after collapse request', foldedLines.some(line => line.includes(timelineExpect.longCjkPrefix ?? '')),
+                'error-bearing turns must not hide their root cause');
 
             // Compact mode summarizes overflow with the naturalized zh label
             // instead of dropping rows (data-driven, no timers).

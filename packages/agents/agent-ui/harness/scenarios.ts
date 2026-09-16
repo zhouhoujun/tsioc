@@ -48,6 +48,7 @@ export function toolPair(
         durationMs?: number;
         timestamp?: number;
         status?: string;
+        attempt?: number;
     }
 ): TimelineEventRecord[] {
     const timestamp = options.timestamp ?? TS_MS + seqBase * 1000;
@@ -62,7 +63,7 @@ export function toolPair(
             turnId: 'turn-1',
             toolCallId,
             receiptId: toolCallId,
-            attempt: 1,
+            attempt: options.attempt ?? 1,
             toolName: options.toolName,
             status: 'running',
             summary: `Running ${options.toolName}...`
@@ -76,7 +77,7 @@ export function toolPair(
             turnId: 'turn-1',
             toolCallId,
             receiptId: toolCallId,
-            attempt: 1,
+            attempt: options.attempt ?? 1,
             toolName: options.toolName,
             status: options.status ?? 'success',
             summary: options.summary,
@@ -123,9 +124,21 @@ export function liveToolPairFrames(
         summary: string;
         durationMs?: number;
         timestamp?: number;
+        attempt?: number;
+        inputSummary?: string;
     }
 ): TimelineEventRecord[] {
-    return toolPair(seqBase, { ...options, status: 'success' });
+    return toolPair(seqBase, { ...options, status: 'success' }).map(event => ({
+        ...event,
+        receipt: {
+            toolCallId: options.toolCallId,
+            receiptId: options.toolCallId,
+            attemptCount: options.attempt ?? 1,
+            durationMs: options.durationMs ?? 500,
+            inputSummary: options.inputSummary,
+            outputSummary: options.summary
+        }
+    } as TimelineEventRecord));
 }
 
 /* ------------------------------------------------------------------ */
@@ -218,7 +231,8 @@ export interface ScenarioExpect {
      * Gates: enable window (viewMode) + open activeScope BEFORE live steps
      * (so pushed frames project under the turn prefix), then clear scope,
      * toggle collapseScope, re-collect, then switch mode to 'compact'.
-     * The folded todo+live group renders `第 1 轮 · 完成 · 2 个工具 · 370ms`.
+     * Error-bearing turns remain expanded after a collapse request so their
+     * root cause is never hidden; compact mode still emits an overflow summary.
      */
     timeline?: {
         viewMode: 'steps' | 'compact';
@@ -226,6 +240,14 @@ export interface ScenarioExpect {
         collapseScope: string;
         /** Distinctive CJK prefix of the long error line (row truncation safe). */
         longCjkPrefix?: string;
+        /** Stable tool-call ids whose lifecycle must project to exactly one row. */
+        stableToolCallIds?: string[];
+        /** Final attempt expected after an in-place retry lifecycle update. */
+        retry?: { toolCallId: string; attempt: number };
+        /** Human-readable row fragments that must retain this relative order. */
+        orderedContent?: string[];
+        /** Pending approval seeded through the same remote event stream. */
+        approvalId?: string;
     };
 }
 
@@ -484,7 +506,7 @@ export const SCENARIOS: GatewayScenario[] = [
 
     {
         id: 'timeline-naturalized',
-        label: 'Timeline window: zh header/footer/boundary, turn collapse fold, compact summary',
+        label: 'Timeline lifecycle: plan, retry, approval, error and file change across DOM/TUI',
         mount: { sessionId: 'session-A', reconnectDelayMs: 3000 },
         expect: {
             viewport: { width: 1280, height: 800 },
@@ -514,7 +536,11 @@ export const SCENARIOS: GatewayScenario[] = [
                 viewMode: 'steps',
                 activeScope: 'turn-1',
                 collapseScope: 'turn-1',
-                longCjkPrefix: LONG_CJK_TIMELINE_SUMMARY.slice(0, 12)
+                longCjkPrefix: LONG_CJK_TIMELINE_SUMMARY.slice(0, 12),
+                stableToolCallIds: ['tc-todo', 'tc-live-1', 'tc-retry', 'tc-file-change'],
+                retry: { toolCallId: 'tc-retry', attempt: 2 },
+                orderedContent: [LONG_CJK_TIMELINE_SUMMARY.slice(0, 12), 'Timeline.ts'],
+                approvalId: 'approval-naturalized'
             }
         },
         buildGatewayOptions() {
@@ -576,16 +602,41 @@ export const SCENARIOS: GatewayScenario[] = [
                     planId: 'plan-naturalized'
                 }
             } },
-            // Live pair under the SAME active turn scope -> also folds into the
-            // turn group. Group fold math: tools = {tc-todo, tc-live-1} = 2,
-            // duration = 120 + 250 = 370ms -> `第 1 轮 · 完成 · 2 个工具 · 370ms`.
+            // Live pair under the SAME active turn scope. Later retry/error and
+            // file-change events make this an error-bearing, non-foldable turn.
             ...pushPairSteps(29, {
                 sessionId: 'session-A',
                 toolName: '工具-live',
                 toolCallId: 'tc-live-1',
                 summary: '工具 工具-live 已完成',
                 durationMs: 250
-            })
+            }),
+            // Failed attempt followed by a successful second attempt. The
+            // stable toolCallId must keep this as one row with attempt=2.
+            { kind: 'pushSse', event: 'tool_failed', data: {
+                seq: 31, id: 'ev-31', type: 'tool_failed', sessionId: 'session-A',
+                timestamp: TS_MS + 31000, turnId: 'turn-1', toolCallId: 'tc-retry',
+                receiptId: 'tc-retry-1', attempt: 1, toolName: '检查失败', status: 'failed',
+                summary: '首次检查失败', detail: '测试断言未通过', durationMs: 90,
+                error: '测试断言未通过', receipt: { toolCallId: 'tc-retry', receiptId: 'tc-retry-1', attemptCount: 1, durationMs: 90 }
+            } as any },
+            ...pushPairSteps(32, {
+                sessionId: 'session-A', toolName: '检查失败', toolCallId: 'tc-retry',
+                summary: '重试后检查通过', durationMs: 140, attempt: 2
+            }),
+            // File changes remain a normal tool lifecycle in the main track;
+            // the detailed patch belongs to the inspector/review surface.
+            ...pushPairSteps(34, {
+                sessionId: 'session-A', toolName: 'apply_patch', toolCallId: 'tc-file-change',
+                inputSummary: '{"path":"packages/agents/agent-ui/src/Timeline.ts"}',
+                summary: 'packages/agents/agent-ui/src/Timeline.ts +12 -3', durationMs: 110
+            }),
+            { kind: 'pushSse', event: 'approval_requested', data: {
+                sessionId: 'session-A', request: {
+                    id: 'approval-naturalized', toolName: 'write_file', sessionId: 'session-A',
+                    reason: '需要确认写入范围', summary: '写入 Timeline.ts', createdAt: TS_MS + 36000
+                }
+            } }
         ]
     }
 ];

@@ -71,6 +71,16 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
 - [ ] 全场景运行期间状态栏（statusline）与终端标题随运行状态更新
 - [x] `Ctrl+C` / `Esc` 中断慢速流式回复后界面恢复干净、可继续输入（场景 7 自动验收）
 
+### P304 Timeline 截图矩阵
+
+使用 `timeline-naturalized` 稳定场景逐格目检；截图是本地验收产物，放入忽略的
+`packages/agents/acceptance/artifacts/`，不得提交到仓库。
+
+- [ ] 暗色主题，80 列：tool lifecycle、plan step、retry、approval、error、file change 顺序清晰，CJK 不破列
+- [ ] 暗色主题，120 列：对象与状态 meta 对齐，错误根因未被折叠
+- [ ] 亮色主题，80 列：状态不只依赖颜色，选中/焦点与正文仍有足够区分
+- [ ] 亮色主题，120 列：主行无重复 lifecycle，详情入口和层级轨道清晰
+
 ## 已知边界
 
 - 场景 2 的 overlay 断言基于文案候选匹配；若面板标题文案变更，调整 `EXPECT_WHICHKEY`。
