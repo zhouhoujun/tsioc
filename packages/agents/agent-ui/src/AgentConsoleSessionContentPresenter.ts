@@ -107,6 +107,106 @@ export function projectAgentConsoleConversationMainline(messages: AgentMessage[]
     return projected;
 }
 
+/** Normalize execution content and keep the final answer after its turn work. */
+export function projectAgentConsoleExecutionMainline(messages: AgentMessage[]): AgentMessage[] {
+    const projected: AgentMessage[] = [];
+    let turn: AgentMessage[] = [];
+    const flushTurn = (): void => {
+        if (!turn.length) return;
+        projected.push(...projectExecutionTurn(turn));
+        turn = [];
+    };
+    for (const message of Array.isArray(messages) ? messages : []) {
+        if (message.role === 'user') {
+            flushTurn();
+            turn.push(message);
+        } else {
+            turn.push(message);
+        }
+    }
+    flushTurn();
+    return projected;
+}
+
+function projectExecutionTurn(messages: AgentMessage[]): AgentMessage[] {
+    if (!messages.some(message => message.role === 'user')) return messages.slice();
+    const lastThoughtIndex = findLastIndex(messages, isThoughtMessage);
+    const finalMessages: AgentMessage[] = [];
+    const body: AgentMessage[] = [];
+    messages.forEach((message, index) => {
+        if (isThoughtMessage(message)) {
+            if (index === lastThoughtIndex) body.push(presentThoughtMainline(message));
+            return;
+        }
+        if (isCommandMessage(message)) {
+            body.push(presentCommandMainline(message));
+            return;
+        }
+        if (presentAgentConsoleSessionContent(message).kind === 'assistant-final') {
+            finalMessages.push(message);
+            return;
+        }
+        body.push(message);
+    });
+    return [...body, ...finalMessages];
+}
+
+function presentThoughtMainline(message: AgentMessage): AgentMessage {
+    const metadata = message.metadata || {};
+    const running = String(metadata.status || '').toLowerCase() === 'running';
+    const content = running ? firstMeaningfulLine(message.content) : summarizeExecutionText(message.content, 120);
+    return {
+        ...message,
+        content: content || 'Thought',
+        metadata: { ...metadata, detailRef: metadata.detailRef || message.id, executionSummary: true }
+    };
+}
+
+function presentCommandMainline(message: AgentMessage): AgentMessage {
+    const metadata = message.metadata || {};
+    const command = [clean(metadata.command), clean(metadata.args)].filter(Boolean).join(' ') || 'Command';
+    const status = String(metadata.status || '').toLowerCase();
+    const statusLabel = status === 'succeeded' || status === 'success' ? 'completed'
+        : status === 'failed' || status === 'error' ? 'failed'
+            : status === 'cancelled' ? 'cancelled' : 'running';
+    const error = tailSummary(metadata.error, 160);
+    const outputIds = Array.isArray(metadata.outputIds) ? metadata.outputIds.filter(Boolean) : [];
+    return {
+        ...message,
+        content: `${command} ${statusLabel}${error ? `: ${error}` : ''}`,
+        metadata: { ...metadata, detailRef: metadata.detailRef || outputIds[0], executionSummary: true }
+    };
+}
+
+function isThoughtMessage(message: AgentMessage): boolean {
+    const metadata = message?.metadata || {};
+    return metadata.reasoning === true || String(metadata.uiEventType || '').toLowerCase() === 'reasoning';
+}
+
+function isCommandMessage(message: AgentMessage): boolean {
+    const metadata = message?.metadata || {};
+    return metadata.uiKind === 'command-execution' || metadata.type === 'shell';
+}
+
+function findLastIndex(messages: AgentMessage[], predicate: (message: AgentMessage) => boolean): number {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+        if (predicate(messages[index])) return index;
+    }
+    return -1;
+}
+
+function summarizeExecutionText(value: unknown, maxLength: number): string {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
+}
+
+function tailSummary(value: unknown, maxLength: number): string {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (text.length <= maxLength) return text;
+    return `...${text.slice(-(maxLength - 3)).trimStart()}`;
+}
+
 function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
     if (!messages.some(message => message.role === 'user')) return messages.slice();
     const conversationIndexes: number[] = [];
