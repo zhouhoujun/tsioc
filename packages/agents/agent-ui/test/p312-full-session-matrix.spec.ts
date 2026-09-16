@@ -2,7 +2,9 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { DOCUMENT } from '@tsdi/common';
 import { TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
+import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleArtifactMessageRenderer,
@@ -95,6 +97,41 @@ export class FullSessionMatrixSuite {
                 expect(plain.some(line => line.includes('恢复索引写入失败'))).toEqual(true);
                 expect(plain.some(line => line.includes('Session restore is complete.'))).toEqual(true);
                 expect(plain.join('\n')).not.toContain('```');
+            }
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('real DOM renderer preserves unique semantic ARIA and markdown at 80 100 and 120 columns')
+    async domWidths() {
+        const ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
+            providers: [{
+                provide: DOCUMENT,
+                useFactory: () => {
+                    const { JSDOM } = require('jsdom');
+                    return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
+                }
+            }]
+        });
+        try {
+            const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+            ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 40 });
+            ref.instance.sessionState.setMessages(buildFullSessionFixture('failed'));
+            await Promise.resolve();
+            await Promise.resolve();
+            const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+            const root = panel.hostView.rootNodes[0] as HTMLElement;
+            for (const width of [80, 100, 120]) {
+                root.style.width = `${width}ch`;
+                const lines = Array.from(root.querySelectorAll('.message-line')) as HTMLElement[];
+                const labels = lines.map(line => line.getAttribute('aria-label') || '').filter(Boolean);
+                expect(labels.length).toBeGreaterThanOrEqual(project('failed').length);
+                expect(new Set(labels).size).toEqual(labels.length);
+                expect(labels.some(label => label.includes('恢复索引写入失败'))).toEqual(true);
+                expect(root.textContent).toContain('Session restore is complete.');
+                expect(root.textContent).not.toContain('```');
             }
         } finally {
             await ctx.close();
