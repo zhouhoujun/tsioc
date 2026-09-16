@@ -128,6 +128,59 @@ export function projectAgentConsoleExecutionMainline(messages: AgentMessage[]): 
     return projected;
 }
 
+/** Keep one causal artifact per plan revision and remove plan status restatements. */
+export function projectAgentConsoleArtifactMainline(messages: AgentMessage[]): AgentMessage[] {
+    const input = Array.isArray(messages) ? messages : [];
+    const plans = new Map<string, { revision: number; index: number }>();
+    input.forEach((message, index) => {
+        if (message.metadata?.uiKind !== 'plan-todo') return;
+        const planId = clean(message.metadata.planId) || message.id;
+        const revision = finiteNumber(message.metadata.planRevision, 0);
+        const current = plans.get(planId);
+        if (!current || revision > current.revision || (revision === current.revision && index > current.index)) {
+            plans.set(planId, { revision, index });
+        }
+    });
+    const activePlans = new Set(plans.keys());
+    return input.filter((message, index) => {
+        const metadata = message.metadata || {};
+        if (metadata.uiKind === 'plan-todo') {
+            const planId = clean(metadata.planId) || message.id;
+            return plans.get(planId)?.index === index;
+        }
+        if (metadata.uiKind !== 'event') return true;
+        const planId = clean(metadata.planId || metadata.timeline?.planId);
+        const stepId = clean(metadata.planStepId || metadata.stepId || metadata.timeline?.stepId);
+        if (!stepId) return true;
+        if (planId) return !activePlans.has(planId);
+        return activePlans.size === 0;
+    }).map(message => bindArtifactCause(message));
+}
+
+function bindArtifactCause(message: AgentMessage): AgentMessage {
+    const metadata = message.metadata || {};
+    if (metadata.uiKind !== 'file-change' && !hasAttachment(message)) return message;
+    const sourceMessageId = clean(metadata.sourceMessageId) || message.id;
+    const stepId = clean(metadata.planStepId || metadata.stepId);
+    return {
+        ...message,
+        metadata: {
+            ...metadata,
+            sourceMessageId,
+            causalKey: clean(metadata.causalKey) || (stepId ? `step:${stepId}` : `message:${sourceMessageId}`)
+        }
+    };
+}
+
+function hasAttachment(message: AgentMessage): boolean {
+    return getAgentMessageImageParts(message).length > 0 || (message.parts || []).some(part => part?.type === 'file');
+}
+
+function finiteNumber(value: unknown, fallback: number): number {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+}
+
 function projectExecutionTurn(messages: AgentMessage[]): AgentMessage[] {
     if (!messages.some(message => message.role === 'user')) return messages.slice();
     const lastThoughtIndex = findLastIndex(messages, isThoughtMessage);

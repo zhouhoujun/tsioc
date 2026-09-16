@@ -71,7 +71,7 @@ import {
     AGENT_CONSOLE_OVERLAY_TITLES,
 } from './AgentConsoleOverlayPresenter';
 import { findTimelineLifecycleMessageIndex, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
-import { projectAgentConsoleConversationMainline, projectAgentConsoleExecutionMainline } from './AgentConsoleSessionContentPresenter';
+import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleExecutionMainline } from './AgentConsoleSessionContentPresenter';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -256,6 +256,8 @@ export interface AgentConsoleReviewDiffSection {
     additions: number;
     deletions: number;
     lines: string[];
+    status?: 'add' | 'update' | 'delete' | 'rename';
+    previousPath?: string;
 }
 
 export interface AgentConsoleReviewHunk {
@@ -1308,7 +1310,7 @@ export class AgentConsoleSessionState {
                 } as AgentMessage);
             }
         }
-        return projectAgentConsoleExecutionMainline(filtered);
+        return projectAgentConsoleExecutionMainline(projectAgentConsoleArtifactMainline(filtered));
     }
 
     /** Earliest session timestamp: first message createdAt → turn start → now. */
@@ -3860,14 +3862,21 @@ export class AgentConsoleSessionState {
         }
         const content = [
             `files changed: ${files.length}`,
-            ...files.map(file => `${file.path} (+${file.additions} -${file.deletions})`)
+            ...files.map(file => `${file.path} [${file.status || 'update'}] (+${file.additions} -${file.deletions})`)
         ].join('\n');
         return {
             id: '__file_change_inline__',
             role: 'assistant',
             content,
             createdAt: Date.now(),
-            metadata: { uiKind: 'file-change', reviewTaskId: this.reviewTask?.id }
+            metadata: {
+                uiKind: 'file-change',
+                reviewTaskId: this.reviewTask?.id,
+                detailRef: this.reviewTask?.id,
+                sourceMessageId: this.reviewTask?.metadata?.sourceMessageId,
+                planId: this.reviewTask?.metadata?.planId,
+                planStepId: this.reviewTask?.metadata?.stepId
+            }
         };
     }
 
@@ -4011,7 +4020,19 @@ export class AgentConsoleSessionState {
     }
 
     get aggregateReviewFileSections(): AgentConsoleReviewDiffSection[] {
-        return this.parseUnifiedDiffSections(this.stringifyReviewContent(this.reviewDiff));
+        const files = new Map<string, AgentConsoleReviewDiffSection>();
+        for (const section of this.parseUnifiedDiffSections(this.stringifyReviewContent(this.reviewDiff))) {
+            const current = files.get(section.path);
+            if (current) {
+                current.additions += section.additions;
+                current.deletions += section.deletions;
+                current.lines.push(...section.lines);
+                current.status = section.status === 'delete' ? 'delete' : current.status === 'add' ? 'add' : section.status || current.status;
+            } else {
+                files.set(section.path, { ...section, lines: section.lines.slice() });
+            }
+        }
+        return Array.from(files.values());
     }
 
     get reviewFileSections(): AgentConsoleReviewDiffSection[] {
@@ -5503,6 +5524,20 @@ export class AgentConsoleSessionState {
 
         const pushCurrent = () => {
             if (current?.lines.length) {
+                const joined = current.lines.join('\n');
+                const renameFrom = /^rename from (.+)$/m.exec(joined)?.[1]?.trim();
+                const renameTo = /^rename to (.+)$/m.exec(joined)?.[1]?.trim();
+                if (renameTo) {
+                    current.path = renameTo;
+                    current.previousPath = renameFrom;
+                    current.status = 'rename';
+                } else if (/^new file mode /m.test(joined) || /^--- \/dev\/null$/m.test(joined)) {
+                    current.status = 'add';
+                } else if (/^deleted file mode /m.test(joined) || /^\+\+\+ \/dev\/null$/m.test(joined)) {
+                    current.status = 'delete';
+                } else {
+                    current.status = 'update';
+                }
                 sections.push(current);
             }
         };

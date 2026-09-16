@@ -1956,7 +1956,7 @@ export class AgentConsoleTuiRendererTest {
         });
         const message = ref.instance.sessionState.displayMessages.find(item => item.id === '__file_change_inline__');
         expect(message?.content).toContain('files changed: 1');
-        expect(message?.content).toContain('src/a.ts (+1 -1)');
+        expect(message?.content).toContain('src/a.ts [update] (+1 -1)');
     }
 
     @Test('file change summary supports keyboard file selection and opens review')
@@ -1992,8 +1992,8 @@ export class AgentConsoleTuiRendererTest {
         expect(message?.content).toContain('goal: 1/2 criteria met');
     }
 
-    @Test('timeline mode adds a plan step boundary without changing selection')
-    async timelineModeAddsPlanBoundary() {
+    @Test('timeline mode keeps a structural plan boundary without changing selection')
+    async timelineModeKeepsPlanBoundary() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{ id: 'a1', role: 'assistant', content: 'working', createdAt: 1 } as any]);
         ref.instance.sessionState.setPlanTodos([
