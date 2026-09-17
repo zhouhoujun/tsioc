@@ -479,8 +479,9 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         const key = String(event?.key || event?.code || '');
+        const browsingHistory = (this.state?.inputHistoryIndex ?? -1) >= 0;
         if ((key === 'ArrowUp' || key === 'ArrowDown')
-            && !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu))) {
+            && (browsingHistory || !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu)))) {
             const handled = this.state?.navigateInputHistory(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
                 this.syncTextareaState(event.target as HTMLTextAreaElement | null);

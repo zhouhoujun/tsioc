@@ -6920,6 +6920,18 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'queueDraft' };
         }
 
+        // A recalled entry can itself open the suggestion menu. Once history
+        // browsing has started, keep up/down on history instead of letting the
+        // newly opened menu steal the remaining navigation sequence.
+        if ((controlKey === 'up' || controlKey === 'down')
+            && this.inputHistoryIndex >= 0
+            && !this.inputLocked
+            && !this.modalPromptActive
+            && !options.hasActiveTextPrompt) {
+            const navigated = this.navigateInputHistory(controlKey === 'up' ? -1 : 1);
+            return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
+        }
+
         if (this.handleMenuInput(controlKey || '', rawText)) {
             return { handled: true, action: 'menuInput' };
         }

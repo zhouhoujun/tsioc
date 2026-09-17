@@ -106,7 +106,7 @@ export class SemanticRendererSuite {
             message('r', 'assistant', 'Checking the forecast', { uiKind: 'event', uiEventType: 'reasoning' })
         ], { rendererRegistry: this.registry });
         expect(rendered[0].blockPadding).toEqual(true);
-        expect(rendered[0].lines[0].itemStyle?.padding).toEqual('0.5em 1ch 0.5em 1ch');
+        expect(rendered[0].lines[0].itemStyle?.padding).toEqual('1em 1ch 1em 1ch');
         expect(rendered[1].spacerBefore).toEqual(true);
         expect(rendered[1].blockPadding).toEqual(true);
         expect(rendered[1].lines[0].itemStyle?.padding).toEqual('0 1ch');

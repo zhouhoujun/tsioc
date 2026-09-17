@@ -3241,3 +3241,10 @@ Turn: Fix session restore                                      running  01:42
 - **架构边界**：保留现有消息、事件与 store 作为事实源，新增层只做纯派生；browser/TUI 共用 agent-ui presenter/renderer；遵守响应式数据驱动，不以定时刷新驱动动画，不在布局层缓存脏节点，不从 `agent-ui/src` 引入 `@tsdi/components/console` 或 Node API。
 - **非目标**：不复制 Codex/opencode 品牌、配色或专有文案；不改造成 dashboard/card feed；不把完整 reasoning、stdout、payload、diff 或后台子任务流水倾倒到主会话；不以更多图标代替清晰的信息层级。
 - **每批门禁**：先跑新增 taxonomy/projection/presenter/renderer 定向 spec，再跑 agent-ui 全套与 `tsc --noEmit`；涉及跨组件响应式核心时按根 `AGENTS.md` 追加 components/components-console 回归。P312 收尾执行完整 `RUN_PTY=1 bash scripts/agents-gate.sh`、更新 baseline 与本节完成证据后独立提交。
+
+## v51 2026-09-17 — 动态消息路由交互与生命周期回归收尾 ✅
+
+- **输入历史恢复**：修复动态消息 renderer 重构后 suggestion menu 抢占历史浏览中 `↑/↓` 的问题。Browser 输入面板与 TUI `processDecodedInput` 共享同一优先级契约：尚未浏览历史时 suggestion menu 可选择候选；历史浏览一旦开始，`↑/↓` 持续遍历历史并最终恢复原草稿。新增 DOM 连续按键与真实 TUI escape sequence 回归测试。
+- **用户消息视觉恢复**：user renderer 恢复使用 `messagesUser` 专属主题，不再误用输入框 `inputShell`；用户消息首尾 padding 恢复为 `1em`，背景色与上下留白由 browser/TUI 共用渲染模型保持。新增 renderer 精确样式与 DOM 实际 CSS 断言。
+- **退出生命周期修复**：`/exit` 销毁 ApplicationContext 后，排队中的响应式尾帧不再通过已销毁的 injector 动态解析 renderer；registry 在 injector destroyed 时安全降级到内置 presentation/template。新增关闭真实 ApplicationContext 后 resolve 的回归测试，消除 `NodeInjector has already been destroyed`。
+- **最终验证**：agent-ui **1353 passing / 0 failed / EXIT=0**，`tsc --noEmit` 通过；授权宿主 `RUN_PTY=1 bash scripts/agents-gate.sh` **24 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 3 包、4 包 tsc、Web production build、DOM 5 scenarios + 80/100 列矩阵、TUI 5 scenarios、gate regression、真实 PTY 8 场景与 `git diff --check`。无响应式核心改动、无 timer、无平台私有依赖。

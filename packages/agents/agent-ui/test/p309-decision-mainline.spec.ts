@@ -52,6 +52,19 @@ export class DecisionMainlineSuite {
         }
     }
 
+    @Test('renderer registry falls back safely after application teardown')
+    async rendererAfterTeardown() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule] });
+        const registry = ctx.get(AgentConsoleMessageRendererRegistry);
+        await ctx.close();
+
+        const response = registry.resolve(
+            decision('q1', { uiKind: 'question' }, 'Continue?'),
+            'assistant'
+        );
+        expect(response.presentation.templateKind).toEqual('assistant');
+    }
+
     @Test('keeps the latest question state and folds its generic event')
     questionLifecycle() {
         const messages = [

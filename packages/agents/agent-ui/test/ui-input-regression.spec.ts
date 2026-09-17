@@ -307,6 +307,29 @@ export class UiInputInteractionRegressionTest {
         expect(state.input).toBe('');
     }
 
+    @Test('TUI keeps browsing history when a recalled entry opens suggestions')
+    async tuiHistoryWinsAfterSuggestionOpens() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        state.setInput('draft', 5);
+
+        await this.press('\u001b[A');
+        expect(state.input).toBe('recent prompt');
+        state.selectMenu = {
+            title: 'Suggestions',
+            options: [{ value: '@src/index.ts', label: 'src/index.ts' }],
+            selectedIndex: 0
+        } as any;
+
+        await this.press('\u001b[A');
+        expect(state.input).toBe('older prompt');
+        await this.press('\u001b[B');
+        expect(state.input).toBe('recent prompt');
+        await this.press('\u001b[B');
+        expect(state.input).toBe('draft');
+    }
+
     @Test('history navigation skips slash-command entries')
     async historySkipsSlashCommands() {
         const instance = this.console();

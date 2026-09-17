@@ -153,7 +153,9 @@ export class AgentConsoleMessageRendererRegistry {
         const request: AgentConsoleMessageRenderRequest = { message, templateKind };
         const kind = presentAgentConsoleSessionContent(message).kind;
         const route = this.routes[kind];
-        const renderer = route ? this.injector.get(route, undefined) : undefined;
+        const renderer = route && !this.injector.destroyed
+            ? this.injector.get(route, undefined)
+            : undefined;
         return renderer?.resolve(request.message, request.templateKind) || {
             presentation: resolveBuiltinMessageRenderer(request.templateKind),
             component: AgentConsoleSystemTemplate
@@ -456,7 +458,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'user',
         roleLabel: resolveMessageRoleLabel('user'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'user'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.inputShell, 'user'),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser, 'user'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -984,7 +986,7 @@ function resolveSemanticLinePadding(
     if (presentation.family === 'execution') {
         return `${isFirst ? '0.2em' : '0'} 1ch ${isLast ? '0.2em' : '0'} 1ch`;
     }
-    const vertical = presentation.kind === 'assistant-final' ? 1
+    const vertical = presentation.kind === 'user' || presentation.kind === 'assistant-final' ? 1
         : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
             : presentation.family === 'artifact' ? 0.4 : 0.5;
     return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;

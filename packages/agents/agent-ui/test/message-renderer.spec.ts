@@ -34,6 +34,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content).toEqual('hello');
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].itemStyle.background).toEqual('#1b2128');
+        expect(items[0].lines[0].itemStyle?.padding).toEqual('1em 1ch 1em 1ch');
         expect(items[0].lines[0].lineStyle?.background).toEqual(undefined);
         expect(items[1].lines[0].content).toEqual('world');
         expect(items[1].lines[0].status?.trim()).toEqual('');

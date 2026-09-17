@@ -110,6 +110,8 @@ export class HtmlConsoleTest {
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
         expect(messageItems.length).toEqual(3);
         expect(messageItems[0]?.getAttribute('style') || '').toContain('padding');
+        expect(messageItems[0]?.getAttribute('style') || '').toContain('padding: 1em 1ch');
+        expect(messageItems[0]?.style.background).toEqual('rgb(27, 33, 40)');
         expect(messageItems[0]?.getAttribute('style') || '').toContain('display: block');
         expect(messageItems[1]?.getAttribute('style') || '').toContain('overflow-wrap: anywhere');
         expect(root.querySelector('h1')).toBeFalsy();
@@ -202,6 +204,32 @@ export class HtmlConsoleTest {
         await inputPanel.instance.onKeydown({ key: 'ArrowUp', code: 'ArrowUp', target: inputField, preventDefault() { prevented = true; } } as any);
         expect(prevented).toEqual(true);
         expect(ref.instance.sessionState.input).toEqual('previous command');
+    }
+
+    @Test('input panel continues history navigation when a recalled entry opens suggestions')
+    async inputPanelContinuesHistoryAfterSuggestionOpens() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
+        ref.instance.sessionState.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        ref.instance.sessionState.setInput('draft', 5);
+
+        await inputPanel.instance.onKeydown({ key: 'ArrowUp', target: inputField, preventDefault() {} } as any);
+        expect(ref.instance.sessionState.input).toEqual('recent prompt');
+        ref.instance.sessionState.selectMenu = {
+            title: 'Suggestions',
+            options: [{ value: '@src/index.ts', label: 'src/index.ts' }],
+            selectedIndex: 0
+        } as any;
+        expect(ref.instance.sessionState.selectMenu?.title).toEqual('Suggestions');
+
+        await inputPanel.instance.onKeydown({ key: 'ArrowUp', target: inputField, preventDefault() {} } as any);
+        expect(ref.instance.sessionState.input).toEqual('older prompt');
+
+        await inputPanel.instance.onKeydown({ key: 'ArrowDown', target: inputField, preventDefault() {} } as any);
+        expect(ref.instance.sessionState.input).toEqual('recent prompt');
+        await inputPanel.instance.onKeydown({ key: 'ArrowDown', target: inputField, preventDefault() {} } as any);
+        expect(ref.instance.sessionState.input).toEqual('draft');
     }
 
     @Test('toggles panel summary and detail through html renderer')
