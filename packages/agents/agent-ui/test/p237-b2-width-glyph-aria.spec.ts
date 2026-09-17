@@ -98,7 +98,7 @@ export class P237B2WidthGlyphAriaTest {
         const answer = renderAgentConsoleMessageItems([{
             id: 'a1', role: 'assistant', content: 'Done', createdAt: 1
         }] as any)[0].lines[0];
-        expect(answer.itemStyle?.padding).toEqual('1em 1ch 1em 1ch');
+        expect(answer.itemStyle?.padding).toEqual('0em 1ch 0em 1ch');
         expect(answer.itemStyle?.margin).toEqual('0 0 0.25em 0');
     }
 

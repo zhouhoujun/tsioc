@@ -45,6 +45,10 @@ class HtmlPanelTestComponent {
     footer = 'Footer';
 }
 
+async function settleDynamicMessages(): Promise<void> {
+    for (let index = 0; index < 128; index++) await Promise.resolve();
+}
+
 @Suite('Agent HTML console')
 export class HtmlConsoleTest {
     ctx!: ApplicationContext;
@@ -84,8 +88,7 @@ export class HtmlConsoleTest {
             completionTokens: 1080,
             totalTokens: 1200
         });
-        await Promise.resolve();
-        await Promise.resolve();
+        await settleDynamicMessages();
         const root = ref.hostView.rootNodes[0] as any;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
@@ -146,7 +149,7 @@ export class HtmlConsoleTest {
         ];
 
         ref.instance.sessionState.setMessages(messages);
-        await Promise.resolve();
+        await settleDynamicMessages();
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
@@ -155,7 +158,7 @@ export class HtmlConsoleTest {
         expect(renderedLines.length).toEqual(2);
 
         ref.instance.sessionState.setMessages(messages.slice());
-        await Promise.resolve();
+        await settleDynamicMessages();
 
         expect(Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')).length).toEqual(2);
@@ -174,7 +177,7 @@ export class HtmlConsoleTest {
         ref.instance.sessionState.pushInputHistory('first command');
         ref.instance.sessionState.pushInputHistory('second command');
         ref.instance.sessionState.setInput('draft', 0);
-        await Promise.resolve();
+        await settleDynamicMessages();
 
         let prevented = false;
         await inputPanel.instance.onKeydown({
@@ -206,8 +209,8 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.input).toEqual('previous command');
     }
 
-    @Test('input panel continues history navigation when a recalled entry opens suggestions')
-    async inputPanelContinuesHistoryAfterSuggestionOpens() {
+    @Test('input panel leaves arrow keys to an open suggestion menu')
+    async inputPanelLeavesArrowsToSuggestionMenu() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
@@ -218,18 +221,24 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.input).toEqual('recent prompt');
         ref.instance.sessionState.selectMenu = {
             title: 'Suggestions',
-            options: [{ value: '@src/index.ts', label: 'src/index.ts' }],
+            options: [
+                { value: '@src/index.ts', label: 'src/index.ts' },
+                { value: '@src/app.ts', label: 'src/app.ts' }
+            ],
             selectedIndex: 0
         } as any;
         expect(ref.instance.sessionState.selectMenu?.title).toEqual('Suggestions');
 
-        await inputPanel.instance.onKeydown({ key: 'ArrowUp', target: inputField, preventDefault() {} } as any);
-        expect(ref.instance.sessionState.input).toEqual('older prompt');
-
-        await inputPanel.instance.onKeydown({ key: 'ArrowDown', target: inputField, preventDefault() {} } as any);
         expect(ref.instance.sessionState.input).toEqual('recent prompt');
-        await inputPanel.instance.onKeydown({ key: 'ArrowDown', target: inputField, preventDefault() {} } as any);
-        expect(ref.instance.sessionState.input).toEqual('draft');
+        let prevented = false;
+        await inputPanel.instance.onKeydown({
+            key: 'ArrowDown',
+            target: inputField,
+            preventDefault() { prevented = true; }
+        } as any);
+        expect(prevented).toEqual(true);
+        expect(ref.instance.sessionState.input).toEqual('recent prompt');
+        expect(ref.instance.sessionState.selectMenu?.selectedIndex).toEqual(1);
     }
 
     @Test('toggles panel summary and detail through html renderer')
@@ -329,7 +338,7 @@ export class HtmlConsoleTest {
             { id: 't1', role: 'tool', content: '{"location":"Chengdu"}', createdAt: 3 } as any,
             { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
         ]);
-        await Promise.resolve();
+        await settleDynamicMessages();
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
@@ -347,31 +356,35 @@ export class HtmlConsoleTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a1',
-            role: 'system',
+            role: 'assistant',
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
-            createdAt: 1
+            createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'reasoning', status: 'running' }
         } as any]);
         await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messagesRoot = messagesPanel.hostView.rootNodes[0] as HTMLElement;
 
-        const collapsedLine = messagesPanel.instance.renderedLines.find(line => line.previewCollapsed);
-        expect(collapsedLine?.toggleContent).toContain('Click to expand');
+        const collapsedToggle = messagesRoot.querySelector('.message-detail-toggle') as HTMLElement;
+        expect(collapsedToggle?.textContent).toContain('Click to expand');
 
-        messagesPanel.instance.onMessageLineClick(collapsedLine);
+        collapsedToggle.click();
+        await settleDynamicMessages();
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
 
-        const collapseLine = messagesPanel.instance.renderedLines.find(line => line.toggleContent === 'Click to collapse');
-        expect(collapseLine?.messageId).toEqual('a1');
-        messagesPanel.instance.onMessageLineClick(collapseLine);
+        const collapseToggle = messagesRoot.querySelector('.message-detail-toggle') as HTMLElement;
+        expect(collapseToggle?.textContent).toContain('Click to collapse');
+        collapseToggle.click();
+        await settleDynamicMessages();
         expect(ref.instance.sessionState.messageDetailOpen).toEqual(false);
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 
-    @Test('expanding a folded auxiliary message refreshes and restores the visible window')
-    async expandingFoldedAuxiliaryMessageRefreshesVisibleWindow() {
+    @Test('default message types stay expanded in a dynamic visible window')
+    async defaultMessageTypesStayExpandedInDynamicWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
         ref.instance.sessionState.setMessages([
@@ -386,17 +399,11 @@ export class HtmlConsoleTest {
             { id: 's1', role: 'system', content: Array.from({ length: 90 }, (_, index) => `line ${index + 1}`).join('\n'), createdAt: 20 }
         ] as any);
         await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(false);
-
-        const toggle = messagesPanel.instance.renderedLines.find(line => line.messageId === 's1' && line.previewCollapsed);
-        messagesPanel.instance.onMessageLineClick(toggle);
-        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(true);
-
-        const collapse = messagesPanel.instance.renderedLines.find(line => line.messageId === 's1' && line.toggleContent === 'Click to collapse');
-        messagesPanel.instance.onMessageLineClick(collapse);
-        expect(messagesPanel.instance.renderedLines.some(line => line.content === 'middle marker')).toEqual(false);
+        expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.content === 'line 90')).toEqual(true);
+        expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.previewCollapsed)).toEqual(false);
     }
 
     @AfterEach()

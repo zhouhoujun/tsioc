@@ -1083,6 +1083,9 @@ function findComponentAttributeDef(attributes: any[], name: string): any {
  */
 export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[], parentNode?: RNode | null) {
     binding(node, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        if (injector.destroyed) {
+            return;
+        }
         const elementRef = injector.getElementRef(target);
         const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { injector, context }) : undefined;
         if (templateRef) injector.attachTemplate(templateRef);

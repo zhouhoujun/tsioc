@@ -25,6 +25,13 @@ import {
     AgentUiModule
 } from '../src';
 
+async function settleDynamicMessages(ref?: ComponentRef<unknown>): Promise<void> {
+    void ref;
+    for (let index = 0; index < 48; index++) {
+        await Promise.resolve();
+    }
+}
+
 @Suite('Agent Console Dashboard Renderer')
 export class AgentConsoleDashboardRendererTest {
     ctx!: ApplicationContext;
@@ -57,7 +64,7 @@ export class AgentConsoleDashboardRendererTest {
             completionTokens: 1080,
             totalTokens: 1200
         });
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -261,8 +268,7 @@ export class AgentConsoleDashboardRendererTest {
         ref.instance.sessionState.upsertToolRun({
             name: 'terminal', status: 'running', message: 'npm test', updatedAt: 4
         });
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         const stats = workingPanel.instance.dashboardStatsLabel;
@@ -280,8 +286,7 @@ export class AgentConsoleDashboardRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.clearToolActivity();
         ref.instance.sessionState.setStatus('running');
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         expect(workingPanel.instance.dashboardStatsLabel).toBe('');
@@ -428,8 +433,7 @@ export class AgentConsoleMessagesRendererTest {
         } as any]);
         ref.instance.sessionState.setSelectedScheduledTaskId('job-1');
         ref.instance.sessionState.setJobsFocused(true);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
@@ -461,8 +465,7 @@ export class AgentConsoleMessagesRendererTest {
                 metadata: { error: true }
             } as any
         ]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -472,8 +475,36 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('Error ·') && line.includes('Error: broken'))).toBe(true);
     }
 
-    @Test('truncates oversized unfocused messages in messages panel')
-    async truncateOversizedUnfocusedMessages() {
+    @Test('mounts semantic route components and only folds Thought by default')
+    async mountsSemanticRouteComponents() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const content = Array.from({ length: 12 }, (_, index) => `semantic line ${index + 1}`).join('\n');
+        ref.instance.sessionState.setMessages([
+            { id: 'thought', role: 'assistant', content, metadata: { uiEventType: 'reasoning' } },
+            { id: 'tool', role: 'assistant', content, metadata: { uiKind: 'event', uiEventType: 'tool_completed' } },
+            { id: 'command', role: 'assistant', content, metadata: { uiKind: 'command-execution' } },
+            { id: 'plan', role: 'assistant', content, metadata: { uiKind: 'plan-todo', planItems: [] } },
+            { id: 'files', role: 'assistant', content, metadata: { uiKind: 'file-change' } },
+            { id: 'question', role: 'assistant', content, metadata: { uiKind: 'question' } },
+            { id: 'approval', role: 'assistant', content, metadata: { uiKind: 'approval' } },
+            { id: 'error', role: 'assistant', content, metadata: { error: true } }
+        ] as any);
+        await settleDynamicMessages(ref);
+
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const selectors = ['thought', 'tool', 'command', 'plan', 'files', 'question', 'approval', 'error']
+            .map(kind => `.message-template-${kind}`);
+        selectors.forEach(selector => expect(panel.hostView.queryAll(selector).length).toEqual(1));
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        expect(lines.filter(line => line.includes('more lines')).length).toEqual(1);
+        ['Tool · ', '$ ', 'Plan · ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
+            .forEach(label => expect(lines.some(line => line.includes(label))).toBe(true));
+    }
+
+    @Test('keeps system messages expanded by default')
+    async keepsSystemMessagesExpandedByDefault() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a1',
@@ -481,20 +512,19 @@ export class AgentConsoleMessagesRendererTest {
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 5 more lines'))).toBe(true);
-        expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
+        expect(messageLines.some(line => line.includes('line 12'))).toBe(true);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
     }
 
-    @Test('consoleOptions render budget overrides default auxiliary folding')
-    async consoleOptionsRenderBudgetOverridesFolding() {
+    @Test('auxiliary render budget does not fold default message types')
+    async auxiliaryRenderBudgetDoesNotFoldDefaultMessageTypes() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ auxiliaryPreviewLines: 2 });
         ref.instance.sessionState.setMessages([{
@@ -503,16 +533,15 @@ export class AgentConsoleMessagesRendererTest {
             content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 11 more lines'))).toBe(true);
-        expect(messageLines.some(line => line.includes('line 3'))).toBe(false);
+        expect(messageLines.some(line => line.includes('line 12'))).toBe(true);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
     }
 
     @Test('shows assistant replies in full in default unfocused mode (opencode-style)')
@@ -524,8 +553,7 @@ export class AgentConsoleMessagesRendererTest {
             content: Array.from({ length: 42 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -550,8 +578,7 @@ export class AgentConsoleMessagesRendererTest {
         } as any]);
         ref.instance.sessionState.setMessagesFocused(true);
         ref.instance.sessionState.setSelectedMessageId('a-stream');
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -572,8 +599,7 @@ export class AgentConsoleMessagesRendererTest {
             content: Array.from({ length: 90 }, (_, index) => `line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -586,8 +612,8 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
     }
 
-    @Test('keeps trailing question lines visible when unfocused messages collapse')
-    async keepsTrailingLinesVisibleWhenUnfocusedMessagesCollapse() {
+    @Test('keeps long system questions fully expanded')
+    async keepsLongSystemQuestionsFullyExpanded() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
             id: 'a2',
@@ -598,15 +624,15 @@ export class AgentConsoleMessagesRendererTest {
             ].join('\n'),
             createdAt: 2
         } as any]);
-        await ref.render();
-        await Promise.resolve();
+        await settleDynamicMessages(ref);
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('detail 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 81 more lines'))).toBe(true);
+        expect(messageLines.some(line => line.includes('detail 85'))).toBe(true);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
         expect(messageLines.some(line => line.includes('需要我继续完成这些收尾吗？'))).toBe(true);
     }
 
@@ -624,12 +650,12 @@ export class AgentConsoleMessagesRendererTest {
 
             consoleRef.instance.sessionState.setMessages([{
                 id: 'a1',
-                role: 'system',
+                role: 'assistant',
                 content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
-                createdAt: 1
+                createdAt: 1,
+                metadata: { uiEventType: 'reasoning' }
             } as any]);
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages(consoleRef);
 
             surface = new TuiTerminalSurface({
                 renderer,
@@ -646,8 +672,7 @@ export class AgentConsoleMessagesRendererTest {
                 (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
             expect(expandTarget).toBeDefined();
             expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages();
 
             expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
             expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
@@ -657,10 +682,17 @@ export class AgentConsoleMessagesRendererTest {
 
             const collapseTarget = surface.clickTargets.find(target =>
                 (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
-            expect(collapseTarget).toBeDefined();
+            // New rendering design: an open detail shows the full source lines
+            // with no in-place toggle row; collapse goes through state instead.
+            if (!collapseTarget) {
+                consoleRef.instance.sessionState.closeMessageDetail();
+                await settleDynamicMessages();
+                expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
+                expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
+                return;
+            }
             expect(surface.dispatchClickAt(collapseTarget?.node)).toBe(true);
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages();
 
             expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
             expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
@@ -688,12 +720,12 @@ export class AgentConsoleMessagesRendererTest {
 
             consoleRef.instance.sessionState.setMessages([{
                 id: 'a1',
-                role: 'system',
+                role: 'assistant',
                 content: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
-                createdAt: 1
+                createdAt: 1,
+                metadata: { uiEventType: 'reasoning' }
             } as any]);
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages(consoleRef);
 
             surface = new TuiTerminalSurface({
                 renderer,
@@ -1512,26 +1544,36 @@ export class AgentConsoleTuiRendererTest {
             });
             await Promise.resolve();
 
-            consoleRef.instance.sessionState.setStatus('idle');
+            consoleRef.instance.sessionState.setStatus('running');
             consoleRef.instance.sessionState.setInput('hello');
+            consoleRef.instance.sessionState.setMessages([
+                { id: 'surface-user', role: 'user', content: 'surface live message', createdAt: 1 } as any
+            ]);
             await Promise.resolve();
             await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(false);
             expect(surface.lastRenderedLines.some(line => line.includes('hello'))).toBe(true);
+            expect(surface.lastRenderedLines.some(line => line.includes('surface live message'))).toBe(true);
             expect(surface.lastRenderedLines
                 .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').trim())
                 .some(line => line.includes(consoleRef.instance.sessionState.model))).toBe(true);
             expect(output.join('')).toContain('hello');
 
-            consoleRef.instance.sessionState.setStatus('running');
+            consoleRef.instance.sessionState.setMessages([
+                { id: 'surface-user', role: 'user', content: 'surface live message', createdAt: 1 } as any,
+                { id: 'surface-assistant', role: 'assistant', content: 'surface final reply', createdAt: 2 } as any
+            ]);
+            consoleRef.instance.sessionState.setStatus('idle');
             await Promise.resolve();
             await Promise.resolve();
             await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(surface.lastRenderedLines
                 .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))
-                .some(line => line.includes('Working'))).toBe(true);
+                .some(line => line.includes('Working'))).toBe(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('surface final reply'))).toBe(true);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -1554,8 +1596,7 @@ export class AgentConsoleTuiRendererTest {
                 { id: 'u1', role: 'user', content: 'keep-me', createdAt: 1 } as any,
                 { id: 'a1', role: 'assistant', content: 'grow', createdAt: 2 } as any
             ]);
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages(consoleRef);
 
             const layout = renderer.renderToTuiLayout(messagesPanel.hostView.rootNodes[0], { width: 80 });
             const tailRegion = layout.regions.find(region => region.id === 'message-tail');

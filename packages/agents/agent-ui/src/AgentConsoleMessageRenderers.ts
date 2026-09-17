@@ -1,5 +1,6 @@
 import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
 import { Inject, Injectable, Injector, Token, Type, token } from '@tsdi/ioc';
+import { noReact } from '@tsdi/components';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -60,6 +61,7 @@ export interface AgentConsoleRenderedLine {
 }
 
 export interface AgentConsoleRenderedMessageItem {
+    [noReact]?: boolean;
     kind: string;
     templateKind: AgentConsoleMessageTemplateKind;
     selected: boolean;
@@ -693,6 +695,7 @@ export function renderAgentConsoleMessageItem(
         };
     });
     return {
+        [noReact]: true,
         kind: roleLabel,
         templateKind,
         selected,
@@ -706,7 +709,7 @@ export function renderAgentConsoleMessageItem(
         semanticFamily: presentation.family,
         semanticKind: presentation.kind,
         spacerBefore: !timelineEvent && presentation.kind === 'assistant-final',
-        blockPadding: !timelineEvent && (presentation.kind === 'user' || presentation.kind === 'assistant-final')
+        blockPadding: !timelineEvent && presentation.kind === 'user'
     };
 }
 
@@ -986,7 +989,8 @@ function resolveSemanticLinePadding(
     if (presentation.family === 'execution') {
         return `${isFirst ? '0.2em' : '0'} 1ch ${isLast ? '0.2em' : '0'} 1ch`;
     }
-    const vertical = presentation.kind === 'user' || presentation.kind === 'assistant-final' ? 1
+    const vertical = presentation.kind === 'user' ? 1
+        : presentation.kind === 'assistant-final' ? 0
         : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
             : presentation.family === 'artifact' ? 0.4 : 0.5;
     return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;

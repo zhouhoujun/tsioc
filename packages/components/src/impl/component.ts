@@ -76,6 +76,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
 
     async render(options?: { host?: RNode }): Promise<void> {
+        if (this.injector.destroyed) {
+            return;
+        }
         const def = this.classRef.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
 
@@ -99,7 +102,13 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.injector.setPayload(this._elementRef);
         if (!this.initCalled) {
             this.initCalled = true;
-            await (this.instance as OnInit).onInit?.();
+            const initResult = (this.instance as OnInit).onInit?.();
+            if (initResult && typeof (initResult as Promise<void>).then === 'function') {
+                await initResult;
+                if (this.injector.destroyed) {
+                    return;
+                }
+            }
         }
         const directives = this.injector.get(DIRECTIVES) || [];
         const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
@@ -114,6 +123,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         let factory = tempFacs.get(compiler);
         if (!factory) {
             const template = def.template || await fetchTemplate(def.templateUrl!);
+            if (this.injector.destroyed) {
+                return;
+            }
             factory = compiler.compile<T>(template, {
                 directives,
                 components,
@@ -134,7 +146,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.resolveViewChilds(def);
         if (!this.afterViewInitCalled) {
             this.afterViewInitCalled = true;
-            await (this.instance as AfterViewInit).onAfterViewInit?.();
+            const afterViewInitResult = (this.instance as AfterViewInit).onAfterViewInit?.();
+            if (afterViewInitResult && typeof (afterViewInitResult as Promise<void>).then === 'function') {
+                await afterViewInitResult;
+            }
         }
     }
 

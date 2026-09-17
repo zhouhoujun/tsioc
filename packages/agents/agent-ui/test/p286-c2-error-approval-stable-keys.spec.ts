@@ -16,8 +16,7 @@ import {
 } from '../src/AgentConsoleTimelineWindow';
 
 // P286: v19-C2 UI 编排细节
-//  - C2-1 异常/审批固定展开：error（statusKind failed/error 或 templateKind error）与
-//    approval（uiEventType approval/approval_request）项在消息面板永不折叠
+//  - C2-1 消息默认展开：仅具体 Thought 组件主动采用预览折叠
 //  - C2-2 窄终端/CJK 折叠细化：estimateRows 按显示宽度（CJK/emoji 双宽）估算而非字符数
 //  - C2-3 重组 timeline 稳定 key：renderedLines.renderKey 基于 messageId，重排后不变
 
@@ -70,7 +69,7 @@ export class C2FixedExpandStableKeysTest {
     async defaultErrorFixedExpand() {
         const ref = await this.bootRef();
         ref.instance.sessionState.setMessages([
-            // 对照：普通 system 长消息仍折叠
+            // 普通 system 长消息默认展开
             { id: 'sys1', role: 'system', content: longContent(12), createdAt: 1 } as any,
             // 错误消息：assistant + metadata.error（无 type）→ templateKind 'error' + statusKind 'error'
             { id: 'err1', role: 'assistant', content: longContent(12), createdAt: 2, metadata: { error: 'boom' } } as any,
@@ -82,16 +81,17 @@ export class C2FixedExpandStableKeysTest {
 
         const lines = this.panelLines(ref);
         const collapsedIds = lines.filter(line => line.previewCollapsed).map(line => line.messageId);
-        expect(collapsedIds).toContain('sys1');
+        expect(collapsedIds).not.toContain('sys1');
         expect(collapsedIds).not.toContain('err1');
         expect(collapsedIds).not.toContain('appr1');
         expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(1);
         expect(lines.find(line => line.messageId === 'err1')?.content).toContain('boom');
         expect(ref.instance.sessionState.displayMessages.find(message => message.id === 'err1')?.metadata?.detailRef).toEqual('err1');
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
+        expect(lines.filter(line => line.messageId === 'sys1')).toHaveLength(12);
     }
 
-    @Test('C2-1 focused: conversation, approval and error stay expanded while auxiliary content folds')
+    @Test('C2-1 focused: conversation, approval, error and system content stay expanded')
     async focusedApprovalErrorFixedExpand() {
         const ref = await this.bootRef();
         ref.instance.sessionState.setConsoleOptions({ messageLayout: 'dynamic' });
@@ -112,11 +112,11 @@ export class C2FixedExpandStableKeysTest {
         expect(collapsedIds).not.toContain('plain1');
         expect(collapsedIds).not.toContain('appr1');
         expect(collapsedIds).not.toContain('err1');
-        expect(collapsedIds).toContain('sys1');
+        expect(collapsedIds).not.toContain('sys1');
         expect(lines.filter(line => line.messageId === 'plain1')).toHaveLength(12);
         expect(lines.filter(line => line.messageId === 'appr1')).toHaveLength(12);
         expect(lines.filter(line => line.messageId === 'err1')).toHaveLength(1);
-        expect(lines.filter(line => line.messageId === 'sys1').length).toBeLessThan(12);
+        expect(lines.filter(line => line.messageId === 'sys1')).toHaveLength(12);
     }
 
     @Test('C2-2 estimateRows counts CJK display width, not char count')

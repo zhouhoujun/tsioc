@@ -307,8 +307,8 @@ export class UiInputInteractionRegressionTest {
         expect(state.input).toBe('');
     }
 
-    @Test('TUI keeps browsing history when a recalled entry opens suggestions')
-    async tuiHistoryWinsAfterSuggestionOpens() {
+    @Test('recalled input keeps history navigation ahead of a newly opened suggestion menu')
+    async tuiSuggestionMenuWinsAfterHistoryRecall() {
         const instance = this.console();
         const state = instance.sessionState;
         state.setInputHistoryEntries(['recent prompt', 'older prompt']);
@@ -318,16 +318,40 @@ export class UiInputInteractionRegressionTest {
         expect(state.input).toBe('recent prompt');
         state.selectMenu = {
             title: 'Suggestions',
-            options: [{ value: '@src/index.ts', label: 'src/index.ts' }],
+            options: [
+                { value: '@src/index.ts', label: 'src/index.ts' },
+                { value: '@src/app.ts', label: 'src/app.ts' }
+            ],
             selectedIndex: 0
         } as any;
 
-        await this.press('\u001b[A');
-        expect(state.input).toBe('older prompt');
-        await this.press('\u001b[B');
-        expect(state.input).toBe('recent prompt');
+        // History browsing has already started: ArrowDown stays on history
+        // (returning to the original draft) instead of being stolen by the
+        // newly opened suggestion menu (selectedIndex would move to 1 if the
+        // menu had consumed the arrow). The menu itself is token-derived:
+        // returning to a draft without an '@' token closes it.
         await this.press('\u001b[B');
         expect(state.input).toBe('draft');
+        expect(state.selectMenu).toBeUndefined();
+    }
+
+    @Test('TUI suggestion menu handles arrows before input history')
+    async tuiSuggestionMenuWinsOnFirstArrow() {
+        const state = this.console().sessionState;
+        state.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        state.setInput('draft', 5);
+        state.selectMenu = {
+            title: 'Suggestions',
+            options: [
+                { value: '@src/index.ts', label: 'src/index.ts' },
+                { value: '@src/app.ts', label: 'src/app.ts' }
+            ],
+            selectedIndex: 0
+        } as any;
+
+        await this.press('\u001b[B');
+        expect(state.input).toBe('draft');
+        expect(state.selectMenu?.selectedIndex).toBe(1);
     }
 
     @Test('history navigation skips slash-command entries')
@@ -340,6 +364,61 @@ export class UiInputInteractionRegressionTest {
         expect(state.navigateInputHistory(-1)).toBe(true);
         expect(state.input).toBe('real prompt');
         expect(state.navigateInputHistory(-1)).toBe(false); // nothing older (commands skipped)
+    }
+
+    @Test('ArrowUp/ArrowDown recall only non-command entries through the real input pipeline')
+    async arrowKeysRecallOnlyNonCommandsThroughPipeline() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        // Entries are stored newest-first (index 0), matching pushInputHistory.
+        state.setInputHistoryEntries(['add logging', 'fix the tests', '/status', '/help']);
+        state.setInput('', 0);
+
+        // ArrowUp -> newest real entry ('/help' newest of them all is skipped)
+        await this.press('\u001b[A');
+        expect(state.input).toBe('add logging');
+
+        // ArrowUp -> next real entry ('/status' skipped as well)
+        await this.press('\u001b[A');
+        expect(state.input).toBe('fix the tests');
+
+        // ArrowDown -> back down through the history, still skipping commands
+        await this.press('\u001b[B');
+        expect(state.input).toBe('add logging');
+
+        // ArrowDown -> back to the original empty draft (never a command)
+        await this.press('\u001b[B');
+        expect(state.input).toBe('');
+    }
+
+    @Test('submitting slash commands and prompts recalls only prompts through the real pipeline')
+    async submitThenRecallSkipsCommandsThroughPipeline() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        const submitted: string[] = [];
+        (instance as any).submit = async () => {
+            const value = state.input.trim();
+            if (!value) return;
+            state.pushInputHistory(value);
+            state.setInput('', 0);
+            submitted.push(value);
+        };
+
+        // type '/help' and submit it (a command)
+        await this.press('/help\r');
+        expect(submitted).toEqual(['/help']);
+
+        // type a real prompt and submit it
+        await this.press('fix the tests\r');
+        expect(submitted).toEqual(['/help', 'fix the tests']);
+
+        // ArrowUp must recall the real prompt, NOT the command submitted earlier
+        await this.press('\u001b[A');
+        expect(state.input).toBe('fix the tests');
+
+        // ArrowDown restores the empty draft
+        await this.press('\u001b[B');
+        expect(state.input).toBe('');
     }
 
     // ------------------------------------------------------------------

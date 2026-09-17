@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -668,7 +668,30 @@ export class AppRpcServer {
         const workspace = this.resolveHistoryRequestWorkspace(params);
         const principalIds = this.resolveHistoryPrincipalIds(context);
         const records = this.listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
-        return this.mergeConsoleInputHistoryEntries(records.map(record => this.parseInputHistoryEntries(record.value)));
+        const cached = records.map(record => this.parseInputHistoryEntries(record.value));
+        const sessionEntries = await this.listWorkspaceUserInputHistory(workspace, principalIds);
+        return this.mergeConsoleInputHistoryEntries([...cached, sessionEntries]);
+    }
+
+    private async listWorkspaceUserInputHistory(workspace: string, principalIds: string[]): Promise<string[]> {
+        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
+        const projects = await this.sessions.listProjects();
+        const sessionIds = projects
+            .filter(project => normalizeAgentWorkspaceIdentity(project.workspace) === workspaceKey)
+            .flatMap(project => project.sessionIds || []);
+        const ownedGroups = await Promise.all(principalIds.map(principalId => this.owners.listOwned(sessionIds, principalId)));
+        const ownedSessionIds = Array.from(new Set(ownedGroups.flat()));
+        const states = await Promise.all(ownedSessionIds.map(sessionId => this.sessions.get(sessionId)));
+        return states
+            .flatMap(state => state.messages || [])
+            .filter(message => message.role === 'user')
+            .map(message => ({
+                value: String(message.content || '').trim(),
+                createdAt: Number(message.createdAt || 0)
+            }))
+            .filter(entry => !!entry.value && !entry.value.startsWith('/'))
+            .sort((left, right) => right.createdAt - left.createdAt)
+            .map(entry => entry.value);
     }
 
     private async putInputHistory(params: any, context: AppRpcRequestContext): Promise<{ workspace: string; entries: string[] }> {

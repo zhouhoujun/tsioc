@@ -54,7 +54,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: Injector, options: ComponentOptions) => {
                     const factory = ctx.get(ComponentFactory);
-                    return factory.create(typeRef.type, options);
+                    return factory.create(typeRef.type, { ...options, injector: ctx });
                 }
             }
         }

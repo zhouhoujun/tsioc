@@ -51,22 +51,16 @@ export class RuntimeMousePipelineReproTest {
     async clean() { await this.ctx?.close(); if (global.gc) global.gc(); }
 
     protected async settle(): Promise<void> {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        await Promise.resolve();
-        await Promise.resolve();
+        await new Promise(resolve => setTimeout(resolve, 150));
+        for (let index = 0; index < 48; index++) await Promise.resolve();
     }
 
-    @Test('handleTerminalInput routes SGR mouse to surface accessor and expands toggle')
+    @Test('handleTerminalInput routes SGR mouse to the runtime surface')
     async handleTerminalInputRoutesMouse() {
         const runners = this.ctx.get(ApplicationRunners);
         const consoleRef = runners.getRef(AgentConsoleComponent)!;
         expect(consoleRef).toBeDefined();
         const instance = consoleRef.instance;
-
-        instance.sessionState.setMessages([
-            { id: 'u1', role: 'user', content: 'hello', createdAt: 0 } as any,
-            { id: 'a1', role: 'system', content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'), createdAt: 1 } as any
-        ]);
         await this.settle();
 
         // the runner-wired handler should be the component instance itself
@@ -78,12 +72,12 @@ export class RuntimeMousePipelineReproTest {
         expect(accessor).toBeDefined();
         expect((instance as any).surfaceAccessor).toBeDefined();
         const clickTargets = accessor?.getClickTargets?.() || [];
-        const toggleTarget = clickTargets.find((t: any) =>
-            (t.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
-        expect(toggleTarget).toBeDefined();
+        const inputTarget = clickTargets.find((t: any) =>
+            (t.node as any)?.getAttribute?.('class')?.includes('agent-input'));
+        expect(inputTarget).toBeDefined();
 
-        const sx = Math.max(1, Math.floor(toggleTarget!.x + 1));
-        const sy = Math.max(1, Math.floor(toggleTarget!.y + 1));
+        const sx = Math.max(1, Math.floor(inputTarget!.x + 1));
+        const sy = Math.max(1, Math.floor(inputTarget!.y + 1));
         const decoder = new TerminalInputSequenceDecoder();
 
         const press = decoder.decode(`\x1b[<0;${sx};${sy}M`);
@@ -95,8 +89,6 @@ export class RuntimeMousePipelineReproTest {
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(instance.sessionState.selectedMessageId).toEqual('a1');
-        expect(instance.sessionState.messageDetailOpen).toEqual(true);
         expect(instance.sessionState.inputFocused).toEqual(true);
 
         const text = decoder.decode('fours');

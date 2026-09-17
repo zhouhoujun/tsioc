@@ -622,7 +622,6 @@ export const defaultAgentOptions: AgentOptions = {
     },
     bootstrapTurn: {
         enabled: false,
-        sessionId: 'default',
         input: '',
         output: ''
     },

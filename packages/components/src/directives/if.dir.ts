@@ -94,6 +94,9 @@ export abstract class BaseIfDirective {
     }
 
     protected updateView() {
+        if (this.viewContainer.injector.destroyed) {
+            return;
+        }
         this.clearAllViews();
         if (this.shouldShow()) {
             this.createView();

@@ -113,6 +113,8 @@ export abstract class ViewContainerRef<T = any> {
     abstract createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
         injector?: Injector,
+        inputs?: Partial<C>,
+        onError?: (error: unknown) => void,
     }): ComponentRef<C>;
 
     /**

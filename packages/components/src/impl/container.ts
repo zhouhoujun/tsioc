@@ -4,6 +4,7 @@ import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
+import { TemplateCompiler } from '../template/compiler';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { NodeType, RNode } from '../renderer/Node';
@@ -120,13 +121,36 @@ class ViewContainerRefImpl implements ViewContainerRef {
     createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
         injector?: NodeInjector,
+        inputs?: Partial<C>,
+        onError?: (error: unknown) => void,
     }): ComponentRef<C> {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
-        const componentRef = (def as Factoriable).ƿfac!(options?.injector || this.injector, {}) as ComponentRef<C>;
+        const injector = options?.injector || this.injector;
+        const renderer = injector.get(Renderer, null) || undefined;
+        const compiler = injector.get(TemplateCompiler, null) || undefined;
+        const componentRef = (def as Factoriable).ƿfac!(injector, {
+            renderer,
+            compiler
+        } as any) as ComponentRef<C>;
+        if (options?.inputs) {
+            Object.assign(componentRef.instance as object, options.inputs);
+        }
         const insertIndex = options?.index !== undefined ? options?.index : this.views.length;
-        componentRef.render()
+        const renderTask = componentRef.render();
+        renderTask
             .then(() => {
-                this.insert(componentRef.hostView, insertIndex);
+                const hostView = componentRef.hostView;
+                if (this.injector.destroyed || !hostView || hostView.destroyed || this.indexOf(hostView) >= 0) {
+                    return;
+                }
+                this.insert(hostView, insertIndex);
+            })
+            .catch(error => {
+                if (options?.onError) {
+                    options.onError(error);
+                    return;
+                }
+                throw error;
             });
         return componentRef;
     }
@@ -298,19 +322,23 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const nativeElement = this.element.nativeElement;
         const parentNode = this.resolveContainerParent();
 
-        // Remove DOM nodes
-        if (this.isElementContainer && parentNode) {
-            viewNodes.forEach(node => {
-                if (node.parentNode === parentNode) {
-                    this.renderer.removeChild(parentNode, node);
-                }
-            });
-        } else {
-            viewNodes.forEach(node => {
-                if (node.parentNode === nativeElement) {
-                    this.renderer.removeChild(nativeElement, node);
-                }
-            });
+        // Remove DOM nodes. Guard: on a destroyed injector the lazy renderer
+        // getter throws (assertNotDestroyed) during directive onDestroy; the
+        // teardown DOM removal is then handled by detachNodes the parent.
+        if (!this.injector.destroyed) {
+            if (this.isElementContainer && parentNode) {
+                viewNodes.forEach(node => {
+                    if (node.parentNode === parentNode) {
+                        this.renderer.removeChild(parentNode, node);
+                    }
+                });
+            } else {
+                viewNodes.forEach(node => {
+                    if (node.parentNode === nativeElement) {
+                        this.renderer.removeChild(nativeElement, node);
+                    }
+                });
+            }
         }
 
         // Remove view from views array

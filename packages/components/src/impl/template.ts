@@ -15,6 +15,20 @@ export const TEMPLATE_SCOPE_PARENT = Symbol('__template_scope_parent');
 
 
 /**
+ * 判断节点是否为结构指令容器锚点（v-container）。
+ * ElementContainer 标志在真实 DOM（jsdom）克隆时因只读 nodeType 丢失，
+ * 因此同时用 tagName 兜底。
+ */
+function isStructuralContainer(node: RNode): boolean {
+    if (node.nodeType & NodeType.ElementContainer) {
+        return true;
+    }
+    const tagName = (node as RElement).tagName;
+    return typeof tagName === 'string' && tagName.toLowerCase() === 'v-container';
+}
+
+
+/**
  * Template ref implement.
  *
  * @export
@@ -121,11 +135,16 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
             });
         }
 
-        if (node.childNodes?.length) {
+        if (node.childNodes?.length && !isStructuralContainer(node)) {
             // Snapshot before iterating: binding factories (e.g. IF-BRANCH) insert anchor
             // views into childNodes while running, which would shift indices and cause
             // the same node to be re-processed while later siblings get skipped.
             // Array.from handles both array (console renderer) and NodeList (DOM renderer) childNodes.
+            //
+            // ElementContainer (v-container) is a structural-directive anchor: its childNodes
+            // are owned by the directive's embedded views (created & bound via createEmbeddedView).
+            // Descending into them here would bind the same node a second time (e.g. a v-if branch
+            // element gets its @click listener registered twice -> toggle fires twice).
             Array.from(node.childNodes as ArrayLike<RNode>).forEach(n => {
                 this.bindings(n, context, effect, injector)
             });

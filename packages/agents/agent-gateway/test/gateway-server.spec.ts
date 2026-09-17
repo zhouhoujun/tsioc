@@ -3978,6 +3978,49 @@ export class AppRpcServerTest {
         expect((sessionB as any).result).toEqual(['session b', 'session a']);
     }
 
+    @Test('recovers non-command input history from owned sessions in the current workspace')
+    async recoversInputHistoryFromWorkspaceSessions() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() { return null; },
+            async searchMemory() { return []; }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {} as any);
+
+        await store.get('workspace-history-a');
+        await store.setWorkspace('workspace-history-a', '/tmp/workspace-a');
+        await owners.create('workspace-history-a', 'user-1');
+        await store.appendRaw('workspace-history-a', { id: 'u1', role: 'user', content: 'older prompt', createdAt: 10 } as any);
+        await store.appendRaw('workspace-history-a', { id: 'u2', role: 'user', content: '/status', createdAt: 20 } as any);
+        await store.appendRaw('workspace-history-a', { id: 'u3', role: 'user', content: 'newer prompt', createdAt: 30 } as any);
+
+        await store.get('workspace-history-other');
+        await store.setWorkspace('workspace-history-other', '/tmp/workspace-b');
+        await owners.create('workspace-history-other', 'user-1');
+        await store.appendRaw('workspace-history-other', { id: 'u4', role: 'user', content: 'other workspace prompt', createdAt: 40 } as any);
+
+        await store.get('workspace-history-foreign');
+        await store.setWorkspace('workspace-history-foreign', '/tmp/workspace-a');
+        await owners.create('workspace-history-foreign', 'user-2');
+        await store.appendRaw('workspace-history-foreign', { id: 'u5', role: 'user', content: 'foreign prompt', createdAt: 50 } as any);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 30,
+            method: 'app.inputHistory.get',
+            params: { workspace: '/tmp/workspace-a' }
+        }, { principalId: 'user-1' });
+
+        expect((response as any).result).toEqual(['newer prompt', 'older prompt']);
+    }
+
     @Test('local-system input history query includes legacy anonymous workspace records')
     async localSystemInputHistoryQueryIncludesLegacyAnonymousRecords() {
         const { store } = await createOrmSessionStore();

@@ -34,6 +34,7 @@ import {
     AgentConsoleMessageRendererRegistry,
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMessageRenderers';
+import { AgentConsoleMessageOutletDirective } from './AgentConsoleMessageOutlet';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeStyles,
@@ -51,10 +52,6 @@ import {
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
-
-// 折叠策略（对标 opencode/codex UI）：对话内容（assistant/user 普通回复、方案询问）永不折叠，全文展示；
-// 仅辅助过程内容折叠：reasoning（4 行无尾）、工具事件/输出、fileChange、system、error、timelineBoundary（8 行保尾）
-// 预算数值来自 policy render（this.state.consoleOptions.*，默认 auxiliary 8 / reasoning 4 / questionTailVisible 6）
 
 function escapeFollowUpTerm(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -479,9 +476,8 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         const key = String(event?.key || event?.code || '');
-        const browsingHistory = (this.state?.inputHistoryIndex ?? -1) >= 0;
         if ((key === 'ArrowUp' || key === 'ArrowDown')
-            && (browsingHistory || !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu)))) {
+            && !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu))) {
             const handled = this.state?.navigateInputHistory(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
                 this.syncTextareaState(event.target as HTMLTextAreaElement | null);
@@ -2559,20 +2555,14 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 @Component({
     selector: 'agent-console-messages-panel',
     imports: [
+        AgentConsoleMessageOutletDirective
     ],
     template: `
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <div class="message-row" v-for="line in renderedLines">
-            <label class="message-line" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
-                <span v-style="line.statusStyle">{{line.status}}</span>
-                <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
-                <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
-                <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-                <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="onMessageLineClick(line)">{{line.toggleContent}}</span>
-                <span v-style="line.lineStyle" v-else>{{line.content}}</span>
-            </label>
+        <div class="message-row" v-for="item in renderedMessageItems">
+            <div agentConsoleMessageOutlet="item"></div>
         </div>
     </div>
     `
@@ -2805,179 +2795,36 @@ export class AgentConsoleMessagesPanelComponent {
         this.state.openMessageDetail(false);
     }
 
-    protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
-        const streamLayout = this.state.consoleOptions.messageLayout !== 'dynamic';
-        if (this.state.rawMode || this.state.showCriticalMarks) {
-            return this.messageItems;
+    get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
+        const items = this.messageItems;
+        if (!this.state.messageDetailOpen) {
+            return items;
         }
-        if (this.state.messagesFocused && !streamLayout) {
-            return this.messageItems.map(item => {
-                if (this.state.messageDetailOpen
-                    && item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
-                    return item;
-                }
-                if (this.isPlanTodoMessageItem(item)
-                    || this.isErrorMessageItem(item)
-                    || this.isApprovalMessageItem(item)) {
-                    return item;
-                }
-                if (this.isReasoningMessageItem(item)) {
-                    return this.truncateMessageItem(item, this.state.consoleOptions.reasoningPreviewLines, false);
-                }
-                if (this.isEventRowMessageItem(item)) {
-                    return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
-                }
-                if (item.templateKind === 'assistant' || item.templateKind === 'user') {
-                    return item;
-                }
-                return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
-            });
-        }
-        if (this.state.messageDetailOpen) {
-            return this.messageItems.map(item => {
-                if (!item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
-                    return item;
-                }
-                const baseLine = item.lines[item.lines.length - 1];
-                const content = this.messageCollapseLabel();
-                const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
-                return {
-                    ...item,
-                    lines: [...item.lines, {
-                        ...baseLine,
-                        previewCollapsed: true,
-                        prefix: '',
-                        prefixStyle: {},
-                        content,
-                        toggleContent: content,
-                        tokens: [{ text: content, tone: 'muted', style: toggleStyle }],
-                        itemStyle: {
-                            ...(baseLine.itemStyle || {}),
-                            padding: '1em 1ch'
-                        },
-                        lineStyle: toggleStyle
-                    }]
-                };
-            });
-        }
-        return this.messageItems.map(item => {
-            if (this.isPlanTodoMessageItem(item)
-                || this.isErrorMessageItem(item)
-                || this.isApprovalMessageItem(item)) {
+        return items.map(item => {
+            if (!item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
                 return item;
             }
-            if (this.isReasoningMessageItem(item)) {
-                return this.truncateMessageItem(item, this.state.consoleOptions.reasoningPreviewLines, false);
-            }
-            if (this.isEventRowMessageItem(item)) {
-                return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
-            }
-            if (item.templateKind === 'assistant' || item.templateKind === 'user') {
-                // 对话内容（含方案+询问的最终回复）永不折叠：对标 opencode/codex 普通回复全文展示
-                return item;
-            }
-            return this.truncateMessageItem(item, this.state.consoleOptions.auxiliaryPreviewLines, true);
+            const baseLine = item.lines[item.lines.length - 1];
+            const content = this.messageCollapseLabel();
+            const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
+            return {
+                ...item,
+                lines: [...item.lines, {
+                    ...baseLine,
+                    previewCollapsed: true,
+                    prefix: '',
+                    prefixStyle: {},
+                    content,
+                    toggleContent: content,
+                    tokens: [{ text: content, tone: 'muted', style: toggleStyle }],
+                    itemStyle: {
+                        ...(baseLine.itemStyle || {}),
+                        padding: '1em 1ch'
+                    },
+                    lineStyle: toggleStyle
+                }]
+            };
         });
-    }
-
-    protected isPlanTodoMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
-        return item.lines.some(line => line.messageId === '__plan_todo_inline__');
-    }
-
-    protected isReasoningMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
-        return item.lines.some(line => {
-            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
-            return message?.metadata?.uiEventType === 'reasoning';
-        });
-    }
-
-    protected isEventRowMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
-        return item.lines.some(line => {
-            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
-            return message?.metadata?.uiKind === 'event';
-        });
-    }
-
-    protected isErrorMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
-        return item.statusKind === 'failed'
-            || item.statusKind === 'error'
-            || item.templateKind === 'error';
-    }
-
-    protected isApprovalMessageItem(item: AgentConsoleRenderedMessageItem): boolean {
-        return item.lines.some(line => {
-            const message = this.state.messages.find(candidate => candidate.id === line.messageId);
-            const uiEventType = String(message?.metadata?.uiEventType || '');
-            return uiEventType === 'approval' || uiEventType === 'approval_request';
-        });
-    }
-
-    protected truncateMessageItem(
-        item: AgentConsoleRenderedMessageItem,
-        previewLines: number = this.state.consoleOptions.auxiliaryPreviewLines,
-        preserveTail = false
-    ): AgentConsoleRenderedMessageItem {
-        if (item.lines.length <= previewLines) {
-            return item;
-        }
-        const questionTail = preserveTail ? this.trailingQuestionLineCount(item.lines) : 0;
-        const tailLines = questionTail > 0
-            ? questionTail
-            : preserveTail ? Math.min(2, previewLines - 2) : 0;
-        const visibleBudget = questionTail > 0 ? this.state.consoleOptions.questionTailVisibleLines : previewLines;
-        const headCount = preserveTail
-            ? Math.max(visibleBudget - tailLines - 1, 1)
-            : previewLines;
-        const head = item.lines.slice(0, headCount);
-        const tail = tailLines > 0 ? item.lines.slice(-tailLines) : [];
-        const hiddenCount = item.lines.length - headCount - tailLines;
-        const baseLine = head[head.length - 1];
-        const toggleText = this.messageExpandLabel(hiddenCount);
-        const previewStyle = {
-            ...(baseLine.lineStyle || {}),
-            ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
-        };
-        const toggleStyle = { ...previewStyle, cursor: 'pointer' };
-        const toggleLine: AgentConsoleRenderedLine = {
-            ...baseLine,
-            previewCollapsed: true,
-            prefix: '',
-            prefixStyle: {},
-            content: toggleText,
-            toggleContent: toggleText,
-            tokens: [{
-                text: toggleText,
-                tone: 'muted',
-                style: toggleStyle
-            }],
-            itemStyle: {
-                ...(baseLine.itemStyle || {}),
-                padding: '1em 1ch'
-            },
-            lineStyle: toggleStyle
-        };
-        const lines = [...head, toggleLine, ...tail];
-        return {
-            ...item,
-            lines
-        };
-    }
-
-    protected trailingQuestionLineCount(lines: AgentConsoleRenderedLine[]): number {
-        let count = 0;
-        while (count < lines.length && /[？?]\s*$/.test(String(lines[lines.length - 1 - count]?.content || '').trimEnd())) {
-            count++;
-        }
-        return count;
-    }
-
-    protected messageExpandLabel(hiddenCount: number): string {
-        if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
-            return this.translator?.translate('agent.message.expandEnter', { count: hiddenCount })
-                || `… ${hiddenCount} more lines. Press Enter to expand`;
-        }
-        return this.translator?.translate('agent.message.expand', { count: hiddenCount })
-            || `… ${hiddenCount} more lines. Click to expand`;
     }
 
     protected messageCollapseLabel(): string {
@@ -2985,7 +2832,8 @@ export class AgentConsoleMessagesPanelComponent {
             return this.translator?.translate('agent.message.collapseEnter')
                 || 'Press Enter to collapse';
         }
-        return this.translator?.translate('agent.message.collapse') || 'Click to collapse';
+        return this.translator?.translate('agent.message.collapse')
+            || 'Click to collapse';
     }
 
     protected resolvePinnedRootMessageIndex(

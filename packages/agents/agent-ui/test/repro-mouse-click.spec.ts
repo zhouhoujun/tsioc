@@ -26,6 +26,10 @@ export class MouseClickPathReproTest {
     @AfterEach()
     async clean() { await this.ctx?.close(); }
 
+    protected async settle(): Promise<void> {
+        for (let index = 0; index < 48; index++) await Promise.resolve();
+    }
+
     protected async buildSurface(opts?: Partial<import('@tsdi/components/console').TuiTerminalSurfaceOptions>) {
         const componentFactory = this.ctx.get(ComponentFactory);
         const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: this.ctx });
@@ -33,17 +37,15 @@ export class MouseClickPathReproTest {
         const renderer = this.ctx.get(TuiRenderer);
 
         consoleRef.instance.sessionState.setMessages([
-            { id: 'u1', role: 'user', content: 'hello', createdAt: 0 } as any,
             {
                 id: 'a1',
                 role: 'assistant',
                 content: Array.from({ length: 12 }, (_v, i) => `line ${i + 1}`).join('\n'),
                 createdAt: 1,
-                metadata: { uiKind: 'event', uiEventType: 'tool_completed', uiEventLabel: 'tool', status: 'success', durationMs: 1250 }
+                metadata: { uiKind: 'event', uiEventType: 'reasoning', status: 'success' }
             } as any
         ]);
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
 
         const writes: string[] = [];
         const surface = new TuiTerminalSurface({
@@ -53,8 +55,7 @@ export class MouseClickPathReproTest {
             output: { write(value: string) { writes.push(value); } },
             ...opts
         });
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
         return { consoleRef, surface, writes };
     }
 
@@ -82,8 +83,7 @@ export class MouseClickPathReproTest {
         const release = decoder.decode(`\x1b[<0;${sx};${sy}m`);
         expect(release.mouse?.release).toBe(true);
         const handled = surface.dispatchMouse(release.mouse);
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
 
         expect(handled).toBe(true);
         expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
@@ -101,8 +101,7 @@ export class MouseClickPathReproTest {
         surface.dispatchMouse(cpress.mouse);
         const crelease = decoder.decode(`\x1b[<0;${cx};${cy}m`);
         expect(surface.dispatchMouse(crelease.mouse)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
         expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
         expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
     }
@@ -142,8 +141,7 @@ export class MouseClickPathReproTest {
         surface.dispatchMouse(click.mouse);
         const clickUp = decoder.decode(`\x1b[<0;${sx};${sy}m`);
         expect(surface.dispatchMouse(clickUp.mouse)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
         expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
 
         // nothing left to reclaim once tracking is active again
@@ -176,8 +174,7 @@ export class MouseClickPathReproTest {
         surface.dispatchMouse(click.mouse);
         const clickUp = decoder.decode(`\x1b[<0;${sx};${sy}m`);
         expect(surface.dispatchMouse(clickUp.mouse)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
+        await this.settle();
         expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
     }
 }

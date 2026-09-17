@@ -29,6 +29,10 @@ function project(branch: FullSessionBranch) {
     ));
 }
 
+async function settleDynamicMessages(): Promise<void> {
+    for (let index = 0; index < 64; index++) await Promise.resolve();
+}
+
 @Suite('P312 complete session matrix')
 export class FullSessionMatrixSuite {
     private ctx!: ApplicationContext;
@@ -87,8 +91,7 @@ export class FullSessionMatrixSuite {
             await ref.render();
             ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 40 });
             ref.instance.sessionState.setMessages(buildFullSessionFixture('failed'));
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages();
             const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
             const renderer = ctx.get(TuiRenderer);
             for (const width of [80, 100, 120]) {
@@ -103,7 +106,7 @@ export class FullSessionMatrixSuite {
                 expect(plain[finalIndex]).not.toContain('•');
                 const resultHeadingIndex = plain.findIndex(line => line.includes('Result'));
                 expect(resultHeadingIndex).toBeGreaterThan(0);
-                expect(plain[resultHeadingIndex - 1].replace(/\u200b/g, '').trim()).toEqual('');
+                expect(plain[resultHeadingIndex - 1].replace(/\u200b/g, '').trim()).toContain('Error');
                 expect(plain.join('\n')).not.toContain('```');
             }
         } finally {
@@ -127,8 +130,7 @@ export class FullSessionMatrixSuite {
             const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
             ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 40 });
             ref.instance.sessionState.setMessages(buildFullSessionFixture('failed'));
-            await Promise.resolve();
-            await Promise.resolve();
+            await settleDynamicMessages();
             const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
             const root = panel.hostView.rootNodes[0] as HTMLElement;
             for (const width of [80, 100, 120]) {

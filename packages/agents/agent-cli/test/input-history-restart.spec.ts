@@ -6,7 +6,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { ApplicationContext } from '@tsdi/core';
 import { ComponentRef } from '@tsdi/components';
 import { TuiConsoleModule } from '@tsdi/components/console';
-import { AGENT_OPTIONS, AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions, provideAgentOrmStorage } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentHookCommandExecutor, AgentRuntime, MemoryStore, mergeAgentOptions, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { provideTools } from '@tsdi/agent-tools';
 import { AgentConsoleComponent, AgentUiConfigService } from '@tsdi/agent-ui';
@@ -204,11 +204,9 @@ export class InputHistoryRestartRepro {
                 await this.waitFor(() =>
                     second.component.sessionState.getInputHistoryEntries().includes('persist-me')
                 );
-                // press ArrowUp through the real terminal pipeline
-                await second.component.handleTerminalInput(
-                    { text: '\u001b[A', controlKey: 'up', partial: false, mouse: undefined } as any,
-                    '\u001b[A'
-                );
+                // Press ArrowUp through stdin so decoding, surface wiring and
+                // component dispatch are covered as they are in the real TUI.
+                second.input.write('\u001b[A');
                 await this.waitFor(() => second.component.sessionState.input === 'persist-me');
             } finally {
                 await second.close();
@@ -218,5 +216,74 @@ export class InputHistoryRestartRepro {
         // ensure the sqljs db was actually touched
         const dbPath = path.join(root, '.tsdi-agent', 'agent.db');
         expect(fs.existsSync(dbPath)).toBe(true);
+    }
+
+    @Test('recovers project history from session messages when the input-history cache is missing')
+    async recoversProjectHistoryWithoutInputHistoryCache() {
+        const root = await this.createRoot();
+        const workspace = path.resolve(root, 'workspace');
+
+        await this.withHome(root, async () => {
+            const first = await this.bootSimulatedChat({ workspace, root });
+            try {
+                first.component.sessionState.setInput('recover-from-session', 20);
+                await first.component.submit();
+                await this.waitFor(() => first.component.sessionState.messages
+                    .some(message => message.role === 'user' && message.content === 'recover-from-session'));
+
+                const memory = first.ctx.get(MemoryStore);
+                const historyRecords = (await memory.getAll(undefined))
+                    .filter(record => record.key === 'agent-ui.console.input-history');
+                expect(historyRecords.length).toBeGreaterThan(0);
+                for (const record of historyRecords) {
+                    await memory.delete(record.id, undefined, 'global');
+                }
+                expect((await memory.getAll(undefined))
+                    .filter(record => record.key === 'agent-ui.console.input-history')).toEqual([]);
+            } finally {
+                await first.close();
+            }
+
+            const second = await this.bootSimulatedChat({ workspace, root });
+            try {
+                await this.waitFor(() => second.component.sessionState
+                    .getInputHistoryEntries().includes('recover-from-session'));
+                second.input.write('\u001b[A');
+                await this.waitFor(() => second.component.sessionState.input === 'recover-from-session');
+                second.input.write('\u001b[B');
+                await this.waitFor(() => second.component.sessionState.input === '');
+            } finally {
+                await second.close();
+            }
+        });
+    }
+
+    @Test('does not recall input history from another workspace')
+    async isolatesInputHistoryByWorkspace() {
+        const root = await this.createRoot();
+        const workspaceA = path.resolve(root, 'workspace-a');
+        const workspaceB = path.resolve(root, 'workspace-b');
+
+        await this.withHome(root, async () => {
+            const first = await this.bootSimulatedChat({ workspace: workspaceA, root });
+            try {
+                first.component.sessionState.setInput('workspace-a-only', 16);
+                await first.component.submit();
+                await this.waitFor(() => first.component.sessionState
+                    .getInputHistoryEntries().includes('workspace-a-only'));
+            } finally {
+                await first.close();
+            }
+
+            const second = await this.bootSimulatedChat({ workspace: workspaceB, root });
+            try {
+                expect(second.component.sessionState.getInputHistoryEntries()).not.toContain('workspace-a-only');
+                second.input.write('\u001b[A');
+                await new Promise(resolve => setTimeout(resolve, 50));
+                expect(second.component.sessionState.input).toBe('');
+            } finally {
+                await second.close();
+            }
+        });
     }
 }
