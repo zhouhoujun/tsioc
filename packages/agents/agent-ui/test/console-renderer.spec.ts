@@ -95,18 +95,30 @@ export class AgentConsoleDashboardRendererTest {
         expect(inputLines.some(line => line.includes('deepseek-v4-flash · 1.2K tokens'))).toBe(true);
     }
 
-    @Test('working elapsed time advances on the shared lifecycle tick')
-    async workingElapsedAdvancesOnSharedTick() {
+    @Test('working elapsed time is derived during data-driven renders')
+    async workingElapsedAdvancesOnStateChange() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setStatus('running');
-        ref.instance.sessionState.turnStartedAt = Date.now();
-        await Promise.resolve();
-        const renderer = this.ctx.get(ConsoleRenderer);
-        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        const originalNow = Date.now;
+        let now = originalNow();
+        Date.now = () => now;
+        try {
+            ref.instance.sessionState.setStatus('running');
+            ref.instance.sessionState.turnStartedAt = now;
+            await Promise.resolve();
+            const renderer = this.ctx.get(ConsoleRenderer);
+            let workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
 
-        expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => line.includes('(0s'))).toBe(true);
-        await new Promise(resolve => setTimeout(resolve, 1200));
-        expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => /\((1|2)s/.test(line))).toBe(true);
+            expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => line.includes('(0s'))).toBe(true);
+            now += 1_500;
+            expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => line.includes('(0s'))).toBe(true);
+
+            ref.instance.sessionState.turnStartedAt += 1;
+            await Promise.resolve();
+            workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+            expect(renderer.renderToLines(workingPanel.hostView.rootNodes[0]).some(line => line.includes('(1s'))).toBe(true);
+        } finally {
+            Date.now = originalNow;
+        }
     }
 
     @Test('renders message history before plan panel in root output')
