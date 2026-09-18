@@ -121,3 +121,9 @@
 - **输入框右边缘**：Web textarea 使用 `border-box`、`max-width: 100%` 和无阴影原生外观，消除 `width: 100%` 叠加 padding/border 导致的右侧溢出竖线。
 - **门禁隔离**：统一 agents gate 在专属临时 HOME 中运行所有包测试、构建、DOM/TUI 与 PTY；结束时新增 `production-db-integrity` 阶段，对真实 HOME 数据库执行前后 SHA-256 不变量检查。HOME 相关测试不再硬编码具体用户名。
 - **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped，覆盖原 24 项完整门禁及生产数据库完整性检查。
+
+## v55 — 收尾复核 ✅
+
+- **全量验证**：在允许本地 socket、子进程和真实终端的环境中重新执行 `RUN_PTY=1 bash scripts/agents-gate.sh`，25 passed / 0 skipped / 25 total。
+- **覆盖范围**：agents 各包、framework 三包、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查全部通过。
+- **当前状态**：无开放实施批次；本轮未发现需要追加修复的代码问题。
