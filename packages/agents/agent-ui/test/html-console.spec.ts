@@ -132,6 +132,8 @@ export class HtmlConsoleTest {
         const messagesIndex = childTags.indexOf('agent-console-messages-panel');
         expect(messagesIndex).toBeGreaterThan(-1);
         expect(root.querySelector('agent-console-input-panel')).toBeTruthy();
+        expect(root.querySelector('agent-console-brand-panel')?.getAttribute('renderRegion')).toEqual('header');
+        expect(root.querySelector('agent-console-messages-panel')?.getAttribute('renderRegion')).toEqual('transcript');
         if (selectPanel) {
             expect(root.querySelector('agent-console-select-panel')).toBeTruthy();
         }

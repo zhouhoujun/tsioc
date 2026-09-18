@@ -28,11 +28,29 @@
 #            components components-console components-html
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
 #            build-agent-ui-web dom-gate tui-gate gate-regression
-#            pty-acceptance diff-check
+#            pty-acceptance diff-check production-db-integrity
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+
+hash_file() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1"
+    else
+        shasum -a 256 "$1"
+    fi
+}
+
+ORIGINAL_HOME="${HOME:-}"
+PRODUCTION_DB="${ORIGINAL_HOME:+$ORIGINAL_HOME/.tsdi-agent/agent.db}"
+PRODUCTION_DB_BEFORE="missing"
+if [ -n "$PRODUCTION_DB" ] && [ -f "$PRODUCTION_DB" ]; then
+    PRODUCTION_DB_BEFORE="$(hash_file "$PRODUCTION_DB")"
+fi
+GATE_TEST_HOME="$(mktemp -d /tmp/tsdi-agent-gate-home.XXXXXX)"
+trap 'rm -rf "$GATE_TEST_HOME"' EXIT
+export HOME="$GATE_TEST_HOME"
 
 LOG_DIR="${GATE_LOG_DIR:-/tmp/agents-gate-logs}"
 mkdir -p "$LOG_DIR"
@@ -174,6 +192,18 @@ run_diff_check() {
     fi
 }
 
+run_production_db_integrity() {
+    local after="missing"
+    if [ -n "$PRODUCTION_DB" ] && [ -f "$PRODUCTION_DB" ]; then
+        after="$(hash_file "$PRODUCTION_DB")"
+    fi
+    if [ "$after" = "$PRODUCTION_DB_BEFORE" ]; then
+        stage_pass production-db-integrity "production database unchanged"
+    else
+        stage_fail production-db-integrity "production database changed during gate"
+    fi
+}
+
 # run_stage <stage-id>
 run_stage() {
     case "$1" in
@@ -225,6 +255,7 @@ echo "=== agents gate start ($(date -u +%Y-%m-%dT%H:%M:%SZ)) ==="
 for stage in $STAGES; do
     run_stage "$stage"
 done
+run_production_db_integrity
 echo ""
 
 TOTAL=$((PASS_COUNT + FAIL_COUNT + SKIP_COUNT))

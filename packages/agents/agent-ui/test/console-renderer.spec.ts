@@ -2142,6 +2142,16 @@ export class AgentConsoleSurfaceReattachRegressionTest {
             expect(brandCount(surface.lastRenderedLines)).toBe(1);
             expect(firstWrites.join('').startsWith('\x1b[2J\x1b[H')).toBe(true);
 
+            consoleRef.instance.sessionState.setMessages(Array.from({ length: 80 }, (_value, index) => ({
+                id: `stream-${index}`,
+                role: index % 2 === 0 ? 'user' : 'assistant',
+                content: `streaming line ${index}`,
+                createdAt: index + 1
+            } as any)));
+            await consoleRef.render();
+            await Promise.resolve();
+            expect(brandCount(surface.lastRenderedLines)).toBe(1);
+
             surface.destroy();
             surface = undefined;
 

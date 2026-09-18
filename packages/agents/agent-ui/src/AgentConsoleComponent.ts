@@ -214,11 +214,11 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
-        <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
+        <agent-console-brand-panel renderRegion="header" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
-        <agent-console-messages-panel v-show="!showMessageDetailPanel"></agent-console-messages-panel>
+        <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
         <agent-console-message-detail-panel renderRegion="transcript" v-if="showMessageDetailPanel"></agent-console-message-detail-panel>
         <agent-console-timeline-event-detail-panel renderRegion="transcript" v-if="showTimelineEventInspector"></agent-console-timeline-event-detail-panel>
         <agent-console-tasks-panel v-show="showTasksPanel && !showMessageDetailPanel"></agent-console-tasks-panel>

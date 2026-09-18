@@ -114,3 +114,10 @@
 - **数据审计**：只读确认原库有 3 个 session、4 条 message、2 条 memory；三个 session 的 workspace 均为 `/home/zhouyou/workspace/sleep-mlt`，显式 project/thread/role 为空。未发现 `.bak`、WAL、旧库或其他可恢复来源，现有文件无法证明更早数据的删除时间或执行主体。
 - **门禁污染修复**：收尾时发现 PTY acceptance 继承用户 HOME，并写入测试 session `chat5de7367c7ad3676cb2c5e4b4b40ce272`。验收现为每次运行创建并清理独立临时 HOME；修复后真实 PTY 再跑通过，生产库 SHA-256 在该次门禁前后稳定为 `7209a8b6d407608010e2d66bbcbf9d83e411743916093b012112527001166fde`。既有测试记录未自动删除，避免对用户库执行破坏性操作。
 - **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` 24 passed / 0 skipped；修复隔离后定向 PTY + diff-check 2 passed / 0 skipped。覆盖 agents 10 包、framework 三包、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY 和 `git diff --check`。
+
+## v54 — 默认流式布局与全门禁数据隔离 ✅
+
+- **Logo 固定**：brand 从 transcript 内容改为独立 header，messages 成为明确的 transcript 起点；默认流式内容增长只裁剪消息窗口，不再把 logo 顶出视口。Web 端 brand 同步采用 sticky header，browser 与 TUI 保持同一布局语义。
+- **输入框右边缘**：Web textarea 使用 `border-box`、`max-width: 100%` 和无阴影原生外观，消除 `width: 100%` 叠加 padding/border 导致的右侧溢出竖线。
+- **门禁隔离**：统一 agents gate 在专属临时 HOME 中运行所有包测试、构建、DOM/TUI 与 PTY；结束时新增 `production-db-integrity` 阶段，对真实 HOME 数据库执行前后 SHA-256 不变量检查。HOME 相关测试不再硬编码具体用户名。
+- **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped，覆盖原 24 项完整门禁及生产数据库完整性检查。

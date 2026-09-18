@@ -1524,7 +1524,8 @@ export class ConsoleRendererTest {
             .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
         expect(lines[1]).toContain('│');
         expect(lines[1]).toContain(' TSDI AGENT ');
-        expect(lines[2]).toContain('gpt-5.4 · ~/workspace/core');
+        expect(lines[2]).toContain('gpt-5.4 · ');
+        expect(lines[2]).toContain('workspace/core');
     }
 
     @Test('keeps footer sections pinned and offsets their component positions')

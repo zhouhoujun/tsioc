@@ -34,8 +34,16 @@
             margin-bottom: 10px;
             padding: 10px;
         }
+        #agent-console .console-brand-panel {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
         #agent-console textarea.agent-input {
             width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: block;
             background: #0d1117;
             color: #c9d1d9;
             border: 1px solid #30363d;
@@ -45,6 +53,8 @@
             font-family: inherit;
             font-size: 14px;
             outline: none;
+            box-shadow: none;
+            appearance: none;
         }
         #agent-console textarea.agent-input:focus {
             border-color: #58a6ff;
