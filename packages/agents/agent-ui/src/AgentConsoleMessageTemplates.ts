@@ -114,7 +114,7 @@ export abstract class AgentConsoleMessageTemplateBase {
     get templateClass(): string { return 'message-template-system'; }
     get blockStyle(): Record<string, string> {
         if (!this.item?.blockPadding) return {};
-        return { ...(this.item.itemStyle || {}), padding: '0', margin: '0' };
+        return { ...(this.item.itemStyle || {}), padding: '1em 0', margin: '0' };
     }
 
     toggleMessageDetail(line: AgentConsoleRenderedLine): void {

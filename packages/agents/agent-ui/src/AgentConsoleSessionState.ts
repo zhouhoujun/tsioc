@@ -71,7 +71,7 @@ import {
     AGENT_CONSOLE_OVERLAY_TITLES,
 } from './AgentConsoleOverlayPresenter';
 import { findTimelineLifecycleMessageIndex, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
-import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline } from './AgentConsoleSessionContentPresenter';
+import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
 import {
     VIM_DEFAULT_BINDINGS,
     isConsoleVimAction,
@@ -1259,7 +1259,7 @@ export class AgentConsoleSessionState {
 
     get displayMessages(): AgentMessage[] {
         const filtered = projectAgentConsoleConversationMainline(
-            this.messages.filter(message => this.isDisplayMessage(message))
+            projectAgentConsoleTimelineDurations(this.messages.filter(message => this.isDisplayMessage(message)))
         );
         if (this.planMessage) {
             let lastUserIndex = -1;

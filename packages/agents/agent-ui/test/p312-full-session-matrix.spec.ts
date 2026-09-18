@@ -106,7 +106,7 @@ export class FullSessionMatrixSuite {
                 expect(plain[finalIndex]).not.toContain('•');
                 const resultHeadingIndex = plain.findIndex(line => line.includes('Result'));
                 expect(resultHeadingIndex).toBeGreaterThan(0);
-                expect(plain[resultHeadingIndex - 1].replace(/\u200b/g, '').trim()).toContain('Error');
+                expect(plain.slice(0, resultHeadingIndex).some(line => line.includes('Error'))).toEqual(true);
                 expect(plain.join('\n')).not.toContain('```');
             }
         } finally {

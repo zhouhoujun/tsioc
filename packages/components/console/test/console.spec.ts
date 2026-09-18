@@ -1845,6 +1845,35 @@ export class ConsoleRendererTest {
         await ctx.close();
     }
 
+    @Test('native scrollback never rewinds beyond the terminal viewport for long streaming content')
+    nativeScrollbackLongStreamWindow() {
+        let lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
+        const writes: string[] = [];
+        const root = {
+            addEventListener() {},
+            removeEventListener() {}
+        } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({ lines, cursorTargets: [{ row: lines.length - 1, column: 0 }] })
+            },
+            root,
+            width: 80,
+            height: 32,
+            nativeScrollback: true,
+            output: { write(value: string) { writes.push(value); } }
+        });
+        surface.render();
+        expect(surface.lastRenderedLines).toHaveLength(32);
+        expect(surface.lastRenderedLines[0]).toEqual('line 169');
+
+        lines = [...lines.slice(0, -1), 'line 200 updated'];
+        const updated = surface.render();
+        expect(updated?.output).not.toMatch(/\x1b\[(?:3[2-9]|[4-9]\d|\d{3,})A/);
+        expect(surface.lastRenderedLines[31]).toEqual('line 200 updated');
+        surface.destroy();
+    }
+
     @Test('windows terminal rendered blocks locally')
     windowsTerminalRenderedBlocksLocally() {
         expect(compactRenderedLines(['', 'old', 'new', ''], 2)).toEqual(['old', 'new']);

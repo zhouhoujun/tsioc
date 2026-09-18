@@ -2,7 +2,7 @@ import { AgentMessage, getAgentMessageImageParts } from '@tsdi/agent';
 
 export type AgentConsoleContentFamily = 'conversation' | 'execution' | 'decision' | 'artifact' | 'diagnostic';
 export type AgentConsoleContentKind = 'user' | 'assistant-final' | 'assistant-partial' | 'assistant-preamble' | 'thought' | 'tool'
-    | 'command' | 'question' | 'approval' | 'plan' | 'file-change' | 'attachment'
+    | 'command' | 'event' | 'question' | 'approval' | 'plan' | 'file-change' | 'attachment'
     | 'error' | 'warning' | 'cancelled' | 'system';
 
 export interface AgentConsoleSessionContentPresentation {
@@ -55,6 +55,10 @@ export function presentAgentConsoleSessionContent(message: AgentMessage): AgentC
     if (hasAttachment && !summary) {
         return result('artifact', 'attachment', 'Attachment', '', 'supporting', true);
     }
+    if (uiKind === 'event') {
+        return result('execution', 'event', clean(metadata.uiEventLabel) || eventTitle(eventType), summary,
+            status === 'running' ? 'active' : 'supporting', false);
+    }
     if (message.role === 'assistant') {
         const preamble = metadata.preamble === true || metadata.conversationPhase === 'preamble'
             || (Array.isArray(metadata.toolCalls) && metadata.toolCalls.length > 0);
@@ -79,6 +83,35 @@ export function presentAgentConsoleSessionContent(message: AgentMessage): AgentC
     }
 }
 
+/** Add display-only total duration to completed lifecycle events. */
+export function projectAgentConsoleTimelineDurations(messages: AgentMessage[]): AgentMessage[] {
+    const starts = new Map<string, number>();
+    return (Array.isArray(messages) ? messages : []).map(message => {
+        const metadata = message.metadata || {};
+        if (metadata.uiKind !== 'event') return message;
+        const createdAt = finiteNumber(message.createdAt, NaN);
+        const eventType = String(metadata.uiEventType || '').toLowerCase();
+        const lifecycle = eventLifecycle(eventType, metadata);
+        if (lifecycle.phase === 'start' && Number.isFinite(createdAt)) {
+            starts.set(lifecycle.key, createdAt);
+            return message;
+        }
+        let durationMs = finiteNumber(metadata.durationMs, NaN);
+        if (!Number.isFinite(durationMs)) {
+            const startedAt = finiteNumber(metadata.startedAt, NaN);
+            const completedAt = finiteNumber(metadata.completedAt ?? metadata.endedAt, NaN);
+            if (Number.isFinite(startedAt) && Number.isFinite(completedAt)) {
+                durationMs = Math.max(0, completedAt - startedAt);
+            } else if (lifecycle.phase === 'end' && starts.has(lifecycle.key) && Number.isFinite(createdAt)) {
+                durationMs = Math.max(0, createdAt - starts.get(lifecycle.key)!);
+            }
+        }
+        if (!Number.isFinite(durationMs)) return message;
+        if (lifecycle.phase === 'end') starts.delete(lifecycle.key);
+        return { ...message, metadata: { ...metadata, durationMs } };
+    });
+}
+
 /**
  * Derive the readable conversation mainline without changing persisted messages.
  * User messages delimit turns. Within each turn there is at most one final
@@ -95,7 +128,6 @@ export function projectAgentConsoleConversationMainline(messages: AgentMessage[]
         turn = [];
     };
     for (const message of Array.isArray(messages) ? messages : []) {
-        if (isRoutineTurnStart(message)) continue;
         if (message.role === 'user') {
             flushTurn();
             turn.push(message);
@@ -341,6 +373,27 @@ function finiteNumber(value: unknown, fallback: number): number {
     return Number.isFinite(number) ? number : fallback;
 }
 
+function eventTitle(eventType: string): string {
+    const value = String(eventType || '').replace(/[._-]+/g, ' ').trim();
+    return value ? value.replace(/^\w/, char => char.toUpperCase()) : 'Event';
+}
+
+function eventLifecycle(eventType: string, metadata: Record<string, any>): {
+    key: string;
+    phase: 'start' | 'end' | 'instant';
+} {
+    const phase = /(?:_started|_invoked)$/.test(eventType) ? 'start'
+        : /(?:_completed|_failed|_cancelled|_canceled)$/.test(eventType) ? 'end' : 'instant';
+    const family = eventType.replace(/(?:_started|_invoked|_completed|_failed|_cancelled|_canceled)$/, '');
+    const stableIdentity = clean(metadata.toolCallId || metadata.taskId || metadata.stepId
+        || metadata.planStepId || metadata.turnId || metadata.timeline?.toolCallId
+        || metadata.timeline?.taskId || metadata.timeline?.stepId);
+    const eventKey = String(clean(metadata.uiEventKey) || '')
+        .replace(/(?:[:._-](?:started|invoked|completed|failed|cancelled|canceled))$/, '');
+    const identity = stableIdentity || (family === 'turn' ? 'current' : eventKey) || 'current';
+    return { key: `${family}:${identity}`, phase };
+}
+
 function projectExecutionTurn(messages: AgentMessage[]): AgentMessage[] {
     if (!messages.some(message => message.role === 'user')) return messages.slice();
     const lastThoughtIndex = findLastIndex(messages, isThoughtMessage);
@@ -469,14 +522,6 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
         if (contentKey) seenFinalContent.add(contentKey);
     });
     return result;
-}
-
-function isRoutineTurnStart(message: AgentMessage): boolean {
-    const metadata = message?.metadata || {};
-    const eventType = String(metadata.uiEventType || '').toLowerCase();
-    const status = String(metadata.status || '').toLowerCase();
-    return metadata.uiKind === 'event'
-        && (eventType === 'turn_started' || (eventType === 'turn' && status === 'running'));
 }
 
 function isNonConversationAssistant(message: AgentMessage): boolean {

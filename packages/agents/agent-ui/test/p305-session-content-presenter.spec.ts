@@ -1,6 +1,10 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { presentAgentConsoleSessionContent } from '../src';
+import {
+    presentAgentConsoleSessionContent,
+    projectAgentConsoleExecutionMainline,
+    projectAgentConsoleTimelineDurations
+} from '../src';
 
 function message(over: Record<string, any>): any {
     return { id: 'm1', role: 'assistant', content: 'content', createdAt: 1, ...over };
@@ -20,6 +24,7 @@ export class SessionContentPresenterTest {
         const cases = [
             [message({ metadata: { uiKind: 'event', uiEventType: 'reasoning', status: 'running' } }), 'execution', 'thought'],
             [message({ metadata: { uiKind: 'event', uiEventType: 'tool_completed', timeline: { toolCallId: 't1' } } }), 'execution', 'tool'],
+            [message({ metadata: { uiKind: 'event', uiEventType: 'turn_completed', status: 'success' } }), 'execution', 'event'],
             [message({ metadata: { uiKind: 'approval' } }), 'decision', 'approval'],
             [message({ metadata: { uiKind: 'question' } }), 'decision', 'question'],
             [message({ metadata: { uiKind: 'plan-todo' } }), 'artifact', 'plan'],
@@ -32,6 +37,33 @@ export class SessionContentPresenterTest {
             expect(presented.family).toEqual(family);
             expect(presented.kind).toEqual(kind);
         });
+    }
+
+    @Test('keeps lifecycle events in place instead of treating them as final answers')
+    lifecycleOrder() {
+        const messages = [
+            message({ id: 'u', role: 'user', content: 'request', createdAt: 1 }),
+            message({ id: 'start', content: 'Started', createdAt: 2,
+                metadata: { uiKind: 'event', uiEventType: 'turn_started', status: 'running' } }),
+            message({ id: 'answer', content: 'Final answer', createdAt: 3 }),
+            message({ id: 'end', content: 'Completed', createdAt: 4,
+                metadata: { uiKind: 'event', uiEventType: 'turn_completed', status: 'success' } })
+        ];
+        expect(projectAgentConsoleExecutionMainline(messages).map(item => item.id))
+            .toEqual(['u', 'start', 'end', 'answer']);
+    }
+
+    @Test('derives elapsed time for every event without replacing exact durations')
+    timelineDurations() {
+        const projected = projectAgentConsoleTimelineDurations([
+            message({ id: 'start', createdAt: 1000,
+                metadata: { uiKind: 'event', uiEventType: 'turn_started', status: 'running' } }),
+            message({ id: 'tool', createdAt: 1250,
+                metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success', durationMs: 40 } }),
+            message({ id: 'end', createdAt: 1800,
+                metadata: { uiKind: 'event', uiEventType: 'turn_completed', status: 'success' } })
+        ] as any);
+        expect(projected.map(item => item.metadata?.durationMs)).toEqual([undefined, 40, 800]);
     }
 
     @Test('derives stable detail and causal routing metadata')

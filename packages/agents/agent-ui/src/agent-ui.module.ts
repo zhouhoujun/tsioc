@@ -169,6 +169,7 @@ import {
                 thought: AgentConsoleThoughtMessageRenderer,
                 tool: AgentConsoleToolMessageRenderer,
                 command: AgentConsoleCommandMessageRenderer,
+                event: AgentConsoleDiagnosticMessageRenderer,
                 question: AgentConsoleQuestionMessageRenderer,
                 approval: AgentConsoleApprovalMessageRenderer,
                 plan: AgentConsolePlanMessageRenderer,

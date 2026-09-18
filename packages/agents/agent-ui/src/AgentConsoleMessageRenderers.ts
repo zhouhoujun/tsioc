@@ -330,7 +330,7 @@ export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleFamilyMes
         const metadata = message.metadata || {};
         const kind = presentAgentConsoleSessionContent(message).kind;
         const labels: Partial<Record<AgentConsoleContentKind, string>> = {
-            error: 'Error · ', warning: 'Warning · ', cancelled: 'Cancelled · ', system: 'System · '
+            error: 'Error · ', warning: 'Warning · ', cancelled: 'Cancelled · ', system: 'System · ', event: 'Event · '
         };
         return { component: kind === 'error' || kind === 'warning' ? AgentConsoleErrorTemplate : AgentConsoleSystemTemplate, presentation: {
             ...builtin,
@@ -590,9 +590,11 @@ export function renderAgentConsoleMessageItem(
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
     const baseItemStyle = renderer.itemStyle(theme, rowSelected);
-    const baseRoleLabel = context.rendererRegistry
-        ? renderer.roleLabel
-        : resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
+    const baseRoleLabel = presentation.kind === 'assistant-final' && templateKind === 'assistant'
+        ? ''
+        : context.rendererRegistry
+            ? renderer.roleLabel
+            : resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
     const roleLabel = context.showUsername
         ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
         : baseRoleLabel;
@@ -709,7 +711,8 @@ export function renderAgentConsoleMessageItem(
         semanticFamily: presentation.family,
         semanticKind: presentation.kind,
         spacerBefore: !timelineEvent && presentation.kind === 'assistant-final',
-        blockPadding: !timelineEvent && presentation.kind === 'user'
+        blockPadding: !timelineEvent
+            && (presentation.kind === 'user' || presentation.kind === 'assistant-final')
     };
 }
 
@@ -989,8 +992,7 @@ function resolveSemanticLinePadding(
     if (presentation.family === 'execution') {
         return `${isFirst ? '0.2em' : '0'} 1ch ${isLast ? '0.2em' : '0'} 1ch`;
     }
-    const vertical = presentation.kind === 'user' ? 1
-        : presentation.kind === 'assistant-final' ? 0
+    const vertical = presentation.kind === 'user' || presentation.kind === 'assistant-final' ? 0
         : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
             : presentation.family === 'artifact' ? 0.4 : 0.5;
     return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;

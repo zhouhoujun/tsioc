@@ -930,12 +930,12 @@ export class TuiTerminalSurface {
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
             : this.options.nativeScrollback === true;
-        const height = nativeScrollback ? undefined : this.resolveHeight();
+        const height = this.resolveHeight();
         const scrollRegionId = this.options.scrollRegionId || 'transcript';
         const footerRegionId = this.options.footerRegionId || 'footer';
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
-        if (!height || !scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
+        if (!height) {
             this.maxScrollOffsetRows = 0;
             this.scrollOffsetRows = 0;
             return {
@@ -943,6 +943,39 @@ export class TuiTerminalSurface {
                 regions: allRegions,
                 cursorTargets: layout.cursorTargets || [],
                 clickTargets: layout.clickTargets || []
+            };
+        }
+        if (!scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
+            if (!nativeScrollback || allLines.length <= height) {
+                this.maxScrollOffsetRows = 0;
+                this.scrollOffsetRows = 0;
+                return {
+                    lines: allLines,
+                    regions: allRegions,
+                    cursorTargets: layout.cursorTargets || [],
+                    clickTargets: layout.clickTargets || []
+                };
+            }
+            const start = allLines.length - height;
+            const mapRow = (row: number): number | undefined => row >= start ? row - start : undefined;
+            this.maxScrollOffsetRows = start;
+            this.scrollOffsetRows = 0;
+            return {
+                lines: allLines.slice(start),
+                regions: allRegions.flatMap(region => {
+                    const regionStart = mapRow(Math.max(start, region.startRow));
+                    const regionEnd = mapRow(Math.max(start, region.endRow - 1));
+                    return regionStart === undefined || regionEnd === undefined
+                        ? [] : [{ id: region.id, startRow: regionStart, endRow: regionEnd + 1 }];
+                }),
+                cursorTargets: (layout.cursorTargets || []).flatMap(target => {
+                    const row = mapRow(target.row);
+                    return row === undefined ? [] : [{ ...target, row }];
+                }),
+                clickTargets: (layout.clickTargets || []).flatMap(target => {
+                    const row = mapRow(target.y);
+                    return row === undefined ? [] : [{ ...target, y: row }];
+                })
             };
         }
         const prefix = allLines.slice(0, scrollRegion.startRow);

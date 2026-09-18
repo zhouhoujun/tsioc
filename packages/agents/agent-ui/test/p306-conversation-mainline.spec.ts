@@ -30,7 +30,7 @@ export class ConversationMainlineProjectionTest {
         expect(projected.map(item => item.id)).toEqual(['u1', 'a2', 'u2', 'a3']);
     }
 
-    @Test('pure Q&A suppresses startup wording and replayed final')
+    @Test('pure Q&A preserves lifecycle events and suppresses replayed final')
     replay() {
         const projected = projectAgentConsoleConversationMainline([
             message('u1', 'user', 'Explain it'),
@@ -38,7 +38,7 @@ export class ConversationMainlineProjectionTest {
             message('a1', 'assistant', 'Final answer', { streaming: false }),
             message('a2', 'assistant', 'Final answer', { streaming: false })
         ]);
-        expect(projected.map(item => item.id)).toEqual(['u1', 'a2']);
+        expect(projected.map(item => item.id)).toEqual(['u1', 'e1', 'a2']);
     }
 
     @Test('tool events stay ordered before the final and preamble is retained as supporting')

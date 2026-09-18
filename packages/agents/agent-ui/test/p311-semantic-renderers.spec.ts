@@ -87,7 +87,7 @@ export class SemanticRendererSuite {
         expect(answer.lines[0].role).toEqual('');
         expect(answer.itemStyle['border-left']).toEqual('2px solid transparent');
         expect(answer.spacerBefore).toEqual(true);
-        expect(answer.blockPadding).toEqual(false);
+        expect(answer.blockPadding).toEqual(true);
         expect(answer.lines[0].itemStyle?.margin).toEqual('0');
         expect(thought.lines[0].role).toEqual('Thought · ');
         expect(thought.lines[0].itemStyle?.margin).toEqual('0.2em 0 0 0');
@@ -106,7 +106,7 @@ export class SemanticRendererSuite {
             message('r', 'assistant', 'Checking the forecast', { uiKind: 'event', uiEventType: 'reasoning' })
         ], { rendererRegistry: this.registry });
         expect(rendered[0].blockPadding).toEqual(true);
-        expect(rendered[0].lines[0].itemStyle?.padding).toEqual('1em 1ch 1em 1ch');
+        expect(rendered[0].lines[0].itemStyle?.padding).toEqual('0em 1ch 0em 1ch');
         expect(rendered[1].spacerBefore).toEqual(true);
         expect(rendered[1].blockPadding).toEqual(true);
         expect(rendered[1].lines[0].itemStyle?.padding).toEqual('0 1ch');

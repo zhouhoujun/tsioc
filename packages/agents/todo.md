@@ -3248,3 +3248,11 @@ Turn: Fix session restore                                      running  01:42
 - **用户消息视觉恢复**：user renderer 恢复使用 `messagesUser` 专属主题，不再误用输入框 `inputShell`；用户消息首尾 padding 恢复为 `1em`，背景色与上下留白由 browser/TUI 共用渲染模型保持。新增 renderer 精确样式与 DOM 实际 CSS 断言。
 - **退出生命周期修复**：`/exit` 销毁 ApplicationContext 后，排队中的响应式尾帧不再通过已销毁的 injector 动态解析 renderer；registry 在 injector destroyed 时安全降级到内置 presentation/template。新增关闭真实 ApplicationContext 后 resolve 的回归测试，消除 `NodeInjector has already been destroyed`。
 - **最终验证**：agent-ui **1353 passing / 0 failed / EXIT=0**，`tsc --noEmit` 通过；授权宿主 `RUN_PTY=1 bash scripts/agents-gate.sh` **24 passed / 0 skipped / EXIT=0**，覆盖 agents 10 包、framework 3 包、4 包 tsc、Web production build、DOM 5 scenarios + 80/100 列矩阵、TUI 5 scenarios、gate regression、真实 PTY 8 场景与 `git diff --check`。无响应式核心改动、无 timer、无平台私有依赖。
+
+## v52 2026-09-18 — 会话时间线与长回复终端重绘收尾 ✅
+
+- **消息容器与正文语义**：用户消息和最终回答统一由动态模板外层提供 `1em 0` 整体纵向 padding，正文行只保留横向 padding，避免逐行留白与用户消息重复 padding。最终回答移除 assistant `•` role label；该圆点原是角色前缀而非 Markdown 列表，Working 的状态点仅保留在执行事件中。
+- **事件与耗时**：生命周期内容新增独立 `event` 语义，开始/结束事件不再被最终消息投影替换，也不能升级为结论。事件只显示一次总耗时：优先使用后端 `durationMs`，否则按稳定事件 ID 配对开始/结束时间；不展示时间戳或相邻事件间隔。时间线继续采用稳定 identity、状态 glyph、紧凑动作与独立 final 的 Codex/opencode 信息层级。
+- **长回复重绘**：用 `agent-cli` 在 `/home/zhouyou/workspace/sleep-mlt` 提问“最新Agent技术”复现约 32 行终端中输出 `ESC[186A` 的越界回退。`TuiTerminalSurface` 在 native scrollback 且缺少显式 transcript/footer region 时，现按终端高度输出安全 tail window，并同步重映射 region/cursor/click target；新增 200 行、32 行终端回归，保证更新不会回退超过视口，同时保留原生 scrollback。
+- **真实 PTY 稳定性**：验收完成判定改用最终正文或持久命令回执，文本与 Enter 分开发送，并以本轮 raw offset 隔离匹配；`/usage`、取消和 `/theme` 不再依赖光标重绘中的瞬时 placeholder/notify。定向 PTY **1 passed / 0 skipped**。
+- **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` **24 passed / 0 skipped / EXIT=0**。其中 agent **890**、agent-ui **1359**、components **137**、components/console **76**、components/html **117** passing；其余 agents 包、4 包 `tsc --noEmit`、Web production build、DOM 5 scenarios + 80/100 列矩阵、TUI 5 scenarios、metrics regression、真实 PTY 8 场景与 `git diff --check` 全部通过。实现位于 browser/TUI 共用层，无组件定时刷新、Node 私有依赖或布局脏节点缓存；计划保持无开放批次。
