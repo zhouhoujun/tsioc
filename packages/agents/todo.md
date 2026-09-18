@@ -127,3 +127,11 @@
 - **全量验证**：在允许本地 socket、子进程和真实终端的环境中重新执行 `RUN_PTY=1 bash scripts/agents-gate.sh`，25 passed / 0 skipped / 25 total。
 - **覆盖范围**：agents 各包、framework 三包、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查全部通过。
 - **当前状态**：无开放实施批次；本轮未发现需要追加修复的代码问题。
+
+## v56 — 动画响应式契约纠偏 ✅
+
+- **移除主动刷新**：删除 `AnimatedTextLifecycleService` 的共享 `setInterval` 及 animated-text、animation-frame、elapsed-time 的 tick 订阅链；公开服务类型保留为空兼容壳，避免破坏 consumer 导入。
+- **时间派生**：字符扫光、帧动画和 Working elapsed 均在真实数据驱动的绑定渲染中由 `Date.now()` 派生，不为动画额外触发 DOM/TUI 重绘。
+- **跨平台落点**：实现位于 `@tsdi/components` 通用指令与 agent-ui 共享 Working 面板；CLI 不再 bootstrap 动画 ticker，browser 与 TUI 使用同一逻辑。
+- **验收契约**：真实 PTY 改为验证无数据变化时 Working 不自刷新，同时保留 Ctrl+C/Esc 双取消；宽度检查忽略 PTY 分块末尾不完整且不可见的 ANSI CSI 前缀。
+- **验证**：components 137 passing；console renderer 定向 75 passing；完整门禁阶段除旧 PTY ticker 断言外 24/25 通过，更新验收后定向 PTY + diff-check + production-db-integrity 3/3 通过。
