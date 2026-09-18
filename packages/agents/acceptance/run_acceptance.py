@@ -134,9 +134,13 @@ def resize_terminal(fd: int, columns: int, lines: int = 32) -> None:
 
 
 def display_width(value: str) -> int:
+    visible = ANSI_RE.sub('', value)
+    # A non-blocking PTY read can end in the middle of a CSI sequence. It has
+    # no display width and must not become a false terminal-overflow failure.
+    visible = re.sub(r'\x1b(?:\[[0-9;?]*)?$', '', visible)
     return sum(0 if unicodedata.combining(char) or unicodedata.category(char) == 'Cf' else
                2 if unicodedata.east_asian_width(char) in ('W', 'F') else 1
-               for char in value)
+               for char in visible)
 
 
 def spawn_agent(port: int):
@@ -449,20 +453,23 @@ def scenario_slash_command_p282(pid: int, fd: int, screen: Screen) -> bool:
     return True
 
 
-def scenario_interrupt_and_timer(pid: int, fd: int, screen: Screen) -> bool:
-    """Drive slow streamed turns to verify elapsed ticks and both interrupt keys."""
+def scenario_interrupt_and_reactive_render(pid: int, fd: int, screen: Screen) -> bool:
+    """Verify idle Working does not self-refresh and both interrupt keys work."""
     first_mark = len(bytes(screen.raw))
     send(fd, '中断测试：请持续输出直到我取消。'.encode())
     send(fd, b'\r')
-    elapsed_patterns = [r'Working\s*\(\s*0s', r'Working\s*\(\s*(?:[1-9]|\d{2,})s',
-                        r'Working\s*\(\s*(?:[2-9]|\d{2,})s']
-    for second, pattern in enumerate(elapsed_patterns):
-        matched = wait_for(
-            fd, screen, [pattern], timeout=10,
-            on_sight=True, tail_from=first_mark)
-        if not matched:
-            print(f'[FAIL] scenario 7: Working did not reach {second}s')
-            return False
+    running = wait_for(fd, screen, [r'Working\s*\(\s*0s'], timeout=10,
+                       on_sight=True, tail_from=first_mark)
+    if not running:
+        print('[FAIL] scenario 7: first slow turn never entered Working state')
+        return False
+    quiet_mark = len(bytes(screen.raw))
+    time.sleep(2.2)
+    drain(fd, screen)
+    quiet_output = bytes(screen.raw)[quiet_mark:].decode(errors='replace')
+    if re.search(r'Working\s*\(\s*(?:[1-9]|\d{2,})s', quiet_output):
+        print('[FAIL] scenario 7: Working self-refreshed without a data change')
+        return False
     cancel_mark = len(bytes(screen.raw))
     send(fd, b'\x03')
     cancelled = wait_for(
@@ -471,6 +478,9 @@ def scenario_interrupt_and_timer(pid: int, fd: int, screen: Screen) -> bool:
     if not cancelled:
         print('[FAIL] scenario 7: Ctrl+C did not cancel the slow turn and restore the composer')
         return False
+    # Cancellation receipt is emitted before the composer focus restoration.
+    # Let that data-driven render settle before submitting the second turn.
+    drain(fd, screen, 0.8)
 
     second_mark = len(bytes(screen.raw))
     send(fd, '中断测试：再次持续输出。'.encode())
@@ -491,7 +501,7 @@ def scenario_interrupt_and_timer(pid: int, fd: int, screen: Screen) -> bool:
     # The cancellation receipt precedes the focus-restored composer frame by a
     # render pass. Drain that pass before the next scenario sends a command.
     drain(fd, screen, 0.8)
-    print('[PASS] scenario 7: Working advanced 0s -> 1s -> 2s; Ctrl+C and Esc cancelled pending turns')
+    print('[PASS] scenario 7: idle Working did not self-refresh; Ctrl+C and Esc cancelled pending turns')
     return True
 
 
@@ -720,7 +730,7 @@ def main() -> int:
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
-            results.append(('7-interrupt-timer', scenario_interrupt_and_timer(pid, fd, screen)))
+            results.append(('7-interrupt-reactive', scenario_interrupt_and_reactive_render(pid, fd, screen)))
             results.append(('8-theme-width-matrix', scenario_theme_width_matrix(pid, fd, screen)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
