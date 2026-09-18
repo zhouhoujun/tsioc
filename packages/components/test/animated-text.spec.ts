@@ -7,11 +7,6 @@ export class AnimatedTextDirectiveTest {
     @Test('renders and advances one highlighted character at a time')
     rendersCharacterSweep() {
         const host: any = { childNodes: [], parentNode: {} };
-        let tick = () => {};
-        const lifecycle = {
-            subscribe(listener: () => void) { tick = listener; },
-            unsubscribe() { tick = () => {}; }
-        };
         const renderer: any = {
             createElement: () => ({ childNodes: [], styles: {} }),
             createText: (text: string) => ({ text }),
@@ -21,20 +16,27 @@ export class AnimatedTextDirectiveTest {
             },
             setStyle: (node: any, key: string, value: string) => node.styles[key] = value
         };
-        const directive = new AnimatedTextDirective({ nativeElement: host } as any, renderer, lifecycle as any);
+        const directive = new AnimatedTextDirective({ nativeElement: host } as any, renderer);
         directive.activeStyle = { color: 'active' };
         directive.baseStyle = { color: 'base' };
         directive.trailStyle = { color: 'trail' };
+        directive.interval = 100;
         directive.text = 'ABC';
-        directive.onInit();
 
-        expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['active', 'base', 'base']);
-        tick();
-        expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'active', 'base']);
-        tick();
-        expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'trail', 'active']);
-
-        directive.onDestroy();
+        const originalNow = Date.now;
+        try {
+            Date.now = () => 0;
+            (directive as any).render();
+            expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['active', 'base', 'base']);
+            Date.now = () => 100;
+            (directive as any).render();
+            expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'active', 'base']);
+            Date.now = () => 200;
+            (directive as any).render();
+            expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'trail', 'active']);
+        } finally {
+            Date.now = originalNow;
+        }
     }
 
     @Test('renders a configurable-width highlight band')
@@ -54,9 +56,14 @@ export class AnimatedTextDirectiveTest {
         directive.baseStyle = { color: 'base' };
         directive.trailStyle = { color: 'trail' };
         directive.scanWidth = 3;
-        directive.text = 'ABCDE';
-
-        expect(host.childNodes.map((node: any) => node.styles.color))
-            .toEqual(['active', 'active', 'active', 'base', 'base']);
+        const originalNow = Date.now;
+        try {
+            Date.now = () => 0;
+            directive.text = 'ABCDE';
+            expect(host.childNodes.map((node: any) => node.styles.color))
+                .toEqual(['active', 'active', 'active', 'base', 'base']);
+        } finally {
+            Date.now = originalNow;
+        }
     }
 }

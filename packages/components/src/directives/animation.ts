@@ -28,11 +28,8 @@ export type AnimatedFrameItem = string | AnimatedFrame;
 /**
  * 动画帧序列指令（属性指令，挂载于宿主元素上）。
  *
- * 周期驱动帧动画：指令订阅 AnimatedTextLifecycleService 的共享 tick，
- * 每个 tick 推进一帧并更新宿主元素（文本子节点 + 样式）。浏览器端直接更新
- * DOM；TUI 端通过 ConsoleText.textContent setter 触发 CHANGE_EVENT，驱动
- * TuiTerminalSurface 重渲染。tick 由 Application.run 生命周期统一启停，
- * 指令自身不创建定时器。
+ * 当前帧在真实数据驱动的渲染中由 Date.now() 派生，不创建定时器，也不为
+ * 动画额外触发渲染。
  *
  * 用法（宿主组件模板）：
  * ```html
@@ -53,8 +50,6 @@ export class AnimatedFrameDirective {
     protected _loop = true;
     protected textNode: any = null;
     protected appliedStyleKeys: string[] = [];
-    protected tickActive = false;
-    protected frameOffset = 0;
 
     @Attribute()
     renderRegion = '';
@@ -111,7 +106,8 @@ export class AnimatedFrameDirective {
         if (!len) {
             return 0;
         }
-        return this._loop ? this.frameOffset % len : Math.min(this.frameOffset, len - 1);
+        const offset = Math.floor(Date.now() / Math.max(1, this._interval));
+        return this._loop ? offset % len : Math.min(offset, len - 1);
     }
 
     get frameText(): string {
@@ -132,54 +128,7 @@ export class AnimatedFrameDirective {
 
     onInit(): void {
         this.applyFrame();
-        if (this.frameList.length) {
-            this.startTick();
-        }
     }
-
-    onDestroy(): void {
-        this.stopTick();
-    }
-
-    protected startTick(): void {
-        if (this.tickActive) {
-            return;
-        }
-        if (!this.lifecycle) {
-            return;
-        }
-        this.tickActive = true;
-        this.listener = () => this.tick();
-        this.lifecycle.subscribe(this.listener);
-    }
-
-    protected stopTick(): void {
-        if (!this.tickActive) {
-            return;
-        }
-        this.tickActive = false;
-        this.lifecycle?.unsubscribe(this.listener);
-        this.listener = () => {};
-    }
-
-    protected tick(): void {
-        const len = this.frameList.length;
-        if (!len) {
-            this.stopTick();
-            return;
-        }
-        const el = this.elementRef?.nativeElement;
-        // 指令实例可能随渲染周期重建但旧实例未被销毁：宿主元素已脱离文档时
-        // 停止 tick，避免废弃实例持续干扰宿主应用。
-        if (!el || el.parentNode == null) {
-            this.stopTick();
-            return;
-        }
-        this.frameOffset += 1;
-        this.applyFrame();
-    }
-
-    protected listener: () => void = () => {};
 
     protected applyFrame(): void {
         const renderer = this.renderer;

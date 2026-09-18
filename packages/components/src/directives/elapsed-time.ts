@@ -6,7 +6,7 @@ import { DirectiveType } from '../refs/directive';
 import { Renderer } from '../renderer/Renderer';
 import { AnimatedTextLifecycleService } from './animated-text';
 
-/** Renders a Date.now()-derived elapsed label from the shared animation tick. */
+/** Renders a Date.now()-derived elapsed label during data-driven renders. */
 @Directive({
     selector: '[elapsed-time]',
     dirType: DirectiveType.Normal
@@ -14,8 +14,6 @@ import { AnimatedTextLifecycleService } from './animated-text';
 export class ElapsedTimeDirective {
     protected _startedAt = 0;
     protected renderedSecond = -1;
-    protected listener: () => void = () => {};
-    protected active = false;
 
     constructor(
         protected elementRef?: ElementRef,
@@ -38,26 +36,6 @@ export class ElapsedTimeDirective {
     }
 
     onInit(): void {
-        this.render();
-        if (!this.lifecycle || this.active) return;
-        this.active = true;
-        this.listener = () => this.tick();
-        this.lifecycle.subscribe(this.listener);
-    }
-
-    onDestroy(): void {
-        if (!this.active) return;
-        this.active = false;
-        this.lifecycle?.unsubscribe(this.listener);
-        this.listener = () => {};
-    }
-
-    protected tick(): void {
-        const element = this.elementRef?.nativeElement;
-        if (!element || element.parentNode == null) {
-            this.onDestroy();
-            return;
-        }
         this.render();
     }
 
