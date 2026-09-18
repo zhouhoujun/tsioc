@@ -354,9 +354,9 @@ export class VmCommandsTest {
             const store = new AgentConsoleInputHistoryStore(undefined, ctx.get(MemoryStore));
             await store.save(['session-a', '/help'], '/tmp/shared-workspace', 'chat-a');
             await store.save(['session-b', 'session-a'], '/tmp/shared-workspace', 'chat-b');
-            expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-b', 'session-a', '/help']);
-            expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b', 'session-a', '/help']);
-            expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual(['session-b', 'session-a', '/help']);
+            expect(await store.load('/tmp/shared-workspace', 'chat-a')).toEqual(['session-b', 'session-a']);
+            expect(await store.load('/tmp/shared-workspace', 'chat-b')).toEqual(['session-b', 'session-a']);
+            expect(await store.load('/tmp/shared-workspace', 'chat-c')).toEqual(['session-b', 'session-a']);
         } finally {
             await ctx.close();
         }

@@ -2381,7 +2381,7 @@ export class AgentConsoleSessionState {
 
     pushInputHistory(value: string): void {
         const trimmed = String(value || '').trim();
-        if (!trimmed) {
+        if (!trimmed || this.shouldSkipHistoryEntry(trimmed)) {
             return;
         }
         this.inputHistoryEntries = [trimmed, ...this.inputHistoryEntries.filter(item => item !== trimmed)].slice(0, 200);
@@ -2432,7 +2432,10 @@ export class AgentConsoleSessionState {
     }
 
     setInputHistoryEntries(entries: string[]): void {
-        this.inputHistoryEntries = Array.from(new Set((entries || []).filter(Boolean)));
+        this.inputHistoryEntries = Array.from(new Set((entries || [])
+            .map(entry => String(entry || '').trim())
+            .filter(entry => !!entry && !this.shouldSkipHistoryEntry(entry))))
+            .slice(0, 200);
         this.inputHistoryIndex = -1;
         this.inputHistoryDraft = '';
     }

@@ -3906,7 +3906,7 @@ export class AppRpcServerTest {
             }
         }, { principalId: 'user-1' });
 
-        expect((workspaceA as any).result).toEqual(['first', '/help', 'second']);
+        expect((workspaceA as any).result).toEqual(['first', 'second']);
         expect((workspaceB as any).result).toEqual(['other']);
     }
 

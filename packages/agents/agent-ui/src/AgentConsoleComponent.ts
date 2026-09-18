@@ -2708,7 +2708,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (workspace === this.resolveHistoryWorkspace()) {
                 this.state.setInputHistoryEntries(entries);
             }
-        } catch {
+        } catch (error) {
+            this.state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -2723,7 +2724,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (workspace === this.resolveHistoryWorkspace()) {
                 this.state.setInputHistoryEntries(entries);
             }
-        } catch {
+        } catch (error) {
+            this.state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -2742,7 +2744,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         try {
             await this.inputHistoryStore.save(this.state.getInputHistoryEntries(), this.resolveHistoryWorkspace(), this.state.sessionId);
-        } catch {
+        } catch (error) {
+            this.state.setLastError(`Failed to save input history: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

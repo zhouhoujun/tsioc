@@ -29,11 +29,14 @@ Artifacts on failure: packages/agents/acceptance/artifacts/<ts>/scenario-<n>.log
 Stdlib only; Linux/macOS (pty). Exit code 0 = all scenarios passed.
 """
 import json
+import atexit
 import os
 import re
 import signal
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 import unicodedata
@@ -51,6 +54,8 @@ WHICHKEY_CANDIDATES = [s for s in os.environ.get(
     'EXPECT_WHICHKEY', 'which-key,Which-Key,Which key,Keys,chained,Keymap').split(',') if s]
 TODO_LABEL = os.environ.get('EXPECT_TODO_LABEL', os.environ.get('FAKE_TODO_CONTENT', '计划项 A'))
 SCENARIO = os.environ.get('FAKE_SCENARIO', 'default')
+ACCEPTANCE_HOME = tempfile.mkdtemp(prefix='tsdi-agent-acceptance-')
+atexit.register(shutil.rmtree, ACCEPTANCE_HOME, ignore_errors=True)
 
 ANSI_RE = re.compile(
     r'\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()][0-9A-B]|\x1b[=>]|\x1b[a-zA-Z]')
@@ -138,6 +143,7 @@ def spawn_agent(port: int):
     import pty
     env = dict(os.environ)
     env.update({
+        'HOME': ACCEPTANCE_HOME,
         'TERM': 'xterm-256color',
         'AGENT_PROVIDER': 'openai',
         'AGENT_MODEL': 'fake-acceptance-model',

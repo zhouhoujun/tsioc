@@ -222,7 +222,7 @@ export class VmMentionsTest {
         state.pushInputHistory('second');
         state.setInput('draft');
 
-        expect(state.getInputHistoryEntries()).toEqual(['second', '/help', 'first']);
+        expect(state.getInputHistoryEntries()).toEqual(['second', 'first']);
         expect(state.navigateInputHistory(-1)).toEqual(true);
         expect(state.input).toEqual('second');
         expect(state.navigateInputHistory(-1)).toEqual(true);

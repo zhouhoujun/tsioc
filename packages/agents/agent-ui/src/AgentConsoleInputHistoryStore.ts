@@ -97,7 +97,7 @@ export class AgentConsoleInputHistoryStore {
                 : [];
         return Array.from(new Set(entries
             .map((entry: any) => String(entry || '').trim())
-            .filter(Boolean)))
+            .filter(entry => !!entry && !entry.startsWith('/'))))
             .slice(0, 200);
     }
 
