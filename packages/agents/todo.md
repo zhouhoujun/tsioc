@@ -157,3 +157,11 @@
 - **边界门禁**：架构契约测试扩展到 `components/console/src`，持续禁止直接导入 Node 内置模块。
 - **验证**：components/console 77 passing；agent-ui tsc 通过；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，生产数据库保持不变。
 - **当前状态**：无开放实施批次。
+
+## v60 — Console 模板解析去 Node 化 ✅
+
+- **移除运行时 JSDOM**：`ConsoleTemplateParser` 改用包内既有 `fast-xml-parser` 依赖直接生成 `ConsoleNode`，不再通过 CommonJS `require('jsdom')` 创建文档。
+- **HTML 兼容**：解析保留节点顺序、属性、文本、注释与实体；对 HTML void 元素使用引号感知的单遍规范化，兼容显式闭合标签及属性值中的 `>`，避免正则误切标签。
+- **边界门禁**：`components/console/src` 除禁止 Node 内置模块导入外，进一步禁止任何 `require()`，确保 browser 与 TUI 共享无 Node loader 的模板路径。
+- **验证**：components/console 77 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，Web build、DOM/TUI、真实 PTY 与生产数据库完整性检查均通过。
+- **当前状态**：无开放实施批次。

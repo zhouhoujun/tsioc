@@ -1,5 +1,5 @@
-import { Inject, Injectable, isArray, Module, ModuleWithProviders, Optional, token } from '@tsdi/ioc';
-import { DOCUMENT } from '@tsdi/common';
+import { Inject, Injectable, isArray, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { XMLParser } from 'fast-xml-parser';
 import {
     AbstractTemplateCompiler,
     noReact,
@@ -671,63 +671,111 @@ export class ConsoleRenderer implements Renderer {
 @Injectable()
 export class ConsoleTemplateParser implements TemplateParser {
     [noReact] = true;
+    protected readonly parser = new XMLParser({
+        preserveOrder: true,
+        ignoreAttributes: false,
+        attributeNamePrefix: '',
+        textNodeName: '#text',
+        commentPropName: '#comment',
+        trimValues: false,
+        parseTagValue: false,
+        parseAttributeValue: false,
+        allowBooleanAttributes: true,
+        htmlEntities: true
+    });
 
-    constructor(
-        private renderer: ConsoleRenderer,
-        @Optional() @Inject(DOCUMENT) private doc?: Object | null
-    ) {
+    constructor(private renderer: ConsoleRenderer) {
     }
 
     parse(template: string): RNode[] {
-        const document = this.resolveDocument();
-        const container = document.createElement('div');
-        container.innerHTML = template.trim();
-        const result: RNode[] = [];
-        Array.from(container.childNodes).forEach(node => {
-            const converted = this.convertNode(node);
-            if (converted) {
-                result.push(converted);
+        const normalized = this.normalizeVoidElements(template.trim());
+        const parsed = this.parser.parse(`<console-root>${normalized}</console-root>`) as Array<Record<string, unknown>>;
+        const root = parsed.find(entry => Object.prototype.hasOwnProperty.call(entry, 'console-root'));
+        const children = root?.['console-root'];
+        return Array.isArray(children)
+            ? children.map(entry => this.convertParsedNode(entry as Record<string, unknown>)).filter((node): node is ConsoleNode => !!node)
+            : [];
+    }
+
+    protected normalizeVoidElements(template: string): string {
+        const names = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+        let result = '';
+        let cursor = 0;
+        while (cursor < template.length) {
+            const start = template.indexOf('<', cursor);
+            if (start < 0) {
+                result += template.slice(cursor);
+                break;
             }
-        });
+            result += template.slice(cursor, start);
+            const nameMatch = template.slice(start).match(/^<\s*(\/?)\s*([a-zA-Z][\w:-]*)/);
+            if (!nameMatch || !names.has(nameMatch[2].toLowerCase())) {
+                result += '<';
+                cursor = start + 1;
+                continue;
+            }
+            let quote = '';
+            let end = start + nameMatch[0].length;
+            for (; end < template.length; end++) {
+                const char = template[end];
+                if (quote) {
+                    if (char === quote) {
+                        quote = '';
+                    }
+                } else if (char === '"' || char === "'") {
+                    quote = char;
+                } else if (char === '>') {
+                    break;
+                }
+            }
+            if (end >= template.length) {
+                result += template.slice(start);
+                break;
+            }
+            if (nameMatch[1]) {
+                cursor = end + 1;
+                continue;
+            }
+            const tag = template.slice(start, end);
+            result += /\/\s*$/.test(tag) ? `${tag}>` : `${tag}/>`;
+            cursor = end + 1;
+        }
         return result;
     }
 
-    protected resolveDocument(): Document {
-        if (this.doc) {
-            return this.doc as Document;
+    protected convertParsedNode(node: Record<string, unknown>): ConsoleNode | null {
+        if (Object.prototype.hasOwnProperty.call(node, '#text')) {
+            const value = String(node['#text'] ?? '');
+            return value.trim() ? this.renderer.createText(value) as ConsoleText : null;
         }
-        const { JSDOM } = require('jsdom') as typeof import('jsdom');
-        return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
-    }
-
-    protected convertNode(node: Node): ConsoleNode | null {
-        switch (node.nodeType) {
-            case node.TEXT_NODE: {
-                const value = node.textContent || '';
-                if (!value.trim()) {
-                    return null;
+        if (Object.prototype.hasOwnProperty.call(node, '#comment')) {
+            const content = node['#comment'];
+            const value = Array.isArray(content) && content.length
+                ? String((content[0] as Record<string, unknown>)['#text'] ?? '')
+                : '';
+            return this.renderer.createComment(value) as ConsoleComment;
+        }
+        const tagName = Object.keys(node).find(key => key !== ':@');
+        if (!tagName) {
+            return null;
+        }
+        const element = this.renderer.createElement(tagName.toLowerCase()) as ConsoleElement;
+        const attributes = node[':@'];
+        if (attributes && typeof attributes === 'object') {
+            Object.entries(attributes as Record<string, unknown>).forEach(([name, value]) => {
+                this.renderer.setAttribute(element, name, value === true ? '' : String(value ?? ''));
+            });
+        }
+        const children = node[tagName];
+        if (Array.isArray(children)) {
+            children.forEach(child => {
+                const converted = this.convertParsedNode(child as Record<string, unknown>);
+                if (converted) {
+                    this.renderer.appendChild(element, converted);
                 }
-                return this.renderer.createText(value) as ConsoleText;
-            }
-            case node.COMMENT_NODE:
-                return this.renderer.createComment(node.textContent || '') as ConsoleComment;
-            case node.ELEMENT_NODE: {
-                const elementNode = node as Element;
-                const element = this.renderer.createElement(elementNode.tagName.toLowerCase()) as ConsoleElement;
-                Array.from(elementNode.attributes).forEach(attr => {
-                    this.renderer.setAttribute(element, attr.name, attr.value);
-                });
-                Array.from(elementNode.childNodes).forEach(child => {
-                    const converted = this.convertNode(child);
-                    if (converted) {
-                        this.renderer.appendChild(element, converted);
-                    }
-                });
-                return element;
-            }
-            default:
-                return null;
+            });
         }
+        return element;
     }
 }
 

@@ -38,6 +38,7 @@ export class ArchitectureContractTest {
     async consoleImportsRemainPlatformNeutral() {
         const nodeImport = /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:node:[^'"]+|buffer|child_process|crypto|events|fs|http|https|net|os|path|stream|tls|url|util|worker_threads)['"]/;
         expect(relativeFilesWithMatch(this.consoleSrc, nodeImport)).toEqual([]);
+        expect(relativeFilesWithMatch(this.consoleSrc, /\brequire\s*\(/)).toEqual([]);
     }
 
     @Test('shared component and agent UI sources do not use interval-driven rendering')
