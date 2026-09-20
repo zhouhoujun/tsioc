@@ -40,6 +40,7 @@ export * from './impl/effect';
 export { createTemplateRef } from './impl/template';
 
 export * from './components';
+export * from './animation-clock';
 
 export * from './directives/animation';
 export * from './directives/animated-text';

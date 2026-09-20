@@ -55,14 +55,12 @@ export class ArchitectureContractTest {
         expect(relativeFilesWithMatch(this.webAdapter, /@tsdi\/components\/console|@tsdi\/agent-ui\/console/)).toEqual([]);
     }
 
-    @Test('shared component and agent UI sources do not use interval-driven rendering')
-    async renderingRemainsDataDriven() {
-        const roots = [this.componentsSrc, this.consoleSrc, this.agentUiSrc];
-        const violations = roots.flatMap(root =>
-            relativeFilesWithMatch(root, /\bsetInterval\s*\(/)
-                .map(file => `${path.basename(path.dirname(root))}/${path.basename(root)}/${file}`)
-        );
-        expect(violations).toEqual([]);
+    @Test('only the console platform clock owns interval-driven animation')
+    async animationClockRemainsPlatformOwned() {
+        expect(relativeFilesWithMatch(this.componentsSrc, /\bsetInterval\s*\(/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.agentUiSrc, /\bsetInterval\s*\(/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.consoleSrc, /\bsetInterval\s*\(/)).toEqual(['animation-clock.ts']);
+        expect(relativeFilesWithMatch(this.htmlSrc, /\brequestAnimationFrame\s*\(/)).toEqual(['animation-clock.ts']);
     }
 
     @Test('session state does not restore manual subscription notification APIs')

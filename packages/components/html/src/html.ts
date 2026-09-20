@@ -3,10 +3,11 @@ import { DOCUMENT, PLATFORM_ID  } from '@tsdi/common';
 import {
     TemplateParser, Renderer, RendererStyleFlags2, AbstractTemplateCompiler,
     RComment, RElement, RNode, RText, RAttr,
-    TemplateCompiler, TemplateCompilerOptions, noReact
+    AnimationClock, TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
 import { transformBlocks } from '../../src/impl/block';
 import { CommonComponentsModule } from '@tsdi/components/common';
+import { BrowserAnimationClock } from './animation-clock';
 
 @Injectable()
 export class HtmlRenderer implements Renderer {
@@ -351,6 +352,8 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
         HtmlRenderer,
         HtmlTemplateParser,
         HtmlTemplateCompiler,
+        BrowserAnimationClock,
+        { provide: AnimationClock, useExisting: BrowserAnimationClock },
         { provide: Renderer, useClass: HtmlRenderer, asDefault: true },
         { provide: TemplateParser, useClass: HtmlTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: HtmlTemplateCompiler, asDefault: true }

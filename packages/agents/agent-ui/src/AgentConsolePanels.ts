@@ -572,7 +572,7 @@ export class AgentConsoleInputPanelComponent {
                 :active-style="accentStyle"
                 :trail-style="labelStyle"
                 :base-style="labelStyle">{{animatedLabel}}</span>
-            <span v-style="labelStyle"> ({{workingElapsed}} • {{interruptHint}}){{workingDetail}}</span>
+            <span v-style="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}</span>
         </label>
     </div>
     `
@@ -720,16 +720,6 @@ export class AgentConsoleWorkingPanelComponent {
             }
         }
         return ` ${parts.join(' · ')}`;
-    }
-
-    get workingElapsed(): string {
-        const startedAt = Number(this.state.turnStartedAt) || 0;
-        const elapsedSecond = startedAt
-            ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
-            : 0;
-        return elapsedSecond < 60
-            ? `${elapsedSecond}s`
-            : `${Math.floor(elapsedSecond / 60)}m ${elapsedSecond % 60}s`;
     }
 
     get interruptHint(): string {

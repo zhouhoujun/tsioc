@@ -3561,9 +3561,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
-            if (chunk?.usage) {
-                this.state.setTokenUsage(chunk.usage);
-            }
+            this.state.setTokenUsage(chunk);
             if (chunk?.type === 'event') {
                 this.consumeStreamEventChunk(chunk);
                 return;

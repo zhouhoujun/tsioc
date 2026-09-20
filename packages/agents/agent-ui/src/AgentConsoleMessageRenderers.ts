@@ -565,7 +565,10 @@ export function renderAgentConsoleMessageItems(
     messages: AgentMessage[],
     context: AgentConsoleMessageRenderContext = {}
 ): AgentConsoleRenderedMessageItem[] {
-    return (messages || []).map((message, index, source) => {
+    const source = context.timelineMode
+        ? deriveTimelineDurations(messages || [])
+        : messages || [];
+    return source.map((message, index) => {
         const item = renderAgentConsoleMessageItem(message, context);
         const previous = index > 0 ? presentAgentConsoleSessionContent(source[index - 1]) : undefined;
         if (previous?.kind === 'user' && item.semanticKind !== 'user') {
@@ -630,7 +633,7 @@ export function renderAgentConsoleMessageItem(
     const eventRowContent = timelineEvent
         ? truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind, timelineEventType)
         : displayContent;
-    const messageStreaming = !!(message?.metadata?.streaming);
+    const messageStreaming = templateKind === 'assistant' && !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
     const markdownLines = hideToolOutput
         ? []
@@ -643,7 +646,13 @@ export function renderAgentConsoleMessageItem(
                     ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
                 : resolveMarkdownLines(eventRowContent, { compactBlankLines: true }, context.markdownBridge);
-    const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps);
+    const timelineMeta = resolveTimelineMeta(
+        message,
+        templateKind,
+        statusLabel,
+        !!context.showTimestamps,
+        !!context.timelineMode
+    );
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
         : templateKind === 'assistant'
@@ -1086,7 +1095,8 @@ function resolveTimelineMeta(
     message: AgentMessage | undefined,
     templateKind: AgentConsoleMessageTemplateKind,
     statusLabel: string,
-    showTimestamps = false
+    showTimestamps = false,
+    timelineMode = false
 ): string {
     const parts: string[] = [];
     const uiKind = String(message?.metadata?.uiKind || '').trim();
@@ -1104,11 +1114,18 @@ function resolveTimelineMeta(
         return parts.join(' · ');
     }
     if (uiKind === 'event') {
-        const durationMs = Number(message?.metadata?.durationMs);
+        const durationMs = resolveMessageDurationMs(message);
         if (Number.isFinite(durationMs) && durationMs >= 0) {
             parts.push(formatTimelineDuration(durationMs));
         }
-    } else if (templateKind !== 'user'
+    } else if (templateKind === 'assistant' && timelineMode) {
+        const durationMs = resolveMessageDurationMs(message);
+        if (Number.isFinite(durationMs) && durationMs >= 0) {
+            parts.push(formatTimelineDuration(durationMs));
+        }
+    }
+    if (uiKind !== 'event'
+        && templateKind !== 'user'
         && showTimestamps
         && typeof message?.createdAt === 'number'
         && Number.isFinite(message.createdAt)) {
@@ -1132,7 +1149,35 @@ function resolveTimelineMeta(
             parts.push(actionLabel);
         }
     }
-    return parts.join(' · ');
+    return parts.length ? `${parts.join(' · ')} · ` : '';
+}
+
+function resolveMessageDurationMs(message?: AgentMessage): number {
+    const metadata = message?.metadata || {};
+    const exact = Number(metadata.durationMs ?? metadata.elapsedMs);
+    if (Number.isFinite(exact) && exact >= 0) return exact;
+    const startedAt = Number(metadata.startedAt);
+    const completedAt = Number(metadata.completedAt ?? metadata.endedAt ?? metadata.finishedAt);
+    return Number.isFinite(startedAt) && Number.isFinite(completedAt) && completedAt >= startedAt
+        ? completedAt - startedAt
+        : NaN;
+}
+
+function deriveTimelineDurations(messages: AgentMessage[]): AgentMessage[] {
+    let turnStartedAt = NaN;
+    return messages.map(message => {
+        const createdAt = Number(message?.createdAt);
+        if (String(message?.role || '').toLowerCase() === 'user') {
+            if (Number.isFinite(createdAt)) turnStartedAt = createdAt;
+            return message;
+        }
+        const presentation = presentAgentConsoleSessionContent(message);
+        if (presentation.kind !== 'assistant-final' || Number.isFinite(resolveMessageDurationMs(message))
+            || !Number.isFinite(turnStartedAt) || !Number.isFinite(createdAt) || createdAt < turnStartedAt) {
+            return message;
+        }
+        return { ...message, metadata: { ...(message.metadata || {}), durationMs: createdAt - turnStartedAt } };
+    });
 }
 
 export const TIMELINE_EVENT_ROW_CONTENT_MAX = 200;

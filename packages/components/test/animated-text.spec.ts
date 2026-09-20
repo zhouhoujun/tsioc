@@ -7,6 +7,11 @@ export class AnimatedTextDirectiveTest {
     @Test('renders and advances one highlighted character at a time')
     rendersCharacterSweep() {
         const host: any = { childNodes: [], parentNode: {} };
+        let tick = () => {};
+        const clock = {
+            subscribe(listener: () => void) { tick = listener; },
+            unsubscribe() { tick = () => {}; }
+        };
         const renderer: any = {
             createElement: () => ({ childNodes: [], styles: {} }),
             createText: (text: string) => ({ text }),
@@ -16,7 +21,7 @@ export class AnimatedTextDirectiveTest {
             },
             setStyle: (node: any, key: string, value: string) => node.styles[key] = value
         };
-        const directive = new AnimatedTextDirective({ nativeElement: host } as any, renderer);
+        const directive = new AnimatedTextDirective({ nativeElement: host } as any, renderer, clock as any);
         directive.activeStyle = { color: 'active' };
         directive.baseStyle = { color: 'base' };
         directive.trailStyle = { color: 'trail' };
@@ -24,16 +29,18 @@ export class AnimatedTextDirectiveTest {
         directive.text = 'ABC';
 
         const originalNow = Date.now;
+        let now = 0;
         try {
-            Date.now = () => 0;
-            (directive as any).render();
+            Date.now = () => now;
+            directive.onInit();
             expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['active', 'base', 'base']);
-            Date.now = () => 100;
-            (directive as any).render();
+            now = 100;
+            tick();
             expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'active', 'base']);
-            Date.now = () => 200;
-            (directive as any).render();
+            now = 200;
+            tick();
             expect(host.childNodes.map((node: any) => node.styles.color)).toEqual(['trail', 'trail', 'active']);
+            directive.onDestroy();
         } finally {
             Date.now = originalNow;
         }

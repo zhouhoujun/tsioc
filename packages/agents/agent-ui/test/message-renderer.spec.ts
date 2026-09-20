@@ -137,6 +137,30 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].statusKind).toEqual('running');
     }
 
+    @Test('never appends an assistant streaming cursor to user timeline rows')
+    userTimelineRowHasNoStreamingCursor() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'u-stream', role: 'user', content: 'typed prompt', createdAt: 1,
+            metadata: { streaming: true }
+        }] as any, { streaming: true, timelineMode: true });
+        expect(items[0].lines.map(line => line.content).join('')).toEqual('typed prompt');
+        expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
+    }
+
+    @Test('shows factual elapsed time for events and final replies')
+    timelineRowsShowDurations() {
+        const items = renderAgentConsoleMessageItems([
+            { id: 'u1', role: 'user', content: 'question', createdAt: 1_000 },
+            {
+                id: 'e1', role: 'assistant', content: 'Read file', createdAt: 1_500,
+                metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success', elapsedMs: 250 }
+            },
+            { id: 'a1', role: 'assistant', content: 'answer', createdAt: 3_500 }
+        ] as any, { timelineMode: true });
+        expect(items[1].lines[0].meta).toEqual('250ms · ');
+        expect(items[2].lines[0].meta).toEqual('2.5s · ');
+    }
+
     @Test('keeps user input raw instead of markdown-formatting it')
     renderUserInputAsRawPlainText() {
         const items = renderAgentConsoleMessageItems([

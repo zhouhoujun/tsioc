@@ -15,7 +15,7 @@ import { TemplateOutletDirective } from './directives/template-outlet.dir';
 import { VShowDirective } from './directives/show.dir';
 import { VBindDirective, VOnDirective } from './directives/bind.dir';
 import { AnimatedFrameDirective } from './directives/animation';
-import { AnimatedTextDirective, AnimatedTextLifecycleService } from './directives/animated-text';
+import { AnimatedTextDirective } from './directives/animated-text';
 import { ElapsedTimeDirective } from './directives/elapsed-time';
 import { componentResolvers } from './impl/resolvers';
 
@@ -33,7 +33,6 @@ import { componentResolvers } from './impl/resolvers';
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         componentResolvers,
-        AnimatedTextLifecycleService,
         { provide: ReactiveEffect, useFactory: () => new DefaultReactiveEffect() }
     ],
     exports: [
@@ -51,8 +50,7 @@ import { componentResolvers } from './impl/resolvers';
         VOnDirective,
         AnimatedFrameDirective,
         AnimatedTextDirective,
-        ElapsedTimeDirective,
-        AnimatedTextLifecycleService
+        ElapsedTimeDirective
     ]
 })
 export class ComponentsModule {

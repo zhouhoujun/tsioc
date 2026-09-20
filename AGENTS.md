@@ -4,11 +4,12 @@
 
 ### 1. Components 是响应式框架（全框架通用，含 `@tsdi/components`、`@tsdi/components/console` 及 consumers 如 `agents/agent-ui`）
 
-数据变化驱动界面更新，**不需要手动触发更新，不需要定时刷新**。
+业务数据变化驱动界面更新，**不需要手动触发更新**。动画与实时计时属于时间状态，允许由 components 通用层的共享生命周期时钟驱动。
 
 - 更新链路：属性 set → `effect.trigger` → 绑定重跑 → `textContent` setter（值短路，`components/console/src/console.ts:246`）→ `notifyChanged` → `CHANGE_EVENT` 冒泡到 root → `requestRender`（微任务合并）。
-- **禁止在组件层用 `setInterval`/`setTimeout` 主动刷新界面**；渲染完全由真实数据变化驱动，无数据变化即无渲染。
-- 动画必须"时间派生"：getter 内由 `Date.now()` 计算（如 Working 面板的 `dotFrame`），动画帧随真实数据驱动的渲染自然推进，不额外驱动渲染。
+- **禁止业务组件、agent-ui 或平台适配层各自用 `setInterval`/`setTimeout` 刷新界面**；动画与 elapsed-time 统一订阅 `@tsdi/components` 的共享生命周期时钟，首个订阅启动、最后一个订阅停止，并在 directive/application 销毁时清理。
+- 动画与实时计时必须由真实时钟持续推进，DOM 与 TUI 共用 components 通用实现；测试必须验证无其他业务数据变化时也会推进，不得用手动调用内部 `render()` 代替用户可见行为验收。
+- **禁止以优化、重构、性能或架构整改为由删除、关闭、降级或改变已有用户功能**。如果既有功能与架构规则发生冲突，必须先保留功能并向用户说明冲突、询问取舍；不得自行删除功能后把降级行为改写成测试预期。
 - **禁止布局层"脏节点追踪"跳过未变面板**：响应式更新会替换节点（旧节点在渲染前离树，parentNode 链断裂）且同帧批量变更多个面板，基于变化源复用的缓存会误判并输出陈旧界面，违反"数据变化驱动界面更新"契约（P63 曾尝试，2 个 agent-ui 测试回归，已回退）。
 
 ### 2. 跨平台（agent-ui 需同时运行于浏览器与命令行窗口 TUI）

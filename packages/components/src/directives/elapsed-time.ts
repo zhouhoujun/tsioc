@@ -4,9 +4,9 @@ import { Directive } from '../decorators/directive';
 import { ElementRef } from '../refs/element';
 import { DirectiveType } from '../refs/directive';
 import { Renderer } from '../renderer/Renderer';
-import { AnimatedTextLifecycleService } from './animated-text';
+import { AnimationClock } from '../animation-clock';
 
-/** Renders a Date.now()-derived elapsed label during data-driven renders. */
+/** Renders a Date.now()-derived elapsed label from the shared animation clock. */
 @Directive({
     selector: '[elapsed-time]',
     dirType: DirectiveType.Normal
@@ -14,11 +14,13 @@ import { AnimatedTextLifecycleService } from './animated-text';
 export class ElapsedTimeDirective {
     protected _startedAt = 0;
     protected renderedSecond = -1;
+    protected enabled = true;
+    protected tickActive = false;
 
     constructor(
         protected elementRef?: ElementRef,
         protected renderer?: Renderer,
-        @Optional() protected lifecycle?: AnimatedTextLifecycleService
+        @Optional() protected lifecycle?: AnimationClock
     ) {
     }
 
@@ -35,7 +37,46 @@ export class ElapsedTimeDirective {
         return this._startedAt;
     }
 
+    @Attribute()
+    set active(value: boolean) {
+        this.enabled = value !== false;
+        if (this.enabled) this.startTick();
+        else this.stopTick();
+    }
+
+    get active(): boolean {
+        return this.enabled;
+    }
+
     onInit(): void {
+        this.render();
+        this.startTick();
+    }
+
+    onDestroy(): void {
+        this.stopTick();
+    }
+
+    protected listener = () => this.tick();
+
+    protected startTick(): void {
+        if (!this.enabled || this.tickActive || !this.lifecycle) return;
+        this.tickActive = true;
+        this.lifecycle.subscribe(this.listener);
+    }
+
+    protected stopTick(): void {
+        if (!this.tickActive) return;
+        this.tickActive = false;
+        this.lifecycle?.unsubscribe(this.listener);
+    }
+
+    protected tick(): void {
+        const element = this.elementRef?.nativeElement;
+        if (!element || element.parentNode == null) {
+            this.onDestroy();
+            return;
+        }
         this.render();
     }
 

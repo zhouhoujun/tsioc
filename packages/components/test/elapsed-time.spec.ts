@@ -7,9 +7,11 @@ export class ElapsedTimeDirectiveTest {
     @Test('advances only when the Date.now-derived second changes')
     rendersElapsedSeconds() {
         const host: any = { childNodes: [], parentNode: {} };
-        let subscribed = false;
+        let tick = () => {};
+        let unsubscribed = false;
         const lifecycle = {
-            subscribe() { subscribed = true; }
+            subscribe(listener: () => void) { tick = listener; },
+            unsubscribe() { unsubscribed = true; tick = () => {}; }
         };
         const renderer: any = {
             createText: (text: string) => ({ text }),
@@ -25,15 +27,16 @@ export class ElapsedTimeDirectiveTest {
             directive.onInit();
             expect(host.childNodes[0].text).toEqual('0s');
             now += 999;
-            (directive as any).render();
+            tick();
             expect(host.childNodes[0].text).toEqual('0s');
             now += 1;
-            (directive as any).render();
+            tick();
             expect(host.childNodes[0].text).toEqual('1s');
             now += 60_000;
-            (directive as any).render();
+            tick();
             expect(host.childNodes[0].text).toEqual('1m 1s');
-            expect(subscribed).toBe(false);
+            directive.onDestroy();
+            expect(unsubscribed).toBe(true);
         } finally {
             Date.now = originalNow;
         }

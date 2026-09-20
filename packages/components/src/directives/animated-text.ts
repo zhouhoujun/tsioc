@@ -1,24 +1,16 @@
-import { Injectable } from '@tsdi/ioc';
 import { Attribute } from '../decorators/atteribute';
 import { Directive } from '../decorators/directive';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { DirectiveType } from '../refs/directive';
 import { Optional } from '@tsdi/ioc';
-
-/**
- * @deprecated 动画现由渲染时的 Date.now() 派生，不再需要 tick 服务。
- * 保留该类型以兼容已有 consumer 的导入与注入配置。
- */
-@Injectable()
-export class AnimatedTextLifecycleService {
-}
+import { AnimationClock } from '../animation-clock';
 
 /**
  * 字符光扫文本指令（属性指令，挂载于宿主元素上）。
  *
- * 字符扫描位置在真实数据驱动的渲染中由 Date.now() 派生，不创建定时器，
- * 也不为动画额外触发渲染。
+ * 字符扫描位置由共享生命周期时钟触发并按 Date.now() 派生。所有 renderer
+ * 共用一个按需启停的时钟，指令自身不创建定时器。
  *
  * 用法（宿主组件模板）：
  * ```html
@@ -55,6 +47,7 @@ export class AnimatedTextDirective {
     protected _interval = 120;
     protected _scanWidth = 1;
     protected _loop = true;
+    protected tickActive = false;
     protected charSpans: any[] = [];
 
     @Attribute()
@@ -72,7 +65,7 @@ export class AnimatedTextDirective {
     constructor(
         protected elementRef?: ElementRef,
         protected renderer?: Renderer,
-        @Optional() protected lifecycle?: AnimatedTextLifecycleService
+        @Optional() protected lifecycle?: AnimationClock
     ) {
     }
 
@@ -82,6 +75,8 @@ export class AnimatedTextDirective {
         if (next !== this._text) {
             this._text = next;
             this.render();
+            if (this.charList.length) this.startTick();
+            else this.stopTick();
         }
     }
 
@@ -162,7 +157,35 @@ export class AnimatedTextDirective {
     onInit(): void {
         if (this.charList.length) {
             this.render();
+            this.startTick();
         }
+    }
+
+    onDestroy(): void {
+        this.stopTick();
+    }
+
+    protected listener = () => this.tick();
+
+    protected startTick(): void {
+        if (this.tickActive || !this.lifecycle) return;
+        this.tickActive = true;
+        this.lifecycle.subscribe(this.listener);
+    }
+
+    protected stopTick(): void {
+        if (!this.tickActive) return;
+        this.tickActive = false;
+        this.lifecycle?.unsubscribe(this.listener);
+    }
+
+    protected tick(): void {
+        const el = this.elementRef?.nativeElement;
+        if (!this.charList.length || !el || el.parentNode == null) {
+            this.stopTick();
+            return;
+        }
+        this.render();
     }
 
     protected render(): void {

@@ -4,7 +4,7 @@ import { Attribute } from '../decorators/atteribute';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { DirectiveType } from '../refs/directive';
-import { AnimatedTextLifecycleService } from './animated-text';
+import { AnimationClock } from '../animation-clock';
 
 /**
  * 动画帧定义。
@@ -28,8 +28,7 @@ export type AnimatedFrameItem = string | AnimatedFrame;
 /**
  * 动画帧序列指令（属性指令，挂载于宿主元素上）。
  *
- * 当前帧在真实数据驱动的渲染中由 Date.now() 派生，不创建定时器，也不为
- * 动画额外触发渲染。
+ * 当前帧由共享生命周期时钟触发并按 Date.now() 派生；指令自身不创建定时器。
  *
  * 用法（宿主组件模板）：
  * ```html
@@ -50,6 +49,7 @@ export class AnimatedFrameDirective {
     protected _loop = true;
     protected textNode: any = null;
     protected appliedStyleKeys: string[] = [];
+    protected tickActive = false;
 
     @Attribute()
     renderRegion = '';
@@ -57,7 +57,7 @@ export class AnimatedFrameDirective {
     constructor(
         protected elementRef?: ElementRef,
         protected renderer?: Renderer,
-        @Optional() protected lifecycle?: AnimatedTextLifecycleService
+        @Optional() protected lifecycle?: AnimationClock
     ) {
     }
 
@@ -127,6 +127,34 @@ export class AnimatedFrameDirective {
     }
 
     onInit(): void {
+        this.applyFrame();
+        if (this.frameList.length) this.startTick();
+    }
+
+    onDestroy(): void {
+        this.stopTick();
+    }
+
+    protected listener = () => this.tick();
+
+    protected startTick(): void {
+        if (this.tickActive || !this.lifecycle) return;
+        this.tickActive = true;
+        this.lifecycle.subscribe(this.listener);
+    }
+
+    protected stopTick(): void {
+        if (!this.tickActive) return;
+        this.tickActive = false;
+        this.lifecycle?.unsubscribe(this.listener);
+    }
+
+    protected tick(): void {
+        const el = this.elementRef?.nativeElement;
+        if (!this.frameList.length || !el || el.parentNode == null) {
+            this.stopTick();
+            return;
+        }
         this.applyFrame();
     }
 

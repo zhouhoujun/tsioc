@@ -108,6 +108,16 @@
 
 当前无开放实施批次。
 
+## v62 — 会话时间线动态状态与用量收尾 ✅
+
+- **共享生命周期时钟**：在 components core 定义抽象动画时钟，由 components/html 使用共享 `requestAnimationFrame`、components/console 使用首订阅启动/末订阅停止的共享 interval 分别实现；animated-text、animation 与 elapsed-time 指令统一订阅并在销毁时清理，agent-ui 不持有平台 timer。
+- **Working 恢复**：恢复 Working 动画和实时 elapsed 展示；真实 DOM/TUI 时钟会在没有其他业务数据变化时持续推进，隐藏面板停止订阅。
+- **时间线耗时**：事件优先展示后端 `durationMs`/`elapsedMs` 或起止时间计算的真实耗时；时间线最终回复按相邻用户请求与回复时间派生耗时，普通消息模式继续保持原时间戳契约。
+- **流式光标**：`▍` 只属于正在流式输出的 assistant，用户输入框和时间线用户消息即使携带 streaming 上下文也不再出现竖向黑块。
+- **Token 实时归并**：状态栏会在 stream、tool、turn 等任意事件携带 usage 时立即更新；兼容顶层及 metadata/message/response 嵌套 usage，部分字段不会清零已知值，无 usage 的完成事件和增量 timeline 投影不会覆盖已收到的统计。
+- **功能保护规则**：根规则明确禁止以优化、重构或架构整改为由删除、关闭或降级已有功能；架构冲突必须先保留功能并询问取舍。
+- **回归验证**：components 137、components/html 118、components/console 78、agent-ui 1367、agent-tools 478、agent-ssh 8 passing；agent-ui tsc 通过。最终统一门禁的 25 个代码/构建/DOM/TUI/真实 PTY/diff 阶段全部通过；生产库完整性检查在前一轮通过，最终复跑期间真实库被外部进程修改，测试未触碰或回滚用户数据。
+
 ## v53 — Workspace 输入历史、Project 协同与数据库安全 ✅
 
 - **历史边界**：输入历史按规范化 workspace 跨 session 聚合，不依赖 project/thread；state、本地 memory 与 AppRpc 存取两端统一排除空输入和 slash 命令，按最近使用顺序去重并限制 200 条，`↑/↓` 可恢复原草稿。

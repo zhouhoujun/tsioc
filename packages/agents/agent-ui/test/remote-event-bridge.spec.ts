@@ -77,6 +77,29 @@ export class RemoteEventBridgeMappingTest {
         expect(state.tokenUsage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
     }
 
+    @Test('every remote event folds nested and partial token usage without clearing known values')
+    eventUsageIsContinuouslyFolded() {
+        const state = makeState();
+        applyRemoteEvent(state, {
+            type: 'stream_chunk', sessionId: 's1',
+            data: { sessionId: 's1', usage: { input_tokens: 10, output_tokens: 2 } }
+        });
+        applyRemoteEvent(state, {
+            type: 'tool_completed', sessionId: 's1',
+            data: {
+                sessionId: 's1', toolName: 'read_file',
+                metadata: { usage: { output_tokens: 5 } },
+                receipt: { toolCallId: 'tc-usage' }
+            }
+        });
+        expect(state.tokenUsage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
+
+        applyRemoteEvent(state, {
+            type: 'turn_completed', sessionId: 's1', data: { sessionId: 's1' }
+        });
+        expect(state.tokenUsage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
+    }
+
     @Test('turn_completed sets status idle')
     turnCompleted() {
         const state = makeState();

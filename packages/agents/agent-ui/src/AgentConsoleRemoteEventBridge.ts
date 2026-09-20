@@ -103,6 +103,9 @@ export function decodeSseFrame(frame: SseFrame): RemoteAgentConsoleEvent | undef
 
 export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteAgentConsoleEvent): void {
     const data = event.data && typeof event.data === 'object' ? event.data : {};
+    // Providers expose usage at different event depths. Fold any factual
+    // snapshot into the shared state before projecting the event itself.
+    state.setTokenUsage(data);
     switch (event.type) {
         case 'turn_started':
             state.setStatus('running');
@@ -110,9 +113,6 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             state.pushActivity('turn', 'Understanding the request');
             break;
         case 'stream_chunk':
-            if (data.usage) {
-                state.setTokenUsage(data.usage);
-            }
             break;
         case 'turn_completed':
             state.setStatus('idle');

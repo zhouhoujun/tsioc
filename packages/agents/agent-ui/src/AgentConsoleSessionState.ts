@@ -1395,7 +1395,10 @@ export class AgentConsoleSessionState {
         if (!preserveCommandExecutionMessages) {
             this.commandExecutionMessages = [];
         }
-        this.tokenUsage = this.resolveTokenUsageFromMessages(messages);
+        const messageUsage = messages.some(message => !!this.resolveUsagePayload(message?.metadata?.usage));
+        if (messageUsage || !preserveCommandExecutionMessages) {
+            this.tokenUsage = this.resolveTokenUsageFromMessages(messages);
+        }
         const displayMessages = this.displayMessages;
         if (!displayMessages.length) {
             this.selectedMessageId = '';
@@ -2342,17 +2345,23 @@ export class AgentConsoleSessionState {
     }
 
     setTokenUsage(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
-        const promptTokens = this.resolveUsageNumber(usage, ['promptTokens', 'prompt_tokens', 'input_tokens']);
-        const completionTokens = this.resolveUsageNumber(usage, ['completionTokens', 'completion_tokens', 'output_tokens']);
-        const totalTokens = this.resolveUsageNumber(usage, ['totalTokens', 'total_tokens'])
+        const source = this.resolveUsagePayload(usage);
+        if (!source) return;
+
+        const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']);
+        const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']);
+        const explicitTotal = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']);
+        const nextPromptTokens = promptTokens ?? this.tokenUsage.promptTokens;
+        const nextCompletionTokens = completionTokens ?? this.tokenUsage.completionTokens;
+        const totalTokens = explicitTotal
             ?? (promptTokens != null || completionTokens != null
-                ? (promptTokens || 0) + (completionTokens || 0)
-                : undefined);
+                ? nextPromptTokens + nextCompletionTokens
+                : this.tokenUsage.totalTokens);
 
         this.tokenUsage = {
-            promptTokens: promptTokens || 0,
-            completionTokens: completionTokens || 0,
-            totalTokens: totalTokens || 0
+            promptTokens: nextPromptTokens,
+            completionTokens: nextCompletionTokens,
+            totalTokens
         };
     }
 
@@ -5455,6 +5464,23 @@ export class AgentConsoleSessionState {
             }
         }
         return undefined;
+    }
+
+    protected resolveUsagePayload(payload: any): Record<string, any> | undefined {
+        if (!payload || typeof payload !== 'object') return undefined;
+        const candidates = [
+            payload.usage,
+            payload.metadata?.usage,
+            payload.message?.metadata?.usage,
+            payload.response?.metadata?.usage,
+            payload
+        ];
+        return candidates.find(candidate => candidate && typeof candidate === 'object'
+            && this.resolveUsageNumber(candidate, [
+                'promptTokens', 'prompt_tokens', 'input_tokens',
+                'completionTokens', 'completion_tokens', 'output_tokens',
+                'totalTokens', 'total_tokens'
+            ]) != null);
     }
 
     protected resolveTokenUsageFromMessages(messages: AgentMessage[]): AgentConsoleTokenUsage {

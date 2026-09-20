@@ -1,12 +1,14 @@
 import { Inject, Injectable, Module, ModuleWithProviders } from '@tsdi/ioc';
 import {
     AbstractTemplateCompiler,
+    AnimationClock,
     Renderer,
     RNode,
     TemplateCompiler,
     TemplateCompilerOptions,
     TemplateParser
 } from '@tsdi/components';
+import { ConsoleAnimationClock } from './animation-clock';
 import {
     CONSOLE_TEMPLATE,
     ConsoleComment,
@@ -1049,6 +1051,8 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         TuiRenderer,
         ConsoleTemplateParser,
         TuiTemplateCompiler,
+        ConsoleAnimationClock,
+        { provide: AnimationClock, useExisting: ConsoleAnimationClock },
         { provide: CONSOLE_TEMPLATE, useValue: tuiDefaultOptions },
         { provide: ConsoleRenderer, useExisting: TuiRenderer },
         { provide: Renderer, useExisting: TuiRenderer, asDefault: true },

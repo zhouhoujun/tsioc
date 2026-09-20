@@ -2,6 +2,7 @@ import { Inject, Injectable, isArray, Module, ModuleWithProviders, token } from 
 import { XMLParser } from 'fast-xml-parser';
 import {
     AbstractTemplateCompiler,
+    AnimationClock,
     noReact,
     NodeType,
     RAttr,
@@ -17,6 +18,7 @@ import {
     TemplateCompilerOptions,
     TemplateParser
 } from '@tsdi/components';
+import { ConsoleAnimationClock } from './animation-clock';
 export class ConsoleCssStyleDeclaration implements RCssStyleDeclaration {
     protected styles: Record<string, string> = {};
 
@@ -802,6 +804,8 @@ export class ConsoleTemplateCompiler extends AbstractTemplateCompiler {
         ConsoleRenderer,
         ConsoleTemplateCompiler,
         ConsoleTemplateParser,
+        ConsoleAnimationClock,
+        { provide: AnimationClock, useExisting: ConsoleAnimationClock },
         { provide: CONSOLE_TEMPLATE, useValue: consoleDefaultOptions },
         { provide: Renderer, useClass: ConsoleRenderer, asDefault: true },
         { provide: TemplateParser, useClass: ConsoleTemplateParser, asDefault: true },
