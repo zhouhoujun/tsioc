@@ -1,5 +1,4 @@
 import { basenameAgentPath, dirnameAgentPath } from '../AgentWorkspacePath';
-import { Buffer } from 'buffer';
 
 /**
  * AGENTS.md discovery helpers.
@@ -184,15 +183,16 @@ export function truncateDocContent(content: string, maxBytes: number): { content
     if (maxBytes <= 0) {
         return { content: '', truncated: input.length > 0, bytes: 0 };
     }
-    const full = Buffer.from(input, 'utf8');
+    const encoder = new TextEncoder();
+    const full = encoder.encode(input);
     if (full.byteLength <= maxBytes) {
         return { content: input, truncated: false, bytes: full.byteLength };
     }
-    let sliced = full.subarray(0, maxBytes).toString('utf8');
+    let sliced = new TextDecoder().decode(full.subarray(0, maxBytes));
     while (sliced.endsWith('\uFFFD') && sliced.length > 0) {
         sliced = sliced.slice(0, -1);
     }
-    return { content: sliced, truncated: true, bytes: Buffer.byteLength(sliced, 'utf8') };
+    return { content: sliced, truncated: true, bytes: encoder.encode(sliced).byteLength };
 }
 
 /** Read and byte-cap every entry of a chain. */

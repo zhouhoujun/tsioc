@@ -135,3 +135,10 @@
 - **跨平台落点**：实现位于 `@tsdi/components` 通用指令与 agent-ui 共享 Working 面板；CLI 不再 bootstrap 动画 ticker，browser 与 TUI 使用同一逻辑。
 - **验收契约**：真实 PTY 改为验证无数据变化时 Working 不自刷新，同时保留 Ctrl+C/Esc 双取消；宽度检查忽略 PTY 分块末尾不完整且不可见的 ANSI CSI 前缀。
 - **验证**：components 137 passing；console renderer 定向 75 passing；完整门禁阶段除旧 PTY ticker 断言外 24/25 通过，更新验收后定向 PTY + diff-check + production-db-integrity 3/3 通过。
+
+## v57 — 跨平台边界复核与全量收尾 ✅
+
+- **边界清理**：`agents-doc` 的 UTF-8 字节截断改用标准 `TextEncoder`/`TextDecoder`，移除 `buffer` 直接导入；verify command 输出回调改用最小结构类型，不再直接引用全局 `Buffer` 类型。
+- **契约复核**：确认现存 timer 均用于请求超时、远端重连、终端 escape/attach/reclaim 或异步事件调度，不承担组件主动刷新；未发现恢复订阅通知或布局脏节点缓存的回归。
+- **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，覆盖 agents 10 包、framework 三包、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次。

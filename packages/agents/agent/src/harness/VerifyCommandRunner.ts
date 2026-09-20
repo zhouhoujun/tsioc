@@ -112,10 +112,10 @@ const DEFAULT_RUNNER = (
                 timedOut: true
             });
         }, timeoutMs);
-        child.stdout?.on('data', (chunk: Buffer) => {
+        child.stdout?.on('data', (chunk: { toString(): string }) => {
             stdout += chunk.toString();
         });
-        child.stderr?.on('data', (chunk: Buffer) => {
+        child.stderr?.on('data', (chunk: { toString(): string }) => {
             stderr += chunk.toString();
         });
         child.on('error', () => {
