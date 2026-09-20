@@ -142,3 +142,10 @@
 - **契约复核**：确认现存 timer 均用于请求超时、远端重连、终端 escape/attach/reclaim 或异步事件调度，不承担组件主动刷新；未发现恢复订阅通知或布局脏节点缓存的回归。
 - **最终验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，覆盖 agents 10 包、framework 三包、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。
+
+## v58 — 架构约束自动化门禁 ✅
+
+- **跨平台导入门禁**：新增源码契约测试，持续禁止 `agent-ui/src` 直接导入 `@tsdi/components/console`、`node:` 或 Node 内置模块，确保 console 能力继续经 `@tsdi/agent-ui/console` 与宿主适配层提供。
+- **响应式门禁**：自动扫描 components、components/console 与 agent-ui 共享源码，禁止重新引入 `setInterval` 驱动界面刷新；同时锁定 `AgentConsoleSessionState` 不得恢复 `subscribe`、`listeners`、`notify` 或 `batch` 手工通知 API。
+- **验证**：agent-ui 1362 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，生产数据库保持不变。
+- **当前状态**：无开放实施批次。
