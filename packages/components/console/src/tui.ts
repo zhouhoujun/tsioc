@@ -459,7 +459,7 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected hasClickHandler(element?: ConsoleElement): boolean {
-        return !!element?.events?.listenerCount?.('click');
+        return !!element?.hasEventListener('click');
     }
 
     protected collectNestedClickTargets(

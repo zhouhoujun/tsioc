@@ -397,6 +397,28 @@ export class ConsoleRendererTest {
         expect(clicked).toBe(true);
     }
 
+    @Test('supports listener removal without a Node event emitter')
+    supportsListenerRemoval() {
+        const renderer = new ConsoleRenderer();
+        const button = renderer.createElement('button') as ConsoleElement;
+        let clicks = 0;
+        const listener = () => clicks++;
+        button.addEventListener('click', listener);
+        button.addEventListener('click', listener);
+
+        expect(button.hasEventListener('click')).toBe(true);
+        expect(button.dispatchEvent({ type: 'click' } as Event)).toBe(true);
+        expect(clicks).toBe(2);
+
+        button.removeEventListener('click', listener);
+        button.dispatchEvent({ type: 'click' } as Event);
+        expect(clicks).toBe(3);
+
+        button.removeEventListener('click');
+        expect(button.hasEventListener('click')).toBe(false);
+        expect(button.dispatchEvent({ type: 'click' } as Event)).toBe(false);
+    }
+
     @Test('renders component template into console node tree')
     async registersConsoleTemplateModule() {
         const ctx = await Application.run(ConsoleTestComponent, {

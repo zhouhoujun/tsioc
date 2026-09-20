@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import { Inject, Injectable, isArray, Module, ModuleWithProviders, Optional, token } from '@tsdi/ioc';
 import { DOCUMENT } from '@tsdi/common';
 import {
@@ -96,7 +95,7 @@ export class ConsoleDomTokenList implements RDomTokenList {
 export class ConsoleNode implements RNode {
     static readonly CHANGE_EVENT = 'console:change';
 
-    readonly events = new EventEmitter();
+    protected readonly eventListeners = new Map<string, EventListener[]>();
     readonly attributes = new Map<string, RAttr>();
 
     constructor(
@@ -203,19 +202,37 @@ export class ConsoleNode implements RNode {
     }
 
     addEventListener(type: string, listener: EventListener): void {
-        this.events.addListener(type, listener);
+        const listeners = this.eventListeners.get(type) || [];
+        listeners.push(listener);
+        this.eventListeners.set(type, listeners);
+    }
+
+    hasEventListener(type: string): boolean {
+        return !!this.eventListeners.get(type)?.length;
     }
 
     dispatchEvent(event: Event): boolean {
-        return this.events.emit(event.type, event);
+        const listeners = this.eventListeners.get(event.type);
+        if (!listeners?.length) {
+            return false;
+        }
+        listeners.slice().forEach(listener => listener.call(this, event));
+        return true;
     }
 
     removeEventListener(type: string, listener?: EventListener): void {
-        if (listener) {
-            this.events.removeListener(type, listener);
+        if (!listener) {
+            this.eventListeners.delete(type);
             return;
         }
-        this.events.removeAllListeners(type);
+        const listeners = this.eventListeners.get(type);
+        const index = listeners?.lastIndexOf(listener) ?? -1;
+        if (listeners && index >= 0) {
+            listeners.splice(index, 1);
+            if (!listeners.length) {
+                this.eventListeners.delete(type);
+            }
+        }
     }
 
     protected syncSiblings(): void {
@@ -226,7 +243,7 @@ export class ConsoleNode implements RNode {
     }
 
     protected notifyChanged(): void {
-        this.events.emit(ConsoleNode.CHANGE_EVENT, { type: ConsoleNode.CHANGE_EVENT, target: this });
+        this.dispatchEvent({ type: ConsoleNode.CHANGE_EVENT, target: this } as unknown as Event);
         this.parentNode?.notifyChanged();
     }
 }

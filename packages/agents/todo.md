@@ -149,3 +149,11 @@
 - **响应式门禁**：自动扫描 components、components/console 与 agent-ui 共享源码，禁止重新引入 `setInterval` 驱动界面刷新；同时锁定 `AgentConsoleSessionState` 不得恢复 `subscribe`、`listeners`、`notify` 或 `batch` 手工通知 API。
 - **验证**：agent-ui 1362 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，生产数据库保持不变。
 - **当前状态**：无开放实施批次。
+
+## v59 — Console 事件机制跨平台化 ✅
+
+- **移除 Node 依赖**：`ConsoleNode` 不再导入 Node `events.EventEmitter`，改用同步、轻量的跨平台监听表，保留多监听器、单个/整类移除和命中返回语义。
+- **实现解耦**：TUI 点击目标探测改用 `hasEventListener` 公共能力，不再读取节点内部事件实现；新增监听器移除与分发语义回归测试。
+- **边界门禁**：架构契约测试扩展到 `components/console/src`，持续禁止直接导入 Node 内置模块。
+- **验证**：components/console 77 passing；agent-ui tsc 通过；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，生产数据库保持不变。
+- **当前状态**：无开放实施批次。

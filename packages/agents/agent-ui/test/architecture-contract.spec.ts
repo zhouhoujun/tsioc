@@ -34,6 +34,12 @@ export class ArchitectureContractTest {
         expect(relativeFilesWithMatch(this.agentUiSrc, forbiddenImport)).toEqual([]);
     }
 
+    @Test('console component source does not import Node modules directly')
+    async consoleImportsRemainPlatformNeutral() {
+        const nodeImport = /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:node:[^'"]+|buffer|child_process|crypto|events|fs|http|https|net|os|path|stream|tls|url|util|worker_threads)['"]/;
+        expect(relativeFilesWithMatch(this.consoleSrc, nodeImport)).toEqual([]);
+    }
+
     @Test('shared component and agent UI sources do not use interval-driven rendering')
     async renderingRemainsDataDriven() {
         const roots = [this.componentsSrc, this.consoleSrc, this.agentUiSrc];
