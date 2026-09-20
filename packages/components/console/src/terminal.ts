@@ -16,9 +16,12 @@ import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
+function resolveConsoleHostProcess(): ConsoleProcessGlobal['process'] {
+    return (globalThis as ConsoleProcessGlobal).process;
+}
+
 function resolveConsoleHostEnv(): Record<string, string | undefined> {
-    const candidate = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-    return candidate?.env ?? {};
+    return resolveConsoleHostProcess()?.env ?? {};
 }
 
 const TERMINAL_RENDER_ANSI = {
@@ -230,7 +233,7 @@ export interface TuiTerminalSurfaceRenderer {
 
 export interface TuiTerminalSurfaceOptions {
     renderer: TuiTerminalSurfaceRenderer;
-    output?: { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void };
+    output?: ConsoleTerminalOutputLike;
     root?: RNode | RNode[];
     width?: number | (() => number);
     height?: number | (() => number);
@@ -271,8 +274,17 @@ export interface ConsoleTerminalInputControllerOptions {
 
 interface ConsoleProcessGlobal {
     process?: {
+        env?: Record<string, string | undefined>;
         stdin?: ConsoleTerminalInputLike;
+        stdout?: ConsoleTerminalOutputLike;
     };
+}
+
+export interface ConsoleTerminalOutputLike extends TerminalSizeLike {
+    isTTY?: boolean;
+    write(value: string): void;
+    on?(event: string, listener: () => void): void;
+    off?(event: string, listener: () => void): void;
 }
 
 const EMPTY_TERMINAL_INPUT: ConsoleTerminalInputLike = {
@@ -336,7 +348,7 @@ export class ConsoleTerminalInputController {
 
     constructor(protected options: ConsoleTerminalInputControllerOptions) {
         this.input = options.input
-            || (globalThis as ConsoleProcessGlobal).process?.stdin
+            || resolveConsoleHostProcess()?.stdin
             || EMPTY_TERMINAL_INPUT;
         this.decoder = options.decoder || new TerminalInputSequenceDecoder();
     }
@@ -463,7 +475,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected surface: TuiTerminalSurface | null = null;
     protected root?: RNode | RNode[];
     protected mouseTrackingEnabled = true;
-    protected readonly output = (globalThis as any).process?.stdout;
+    protected readonly output = resolveConsoleHostProcess()?.stdout;
     protected readonly useAlternateScreen = shouldUseAlternateScreen();
     protected attachTimer?: ReturnType<typeof setTimeout>;
 
@@ -1143,8 +1155,8 @@ export class TuiTerminalSurface {
             .filter(Boolean);
     }
 
-    protected resolveOutput(): { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void } | undefined {
-        return this.options.output || (globalThis as any).process?.stdout;
+    protected resolveOutput(): ConsoleTerminalOutputLike | undefined {
+        return this.options.output || resolveConsoleHostProcess()?.stdout;
     }
 
     protected bindOutputResize(): void {

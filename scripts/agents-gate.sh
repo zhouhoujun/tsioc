@@ -4,7 +4,7 @@
 #
 # Chains every reproducible acceptance carrier into one gate:
 #   1. unit tests: 10 agent subpackages (each must EXIT=0)
-#   2. unit tests: components / components/console / components/html
+#   2. unit tests: components / components/common / components/console / components/html
 #   3. tsc --noEmit: agent / agent-ui / agent-gateway / agent-tools
 #   4. production build: agent-ui browser bundle + markdown worker
 #   5. DOM gate: harness/run-dom-gate.ts (JSDOM virtual DOM, 5 scenarios +
@@ -25,7 +25,7 @@
 #
 # Stage ids: agent agent-channels agent-cli agent-gateway agent-providers
 #            agent-ssh agent-tools agent-ui agent-desktop agent-vscode
-#            components components-console components-html
+#            components components-common components-console components-html
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
@@ -218,6 +218,7 @@ run_stage() {
         agent-desktop)    run_npm_test agent-desktop '@tsdi/agent-desktop unit tests' packages/agents/agent-desktop ;;
         agent-vscode)     run_npm_test agent-vscode '@tsdi/agent-vscode unit tests' packages/agents/agent-vscode ;;
         components)       run_npm_test components '@tsdi/components unit tests' packages/components ;;
+        components-common) run_npm_test components-common '@tsdi/components/common unit tests' packages/components/common ;;
         components-console) run_npm_test components-console '@tsdi/components/console unit tests' packages/components/console ;;
         components-html)  run_npm_test components-html '@tsdi/components/html unit tests' packages/components/html ;;
         tsc-agent)        run_tsc tsc-agent 'tsc --noEmit @tsdi/agent' packages/agents/agent ;;
@@ -240,7 +241,7 @@ run_stage() {
 
 ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             agent-ssh agent-tools agent-ui agent-desktop agent-vscode
-            components components-console components-html
+            components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
             pty-acceptance diff-check"

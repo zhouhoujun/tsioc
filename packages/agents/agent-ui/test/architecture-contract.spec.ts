@@ -26,11 +26,15 @@ function relativeFilesWithMatch(root: string, pattern: RegExp): string[] {
 export class ArchitectureContractTest {
     private readonly agentUiSrc = path.resolve(__dirname, '../src');
     private readonly componentsSrc = path.resolve(__dirname, '../../../components/src');
+    private readonly commonSrc = path.resolve(__dirname, '../../../components/common/src');
     private readonly consoleSrc = path.resolve(__dirname, '../../../components/console/src');
+    private readonly htmlSrc = path.resolve(__dirname, '../../../components/html/src');
+    private readonly consoleAdapter = path.resolve(__dirname, '../console');
+    private readonly webAdapter = path.resolve(__dirname, '../web-console');
 
     @Test('agent-ui source does not import console implementation or Node modules directly')
     async agentUiImportsRemainPlatformNeutral() {
-        const forbiddenImport = /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:@tsdi\/components\/console|node:[^'"]+|buffer|child_process|crypto|events|fs|http|https|net|os|path|stream|tls|url|util|worker_threads)['"]/;
+        const forbiddenImport = /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:@tsdi\/components\/(?:console|html)|node:[^'"]+|buffer|child_process|crypto|events|fs|http|https|net|os|path|stream|tls|url|util|worker_threads)['"]/;
         expect(relativeFilesWithMatch(this.agentUiSrc, forbiddenImport)).toEqual([]);
     }
 
@@ -39,6 +43,16 @@ export class ArchitectureContractTest {
         const nodeImport = /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:node:[^'"]+|buffer|child_process|crypto|events|fs|http|https|net|os|path|stream|tls|url|util|worker_threads)['"]/;
         expect(relativeFilesWithMatch(this.consoleSrc, nodeImport)).toEqual([]);
         expect(relativeFilesWithMatch(this.consoleSrc, /\brequire\s*\(/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.consoleSrc, /globalThis\s+as\s+any/)).toEqual([]);
+    }
+
+    @Test('HTML and console renderers remain independent platform adapters')
+    async renderersDoNotImportEachOther() {
+        expect(relativeFilesWithMatch(this.consoleSrc, /@tsdi\/components\/html|components\/html/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.htmlSrc, /@tsdi\/components\/console|components\/console/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.commonSrc, /@tsdi\/components\/(?:html|console)|components\/(?:html|console)/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.consoleAdapter, /@tsdi\/components\/html|@tsdi\/agent-ui\/web-console/)).toEqual([]);
+        expect(relativeFilesWithMatch(this.webAdapter, /@tsdi\/components\/console|@tsdi\/agent-ui\/console/)).toEqual([]);
     }
 
     @Test('shared component and agent UI sources do not use interval-driven rendering')

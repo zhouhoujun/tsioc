@@ -16,7 +16,11 @@
 - 渲染/动画改动必须在 `@tsdi/components`、`@tsdi/components/console` 通用层落地，不得只在 agent-ui 侧 hack。
 - 浏览器端走 `ConsoleRenderer`（DOM），命令行端走 `TuiRenderer` + `TuiTerminalSurface`；两平台共用同一实现。
 - **`agent-ui/src/` 不得直接引用 `@tsdi/components/console` 或 node 库**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；console 相关的类型和函数统一从 `@tsdi/agent-ui/console` 引入，由各平台适配层提供实现。
-- `components/console` 与 `agents` 库**不得直接引用 node API**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；需要环境信息时用全局守卫（如 `(globalThis as { process?: ... }).process`）访问。
+- `components/console` 与 agents 库**不得直接引用 node API**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；需要环境信息时用全局守卫（如 `(globalThis as { process?: ... }).process`）访问。
+- `components/common` 是 renderer-neutral 公共层，只能依赖 components 核心，不得反向引用 `components/html` 或 `components/console`。
+- `components/html` 与 `components/console` 是并列平台 renderer，禁止互相引用、互相模拟或把一端兼容逻辑塞入另一端。
+- `agent-ui/src` 是平台无关 UI 层，不得直接引用 `@tsdi/components/html` 或 `@tsdi/components/console`。
+- `agent-ui/console` 只连接 agent-ui 与 `components/console`；`agent-ui/web-console` 只连接 agent-ui 与 `components/html`，两个适配层禁止互相引用。
 
 ### 3. 响应式代理机制（`@tsdi/components/src/reactive.ts` + `impl/effect.ts`）
 
@@ -47,12 +51,13 @@
 
 ### 跑某包全部测试
 ```bash
-cd packages/<包名>            # 例：components、components/html、components/console、agents/agent-ui
+cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线：components 110 通过；components/console 72 通过；components/html 117 通过（但 EXIT=1，`switch-case.dir.ts:299` 既有 bug，见下）；agents/agent-ui 328 通过 EXIT=0。
+- 已知基线：components 110 通过；components/common 5 通过；components/console 77 通过；components/html 117 通过；agents/agent-ui 以当前 runner 输出为准。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。
+- 共享 components 或 agent-ui 改动必须按影响范围覆盖 components、components/common、components/html、components/console 与 agent-ui；统一 agents gate 必须单独包含这四个 components 包。
 
 ### 跑单个 spec（targeted 验证）
 `@tsdi/unit` 的模块解析依赖包内路径，**临时 runner 文件必须建在包内**（`/tmp` 下会报 Cannot find module '@tsdi/unit'）：
@@ -68,7 +73,7 @@ EOF
 npx ts-node -r tsconfig-paths/register test/run-one.tmp.ts && rm test/run-one.tmp.ts
 ```
 - html 包必须带 `platform: 'browser'`（unit.ts 里就这么配的）；components/console、agent-ui 不需要。
-- 改完核心响应式代码（`reactive.ts`/`impl/effect.ts`）后，至少回归：agent-ui 全套 + components + components/console。
+- 改完核心响应式代码（`reactive.ts`/`impl/effect.ts`）后，至少回归：agent-ui 全套 + components + components/common + components/html + components/console。
 
 ### 已知既有问题（已修复，2026-08）
 - `components/html` 曾因测试全部通过但进程 EXIT=1（TypeError）。延迟微任务（compiler-fns.ts `Promise.resolve().then`）里 `CaseDirective.onInit`/`DefaultDirective.onInit`（switch-case.dir.ts）对非 switch 的 `_switchDirective` 直接调 `unregisterCase`/`unregisterDefault` 崩溃；已补上与 `bindToSwitch`/`onDestroy` 一致的 `typeof ... === 'function'` 守卫。修复后 117 passing EXIT=0。

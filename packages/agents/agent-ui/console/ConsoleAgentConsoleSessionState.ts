@@ -26,7 +26,7 @@ export class ConsoleAgentConsoleSessionState extends AgentConsoleSessionState {
     override processInputChunk(
         value: string,
         cursor: number,
-        chunk: Buffer,
+        chunk: Uint8Array | string,
         options?: ConsoleTextInputChunkOptions
     ): ConsoleTextInputChunkResult {
         return this.consoleUtils.processConsoleTextInputChunk(value, cursor, chunk, options);

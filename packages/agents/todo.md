@@ -13,8 +13,11 @@
 
 ### 2. 跨平台边界
 
-- `agent-ui/src` 不得直接引用 `@tsdi/components/console`、`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等 Node 私有 API。
-- console 能力统一从 `@tsdi/agent-ui/console` 暴露，由 browser、CLI、desktop、VS Code 等宿主适配。
+- `components/common` 是 renderer-neutral 公共层，只能依赖 components 核心，不得反向引用 `components/html` 或 `components/console`。
+- `components/html` 与 `components/console` 是并列平台 renderer，禁止互相引用、互相模拟或把一端兼容逻辑塞入另一端。
+- `agent-ui/src` 是平台无关 UI 层，不得直接引用 `@tsdi/components/html`、`@tsdi/components/console`、`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等平台私有 API。
+- `agent-ui/console` 只负责连接 agent-ui 与 `components/console`；`agent-ui/web-console` 只负责连接 agent-ui 与 `components/html`，两个适配层禁止互相引用。
+- console 能力统一从 `@tsdi/agent-ui/console` 暴露，Web 能力从 `@tsdi/agent-ui/web-console` 暴露，由 CLI、browser、desktop、VS Code 等宿主选择对应适配。
 - `components/console` 与 agents 库不得直接依赖 Node API；必要环境信息通过受守卫的 `globalThis` 访问。
 - 不复制 Codex/opencode 品牌或配色，只参考其信息架构、稳定 identity、状态层级和交互原则。
 
@@ -64,7 +67,7 @@
 - 输入交互至少覆盖真实 ORM、AppRpc、CLI/TUI decoder、component/state 和 PTY 按键链。
 - 回归测试必须先证明在旧实现上稳定失败，再证明修复后通过。
 - 涉及响应式核心时回归 components、components/console、agent-ui；涉及 browser/TUI 时同时验证两端。
-- 收尾门禁包括 agents 各包、framework 三包、相关 tsc、Web build、DOM/TUI、metrics regression、真实 PTY 和 `git diff --check`。
+- 收尾门禁包括 agents 各包、framework 核心及 components/common、components/html、components/console、相关 tsc、Web build、DOM/TUI、metrics regression、真实 PTY 和 `git diff --check`。
 - 未解释数据丢失、未覆盖真实复现路径或仍存在开放复现时，不得仅凭测试数字宣布完成。
 
 ## 二、当前已具备的功能点
@@ -164,4 +167,13 @@
 - **HTML 兼容**：解析保留节点顺序、属性、文本、注释与实体；对 HTML void 元素使用引号感知的单遍规范化，兼容显式闭合标签及属性值中的 `>`，避免正则误切标签。
 - **边界门禁**：`components/console/src` 除禁止 Node 内置模块导入外，进一步禁止任何 `require()`，确保 browser 与 TUI 共享无 Node loader 的模板路径。
 - **验证**：components/console 77 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 passed / 0 skipped / 25 total，Web build、DOM/TUI、真实 PTY 与生产数据库完整性检查均通过。
+- **当前状态**：无开放实施批次。
+
+## v61 — Components 与 Agent UI 平台分层固化 ✅
+
+- **依赖方向**：明确 components core → components/common → components/html 或 components/console；html 与 console 并列且禁止互相引用，common 不得反向依赖 renderer。
+- **宿主适配**：`agent-ui/src` 保持平台无关；`agent-ui/console` 仅连接 TUI renderer，`agent-ui/web-console` 仅连接 HTML renderer，两个适配层禁止交叉引用。console 输入 chunk 同步收敛为跨平台 `Uint8Array | string`。
+- **类型化环境端口**：console 的 `env/stdin/stdout` 统一经类型化 `globalThis` 宿主守卫访问，移除 `globalThis as any`，输出端口显式声明 TTY、尺寸、写入和 resize 能力。
+- **规则与门禁**：根 `AGENTS.md` 和本文件写入完整分层规则；架构测试覆盖 core/common/html/console 与两个 agent-ui adapter；统一 gate 新增 components/common 独立阶段。
+- **验证**：components/common 5、components/html 117、components/console 77 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，生产数据库保持不变。
 - **当前状态**：无开放实施批次。
