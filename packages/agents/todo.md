@@ -177,3 +177,9 @@
 - **规则与门禁**：根 `AGENTS.md` 和本文件写入完整分层规则；架构测试覆盖 core/common/html/console 与两个 agent-ui adapter；统一 gate 新增 components/common 独立阶段。
 - **验证**：components/common 5、components/html 117、components/console 77 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，生产数据库保持不变。
 - **当前状态**：无开放实施批次。
+
+## v62 — 最终收尾复核 ✅
+
+- **完成检查**：复核 `todo.md` 无开放实施批次、工作树干净；components common/html/console 与 agent-ui console/web-console 依赖方向只保留规则允许的单向适配，未发现交叉引用或新增架构违规。
+- **全量验证**：独立重跑 `RUN_PTY=1 bash scripts/agents-gate.sh`，26 passed / 0 skipped / 26 total；覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次；本轮未发现需要追加修复的代码问题。
