@@ -97,6 +97,8 @@
 - multiline draft、stash、external editor、Vim、keymap、suggestions、workspace mentions 和 slash palette。
 - Ctrl+C/Esc 中断、Working elapsed、queued/steer prompt、pending question 和 approval focus lifecycle。
 - 长回复 native scrollback 安全窗口。
+- 状态栏 token 计量随流式 chunk 实时推进：仅 final done 携带真实 usage 时按 CJK 感知分词累计 completion 预估，真实 chunk usage 优先生效、以 estimated 标记且不写入最终审计记录。
+- 事件总耗时优先展示后端 `durationMs`，缺失时按保留的开始时间推导 `durationMs = now - startedAt`，终态替换 running 行不回退且重复终态保持首次推导值。
 
 ### 宿主与门禁
 
@@ -201,4 +203,13 @@
 - **主题一致性**：结构行与事件轨道从 `statusLabel`、`toolsAccent`、`statusErrorValue` 主题 token 派生，失败保持加粗强调，四套主题不再被深色硬编码绑定。
 - **契约保持**：保留单列状态 glyph、ARIA 文本、CJK/窄终端宽度、失败/阻塞展开、折叠窗口和 inspector 语义；新增回归断言锁定连续轨道与无 card 分隔线。
 - **验证**：agent-ui 1364 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 framework 四包、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次。
+
+## v64 — 流式实时 token 计量与时间线分步耗时兜底 ✅
+
+- **流式 usage 预估**：OpenAI 兼容 provider 仅在最终 done chunk 携带真实 usage。运行时 `collectStreamingResponse` 现为每个 text/reasoning chunk 追加 CJK 感知的累计 completion 预估（复用 context-manager 分词启发式），事件 value 与 `AgentStreamChunkEvent.usage` 同步携带；真实 chunk usage 优先生效、`estimated` 标记区分，预估绝不写入最终 response metadata/审计记录；SSE 与 RPC 网关转发路径同时受益，状态栏 token 计量在流式中按 chunk 实时推进。
+- **分步耗时兜底**：终态事件替换 running 行且回执未附带 `durationMs` 时，按保留的开始时间推导 `durationMs = now - startedAt`；重复终态保持首次推导值、显式回执时长优先，终态→running 回退仍被生命周期门拒绝；本地与远程 tool 投影维持回执时长优先语义。
+- **流式回执回归**：新增 `streamingTurnYieldsEstimatedChunkUsage`，锁定「预估随 chunk 到达、真实 usage 后到优先」的回执顺序。修正异步生成器调度测试：在 runtime 链推进到适配器 await 点之后再 `releaseFollowupChunk()`，避免过早释放成为空操作而挂死（先建立挂起的 `stream.next()`，释放后再 await）。
+- **时间线窗口回归**：`resolveTimelineVisibleMessages` 的窗口 limit 恢复为 `messagesVisibleItems`，stream 布局不再把 timeline 窗口放开到 `MAX_SAFE_INTEGER`——compact/steps 折叠摘要、当前步骤 + 错误仅显模式与隐藏计数恢复；流式 transcript 无界契约由 `visibleMessages` 顶层 stream 分支（`messageLayout !== 'dynamic'` 直接返回全量）独立保证。`default message stream remains unbounded` 测试显式 `setTimelineMode('off')`，消除跨用例共享组件例泄漏的 steps 模式污染。
+- **验证**：agent 全包、agent-ui 1373 passing；runtime-loop 定向 60 passing（含新流式预估断言）；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。

@@ -113,7 +113,7 @@ export class HtmlConsoleTest {
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
         expect(messageItems.length).toEqual(3);
         expect(messageItems[0]?.getAttribute('style') || '').toContain('padding');
-        expect(messageItems[0]?.getAttribute('style') || '').toContain('padding: 0em 1ch');
+        expect(messageItems[0]?.getAttribute('style') || '').toContain('padding: 0em 0px 0em 1ch');
         expect(messageItems[0]?.style.background).toEqual('rgb(27, 33, 40)');
         expect(messageItems[0]?.getAttribute('style') || '').toContain('display: block');
         expect(messageItems[1]?.getAttribute('style') || '').toContain('overflow-wrap: anywhere');

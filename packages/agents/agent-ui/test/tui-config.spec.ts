@@ -14,7 +14,7 @@ export class AgentTuiConfigTest {
         expect(resolved.attentionSound).toEqual(false);
         expect(resolved.leaderTimeout).toEqual(3000);
         expect(resolved.diffStyle).toEqual('auto');
-        expect(resolved.cursor).toEqual({ style: 'block', blinking: true });
+        expect(resolved.cursor).toEqual({ style: 'line', blinking: true });
         expect(resolved.scrollAcceleration).toEqual(false);
         expect(resolved.attention).toEqual({ notifications: false, soundPack: 'default', volume: 0.5, sounds: {} });
         expect(resolved.terminalTitle).toEqual(true);
@@ -96,7 +96,7 @@ export class AgentTuiConfigTest {
         expect(resolved.theme).toEqual('dark');
         expect(resolved.diffStyle).toEqual('auto');
         expect(resolved.scrollAcceleration).toEqual(false);
-        expect(resolved.cursor).toEqual({ style: 'block', blinking: true });
+        expect(resolved.cursor).toEqual({ style: 'line', blinking: true });
         expect(resolved.attention).toEqual({ notifications: false, soundPack: 'default', volume: 0.5, sounds: {} });
         expect(resolved.terminalTitle).toEqual(true);
     }

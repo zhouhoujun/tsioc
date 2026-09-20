@@ -34,14 +34,14 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content).toEqual('hello');
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].itemStyle.background).toEqual('#1b2128');
-        expect(items[0].lines[0].itemStyle?.padding).toEqual('0em 1ch 0em 1ch');
+        expect(items[0].lines[0].itemStyle?.padding).toEqual('0em 0 0em 1ch');
         expect(items[0].lines[0].lineStyle?.background).toEqual(undefined);
         expect(items[1].lines[0].content).toEqual('world');
         expect(items[1].lines[0].status?.trim()).toEqual('');
         expect(items[1].lines[0].statusKind).toEqual('success');
         expect(items[1].lines[0].statusLabel).toEqual('成功');
         expect(items[1].lines[0].role).toEqual('');
-        expect(items[1].lines[0].meta).toEqual('');
+        expect(items[1].lines[0].meta).toEqual('1ms · ');
         expect(items[1].itemStyle.background).toEqual(undefined);
         expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
         expect(items[3].lines[0].status?.trim()).toEqual('');

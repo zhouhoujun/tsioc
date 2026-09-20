@@ -2276,9 +2276,54 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let usage: Record<string, any> | undefined;
         let metadata: Record<string, any> = {};
         const seenToolCalls = new Set<string>();
+        // Providers attach usage only to the final 'done' chunk. Compose a per-chunk
+        // estimated total (context-manager tokenizer heuristic) so live token meters
+        // advance during generation; real chunk usage wins, and estimates (tagged
+        // `estimated`) never persist into response metadata or audit records.
+        let estimatedCompletionTokens = 0;
+        let estimatedPromptTokens: number | undefined;
+        let estimatedCachedPromptTokens: number | undefined;
+
+        const resolveChunkUsage = (chunk: StreamChunk): Record<string, any> | undefined => {
+            if (chunk.usage) {
+                return chunk.usage as Record<string, any>;
+            }
+            if (chunk.type !== 'text' && chunk.type !== 'reasoning') {
+                return undefined;
+            }
+            return {
+                ...(estimatedPromptTokens !== undefined ? {
+                    promptTokens: estimatedPromptTokens,
+                    totalTokens: estimatedPromptTokens + estimatedCompletionTokens
+                } : {}),
+                ...(estimatedCachedPromptTokens !== undefined ? { cachedPromptTokens: estimatedCachedPromptTokens } : {}),
+                completionTokens: estimatedCompletionTokens,
+                estimated: true
+            };
+        };
 
         for await (const chunk of this.modelAdapter.stream(request)) {
             const freshToolCalls = this.collectFreshStreamingToolCalls(seenToolCalls, chunk.toolCalls);
+
+            if (chunk.type === 'text') {
+                message += chunk.content ?? '';
+                estimatedCompletionTokens += this.contextManager.estimateTokens(chunk.content ?? '');
+            }
+            if (chunk.type === 'reasoning') {
+                reasoningContent += chunk.content ?? '';
+                estimatedCompletionTokens += this.contextManager.estimateTokens(chunk.content ?? '');
+            }
+            if (chunk.usage) {
+                const source = chunk.usage as Record<string, any>;
+                usage = source;
+                if (typeof source.promptTokens === 'number' && Number.isFinite(source.promptTokens) && estimatedPromptTokens === undefined) {
+                    estimatedPromptTokens = source.promptTokens;
+                }
+                if (typeof source.cachedPromptTokens === 'number' && Number.isFinite(source.cachedPromptTokens) && estimatedCachedPromptTokens === undefined) {
+                    estimatedCachedPromptTokens = source.cachedPromptTokens;
+                }
+            }
+            const chunkUsage = resolveChunkUsage(chunk);
 
             if (chunk.type !== 'done' || chunk.usage || freshToolCalls.length) {
                 await this.app.publishEvent(new AgentStreamChunkEvent(
@@ -2289,21 +2334,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
                         ? this.describeStreamingToolCalls(freshToolCalls)
                         : chunk.content,
                     freshToolCalls.length ? freshToolCalls : chunk.toolCalls,
-                    chunk.usage
+                    chunkUsage
                 ));
             }
 
-            if (chunk.type === 'text') {
-                message += chunk.content ?? '';
-            }
-            if (chunk.type === 'reasoning') {
-                reasoningContent += chunk.content ?? '';
-            }
             if (freshToolCalls.length) {
                 toolCalls = toolCalls.concat(freshToolCalls);
-            }
-            if (chunk.usage) {
-                usage = chunk.usage as Record<string, any>;
             }
             if (chunk.metadata) {
                 metadata = { ...metadata, ...chunk.metadata };
@@ -2324,7 +2360,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                         ? this.describeStreamingToolCalls(freshToolCalls)
                         : chunk.content,
                     toolCalls: chunk.type === 'tool_call' ? freshToolCalls : undefined,
-                    usage: chunk.usage as Record<string, any> | undefined
+                    usage: chunkUsage
                 };
             }
         }

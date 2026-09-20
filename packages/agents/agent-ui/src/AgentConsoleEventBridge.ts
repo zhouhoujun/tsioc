@@ -132,6 +132,9 @@ export class AgentConsoleEventBridge {
         bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
                 this.state.setContextPreparation(event.report);
+                if (Number.isFinite(Number(event.report.afterTokens))) {
+                    this.state.setTokenUsage({ promptTokens: Number(event.report.afterTokens) });
+                }
                 this.state.pushActivity('model', `Context ${event.report.strategy}: ${event.report.beforeTokens}→${event.report.afterTokens}`);
         });
 

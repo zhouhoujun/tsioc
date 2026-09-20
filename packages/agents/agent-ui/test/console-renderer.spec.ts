@@ -2048,10 +2048,10 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
     }
 
-    @Test('timeline mode keeps a bounded scan window and summarizes hidden history')
+    @Test('explicit dynamic timeline mode keeps a bounded scan window and summarizes hidden history')
     timelineModeBoundsHistory() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3 });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'dynamic' });
         ref.instance.sessionState.setMessages(Array.from({ length: 8 }, (_, index) => ({
             id: `event-${index + 1}`,
             role: 'assistant',
@@ -2070,9 +2070,10 @@ export class AgentConsoleTuiRendererTest {
             .toEqual(['event-6', 'event-7', 'event-8']);
     }
 
-    @Test('large message stream renders only the windowed slice (bounded virtualization)')
+    @Test('default message stream remains unbounded')
     async largeStreamRendersWindowedSlice() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTimelineMode('off');
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
         ref.instance.sessionState.setMessages(Array.from({ length: 300 }, (_, index) => ({
             id: `msg-${index + 1}`,
@@ -2085,15 +2086,13 @@ export class AgentConsoleTuiRendererTest {
 
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visible = panel.instance.visibleMessages;
-        expect(visible.length).toBeGreaterThan(0);
-        expect(visible.length).toBeLessThanOrEqual(10);
+        expect(visible.length).toBeGreaterThanOrEqual(300);
+        expect(visible.some(item => item.id === 'msg-1')).toBe(true);
         expect(visible.some(item => item.id === 'msg-300')).toBe(true);
-        expect(visible.some(item => item.id === 'msg-1')).toBe(false);
 
         const rendered = panel.instance.renderedLines;
-        expect(rendered.length).toBeGreaterThan(0);
-        expect(rendered.length).toBeLessThan(60);
-        expect(rendered.every(line => !line.messageId || !String(line.messageId).startsWith('msg-1'))).toBe(true);
+        expect(rendered.some(line => line.messageId === 'msg-1')).toBe(true);
+        expect(rendered.some(line => line.messageId === 'msg-300')).toBe(true);
     }
 
     @Test('setMessages does not auto-select synthetic plan message')

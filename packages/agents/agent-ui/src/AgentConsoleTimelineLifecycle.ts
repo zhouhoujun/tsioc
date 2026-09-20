@@ -60,6 +60,10 @@ function finiteNumber(value: unknown): number | undefined {
     return Number.isFinite(number) ? number : undefined;
 }
 
-function isTerminalStatus(status: string): boolean {
+export function isTerminalUiEventStatus(status?: string): boolean {
     return status === 'success' || status === 'failed' || status === 'error' || status === 'cancelled';
+}
+
+function isTerminalStatus(status: string): boolean {
+    return isTerminalUiEventStatus(status);
 }

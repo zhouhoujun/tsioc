@@ -35,6 +35,7 @@ class FakeAppRpc {
         { id: 'active-1', title: 'Active session', pinned: false, archived: false, messageCount: 3 },
         { id: 'archived-1', title: 'Archived session', pinned: false, archived: true, messageCount: 5 }
     ];
+    messagePages?: Record<string, { messages: any[]; nextCursor?: string; hasMore: boolean }>;
 
     async request(method: string, params?: any): Promise<any> {
         this.calls.push({ method, params });
@@ -54,6 +55,10 @@ class FakeAppRpc {
                 return { sessionId, sourceSessionId: params?.sessionId };
             }
             case 'session.messages':
+                if (this.messagePages) {
+                    const key = params?.before && params?.cursor ? params.cursor : 'tail';
+                    return this.messagePages[key] || { messages: [], hasMore: false };
+                }
                 return { messages: [], sections: [], nextCursor: undefined, hasMore: false };
             case 'tools.list':
                 return [];
@@ -89,6 +94,37 @@ function createLifecycleConsole(): {
 
 @Suite('session lifecycle commands (P124)')
 export class SessionLifecycleCommandTest {
+
+    @Test('restoring a paged session keeps messages from the beginning')
+    async restoringPagedSessionKeepsBeginning() {
+        const { component, rpc } = createLifecycleConsole();
+        rpc.messagePages = {
+            tail: {
+                messages: [
+                    { id: 'm3', role: 'user', content: 'third', createdAt: 3 },
+                    { id: 'm4', role: 'assistant', content: 'fourth', createdAt: 4 }
+                ],
+                nextCursor: 'm4',
+                hasMore: true
+            },
+            m3: {
+                messages: [
+                    { id: 'm1', role: 'user', content: 'first', createdAt: 1 },
+                    { id: 'm2', role: 'assistant', content: 'second', createdAt: 2 }
+                ],
+                nextCursor: 'm2',
+                hasMore: false
+            }
+        };
+
+        const page = await (component as any).loadSessionPage('active-1');
+
+        expect(page.messages.map((message: any) => message.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
+        expect(rpc.calls.filter(call => call.method === 'session.messages').map(call => call.params)).toEqual([
+            { sessionId: 'active-1' },
+            { sessionId: 'active-1', cursor: 'm3', before: true }
+        ]);
+    }
 
     @Test('/resume lists archived sessions and resumes a selection')
     async resumeIncludesArchived() {
@@ -181,5 +217,127 @@ export class SessionLifecycleCommandTest {
         expect(state.commandHints).toContain('/archive');
         expect(state.commandHints).toContain('/fork');
         expect(state.commandHints).toContain('/side');
+    }
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+@Suite('timeline event duration derivation')
+export class TimelineEventDurationTest {
+
+    @Test('terminal upsert derives duration from the running row start time')
+    async terminalUpsertDerivesDuration() {
+        const { state } = createLifecycleConsole();
+        const key = 'tool-1';
+        state.upsertUiEventMessage(key, 'Invoked', {
+            eventType: 'tool_call',
+            label: 'tool',
+            status: 'running',
+            toolCallId: 'tc-1',
+            source: 'local'
+        });
+        await sleep(5);
+        state.upsertUiEventMessage(key, 'Completed', {
+            eventType: 'tool_completed',
+            label: 'tool',
+            status: 'success',
+            toolCallId: 'tc-1',
+            source: 'local'
+        });
+
+        const rows = state.messages.filter(message => message.metadata?.uiKind === 'event');
+        expect(rows.length).toEqual(1);
+        expect(rows[0].metadata?.status).toEqual('success');
+        expect(typeof rows[0].metadata?.durationMs).toEqual('number');
+        expect(rows[0].metadata?.durationMs).toBeGreaterThanOrEqual(5);
+    }
+
+    @Test('repeated terminal upserts keep the first derived duration')
+    async repeatedTerminalUpsertsKeepDuration() {
+        const { state } = createLifecycleConsole();
+        const key = 'bg-1';
+        state.upsertUiEventMessage(key, 'Running', {
+            eventType: 'bg',
+            label: 'task',
+            status: 'running',
+            receiptId: 'r-1',
+            source: 'local'
+        });
+        await sleep(5);
+        state.upsertUiEventMessage(key, 'Done', {
+            eventType: 'bg',
+            label: 'task',
+            status: 'success',
+            receiptId: 'r-1',
+            source: 'local'
+        });
+        const first = state.messages.find(message => message.metadata?.uiEventKey === key);
+        expect(typeof first?.metadata?.durationMs).toEqual('number');
+        const firstDuration = first?.metadata?.durationMs;
+
+        await sleep(10);
+        state.upsertUiEventMessage(key, 'Done again', {
+            eventType: 'bg',
+            label: 'task',
+            status: 'success',
+            receiptId: 'r-1',
+            source: 'local'
+        });
+        const second = state.messages.find(message => message.metadata?.uiEventKey === key);
+        expect(second?.metadata?.durationMs).toEqual(firstDuration);
+    }
+
+    @Test('explicit receipt duration is preserved over derivation')
+    async explicitDurationPreserved() {
+        const { state } = createLifecycleConsole();
+        const key = 'tool-explicit';
+        state.upsertUiEventMessage(key, 'Invoked', {
+            eventType: 'tool_call',
+            label: 'tool',
+            status: 'running',
+            toolCallId: 'tc-9',
+            source: 'local'
+        });
+        state.upsertUiEventMessage(key, 'Completed', {
+            eventType: 'tool_completed',
+            label: 'tool',
+            status: 'success',
+            durationMs: 1234,
+            toolCallId: 'tc-9',
+            source: 'local'
+        });
+        const row = state.messages.find(message => message.metadata?.uiEventKey === key);
+        expect(row?.metadata?.durationMs).toEqual(1234);
+    }
+
+    @Test('re-running after a terminal row is rejected and does not clear duration')
+    async rerunAfterTerminalRejected() {
+        const { state } = createLifecycleConsole();
+        const key = 'tool-2';
+        state.upsertUiEventMessage(key, 'Invoked', {
+            eventType: 'tool_call',
+            label: 'tool',
+            status: 'running',
+            toolCallId: 'tc-2',
+            source: 'local'
+        });
+        await sleep(5);
+        state.upsertUiEventMessage(key, 'Completed', {
+            eventType: 'tool_completed',
+            label: 'tool',
+            status: 'success',
+            toolCallId: 'tc-2',
+            source: 'local'
+        });
+        state.upsertUiEventMessage(key, 'Rerunning', {
+            eventType: 'tool_call',
+            label: 'tool',
+            status: 'running',
+            toolCallId: 'tc-2',
+            source: 'local'
+        });
+        const row = state.messages.find(message => message.metadata?.uiEventKey === key);
+        expect(row?.metadata?.status).toEqual('success');
+        expect(typeof row?.metadata?.durationMs).toEqual('number');
     }
 }

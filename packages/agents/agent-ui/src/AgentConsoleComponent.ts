@@ -3836,6 +3836,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return this.state.resolveTerminalCursorMode();
     }
 
+    resolveTerminalCursorStyle(): 'bar' {
+        return 'bar';
+    }
+
+    shouldBlinkTerminalCursor(): boolean {
+        return true;
+    }
+
     // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback; only
     // explicit dynamic mode may be constrained to the viewport height.
     shouldUseNativeScrollback(): boolean {
@@ -3949,8 +3957,23 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }> {
         if (this.sessionService) {
             const page = await this.sessionService.loadMessagesPage(sessionId);
+            const messages = page.messages.slice();
+            const seenCursors = new Set<string>();
+            let cursor = page.messages[0]?.id;
+            let hasMore = page.hasMore === true;
+            while (hasMore && cursor && !seenCursors.has(cursor)) {
+                seenCursors.add(cursor);
+                const previous = await this.sessionService.loadMessagesPage(
+                    sessionId,
+                    undefined,
+                    { cursor, before: true }
+                );
+                messages.unshift(...previous.messages);
+                cursor = previous.messages[0]?.id;
+                hasMore = previous.hasMore === true;
+            }
             return {
-                messages: this.normalizeLoadedMessages(page.messages),
+                messages: this.normalizeLoadedMessages(messages),
                 sections: Array.isArray(page.sections) ? page.sections : [],
                 goalSummary: page.goalSummary
             };

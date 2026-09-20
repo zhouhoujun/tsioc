@@ -1775,6 +1775,57 @@ export class RuntimeLoopTest {
         expect(messages[messages.length - 1].content).toEqual('tool-finished');
     }
 
+    @Test('streaming turn yields estimated per-chunk usage so token meters update live')
+    async streamingTurnYieldsEstimatedChunkUsage() {
+        const model = new StreamingToolLoopModelAdapter();
+        const { runtime } = await createRuntime(
+            model,
+            new EchoToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions
+        );
+
+        const stream = runtime.runStreamingTurn('s1', 'hello');
+        const first = await stream.next();
+        expect(first.value?.type).toEqual('tool_call');
+
+        const second = await stream.next();
+        expect(second.value?.type).toEqual('text');
+        expect(second.value?.content).toEqual('tool-');
+        expect(second.value?.usage?.estimated).toEqual(true);
+        expect(second.value?.usage?.completionTokens).toBeGreaterThan(0);
+        const firstEstimate = second.value?.usage?.completionTokens;
+
+        // Advance the runtime into the next model chunk (where the adapter's
+        // followup release promise is registered) before releasing it.
+        const pendingThird = stream.next();
+        let settled = false;
+        void pendingThird.then(() => {
+            settled = true;
+        });
+        await Promise.resolve();
+        expect(settled).toEqual(false);
+
+        model.releaseFollowupChunk();
+        const third = await pendingThird;
+        expect(third.value?.type).toEqual('text');
+        expect(third.value?.content).toEqual('finished');
+        expect(third.value?.usage?.estimated).toEqual(true);
+        expect(third.value?.usage?.completionTokens).toBeGreaterThan(firstEstimate);
+
+        const done = await stream.next();
+        expect(done.value?.type).toEqual('done');
+        expect(done.value?.usage).toBeUndefined();
+
+        const completed = await stream.next();
+        expect(completed.done).toEqual(true);
+
+        const messages = await runtime.getMessages('s1');
+        expect(messages[messages.length - 1].metadata?.usage).toBeUndefined();
+    }
+
     @Test('streaming turn promotes done chunk tool calls into the shared tool loop')
     async streamingTurnPromotesDoneChunkToolCalls() {
         const { runtime } = await createRuntime(

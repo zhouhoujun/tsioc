@@ -75,7 +75,7 @@ export const defaultAgentTuiConfig: AgentTuiResolvedConfig = {
     attentionSound: false,
     leaderTimeout: 3000,
     diffStyle: 'auto',
-    cursor: { style: 'block', blinking: true },
+    cursor: { style: 'line', blinking: true },
     scrollAcceleration: false,
     attention: { notifications: false, soundPack: 'default', volume: 0.5, sounds: {} },
     terminalTitle: true,

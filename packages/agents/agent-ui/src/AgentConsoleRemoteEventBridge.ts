@@ -129,6 +129,9 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             break;
         case 'context_prepared':
             state.setContextPreparation(data.report ?? null);
+            if (Number.isFinite(Number(data.report?.afterTokens))) {
+                state.setTokenUsage({ promptTokens: Number(data.report.afterTokens) });
+            }
             state.pushActivity('model', `Context ${data.report?.strategy || 'prepared'}: ${data.report?.beforeTokens ?? '?'}→${data.report?.afterTokens ?? '?'}`);
             break;
         case 'tool_invoked':

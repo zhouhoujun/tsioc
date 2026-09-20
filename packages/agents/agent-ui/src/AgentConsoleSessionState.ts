@@ -70,7 +70,7 @@ import {
     AGENT_CONSOLE_OVERLAY_HINTS,
     AGENT_CONSOLE_OVERLAY_TITLES,
 } from './AgentConsoleOverlayPresenter';
-import { findTimelineLifecycleMessageIndex, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
+import { findTimelineLifecycleMessageIndex, isTerminalUiEventStatus, shouldApplyTimelineLifecycleUpdate } from './AgentConsoleTimelineLifecycle';
 import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
 import {
     VIM_DEFAULT_BINDINGS,
@@ -1740,8 +1740,9 @@ export class AgentConsoleSessionState {
             if (!shouldApplyTimelineLifecycleUpdate(existing, options)) {
                 return;
             }
+            const resolvedOptions = this.resolveUiEventDurationFallback(existing, options);
             const nextMessage = this.createUiEventMessage(text, {
-                ...options,
+                ...resolvedOptions,
                 eventKey,
                 id: existing.id,
                 createdAt: existing.createdAt
@@ -1757,6 +1758,30 @@ export class AgentConsoleSessionState {
             }));
         }
         this.setMessages(next, true);
+    }
+
+    /**
+     * Derive the per-step elapsed time when a terminal event replaces a still-running
+     * timeline row that carries no explicit duration. The replacement row preserves the
+     * original start time (createdAt), so the processed duration is always available
+     * for the timeline UI even when the incoming event has no receipt duration.
+     */
+    protected resolveUiEventDurationFallback(
+        existing: AgentMessage,
+        incoming: AgentConsoleUiEventOptions
+    ): AgentConsoleUiEventOptions {
+        if (incoming.durationMs != null) {
+            return incoming;
+        }
+        const currentStatus = String(existing.metadata?.status || '');
+        if (isTerminalUiEventStatus(currentStatus) && existing.metadata?.durationMs != null) {
+            return { ...incoming, durationMs: existing.metadata.durationMs };
+        }
+        if (currentStatus !== 'running' || !isTerminalUiEventStatus(incoming.status)) {
+            return incoming;
+        }
+        const startedAt = Number(existing.createdAt) || Date.now();
+        return { ...incoming, durationMs: Math.max(0, Date.now() - startedAt) };
     }
 
     /** Shared cross-host projection entry point for transcript thread items. */

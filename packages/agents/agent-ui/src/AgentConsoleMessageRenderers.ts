@@ -565,9 +565,7 @@ export function renderAgentConsoleMessageItems(
     messages: AgentMessage[],
     context: AgentConsoleMessageRenderContext = {}
 ): AgentConsoleRenderedMessageItem[] {
-    const source = context.timelineMode
-        ? deriveTimelineDurations(messages || [])
-        : messages || [];
+    const source = deriveTimelineDurations(messages || []);
     return source.map((message, index) => {
         const item = renderAgentConsoleMessageItem(message, context);
         const previous = index > 0 ? presentAgentConsoleSessionContent(source[index - 1]) : undefined;
@@ -650,8 +648,7 @@ export function renderAgentConsoleMessageItem(
         message,
         templateKind,
         statusLabel,
-        !!context.showTimestamps,
-        !!context.timelineMode
+        !!context.showTimestamps
     );
     const fallbackLine = messageStreaming
         ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
@@ -1005,6 +1002,9 @@ function resolveSemanticLinePadding(
     const vertical = presentation.kind === 'user' || presentation.kind === 'assistant-final' ? 0
         : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
             : presentation.family === 'artifact' ? 0.4 : 0.5;
+    if (presentation.kind === 'user') {
+        return `${isFirst ? `${vertical}em` : '0'} 0 ${isLast ? `${vertical}em` : '0'} 1ch`;
+    }
     return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;
 }
 
@@ -1095,8 +1095,7 @@ function resolveTimelineMeta(
     message: AgentMessage | undefined,
     templateKind: AgentConsoleMessageTemplateKind,
     statusLabel: string,
-    showTimestamps = false,
-    timelineMode = false
+    showTimestamps = false
 ): string {
     const parts: string[] = [];
     const uiKind = String(message?.metadata?.uiKind || '').trim();
@@ -1118,7 +1117,7 @@ function resolveTimelineMeta(
         if (Number.isFinite(durationMs) && durationMs >= 0) {
             parts.push(formatTimelineDuration(durationMs));
         }
-    } else if (templateKind === 'assistant' && timelineMode) {
+    } else if (templateKind === 'assistant') {
         const durationMs = resolveMessageDurationMs(message);
         if (Number.isFinite(durationMs) && durationMs >= 0) {
             parts.push(formatTimelineDuration(durationMs));

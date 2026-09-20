@@ -311,6 +311,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     shouldEnableTerminalMouseTracking?(): boolean;
     shouldPlaceTerminalCursor?(): boolean;
     resolveTerminalCursorMode?(): 'prompt' | 'bottom';
+    resolveTerminalCursorStyle?(): 'block' | 'underline' | 'bar';
+    shouldBlinkTerminalCursor?(): boolean;
     shouldUseNativeScrollback?(): boolean;
 }
 
@@ -605,6 +607,12 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             return;
         }
         this.root = root;
+        if (this.output?.isTTY) {
+            this.output.write(buildTerminalCursorStyleSequence(
+                lifecycle.resolveTerminalCursorStyle?.() || 'block',
+                lifecycle.shouldBlinkTerminalCursor?.() !== false
+            ));
+        }
         this.surface?.destroy();
         this.surface = new TuiTerminalSurface({
             renderer,
@@ -626,6 +634,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             this.attachTimer = undefined;
         }
         if (this.output?.isTTY) {
+            this.output.write('\x1b[0 q');
             this.output.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
             this.output.write(buildTerminalCleanupSequence({
                 reset: '\x1b[0m',
@@ -947,6 +956,16 @@ export class TuiTerminalSurface {
         const footerRegionId = this.options.footerRegionId || 'footer';
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
+        if (nativeScrollback) {
+            this.maxScrollOffsetRows = 0;
+            this.scrollOffsetRows = 0;
+            return {
+                lines: allLines,
+                regions: allRegions,
+                cursorTargets: layout.cursorTargets || [],
+                clickTargets: layout.clickTargets || []
+            };
+        }
         if (!height) {
             this.maxScrollOffsetRows = 0;
             this.scrollOffsetRows = 0;
@@ -958,7 +977,7 @@ export class TuiTerminalSurface {
             };
         }
         if (!scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
-            if (!nativeScrollback || allLines.length <= height) {
+            if (allLines.length <= height) {
                 this.maxScrollOffsetRows = 0;
                 this.scrollOffsetRows = 0;
                 return {
@@ -1534,6 +1553,18 @@ export function buildTerminalCursorSequence(options: TerminalCursorSequenceOptio
         return `${linesAfterTarget > 0 ? `\x1b[${linesAfterTarget}A` : ''}\r${cursorColumn > 1 ? `\x1b[${cursorColumn - 1}C` : ''}`;
     }
     return `\x1b[${targetRow + 1};${cursorColumn}H`;
+}
+
+export function buildTerminalCursorStyleSequence(
+    style: 'block' | 'underline' | 'bar',
+    blinking = true
+): string {
+    const code = style === 'bar'
+        ? (blinking ? 5 : 6)
+        : style === 'underline'
+            ? (blinking ? 3 : 4)
+            : (blinking ? 1 : 2);
+    return `\x1b[${code} q`;
 }
 
 export function resolveTerminalSize(size: TerminalSizeLike = {}): TerminalSize {

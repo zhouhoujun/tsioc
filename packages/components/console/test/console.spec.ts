@@ -1868,7 +1868,7 @@ export class ConsoleRendererTest {
         await ctx.close();
     }
 
-    @Test('native scrollback never rewinds beyond the terminal viewport for long streaming content')
+    @Test('native scrollback preserves the complete unbounded stream')
     nativeScrollbackLongStreamWindow() {
         let lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
         const writes: string[] = [];
@@ -1887,13 +1887,12 @@ export class ConsoleRendererTest {
             output: { write(value: string) { writes.push(value); } }
         });
         surface.render();
-        expect(surface.lastRenderedLines).toHaveLength(32);
-        expect(surface.lastRenderedLines[0]).toEqual('line 169');
+        expect(surface.lastRenderedLines).toHaveLength(200);
+        expect(surface.lastRenderedLines[0]).toEqual('line 1');
 
         lines = [...lines.slice(0, -1), 'line 200 updated'];
         const updated = surface.render();
-        expect(updated?.output).not.toMatch(/\x1b\[(?:3[2-9]|[4-9]\d|\d{3,})A/);
-        expect(surface.lastRenderedLines[31]).toEqual('line 200 updated');
+        expect(surface.lastRenderedLines[199]).toEqual('line 200 updated');
         surface.destroy();
     }
 
