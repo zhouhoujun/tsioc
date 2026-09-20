@@ -489,7 +489,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     },
     {
         templateKind: 'timelineBoundary',
-        roleLabel: '┄ ',
+        roleLabel: '├ ',
         roleStyle: theme => ({
             ...styleTextToObject(theme.toolsAccent),
             'font-weight': 'bold'
@@ -497,15 +497,15 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            'border-top': rowSelected ? '2px solid transparent' : '2px solid #58a6ff',
-            'border-bottom': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.25)'
+            margin: '0',
+            'border-left': resolveTimelineRail(theme, rowSelected, 'accent')
         }),
         lead: () => '',
         continuationLead: () => ''
     },
     {
         templateKind: 'timelineHeader',
-        roleLabel: '═ ',
+        roleLabel: '┌ ',
         roleStyle: theme => ({
             ...styleTextToObject(theme.toolsAccent),
             'font-weight': 'bold'
@@ -513,30 +513,14 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            'border-top': rowSelected ? '2px solid transparent' : '2px solid #58a6ff',
-            'border-bottom': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.15)'
+            margin: '0',
+            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
         }),
         lead: () => '',
         continuationLead: () => ''
     },
     {
         templateKind: 'timelineFooter',
-        roleLabel: '─ ',
-        roleStyle: theme => ({
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        }),
-        itemStyle: (theme, rowSelected) => ({
-            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
-            'font-weight': 'bold',
-            'border-top': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.15)',
-            'border-bottom': rowSelected ? '2px solid transparent' : '2px solid #58a6ff'
-        }),
-        lead: () => '',
-        continuationLead: () => ''
-    },
-    {
-        templateKind: 'timelineCollapsed',
         roleLabel: '└ ',
         roleStyle: theme => ({
             ...styleTextToObject(theme.toolsAccent),
@@ -545,7 +529,24 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            'border-top': rowSelected ? '2px solid transparent' : '1px solid rgba(88, 166, 255, 0.25)'
+            margin: '0',
+            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
+        }),
+        lead: () => '',
+        continuationLead: () => ''
+    },
+    {
+        templateKind: 'timelineCollapsed',
+        roleLabel: '⋮ ',
+        roleStyle: theme => ({
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        }),
+        itemStyle: (theme, rowSelected) => ({
+            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
+            'font-weight': 'bold',
+            margin: '0',
+            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
         }),
         lead: () => '',
         continuationLead: () => ''
@@ -604,11 +605,11 @@ export function renderAgentConsoleMessageItem(
     const effectiveRoleLabel = timelineEvent
         // Status remains a single glyph column; the semantic renderer supplies
         // the human-readable content type (Thought/Tool/Background/etc.).
-        ? `  ${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
+        ? `│ ${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
         : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const itemStyle = timelineEvent
-        ? resolveTimelineEventItemStyle(baseItemStyle, statusKind, rowSelected)
+        ? resolveTimelineEventItemStyle(theme, baseItemStyle, statusKind, rowSelected)
         : baseItemStyle;
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
@@ -1292,20 +1293,34 @@ function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlin
 }
 
 function resolveTimelineEventItemStyle(
+    theme: AgentConsoleTheme,
     style: Record<string, string>,
     status: AgentConsoleMessageStatus | undefined,
     rowSelected: boolean
 ): Record<string, string> {
     const failed = status === 'failed' || status === 'error';
+    const railStyle = styleTextToObject(failed ? theme.statusErrorValue : theme.statusLabel);
     return {
         ...style,
         margin: '0',
         'border-left': rowSelected
             ? style['border-left']
             : failed
-                ? '2px solid #f85149'
-                : '1px solid #30363d'
+                ? `2px solid ${railStyle.color || 'currentColor'}`
+                : `1px solid ${railStyle.color || 'currentColor'}`
     };
+}
+
+function resolveTimelineRail(
+    theme: AgentConsoleTheme,
+    rowSelected: boolean,
+    tone: 'muted' | 'accent'
+): string {
+    if (rowSelected) {
+        return '2px solid transparent';
+    }
+    const style = styleTextToObject(tone === 'accent' ? theme.toolsAccent : theme.statusLabel);
+    return `2px solid ${style.color || 'currentColor'}`;
 }
 
 function resolveAgentConsoleMessageStatusStyle(

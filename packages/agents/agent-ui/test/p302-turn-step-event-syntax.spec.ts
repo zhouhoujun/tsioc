@@ -191,27 +191,28 @@ export class P302TurnStepEventSyntaxTest {
 
     // ── Boundary visual contract ───────────────────────────────────────────
 
-    @Test('boundary row uses structural separator style (not a card) (P302)')
+    @Test('boundary row uses one themed rail without card separators (P302)')
     boundaryNotCard() {
         const items = renderAgentConsoleMessageItems([boundaryMsg('b1', '第 1/1 步 · 分析')], {
             timelineMode: true
         });
-        expect(items[0].itemStyle['border-top']).toBeDefined();
-        expect(items[0].itemStyle['border-bottom']).toBeDefined();
+        expect(items[0].itemStyle['border-top']).toBeUndefined();
+        expect(items[0].itemStyle['border-bottom']).toBeUndefined();
         expect(items[0].itemStyle['border-left']).toBeDefined();
+        expect(items[0].itemStyle.margin).toBe('0');
     }
 
-    @Test('boundary role uses structural prefix ┄ (P302)')
+    @Test('boundary role continues the timeline rail with ├ (P302)')
     boundaryRolePrefix() {
         const items = renderAgentConsoleMessageItems([boundaryMsg('b1', '第 1/1 步 · 分析')], {
             timelineMode: true
         });
-        expect(items[0].lines[0].role).toContain('┄');
+        expect(items[0].lines[0].role).toContain('├');
     }
 
     // ── Event rail contract ────────────────────────────────────────────────
 
-    @Test('event rows use single-level 2-space indent (max 2) (P302)')
+    @Test('event rows use a compact continuation rail (P302)')
     eventIndentMaxTwo() {
         const items = renderAgentConsoleMessageItems([
             eventMsg('e1'),
@@ -220,7 +221,7 @@ export class P302TurnStepEventSyntaxTest {
         ], { timelineMode: true });
         for (const item of items) {
             const role = item.lines[0]?.role || '';
-            expect(role).toMatch(/^ {2}/);
+            expect(role).toMatch(/^│ /);
             expect(getDisplayWidth(role)).toBeLessThanOrEqual(4);
         }
     }
@@ -249,7 +250,7 @@ export class P302TurnStepEventSyntaxTest {
 
     // ── Three-layer hierarchy verification ─────────────────────────────────
 
-    @Test('turn layers: header 0 indent, boundary 0 indent (└─ role), event 1 indent (P302)')
+    @Test('turn layers form a coherent start, branch, continuation rail (P302)')
     threeLayerIndentHierarchy() {
         const headerItems = renderAgentConsoleMessageItems([headerMsg()], {
             timelineMode: true
@@ -260,8 +261,8 @@ export class P302TurnStepEventSyntaxTest {
         const eventItems = renderAgentConsoleMessageItems([eventMsg('e1')], {
             timelineMode: true
         });
-        expect(headerItems[0].lines[0].role).toContain('═');
-        expect(boundaryItems[0].lines[0].role).toContain('┄');
-        expect(eventItems[0].lines[0].role).toMatch(/^ {2}/);
+        expect(headerItems[0].lines[0].role).toContain('┌');
+        expect(boundaryItems[0].lines[0].role).toContain('├');
+        expect(eventItems[0].lines[0].role).toMatch(/^│ /);
     }
 }

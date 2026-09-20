@@ -183,3 +183,12 @@
 - **完成检查**：复核 `todo.md` 无开放实施批次、工作树干净；components common/html/console 与 agent-ui console/web-console 依赖方向只保留规则允许的单向适配，未发现交叉引用或新增架构违规。
 - **全量验证**：独立重跑 `RUN_PTY=1 bash scripts/agents-gate.sh`，26 passed / 0 skipped / 26 total；覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次；本轮未发现需要追加修复的代码问题。
+
+## v63 — 会话时间线视觉收敛 ✅
+
+- **专业层级**：参考现代 coding agent 的信息层级，将厚重的横向分隔框收敛为 `┌ / ├ / │ / └` 连续执行轨道；折叠摘要使用 `⋮`，避免与会话结束语义冲突。
+- **跨平台落点**：变更仅位于 `agent-ui/src` 共享 renderer，DOM `ConsoleRenderer` 与 TUI `TuiRenderer` 共用同一渲染模型；未在 `components/html`、`components/console` 或宿主适配层增加平台 hack。
+- **主题一致性**：结构行与事件轨道从 `statusLabel`、`toolsAccent`、`statusErrorValue` 主题 token 派生，失败保持加粗强调，四套主题不再被深色硬编码绑定。
+- **契约保持**：保留单列状态 glyph、ARIA 文本、CJK/窄终端宽度、失败/阻塞展开、折叠窗口和 inspector 语义；新增回归断言锁定连续轨道与无 card 分隔线。
+- **验证**：agent-ui 1364 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 framework 四包、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次。

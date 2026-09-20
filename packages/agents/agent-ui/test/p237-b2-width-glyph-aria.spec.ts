@@ -62,7 +62,7 @@ export class P237B2WidthGlyphAriaTest {
             metadata: { uiKind: 'event', uiEventType: 'tool_invoked', status: 'running' }
         }] as any);
         expect(running[0].lines[0].status?.trim()).toEqual('●');
-        expect(running[0].lines[0].role?.trim()).toEqual('');
+        expect(running[0].lines[0].role?.trim()).toEqual('│');
 
         const completed = renderAgentConsoleMessageItems([{
             id: 'e2', role: 'assistant', content: 'Read files', createdAt: 1,
@@ -85,7 +85,7 @@ export class P237B2WidthGlyphAriaTest {
         }] as any)[0].lines[0];
         expect(completed.itemStyle?.padding).toEqual('0 1ch');
         expect(completed.itemStyle?.margin).toEqual('0');
-        expect(completed.itemStyle?.['border-left']).toEqual('1px solid #30363d');
+        expect(completed.itemStyle?.['border-left']).toEqual('1px solid #6e7681');
 
         const failed = renderAgentConsoleMessageItems([{
             id: 'e2', role: 'assistant', content: 'Tests failed', createdAt: 1,
@@ -93,7 +93,7 @@ export class P237B2WidthGlyphAriaTest {
         }] as any)[0].lines[0];
         expect(failed.itemStyle?.padding).toEqual('0 1ch');
         expect(failed.itemStyle?.margin).toEqual('0');
-        expect(failed.itemStyle?.['border-left']).toEqual('2px solid #f85149');
+        expect(failed.itemStyle?.['border-left']).toEqual('2px solid #ffa198');
 
         const answer = renderAgentConsoleMessageItems([{
             id: 'a1', role: 'assistant', content: 'Done', createdAt: 1
