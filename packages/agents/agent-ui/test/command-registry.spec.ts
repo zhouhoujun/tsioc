@@ -209,4 +209,16 @@ export class AgentConsoleCommandRegistryTest {
         expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/review'), 'task-7').diagnostics).toEqual([]);
         expect(parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/diff'), '--staged src/a.ts').diagnostics).toEqual([]);
     }
+
+    @Test('command interaction keeps correction flow and resolves aliases')
+    async commandInteractionCorrectionAndAlias() {
+        const invalid = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/copy'), 'unknown');
+        expect(invalid.diagnostics[0].code).toEqual('invalid');
+        expect(invalid.diagnostics[0].suggestion).toBeDefined();
+
+        const corrected = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/copy'), 'session');
+        expect(corrected.diagnostics).toEqual([]);
+        expect(corrected.resolved).toEqual(['session']);
+        expect(getAgentConsoleCommandName('/q')).toEqual('/quit');
+    }
 }
