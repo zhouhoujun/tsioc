@@ -654,13 +654,16 @@ export function renderAgentConsoleMessageItem(
     );
     const durationSuffixMatch = timelineMeta.match(/ \([^()]+\)$/);
     const durationSuffix = durationSuffixMatch?.[0] || '';
-    const timelineDetails = timelineMeta;
+    const timelineDetails = message?.metadata?.uiKind === 'event' || templateKind === 'timelineBoundary'
+        ? timelineMeta
+        : (durationSuffix ? timelineMeta.slice(0, -durationSuffix.length) : timelineMeta);
+    const workedSummary = templateKind === 'assistant' && timelineMeta.startsWith('Worked for ');
     const fallbackLine = templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
     const detailLimit = Math.max(1, Math.floor(context.messageDetailVisibleLines || 6));
-    const detailToggle = (sourceLines.length > detailLimit
+    const detailToggle = timelineEvent && (sourceLines.length > detailLimit
         || String(displayContent).split('\n').length > detailLimit
         || String(message?.content || '').split('\n').length > detailLimit)
         ? (context.messageDetailOpen && selected ? 'Click to collapse' : 'Click to expand')
@@ -683,18 +686,15 @@ export function renderAgentConsoleMessageItem(
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
         const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
-        const tokens = isLast && durationSuffix
-            ? [...rendered.tokens, { text: durationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
-            : rendered.tokens;
         return {
             ...rendered,
-            tokens,
+            tokens: rendered.tokens,
             messageId: message?.id,
             toggleContent: isFirst ? detailToggle : '',
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
-            meta: isFirst ? timelineDetails : '',
-            metaStyle: isFirst || isLast ? timelineMetaStyle : {},
+            meta: workedSummary ? (isLast ? timelineDetails : '') : (isFirst ? timelineDetails : ''),
+            metaStyle: workedSummary ? (isLast ? timelineMetaStyle : {}) : (isFirst || isLast ? timelineMetaStyle : {}),
             ariaLabel: [
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
@@ -1125,17 +1125,14 @@ function resolveTimelineMeta(
         }
         return duration ? ` (${duration})` : '';
     }
-    if (uiKind === 'event') {
+    if (templateKind === 'assistant' && uiKind !== 'event') {
+        const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
         const durationMs = resolveMessageDurationMs(message);
-        if (Number.isFinite(durationMs) && durationMs >= 0) {
-            duration = formatTimelineDuration(durationMs);
-        }
-    } else if (templateKind === 'assistant') {
-        const durationMs = resolveMessageDurationMs(message);
-        if (Number.isFinite(durationMs) && durationMs >= 0) {
-            duration = formatTimelineDuration(durationMs);
+        if (Number.isFinite(completedAt) && Number.isFinite(durationMs) && durationMs >= 0) {
+            return `Worked for ${formatWorkedDuration(durationMs)} · done ${formatDoneTime(completedAt)}`;
         }
     }
+    // Individual event/message durations are omitted; final replies carry the aggregate summary.
     if (uiKind !== 'event'
         && templateKind !== 'user'
         && showTimestamps
@@ -1166,6 +1163,18 @@ function resolveTimelineMeta(
     }
     const details = parts.length ? ` · ${parts.join(' · ')}` : '';
     return `${details}${duration ? ` (${duration})` : ''}`;
+}
+
+function formatWorkedDuration(durationMs: number): string {
+    const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+function formatDoneTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 function resolveMessageDurationMs(message?: AgentMessage): number {

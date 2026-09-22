@@ -316,6 +316,15 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(completed[0].lines[0].meta).not.toContain('09:05');
     }
 
+    @Test('final assistant reply shows one Codex-style worked/done summary')
+    renderWorkedDoneSummary() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'final-summary', role: 'assistant', content: '完成', createdAt: 1000,
+            metadata: { durationMs: 542000, completedAt: 325000 }
+        }] as any);
+        expect(items[0].lines[0].meta).toContain('Worked for 9m 2s · done ');
+    }
+
     @Test('timeline event rows use compact hierarchy markers')
     renderTimelineEventHierarchy() {
         const items = renderAgentConsoleMessageItems([{
