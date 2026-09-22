@@ -2757,7 +2757,9 @@ export class AgentConsoleMessagesPanelComponent {
             showUsername,
             username: this.state.consoleOptions.username,
             timelineMode,
-            timelineLabels: this.state.consoleOptions.timelineLabels
+            timelineLabels: this.state.consoleOptions.timelineLabels,
+            messageDetailOpen,
+            messageDetailVisibleLines: this.state.messageDetailVisibleLines
         });
         messageItemsCache.set(this, {
             messages,

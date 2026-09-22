@@ -113,6 +113,8 @@ export interface AgentConsoleMessageRenderContext {
     /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
     markdownBridge?: MarkdownWorkerBridge;
     rendererRegistry?: AgentConsoleMessageRendererRegistry;
+    messageDetailOpen?: boolean;
+    messageDetailVisibleLines?: number;
 }
 
 export interface AgentConsoleResolvedMessageRenderer {
@@ -655,6 +657,12 @@ export function renderAgentConsoleMessageItem(
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
+    const detailLimit = Math.max(1, Math.floor(context.messageDetailVisibleLines || 6));
+    const detailToggle = (sourceLines.length > detailLimit
+        || String(displayContent).split('\n').length > detailLimit
+        || String(message?.content || '').split('\n').length > detailLimit)
+        ? (context.messageDetailOpen && selected ? 'Click to collapse' : 'Click to expand')
+        : '';
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
@@ -677,6 +685,7 @@ export function renderAgentConsoleMessageItem(
             ...rendered,
             tokens: rendered.tokens,
             messageId: message?.id,
+            toggleContent: isFirst ? detailToggle : '',
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
             meta: isFirst ? timelineDetails : '',
