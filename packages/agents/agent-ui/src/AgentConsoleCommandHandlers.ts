@@ -389,7 +389,7 @@ async function handleApproveDeny(ctx: CommandHandlerContext, args: string, resol
     return true;
 }
 
-// ── /quit + /exit ────────────────────────────────────────────────────────────
+// ── /exit ────────────────────────────────────────────────────────────────────
 
 async function handleQuitExit(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     await ctx.requestTerminalExit(ctx.closingSessionMessage());
@@ -1403,7 +1403,6 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/messages': handleMessages,
     '/approve': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
     '/deny': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
-    '/quit': handleQuitExit,
     '/exit': handleQuitExit,
     '/multiline': handleMultiline,
     '/cancel': handleCancel,

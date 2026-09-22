@@ -239,12 +239,10 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         { name: 'verb', type: 'enum', values: ['show', 'stop', 'undo', 'current', 'all', 'running', 'completed', 'failed', 'cancelled'] },
         { name: 'arg', variadic: true }
     ] },
-    { name: '/quit', description: 'quit the agent console', group: 'system', aliases: ['/q'] },
     {
         name: '/exit',
         description: 'exit',
-        group: 'system',
-        aliases: ['/x']
+        group: 'system'
     }
 ];
 

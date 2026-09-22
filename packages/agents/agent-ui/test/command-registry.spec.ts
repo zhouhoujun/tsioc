@@ -22,7 +22,7 @@ const GROUP_COUNTS: Record<string, number> = {
     review: 8,
     hooks: 4,
     delegation: 10,
-    system: 3
+    system: 2
 };
 
 const NEEDS_ARGS_COMMANDS = [
@@ -41,9 +41,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 91 commands with defined groups, /help first')
+    @Test('defines all 90 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(91);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(90);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);
@@ -78,8 +78,10 @@ export class AgentConsoleCommandRegistryTest {
                 expect(getAgentConsoleCommandName(alias)).toEqual(def.name);
             });
         });
-        expect(getAgentConsoleCommandName('/q')).toEqual('/quit');
-        expect(getAgentConsoleCommandName('/x')).toEqual('/exit');
+        expect(getAgentConsoleCommandName('/exit')).toEqual('/exit');
+        expect(getAgentConsoleCommandDefinition('/q')).toBeUndefined();
+        expect(getAgentConsoleCommandDefinition('/x')).toBeUndefined();
+        expect(getAgentConsoleCommandDefinition('/quit')).toBeUndefined();
         expect(getAgentConsoleCommandName('/unknown')).toEqual('/unknown');
     }
 
@@ -96,18 +98,18 @@ export class AgentConsoleCommandRegistryTest {
         const hints = agentConsoleCommandHints(['/external', '/help', '/q']);
         expect(hints[0]).toEqual('/help');
         expect(new Set(hints).size).toEqual(hints.length);
-        expect(hints).toContain('/quit');
-        expect(hints).toContain('/q');
+        expect(hints).not.toContain('/quit');
         expect(hints).toContain('/external');
         expect(hints.filter(hint => hint === '/help').length).toEqual(1);
         const base = agentConsoleCommandHints();
         base.forEach(hint => expect(hint.startsWith('/')).toEqual(true));
+        expect(base).not.toContain('/q');
     }
 
     @Test('formats descriptions as [组] 描述 and resolves aliases')
     descriptionFormat() {
         expect(resolveAgentConsoleCommandDescription('/help')).toEqual('[核心] show command help, grouped by category');
-        expect(resolveAgentConsoleCommandDescription('/q')).toEqual('[系统] quit the agent console');
+        expect(resolveAgentConsoleCommandDescription('/q')).toEqual(undefined);
         expect(resolveAgentConsoleCommandDescription('/unknown')).toEqual(undefined);
     }
 
@@ -219,6 +221,6 @@ export class AgentConsoleCommandRegistryTest {
         const corrected = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/copy'), 'session');
         expect(corrected.diagnostics).toEqual([]);
         expect(corrected.resolved).toEqual(['session']);
-        expect(getAgentConsoleCommandName('/q')).toEqual('/quit');
+        expect(getAgentConsoleCommandName('/exit')).toEqual('/exit');
     }
 }

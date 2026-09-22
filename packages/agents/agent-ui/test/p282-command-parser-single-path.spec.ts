@@ -315,11 +315,10 @@ export class P282CommandParserSinglePathTest {
 
     @Test('aliases resolve to canonical definition before parsing')
     aliasResolvesForParse() {
-        expect(getAgentConsoleCommandName('/q')).toEqual('/quit');
-        expect(getAgentConsoleCommandDefinition('/q')).toBeDefined();
-        // aliases carry no args schema but inherit canonical behavior at dispatch
-        const canonical = getAgentConsoleCommandName('/q');
-        expect(canonical).toEqual('/quit');
+        expect(getAgentConsoleCommandName('/exit')).toEqual('/exit');
+        expect(getAgentConsoleCommandDefinition('/q')).toBeUndefined();
+        expect(getAgentConsoleCommandDefinition('/x')).toBeUndefined();
+        expect(getAgentConsoleCommandDefinition('/quit')).toBeUndefined();
     }
 
     @Test('session nav: /session /new /tools accept an optional value')
