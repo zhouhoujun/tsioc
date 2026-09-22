@@ -514,6 +514,7 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
             return;
         }
         if (contentKey && normalizedConversationContent(messages[finalIndex]) === contentKey) return;
+        if (contentKey && isSupersededConversationSnapshot(message, messages[finalIndex])) return;
         if (contentKey && seenFinalContent.has(contentKey)) return;
         result.push({
             ...message,
@@ -522,6 +523,24 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
         if (contentKey) seenFinalContent.add(contentKey);
     });
     return result;
+}
+
+function isSupersededConversationSnapshot(message: AgentMessage, finalMessage?: AgentMessage): boolean {
+    if (!finalMessage) return false;
+    const earlier = normalizedConversationContent(message);
+    const final = normalizedConversationContent(finalMessage);
+    if (!earlier || !final) return false;
+    if (final.startsWith(earlier)) return true;
+
+    // Persisted stream snapshots can contain list markers whose text only
+    // arrives in the completed message. Match their substantial prose instead
+    // of treating the incomplete snapshot as a separate preamble.
+    const substantialLines = String(message.content || '')
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(line => line.replace(/^\s*(?:[-*+]\s*|\d+\.\s*)/, '').replace(/\s+/g, ' ').trim())
+        .filter(line => line.length >= 32);
+    return substantialLines.some(line => final.includes(line));
 }
 
 function isNonConversationAssistant(message: AgentMessage): boolean {

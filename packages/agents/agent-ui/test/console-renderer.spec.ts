@@ -82,7 +82,7 @@ export class AgentConsoleDashboardRendererTest {
         expect(workingPanel).toBeTruthy();
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
-        expect(workingLines.some(line => line.includes('1200 tokens'))).toBe(true);
+        expect(workingLines.some(line => line.includes('1.2K tokens'))).toBe(true);
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('world') && !line.includes('•'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
@@ -450,6 +450,7 @@ export class AgentConsoleMessagesRendererTest {
     async renderMessageStatuses() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([
+            { id: 'user-duration', role: 'user', content: '今天天气怎么样', createdAt: 500 },
             {
                 id: 'a1',
                 role: 'assistant',
@@ -473,6 +474,38 @@ export class AgentConsoleMessagesRendererTest {
 
         expect(messageLines.some(line => line.includes('•') && line.includes('streaming response'))).toBe(true);
         expect(messageLines.some(line => line.includes('Error ·') && line.includes('Error: broken'))).toBe(true);
+    }
+
+    @Test('renders elapsed time in gray at the end of tool and final reply rows')
+    async rendersElapsedTimeAtRowEnd() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            {
+                id: 'tool-duration', role: 'assistant',
+                content: 'agent.tool.weather completed · Chengdu, Sichuan, CN 24.6°C Mainly clear',
+                createdAt: 1_000,
+                metadata: {
+                    uiKind: 'event', uiEventType: 'tool_completed', status: 'success', elapsedMs: 6_400
+                }
+            },
+            {
+                id: 'answer-duration', role: 'assistant', content: '你现在所在位置约为四川成都。',
+                createdAt: 2_000, metadata: { elapsedMs: 0 }
+            }
+        ] as any);
+        await settleDynamicMessages(ref);
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        const toolLine = lines.find(line => line.includes('agent.tool.weather completed')) || '';
+        const answerLine = lines.find(line => line.includes('你现在所在位置约为四川成都。')) || '';
+
+        expect(toolLine.trimEnd().endsWith('Mainly clear (6.4s)')).toBe(true);
+        expect(answerLine).toContain('你现在所在位置约为四川成都。');
+        expect(answerLine.trimEnd().endsWith('(0ms)')).toBe(true);
+        expect(toolLine.includes('(6.4s)agent.tool.weather')).toBe(false);
+
     }
 
     @Test('mounts semantic route components and only folds Thought by default')
@@ -646,6 +679,14 @@ export class AgentConsoleMessagesRendererTest {
             const componentFactory = tuiCtx.get(ComponentFactory);
             const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
             await consoleRef.render();
+            expect(consoleRef.instance.resolveTerminalCursorStyle()).toEqual('bar');
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
+            consoleRef.instance.sessionState.setStatus('running');
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            consoleRef.instance.sessionState.setStatus('reasoning');
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            consoleRef.instance.sessionState.setStatus('idle');
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             const renderer = tuiCtx.get(TuiRenderer);
 
             consoleRef.instance.sessionState.setMessages([{
@@ -1397,6 +1438,71 @@ export class AgentConsoleTuiRendererTest {
 
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 60 });
             expect(rootLines.some((line: string) => line.includes('hello'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('final tui output has no trailing one-cell background block on input or user text')
+    async noTrailingBackgroundCellInTui() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            consoleRef.instance.sessionState.setInput('draft-text');
+            consoleRef.instance.sessionState.setMessages([
+                { id: 'u1', role: 'user', content: 'timeline-user-text', createdAt: 1 } as any
+            ]);
+            await Promise.resolve();
+
+            const lines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 60 });
+            for (const marker of ['draft-text', 'timeline-user-text']) {
+                const line = lines.find(value => value.includes(marker)) || '';
+                const tail = line.slice(line.indexOf(marker) + marker.length);
+                expect(tail).not.toMatch(/^\x1b\[0m\x1b\[[0-9;]*48;[0-9;]*m \x1b\[0m/);
+            }
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('final verbose timeline renders one answer and no marker-only shells')
+    async timelineDoesNotRepeatStreamSnapshotsOrFailureDetail() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const state = consoleRef.instance.sessionState;
+            const shared = '下面基于截至 2024 年的确定趋势，并结合行业延续方向做一个谨慎判断。';
+            const finalAnswer = `${shared}\nAgent 最新技术发展方向主要集中在这几类：\n1. 从聊天助手走向可执行系统\n   - 自动写代码`;
+            state.setTimelineMode('verbose');
+            state.setMessages([
+                { id: 'u1', role: 'user', content: 'Agent 最新技术发展方向', createdAt: 1 } as any,
+                { id: 'a1', role: 'assistant', content: `我先快速查一下近期公开资料。\n${shared}\n1.\n   -\n   -`, createdAt: 2 } as any,
+                {
+                    id: 'e1', role: 'assistant', content: `web search unavailable\n${finalAnswer}`, createdAt: 3,
+                    metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
+                } as any,
+                { id: 'a2', role: 'assistant', content: finalAnswer, createdAt: 4 } as any
+            ]);
+            await settleDynamicMessages(consoleRef);
+
+            const panel = consoleRef.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+            expect(panel.instance.visibleMessages.map(message => message.id)).toContain('a2');
+            const visible = renderer.renderToTuiLines(panel.hostView.rootNodes[0], { width: 100 })
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            expect(visible.join('\n').split('自动写代码').length - 1).toBe(1);
+            expect(visible.some(line => /^\s*(?:\d+\.|[•◦▪])\s*$/.test(line))).toBe(false);
+            expect(visible.some(line => line.includes('web search unavailable'))).toBe(true);
+            expect(visible.some(line => line.includes('▍'))).toBe(false);
         } finally {
             await tuiCtx.close();
         }

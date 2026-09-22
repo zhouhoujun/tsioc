@@ -1,4 +1,5 @@
 import { Module } from '@tsdi/ioc';
+import { TransformModule } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
@@ -84,6 +85,7 @@ import {
 @Module({
     imports: [
         ComponentsModule,
+        TransformModule,
         AgentModule,
         I18nModule.withLocales({
             en: agentUiEnglish,

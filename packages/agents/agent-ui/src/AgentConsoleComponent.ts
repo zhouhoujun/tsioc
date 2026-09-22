@@ -170,6 +170,7 @@ import {
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
+import { AgentUiConfigService } from './agent-ui-config';
 import {
     AgentConsoleMentionCatalogItem,
     AgentConsoleWorkspaceMentionsProvider
@@ -210,6 +211,38 @@ interface AgentConsoleQueuedPrompt {
     attachments: AgentConsolePendingAttachment[];
     command?: boolean;
 }
+
+type AgentWizardStepId = 'provider' | 'base-url' | 'auth' | 'credential' | 'tiers' | 'model-fast' | 'model-balanced' | 'model-strong' | 'confirm';
+
+interface AgentWizardStepDef {
+    id: AgentWizardStepId;
+    kind: 'choose' | 'enter' | 'confirm';
+    label: string;
+}
+
+interface AgentWizardProviderDef {
+    id: string;
+    label: string;
+    adapter: 'openai-compatible' | 'anthropic' | 'openai';
+    baseUrl: string;
+    apiKeyEnv: string;
+    models: string[];
+}
+
+const AGENT_WIZARD_PROVIDERS: AgentWizardProviderDef[] = [
+    { id: 'deepseek', label: 'DeepSeek', adapter: 'openai-compatible', baseUrl: 'https://api.deepseek.com', apiKeyEnv: 'DEEPSEEK_API_KEY', models: ['deepseek-chat', 'deepseek-reasoner'] },
+    { id: 'openai', label: 'OpenAI', adapter: 'openai', baseUrl: 'https://api.openai.com', apiKeyEnv: 'OPENAI_API_KEY', models: ['gpt-4.1-mini', 'gpt-4.1', 'gpt-5'] },
+    { id: 'anthropic', label: 'Anthropic', adapter: 'anthropic', baseUrl: 'https://api.anthropic.com', apiKeyEnv: 'ANTHROPIC_API_KEY', models: ['claude-haiku-3-5', 'claude-sonnet-4', 'claude-opus-4-1'] },
+    { id: 'gemini', label: 'Google Gemini', adapter: 'openai-compatible', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', apiKeyEnv: 'GEMINI_API_KEY', models: ['gemini-2.5-flash', 'gemini-2.5-pro'] },
+    { id: 'custom-openai', label: 'Custom OpenAI-compatible', adapter: 'openai-compatible', baseUrl: '', apiKeyEnv: 'OPENAI_API_KEY', models: [] },
+    { id: 'custom-anthropic', label: 'Custom Anthropic-compatible', adapter: 'anthropic', baseUrl: '', apiKeyEnv: 'ANTHROPIC_API_KEY', models: [] }
+];
+
+const AGENT_WIZARD_TIERS: Array<{ id: 'single' | 'pair' | 'auto'; label: string; description: string }> = [
+    { id: 'single', label: 'Single model', description: 'One model for everything' },
+    { id: 'pair', label: 'Fast + strong', description: 'Two models: fast for light work, strong for deep dives' },
+    { id: 'auto', label: 'Auto routing', description: 'Fast, balanced, and strong; complexity decides' }
+];
 @Component({
     selector: 'agent-console',
     template: `
@@ -293,6 +326,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
     protected modelReasoningEffort: 'low' | 'medium' | 'high' = 'medium';
+    protected providerWizard?: {
+        stepIndex: number;
+        values: {
+            providerId?: string;
+            baseUrl?: string;
+            authMode?: 'key' | 'env';
+            credential?: string;
+            tiers?: 'single' | 'pair' | 'auto';
+            modelFast?: string;
+            modelBalanced?: string;
+            modelStrong?: string;
+        };
+    };
     protected yoloMode = false;
 
     constructor(
@@ -326,6 +372,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(AgentConsoleStashStore) private stashStore?: AgentConsoleStashStore | null,
         @Optional() private modelStore?: AgentConsoleModelStore | null,
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
+        @Optional() private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null
     ) {
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
@@ -2323,6 +2370,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     async onInit(): Promise<void> {
         this.state.submitAction = this.submitActionHandler;
+        this.state.escapeAction = () => this.handleWizardEscape();
         this.state.questionAction = this.appRpc
             ? async input => { await this.appRpc!.request('question.answer', input); }
             : undefined;
@@ -3101,6 +3149,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             openModelSwitcher: () => self.openModelSwitcher(),
             activateModelProfile: (n) => self.activateModelProfile(n),
             queueNextTurnModelProfile: (n) => self.queueNextTurnModelProfile(n),
+            startProviderWizard: () => self.startProviderWizard(),
             openUsage: (i) => self.openUsage(i),
         } as CommandHandlerContext;
     }
@@ -3249,6 +3298,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
+        if (this.state.providerWizard?.open && this.state.providerWizard?.phase === 'enter') {
+            await this.advanceProviderWizard(value);
+            return;
+        }
         const editTargetId = this.editTargetMessageId;
         const editConsumed = !!editTargetId;
         if (editTargetId) {
@@ -3361,6 +3414,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.state.clearActivities();
             this.state.pushActivity('turn', this.state.summarize(value));
             this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
+            this.state.resetTurnTokenUsage();
             this.updateTerminalTitle();
 
         try {
@@ -3845,9 +3899,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback; only
-    // explicit dynamic mode may be constrained to the viewport height.
+    // explicit dynamic mode and mutable streaming turns are constrained to the
+    // viewport. A long partial cannot be rewritten after it enters native
+    // scrollback, so only commit the completed response to scrollback.
     shouldUseNativeScrollback(): boolean {
-        return this.state.consoleOptions.messageLayout !== 'dynamic';
+        return this.state.consoleOptions.messageLayout !== 'dynamic'
+            && this.state.status !== 'running'
+            && this.state.status !== 'reasoning';
     }
 
     getTerminalRenderedLines(): string[] {
@@ -6636,6 +6694,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
             updateTerminalTitle: () => this.updateTerminalTitle(),
             persistSettings: patch => this.persistSettings(patch),
+            addModelProvider: () => this.startProviderWizard(),
             resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
             getFavorites: () => this.modelFavorites,
             setFavorites: value => { this.modelFavorites = value; },
@@ -6646,6 +6705,514 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             nextActivateRequestId: () => ++this.activateModelRequestId,
             peekActivateRequestId: () => this.activateModelRequestId
         };
+    }
+
+    protected startProviderWizard(): void {
+        if (!this.appRpc && !this.uiConfig) {
+            this.notify('Model configuration storage is unavailable.');
+            return;
+        }
+        if (this.isTurnInProgress()) {
+            this.notifyBusyState();
+            return;
+        }
+        this.providerWizard = { stepIndex: 0, values: {} };
+        this.showProviderWizardStep();
+    }
+
+    protected wizardProviderDef(id?: string): AgentWizardProviderDef | undefined {
+        return AGENT_WIZARD_PROVIDERS.find(item => item.id === id);
+    }
+
+    protected wizardTierLabel(tier?: string): string {
+        return AGENT_WIZARD_TIERS.find(item => item.id === tier)?.label || 'Auto routing';
+    }
+
+    protected handleWizardEscape(): boolean {
+        if (!this.providerWizard) return false;
+        if (this.providerWizard.stepIndex === 0) {
+            this.cancelProviderWizard();
+        } else {
+            this.providerWizard.stepIndex -= 1;
+            this.showProviderWizardStep();
+        }
+        return true;
+    }
+
+    protected cancelProviderWizard(): boolean {
+        if (!this.providerWizard) return false;
+        this.providerWizard = undefined;
+        this.state.closeProviderWizard();
+        this.state.setInputPlaceholder(this.state.consoleOptions.inputPlaceholder);
+        this.state.setInput('', 0);
+        this.notify('Add provider cancelled.');
+        return true;
+    }
+
+    protected resetProviderWizardComposer(): void {
+        this.state.closeProviderWizard();
+        this.state.setInputPlaceholder(this.state.consoleOptions.inputPlaceholder);
+        this.state.setInput('', 0);
+    }
+
+    protected providerWizardSteps(): AgentWizardStepDef[] {
+        const values = this.providerWizard?.values || {};
+        const def = this.wizardProviderDef(values.providerId);
+        const steps: AgentWizardStepDef[] = [
+            { id: 'provider', kind: 'choose', label: 'Choose a provider' }
+        ];
+        if (!def || !def.baseUrl) {
+            steps.push({ id: 'base-url', kind: 'enter', label: 'API base URL' });
+        }
+        steps.push({ id: 'auth', kind: 'choose', label: 'Authentication' });
+        steps.push({ id: 'credential', kind: 'enter', label: values.authMode === 'env' ? 'Environment variable' : 'API key' });
+        steps.push({ id: 'tiers', kind: 'choose', label: 'Model routing' });
+        const tiers = values.tiers || 'auto';
+        steps.push({ id: 'model-fast', kind: 'enter', label: tiers === 'single' ? 'Model' : 'Fast model' });
+        if (tiers === 'auto') {
+            steps.push({ id: 'model-balanced', kind: 'enter', label: 'Balanced model' });
+        }
+        if (tiers !== 'single') {
+            steps.push({ id: 'model-strong', kind: 'enter', label: 'Strong model' });
+        }
+        steps.push({ id: 'confirm', kind: 'confirm', label: 'Review & save' });
+        return steps;
+    }
+
+    protected wizardStepHelp(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
+        const def = this.wizardProviderDef(values.providerId);
+        switch (step.id) {
+            case 'provider':
+                return 'Pick a provider to connect. Custom providers let you bring your own API URL.';
+            case 'base-url':
+                return 'Enter the API endpoint, e.g. https://api.example.com/v1.';
+            case 'auth':
+                return 'Choose how the API key is provided.';
+            case 'credential':
+                return values.authMode === 'env'
+                    ? 'Enter the environment variable that holds the API key, or accept the suggested one.'
+                    : 'Paste the API key. It is stored locally and never shown again.';
+            case 'tiers':
+                return 'Choose how many models to configure for this provider.';
+            case 'model-fast':
+                return def?.models.length ? `Suggested: ${def.models[0]}.` : 'Enter the model identifier to use.';
+            case 'model-balanced':
+                return def?.models.length ? `Suggested: ${def.models[Math.floor((def.models.length - 1) / 2)] || def.models[0]}.` : 'Enter the balanced model identifier.';
+            case 'model-strong':
+                return def?.models.length ? `Suggested: ${def.models[def.models.length - 1]}.` : 'Enter the strong model identifier.';
+            case 'confirm':
+                return 'Review the provider details, then choose how to save.';
+            default:
+                return '';
+        }
+    }
+
+    protected providerWizardPrefill(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
+        const def = this.wizardProviderDef(values.providerId);
+        switch (step.id) {
+            case 'base-url':
+                return values.baseUrl || def?.baseUrl || '';
+            case 'credential':
+                return values.credential || (values.authMode === 'env' ? def?.apiKeyEnv || '' : '');
+            case 'model-fast':
+                return values.modelFast || (def?.models[0] || '');
+            case 'model-balanced':
+                return values.modelBalanced || (def?.models[Math.floor((def.models.length - 1) / 2)] || def?.models[0] || '');
+            case 'model-strong':
+                return values.modelStrong || (def?.models[def.models.length - 1] || '');
+            default:
+                return '';
+        }
+    }
+
+    protected providerWizardSummary(): string[] {
+        const values = this.providerWizard?.values || {};
+        const def = this.wizardProviderDef(values.providerId);
+        const baseUrl = values.baseUrl || def?.baseUrl || '';
+        const credential = values.authMode === 'env' ? `env ${values.credential}` : 'API key set';
+        const models = [values.modelFast, values.modelBalanced, values.modelStrong].filter(Boolean).join(' · ');
+        return [
+            `${def?.label || values.providerId || 'Provider'} · ${baseUrl || 'no base URL'}`,
+            credential,
+            this.wizardTierLabel(values.tiers),
+            models ? `Models: ${models}` : ''
+        ].filter(Boolean);
+    }
+
+    protected showProviderWizardStep(): void {
+        const wizard = this.providerWizard;
+        if (!wizard) return;
+        const steps = this.providerWizardSteps();
+        wizard.stepIndex = Math.min(wizard.stepIndex, steps.length - 1);
+        const step = steps[wizard.stepIndex];
+        const count = steps.length;
+        const progress = `Step ${wizard.stepIndex + 1}/${count}`;
+        const summary = this.providerWizardSummary();
+        if (step.kind === 'choose') {
+            this.state.setProviderWizard({
+                phase: 'choose', stepIndex: wizard.stepIndex, stepCount: count,
+                stepLabel: step.label, progress, prompt: '',
+                help: this.wizardStepHelp(step, wizard.values),
+                hint: 'enter confirm   esc back', secret: false, summary
+            });
+            this.openProviderWizardChoice(step);
+            return;
+        }
+        if (step.kind === 'confirm') {
+            this.state.setProviderWizard({
+                phase: 'confirm', stepIndex: wizard.stepIndex, stepCount: count,
+                stepLabel: step.label, progress, prompt: '',
+                help: this.wizardStepHelp(step, wizard.values),
+                hint: 'enter confirm   esc back', secret: false, summary
+            });
+            this.openProviderWizardConfirm();
+            return;
+        }
+        const secret = step.id === 'credential' && wizard.values.authMode === 'key';
+        const prefill = this.providerWizardPrefill(step, wizard.values);
+        this.state.inputSecret = secret;
+        this.state.inputPrompt = `${wizard.stepIndex + 1}/${count} › `;
+        this.state.setInputPlaceholder(step.label);
+        this.state.setInput(prefill, prefill.length);
+        this.state.setProviderWizard({
+            phase: 'enter', stepIndex: wizard.stepIndex, stepCount: count,
+            stepLabel: step.label, progress, prompt: `${wizard.stepIndex + 1}/${count} › `,
+            help: this.wizardStepHelp(step, wizard.values),
+            hint: 'enter confirm   esc back', secret, summary
+        });
+        this.state.setInputFocused(true);
+        this.notify(`${progress}: ${this.wizardStepHelp(step, wizard.values)}`);
+    }
+
+    protected openProviderWizardChoice(step: AgentWizardStepDef): void {
+        const wizard = this.providerWizard;
+        const values = wizard?.values || {};
+        const def = this.wizardProviderDef(values.providerId);
+        let title = 'Add provider';
+        let options: AgentConsoleSelectOption[] = [];
+        let selected = 0;
+        switch (step.id) {
+            case 'provider':
+                title = 'Add provider · choose provider';
+                options = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
+                    label: item.label,
+                    value: item.id,
+                    description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
+                    detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
+                    shortcut: String(index + 1)
+                }));
+                options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
+                break;
+            case 'auth':
+                title = `${def?.label || 'Provider'} · authentication`;
+                options = [
+                    { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
+                    { label: 'Use environment variable', value: 'env', description: `Reference ${def?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
+                ];
+                selected = values.authMode === 'env' ? 1 : 0;
+                break;
+            case 'tiers':
+                title = `${def?.label || 'Provider'} · model routing`;
+                options = AGENT_WIZARD_TIERS.map((item, index) => ({
+                    label: item.label,
+                    value: item.id,
+                    description: item.description,
+                    shortcut: String(index + 1)
+                }));
+                selected = Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto')));
+                break;
+            default:
+                return;
+        }
+        this.state.selectMenuAction = (value: string | undefined) => this.handleProviderWizardChoice(value);
+        this.state.closeSelectMenu();
+        this.state.openSelectMenu(title, options, selected, 'enter confirm   esc back');
+    }
+
+    protected async handleProviderWizardChoice(value?: string): Promise<void> {
+        const wizard = this.providerWizard;
+        if (!wizard) return;
+        if (value === undefined || value === '__cancel__') {
+            this.handleWizardEscape();
+            return;
+        }
+        const step = this.providerWizardSteps()[wizard.stepIndex];
+        const values = wizard.values;
+        switch (step.id) {
+            case 'provider': {
+                values.providerId = value;
+                const def = this.wizardProviderDef(value);
+                values.baseUrl = def?.baseUrl || '';
+                values.authMode = 'key';
+                values.tiers = 'auto';
+                break;
+            }
+            case 'auth':
+                if (value === 'key' || value === 'env') {
+                    values.authMode = value;
+                    if (value === 'env') {
+                        values.credential = this.wizardProviderDef(values.providerId)?.apiKeyEnv || values.credential;
+                    }
+                }
+                break;
+            case 'tiers':
+                values.tiers = value as 'single' | 'pair' | 'auto';
+                break;
+            default:
+                return;
+        }
+        wizard.stepIndex += 1;
+        this.showProviderWizardStep();
+    }
+
+    protected wizardProviderName(values: NonNullable<typeof this.providerWizard>['values']): string {
+        const def = this.wizardProviderDef(values.providerId);
+        const base = values.providerId || 'custom';
+        if (!def) return base;
+        if (def.baseUrl) return def.id;
+        const host = String(values.baseUrl || '').replace(/^https?:\/\//i, '').split(/[/:]/)[0].trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+        return host || 'custom';
+    }
+
+    protected providerWizardConfirmOptions(): AgentConsoleSelectOption[] {
+        const values = this.providerWizard?.values || {};
+        const summary = this.providerWizardSummary().join('\n');
+        const options: AgentConsoleSelectOption[] = [
+            { label: 'Save & activate', value: 'save-active', description: `Use ${this.wizardProviderName(values)} immediately`, detail: summary },
+            { label: 'Save only', value: 'save', description: 'Configure now, switch later with /model', detail: summary }
+        ];
+        if (this.appRpc && (values.credential || this.wizardProviderDef(values.providerId)?.apiKeyEnv)) {
+            options.push({ label: 'Test connection', value: 'test', description: 'Verify the key and base URL reach the provider', detail: summary });
+        }
+        options.push({ label: 'Edit…', value: 'edit', description: 'Change a field before saving' });
+        options.push({ label: 'Cancel', value: 'cancel', description: 'Discard this provider' });
+        return options;
+    }
+
+    protected openProviderWizardConfirm(): void {
+        this.state.selectMenuAction = (value: string | undefined) => this.handleProviderWizardConfirm(value);
+        this.state.closeSelectMenu();
+        this.state.openSelectMenu('Confirm provider', this.providerWizardConfirmOptions(), 0, 'enter confirm   esc back');
+    }
+
+    protected async handleProviderWizardConfirm(action?: string): Promise<void> {
+        if (!action) {
+            this.handleWizardEscape();
+            return;
+        }
+        switch (action) {
+            case 'save-active':
+                await this.commitProviderWizard();
+                await this.activateModelProfile(`${this.wizardProviderName(this.providerWizard?.values || {})}-fast`).catch(() => undefined);
+                return;
+            case 'save':
+                await this.commitProviderWizard();
+                return;
+            case 'test':
+                await this.testProviderConnection();
+                return;
+            case 'edit':
+                await this.openProviderWizardEditor();
+                return;
+            case 'cancel':
+                this.cancelProviderWizard();
+                return;
+            default:
+                return;
+        }
+    }
+
+    protected async openProviderWizardEditor(): Promise<void> {
+        const wizard = this.providerWizard;
+        if (!wizard) return;
+        const steps = this.providerWizardSteps();
+        const entries = steps
+            .map((step, index) => ({ step, index }))
+            .filter(item => !['provider', 'confirm'].includes(item.step.id))
+            .map(item => ({
+                label: item.step.label,
+                value: String(item.index),
+                description: `Back to ${item.step.label.toLowerCase()}`
+            }));
+        const choice = await this.state.selectAsync('Edit provider', entries, 0, 'enter confirm   esc back');
+        if (choice === undefined) {
+            this.showProviderWizardStep();
+            return;
+        }
+        const index = Number(choice);
+        const target = steps[index];
+        if (!target) return;
+        wizard.stepIndex = index;
+        this.showProviderWizardStep();
+    }
+
+    protected async testProviderConnection(): Promise<void> {
+        const wizard = this.providerWizard;
+        if (!wizard || !this.appRpc) return;
+        const values = wizard.values;
+        const def = this.wizardProviderDef(values.providerId);
+        const baseUrl = values.baseUrl || def?.baseUrl || '';
+        if (!/^https?:\/\//i.test(baseUrl)) {
+            this.notify('Enter a valid base URL before testing.');
+            return;
+        }
+        this.notify('Testing connection…');
+        let result: { ok: boolean; models?: string[]; error?: string };
+        try {
+            result = await this.appRpc.request('provider.test', {
+                provider: def?.adapter || 'openai-compatible',
+                baseUrl,
+                ...(values.authMode === 'key' ? { apiKey: values.credential } : { apiKeyEnv: values.credential || def?.apiKeyEnv })
+            }, this.rpcRequestContext());
+        } catch (error) {
+            result = { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+        const summaryLines = this.providerWizardSummary();
+        const summary = summaryLines.join('\n');
+        if (!this.providerWizard) return;
+        const count = result.models?.length || 0;
+        const options: AgentConsoleSelectOption[] = result.ok
+            ? [
+                { label: 'Save & activate', value: 'save-active', description: `Connection OK · ${count} model${count === 1 ? '' : 's'} found`, detail: summary },
+                { label: 'Save only', value: 'save', description: 'Connection OK · save for later', detail: summary },
+                { label: 'Edit…', value: 'edit', description: 'Change a field before saving' },
+                { label: 'Cancel', value: 'cancel', description: 'Discard this provider' }
+            ]
+            : [
+                { label: 'Retry test', value: 'test', description: `Last attempt failed: ${result.error || 'unknown error'}`, detail: summary },
+                { label: 'Save & activate', value: 'save-active', description: 'Save anyway and continue', detail: summary },
+                { label: 'Save only', value: 'save', description: 'Save anyway for later', detail: summary },
+                { label: 'Edit…', value: 'edit', description: 'Fix the connection before saving' },
+                { label: 'Cancel', value: 'cancel', description: 'Discard this provider' }
+            ];
+        const details = result.ok ? `${count} model(s) available` : `Connection failed: ${result.error || 'unknown error'}`;
+        this.state.setProviderWizard({
+            phase: 'confirm', summary: summaryLines, help: details, hint: 'enter confirm   esc back',
+            secret: false
+        });
+        this.state.selectMenuAction = (value: string | undefined) => this.handleProviderWizardConfirm(value);
+        this.state.closeSelectMenu();
+        this.state.openSelectMenu(result.ok ? 'Connection OK' : 'Connection failed', options, 0, 'enter confirm   esc back');
+    }
+
+    protected async commitProviderWizard(): Promise<void> {
+        const wizard = this.providerWizard;
+        if (!wizard) return;
+        const values = wizard.values;
+        const def = this.wizardProviderDef(values.providerId);
+        if (!def || !values.providerId || !values.modelFast) {
+            this.notify('Provider was not saved: a provider and model are required.');
+            this.showProviderWizardStep();
+            return;
+        }
+        const name = this.wizardProviderName(values);
+        const baseUrl = (values.baseUrl || def.baseUrl || '').replace(/\/+$/, '');
+        if (!/^https?:\/\//i.test(baseUrl)) {
+            this.notify('Provider was not saved: enter a valid http(s) API base URL.');
+            wizard.stepIndex = Math.max(0, this.providerWizardSteps().findIndex(step => step.id === 'base-url'));
+            this.showProviderWizardStep();
+            return;
+        }
+        const tiers = values.tiers || 'auto';
+        const makeProfile = (model: string): { provider: string; model: string; baseUrl: string; apiKey?: string; apiKeyEnv?: string } => ({
+            provider: def.adapter,
+            model,
+            baseUrl,
+            ...(values.authMode === 'key' && values.credential ? { apiKey: values.credential } : {}),
+            ...(values.authMode === 'env' && values.credential ? { apiKeyEnv: values.credential } : {})
+        });
+        if (this.appRpc) {
+            await this.appRpc.request('model.add', {
+                name,
+                provider: def.adapter,
+                baseUrl,
+                ...(values.authMode === 'key' && values.credential ? { apiKey: values.credential } : {}),
+                ...(values.authMode === 'env' && values.credential ? { apiKeyEnv: values.credential } : {}),
+                ...(tiers === 'single'
+                    ? { model: values.modelFast }
+                    : {
+                        fastModel: values.modelFast,
+                        ...(tiers === 'auto' ? { balancedModel: values.modelBalanced || values.modelFast } : {}),
+                        strongModel: values.modelStrong || values.modelFast
+                    })
+            }, this.rpcRequestContext());
+        } else {
+            const current = (this.options.model || {}) as AgentUiResolvedModelProfile;
+            const profiles = { ...(current.profiles || {}) };
+            profiles[`${name}-fast`] = makeProfile(values.modelFast);
+            const next: AgentUiResolvedModelProfile = {
+                ...current,
+                provider: def.adapter,
+                model: values.modelFast,
+                baseUrl,
+                profiles
+            };
+            if (tiers !== 'single') {
+                profiles[`${name}-strong`] = makeProfile(values.modelStrong || values.modelFast);
+            }
+            if (tiers === 'auto') {
+                profiles[`${name}-balanced`] = makeProfile(values.modelBalanced || values.modelFast);
+            }
+            if (tiers !== 'single') {
+                next.complexityRouting = {
+                    ...(current.complexityRouting || {}),
+                    simple: `${name}-fast`,
+                    moderate: tiers === 'auto' ? `${name}-balanced` : `${name}-fast`,
+                    complex: `${name}-strong`
+                };
+            }
+            next.defaultProfile = `${name}-fast`;
+            if (values.authMode === 'key' && values.credential) {
+                next.apiKey = values.credential;
+            } else if (values.authMode === 'env' && values.credential) {
+                next.apiKeyEnv = values.credential;
+            }
+            this.options.model = next as any;
+            this.uiConfig!.writeModelProfile(this.uiConfig!.resolve().root, next);
+        }
+        const label = def.label;
+        this.resetProviderWizardComposer();
+        this.notify(`Added ${label} provider (${name}). Type /model to use it.`);
+    }
+
+    protected async advanceProviderWizard(value: string): Promise<void> {
+        const wizard = this.providerWizard;
+        if (!wizard) return;
+        const step = this.providerWizardSteps()[wizard.stepIndex];
+        if (step.kind !== 'enter') return;
+        const trimmed = String(value || '').trim();
+        const values = wizard.values;
+        if (!trimmed) {
+            this.notify(`${step.label} is required. Press Esc to go back.`);
+            return;
+        }
+        if (step.id === 'base-url' && !/^https?:\/\//i.test(trimmed)) {
+            this.notify('Base URL must start with http(s)://.');
+            return;
+        }
+        switch (step.id) {
+            case 'base-url':
+                values.baseUrl = trimmed.replace(/\/+$/, '');
+                break;
+            case 'credential':
+                values.credential = trimmed;
+                break;
+            case 'model-fast':
+                values.modelFast = trimmed;
+                break;
+            case 'model-balanced':
+                values.modelBalanced = trimmed;
+                break;
+            case 'model-strong':
+                values.modelStrong = trimmed;
+                break;
+            default:
+                return;
+        }
+        wizard.stepIndex += 1;
+        this.state.setInput('', 0);
+        this.state.inputSecret = false;
+        this.showProviderWizardStep();
     }
 
     protected getModelProfileOptions(): AgentConsoleSelectOption[] {

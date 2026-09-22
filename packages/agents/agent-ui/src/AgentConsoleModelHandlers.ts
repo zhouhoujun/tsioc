@@ -34,6 +34,7 @@ export interface ModelHandlerContext {
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
     updateTerminalTitle(): void;
     persistSettings(patch: { thinkingLevel?: 'low' | 'medium' | 'high' }): unknown;
+    addModelProvider?(): void | Promise<void>;
     resolveHistoryWorkspace(): string;
     getFavorites(): string[];
     setFavorites(value: string[]): void;
@@ -128,22 +129,75 @@ export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise
 }
 
 export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void> {
-    const options = await loadModelProfileOptions(ctx);
+    const profiles = await loadModelProfileOptions(ctx);
+    const groups = new Map<string, AgentConsoleSelectOption[]>();
+    for (const profile of profiles) {
+        const tierMatch = profile.value.match(/^(.*)-(fast|balanced|strong)$/);
+        const provider = tierMatch?.[1] || String(profile.description || '').split('/')[0].trim() || profile.value;
+        const group = groups.get(provider) || [];
+        group.push(profile);
+        groups.set(provider, group);
+    }
+    const options: AgentConsoleSelectOption[] = [...groups.entries()].map(([provider, entries]) => ({
+        label: provider,
+        value: `__provider__:${provider}`,
+        description: `${entries.length} configured model${entries.length === 1 ? '' : 's'}`
+    }));
+    options.push({
+        label: 'Add new provider',
+        value: '__add_provider__',
+        description: 'Configure another provider connection',
+        detail: 'Opens the guided add-provider wizard.'
+    });
     if (!options.length) {
-        ctx.notify('No model profiles configured.');
+        ctx.notify('No model profiles configured. Add a provider in settings.json.');
+    }
+    const selected = await ctx.select(
+        'Model providers',
+        options,
+        0
+    );
+    if (selected === '__add_provider__') {
+        await ctx.addModelProvider?.();
         return;
     }
-    const currentProfile = String(
-        ctx.appRpc ? ctx.state.modelProfile : (ctx.options().model?.defaultProfile || ctx.state.modelProfile || '')
-    ).trim();
-    const selected = await ctx.select(
-        'Model profiles',
-        options,
-        Math.max(0, options.findIndex(item => item.value === currentProfile || item.label.startsWith(`${currentProfile} [`)))
-    );
-    if (selected) {
-        await activateModelProfile(ctx, selected);
+    if (!selected?.startsWith('__provider__:')) return;
+    const provider = selected.slice('__provider__:'.length);
+    const entries = groups.get(provider) || [];
+    const tiers = new Map(entries.map(entry => {
+        const match = entry.value.match(/(?:^|-)(fast|balanced|strong)$/);
+        return [match?.[1] || entry.value, entry] as const;
+    }));
+    const modes: AgentConsoleSelectOption[] = ['auto', 'fast', 'balanced', 'strong'].map(mode => ({
+        label: mode,
+        value: mode,
+        description: mode === 'auto'
+            ? 'Agent selects a model from request complexity'
+            : tiers.get(mode)?.description || 'Not configured'
+    }));
+    const mode = await ctx.select(`${provider} · model mode`, modes, 0);
+    if (!mode) return;
+    if (mode === 'auto') {
+        const fast = tiers.get('fast')?.value;
+        const balanced = tiers.get('balanced')?.value;
+        const strong = tiers.get('strong')?.value;
+        if (!fast || !balanced || !strong) {
+            ctx.notify(`${provider} needs fast, balanced, and strong models before auto can be used.`);
+            return;
+        }
+        const model = ctx.options().model || {};
+        model.defaultProfile = undefined;
+        model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
+        ctx.state.setModelProfile('auto');
+        ctx.notify(`Switched ${provider} to auto model routing.`);
+        return;
     }
+    const target = tiers.get(mode);
+    if (!target) {
+        ctx.notify(`${provider} has no ${mode} model configured.`);
+        return;
+    }
+    await activateModelProfile(ctx, target.value);
 }
 
 // ── Store persistence ────────────────────────────────────────────────────────

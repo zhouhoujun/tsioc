@@ -982,6 +982,7 @@ export class VmDiagnosticsTest {
         expect(state.tokenUsage.totalTokens).toEqual(24);
         expect(state.tokenUsage.promptTokens).toEqual(11);
         expect(state.tokenUsage.completionTokens).toEqual(13);
+        expect(state.turnTokenUsage.totalTokens).toEqual(24);
 
         await app.eventMulticaster.emit(new AgentModelCompletedEvent(this, 'chat-usage', {
             metadata: {
@@ -1000,6 +1001,12 @@ export class VmDiagnosticsTest {
         expect(state.tokenUsage.totalTokens).toEqual(42);
         expect(state.tokenUsage.promptTokens).toEqual(20);
         expect(state.tokenUsage.completionTokens).toEqual(22);
+        expect(state.turnTokenUsage.totalTokens).toEqual(42);
+
+        state.resetTurnTokenUsage();
+        state.setTokenUsage({ promptTokens: 3, completionTokens: 5, totalTokens: 8 });
+        expect(state.turnTokenUsage.totalTokens).toEqual(8);
+        expect(state.tokenUsage.totalTokens).toEqual(50);
     }
 
     @Test('working usage updates during app rpc streaming chunks')

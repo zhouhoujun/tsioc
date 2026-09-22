@@ -243,6 +243,9 @@ function compactMarkdownLines(lines: AgentConsoleMarkdownLine[]): AgentConsoleMa
     const normalized: AgentConsoleMarkdownLine[] = [];
     lines.forEach(line => {
         const text = flattenAgentConsoleMarkdownLine(line).trim();
+        if (/^(?:\d+\.|[-*+]|[•◦▪])$/.test(text)) {
+            return;
+        }
         if (!text && (!normalized.length || !flattenAgentConsoleMarkdownLine(normalized[normalized.length - 1]).trim())) {
             return;
         }

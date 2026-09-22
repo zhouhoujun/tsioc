@@ -54,6 +54,28 @@ export class TimelineProjectionSeedTest {
         expect(uiEvents[0].metadata?.status).toEqual('success');
     }
 
+    @Test('seeded timeline skips marker-only steps and keeps failed tool detail off the main row')
+    testSeedSummary() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 's1' });
+        state.seedTimeline([
+            entry({ key: 'step:empty', kind: 'step', label: '1.\n  •\n  •', status: 'completed', lastSeq: 1 }),
+            entry({
+                key: 'tool:failed',
+                kind: 'tool',
+                label: 'web_search',
+                status: 'failed',
+                error: `network unavailable\n${'完整回答不应进入时间线主行'.repeat(30)}`,
+                lastSeq: 2
+            })
+        ]);
+        const events = state.messages.filter(message => message.metadata?.uiKind === 'event');
+        expect(events.length).toEqual(1);
+        expect(events[0].content).toContain('web search failed: network unavailable');
+        expect(events[0].content.length).toBeLessThanOrEqual(190);
+        expect(events[0].content).not.toContain('完整回答不应进入时间线主行完整回答不应进入时间线主行完整回答不应进入时间线主行');
+    }
+
     @Test('markTimelineReconnecting toggles reconnecting and stale flags')
     testReconnectFlags() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

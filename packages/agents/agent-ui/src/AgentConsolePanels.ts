@@ -307,6 +307,7 @@ export class AgentConsoleStatusPanelComponent {
                     cursorStyle="color: #7ee787;"
                     cursorTarget="input"
                     continuationPrompt="  "
+                    mask="{{inputSecret}}"
                     @input="onInput($event)"
                     @click="onCursorChange($event)"
                     @keyup="onCursorChange($event)"
@@ -314,8 +315,15 @@ export class AgentConsoleStatusPanelComponent {
                     @blur="onBlur()"
                     @keydown="onKeydown($event)"></textarea>
             </div>
+            <div class="wizard-banner" v-show="wizardOpen">
+                <label class="wizard-title" v-style="wizardTitleStyle">{{wizardTitleLabel}}</label>
+                <label class="wizard-step" v-style="wizardStepStyle">{{wizardStepLabel}}</label>
+                <label class="wizard-help" v-style="wizardHelpStyle" v-show="wizardHelpLabel">{{wizardHelpLabel}}</label>
+                <label class="wizard-summary" v-style="wizardHelpStyle" v-show="wizardSummaryLabel">{{wizardSummaryLabel}}</label>
+                <label class="wizard-hint" v-style="wizardHintStyle" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
+            </div>
         </div>
-        <label class="input-meta" v-style="hintStyle">{{metaLabel}}</label>
+        <label class="input-meta" v-style="hintStyle"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens</label>
     </div>
     `
 })
@@ -338,6 +346,10 @@ export class AgentConsoleInputPanelComponent {
 
     get input(): string {
         return this.state?.input || '';
+    }
+
+    get inputSecret(): boolean {
+        return !!this.state?.inputSecret;
     }
 
     set input(value: string) {
@@ -383,6 +395,47 @@ export class AgentConsoleInputPanelComponent {
         return this.state?.inputPlaceholderLabel || '';
     }
 
+    get wizardOpen(): boolean {
+        return !!this.state?.providerWizard?.open;
+    }
+
+    get wizardTitleLabel(): string {
+        const wizard = this.state?.providerWizard;
+        return wizard?.open ? `Add provider · ${wizard.progress || ''}`.trim() : '';
+    }
+
+    get wizardStepLabel(): string {
+        return this.state?.providerWizard?.stepLabel || '';
+    }
+
+    get wizardHelpLabel(): string {
+        return this.state?.providerWizard?.help || '';
+    }
+
+    get wizardSummaryLabel(): string {
+        return this.state?.providerWizard?.summary.join(' · ') || '';
+    }
+
+    get wizardHintLabel(): string {
+        return this.state?.providerWizard?.hint || '';
+    }
+
+    get wizardTitleStyle() {
+        return this.activeThemeStyles.inputTitle;
+    }
+
+    get wizardStepStyle() {
+        return this.activeThemeStyles.inputCaption;
+    }
+
+    get wizardHelpStyle() {
+        return this.activeThemeStyles.inputHint || this.activeThemeStyles.inputCaption;
+    }
+
+    get wizardHintStyle() {
+        return this.activeThemeStyles.inputCaption;
+    }
+
     get entryStyle() {
         return this.activeThemeStyles.inputField;
     }
@@ -396,7 +449,9 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get fieldStyle() {
-        return this.activeThemeStyles.inputField;
+        return this.inputSecret
+            ? { ...this.activeThemeStyles.inputField, '-webkit-text-security': 'disc' }
+            : this.activeThemeStyles.inputField;
     }
 
     get hintStyle() {
@@ -407,12 +462,16 @@ export class AgentConsoleInputPanelComponent {
         return this.state?.inputHintLabel || '';
     }
 
-    get tokenUsageLabel(): string {
-        return `${formatCompactNumber(this.state?.tokenUsage?.totalTokens ?? 0)} tokens`;
+    get totalTokens(): number {
+        return this.state?.tokenUsage?.totalTokens ?? 0;
+    }
+
+    get metaPrefixLabel(): string {
+        return [this.state?.providerWizardLabel, this.state?.planNudgeLabel, this.hintLabel].filter(Boolean).join(' · ');
     }
 
     get metaLabel(): string {
-        return [this.state?.planNudgeLabel, this.hintLabel, this.tokenUsageLabel].filter(Boolean).join(' · ');
+        return this.metaPrefixLabel;
     }
 
     async submit(): Promise<void> {
@@ -572,7 +631,7 @@ export class AgentConsoleInputPanelComponent {
                 :active-style="accentStyle"
                 :trail-style="labelStyle"
                 :base-style="labelStyle">{{animatedLabel}}</span>
-            <span v-style="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}</span>
+            <span v-style="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}<span v-show="hasTokenUsage"> · {{totalTokens | number-format}} tokens</span></span>
         </label>
     </div>
     `
@@ -652,7 +711,11 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get totalTokens(): number {
-        return this.state.tokenUsage.totalTokens;
+        return this.state.turnTokenUsage.totalTokens;
+    }
+
+    get hasTokenUsage(): boolean {
+        return this.totalTokens > 0;
     }
 
     get messagesCount(): number {
@@ -708,10 +771,6 @@ export class AgentConsoleWorkingPanelComponent {
             if (!activePlan) {
                 parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
             }
-        }
-        if (this.totalTokens > 0) {
-            parts.push(this.translator?.translate('agent.dashboard.tokens', { count: this.totalTokens })
-                || `${this.totalTokens} tokens`);
         }
         if (this.state.consoleOptions.workingPresentation === 'dashboard') {
             const dashboard = this.dashboardCountersLabel;
@@ -2377,7 +2436,7 @@ export class AgentConsoleMessageTokensComponent {
     selector: 'agent-console-message-line',
     imports: [AgentConsoleMessageTokensComponent],
     template: `
-    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent" @click="toggleMessageDetail">{{toggleContent}}</span></label>
+    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent" @click="toggleMessageDetail">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
     `
 })
 export class AgentConsoleMessageLineComponent {

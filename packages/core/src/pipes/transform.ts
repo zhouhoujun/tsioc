@@ -17,6 +17,7 @@ import { SortPipe } from './sort';
 import { BigintPipe } from './parses/bigint';
 import { LongPipe } from './parses/long';
 import { ArrayPipe } from './parses/array';
+import { NumberFormatPipe } from './formats/number-format';
 
 
 
@@ -26,7 +27,7 @@ import { ArrayPipe } from './parses/array';
 @Module({
     exports: [
         LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe,
-        DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe,
+        DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe, NumberFormatPipe,
         JsonPipe, DatePipe, StringPipe, BoolPipe, EnumPipe,
         FloatPipe, IntPipe, LongPipe, BigintPipe, NumberPipe, ArrayPipe
     ]

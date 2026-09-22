@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     defaultAgentConsoleOptions,
+    defaultAgentConsoleTheme,
     renderAgentConsoleMessageItems,
     resolveAgentConsoleMessageStatus,
     resolveAgentConsoleMessageStatusLabel,
@@ -13,6 +14,19 @@ export class AgentConsoleMessageRendererDispatchTest {
     @Test('uses the same 400-character preview budget for tool runs and inline tool messages')
     useConsistentToolPreviewBudget() {
         expect(defaultAgentConsoleOptions.toolRunSummaryMaxLength).toEqual(400);
+    }
+
+    @Test('input and user themes do not paint a trailing background cell')
+    noTrailingBackgroundCell() {
+        expect(defaultAgentConsoleTheme.inputShell).toContain('padding: 1em 0 1em 1ch');
+        expect(defaultAgentConsoleTheme.messagesUser).toContain('padding: 0 0 0 1ch');
+        expect(defaultAgentConsoleTheme.inputShell).toContain('background: #1b2128');
+        expect(defaultAgentConsoleTheme.messagesUser).toContain('background: #1b2128');
+        expect(defaultAgentConsoleTheme.messagesSelected).toContain('background: #13202b');
+        const items = renderAgentConsoleMessageItems([
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 }
+        ] as any);
+        expect(items[0].lines[0].itemStyle?.padding).toEqual('0em 0 0em 1ch');
     }
 
     @Test('dispatches message template kinds by role and metadata')
@@ -41,7 +55,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[1].lines[0].statusKind).toEqual('success');
         expect(items[1].lines[0].statusLabel).toEqual('成功');
         expect(items[1].lines[0].role).toEqual('');
-        expect(items[1].lines[0].meta).toEqual('1ms · ');
+        expect(items[1].lines[0].tokens.at(-1)?.text).toEqual(' (1ms)');
         expect(items[1].itemStyle.background).toEqual(undefined);
         expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
         expect(items[3].lines[0].status?.trim()).toEqual('');
@@ -80,7 +94,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content.includes('{')).toEqual(false);
     }
 
-    @Test('renders streaming assistant markdown with full code fences and a blinking cursor')
+    @Test('renders streaming assistant markdown without a literal cursor block')
     renderStreamingAssistantMarkdown() {
         const items = renderAgentConsoleMessageItems([
             {
@@ -98,10 +112,10 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].statusStyle?.color).toBeTruthy();
         expect(items[0].lines.some(line => line.prefix === '│ ' && line.content.includes('const x = 1;'))).toBe(true);
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(false);
-        expect(items[0].lines[items[0].lines.length - 1].content.endsWith('▍')).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
     }
 
-    @Test('renders an unclosed streaming fence as plain text with a blinking cursor')
+    @Test('renders an unclosed streaming fence as plain text without a literal cursor block')
     renderStreamingUnclosedFenceAsText() {
         const items = renderAgentConsoleMessageItems([
             {
@@ -117,11 +131,11 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(true);
         expect(items[0].lines.some(line => line.content.includes('const y = 2;'))).toBe(true);
         expect(items[0].lines.some(line => line.prefix === '│ ')).toBe(false);
-        expect(items[0].lines[items[0].lines.length - 1].content.endsWith('▍')).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
     }
 
-    @Test('renders only a blinking cursor for an empty streaming assistant message')
-    renderStreamingEmptyMessageCursor() {
+    @Test('renders a neutral placeholder for an empty streaming assistant message')
+    renderStreamingEmptyMessagePlaceholder() {
         const items = renderAgentConsoleMessageItems([
             {
                 id: 'a3',
@@ -133,7 +147,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         ] as any);
 
         expect(items[0].lines.length).toEqual(1);
-        expect(items[0].lines[0].content).toEqual('▍');
+        expect(items[0].lines[0].content).toEqual('…');
         expect(items[0].lines[0].statusKind).toEqual('running');
     }
 
@@ -157,8 +171,9 @@ export class AgentConsoleMessageRendererDispatchTest {
             },
             { id: 'a1', role: 'assistant', content: 'answer', createdAt: 3_500 }
         ] as any, { timelineMode: true });
-        expect(items[1].lines[0].meta).toEqual('250ms · ');
-        expect(items[2].lines[0].meta).toEqual('2.5s · ');
+        expect(items[1].lines.at(-1)?.tokens.at(-1)?.text).toEqual(' (250ms)');
+        expect(items[2].lines.at(-1)?.tokens.at(-1)?.text).toEqual(' (2.5s)');
+        expect(items[1].lines.at(-1)?.tokens.at(-1)?.style.color).toEqual('#6e7681');
     }
 
     @Test('keeps user input raw instead of markdown-formatting it')
@@ -194,6 +209,18 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines.some(line => line.prefix === '2. ' && line.content === '随机组合试卷')).toBe(true);
         expect(items[0].lines.some(line => line.prefix === '3. ' && line.content === '评分')).toBe(true);
         expect(items[0].lines.some(line => line.prefix === '│ ' && line.content.includes('const score = 100;'))).toBe(true);
+    }
+
+    @Test('drops marker-only streaming fragments from compact markdown replies')
+    dropsMarkerOnlyFragments() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'a1',
+            role: 'assistant',
+            content: '正文\n1.\n   -\n2. 完整条目\n   - 子项',
+            createdAt: 1
+        }] as any);
+        expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`))
+            .toEqual(['正文', '2. 完整条目', '   • 子项']);
     }
 
     @Test('resolves shared reply statuses and localized labels')
@@ -285,7 +312,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             createdAt,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', uiEventLabel: 'tool', status: 'success', durationMs: 1250 }
         }] as any, { showTimestamps: true });
-        expect(completed[0].lines[0].meta).toContain('1.3s');
+        expect(completed[0].lines[0].tokens.at(-1)?.text).toEqual(' (1.3s)');
         expect(completed[0].lines[0].meta).not.toContain('09:05');
     }
 

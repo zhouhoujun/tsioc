@@ -218,6 +218,7 @@ export interface CommandHandlerContext {
     openModelSwitcher(): Promise<void>;
     activateModelProfile(profileName: string): Promise<void>;
     queueNextTurnModelProfile(profileName: string): Promise<void>;
+    startProviderWizard(): void | Promise<void>;
     openUsage(input?: string): Promise<boolean>;
 }
 
@@ -282,6 +283,15 @@ async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: 
         return true;
     }
     await ctx.openModelSwitcher();
+    return true;
+}
+
+async function handleProvider(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    if (ctx.isTurnInProgress()) {
+        ctx.notifyBusyState();
+        return true;
+    }
+    await ctx.startProviderWizard?.();
     return true;
 }
 
@@ -1309,6 +1319,7 @@ async function handleOutputs(ctx: CommandHandlerContext, _args: string, _resolve
 export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/help': handleHelp,
     '/model': handleModel,
+    '/provider': handleProvider,
     '/init': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runInitCommand(a).then(() => true)),
     '/plan': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runPlanCommand(a).then(() => true)),
     '/archetype': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runArchetypeCommand(a).then(() => true)),

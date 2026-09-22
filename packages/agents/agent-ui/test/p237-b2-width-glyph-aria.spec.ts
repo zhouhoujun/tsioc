@@ -50,9 +50,9 @@ export class P237B2WidthGlyphAriaTest {
         expect(truncateTimelineEventRowContent('中'.repeat(50), 'success'))
             .toEqual('中'.repeat(50));
         expect(truncateTimelineEventRowContent('中'.repeat(300), 'failed'))
-            .toEqual('中'.repeat(300));
+            .toEqual('中'.repeat(100) + '…');
         expect(truncateTimelineEventRowContent('中'.repeat(300), 'error'))
-            .toEqual('中'.repeat(300));
+            .toEqual('中'.repeat(100) + '…');
     }
 
     @Test('event rows get a default status glyph when no custom symbol is configured')

@@ -8,7 +8,10 @@ import {
     resolveTimelineEventSentence,
     TimelineSentenceParts
 } from '../src/AgentConsoleTimelineWindow';
-import { renderAgentConsoleMessageItems } from '../src/AgentConsoleMessageRenderers';
+import {
+    renderAgentConsoleMessageItems,
+    TIMELINE_EVENT_ROW_CONTENT_MAX
+} from '../src/AgentConsoleMessageRenderers';
 
 @Suite('formatTimelineSentence (P281)')
 export class FormatTimelineSentenceTest {
@@ -332,14 +335,14 @@ export class EventRowContentPrecedenceTest {
         expect(items[0].lines[0].content).toBe('Model responded');
     }
 
-    @Test('long failed rows keep the full body so the cause stays visible')
+    @Test('long failed rows keep a bounded cause summary on the mainline')
     testFailedRowsKeepFullContent() {
         const longContent = 'x'.repeat(300);
         const items = renderAgentConsoleMessageItems([{
             id: 'e3', role: 'assistant', content: longContent, createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error', durationMs: 40 }
         }] as any);
-        expect(items[0].lines[0].content).toBe(longContent);
+        expect(items[0].lines[0].content).toBe(`${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`);
     }
 }
 

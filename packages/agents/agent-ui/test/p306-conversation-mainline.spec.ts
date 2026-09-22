@@ -41,6 +41,17 @@ export class ConversationMainlineProjectionTest {
         expect(projected.map(item => item.id)).toEqual(['u1', 'e1', 'a2']);
     }
 
+    @Test('completed response replaces a persisted partial markdown snapshot')
+    persistedPartialSnapshot() {
+        const shared = '我这里的实时网页搜索不可用，所以不能核验最新发布细节。下面基于确定趋势做一个谨慎判断。';
+        const projected = projectAgentConsoleConversationMainline([
+            message('u1', 'user', 'Agent 最新技术发展方向'),
+            message('a1', 'assistant', `我先查一下近期公开资料。\n${shared}\n1.\n   -\n   -`, { streaming: false }),
+            message('a2', 'assistant', `${shared}\n\n1. 从聊天助手走向可执行系统\n   - 自动写代码\n   - 自动检索资料`, { streaming: false })
+        ]);
+        expect(projected.map(item => item.id)).toEqual(['u1', 'a2']);
+    }
+
     @Test('tool events stay ordered before the final and preamble is retained as supporting')
     toolThenFinal() {
         const projected = projectAgentConsoleConversationMainline([

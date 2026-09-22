@@ -3838,6 +3838,61 @@ export class AppRpcServerTest {
             provider: 'deepseek',
             model: 'deepseek-v4-pro'
         });
+
+        const added = await rpc.handle({
+            jsonrpc: '2.0', id: 10, method: 'model.add', params: {
+                name: 'Acme', baseUrl: 'https://api.acme.test/v1/', apiKey: 'secret',
+                fastModel: 'acme-fast', balancedModel: 'acme-balanced', strongModel: 'acme-strong'
+            }
+        }, { principalId: 'user-1' });
+        expect((added as any).result).toEqual({
+            name: 'acme', profiles: ['acme-fast', 'acme-balanced', 'acme-strong']
+        });
+        const afterAdd = await rpc.handle({ jsonrpc: '2.0', id: 11, method: 'model.list' }, { principalId: 'user-1' });
+        expect((afterAdd as any).result.map((profile: any) => profile.name)).toContain('acme-balanced');
+
+        const single = await rpc.handle({
+            jsonrpc: '2.0', id: 12, method: 'model.add', params: {
+                name: 'solo', baseUrl: 'https://api.solo.test/v1', provider: 'anthropic',
+                apiKeyEnv: 'ANTHROPIC_API_KEY', model: 'claude-solo'
+            }
+        }, { principalId: 'user-1' });
+        expect((single as any).result).toEqual({ name: 'solo', profiles: ['solo-fast'] });
+        const singleProfile = (rpc as any).options.model.profiles['solo-fast'];
+        expect(singleProfile).toEqual({
+            provider: 'anthropic', model: 'claude-solo', baseUrl: 'https://api.solo.test/v1',
+            apiKeyEnv: 'ANTHROPIC_API_KEY'
+        });
+        expect((rpc as any).options.model.defaultProfile).toEqual('solo-fast');
+
+        const caps = await rpc.handle({ jsonrpc: '2.0', id: 13, method: 'app.capabilities', params: {} }, { principalId: 'user-1' });
+        expect((caps as any).result.methods).toContain('provider.test');
+
+        const originalFetch = (globalThis as any).fetch;
+        try {
+            (globalThis as any).fetch = async () => ({
+                ok: true, status: 200, statusText: 'OK',
+                json: async () => ({ data: [{ id: 'm1' }, { id: 'm2' }] })
+            });
+            const tested = await rpc.handle({
+                jsonrpc: '2.0', id: 14, method: 'provider.test', params: {
+                    provider: 'openai-compatible', baseUrl: 'https://api.solo.test/v1', apiKey: 'secret'
+                }
+            }, { principalId: 'user-1' });
+            expect((tested as any).result).toEqual({ ok: true, status: 200, models: ['m1', 'm2'] });
+
+            (globalThis as any).fetch = async () => ({
+                ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({})
+            });
+            const rejected = await rpc.handle({
+                jsonrpc: '2.0', id: 15, method: 'provider.test', params: {
+                    provider: 'openai-compatible', baseUrl: 'https://api.solo.test/v1', apiKey: 'bad'
+                }
+            }, { principalId: 'user-1' });
+            expect((rejected as any).result).toEqual({ ok: false, status: 401, models: [], error: 'HTTP 401 Unauthorized' });
+        } finally {
+            (globalThis as any).fetch = originalFetch;
+        }
     }
 
     @Test('stores console input history per workspace through json-rpc')

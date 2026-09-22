@@ -90,25 +90,25 @@ export class PlanStepTimelineTest {
         expect(items[0].lines[0].meta).not.toContain('阻塞');
     }
 
-    @Test('long blocked/failed step rows stay fully expanded even when status is running (P292/P237)')
+    @Test('long blocked/failed step rows keep a bounded mainline summary even when status is running (P292/P237)')
     blockedStepRowStaysExpanded() {
         const longContent = 'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX + 50);
+        const summary = `${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`;
         const blocked = {
             id: 'b2', role: 'assistant', content: longContent, createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'plan_step_blocked', status: 'running' }
         };
         const blockedItems = renderAgentConsoleMessageItems([blocked] as any);
-        expect(blockedItems[0].lines[0].content).toEqual(longContent);
+        expect(blockedItems[0].lines[0].content).toEqual(summary);
         expect(blockedItems[0].lines[0].meta).toContain('重试');
-        // direct truncation contract: eventType alone (no statusKind) keeps the row
-        expect(truncateTimelineEventRowContent(longContent, undefined, 'plan_step_blocked')).toEqual(longContent);
-        expect(truncateTimelineEventRowContent(longContent, 'blocked')).toEqual(longContent);
+        expect(truncateTimelineEventRowContent(longContent, undefined, 'plan_step_blocked')).toEqual(summary);
+        expect(truncateTimelineEventRowContent(longContent, 'blocked')).toEqual(summary);
         const failed = {
             id: 'f1', role: 'assistant', content: longContent, createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'plan_step_failed', status: 'running' }
         };
         const failedItems = renderAgentConsoleMessageItems([failed] as any);
-        expect(failedItems[0].lines[0].content).toEqual(longContent);
+        expect(failedItems[0].lines[0].content).toEqual(summary);
         expect(failedItems[0].status).toContain('✕');
         expect(failedItems[0].lines[0].meta).toContain('重试');
     }

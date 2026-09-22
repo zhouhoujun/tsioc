@@ -102,6 +102,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     { name: '/status', description: 'show session status', group: 'core' },
     { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', needsArgs: true, args: [{ name: 'profile', variadic: true }] },
+    { name: '/provider', description: 'add a new AI provider with the guided wizard', group: 'core' },
     { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', needsArgs: true, args: [{ name: 'profile' }] },
     { name: '/tools', description: 'inspect the currently enabled tools: /tools [<name>]', group: 'core', args: [{ name: 'name' }] },
     { name: '/skills', description: 'browse skills: /skills [query | <id>]', group: 'core', args: [{ name: 'query', variadic: true }] },

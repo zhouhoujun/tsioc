@@ -101,15 +101,15 @@ export class P237EventRowSummaryTest {
         expect(message.content).toEqual(longContent);
     }
 
-    @Test('failed event rows stay fully expanded by default')
-    failedEventRowStaysExpanded() {
+    @Test('failed event rows keep a bounded mainline summary and preserve the source body')
+    failedEventRowKeepsBoundedSummary() {
         const longContent = 'x'.repeat(300);
         const message = {
             id: 'e5', role: 'assistant', content: longContent, createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error', durationMs: 40 }
         };
         const items = renderAgentConsoleMessageItems([message] as any);
-        expect(items[0].lines[0].content).toEqual(longContent);
+        expect(items[0].lines[0].content).toEqual(`${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`);
         expect(message.content).toEqual(longContent);
         expect(items[0].lines[0].meta).toContain('retry');
     }
@@ -127,7 +127,7 @@ export class P237EventRowSummaryTest {
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'approval' } } as any, 'success')).toEqual('审批');
     }
 
-    @Test('truncateTimelineEventRowContent bounds rows except failed/error')
+    @Test('truncateTimelineEventRowContent bounds all mainline event rows')
     truncationRules() {
         const short = 'short content';
         expect(truncateTimelineEventRowContent(short, 'success')).toEqual(short);
@@ -135,8 +135,8 @@ export class P237EventRowSummaryTest {
         const sliced = truncateTimelineEventRowContent(long, 'success');
         expect(sliced.endsWith('…')).toEqual(true);
         expect(sliced.length).toBeLessThanOrEqual(TIMELINE_EVENT_ROW_CONTENT_MAX + 1);
-        expect(truncateTimelineEventRowContent(long, 'failed')).toEqual(long);
-        expect(truncateTimelineEventRowContent(long, 'error')).toEqual(long);
+        expect(truncateTimelineEventRowContent(long, 'failed')).toEqual(sliced);
+        expect(truncateTimelineEventRowContent(long, 'error')).toEqual(sliced);
         expect(truncateTimelineEventRowContent('', 'success')).toEqual('');
     }
 

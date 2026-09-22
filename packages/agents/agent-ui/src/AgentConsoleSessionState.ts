@@ -371,6 +371,24 @@ export interface AgentConsoleSelectMenu {
     parentMenuAction?: (value: string | undefined) => void | Promise<void>;
 }
 
+/**
+ * Reactive banner state for the add-provider wizard, rendered by the input panel.
+ * The component owns the step machine; this object drives the display layer only.
+ */
+export interface AgentConsoleProviderWizardState {
+    open: boolean;
+    phase: 'choose' | 'enter' | 'confirm';
+    stepIndex: number;
+    stepCount: number;
+    stepLabel: string;
+    progress: string;
+    prompt: string;
+    help: string;
+    hint: string;
+    secret: boolean;
+    summary: string[];
+}
+
 export interface AgentConsoleOptions {
     inputPrompt?: string;
     inputPlaceholder?: string;
@@ -561,6 +579,9 @@ export class AgentConsoleSessionState {
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     sessionId = 'console';
     input = '';
+    inputSecret = false;
+    providerWizardLabel = '';
+    providerWizard?: AgentConsoleProviderWizardState;
     inputCursor = 0;
     inputFocused = true;
     /** Serializable focus projection shared by TUI and browser adapters. */
@@ -697,6 +718,16 @@ export class AgentConsoleSessionState {
         completionTokens: 0,
         totalTokens: 0
     };
+    turnTokenUsage: AgentConsoleTokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0
+    };
+    protected turnTokenUsageBase: AgentConsoleTokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0
+    };
     inputPrompt = this.consoleOptions.inputPrompt;
     inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
     inputPlaceholder = this.consoleOptions.inputPlaceholder;
@@ -751,6 +782,7 @@ export class AgentConsoleSessionState {
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = [];
     submitAction?: () => Promise<void>;
+    escapeAction?: () => boolean | Promise<boolean>;
     queueDraftAction?: () => boolean | Promise<boolean>;
     toggleHealthPopoverAction?: () => void | Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
@@ -2376,17 +2408,31 @@ export class AgentConsoleSessionState {
         const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']);
         const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']);
         const explicitTotal = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']);
-        const nextPromptTokens = promptTokens ?? this.tokenUsage.promptTokens;
-        const nextCompletionTokens = completionTokens ?? this.tokenUsage.completionTokens;
+        const nextPromptTokens = promptTokens ?? this.turnTokenUsage.promptTokens;
+        const nextCompletionTokens = completionTokens ?? this.turnTokenUsage.completionTokens;
         const totalTokens = explicitTotal
             ?? (promptTokens != null || completionTokens != null
                 ? nextPromptTokens + nextCompletionTokens
-                : this.tokenUsage.totalTokens);
+                : this.turnTokenUsage.totalTokens);
 
-        this.tokenUsage = {
+        this.turnTokenUsage = {
             promptTokens: nextPromptTokens,
             completionTokens: nextCompletionTokens,
             totalTokens
+        };
+        this.tokenUsage = {
+            promptTokens: this.turnTokenUsageBase.promptTokens + nextPromptTokens,
+            completionTokens: this.turnTokenUsageBase.completionTokens + nextCompletionTokens,
+            totalTokens: this.turnTokenUsageBase.totalTokens + totalTokens
+        };
+    }
+
+    resetTurnTokenUsage(): void {
+        this.turnTokenUsageBase = { ...this.tokenUsage };
+        this.turnTokenUsage = {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0
         };
     }
 
@@ -5049,6 +5095,22 @@ export class AgentConsoleSessionState {
         });
     }
 
+    setProviderWizard(patch: Partial<AgentConsoleProviderWizardState>): void {
+        this.providerWizard = {
+            ...(this.providerWizard || {
+                open: true, phase: 'choose', stepIndex: 0, stepCount: 1,
+                stepLabel: '', progress: '', prompt: '', help: '', hint: '', secret: false, summary: []
+            }),
+            ...patch
+        };
+    }
+
+    closeProviderWizard(): void {
+        this.providerWizard = undefined;
+        this.inputSecret = false;
+        this.inputPrompt = this.consoleOptions.inputPrompt;
+    }
+
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): void {
         const currentMenu = this.selectMenu;
         const currentAction = this.selectMenuAction;
@@ -5509,30 +5571,22 @@ export class AgentConsoleSessionState {
     }
 
     protected resolveTokenUsageFromMessages(messages: AgentMessage[]): AgentConsoleTokenUsage {
-        for (let index = messages.length - 1; index >= 0; index -= 1) {
-            const usage = messages[index]?.metadata?.usage;
+        return messages.reduce<AgentConsoleTokenUsage>((total, message) => {
+            const usage = message?.metadata?.usage;
             if (!usage || typeof usage !== 'object') {
-                continue;
+                return total;
             }
             const promptTokens = this.resolveUsageNumber(usage, ['promptTokens', 'prompt_tokens', 'input_tokens']);
             const completionTokens = this.resolveUsageNumber(usage, ['completionTokens', 'completion_tokens', 'output_tokens']);
             const totalTokens = this.resolveUsageNumber(usage, ['totalTokens', 'total_tokens'])
                 ?? (promptTokens != null || completionTokens != null
                     ? (promptTokens || 0) + (completionTokens || 0)
-                    : undefined);
-
-            return {
-                promptTokens: promptTokens || 0,
-                completionTokens: completionTokens || 0,
-                totalTokens: totalTokens || 0
-            };
-        }
-
-        return {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0
-        };
+                    : 0);
+            total.promptTokens += promptTokens || 0;
+            total.completionTokens += completionTokens || 0;
+            total.totalTokens += totalTokens || 0;
+            return total;
+        }, { promptTokens: 0, completionTokens: 0, totalTokens: 0 });
     }
 
     protected expandTabs(value: string): string {
@@ -6102,6 +6156,9 @@ export class AgentConsoleSessionState {
             return true;
         }
         if (this.status === 'running' || this.status === 'reasoning') {
+            return true;
+        }
+        if (await this.escapeAction?.()) {
             return true;
         }
         return false;
@@ -7157,13 +7214,18 @@ function normalizeReplayStatus(status?: string): ThreadItemStatus | undefined {
 }
 
 function projectTimelineContent(entry: TimelineEntry): string {
-    const label = entry.label || entry.kind;
+    const rawLabel = String(entry.label || entry.kind || '').trim();
+    if (isTimelineStructureOnlyLabel(rawLabel)) {
+        return '';
+    }
+    const label = summarizeTimelineEntryText(rawLabel, 120) || entry.kind;
     if (entry.kind === 'tool') {
         if (entry.status === 'running') {
             return `Running ${label.replace(/[._-]+/g, ' ')}`;
         }
         if (entry.status === 'failed') {
-            return `${label.replace(/[._-]+/g, ' ')} failed: ${entry.error || entry.summary || 'unknown error'}`;
+            const error = summarizeTimelineEntryText(entry.error || entry.summary, 160) || 'unknown error';
+            return `${label.replace(/[._-]+/g, ' ')} failed: ${error}`;
         }
         const duration = typeof entry.durationMs === 'number' ? ` · ${entry.durationMs}ms` : '';
         return `${label.replace(/[._-]+/g, ' ')} completed${duration}`;
@@ -7189,4 +7251,18 @@ function projectTimelineContent(entry: TimelineEntry): string {
         return 'Turn started';
     }
     return `${entry.kind}: ${label}`;
+}
+
+function isTimelineStructureOnlyLabel(value: string): boolean {
+    return !!value && !value.replace(/(?:^|\s)(?:\d+\.|[-*+•◦▪])(?=\s|$)/g, '').trim();
+}
+
+function summarizeTimelineEntryText(value: unknown, maxLength: number): string {
+    const text = String(value || '')
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(line => line.replace(/\s+/g, ' ').trim())
+        .find(Boolean) || '';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
 }

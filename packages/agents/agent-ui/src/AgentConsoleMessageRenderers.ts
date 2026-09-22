@@ -650,20 +650,18 @@ export function renderAgentConsoleMessageItem(
         statusLabel,
         !!context.showTimestamps
     );
-    const fallbackLine = messageStreaming
-        ? { rawText: '', tokens: [{ text: '▍' }] as AgentConsoleMarkdownToken[] }
-        : templateKind === 'assistant'
+    const durationSuffixMatch = timelineMeta.match(/ \([^()]+\)$/);
+    const durationSuffix = durationSuffixMatch?.[0] || '';
+    const timelineDetails = durationSuffix ? timelineMeta.slice(0, -durationSuffix.length) : timelineMeta;
+    const fallbackLine = templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
-        const cursorTokens = messageStreaming && isLast && markdownLines.length
-            ? [...(line.tokens || []), { text: '▍' } as AgentConsoleMarkdownToken]
-            : line.tokens || [];
         const rendered = buildRenderedLine(
-            { ...line, tokens: cursorTokens },
+            { ...line, tokens: line.tokens || [] },
             isFirst ? renderer.lead(rowSelected) : renderer.continuationLead(rowSelected),
             effectiveRoleLabel,
             renderer,
@@ -676,17 +674,22 @@ export function renderAgentConsoleMessageItem(
             statusLabel,
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
+        const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
+        const tokens = isLast && durationSuffix
+            ? [...rendered.tokens, { text: durationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
+            : rendered.tokens;
         return {
             ...rendered,
+            tokens,
             messageId: message?.id,
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
-            meta: isFirst ? timelineMeta : '',
-            metaStyle: isFirst ? resolveTimelineMetaStyle(theme, rowSelected, templateKind) : {},
+            meta: isFirst ? timelineDetails : '',
+            metaStyle: isFirst || isLast ? timelineMetaStyle : {},
             ariaLabel: [
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
-                isFirst ? timelineMeta : '',
+                isLast ? timelineMeta : '',
                 rendered.prefix,
                 rendered.content
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
@@ -1098,6 +1101,7 @@ function resolveTimelineMeta(
     showTimestamps = false
 ): string {
     const parts: string[] = [];
+    let duration = '';
     const uiKind = String(message?.metadata?.uiKind || '').trim();
     if (templateKind === 'timelineHeader' || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
         return '';
@@ -1108,19 +1112,19 @@ function resolveTimelineMeta(
         // textual status stay out of the row so it reads as a short title.
         const elapsedMs = Number(message?.metadata?.planStepElapsedMs);
         if (Number.isFinite(elapsedMs) && elapsedMs >= 0) {
-            parts.push(formatTimelineSessionDuration(elapsedMs));
+            duration = formatTimelineSessionDuration(elapsedMs);
         }
-        return parts.join(' · ');
+        return duration ? ` (${duration})` : '';
     }
     if (uiKind === 'event') {
         const durationMs = resolveMessageDurationMs(message);
         if (Number.isFinite(durationMs) && durationMs >= 0) {
-            parts.push(formatTimelineDuration(durationMs));
+            duration = formatTimelineDuration(durationMs);
         }
     } else if (templateKind === 'assistant') {
         const durationMs = resolveMessageDurationMs(message);
         if (Number.isFinite(durationMs) && durationMs >= 0) {
-            parts.push(formatTimelineDuration(durationMs));
+            duration = formatTimelineDuration(durationMs);
         }
     }
     if (uiKind !== 'event'
@@ -1139,7 +1143,10 @@ function resolveTimelineMeta(
     }
     // Event rows keep meta purely factual (duration/label/action); the glyph
     // column is the single state point (P289), textual status stays in aria.
-    if (statusLabel && templateKind !== 'assistant' && uiKind !== 'event') {
+    // Error rows already carry the semantic status in their role label
+    // (`Error · `). Adding the generic status label here produced
+    // `Error ·  · 错误` in the transcript.
+    if (statusLabel && templateKind !== 'assistant' && templateKind !== 'error' && uiKind !== 'event') {
         parts.push(statusLabel);
     }
     if (uiKind === 'event') {
@@ -1148,7 +1155,8 @@ function resolveTimelineMeta(
             parts.push(actionLabel);
         }
     }
-    return parts.length ? `${parts.join(' · ')} · ` : '';
+    const details = parts.length ? ` · ${parts.join(' · ')}` : '';
+    return `${details}${duration ? ` (${duration})` : ''}`;
 }
 
 function resolveMessageDurationMs(message?: AgentMessage): number {
@@ -1191,11 +1199,11 @@ export function truncateTimelineEventRowContent(
     statusKind?: AgentConsoleMessageStatus,
     eventType = ''
 ): string {
-    const text = String(content || '');
-    if (statusKind === 'failed' || statusKind === 'error' || statusKind === 'blocked'
-        || eventType === 'plan_step_failed' || eventType === 'plan_step_blocked') {
-        return text;
-    }
+    const text = String(content || '')
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(line => line.trim())
+        .find(line => line && !/^(?:\d+\.|[-*+•◦▪])$/.test(line)) || '';
     if (getDisplayWidth(text) <= TIMELINE_EVENT_ROW_CONTENT_MAX) {
         return text;
     }
@@ -1259,20 +1267,8 @@ function resolveTimelineMetaStyle(
     if (rowSelected) {
         return {};
     }
-    const base = styleTextToObject(theme.statusLabel);
-    if (templateKind === 'assistant') {
-        return {
-            ...base,
-            ...styleTextToObject(theme.toolsAccent)
-        };
-    }
-    if (templateKind === 'error') {
-        return {
-            ...base,
-            ...styleTextToObject(theme.statusErrorValue)
-        };
-    }
-    return base;
+    void templateKind;
+    return styleTextToObject(theme.statusLabel);
 }
 
 function resolveRenderedLineToneStyle(

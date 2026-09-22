@@ -2518,10 +2518,136 @@ export class VmReviewTasksTest {
         expect(component.selectMenu?.options.map(option => option.value)).toEqual(['model', 'thinking-level', 'fast', 'status']);
 
         await component.sessionState.confirmSelectMenu('model');
-        await waitForCondition(() => component.selectMenu?.title === 'Model profiles');
-        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['fast', 'strong']);
+        await waitForCondition(() => component.selectMenu?.title === 'Model providers');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['__provider__:deepseek', '__add_provider__']);
+        const chooseProvider = component.sessionState.confirmSelectMenu('__provider__:deepseek');
+        await waitForCondition(() => component.selectMenu?.title === 'deepseek · model mode');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['auto', 'fast', 'balanced', 'strong']);
         await component.sessionState.confirmSelectMenu('fast');
+        await chooseProvider;
         await pending;
+    }
+
+    @Test('add provider wizard masks the API key and persists three routing tiers')
+    async addProviderWizardPersistsRoutes() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        const writes: any[] = [];
+        (component as any).uiConfig = {
+            resolve: () => ({ root: '/config' }),
+            writeModelProfile: (root: string, profile: any) => writes.push({ root, profile })
+        };
+
+        (component as any).startProviderWizard();
+        expect(component.sessionState.providerWizard?.phase).toEqual('choose');
+        expect(component.selectMenu?.title).toEqual('Add provider · choose provider');
+        await component.sessionState.confirmSelectMenu('custom-openai');
+
+        expect(component.sessionState.inputPrompt).toEqual('2/9 › ');
+        expect(component.sessionState.inputPlaceholderLabel).toEqual('API base URL');
+        const baseUrl = 'https://api.acme.test/v1';
+        component.sessionState.setInput(baseUrl, baseUrl.length);
+        await component.submit();
+
+        expect(component.selectMenu?.title).toEqual('Custom OpenAI-compatible · authentication');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['key', 'env']);
+        await component.sessionState.confirmSelectMenu('key');
+
+        expect(component.sessionState.inputSecret).toEqual(true);
+        expect(component.sessionState.inputPlaceholderLabel).toEqual('API key');
+        const secret = 'secret-key';
+        component.sessionState.setInput(secret, secret.length);
+        await component.submit();
+
+        expect(component.selectMenu?.title).toEqual('Custom OpenAI-compatible · model routing');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual(['single', 'pair', 'auto']);
+        await component.sessionState.confirmSelectMenu('auto');
+
+        for (const value of ['acme-fast', 'acme-balanced', 'acme-strong']) {
+            component.sessionState.setInput(value, value.length);
+            await component.submit();
+        }
+
+        expect(component.selectMenu?.title).toEqual('Confirm provider');
+        await component.sessionState.confirmSelectMenu('save');
+
+        expect(component.sessionState.inputSecret).toEqual(false);
+        expect(component.sessionState.providerWizard).toEqual(undefined);
+        expect(writes.length).toEqual(1);
+        expect(writes[0].root).toEqual('/config');
+        expect(writes[0].profile.profiles['api-acme-test-fast'].apiKey).toEqual(secret);
+        expect(writes[0].profile.complexityRouting).toEqual({
+            simple: 'api-acme-test-fast', moderate: 'api-acme-test-balanced', complex: 'api-acme-test-strong'
+        });
+        expect(component.sessionState.inputHistoryEntries).not.toContain(secret);
+    }
+
+    @Test('add provider wizard sends collected fields through gateway rpc')
+    async addProviderWizardUsesGatewayRpc() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        (component as any).startProviderWizard();
+        await component.sessionState.confirmSelectMenu('custom-openai');
+        const baseUrl = 'https://remote.test/v1';
+        component.sessionState.setInput(baseUrl, baseUrl.length);
+        await component.submit();
+        await component.sessionState.confirmSelectMenu('key');
+        component.sessionState.setInput('remote-secret', 'remote-secret'.length);
+        await component.submit();
+        await component.sessionState.confirmSelectMenu('auto');
+        for (const value of ['r-fast', 'r-balanced', 'r-strong']) {
+            component.sessionState.setInput(value, value.length);
+            await component.submit();
+        }
+        await component.sessionState.confirmSelectMenu('save');
+        const call = appRpc.calls.find(item => item.method === 'model.add');
+        expect(call?.params).toEqual({
+            name: 'remote-test', provider: 'openai-compatible', baseUrl: 'https://remote.test/v1',
+            apiKey: 'remote-secret', fastModel: 'r-fast', balancedModel: 'r-balanced', strongModel: 'r-strong'
+        });
+        expect(component.sessionState.inputHistoryEntries).not.toContain('remote-secret');
+    }
+
+    @Test('add provider wizard supports a single model referenced by environment variable')
+    async addProviderWizardSingleModelUsesEnvVar() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        (component as any).startProviderWizard();
+        await component.sessionState.confirmSelectMenu('custom-openai');
+        const baseUrl = 'https://solo.test/v1';
+        component.sessionState.setInput(baseUrl, baseUrl.length);
+        await component.submit();
+        await component.sessionState.confirmSelectMenu('env');
+        expect(component.sessionState.inputSecret).toEqual(false);
+        expect(component.sessionState.input).toEqual('OPENAI_API_KEY');
+        await component.submit();
+        await component.sessionState.confirmSelectMenu('single');
+        component.sessionState.setInput('solo-model', 'solo-model'.length);
+        await component.submit();
+        await component.sessionState.confirmSelectMenu('save');
+        const call = appRpc.calls.find(item => item.method === 'model.add');
+        expect(call?.params).toEqual({
+            name: 'solo-test', provider: 'openai-compatible', baseUrl: 'https://solo.test/v1',
+            apiKeyEnv: 'OPENAI_API_KEY', model: 'solo-model'
+        });
+    }
+
+    @Test('provider command opens the guided wizard and esc cancels it')
+    async providerCommandOpensWizard() {
+        const appRpc = new AppRpcStub();
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        const pending = (component as any).handleCommand('/provider');
+        await waitForCondition(() => !!component.selectMenu);
+        expect(component.selectMenu?.title).toEqual('Add provider · choose provider');
+        expect(component.selectMenu?.options.map(option => option.value)).toEqual([
+            'deepseek', 'openai', 'anthropic', 'gemini', 'custom-openai', 'custom-anthropic', '__cancel__'
+        ]);
+        await component.sessionState.confirmSelectMenu('__cancel__');
+        await pending;
+        expect(component.sessionState.providerWizard).toEqual(undefined);
+        expect(component.notice).toContain('Add provider cancelled.');
     }
 
     @Test('yolo command toggles auto approval and persists workspace setting')

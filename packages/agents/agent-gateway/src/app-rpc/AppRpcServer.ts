@@ -224,7 +224,9 @@ export class AppRpcServer {
                         'tools.activate',
                         'tools.invoke',
                         'model.list',
+                        'model.add',
                         'model.activate',
+                        'provider.test',
                         'memory.list',
                         'memory.put',
                         'memory.search',
@@ -431,6 +433,10 @@ export class AppRpcServer {
                 return this.invokeTool(params, context);
             case 'model.list':
                 return this.listModelProfiles();
+            case 'model.add':
+                return this.addModelProvider(params);
+            case 'provider.test':
+                return this.testProvider(params, context);
             case 'model.activate':
                 return this.activateModelProfile(params, context);
             case 'memory.list':
@@ -2011,6 +2017,120 @@ export class AppRpcServer {
             model: profile.model || this.options.model.model || '',
             reasoningEffort: this.options.model.reasoningEffort
         };
+    }
+
+    private addModelProvider(params: any): any {
+        const name = this.requireString(params?.name, 'model.add name')
+            .toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        const baseUrl = this.requireString(params?.baseUrl, 'model.add baseUrl').replace(/\/+$/, '');
+        const providerId = params?.provider ? String(params.provider).trim() : 'openai-compatible';
+        const provider = providerId === 'custom-openai' ? 'openai-compatible'
+            : providerId === 'custom-anthropic' ? 'anthropic'
+            : (providerId || 'openai-compatible');
+        const apiKey = params?.apiKey && String(params.apiKey).trim() ? String(params.apiKey) : undefined;
+        const apiKeyEnv = params?.apiKeyEnv && String(params.apiKeyEnv).trim() ? String(params.apiKeyEnv) : undefined;
+        const singleModel = params?.model && String(params.model).trim() ? String(params.model).trim() : undefined;
+        const fastModel = params?.fastModel && String(params.fastModel).trim() ? String(params.fastModel).trim() : undefined;
+        const balancedModel = params?.balancedModel && String(params.balancedModel).trim() ? String(params.balancedModel).trim() : undefined;
+        const strongModel = params?.strongModel && String(params.strongModel).trim() ? String(params.strongModel).trim() : undefined;
+        if (!name || !/^https?:\/\//i.test(baseUrl)) {
+            throw new AppRpcError(-32602, 'Invalid params: name and an http(s) baseUrl are required');
+        }
+        if (!singleModel && !fastModel) {
+            throw new AppRpcError(-32602, 'Invalid params: model.add requires a model or fastModel');
+        }
+        this.options.model = this.options.model || {};
+        const profiles = this.options.model.profiles = { ...(this.options.model.profiles || {}) };
+        const build = (model: string) => ({
+            provider,
+            model,
+            baseUrl,
+            ...(apiKey ? { apiKey } : {}),
+            ...(apiKeyEnv ? { apiKeyEnv } : {})
+        });
+        const registered: string[] = [];
+        const routing = { ...(this.options.model.complexityRouting || {}) };
+        if (singleModel) {
+            profiles[`${name}-fast`] = build(singleModel);
+            registered.push(`${name}-fast`);
+            this.options.model.defaultProfile = `${name}-fast`;
+        } else if (fastModel) {
+            profiles[`${name}-fast`] = build(fastModel);
+            registered.push(`${name}-fast`);
+            routing.simple = `${name}-fast`;
+            if (balancedModel) {
+                profiles[`${name}-balanced`] = build(balancedModel);
+                registered.push(`${name}-balanced`);
+                routing.moderate = `${name}-balanced`;
+            }
+            if (strongModel) {
+                profiles[`${name}-strong`] = build(strongModel);
+                registered.push(`${name}-strong`);
+                routing.complex = `${name}-strong`;
+                if (!balancedModel) {
+                    routing.moderate = `${name}-fast`;
+                }
+            }
+            this.options.model.complexityRouting = routing;
+            this.options.model.defaultProfile = `${name}-fast`;
+        }
+        this.options.model.provider = provider;
+        this.options.model.baseUrl = baseUrl;
+        if (apiKey) this.options.model.apiKey = apiKey;
+        if (apiKeyEnv) this.options.model.apiKeyEnv = apiKeyEnv;
+        return { name, profiles: registered };
+    }
+
+    private async testProvider(params: any, _context: AppRpcRequestContext): Promise<any> {
+        const baseUrl = this.requireString(params?.baseUrl, 'provider.test baseUrl').replace(/\/+$/, '');
+        if (!/^https?:\/\//i.test(baseUrl)) {
+            throw new AppRpcError(-32602, 'Invalid params: an http(s) baseUrl is required');
+        }
+        const apiKey = params?.apiKey && String(params.apiKey).trim() ? String(params.apiKey) : undefined;
+        const apiKeyEnv = params?.apiKeyEnv && String(params.apiKeyEnv).trim() ? String(params.apiKeyEnv) : undefined;
+        const provider = String(params?.provider || 'openai-compatible');
+        const key = apiKey || (apiKeyEnv ? ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[apiKeyEnv] || '') : '');
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        try {
+            const headers: Record<string, string> = {};
+            if (key) {
+                headers[provider === 'anthropic' ? 'x-api-key' : 'Authorization'] = provider === 'anthropic' ? key : `Bearer ${key}`;
+            }
+            const response = await fetch(`${baseUrl}/models`, { headers, signal: controller.signal });
+            const body = response.ok ? await this.tryParseTestProviderBody(response) : null;
+            return {
+                ok: response.ok,
+                status: response.status,
+                models: body?.models || [],
+                error: response.ok ? undefined : `HTTP ${response.status} ${response.statusText || ''}`.trim()
+            };
+        } catch (error: any) {
+            if (error?.name === 'AbortError') {
+                return { ok: false, status: 0, models: [], error: 'Connection timed out after 8s' };
+            }
+            return { ok: false, status: 0, models: [], error: error?.message || String(error) };
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    private async tryParseTestProviderBody(response: Response): Promise<{ models: string[] } | null> {
+        try {
+            const body = await response.json();
+            if (Array.isArray(body?.data)) {
+                const models = body.data
+                    .map((item: any) => item?.id)
+                    .filter((id: unknown): id is string => typeof id === 'string');
+                return { models: models.slice(0, 20) };
+            }
+            if (Array.isArray(body?.models)) {
+                return { models: body.models.slice(0, 20) };
+            }
+        } catch {
+            return null;
+        }
+        return null;
     }
 
     private async listMemory(params: any, context: AppRpcRequestContext): Promise<any> {
