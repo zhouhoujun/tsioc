@@ -954,6 +954,24 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('leaves the final terminal column unpainted for an unbordered input background')
+    async leavesFinalColumnUnpaintedForInputBackground() {
+        const ctx = await Application.run(ConsoleNestedTextareaTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleNestedTextareaTestComponent) as ComponentRef<ConsoleNestedTextareaTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 24 });
+            const visibleWidths = lines.map(line => getDisplayWidth(line.replace(/\x1b\[[0-9;]*m/g, '')));
+            expect(visibleWidths.some(width => width === 23)).toBe(true);
+            expect(visibleWidths.every(width => width <= 23)).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('does not add extra spacer rows for plain div wrappers around inputs')
     async avoidsExtraSpacerRowsForPlainDivWrappers() {
         const ctx = await Application.run(ConsoleNestedTextareaTestComponent, {

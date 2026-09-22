@@ -281,7 +281,8 @@ export class TuiRenderer extends ConsoleRenderer {
             }
             case 'input': {
                 const lineStart = lines.length;
-                const value = element.getAttribute('value') || text || '';
+                const rawValue = element.getAttribute('value') || text || '';
+                const value = (element.getAttribute('mask') || '').toLowerCase() === 'true' ? '•'.repeat(rawValue.length) : rawValue;
                 const prompt = element.getAttribute('prompt') || '';
                 const cursor = element.getAttribute('cursor') || ' ';
                 const placeholder = element.getAttribute('placeholder') || '';
@@ -344,7 +345,8 @@ export class TuiRenderer extends ConsoleRenderer {
             }
             case 'textarea': {
                 const lineStart = lines.length;
-                const value = element.getAttribute('value') || text || '';
+                const rawValue = element.getAttribute('value') || text || '';
+                const value = (element.getAttribute('mask') || '').toLowerCase() === 'true' ? '•'.repeat(rawValue.length) : rawValue;
                 const prompt = element.getAttribute('prompt') || '';
                 const placeholder = element.getAttribute('placeholder') || '';
                 const continuationPrompt = element.getAttribute('continuationPrompt') || '  ';
@@ -545,10 +547,14 @@ export class TuiRenderer extends ConsoleRenderer {
         }
         const padding = this.resolveBoxPadding(styleMap.padding);
         const hasBorder = !!styleMap.border;
-        const innerWidth = Math.max(4, width - (hasBorder ? 2 : 0) - padding.left - padding.right);
+        const hasBackground = !!(styleMap.background || styleMap['background-color']);
+        // Do not paint the terminal's final column for unbordered background bands.
+        // Some terminals auto-wrap or retain that cell as a vertical shadow.
+        const renderWidth = !hasBorder && hasBackground ? Math.max(1, width - 1) : width;
+        const innerWidth = Math.max(4, renderWidth - (hasBorder ? 2 : 0) - padding.left - padding.right);
         const contentLines = lines.length ? lines : [''];
         const framed: string[] = [];
-        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, width - 2)), styleMap, undefined, true) : '';
+        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, renderWidth - 2)), styleMap, undefined, true) : '';
         const topPad = ' '.repeat(Math.max(0, padding.top));
         const bottomPad = ' '.repeat(Math.max(0, padding.bottom));
         const renderRow = (raw: string) => {
