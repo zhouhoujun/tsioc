@@ -650,9 +650,7 @@ export function renderAgentConsoleMessageItem(
         statusLabel,
         !!context.showTimestamps
     );
-    const durationSuffixMatch = timelineMeta.match(/ \([^()]+\)$/);
-    const durationSuffix = durationSuffixMatch?.[0] || '';
-    const timelineDetails = durationSuffix ? timelineMeta.slice(0, -durationSuffix.length) : timelineMeta;
+    const timelineDetails = timelineMeta;
     const fallbackLine = templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
@@ -675,12 +673,9 @@ export function renderAgentConsoleMessageItem(
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
         const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
-        const tokens = isLast && durationSuffix
-            ? [...rendered.tokens, { text: durationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
-            : rendered.tokens;
         return {
             ...rendered,
-            tokens,
+            tokens: rendered.tokens,
             messageId: message?.id,
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
