@@ -12,8 +12,21 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 import { QuestionStore } from './app-rpc/QuestionStore';
 
-@Module({
-    imports: [AgentModule],
+/** Map a `run.turn_stream.chunk` notification into the shape the console UI consumes. */
+export function mapRunTurnStreamChunk(params: any): Record<string, any> {
+    return {
+        type: params?.chunkType,
+        content: params?.content,
+        toolCalls: params?.toolCalls,
+        usage: params?.usage,
+        eventType: params?.eventType,
+        label: params?.label,
+        status: params?.status,
+        toolName: params?.toolName
+    };
+}
+
+@Module({    imports: [AgentModule],
     providers: [
         SessionOwnerStore,
         SessionHandler,
@@ -60,16 +73,7 @@ import { QuestionStore } from './app-rpc/QuestionStore';
                             throw new Error(message.error?.message || 'App RPC stream failed');
                         }
                         if ('method' in message && message.method === 'run.turn_stream.chunk') {
-                            yield {
-                                type: message.params?.chunkType,
-                                content: message.params?.content,
-                                toolCalls: message.params?.toolCalls,
-                                usage: message.params?.usage,
-                                eventType: message.params?.eventType,
-                                label: message.params?.label,
-                                status: message.params?.status,
-                                toolName: message.params?.toolName
-                            };
+                            yield mapRunTurnStreamChunk(message.params);
                             continue;
                         }
                         if ('result' in message) {
