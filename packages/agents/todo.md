@@ -129,10 +129,10 @@
 - **P1.3 空/中断响应健壮性**（部分）：v67 已有界重试 2 次且工具错误可恢复；待补轻度退避与「provider 连续空响应」明确提示。
 - **验收**：含 `"cancel"`/嵌套 profile 的 settings 在启动、`/model`、`/doctor` 均不崩且输出净化配置；坏 profile 路由时 turn 继续并给诊断；新增 config sanitize + routing fallback 回归。
 
-### P2 — Workspace 路径与工具失败可操作化（P2.1 ✅ v68）
+### P2 — Workspace 路径与工具失败可操作化（P2.1 ✅ v68；P2.2 ✅ v69）
 
 - ✅ **P2.1 路径错误可操作**：`resolveWorkspacePath`/`assertWorkspacePattern` 失败信息附上允许的 workspace root 与相对路径示例，并明确禁止绝对路径与 `..`。
-- **P2.2 工作区上下文注入**：系统提示/环境块显式声明 workspace root 并要求相对路径（never invent absolute paths outside it）；glob 绝对 pattern 明确拒绝并提示。
+- ✅ **P2.2 工作区上下文注入**：`buildModelRequest` 注入 `Workspace root: <dir>` 系统消息，要求只用工作区相对路径、禁止绝对路径与 `..` 逃逸。
 - **P2.3 失败行可操作**：失败/阻塞事件行的 `retry` 提示升级为可点击/回车就地重试的 affordance（codex/opencode 语义），不再只是文本。
 - **验收**：模型使用越界/绝对路径时 turn 不终止、错误可读、可纠错继续；PTY 覆盖 bad-path → recover。
 
@@ -150,9 +150,9 @@
 - **P4.3 行距与空白统一**：transcript 消息间距与事件紧凑度统一，消除多余空行。
 - **验收**：真实会话工具行按稳定 key 归并、无重复、无多余空行；新增 timeline 归并回归。
 
-### P5 — 工具/Provider 可用性
+### P5 — 工具/Provider 可用性（P5.1 ✅ v69）
 
-- **P5.1 `web_search` 未配置 adapter**：除工具错误外给出 UI 提示（未配置搜索适配器及配置入口）。
+- ✅ **P5.1 `web_search` 未配置 adapter**：工具失败时 UI 显示「未配置联网搜索适配器」可操作提示，替代泛化的 `failed`。
 - **P5.2 工具标签/摘要映射补全**：新增工具时同步本地化显示名与参数摘要（`Read file: <path>` 形式）。
 - **验收**：未配置能力有明确可操作提示；新工具不出现原始工具名列表。
 
@@ -303,4 +303,11 @@
 - **路径可操作（P2.1）**：`resolveWorkspacePath` 与 glob 绝对/`..` pattern 的错误信息附上 workspace root 与相对路径示例，明确禁止绝对路径与父目录逃逸。
 - **plan 本地化（P3.1）**：新增 `planLabel/planActive/planBlocked/planFailed/planCompleted` 标签（zh + EN）；plan 头部、plan/tasks 面板摘要、Working 当前步骤与完成摘要不再硬编码英文。
 - **验证**：agent 894 passing、agent-cli 77 passing、agent-ui 1397 passing；真实 PTY acceptance 隔离 HOME 连续两次 8/8 通过（全量门禁期间 PTY scenario 8 偶发超时，属已知负载抖动，隔离复跑稳定通过）。
-- **当前状态**：P1.3（退避/空响应提示）、P2.2/P2.3、P3.2/P3.3、P4、P5、P6 仍开放。
+- **当前状态**（v68 收尾）：P1.3（退避/空响应提示）、P2.3、P3.2/P3.3、P4、P5.2、P6 仍开放（P2.2、P5.1 由 v69 完成）。
+
+## v69 — 优化批次 P2.2 / P5.1 落地 ✅
+
+- **工作区上下文注入（P2.2）**：`DefaultAgentRuntime.buildModelRequest` 在存在 workspace 时注入系统消息 `Workspace root: <dir>. Use workspace-relative paths only; never use absolute paths or '..' ...`，从源头降低模型编造越界绝对路径的概率。
+- **联网搜索可操作提示（P5.1）**：`web_search` 因未配置适配器失败时，UI 显示「未配置联网搜索适配器；请在设置中配置搜索适配器。」（en/zh i18n），替代泛化的 `failed`。
+- **验证**：agent 894 passing、agent-ui 1398 passing（新增 missing-adapter hint 用例）。
+- **当前状态**：P1.3（退避/空响应提示）、P2.3、P3.2/P3.3、P4、P5.2、P6 仍开放。
