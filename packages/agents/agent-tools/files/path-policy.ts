@@ -31,7 +31,7 @@ export function resolveWorkspacePath(targetPath: string, rootDir: string): strin
     const absolute = path.resolve(rootDir, normalized);
     const relative = path.relative(rootDir, absolute);
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
-        throw new Error(`Path '${targetPath}' is outside the allowed workspace root.`);
+        throw new Error(`Path '${targetPath}' is outside the allowed workspace root. Use a workspace-relative path (root: ${rootDir}); do not use absolute paths or '..'.`);
     }
     return absolute;
 }

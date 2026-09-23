@@ -55,7 +55,7 @@ export class GlobSearchTool implements AgentTool {
     private assertWorkspacePattern(pattern: string): void {
         const trimmed = pattern.trim();
         if (path.isAbsolute(trimmed) || trimmed.split(/[\\/]+/).includes('..')) {
-            throw new Error('Invalid glob_search input: pattern must stay within the workspace root.');
+            throw new Error(`Invalid glob_search input: pattern '${trimmed}' must stay within the workspace root; use a workspace-relative pattern such as 'src/**/*.ts'.`);
         }
     }
 }
