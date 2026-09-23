@@ -117,6 +117,7 @@ interface ToolCompensationEntry {
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
+const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 function sameStringList(left: string[], right: string[]): boolean {
@@ -220,6 +221,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     protected now(): number {
         return this.clock?.now() ?? Date.now();
+    }
+
+    protected async sleep(ms: number): Promise<void> {
+        if (!Number.isFinite(ms) || ms <= 0) {
+            return;
+        }
+        await new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
     async runTurn(
@@ -1081,6 +1089,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
+                await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
                 response = await this.modelAdapter.complete(
                     this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
@@ -1166,6 +1175,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
+                await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
                 response = yield* this.collectStreamingResponse(
                     sessionId,
                     this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
