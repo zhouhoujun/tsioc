@@ -136,10 +136,10 @@
 - **P2.3 失败行可操作**：失败/阻塞事件行的 `retry` 提示升级为可点击/回车就地重试的 affordance（codex/opencode 语义），不再只是文本。
 - **验收**：模型使用越界/绝对路径时 turn 不终止、错误可读、可纠错继续；PTY 覆盖 bad-path → recover。
 
-### P3 — 本地化与文案一致性（P3.1 ✅ v68）
+### P3 — 本地化与文案一致性（P3.1 ✅ v68；P3.2 部分 v71）
 
 - ✅ **P3.1 plan 头部/结尾本地化**：plan 头部（`计划 X/Y ▓ · 进行中 N · 阻塞 · 失败`）、tasks/plan 面板摘要、Working 当前步骤、`planCompleted` 结尾均走 `AgentConsoleTimelineLabels`，补齐 zh/EN 键。
-- **P3.2 事件/工具/状态句子统一 i18n**：`resolveTimelineEventSentence`、`resolveEventResultPhrase`、Working/Preparing 等全部经 labels/translator，禁止英文硬编码。
+- ◐ **P3.2 事件/工具/状态句子统一 i18n**：事件句子与状态词已走 labels/translator；v71 本地化 cancel/queue/busy 交互提示；其余命令、用法与诊断提示仍待补。
 - **P3.3 工具结果摘要精简**：限制长度、去重、`+N more` 一致（`N match(es)` 已修）。
 - **验收**：zh-CN 下时间线/计划/状态无英文残留；新增文案快照测试。
 
@@ -318,3 +318,9 @@
 - **工具批行折叠（P4.2 部分）**：一步超过 3 个工具调用时，仅展示前 3 个本地化动作+参数并折叠为 `· +N more`，避免超长批行。
 - **验证**：agent 894 passing、agent-ui 1399 passing（新增 batch 折叠用例）。
 - **当前状态**：P1.3（退避）、P2.3、P3.2/P3.3、P4.1/P4.3、P5.2、P6 仍开放。
+
+## v71 — 优化批次 P3.2 交互提示本地化（部分）✅
+
+- **cancel/queue/busy 提示本地化**：`agent.notice.cancelling|nothingToCancel|queuedPrompt|queuedCommand|busy`（zh + EN）；`interruptTurn`、`enqueuePrompt`、`notifyBusyState` 默认文案不再硬编码英文。
+- **验证**：agent-ui 1399 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total（含真实 PTY、生产库完整性）。
+- **当前状态**：P1.3（退避）、P2.3、P3.2（其余命令/用法/诊断提示）、P3.3、P4.1/P4.3、P5.2、P6 仍开放。
