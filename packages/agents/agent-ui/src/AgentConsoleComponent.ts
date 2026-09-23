@@ -3886,7 +3886,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 .map((call: any) => this.formatToolCallLabel(call))
                 .filter(Boolean);
             if (parts.length) {
-                return parts.join(' · ');
+                return parts.length > 3
+                    ? [...parts.slice(0, 3), `+${parts.length - 3} more`].join(' · ')
+                    : parts.join(' · ');
             }
         }
         const text = String(chunk?.content || '').trim();

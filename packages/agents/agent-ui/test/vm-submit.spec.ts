@@ -106,6 +106,22 @@ export class VmSubmitTest {
         expect(summary).not.toContain('read_file,');
     }
 
+    @Test('long tool batches collapse the tail into a +N more summary')
+    async longToolBatchesCollapseTail() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        const toolCalls = Array.from({ length: 6 }, (_value, index) => ({
+            name: 'read_file',
+            input: { path: `src/file-${index}.ts` }
+        }));
+        const summary = (component as any).describePendingToolCall({ content: 'read_file', toolCalls });
+
+        expect(summary).toContain('src/file-0.ts');
+        expect(summary).toContain('src/file-1.ts');
+        expect(summary).toContain('src/file-2.ts');
+        expect(summary).toContain('+3 more');
+        expect(summary).not.toContain('src/file-5.ts');
+    }
+
     @Test('pending tool call falls back to the raw content without structured calls')
     async pendingToolCallFallsBackWithoutStructuredCalls() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
