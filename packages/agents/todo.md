@@ -240,3 +240,12 @@
 - **排队计数可见**：输入行 prompt 增加 `N queued` 徽标，排队输入数量常驻可见（`queuedPromptCount`）。
 - **验证**：agent-ui 1395 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。
+
+## v67 — 真实 CLI 会话差距修复（工具行 / RPC 透传 / 错误恢复）✅
+
+- **工具调用批行可读化**：模型一步返回多个工具调用时不再显示原始工具名逗号列表（`readfile, globsearch, content_search`），改为本地化动作 + 主参数（`Read file: AGENTS.md · Search files: exam-system/**/*.ts · Search code: scorePaper`）；主参数按 path/pattern/query/command 等优先选取并截断。
+- **RPC 桥保留 toolCalls**：本地 in-process AppRpc 桥（`agent-gateway/agent-app-server.module.ts`）与 `HttpAgentConsoleAppRpc.stream` 此前丢弃流式 `toolCalls`，导致 UI 只能回退到工具名列表；现两端透传，Web/attach/本地 chat 行为一致。
+- **工具错误可恢复**：模型在一次可恢复工具失败后返回空响应时，运行时注入带工具错误与"使用工作区相对路径"提示的恢复轮，而不是直接以 `required tool failed` 收尾；空响应重试改为有界两次，容忍 provider 瞬时空回包。
+- **工具结果摘要**：glob_search 结果复数修正为 `1 match / 2 matches`（此前 `matchs`）。
+- **验证**：agent 893 passing、agent-ui 1397 passing；真实 CLI（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）驱动构建任务观察到工具行可读化、复数正确、错误恢复生效；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total。
+- **当前状态**：无开放实施批次。
