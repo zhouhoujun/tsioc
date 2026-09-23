@@ -1234,6 +1234,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (goal?.status === 'active') {
             messages = [{ id: `goal-${goal.id}`, role: 'system', content: buildGoalContext(goal), createdAt: goal.updatedAt }, ...messages];
         }
+        const workspaceRoot = String(turnContext?.workspace || '').trim();
+        if (workspaceRoot) {
+            messages = [{
+                id: 'workspace-root',
+                role: 'system',
+                content: `Workspace root: ${workspaceRoot}. Use workspace-relative paths only; never use absolute paths or '..' to escape the root, because file tools reject paths outside it.`,
+                createdAt: Date.now()
+            }, ...messages];
+        }
         const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId);
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
