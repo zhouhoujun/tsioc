@@ -3665,7 +3665,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             }
             if (chunk?.type === 'tool_call') {
                 this.clearStreamingPendingNotice();
-                const content = this.describePendingToolCall(chunk.content);
+                const content = this.describePendingToolCall(chunk);
                 const eventKey = this.qualifyTurnUiEventKey(this.resolveToolEventKey('tool_call', chunk));
                 this.state.pushActivity('tool', `Tool call: ${this.state.summarize(String(content || chunk.content || ''))}`);
                 if (eventKey) {
@@ -3876,13 +3876,63 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             .trim();
     }
 
-    protected describePendingToolCall(content: unknown): string {
-        const text = String(content || '').trim();
+    protected describePendingToolCall(chunk: any): string {
+        const toolCalls = Array.isArray(chunk?.toolCalls) ? chunk.toolCalls : [];
+        if (toolCalls.length) {
+            const parts = toolCalls
+                .map((call: any) => this.formatToolCallLabel(call))
+                .filter(Boolean);
+            if (parts.length) {
+                return parts.join(' · ');
+            }
+        }
+        const text = String(chunk?.content || '').trim();
         if (!text) {
             return 'tool';
         }
-        const toolName = this.resolveToolEventName({ content: text });
+        const toolName = this.resolveToolEventName(chunk);
         return toolName || text;
+    }
+
+    protected formatToolCallLabel(call: any): string {
+        const name = String(call?.name || '').trim();
+        if (!name) {
+            return '';
+        }
+        const label = this.translator?.translate(`agent.tool.${name}`) || name.replace(/[._-]+/g, ' ');
+        const argument = this.resolveToolCallArgument(call?.input);
+        return argument ? `${label}: ${argument}` : label;
+    }
+
+    protected resolveToolCallArgument(input: any): string {
+        if (input === undefined || input === null) {
+            return '';
+        }
+        let value = '';
+        if (typeof input === 'string') {
+            value = input;
+        } else if (typeof input === 'object') {
+            const preferred = [
+                'path', 'file_path', 'filePath', 'file', 'filename', 'dir', 'directory', 'folder',
+                'pattern', 'glob', 'query', 'q', 'command', 'cmd', 'prompt', 'target', 'url', 'name', 'id'
+            ];
+            for (const key of preferred) {
+                const candidate = (input as Record<string, any>)[key];
+                if (typeof candidate === 'string' && candidate.trim()) {
+                    value = candidate.trim();
+                    break;
+                }
+            }
+            if (!value) {
+                const first = Object.values(input as Record<string, any>)
+                    .find(candidate => typeof candidate === 'string' && candidate.trim());
+                if (typeof first === 'string') {
+                    value = first.trim();
+                }
+            }
+        }
+        const collapsed = value.replace(/\s+/g, ' ').trim();
+        return collapsed.length > 48 ? `${collapsed.slice(0, 47)}…` : collapsed;
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {

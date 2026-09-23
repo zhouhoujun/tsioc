@@ -88,9 +88,33 @@ export class VmSubmitTest {
         expect(component.status).toEqual('idle');
     }
 
+    @Test('pending tool calls render human labels with their primary argument')
+    async pendingToolCallsRenderHumanLabels() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        const summary = (component as any).describePendingToolCall({
+            content: 'read_file, glob_search, content_search',
+            toolCalls: [
+                { name: 'read_file', input: { path: 'exam-system/src/scoring.js' } },
+                { name: 'glob_search', input: { pattern: '**/*.ts' } },
+                { name: 'content_search', input: { query: 'scorePaper' } }
+            ]
+        });
+
+        expect(summary).toContain('exam-system/src/scoring.js');
+        expect(summary).toContain('**/*.ts');
+        expect(summary).toContain('scorePaper');
+        expect(summary).not.toContain('read_file,');
+    }
+
+    @Test('pending tool call falls back to the raw content without structured calls')
+    async pendingToolCallFallsBackWithoutStructuredCalls() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        expect((component as any).describePendingToolCall({})).toEqual('tool');
+        expect((component as any).describePendingToolCall({ content: 'read_file' })).toContain('read');
+    }
+
     @Test('attach command queues image and submit sends structured parts to the runtime')
-    async attachCommandQueuesImageAndSubmitSendsStructuredParts() {
-        const runtime = new RuntimeStub();
+    async attachCommandQueuesImageAndSubmitSendsStructuredParts() {        const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const app = new ApplicationContextStub();
         app.registry.set(FileAdapter, new TestFileAdapter());
