@@ -324,3 +324,10 @@
 - **cancel/queue/busy 提示本地化**：`agent.notice.cancelling|nothingToCancel|queuedPrompt|queuedCommand|busy`（zh + EN）；`interruptTurn`、`enqueuePrompt`、`notifyBusyState` 默认文案不再硬编码英文。
 - **验证**：agent-ui 1399 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total（含真实 PTY、生产库完整性）。
 - **当前状态**：P1.3（退避）、P2.3、P3.2（其余命令/用法/诊断提示）、P3.3、P4.1/P4.3、P5.2、P6 仍开放。
+
+## v72 — 模型可用性只读校验（`doctor --check-models`）✅
+
+- **新增只读校验**：`tsdi-agent doctor --check-models` 拉取 provider `${baseUrl}/v1/models`，对照顶层 `model`、`defaultProfile`、各 `profiles.*.model` 与 `complexityRouting` 解析出的模型，命中缺失时报 `model_not_available`（附可用模型示例）；端点不可达或 HTTP 失败降级为 warn，不崩溃。
+- **动机**：真实会话中 `complexityRouting.complex → strong` 指向 provider 未提供的模型（如 `gpt-5.6`），复杂请求持续返回空响应；该检查让此类配置错误在 doctor 阶段可见、可定位。
+- **验证**：agent-cli 78 passing（新增 `/models` 缺失用例）。
+- **当前状态**：P1.3（退避）、P2.3、P3.2（其余命令/用法/诊断提示）、P3.3、P4.1/P4.3、P5.2、P6 仍开放。
