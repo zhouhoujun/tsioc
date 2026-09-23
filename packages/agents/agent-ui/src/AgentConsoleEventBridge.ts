@@ -319,6 +319,7 @@ export class AgentConsoleEventBridge {
                     timeoutMs: event.request.timeoutMs,
                     expiresAt: event.request.expiresAt ?? Date.now() + event.request.timeoutMs
                 });
+                this.state.requestApprovalAttention();
                 this.state.pushActivity('tool', `Approval required for ${event.request.toolName}`);
         });
 

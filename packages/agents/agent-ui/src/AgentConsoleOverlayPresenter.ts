@@ -51,7 +51,7 @@ export const AGENT_CONSOLE_OVERLAY_HINTS: Record<string, string> = {
     select: '1-9 select   up/down move   enter confirm   q cancel',
     palette: 'type to filter   enter execute',
     suggestions: 'enter 执行   tab 补全   up/down 选择',
-    approvals: 'up/down move   pg jump   a approve   d deny   y copy   esc',
+    approvals: 'a allow   d deny   y copy   up/down move   esc dismiss',
     'pending-question': 'up/down move   enter confirm   q cancel',
     outputs: 'up/down move   enter copy   esc close',
     tasks: 'up/down move   pg jump   enter open   esc close',

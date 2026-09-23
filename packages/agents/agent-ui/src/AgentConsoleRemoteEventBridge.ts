@@ -210,6 +210,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 timeoutMs: timeoutMs > 0 ? timeoutMs : 0,
                 expiresAt: timeoutMs > 0 ? Date.now() + timeoutMs : 0
             });
+            state.requestApprovalAttention();
             state.pushActivity('tool', `Approval required for ${request.toolName || 'tool'}`);
             break;
         }

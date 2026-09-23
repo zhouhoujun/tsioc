@@ -3423,6 +3423,46 @@ export class AgentConsoleSessionState {
         return `legacy-question-${question.question}`;
     }
 
+    async submitPendingQuestionInput(): Promise<boolean> {
+        const question = this.pendingQuestion;
+        const answer = String(this.input || '').trim();
+        if (!question || !answer || !this.questionAction) {
+            return false;
+        }
+        if (question.expiresAt && Date.now() > question.expiresAt) {
+            question.status = 'expired';
+            question.error = undefined;
+            this.finishPendingQuestion();
+            this.setInputFocused(true);
+            return true;
+        }
+        question.status = 'submitting';
+        question.error = undefined;
+        try {
+            await this.questionAction({
+                questionId: question.questionId || this.buildLegacyQuestionId(question),
+                sessionId: question.sessionId || this.sessionId,
+                action: 'answer',
+                answer
+            });
+            question.status = 'answered';
+            question.answer = answer;
+            this.finishPendingQuestion();
+            this.setInputFocused(true);
+        } catch (error: any) {
+            const message = error?.message || String(error || 'Question response failed');
+            if (/expired/i.test(message)) {
+                question.status = 'expired';
+                question.error = undefined;
+                this.finishPendingQuestion();
+            } else {
+                question.status = 'pending';
+                question.error = message;
+            }
+        }
+        return true;
+    }
+
     async retrySelectedPlanTodo(): Promise<boolean> {
         const item = this.selectedPlanTodo;
         if (!item || item.status !== 'failed') return false;
@@ -3813,6 +3853,28 @@ export class AgentConsoleSessionState {
             this.selectedApprovalId = this.pendingApprovals[0].id;
         }
         this.syncDerivedInputFocus();
+    }
+
+    /**
+     * Surface a newly arrived approval prompt the way codex/opencode interrupt
+     * for permission. The composer keeps focus only when a higher-priority layer
+     * (question, blocking select menu, detail inspector) already owns the turn.
+     */
+    requestApprovalAttention(): void {
+        if (!this.pendingApprovals.length) {
+            return;
+        }
+        if (this.pendingQuestion
+            || this.hasBlockingSelectMenu()
+            || this.textOverlay
+            || this.reviewOpen
+            || this.timelineEventInspectorOpen
+            || this.messageDetailOpen) {
+            return;
+        }
+        if (!this.approvalsFocused) {
+            this.setApprovalsFocused(true);
+        }
     }
 
     setSelectedApprovalId(approvalId: string): void {
@@ -6223,8 +6285,14 @@ export class AgentConsoleSessionState {
                 case 'page':
                     this.movePendingQuestionSelectionPage(decision.direction);
                     return true;
-                case 'confirm':
+                case 'confirm': {
+                    const typed = String(this.input || '').trim();
+                    const selected = this.pendingQuestion?.options[this.pendingQuestionSelectedIndex];
+                    if (this.questionAction && typed && typed !== selected) {
+                        return this.submitPendingQuestionInput();
+                    }
                     return this.choosePendingQuestion();
+                }
                 case 'choose':
                     return this.choosePendingQuestion(decision.index);
                 case 'escape':
@@ -7049,6 +7117,24 @@ export class AgentConsoleSessionState {
 
         if (this.hasBlockingSelectMenu()) {
             return { handled: true, action: 'menuBlocked' };
+        }
+
+        // While a question is pending, printable keys build a custom answer in
+        // the composer (codex/opencode "type your own answer"). Once a draft is
+        // present digits are part of that answer; with an empty draft a digit
+        // still picks the numbered option below.
+        if (this.pendingQuestion && !controlKey && rawText && rawText.length === 1 && !/[\r\n]/.test(rawText)) {
+            const isDigit = /[0-9]/.test(rawText);
+            if (!isDigit || this.input) {
+                this.setInput(`${this.input}${rawText}`, this.input.length + 1);
+                return { handled: true, action: 'textInput', value: rawText };
+            }
+        }
+        if (this.pendingQuestion && (controlKey === 'backspace' || rawText === '\b' || rawText === '\u007f')) {
+            if (this.input) {
+                this.setInput(this.input.slice(0, -1), Math.max(0, this.input.length - 1));
+            }
+            return { handled: true, action: 'textInput' };
         }
 
         // Filter-mode typing must bypass resolveFocusShortcutKey (which remaps

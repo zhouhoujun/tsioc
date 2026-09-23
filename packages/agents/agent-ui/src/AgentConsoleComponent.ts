@@ -3682,6 +3682,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const eventType = String(chunk?.eventType || 'state').trim() || 'state';
         if (eventType === 'approval_requested') {
             const toolName = String(chunk?.toolName || 'tool');
+            const inputSummary = String(chunk?.inputSummary || chunk?.command || chunk?.input || '').trim();
             this.state.upsertPendingApproval({
                 id: String(chunk?.approvalId || `approval-${Date.now()}`),
                 toolName,
@@ -3689,10 +3690,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 reason: String(chunk?.content || `Approval required for ${toolName}`),
                 summary: String(chunk?.content || ''),
                 hasInput: true,
-                inputSummary: undefined,
+                inputSummary: inputSummary || undefined,
                 createdAt: Date.now(),
-                timeoutMs: 0
+                timeoutMs: Number(chunk?.timeoutMs) || 0
             } as AgentConsoleApprovalRequest);
+            this.state.requestApprovalAttention();
             this.state.pushActivity('tool', `Approval required for ${toolName}`);
             return;
         }

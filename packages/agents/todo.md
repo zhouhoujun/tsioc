@@ -41,6 +41,7 @@
 - 历史去重后按最近使用顺序保留最多 200 条。
 - `↑` 从最新 prompt 向旧 prompt 浏览；`↓` 反向浏览并最终恢复按键前的原始草稿。
 - suggestion menu 只在尚未浏览历史时优先消费方向键；历史浏览一旦开始，本次浏览期间 `↑/↓` 必须继续属于历史。
+- pending question 激活时输入框可键入自定义答案：空草稿时数字键选择编号选项，已有草稿时数字属于答案文本，Enter 提交自定义答案或选中项。
 - browser textarea、TUI escape sequence、Vim history action 必须遵守同一契约。
 
 ### 5. Workspace、Project 与跨会话协同
@@ -96,6 +97,7 @@
 - Markdown、CJK 宽度、80/100/120 列布局、主题、ARIA、键盘与鼠标交互。
 - multiline draft、stash、external editor、Vim、keymap、suggestions、workspace mentions 和 slash palette。
 - Ctrl+C/Esc 中断、Working elapsed、queued/steer prompt、pending question 和 approval focus lifecycle。
+- approval 到达自动聚焦面板（让位更高优先级层），展示 `Allow <tool>?` + 命令预览 + 原因/到期与固定操作键；pending question 支持自定义答案与队列计数。
 - 长回复 native scrollback 安全窗口。
 - 状态栏 token 计量随流式 chunk 实时推进：仅 final done 携带真实 usage 时按 CJK 感知分词累计 completion 预估，真实 chunk usage 优先生效、以 estimated 标记且不写入最终审计记录。
 - 事件总耗时优先展示后端 `durationMs`，缺失时按保留的开始时间推导 `durationMs = now - startedAt`，终态替换 running 行不回退且重复终态保持首次推导值。
@@ -212,4 +214,15 @@
 - **流式回执回归**：新增 `streamingTurnYieldsEstimatedChunkUsage`，锁定「预估随 chunk 到达、真实 usage 后到优先」的回执顺序。修正异步生成器调度测试：在 runtime 链推进到适配器 await 点之后再 `releaseFollowupChunk()`，避免过早释放成为空操作而挂死（先建立挂起的 `stream.next()`，释放后再 await）。
 - **时间线窗口回归**：`resolveTimelineVisibleMessages` 的窗口 limit 恢复为 `messagesVisibleItems`，stream 布局不再把 timeline 窗口放开到 `MAX_SAFE_INTEGER`——compact/steps 折叠摘要、当前步骤 + 错误仅显模式与隐藏计数恢复；流式 transcript 无界契约由 `visibleMessages` 顶层 stream 分支（`messageLayout !== 'dynamic'` 直接返回全量）独立保证。`default message stream remains unbounded` 测试显式 `setTimelineMode('off')`，消除跨用例共享组件例泄漏的 steps 模式污染。
 - **验证**：agent 全包、agent-ui 1373 passing；runtime-loop 定向 60 passing（含新流式预估断言）；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次。
+
+## v65 — 审批/问答确认交互与时间线耗时契约收敛 ✅
+
+- **审批确认（参考 opencode/codex）**：新审批到达时 `requestApprovalAttention` 自动把焦点交给 approval 面板，但让位给 pending question、blocking select 菜单与详情 inspector 等更高优先级层；面板显示 `Approval required · Allow <tool>?`、命令预览（shell 类工具前缀 `$`）、原因与到期倒计时，并固定 `a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss` 操作提示。
+- **审批事件载荷**：`approval_requested` 透传 `inputSummary/command/input` 与 `timeoutMs`；组件事件路径、本地事件桥与远端 SSE 桥行为一致。
+- **问答确认（用户对话）**：pending question 头部显示 `Awaiting your answer[ · N queued]`，选项提示统一为 `↑↓ move · 1-9 pick · Enter confirm · Esc dismiss`；用户可在输入框键入自定义答案，已有草稿时数字属于答案文本、空草稿时数字仍选择编号选项，Enter 提交自定义答案或选中项；不改变 composer 的既有数字选项契约。
+- **时间线耗时契约修复**：恢复事件行总耗时展示（rule 30），并以行尾 muted token 呈现、禁止贴在内容起始；最终回答改用 24 小时制 `Worked for X · done HH:mm` 摘要并保留行尾耗时 token；步骤边界（P302）耗时继续保留在 meta；`formatDoneTime` 不再随 locale 漂移。
+- **事件详情展开修复**：message detail 打开且选中时事件行使用完整正文，此前开关只切换文案而正文仍被截断。
+- **门禁字形误报修复**：TUI gate `single status glyph per line` 仅统计行首状态标记，不再把内容截断省略号 `…` 当作第二个状态标记。
+- **验证**：agent-ui 1392 passing（含新增 `p313-approval-question-ux`）；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。

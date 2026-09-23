@@ -1716,10 +1716,12 @@ export class AgentConsoleJobsPanelComponent {
     selector: 'agent-console-approvals-panel',
     template: `
     <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
-        <label v-style="accentStyle">{{approvalsSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="approvalsHintLabel">{{approvalsHintLabel}}</label>
+        <label v-style="accentStyle">{{approvalsTitleLabel}}</label>
+        <label v-style="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
         <label v-style="listStyle" v-show="approvalListLabel">{{approvalListLabel}}</label>
+        <label v-style="detailStyle" v-show="selectedApprovalRequestLabel">{{selectedApprovalRequestLabel}}</label>
         <label v-style="detailStyle" v-show="selectedApprovalDetailLabel">{{selectedApprovalDetailLabel}}</label>
+        <label v-style="metaStyle" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `
 })
@@ -1805,11 +1807,36 @@ export class AgentConsoleApprovalsPanelComponent {
         return `approvals ${this.approvals.length} · ${selectedIndex + 1}/${this.approvals.length}`;
     }
 
+    get approvalsTitleLabel(): string {
+        if (!this.shouldShow || !this.approvals.length) {
+            return '';
+        }
+        return this.state.selectedApproval
+            ? `Approval required · Allow ${this.state.selectedApproval.toolName}?`
+            : 'Approval required';
+    }
+
     get approvalsHintLabel(): string {
         if (!this.shouldShow || !this.approvals.length || !this.state.approvalsFocused) {
             return '';
         }
         return this.state.consoleOptions.approvalsHint;
+    }
+
+    get approvalActionsLabel(): string {
+        if (!this.shouldShow || !this.approvals.length) {
+            return '';
+        }
+        return 'a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss';
+    }
+
+    get selectedApprovalRequestLabel(): string {
+        if (!this.shouldShow || !this.state.selectedApproval) {
+            return '';
+        }
+        const request = this.state.selectedApproval;
+        const command = String(request.inputSummary || request.summary || '').replace(/\s+/g, ' ').trim();
+        return command ? `$ ${this.summarize(command)}` : '';
     }
 
     get accessibilityLabel(): string {
@@ -1827,11 +1854,14 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         const request = this.state.selectedApproval;
-        return [
-            `tool ${request.toolName} · reason ${request.reason}`,
-            request.inputSummary ? `input ${this.summarize(request.inputSummary)}` : 'input -',
-            `timeout ${request.timeoutMs}ms · session ${request.sessionId}`
-        ].join('\n');
+        const lines = [`Reason: ${request.reason || 'No reason provided'}`];
+        if (request.expiresAt && request.timeoutMs > 0) {
+            const remainingMs = request.expiresAt - Date.now();
+            lines.push(remainingMs > 0
+                ? `Expires in ${Math.max(1, Math.ceil(remainingMs / 1000))}s`
+                : 'Expired');
+        }
+        return lines.join('\n');
     }
 
     get shouldShow(): boolean {
@@ -2158,6 +2188,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     selector: 'agent-console-pending-question-panel',
     template: `
     <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
+        <label v-style="accentStyle">{{pendingQuestionHeader}}</label>
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionExpiryHint">{{pendingQuestionExpiryHint}}</label>
@@ -2165,6 +2196,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
             <div id="{{item.id}}" v-style="listStyle" role="option" aria-selected="{{item.selected}}" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</div>
         </div>
         <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">{{pendingQuestionSelectionHint}}</label>
+        <label v-style="metaStyle" v-show="pendingQuestionCustomHint">{{pendingQuestionCustomHint}}</label>
     </div>
     `
 })
@@ -2205,6 +2237,15 @@ export class AgentConsolePendingQuestionPanelComponent {
         return `${severity}? ${question.question}${position}`;
     }
 
+    get pendingQuestionHeader(): string {
+        const question = this.state.pendingQuestion;
+        if (!question) {
+            return '';
+        }
+        const total = this.state.pendingQuestionTotal;
+        return total > 1 ? `Awaiting your answer · ${total} queued` : 'Awaiting your answer';
+    }
+
     get pendingQuestionContext(): string {
         return this.state.pendingQuestion?.context || '';
     }
@@ -2237,7 +2278,18 @@ export class AgentConsolePendingQuestionPanelComponent {
         const count = this.pendingQuestionOptionItems.length;
         if (!count) return '';
         const selected = Math.min(this.state.pendingQuestionSelectedIndex + 1, count);
-        return `selected ${selected}/${count} · ↑↓ choose · 1-9 select · Enter confirm · Esc dismiss`;
+        return `selected ${selected}/${count} · ↑↓ move · 1-9 pick · Enter confirm · Esc dismiss`;
+    }
+
+    get pendingQuestionCustomHint(): string {
+        const question = this.state.pendingQuestion;
+        if (!question || !this.state.questionAction) {
+            return '';
+        }
+        const typed = String(this.state.input || '').trim();
+        return typed
+            ? `Custom answer: ${typed} · Enter to send`
+            : 'Or type your own answer, then press Enter';
     }
 
     get accessibilityLabel(): string {

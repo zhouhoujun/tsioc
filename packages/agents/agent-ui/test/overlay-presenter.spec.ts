@@ -45,7 +45,7 @@ export class AgentConsoleOverlayPresenterTest {
 
     @Test('approvals hint from session defaults')
     async approvalsHintFromSessionDefaults() {
-        expect(AGENT_CONSOLE_OVERLAY_HINTS.approvals).toBe('up/down move   pg jump   a approve   d deny   y copy   esc');
+        expect(AGENT_CONSOLE_OVERLAY_HINTS.approvals).toBe('a allow   d deny   y copy   up/down move   esc dismiss');
     }
 
     @Test('title catalog entries exist')
