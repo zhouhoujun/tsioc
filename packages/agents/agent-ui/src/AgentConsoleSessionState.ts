@@ -787,6 +787,7 @@ export class AgentConsoleSessionState {
     toggleHealthPopoverAction?: () => void | Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
     copyFocusedTextAction?: (text: string, label: string) => void | Promise<void>;
+    retryFailedEventAction?: (message: AgentMessage) => boolean | Promise<boolean>;
     activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
     openSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
@@ -2070,21 +2071,32 @@ export class AgentConsoleSessionState {
         return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
     }
 
-    protected isTimelineEventMessage(message?: AgentMessage | null): boolean {
+    protected     isTimelineEventMessage(message?: AgentMessage | null): boolean {
         if (!message) {
             return false;
         }
         const metadata = message.metadata || {};
         if (metadata.uiKind !== 'event') {
             return false;
-        }
-        return metadata.uiEventType === 'tool_invoked'
+        }        return metadata.uiEventType === 'tool_invoked'
             || metadata.uiEventType === 'tool_completed'
             || metadata.uiEventType === 'tool_failed'
             || metadata.uiEventType === 'plan_step_failed'
             || metadata.uiEventType === 'plan_step_blocked'
             || metadata.uiEventType === 'approval'
             || metadata.uiEventType === 'approval_request';
+    }
+
+    isFailedEventMessage(message?: AgentMessage | null): boolean {
+        if (!this.isTimelineEventMessage(message)) {
+            return false;
+        }
+        const metadata = message!.metadata || {};
+        const status = String(metadata.status || '').toLowerCase();
+        return metadata.error === true
+            || status === 'failed'
+            || status === 'error'
+            || status === 'blocked';
     }
 
     openTimelineEventInspector(eventMessage?: AgentMessage): void {
@@ -6633,6 +6645,14 @@ export class AgentConsoleSessionState {
                 case 'end':
                     this.selectLastMessage();
                     return true;
+                case 'r': {
+                    const selected = this.selectedMessage;
+                    if (this.isFailedEventMessage(selected) && this.retryFailedEventAction && selected) {
+                        const handled = await this.retryFailedEventAction(selected);
+                        return handled !== false;
+                    }
+                    return false;
+                }
                 case 'enter':
                     if (this.selectedMessage?.metadata?.uiKind === 'plan-todo') {
                         return this.togglePlanTodoExpanded();

@@ -48,7 +48,19 @@ export const agentUiEnglish: TranslationBundle = {
                 nothingToCancel: 'No running turn to cancel.',
                 queuedPrompt: 'Queued prompt ({count}).',
                 queuedCommand: 'Queued command ({count}).',
-                busy: 'Wait for the current turn to finish.'
+                busy: 'Wait for the current turn to finish.',
+                nothingToRetry: 'Nothing to retry.',
+                noPendingApprovals: 'No pending approvals.',
+                noQueuedPrompts: 'No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.',
+                noQueuedPromptsClear: 'No queued prompts to clear.',
+                queueUsage: 'Usage: /queue [list|clear]',
+                noStashedDrafts: 'No stashed drafts. Use /stash push <name> to save the current draft.',
+                emptyStash: 'Nothing to stash: the draft is empty.',
+                stashUsage: 'Usage: /stash [list|push <name>|pop <name>|rm <name>]',
+                personalityCleared: 'Personality cleared.',
+                personalityUsage: 'Usage: /personality [list|set <name>|unset]',
+                yoloUsage: 'Usage: /yolo [on|off]',
+                noMcpServers: 'No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).'
             },
             message: {
                 expand: '… {count} more lines. Click to expand',
@@ -65,6 +77,10 @@ export const agentUiEnglish: TranslationBundle = {
                 read_file: 'Read file', write_file: 'Create file', edit_file: 'Edit file', apply_patch: 'Apply changes',
                 mkdir: 'Create directory', todo: 'Update plan', ask_user: 'Waiting for your input',
                 coding_task: 'Run implementation task', git_operations: 'Check version control',
+                stat: 'Inspect file', watch_files: 'Watch files', move_file: 'Move file', copy_file: 'Copy file',
+                delete_file: 'Delete file', web_search: 'Web search', web_extract: 'Fetch web page',
+                weather: 'Check weather', location: 'Resolve location', terminal: 'Run command',
+                background_task: 'Run background task', schedule: 'Schedule prompt',
                 invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected; continuing with files', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
             }
         }
@@ -99,7 +115,19 @@ export const agentUiChinese: TranslationBundle = {
                 nothingToCancel: '没有正在运行的轮次可取消。',
                 queuedPrompt: '已排队提示（{count}）。',
                 queuedCommand: '已排队命令（{count}）。',
-                busy: '请等待当前轮次结束。'
+                busy: '请等待当前轮次结束。',
+                nothingToRetry: '没有可重试的内容。',
+                noPendingApprovals: '没有待处理的审批。',
+                noQueuedPrompts: '没有排队提示。turn 运行中按 Tab 可排队后续提示。',
+                noQueuedPromptsClear: '没有可清空的排队提示。',
+                queueUsage: '用法：/queue [list|clear]',
+                noStashedDrafts: '没有暂存草稿。用 /stash push <name> 保存当前草稿。',
+                emptyStash: '无内容可暂存：草稿为空。',
+                stashUsage: '用法：/stash [list|push <name>|pop <name>|rm <name>]',
+                personalityCleared: '人格已清除。',
+                personalityUsage: '用法：/personality [list|set <name>|unset]',
+                yoloUsage: '用法：/yolo [on|off]',
+                noMcpServers: '未配置 MCP 服务器。可通过 agent 设置（tsdi-agent mcp add）添加。'
             },
             message: {
                 expand: '… 还有 {count} 行，点击展开',
@@ -116,6 +144,10 @@ export const agentUiChinese: TranslationBundle = {
                 read_file: '读取文件', write_file: '创建文件', edit_file: '修改文件', apply_patch: '应用修改',
                 mkdir: '创建目录', todo: '更新计划', ask_user: '等待你的输入',
                 coding_task: '执行实现任务', git_operations: '检查版本状态',
+                stat: '查看文件信息', watch_files: '监听文件', move_file: '移动文件', copy_file: '复制文件',
+                delete_file: '删除文件', web_search: '联网搜索', web_extract: '抓取网页',
+                weather: '查询天气', location: '解析位置', terminal: '执行命令',
+                background_task: '运行后台任务', schedule: '定时提示',
                 invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库，继续处理文件', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
             }
         }

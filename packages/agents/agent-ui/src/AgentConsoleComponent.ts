@@ -1913,7 +1913,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async openApprovalInspector(requests: AgentConsoleApprovalRequest[]): Promise<void> {
         if (!requests.length) {
-            this.notify('No pending approvals.');
+            this.notify(this.translator?.translate('agent.notice.noPendingApprovals') || 'No pending approvals.');
             return;
         }
         let selectedRequestIndex = 0;
@@ -2207,13 +2207,29 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    protected async retryFailedEventHandler(message: AgentMessage): Promise<boolean> {
+        void message;
+        if (this.isTurnInProgress()) {
+            this.notify(this.translator?.translate('agent.notice.busy') || 'Wait for the current turn to finish.');
+            return false;
+        }
+        const lastUser = [...this.state.messages].reverse().find(item =>
+            item.role === 'user' && !!String(item.content || '').trim());
+        if (!lastUser) {
+            this.notify(this.translator?.translate('agent.notice.nothingToRetry') || 'Nothing to retry.');
+            return false;
+        }
+        this.state.setInput(String(lastUser.content || ''), String(lastUser.content || '').length);
+        await this.submit();
+        return true;
+    }
+
     get activateSelectedSessionActionHandler(): (sessionId: string) => Promise<void> {
         return async (sessionId: string) => {
             if (!sessionId) {
                 return;
             }
-            await this.openSession(sessionId);
-            this.state.setSessionsFocused(false);
+            await this.openSession(sessionId);            this.state.setSessionsFocused(false);
         };
     }
 
@@ -2383,6 +2399,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.queueDraftAction = () => this.queueDraft();
         this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
+        this.state.retryFailedEventAction = message => this.retryFailedEventHandler(message);
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
         this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
@@ -4575,7 +4592,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
             const names = Object.keys(stashes);
             if (!names.length) {
-                this.notify('No stashed drafts. Use /stash push <name> to save the current draft.');
+                this.notify(this.translator?.translate('agent.notice.noStashedDrafts') || 'No stashed drafts. Use /stash push <name> to save the current draft.');
                 return true;
             }
             this.pushCommandOutput('/stash list', `Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
@@ -4586,7 +4603,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (verb.toLowerCase() === 'push' || verb.toLowerCase() === 'save') {
             const draft = String(this.state.input || '').trim();
             if (!draft) {
-                this.notify('Nothing to stash: the draft is empty.');
+                this.notify(this.translator?.translate('agent.notice.emptyStash') || 'Nothing to stash: the draft is empty.');
                 return true;
             }
             const name = requested || 'default';
@@ -4636,7 +4653,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.notify(`Removed stash "${name}".`);
             return true;
         }
-        this.notify('Usage: /stash [list|push <name>|pop <name>|rm <name>]');
+        this.notify(this.translator?.translate('agent.notice.stashUsage') || 'Usage: /stash [list|push <name>|pop <name>|rm <name>]');
         return true;
     }
 
@@ -4645,7 +4662,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const queue = this.queuedPrompts.get(this.state.sessionId) || [];
         if (!parsed || parsed.toLowerCase() === 'list') {
             if (!queue.length) {
-                this.notify('No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.');
+                this.notify(this.translator?.translate('agent.notice.noQueuedPrompts') || 'No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.');
                 return true;
             }
             const lines = queue.map((entry, index) =>
@@ -4656,7 +4673,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (parsed.toLowerCase() === 'clear') {
             if (!queue.length) {
-                this.notify('No queued prompts to clear.');
+                this.notify(this.translator?.translate('agent.notice.noQueuedPromptsClear') || 'No queued prompts to clear.');
                 return true;
             }
             this.queuedPrompts.delete(this.state.sessionId);
@@ -4664,7 +4681,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.notify(`Cleared ${queue.length} queued prompt${queue.length === 1 ? '' : 's'}.`);
             return true;
         }
-        this.notify('Usage: /queue [list|clear]');
+        this.notify(this.translator?.translate('agent.notice.queueUsage') || 'Usage: /queue [list|clear]');
         return true;
     }
 
@@ -5019,10 +5036,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (verb === 'unset') {
             this.options.ui = { ...(this.options.ui || {}), personality: undefined };
-            this.notify('Personality cleared.');
+            this.notify(this.translator?.translate('agent.notice.personalityCleared') || 'Personality cleared.');
             return true;
         }
-        this.notify('Usage: /personality [list|set <name>|unset]');
+        this.notify(this.translator?.translate('agent.notice.personalityUsage') || 'Usage: /personality [list|set <name>|unset]');
         return true;
     }
 
@@ -5155,7 +5172,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async runYoloCommand(args?: string): Promise<boolean> {
         const value = String(args || '').trim().toLowerCase();
         if (value && value !== 'on' && value !== 'off') {
-            this.notify('Usage: /yolo [on|off]');
+            this.notify(this.translator?.translate('agent.notice.yoloUsage') || 'Usage: /yolo [on|off]');
             return true;
         }
         await this.setYoloMode(value ? value === 'on' : !this.yoloMode);
@@ -5379,7 +5396,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             servers.set(serverId, entry);
         }
         if (!servers.size) {
-            this.notify('No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).');
+            this.notify(this.translator?.translate('agent.notice.noMcpServers') || 'No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).');
             return true;
         }
         const lines = Array.from(servers.entries()).map(([serverId, entry]) => {

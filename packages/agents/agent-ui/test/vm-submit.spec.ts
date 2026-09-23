@@ -107,8 +107,7 @@ export class VmSubmitTest {
     }
 
     @Test('long tool batches collapse the tail into a +N more summary')
-    async longToolBatchesCollapseTail() {
-        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+    async longToolBatchesCollapseTail() {        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
         const toolCalls = Array.from({ length: 6 }, (_value, index) => ({
             name: 'read_file',
             input: { path: `src/file-${index}.ts` }
@@ -120,6 +119,23 @@ export class VmSubmitTest {
         expect(summary).toContain('src/file-2.ts');
         expect(summary).toContain('+3 more');
         expect(summary).not.toContain('src/file-5.ts');
+    }
+
+    @Test('focused failed event retries with the r key')
+    async focusedFailedEventRetriesWithRKey() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let retried = 0;
+        state.retryFailedEventAction = () => { retried += 1; return true; };
+        state.setMessages([
+            { id: 'u1', role: 'user', content: 'hi', createdAt: 1 },
+            { id: 'e1', role: 'assistant', content: 'boom', createdAt: 2, metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' } }
+        ] as any);
+        state.setMessagesFocused(true);
+        state.setSelectedMessageId('e1');
+
+        expect(state.isFailedEventMessage(state.selectedMessage)).toEqual(true);
+        expect(await state.handleFocusKey('r')).toEqual(true);
+        expect(retried).toEqual(1);
     }
 
     @Test('pending tool call falls back to the raw content without structured calls')
