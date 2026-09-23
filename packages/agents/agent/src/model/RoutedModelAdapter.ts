@@ -28,10 +28,17 @@ export class RoutedModelAdapter extends ModelAdapter {
 
     readonly provider: string;
 
+    private readonly warnings: string[] = [];
+
     constructor(private readonly options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
         super();
         this.provider = this.normalizeProvider(this.options.provider, this.options.baseUrl);
         this.appArgs = appArgs;
+    }
+
+    /** Non-fatal routing problems collected while selecting a model config. */
+    getWarnings(): string[] {
+        return this.warnings.slice();
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
@@ -213,7 +220,7 @@ export class RoutedModelAdapter extends ModelAdapter {
         const topLevel = this.pickConfig(this.options);
         const profileConfig = route.profile ? this.options.profiles?.[route.profile] : undefined;
         if (route.profile && !profileConfig) {
-            throw new Error(`Unknown model profile '${route.profile}'.`);
+            this.warnings.push(`Unknown model profile '${route.profile}' for route '${route.name || ''}'; ignoring the profile.`);
         }
 
         const routeConfig = this.mergeConfigs(
@@ -235,7 +242,8 @@ export class RoutedModelAdapter extends ModelAdapter {
         if (typeof entry === 'string') {
             const profile = this.options.profiles?.[entry];
             if (!profile) {
-                throw new Error(`Unknown model profile '${entry}' for complexity '${complexity}'.`);
+                this.warnings.push(`Unknown model profile '${entry}' for complexity '${complexity}'; falling back to the default model.`);
+                return null;
             }
             return { config: this.mergeConfigs(topLevel, profile), profileName: entry };
         }
@@ -247,7 +255,8 @@ export class RoutedModelAdapter extends ModelAdapter {
         if (this.options.defaultProfile) {
             const profile = this.options.profiles?.[this.options.defaultProfile];
             if (!profile) {
-                throw new Error(`Unknown default model profile '${this.options.defaultProfile}'.`);
+                this.warnings.push(`Unknown default model profile '${this.options.defaultProfile}'; falling back to the top-level model.`);
+                return { config: this.mergeConfigs(undefined, topLevel) };
             }
             return {
                 config: this.mergeConfigs(topLevel, profile),

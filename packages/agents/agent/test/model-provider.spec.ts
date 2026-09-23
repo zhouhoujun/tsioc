@@ -1012,6 +1012,51 @@ export class ModelProviderTest {
         expect(result.message).toEqual('ok');
     }
 
+    @Test('falls back to the top-level model when a complexity profile is missing')
+    async fallsBackWhenComplexityProfileMissing() {
+        const bodies: any[] = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            bodies.push(JSON.parse(init.body));
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'ok' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'k',
+            complexityRouting: { simple: 'missing-profile' }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-missing-profile',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: 'hi',
+                createdAt: 1
+            }]
+        });
+
+        expect(result.message).toEqual('ok');
+        expect(bodies[0].model).toEqual('gpt-5.4');
+        expect(adapter.getWarnings().some(warning => warning.includes('missing-profile'))).toEqual(true);
+    }
+
     @Test('sanitizes dotted tool names for openai-compatible requests and restores them on parse')
     async sanitizesDottedToolNamesAndRestoresOriginalNames() {
         let call: any;
