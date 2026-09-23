@@ -63,6 +63,7 @@ import { QuestionStore } from './app-rpc/QuestionStore';
                             yield {
                                 type: message.params?.chunkType,
                                 content: message.params?.content,
+                                toolCalls: message.params?.toolCalls,
                                 usage: message.params?.usage,
                                 eventType: message.params?.eventType,
                                 label: message.params?.label,

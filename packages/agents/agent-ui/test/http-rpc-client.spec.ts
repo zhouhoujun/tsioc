@@ -105,6 +105,7 @@ export class HttpAgentConsoleAppRpcTest {
             return ndjsonResponse(200, [
                 JSON.stringify({ jsonrpc: '2.0', method: 'run.turn_stream.chunk', params: { chunkType: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' } }),
                 JSON.stringify({ jsonrpc: '2.0', method: 'run.turn_stream.chunk', params: { chunkType: 'content', content: 'hello' } }),
+                JSON.stringify({ jsonrpc: '2.0', method: 'run.turn_stream.chunk', params: { chunkType: 'tool_call', content: 'read_file', toolCalls: [{ id: 't1', name: 'read_file', input: { path: 'a.ts' } }] } }),
                 JSON.stringify({ jsonrpc: '2.0', id: 1, result: { sessionId: 's1', message: { content: 'done' } } })
             ]);
         };
@@ -113,13 +114,17 @@ export class HttpAgentConsoleAppRpcTest {
         for await (const chunk of rpc.stream('run.turn_stream', { sessionId: 's1', input: 'x' })) {
             chunks.push(chunk);
         }
-        expect(chunks.length).toEqual(3);
+        expect(chunks.length).toEqual(4);
         expect(chunks[0].type).toEqual('event');
         expect(chunks[0].eventType).toEqual('turn_started');
         expect(chunks[1].type).toEqual('content');
         expect(chunks[1].content).toEqual('hello');
-        expect(chunks[2].type).toEqual('done');
-        expect(chunks[2].sessionId).toEqual('s1');
+        expect(chunks[2].type).toEqual('tool_call');
+        expect(chunks[2].content).toEqual('read_file');
+        expect(chunks[2].toolCalls?.[0]?.name).toEqual('read_file');
+        expect(chunks[2].toolCalls?.[0]?.input?.path).toEqual('a.ts');
+        expect(chunks[3].type).toEqual('done');
+        expect(chunks[3].sessionId).toEqual('s1');
     }
 
     @Test('stream throws on NDJSON error line')

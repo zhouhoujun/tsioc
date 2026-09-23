@@ -239,6 +239,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                         yield {
                             type: p.chunkType,
                             content: p.content,
+                            toolCalls: p.toolCalls,
                             usage: p.usage,
                             eventType: p.eventType,
                             label: p.label,
