@@ -126,7 +126,7 @@
 
 - ✅ **P1.1 配置自愈**：`settings.json` 读入已能识别 `cancel`/`q` 占位 sentinel 并丢弃无效 profile；补齐**写回净化**（启动与 `/model` 保存时清理 sentinel 与嵌套重复 `profiles`/`complexityRouting`）并在 `/doctor` 可见报告，禁止无效 sentinel 再次持久化。
 - ✅ **P1.2 路由不中断**：`RoutedModelAdapter` 遇到未知/无效 `complexityRouting`/`defaultProfile`/route profile 时回退顶层并记录 `getWarnings()` 诊断，而不是抛错终止 turn（显式 `--profile` 仍按原契约抛错）。
-- **P1.3 空/中断响应健壮性**（部分）：v67 已有界重试 2 次且工具错误可恢复；待补轻度退避与「provider 连续空响应」明确提示。
+- **P1.3 空/中断响应健壮性**（部分）：v67 已有界重试 2 次且工具错误可恢复；v70 补齐收尾文案的动作指引（区分 provider 空回包与工具失败），退避仍待补。
 - **验收**：含 `"cancel"`/嵌套 profile 的 settings 在启动、`/model`、`/doctor` 均不崩且输出净化配置；坏 profile 路由时 turn 继续并给诊断；新增 config sanitize + routing fallback 回归。
 
 ### P2 — Workspace 路径与工具失败可操作化（P2.1 ✅ v68；P2.2 ✅ v69）
@@ -146,7 +146,7 @@
 ### P4 — 时间线与计划一致性
 
 - **P4.1 plan 投影一致性**：plan 头部计数与 todo 工具回执/plan 消息一致（消除 `plan 1/4` 对 `7 items` 的相位差）；plan 更新按稳定 key 归并。
-- **P4.2 工具批行分组**：一步多工具聚合为可读摘要，超长批行可展开到 inspector；running→completed 原地归并且不重复。
+- **P4.2 工具批行分组**（部分 ✅ v70）：一步多工具超过 3 个时折叠为 `· +N more`，避免超长行；running→completed 原地归并已由既有稳定 key 负责，inspector 展开仍待补。
 - **P4.3 行距与空白统一**：transcript 消息间距与事件紧凑度统一，消除多余空行。
 - **验收**：真实会话工具行按稳定 key 归并、无重复、无多余空行；新增 timeline 归并回归。
 
@@ -311,3 +311,10 @@
 - **联网搜索可操作提示（P5.1）**：`web_search` 因未配置适配器失败时，UI 显示「未配置联网搜索适配器；请在设置中配置搜索适配器。」（en/zh i18n），替代泛化的 `failed`。
 - **验证**：agent 894 passing、agent-ui 1398 passing（新增 missing-adapter hint 用例）。
 - **当前状态**：P1.3（退避/空响应提示）、P2.3、P3.2/P3.3、P4、P5.2、P6 仍开放。
+
+## v70 — 优化批次 P1.3 / P4.2 部分落地 ✅
+
+- **空响应/工具失败收尾可操作（P1.3 部分）**：`resolveAssistantResponseText` 现在区分「工具失败」与「provider 空回包」，分别在收尾文案后追加动作指引（修正工具输入/路径后重试；或按 provider 瞬时问题重试/检查模型配置）。
+- **工具批行折叠（P4.2 部分）**：一步超过 3 个工具调用时，仅展示前 3 个本地化动作+参数并折叠为 `· +N more`，避免超长批行。
+- **验证**：agent 894 passing、agent-ui 1399 passing（新增 batch 折叠用例）。
+- **当前状态**：P1.3（退避）、P2.3、P3.2/P3.3、P4.1/P4.3、P5.2、P6 仍开放。
