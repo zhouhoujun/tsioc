@@ -122,23 +122,23 @@
 
 > 来源：真实 CLI 会话（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）暴露的差距，对照 codex/opencode 的信息架构与恢复语义。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / PTY）后才能关闭。历史批次见文末 v 系列。
 
-### P1 — 模型配置自愈与路由健壮性
+### P1 — 模型配置自愈与路由健壮性（P1.1 / P1.2 ✅ v68；P1.3 部分）
 
-- **P1.1 配置自愈**：`settings.json` 读入已能识别 `cancel`/`q` 占位 sentinel 并丢弃无效 profile；补齐**写回净化**（启动与 `/model` 保存时清理 sentinel 与嵌套重复 `profiles`/`complexityRouting`）并在 `/doctor` 可见报告，禁止无效 sentinel 再次持久化。
-- **P1.2 路由不中断**：`RoutedModelAdapter` 遇到未知/无效 `complexityRouting`/`defaultProfile` 时回退 top-level 并发出可诊断事件，而不是抛错终止 turn；`/doctor` 标记指向不存在 profile 的路由项。
-- **P1.3 空/中断响应健壮性**：保留有界重试（现 2 次），增加轻度退避与「provider 连续空响应」明确提示，区分 provider 空回包与真正的空答案。
+- ✅ **P1.1 配置自愈**：`settings.json` 读入已能识别 `cancel`/`q` 占位 sentinel 并丢弃无效 profile；补齐**写回净化**（启动与 `/model` 保存时清理 sentinel 与嵌套重复 `profiles`/`complexityRouting`）并在 `/doctor` 可见报告，禁止无效 sentinel 再次持久化。
+- ✅ **P1.2 路由不中断**：`RoutedModelAdapter` 遇到未知/无效 `complexityRouting`/`defaultProfile`/route profile 时回退顶层并记录 `getWarnings()` 诊断，而不是抛错终止 turn（显式 `--profile` 仍按原契约抛错）。
+- **P1.3 空/中断响应健壮性**（部分）：v67 已有界重试 2 次且工具错误可恢复；待补轻度退避与「provider 连续空响应」明确提示。
 - **验收**：含 `"cancel"`/嵌套 profile 的 settings 在启动、`/model`、`/doctor` 均不崩且输出净化配置；坏 profile 路由时 turn 继续并给诊断；新增 config sanitize + routing fallback 回归。
 
-### P2 — Workspace 路径与工具失败可操作化
+### P2 — Workspace 路径与工具失败可操作化（P2.1 ✅ v68）
 
-- **P2.1 路径错误可操作**：`resolveWorkspacePath`/`assertWorkspacePattern` 失败信息附上允许的 workspace root 与相对路径示例；归一化 `./`，对 `..`/绝对路径给出明确修复建议。
+- ✅ **P2.1 路径错误可操作**：`resolveWorkspacePath`/`assertWorkspacePattern` 失败信息附上允许的 workspace root 与相对路径示例，并明确禁止绝对路径与 `..`。
 - **P2.2 工作区上下文注入**：系统提示/环境块显式声明 workspace root 并要求相对路径（never invent absolute paths outside it）；glob 绝对 pattern 明确拒绝并提示。
 - **P2.3 失败行可操作**：失败/阻塞事件行的 `retry` 提示升级为可点击/回车就地重试的 affordance（codex/opencode 语义），不再只是文本。
 - **验收**：模型使用越界/绝对路径时 turn 不终止、错误可读、可纠错继续；PTY 覆盖 bad-path → recover。
 
-### P3 — 本地化与文案一致性
+### P3 — 本地化与文案一致性（P3.1 ✅ v68）
 
-- **P3.1 plan 头部/结尾本地化**：`plan X/Y ▓ · active N · blocked · failed`、`Plan completed: X/Y steps, N failures` 等走 translator，补齐 zh-CN 键。
+- ✅ **P3.1 plan 头部/结尾本地化**：plan 头部（`计划 X/Y ▓ · 进行中 N · 阻塞 · 失败`）、tasks/plan 面板摘要、Working 当前步骤、`planCompleted` 结尾均走 `AgentConsoleTimelineLabels`，补齐 zh/EN 键。
 - **P3.2 事件/工具/状态句子统一 i18n**：`resolveTimelineEventSentence`、`resolveEventResultPhrase`、Working/Preparing 等全部经 labels/translator，禁止英文硬编码。
 - **P3.3 工具结果摘要精简**：限制长度、去重、`+N more` 一致（`N match(es)` 已修）。
 - **验收**：zh-CN 下时间线/计划/状态无英文残留；新增文案快照测试。
@@ -295,3 +295,12 @@
 - **工具结果摘要**：glob_search 结果复数修正为 `1 match / 2 matches`（此前 `matchs`）。
 - **验证**：agent 893 passing、agent-ui 1397 passing；真实 CLI（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）驱动构建任务观察到工具行可读化、复数正确、错误恢复生效；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total。
 - **当前状态**：无开放实施批次。
+
+## v68 — 优化批次 P1 / P2.1 / P3.1 落地 ✅
+
+- **配置自愈（P1.1）**：新增 `healSettingsModelConfig`，在 `resolveCliConfig` 启动路径与 `/model` 写回时用 `sanitizeModelProfile` 清理 sentinel（`cancel`/`/cancel`/`q`）、无效 profile、悬空 `complexityRouting`/`defaultProfile` 与嵌套重复；`/doctor` 经 `getLastSettingsHealReport` 报告 `settings_model_repaired`。
+- **路由降级（P1.2）**：`RoutedModelAdapter` 对未知 complexity/default/route profile 不再抛错，改为回退可用配置并累积 `getWarnings()` 诊断；显式 `--profile` 保持原抛错契约。
+- **路径可操作（P2.1）**：`resolveWorkspacePath` 与 glob 绝对/`..` pattern 的错误信息附上 workspace root 与相对路径示例，明确禁止绝对路径与父目录逃逸。
+- **plan 本地化（P3.1）**：新增 `planLabel/planActive/planBlocked/planFailed/planCompleted` 标签（zh + EN）；plan 头部、plan/tasks 面板摘要、Working 当前步骤与完成摘要不再硬编码英文。
+- **验证**：agent 894 passing、agent-cli 77 passing、agent-ui 1397 passing；真实 PTY acceptance 隔离 HOME 连续两次 8/8 通过（全量门禁期间 PTY scenario 8 偶发超时，属已知负载抖动，隔离复跑稳定通过）。
+- **当前状态**：P1.3（退避/空响应提示）、P2.2/P2.3、P3.2/P3.3、P4、P5、P6 仍开放。
