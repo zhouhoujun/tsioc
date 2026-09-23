@@ -976,6 +976,43 @@ export class AgentCliTest {
         expect(Array.isArray(payload.pathEntries)).toBe(true);
     }
 
+    @Test('doctor --check-models flags configured models missing from the provider')
+    async doctorCheckModelsFlagsMissingModels() {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'settings.json'), JSON.stringify({
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.6',
+                baseUrl: 'https://provider.test',
+                apiKey: 'secret',
+                defaultProfile: 'strong',
+                profiles: {
+                    strong: { provider: 'openai-compatible', model: 'gpt-5.6', baseUrl: 'https://provider.test' }
+                },
+                complexityRouting: { complex: 'strong' }
+            }
+        }), 'utf8');
+
+        const originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => ({
+            ok: true,
+            async json() {
+                return { data: [{ id: 'gpt-5.4' }, { id: 'gpt-5.4-mini' }] };
+            }
+        });
+        try {
+            const report = await runAgentDoctor(
+                { root, checkModels: true, json: true } as any,
+                { stdout: { write: () => true } }
+            );
+            const missing = report.issues.filter(issue => issue.code === 'model_not_available');
+            expect(missing.length).toBeGreaterThan(0);
+            expect(missing[0].message).toContain('gpt-5.6');
+        } finally {
+            (globalThis as any).fetch = originalFetch;
+        }
+    }
+
     @Test('formats project list lines with project and thread labels')
     formatsProjectListLines() {
         expect(resolveProjectDisplayLabel({

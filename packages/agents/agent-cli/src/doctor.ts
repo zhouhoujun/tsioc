@@ -360,11 +360,104 @@ export function formatAgentDoctorReport(report: AgentDoctorReport): string {
     return lines.join('\n');
 }
 
-export async function runAgentDoctor(options: AgentCliOptions & { json?: boolean }, io: AgentDoctorIo = {}): Promise<AgentDoctorReport> {
+export async function runAgentDoctor(options: AgentCliOptions & { json?: boolean; checkModels?: boolean }, io: AgentDoctorIo = {}): Promise<AgentDoctorReport> {
     const stdout = io.stdout || process.stdout;
     const report = createAgentDoctorReport(options);
+    if (options.checkModels) {
+        report.issues.push(...await checkModelAvailability(options));
+    }
     stdout.write(options.json
         ? JSON.stringify(report, null, 2) + '\n'
         : formatAgentDoctorReport(report) + '\n');
     return report;
+}
+
+function collectConfiguredModels(model: AgentCliProviderProfile): Array<{ name: string; model: string }> {
+    const entries: Array<{ name: string; model: string }> = [];
+    if (model.model) {
+        entries.push({ name: 'default', model: String(model.model) });
+    }
+    if (model.defaultProfile && model.profiles?.[model.defaultProfile]?.model) {
+        entries.push({ name: `defaultProfile:${model.defaultProfile}`, model: String(model.profiles[model.defaultProfile].model) });
+    }
+    for (const [name, profile] of Object.entries(model.profiles || {})) {
+        if (profile?.model) {
+            entries.push({ name: `profile:${name}`, model: String(profile.model) });
+        }
+    }
+    for (const [complexity, entry] of Object.entries(model.complexityRouting || {})) {
+        if (typeof entry === 'string') {
+            const profile = model.profiles?.[entry];
+            if (profile?.model) {
+                entries.push({ name: `route:${complexity}->${entry}`, model: String(profile.model) });
+            }
+        } else if (entry && typeof entry === 'object' && entry.model) {
+            entries.push({ name: `route:${complexity}`, model: String(entry.model) });
+        }
+    }
+    return entries;
+}
+
+async function checkModelAvailability(options: AgentCliOptions): Promise<AgentDoctorIssue[]> {
+    const issues: AgentDoctorIssue[] = [];
+    let model: AgentCliProviderProfile;
+    try {
+        const resolved = resolveCliConfig(options);
+        model = resolveCliModelConfig(options, resolved.root);
+    } catch {
+        return issues;
+    }
+    const baseUrl = String(model.baseUrl || '').replace(/\/+$/, '');
+    const apiKey = String(model.apiKey || '').trim();
+    if (!baseUrl || !apiKey) {
+        return issues;
+    }
+    let payload: any;
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const response = await (globalThis as any).fetch(`${baseUrl}/v1/models`, {
+            headers: { authorization: `Bearer ${apiKey}` },
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (!response?.ok) {
+            issues.push({
+                severity: 'warn',
+                code: 'models_endpoint_unavailable',
+                message: `Provider model listing returned HTTP ${response?.status ?? 'unknown'}.`,
+                hint: 'Check the base URL and API key.'
+            });
+            return issues;
+        }
+        payload = await response.json();
+    } catch (error: any) {
+        issues.push({
+            severity: 'warn',
+            code: 'models_endpoint_unreachable',
+            message: `Could not query provider models: ${error?.message || String(error)}`,
+            hint: 'Check network access and the configured base URL.'
+        });
+        return issues;
+    }
+    const available = new Set(
+        (payload?.data || payload?.models || [])
+            .map((item: any) => String(item?.id || item?.name || '').trim())
+            .filter(Boolean)
+    );
+    if (!available.size) {
+        return issues;
+    }
+    const hinted = [...available].slice(0, 12).join(', ');
+    for (const entry of collectConfiguredModels(model)) {
+        if (!available.has(entry.model)) {
+            issues.push({
+                severity: 'error',
+                code: 'model_not_available',
+                message: `Configured model '${entry.model}' (${entry.name}) is not advertised by the provider.`,
+                hint: `Available models include: ${hinted}`
+            });
+        }
+    }
+    return issues;
 }

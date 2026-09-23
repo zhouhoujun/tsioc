@@ -345,6 +345,7 @@ function createAgentCli(): Command {
         .option('--api-key-env <name>', 'Env var name for API key.')
         .option('--timeout <ms>', 'Request timeout in ms.')
         .option('--json', 'Output JSON.')
+        .option('--check-models', 'Query the provider model listing and report configured models that are missing.')
         .action(async (options: any) => {
             const report = await runAgentDoctor(options);
             if (report.issues.some(issue => issue.severity === 'error')) {
