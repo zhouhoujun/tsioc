@@ -113,6 +113,17 @@ export class VmSubmitTest {
         expect((component as any).describePendingToolCall({ content: 'read_file' })).toContain('read');
     }
 
+    @Test('web_search failure surfaces an actionable missing-adapter hint')
+    async webSearchFailureShowsMissingAdapterHint() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
+        const content = (component as any).describeStreamEventContent('tool_failed', {
+            toolName: 'web_search',
+            content: 'web_search requires a configured search adapter.'
+        });
+        expect(content).toContain('not configured');
+        expect(content).not.toContain('requires a configured search adapter');
+    }
+
     @Test('attach command queues image and submit sends structured parts to the runtime')
     async attachCommandQueuesImageAndSubmitSendsStructuredParts() {        const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();

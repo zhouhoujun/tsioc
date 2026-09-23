@@ -3831,6 +3831,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
             return this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected; continuing with files';
         }
+        if (eventType === 'tool_failed' && toolName === 'web_search' && /search adapter/i.test(content)) {
+            return this.translator?.translate('agent.tool.searchUnavailable') || 'Web search is not configured; add a search adapter in settings.';
+        }
         return eventType === 'tool_failed'
             ? (this.translator?.translate('agent.tool.failed', { label }) || `${label} failed`)
             : content;
