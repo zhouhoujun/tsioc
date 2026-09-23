@@ -529,9 +529,9 @@ export class AgentConsoleMessagesRendererTest {
         const toolLine = lines.find(line => line.includes('agent.tool.web_search failed')) || '';
 
         expect(toolLine.includes('·  ·')).toBe(false);
-        expect(toolLine).toContain('Tool · retry ');
+        expect(toolLine).toContain('agent.tool.web_search failed · retry');
         expect(toolLine.includes('retryagent')).toBe(false);
-        expect(toolLine.trimEnd().endsWith('(24s)')).toBe(true);
+        expect(toolLine.trimEnd().endsWith('retry (24s)')).toBe(true);
     }
 
     @Test('mounts semantic route components and only folds Thought by default')

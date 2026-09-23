@@ -611,6 +611,7 @@ export function renderAgentConsoleMessageItem(
         ? `│ ${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
         : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
+    const actionLabel = timelineEvent ? resolveTimelineEventActionLabel(message, statusKind) : '';
     const itemStyle = timelineEvent
         ? resolveTimelineEventItemStyle(theme, baseItemStyle, statusKind, rowSelected)
         : baseItemStyle;
@@ -695,8 +696,12 @@ export function renderAgentConsoleMessageItem(
             statusLabel,
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
-        const tokens = isLast && tokenDurationSuffix
-            ? [...rendered.tokens, { text: tokenDurationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
+        const tokens = isLast && (actionLabel || tokenDurationSuffix)
+            ? [
+                ...rendered.tokens,
+                ...(actionLabel ? [{ text: ` · ${actionLabel}`, tone: 'muted' as const, style: timelineMetaStyle }] : []),
+                ...(tokenDurationSuffix ? [{ text: tokenDurationSuffix, tone: 'muted' as const, style: timelineMetaStyle }] : [])
+            ]
             : rendered.tokens;
         return {
             ...rendered,
@@ -711,6 +716,7 @@ export function renderAgentConsoleMessageItem(
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
                 isLast && !workedSummary ? timelineMeta : '',
+                isLast ? actionLabel : '',
                 rendered.prefix,
                 rendered.content
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
@@ -1220,19 +1226,13 @@ function resolveTimelineMeta(
             parts.push(label);
         }
     }
-    // Event rows keep meta purely factual (duration/label/action); the glyph
-    // column is the single state point (P289), textual status stays in aria.
-    // Error rows already carry the semantic status in their role label
-    // (`Error · `). Adding the generic status label here produced
-    // `Error ·  · 错误` in the transcript.
+    // Event rows keep meta purely factual (label/timestamp); the action hint
+    // (`retry` / `重试` / `审批`) is rendered as a trailing muted token instead
+    // of prefixing the row. The glyph column is the single state point (P289),
+    // textual status stays in aria. Error rows already carry the semantic status
+    // in their role label (`Error · `), so the generic label is not repeated.
     if (statusLabel && templateKind !== 'assistant' && templateKind !== 'error' && uiKind !== 'event') {
         parts.push(statusLabel);
-    }
-    if (uiKind === 'event') {
-        const actionLabel = resolveTimelineEventActionLabel(message, resolveAgentConsoleMessageStatus(message, templateKind));
-        if (actionLabel) {
-            parts.push(actionLabel);
-        }
     }
     const details = parts.join(' · ');
     return `${details}${duration ? ` (${duration})` : ''}`;

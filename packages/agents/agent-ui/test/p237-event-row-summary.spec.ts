@@ -52,7 +52,7 @@ export class P237EventRowSummaryTest {
             id: 'e3', role: 'assistant', content: 'Read failed', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
         }] as any);
-        expect(failed[0].lines[0].meta).toContain('retry');
+        expect(failed[0].lines[0].tokens.map(token => token.text).join('')).toContain('retry');
         expect(failed[0].lines[0].meta).not.toContain('错误');
         expect(failed[0].status).toContain('✕');
         expect(failed[0].lines[0].ariaLabel).toContain('错误');
@@ -111,7 +111,7 @@ export class P237EventRowSummaryTest {
         const items = renderAgentConsoleMessageItems([message] as any);
         expect(items[0].lines[0].content).toEqual(`${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`);
         expect(message.content).toEqual(longContent);
-        expect(items[0].lines[0].meta).toContain('retry');
+        expect(items[0].lines[0].tokens.map(token => token.text).join('')).toContain('retry');
     }
 
     @Test('resolveTimelineEventActionLabel maps actionable states to labels')

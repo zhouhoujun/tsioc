@@ -86,7 +86,7 @@ export class PlanStepTimelineTest {
         expect(items[0].status).not.toContain('●');
         expect(items[0].lines[0].ariaLabel).toContain('阻塞');
         expect(items[0].lines[0].ariaLabel).not.toContain('正在执行');
-        expect(items[0].lines[0].meta).toContain('重试');
+        expect(items[0].lines[0].tokens.map(token => token.text).join('')).toContain('重试');
         expect(items[0].lines[0].meta).not.toContain('阻塞');
     }
 
@@ -100,7 +100,7 @@ export class PlanStepTimelineTest {
         };
         const blockedItems = renderAgentConsoleMessageItems([blocked] as any);
         expect(blockedItems[0].lines[0].content).toEqual(summary);
-        expect(blockedItems[0].lines[0].meta).toContain('重试');
+        expect(blockedItems[0].lines[0].tokens.map(token => token.text).join('')).toContain('重试');
         expect(truncateTimelineEventRowContent(longContent, undefined, 'plan_step_blocked')).toEqual(summary);
         expect(truncateTimelineEventRowContent(longContent, 'blocked')).toEqual(summary);
         const failed = {
@@ -110,7 +110,7 @@ export class PlanStepTimelineTest {
         const failedItems = renderAgentConsoleMessageItems([failed] as any);
         expect(failedItems[0].lines[0].content).toEqual(summary);
         expect(failedItems[0].status).toContain('✕');
-        expect(failedItems[0].lines[0].meta).toContain('重试');
+        expect(failedItems[0].lines[0].tokens.map(token => token.text).join('')).toContain('重试');
     }
 
     @Test('active step renders running ● + in-progress word as its group-header state (P292)')

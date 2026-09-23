@@ -388,6 +388,10 @@ export class AgentConsoleInputPanelComponent {
         if (this.state?.isSshShellActive) {
             badges.push(`ssh ${this.state.sshShell?.hostId || ''}`);
         }
+        const queuedCount = this.state?.queuedPromptCount ?? 0;
+        if (queuedCount > 0) {
+            badges.push(`${queuedCount} queued`);
+        }
         return badges.length ? `${base} · ${badges.join(' · ')}` : base;
     }
 

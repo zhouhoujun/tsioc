@@ -916,6 +916,20 @@ export class VmPanelsTest {
         expect(panel.inputPrompt).toEqual('>');
     }
 
+    @Test('input panel prompt shows the queued prompt count')
+    async inputPromptShowsQueuedBadge() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.inputPrompt = '>';
+        const panel = new AgentConsoleInputPanelComponent(state);
+        expect(panel.inputPrompt).toEqual('>');
+
+        state.setQueuedPromptCount(2);
+        expect(panel.inputPrompt).toEqual('> · 2 queued');
+
+        state.setQueuedPromptCount(0);
+        expect(panel.inputPrompt).toEqual('>');
+    }
+
     @Test('input panel nudges explicit planning drafts toward plan mode')
     async inputPanelNudgesPlanningDrafts() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

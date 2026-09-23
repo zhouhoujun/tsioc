@@ -236,5 +236,7 @@
 - **流式历史不再被顶掉**：stream 布局全程使用 native scrollback（含 turn 运行中），多轮对话历史不再按视口高度裁剪；仅显式 dynamic 模式做窗口化。TUI 长回复尾部可见性与滚动安全由真实 PTY 验收覆盖。
 - **关联文件紧凑展示**：用户消息的 @mention 上下文不再原样显示 `› [Mention Context]` + 原始上下文行；正文只显示干净 prompt，并在其下以 muted `Files · <paths>` 一行展示关联文件；发给运行时的提示仍携带完整上下文（编辑/回放不受影响）。
 - **长回复排版收敛**：meta 与正文之间补空格分隔，去掉 role/meta 重复的 `·  ·`；最终回答的 `Worked for X · done HH:mm` 移到独立 footer 行，不再粘在正文末行；去掉重复的行尾耗时 token；sub-second（含派生 0s）不显示 worked summary，避免噪声。
-- **验证**：agent-ui 1394 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **失败行动作提示后移**：`retry`/`重试`/`审批` 从 meta 前缀改为行尾 muted token（`… failed · retry (24s)`），P289 单一状态点与 aria 动作词保持不变，读感更顺。
+- **排队计数可见**：输入行 prompt 增加 `N queued` 徽标，排队输入数量常驻可见（`queuedPromptCount`）。
+- **验证**：agent-ui 1395 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。
