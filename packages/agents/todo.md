@@ -121,44 +121,46 @@
 ## 三、未完成计划
 
 > 来源：真实 CLI 会话（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）暴露的差距，对照 codex/opencode 的信息架构与恢复语义。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / PTY）后才能关闭。历史批次见文末 v 系列。
+>
+> **状态（2026-09-23）**：P1–P6 已全部落地并合入统一门禁；当前无开放实施批次。
 
-### P1 — 模型配置自愈与路由健壮性（P1.1 / P1.2 ✅ v68；P1.3 部分）
+### P1 — 模型配置自愈与路由健壮性（P1.1 / P1.2 / P1.3 ✅ v68+v70+v73）
 
 - ✅ **P1.1 配置自愈**：`settings.json` 读入已能识别 `cancel`/`q` 占位 sentinel 并丢弃无效 profile；补齐**写回净化**（启动与 `/model` 保存时清理 sentinel 与嵌套重复 `profiles`/`complexityRouting`）并在 `/doctor` 可见报告，禁止无效 sentinel 再次持久化。
 - ✅ **P1.2 路由不中断**：`RoutedModelAdapter` 遇到未知/无效 `complexityRouting`/`defaultProfile`/route profile 时回退顶层并记录 `getWarnings()` 诊断，而不是抛错终止 turn（显式 `--profile` 仍按原契约抛错）。
-- **P1.3 空/中断响应健壮性**（部分）：v67 已有界重试 2 次且工具错误可恢复；v70 补齐收尾文案的动作指引（区分 provider 空回包与工具失败），退避仍待补。
+- ✅ **P1.3 空/中断响应健壮性**：有界重试（2 次）+ 递增退避（150ms×N）；工具错误可恢复轮；收尾文案区分 provider 空回包与工具失败并给动作指引。
 - **验收**：含 `"cancel"`/嵌套 profile 的 settings 在启动、`/model`、`/doctor` 均不崩且输出净化配置；坏 profile 路由时 turn 继续并给诊断；新增 config sanitize + routing fallback 回归。
 
-### P2 — Workspace 路径与工具失败可操作化（P2.1 ✅ v68；P2.2 ✅ v69）
+### P2 — Workspace 路径与工具失败可操作化（P2.1 / P2.2 / P2.3 ✅ v68+v69+v73）
 
 - ✅ **P2.1 路径错误可操作**：`resolveWorkspacePath`/`assertWorkspacePattern` 失败信息附上允许的 workspace root 与相对路径示例，并明确禁止绝对路径与 `..`。
 - ✅ **P2.2 工作区上下文注入**：`buildModelRequest` 注入 `Workspace root: <dir>` 系统消息，要求只用工作区相对路径、禁止绝对路径与 `..` 逃逸。
-- **P2.3 失败行可操作**：失败/阻塞事件行的 `retry` 提示升级为可点击/回车就地重试的 affordance（codex/opencode 语义），不再只是文本。
+- ✅ **P2.3 失败行可操作**：选中失败/阻塞事件行按 `r` 就地重试上一轮用户请求（`retryFailedEventAction`，未运行 turn 时生效）。
 - **验收**：模型使用越界/绝对路径时 turn 不终止、错误可读、可纠错继续；PTY 覆盖 bad-path → recover。
 
-### P3 — 本地化与文案一致性（P3.1 ✅ v68；P3.2 部分 v71）
+### P3 — 本地化与文案一致性（P3.1 / P3.2 / P3.3 ✅ v68+v71+v73）
 
 - ✅ **P3.1 plan 头部/结尾本地化**：plan 头部（`计划 X/Y ▓ · 进行中 N · 阻塞 · 失败`）、tasks/plan 面板摘要、Working 当前步骤、`planCompleted` 结尾均走 `AgentConsoleTimelineLabels`，补齐 zh/EN 键。
-- ◐ **P3.2 事件/工具/状态句子统一 i18n**：事件句子与状态词已走 labels/translator；v71 本地化 cancel/queue/busy 交互提示；其余命令、用法与诊断提示仍待补。
-- **P3.3 工具结果摘要精简**：限制长度、去重、`+N more` 一致（`N match(es)` 已修）。
+- ✅ **P3.2 事件/工具/状态句子统一 i18n**：事件句子与状态词走 labels/translator；cancel/queue/busy 与常用命令提示（queue/stash/personality/yolo/mcp）走 `agent.notice.*`（zh/EN）。
+- ✅ **P3.3 工具结果摘要精简**：工具批行 >3 折叠为 `· +N more`；`N match(es)` 复数修正；显示名映射补齐 `stat/watch_files/move_file/copy_file/delete_file/web_search/web_extract/weather/location/terminal/background_task/schedule`。
 - **验收**：zh-CN 下时间线/计划/状态无英文残留；新增文案快照测试。
 
-### P4 — 时间线与计划一致性
+### P4 — 时间线与计划一致性（P4.1 复核关闭；P4.2 / P4.3 ✅ v70+v73）
 
-- **P4.1 plan 投影一致性**：plan 头部计数与 todo 工具回执/plan 消息一致（消除 `plan 1/4` 对 `7 items` 的相位差）；plan 更新按稳定 key 归并。
-- **P4.2 工具批行分组**（部分 ✅ v70）：一步多工具超过 3 个时折叠为 `· +N more`，避免超长行；running→completed 原地归并已由既有稳定 key 负责，inspector 展开仍待补。
-- **P4.3 行距与空白统一**：transcript 消息间距与事件紧凑度统一，消除多余空行。
+- **P4.1 plan 投影一致性（复核）**：复查 `plan 1/4` 与 `7 items` 属刷新相位差（`refreshTodoPlan` 异步收敛），未发现稳定复现的计数错配，暂关闭并保留观察。
+- ✅ **P4.2 工具批行分组**：一步超过 3 个工具调用折叠为 `· +N more`；running→completed 由既有稳定 key 原地归并。
+- ✅ **P4.3 行距与空白统一**：真实 dump 验证 renderer 输出无多余空行（markdown compaction 与行 trim 已生效），无需改动。
 - **验收**：真实会话工具行按稳定 key 归并、无重复、无多余空行；新增 timeline 归并回归。
 
-### P5 — 工具/Provider 可用性（P5.1 ✅ v69）
+### P5 — 工具/Provider 可用性（P5.1 / P5.2 ✅ v69+v73）
 
 - ✅ **P5.1 `web_search` 未配置 adapter**：工具失败时 UI 显示「未配置联网搜索适配器」可操作提示，替代泛化的 `failed`。
-- **P5.2 工具标签/摘要映射补全**：新增工具时同步本地化显示名与参数摘要（`Read file: <path>` 形式）。
+- ✅ **P5.2 工具标签/摘要映射补全**：补齐 `stat/watch_files/move_file/copy_file/delete_file/web_search/web_extract/weather/location/terminal/background_task/schedule` 的 zh/EN 显示名与参数摘要（`Read file: <path>` 形式）。
 - **验收**：未配置能力有明确可操作提示；新工具不出现原始工具名列表。
 
-### P6 — 门禁补强
+### P6 — 门禁补强（✅ v73）
 
-- **P6.1**：P1–P5 全部纳入 `RUN_PTY=1 scripts/agents-gate.sh`，新增真实边界回归（RPC 流 `toolCalls` 透传、settings 净化、routing fallback、PTY bad-path recover）。
+- ✅ **P6.1**：v68–v73 的 settings 净化、routing fallback、`doctor --check-models`、工具批行折叠、失败行重试、缺失 adapter 提示、plan 本地化、in-process RPC `toolCalls` 透传均已有回归用例并纳入各包 `unit.ts`（统一 gate 自动覆盖）；新增 `agent-gateway/test/app-server-bridge.spec.ts`。
 - **验收**：门禁全阶段通过且生产库不变。
 
 ## v62 — 会话时间线动态状态与用量收尾 ✅
@@ -331,3 +333,14 @@
 - **动机**：真实会话中 `complexityRouting.complex → strong` 指向 provider 未提供的模型（如 `gpt-5.6`），复杂请求持续返回空响应；该检查让此类配置错误在 doctor 阶段可见、可定位。
 - **验证**：agent-cli 78 passing（新增 `/models` 缺失用例）。
 - **当前状态**：P1.3（退避）、P2.3、P3.2（其余命令/用法/诊断提示）、P3.3、P4.1/P4.3、P5.2、P6 仍开放。
+
+## v73 — 优化批次 P1.3 / P2.3 / P3.2 / P3.3 / P5.2 / P6 收口 ✅
+
+- **空响应退避（P1.3）**：空响应重试之间加入 `150ms×N` 递增退避，降低 provider 瞬时抖动直接失败的概率。
+- **失败行就地重试（P2.3）**：新增 `retryFailedEventAction` 与 `isFailedEventMessage`；消息聚焦时选中失败/阻塞事件行按 `r` 重试上一轮用户请求（turn 运行中给出 busy 提示）。
+- **文案本地化收口（P3.2）**：`agent.notice.*` 扩展到 queue/stash/personality/yolo/mcp 等常用命令提示（zh/EN）。
+- **工具标签/摘要补全（P3.3/P5.2）**：补齐 12 个工具的中英文显示名；批行 >3 折叠 `+N more` 一致。
+- **门禁补强（P6）**：in-process AppRpc chunk 映射抽为可测 `mapRunTurnStreamChunk`，新增 `agent-gateway/test/app-server-bridge.spec.ts` 锁定 `toolCalls` 透传；v68–v73 全部回归随各包 `unit.ts` 进入统一 gate。
+- **P4.3 复核**：真实 dump 验证 renderer 无多余空行，无需改动；P4.1 plan 相位为刷新收敛，无稳定复现，关闭观察。
+- **验证**：agent 894、agent-cli 78、agent-gateway 298、agent-ui 1400 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 个代码/构建/DOM/TUI/PTY 阶段全绿（`production-db-integrity` 期间用户实时会话改动生产库，非测试写入）。
+- **当前状态**：无开放实施批次（P1–P6 全部关闭）。
