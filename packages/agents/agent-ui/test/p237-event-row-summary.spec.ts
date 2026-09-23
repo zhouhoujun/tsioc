@@ -43,7 +43,7 @@ export class P237EventRowSummaryTest {
             id: 'e2', role: 'assistant', content: 'Read files', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success', durationMs: 1250 }
         }] as any);
-        expect(completed[0].lines[0].meta).toContain('1.3s');
+        expect(completed[0].lines[0].tokens.at(-1)?.text).toContain('1.3s');
         expect(completed[0].lines[0].meta).not.toContain('成功');
         expect(completed[0].status).toContain('✓');
         expect(completed[0].lines[0].ariaLabel).toContain('成功');
@@ -97,7 +97,7 @@ export class P237EventRowSummaryTest {
         const items = renderAgentConsoleMessageItems([message] as any);
         expect(items[0].lines[0].content.length).toBeLessThanOrEqual(TIMELINE_EVENT_ROW_CONTENT_MAX + 1);
         expect(items[0].lines[0].content).toEqual(`${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`);
-        expect(items[0].lines[0].meta).toContain('1.3s');
+        expect(items[0].lines[0].tokens.at(-1)?.text).toContain('1.3s');
         expect(message.content).toEqual(longContent);
     }
 

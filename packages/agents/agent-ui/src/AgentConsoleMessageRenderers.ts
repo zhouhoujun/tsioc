@@ -631,7 +631,9 @@ export function renderAgentConsoleMessageItem(
     // long rows also keep the detail toggle); the sentence only fills empty
     // content events like model_completed.
     const eventRowContent = timelineEvent
-        ? truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind, timelineEventType)
+        ? (context.messageDetailOpen && selected
+            ? (displayContent || timelineSentence || '')
+            : truncateTimelineEventRowContent(displayContent || timelineSentence || '', statusKind, timelineEventType))
         : displayContent;
     const messageStreaming = templateKind === 'assistant' && !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
@@ -652,12 +654,23 @@ export function renderAgentConsoleMessageItem(
         statusLabel,
         !!context.showTimestamps
     );
-    const durationSuffixMatch = timelineMeta.match(/ \([^()]+\)$/);
-    const durationSuffix = durationSuffixMatch?.[0] || '';
-    const timelineDetails = message?.metadata?.uiKind === 'event' || templateKind === 'timelineBoundary'
-        ? timelineMeta
-        : (durationSuffix ? timelineMeta.slice(0, -durationSuffix.length) : timelineMeta);
+    const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
+    // Step boundaries own their duration in meta; event/assistant rows keep it
+    // as a trailing muted token instead (P302 vs P237/elapsed-at-row-end).
+    const durationStaysInMeta = templateKind === 'timelineBoundary';
+    const timelineDetails = !durationStaysInMeta && metaDurationSuffix
+        ? timelineMeta.slice(0, -metaDurationSuffix.length)
+        : timelineMeta;
     const workedSummary = templateKind === 'assistant' && timelineMeta.startsWith('Worked for ');
+    // Final replies moved it out of meta into the worked/done summary, so derive
+    // the trailing token duration directly when meta has no ` (duration)` suffix.
+    let tokenDurationSuffix = durationStaysInMeta ? '' : metaDurationSuffix;
+    if (!tokenDurationSuffix && templateKind === 'assistant') {
+        const durationMs = resolveMessageDurationMs(message);
+        if (Number.isFinite(durationMs) && durationMs >= 0) {
+            tokenDurationSuffix = ` (${formatTimelineDuration(durationMs)})`;
+        }
+    }
     const fallbackLine = templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
@@ -686,9 +699,12 @@ export function renderAgentConsoleMessageItem(
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
         const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
+        const tokens = isLast && tokenDurationSuffix
+            ? [...rendered.tokens, { text: tokenDurationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
+            : rendered.tokens;
         return {
             ...rendered,
-            tokens: rendered.tokens,
+            tokens,
             messageId: message?.id,
             toggleContent: isFirst ? detailToggle : '',
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
@@ -1125,14 +1141,23 @@ function resolveTimelineMeta(
         }
         return duration ? ` (${duration})` : '';
     }
-    if (templateKind === 'assistant' && uiKind !== 'event') {
+    if (uiKind === 'event') {
+        // P237/rule 30: event rows expose total elapsed (backend durationMs
+        // first, otherwise paired start/end); the caller renders it as the
+        // trailing muted token so it stays at the end of the row.
+        const durationMs = resolveMessageDurationMs(message);
+        if (Number.isFinite(durationMs) && durationMs >= 0) {
+            duration = formatTimelineDuration(durationMs);
+        }
+    } else if (templateKind === 'assistant') {
+        // Final replies carry the aggregate Codex-style worked/done summary
+        // instead of a bare timestamp.
         const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
         const durationMs = resolveMessageDurationMs(message);
         if (Number.isFinite(completedAt) && Number.isFinite(durationMs) && durationMs >= 0) {
             return `Worked for ${formatWorkedDuration(durationMs)} · done ${formatDoneTime(completedAt)}`;
         }
     }
-    // Individual event/message durations are omitted; final replies carry the aggregate summary.
     if (uiKind !== 'event'
         && templateKind !== 'user'
         && showTimestamps
@@ -1174,7 +1199,7 @@ function formatWorkedDuration(durationMs: number): string {
 
 function formatDoneTime(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function resolveMessageDurationMs(message?: AgentMessage): number {

@@ -76,13 +76,27 @@ function projectedToolRows(state: AgentConsoleSessionState, toolCallId: string) 
 const CJK_RE = /[\u4e00-\u9fff]/;
 /** Decorative leading glyphs the message renderer may emit (see console-renderer.spec). */
 const STATUS_GLYPHS = ['✓', '✕', '●', '○', '…', '›', '•'];
+/** Characters allowed between leading status markers (track/separator chrome). */
+const STATUS_SEPARATORS = new Set([' ', '│', '·', '─', '┌', '├', '└']);
 /** P281 wording rules: no machine-y double-word phrases. */
 const MACHINE_PHRASE_RE = /success\s+completed|completed\s+success|failed\s+error|error\s+failed/i;
 
+/**
+ * Count the leading status markers of a row. Content is scanned only up to the
+ * first non-marker character, so an inline glyph or the trailing `…` used by
+ * content truncation is not mistaken for a second state marker.
+ */
 function countStatusGlyphs(line: string): number {
     let count = 0;
-    for (const glyph of STATUS_GLYPHS) {
-        count += line.split(glyph).length - 1;
+    for (const ch of String(line || '')) {
+        if (STATUS_SEPARATORS.has(ch)) {
+            continue;
+        }
+        if (STATUS_GLYPHS.includes(ch)) {
+            count += 1;
+            continue;
+        }
+        break;
     }
     return count;
 }
