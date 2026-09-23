@@ -74,6 +74,13 @@
 - 收尾门禁包括 agents 各包、framework 核心及 components/common、components/html、components/console、相关 tsc、Web build、DOM/TUI、metrics regression、真实 PTY 和 `git diff --check`。
 - 未解释数据丢失、未覆盖真实复现路径或仍存在开放复现时，不得仅凭测试数字宣布完成。
 
+### 8. 配置、路由与本地化
+
+- 不得把无效/占位配置（`cancel`/`q` sentinel、空 profile、嵌套重复 `profiles`）持久化到 `settings.json`；读取必须净化，且净化结果应可自愈写回。
+- 路由或配置缺失/无效不得静默或抛错终止 turn；必须回退到可用配置并给出可诊断提示。
+- 用户可见文案必须经 i18n，不得硬编码英文（含 plan 头部/结尾、事件句子、状态词）。
+- 工具失败信息必须可操作：包含允许范围（workspace root）与修复建议；越界路径不得只报 `outside the allowed workspace root`。
+
 ## 二、当前已具备的功能点
 
 ### 会话与项目
@@ -113,7 +120,46 @@
 
 ## 三、未完成计划
 
-当前无开放实施批次。
+> 来源：真实 CLI 会话（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）暴露的差距，对照 codex/opencode 的信息架构与恢复语义。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / PTY）后才能关闭。历史批次见文末 v 系列。
+
+### P1 — 模型配置自愈与路由健壮性
+
+- **P1.1 配置自愈**：`settings.json` 读入已能识别 `cancel`/`q` 占位 sentinel 并丢弃无效 profile；补齐**写回净化**（启动与 `/model` 保存时清理 sentinel 与嵌套重复 `profiles`/`complexityRouting`）并在 `/doctor` 可见报告，禁止无效 sentinel 再次持久化。
+- **P1.2 路由不中断**：`RoutedModelAdapter` 遇到未知/无效 `complexityRouting`/`defaultProfile` 时回退 top-level 并发出可诊断事件，而不是抛错终止 turn；`/doctor` 标记指向不存在 profile 的路由项。
+- **P1.3 空/中断响应健壮性**：保留有界重试（现 2 次），增加轻度退避与「provider 连续空响应」明确提示，区分 provider 空回包与真正的空答案。
+- **验收**：含 `"cancel"`/嵌套 profile 的 settings 在启动、`/model`、`/doctor` 均不崩且输出净化配置；坏 profile 路由时 turn 继续并给诊断；新增 config sanitize + routing fallback 回归。
+
+### P2 — Workspace 路径与工具失败可操作化
+
+- **P2.1 路径错误可操作**：`resolveWorkspacePath`/`assertWorkspacePattern` 失败信息附上允许的 workspace root 与相对路径示例；归一化 `./`，对 `..`/绝对路径给出明确修复建议。
+- **P2.2 工作区上下文注入**：系统提示/环境块显式声明 workspace root 并要求相对路径（never invent absolute paths outside it）；glob 绝对 pattern 明确拒绝并提示。
+- **P2.3 失败行可操作**：失败/阻塞事件行的 `retry` 提示升级为可点击/回车就地重试的 affordance（codex/opencode 语义），不再只是文本。
+- **验收**：模型使用越界/绝对路径时 turn 不终止、错误可读、可纠错继续；PTY 覆盖 bad-path → recover。
+
+### P3 — 本地化与文案一致性
+
+- **P3.1 plan 头部/结尾本地化**：`plan X/Y ▓ · active N · blocked · failed`、`Plan completed: X/Y steps, N failures` 等走 translator，补齐 zh-CN 键。
+- **P3.2 事件/工具/状态句子统一 i18n**：`resolveTimelineEventSentence`、`resolveEventResultPhrase`、Working/Preparing 等全部经 labels/translator，禁止英文硬编码。
+- **P3.3 工具结果摘要精简**：限制长度、去重、`+N more` 一致（`N match(es)` 已修）。
+- **验收**：zh-CN 下时间线/计划/状态无英文残留；新增文案快照测试。
+
+### P4 — 时间线与计划一致性
+
+- **P4.1 plan 投影一致性**：plan 头部计数与 todo 工具回执/plan 消息一致（消除 `plan 1/4` 对 `7 items` 的相位差）；plan 更新按稳定 key 归并。
+- **P4.2 工具批行分组**：一步多工具聚合为可读摘要，超长批行可展开到 inspector；running→completed 原地归并且不重复。
+- **P4.3 行距与空白统一**：transcript 消息间距与事件紧凑度统一，消除多余空行。
+- **验收**：真实会话工具行按稳定 key 归并、无重复、无多余空行；新增 timeline 归并回归。
+
+### P5 — 工具/Provider 可用性
+
+- **P5.1 `web_search` 未配置 adapter**：除工具错误外给出 UI 提示（未配置搜索适配器及配置入口）。
+- **P5.2 工具标签/摘要映射补全**：新增工具时同步本地化显示名与参数摘要（`Read file: <path>` 形式）。
+- **验收**：未配置能力有明确可操作提示；新工具不出现原始工具名列表。
+
+### P6 — 门禁补强
+
+- **P6.1**：P1–P5 全部纳入 `RUN_PTY=1 scripts/agents-gate.sh`，新增真实边界回归（RPC 流 `toolCalls` 透传、settings 净化、routing fallback、PTY bad-path recover）。
+- **验收**：门禁全阶段通过且生产库不变。
 
 ## v62 — 会话时间线动态状态与用量收尾 ✅
 
