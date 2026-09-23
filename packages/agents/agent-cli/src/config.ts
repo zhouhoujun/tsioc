@@ -410,13 +410,74 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
     }
     const next = {
         ...current,
-        model: nextModel
+        model: sanitizeModelProfile(nextModel)
     };
     return writeJsonObject(settingsPath, next);
 }
 
-export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {
-    const resolvedRoot = path.resolve(root);
+export interface AgentCliSettingsHealReport {
+    changed: boolean;
+    removedProfiles: string[];
+    removedRoutes: string[];
+    removedSavedProfiles: string[];
+    droppedDefaultProfile: boolean;
+}
+
+let lastSettingsHealReport: AgentCliSettingsHealReport | null = null;
+
+export function getLastSettingsHealReport(): AgentCliSettingsHealReport | null {
+    return lastSettingsHealReport;
+}
+
+/**
+ * Rewrite `settings.json` with the sanitized model config when the stored model
+ * contains invalid sentinels, dangling profiles/routes or nested duplicates.
+ * Returns what was removed so callers (e.g. `doctor`) can report it.
+ */
+export function healSettingsModelConfig(root?: string): AgentCliSettingsHealReport {
+    const empty: AgentCliSettingsHealReport = {
+        changed: false,
+        removedProfiles: [],
+        removedRoutes: [],
+        removedSavedProfiles: [],
+        droppedDefaultProfile: false
+    };
+    lastSettingsHealReport = empty;
+    if (!root) {
+        return empty;
+    }
+    const settingsPath = path.join(path.resolve(root), 'settings.json');
+    if (!fs.existsSync(settingsPath)) {
+        return empty;
+    }
+    const current = readJsonObject(settingsPath);
+    const rawModel = current.model;
+    if (!rawModel || typeof rawModel !== 'object' || Array.isArray(rawModel)) {
+        return empty;
+    }
+    const sanitized = sanitizeModelProfile(rawModel as Record<string, any>);
+    if (JSON.stringify(sanitized) === JSON.stringify(rawModel)) {
+        return empty;
+    }
+    const report: AgentCliSettingsHealReport = {
+        changed: true,
+        removedProfiles: removedConfigKeys(rawModel.profiles, sanitized.profiles),
+        removedRoutes: removedConfigKeys(rawModel.complexityRouting, sanitized.complexityRouting),
+        removedSavedProfiles: removedConfigKeys(rawModel.savedProfiles, sanitized.savedProfiles),
+        droppedDefaultProfile: !!rawModel.defaultProfile && !sanitized.defaultProfile
+    };
+    writeJsonObject(settingsPath, { ...current, model: sanitized });
+    lastSettingsHealReport = report;
+    return report;
+}
+
+function removedConfigKeys(raw?: Record<string, any>, sanitized?: Record<string, any>): string[] {
+    const before = raw && typeof raw === 'object' ? Object.keys(raw) : [];
+    const after = new Set(sanitized && typeof sanitized === 'object' ? Object.keys(sanitized) : []);
+    return before.filter(key => !after.has(key));
+}
+
+export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {    const resolvedRoot = path.resolve(root);
     const settingsPath = path.join(resolvedRoot, 'settings.json');
     const current = readJsonObject(settingsPath);
     return writeJsonObject(settingsPath, {
@@ -562,6 +623,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     const resolved = resolveAgentToolDiscovery(options.root);
     const settings: AgentRootSettings = resolved.settings;
     const providerProfile = resolveProviderProfile(resolved.root);
+    healSettingsModelConfig(resolved.root);
     const settingsModel = readSettingsModel(resolved.root);
     const hooks = resolveCliHooks(resolved.root);
     const usesDefaultWorkspacePlaceholder = !options.root

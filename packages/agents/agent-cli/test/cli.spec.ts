@@ -56,9 +56,10 @@ import {
     withAdapterProviders,
     runAgentRpcStdio,
     writeProviderProfile,
-    writeSettingsModelProfile
+    writeSettingsModelProfile,
+    healSettingsModelConfig,
+    getLastSettingsHealReport
 } from '../src';
-
 @Suite('Agent CLI')
 export class AgentCliTest {
     private createFakeTerminalInput(): PassThrough & { isTTY: boolean; readable: boolean; setRawMode(enabled: boolean): void; rawMode: boolean; } {
@@ -293,6 +294,40 @@ export class AgentCliTest {
         ]);
         expect(resolved.channels.registration?.preset).toBe('none');
         expect(resolved.channels.defaultChannel).toBe('local');
+    }
+
+    @Test('heals invalid model profiles and dangling routes in settings.json')
+    async healsInvalidModelConfigInSettings() {
+        const root = await this.createRoot();
+        const settingsPath = path.join(root, 'settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify({
+            workspace: 'workspace',
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.5',
+                defaultProfile: 'flash',
+                profiles: {
+                    flash: { provider: 'cancel', model: 'cancel', baseUrl: 'cancel', apiKey: 'cancel' },
+                    good: { provider: 'openai-compatible', model: 'gpt-5.4', baseUrl: 'https://rehdasu.cn' }
+                },
+                complexityRouting: { simple: 'flash', complex: 'good' }
+            }
+        }), 'utf8');
+
+        const report = healSettingsModelConfig(root);
+        expect(report.changed).toEqual(true);
+        expect(report.removedProfiles).toContain('flash');
+        expect(report.droppedDefaultProfile).toEqual(true);
+
+        const healed = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        expect(healed.model.profiles.flash).toBeUndefined();
+        expect(healed.model.profiles.good).toBeDefined();
+        expect(healed.model.defaultProfile).toBeUndefined();
+        expect(healed.model.complexityRouting.simple).toBeUndefined();
+        expect(healed.model.complexityRouting.complex).toEqual('good');
+
+        expect(healSettingsModelConfig(root).changed).toEqual(false);
+        expect(getLastSettingsHealReport()?.changed).toEqual(false);
     }
 
     @Test('resolves lifecycle hooks from hooks.json')

@@ -4,6 +4,7 @@ import { McpOAuthCredentialStore } from '@tsdi/agent-tools';
 import {
     AgentCliOptions,
     AgentCliProviderProfile,
+    getLastSettingsHealReport,
     resolveCliConfig,
     resolveCliModelConfig,
     resolveProviderApiKeyEnv
@@ -288,6 +289,21 @@ export function createAgentDoctorReport(options: AgentCliOptions): AgentDoctorRe
         issues: []
     };
     report.issues = inferIssues(report);
+    const settingsHeal = getLastSettingsHealReport();
+    if (settingsHeal?.changed) {
+        const removed = [
+            ...settingsHeal.removedProfiles.map(name => `profile ${name}`),
+            ...settingsHeal.removedRoutes.map(name => `route ${name}`),
+            ...settingsHeal.removedSavedProfiles.map(name => `saved profile ${name}`),
+            ...(settingsHeal.droppedDefaultProfile ? ['default profile'] : [])
+        ];
+        report.issues.push({
+            severity: 'warn',
+            code: 'settings_model_repaired',
+            message: `Repaired invalid model config in settings.json${removed.length ? ` (removed ${removed.join(', ')})` : ''}.`,
+            hint: 'Unset/invalid profiles and dangling complexity routes were removed; re-run `/model` to configure a valid provider.'
+        });
+    }
     if (providerProfile && !report.baseUrl && providerProfile.baseUrl) {
         report.baseUrl = providerProfile.baseUrl;
     }
