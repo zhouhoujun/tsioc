@@ -476,7 +476,7 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('Error ·') && line.includes('Error: broken'))).toBe(true);
     }
 
-    @Test('renders elapsed time in gray at the end of tool and final reply rows')
+    @Test('renders elapsed time at the end of tool rows and a worked/done footer on final replies')
     async rendersElapsedTimeAtRowEnd() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([
@@ -490,7 +490,7 @@ export class AgentConsoleMessagesRendererTest {
             },
             {
                 id: 'answer-duration', role: 'assistant', content: '你现在所在位置约为四川成都。',
-                createdAt: 2_000, metadata: { elapsedMs: 0 }
+                createdAt: 2_000, metadata: { elapsedMs: 2_500 }
             }
         ] as any);
         await settleDynamicMessages(ref);
@@ -500,12 +500,38 @@ export class AgentConsoleMessagesRendererTest {
         const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
         const toolLine = lines.find(line => line.includes('agent.tool.weather completed')) || '';
         const answerLine = lines.find(line => line.includes('你现在所在位置约为四川成都。')) || '';
+        const workedLine = lines.find(line => line.includes('Worked for')) || '';
 
         expect(toolLine.trimEnd().endsWith('Mainly clear (6.4s)')).toBe(true);
         expect(answerLine).toContain('你现在所在位置约为四川成都。');
-        expect(answerLine.trimEnd().endsWith('(0ms)')).toBe(true);
+        expect(answerLine.trimEnd().endsWith('(2.5s)')).toBe(false);
+        expect(workedLine).toContain('Worked for');
         expect(toolLine.includes('(6.4s)agent.tool.weather')).toBe(false);
 
+    }
+
+    @Test('failed tool event keeps one separator and a space before content')
+    async failedToolEventSpacing() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'search the docs', createdAt: 1_000 },
+            {
+                id: 'failed-tool', role: 'assistant', content: 'agent.tool.web_search failed',
+                createdAt: 1_100,
+                metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error', durationMs: 24_000 }
+            }
+        ] as any);
+        await settleDynamicMessages(ref);
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        const toolLine = lines.find(line => line.includes('agent.tool.web_search failed')) || '';
+
+        expect(toolLine.includes('·  ·')).toBe(false);
+        expect(toolLine).toContain('Tool · retry ');
+        expect(toolLine.includes('retryagent')).toBe(false);
+        expect(toolLine.trimEnd().endsWith('(24s)')).toBe(true);
     }
 
     @Test('mounts semantic route components and only folds Thought by default')
@@ -682,11 +708,14 @@ export class AgentConsoleMessagesRendererTest {
             expect(consoleRef.instance.resolveTerminalCursorStyle()).toEqual('bar');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             consoleRef.instance.sessionState.setStatus('running');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             consoleRef.instance.sessionState.setStatus('reasoning');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             consoleRef.instance.sessionState.setStatus('idle');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'dynamic' });
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
             const renderer = tuiCtx.get(TuiRenderer);
 
             consoleRef.instance.sessionState.setMessages([{

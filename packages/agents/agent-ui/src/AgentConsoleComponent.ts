@@ -424,8 +424,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected isSteerModeEnabled(): boolean {
+        // Steering interrupts the in-flight turn, so it is opt-in: a plain Enter
+        // during a running turn queues the draft instead of cancelling the turn.
         const mode = this.options.ui?.steerMode;
-        return mode !== false && mode !== 'off';
+        return mode === true || mode === 'on';
     }
 
     protected enqueuePrompt(input: string): void {
@@ -2640,6 +2642,21 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         };
     }
 
+    protected resolveMentionDisplayFiles(input: string): string[] {
+        const matches = String(input || '').match(/(^|\s)@([^\s@]+)/g) || [];
+        const builtin = new Set(['workspace', 'session', 'model', 'tools']);
+        const toolNames = new Set((this.state.tools || []).map(tool => tool.name));
+        const files = new Set<string>();
+        for (const raw of matches) {
+            const name = raw.trim().slice(1);
+            if (!name || builtin.has(name) || toolNames.has(name)) {
+                continue;
+            }
+            files.add(name);
+        }
+        return Array.from(files);
+    }
+
     protected async enrichPromptWithMentions(input: string): Promise<string> {
         const text = String(input || '');
         const appMentions = extractAgentConsoleAppMentions(text);
@@ -3391,13 +3408,21 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const profile = this.consumePendingTurnModelProfile();
         this.clearStreamingMessageState();
         const turnScope = this.state.beginTurnEventScope();
+        const mentionFiles = this.resolveMentionDisplayFiles(value);
+        const userMetadata: Record<string, any> = {};
+        if (steer) {
+            userMetadata.kind = 'steer';
+        }
+        if (mentionFiles.length) {
+            userMetadata.mentionFiles = mentionFiles;
+        }
         const userMessage: AgentMessage = {
             id: `user-${Date.now()}`,
             role: 'user',
             content: prompt,
             parts: turnMessage?.parts,
             createdAt: Date.now(),
-            ...(steer ? { metadata: { kind: 'steer' } } : {})
+            ...(Object.keys(userMetadata).length ? { metadata: userMetadata } : {})
         };
         const assistantMessage: AgentMessage = {
             id: `assistant-${Date.now()}`,
@@ -3900,14 +3925,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return true;
     }
 
-    // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback; only
-    // explicit dynamic mode and mutable streaming turns are constrained to the
-    // viewport. A long partial cannot be rewritten after it enters native
-    // scrollback, so only commit the completed response to scrollback.
+    // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback for the
+    // whole session, including while a turn is streaming, so multi-turn history
+    // is never clipped to the viewport. Only explicit dynamic mode windows.
     shouldUseNativeScrollback(): boolean {
-        return this.state.consoleOptions.messageLayout !== 'dynamic'
-            && this.state.status !== 'running'
-            && this.state.status !== 'reasoning';
+        return this.state.consoleOptions.messageLayout !== 'dynamic';
     }
 
     getTerminalRenderedLines(): string[] {

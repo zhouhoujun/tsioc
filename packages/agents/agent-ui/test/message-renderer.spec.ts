@@ -55,7 +55,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[1].lines[0].statusKind).toEqual('success');
         expect(items[1].lines[0].statusLabel).toEqual('成功');
         expect(items[1].lines[0].role).toEqual('');
-        expect(items[1].lines[0].tokens.at(-1)?.text).toEqual(' (1ms)');
+        expect(items[1].lines.length).toEqual(1);
         expect(items[1].itemStyle.background).toEqual(undefined);
         expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
         expect(items[3].lines[0].status?.trim()).toEqual('');
@@ -172,7 +172,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             { id: 'a1', role: 'assistant', content: 'answer', createdAt: 3_500 }
         ] as any, { timelineMode: true });
         expect(items[1].lines.at(-1)?.tokens.at(-1)?.text).toEqual(' (250ms)');
-        expect(items[2].lines.at(-1)?.tokens.at(-1)?.text).toEqual(' (2.5s)');
+        expect(items[2].lines.at(-1)?.meta).toContain('Worked for');
         expect(items[1].lines.at(-1)?.tokens.at(-1)?.style.color).toEqual('#6e7681');
     }
 
@@ -322,7 +322,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             id: 'final-summary', role: 'assistant', content: '完成', createdAt: 1000,
             metadata: { durationMs: 542000, completedAt: 325000 }
         }] as any);
-        expect(items[0].lines[0].meta).toContain('Worked for 9m 2s · done ');
+        expect(items[0].lines.at(-1)?.meta).toContain('Worked for 9m 2s · done ');
     }
 
     @Test('timeline event rows use compact hierarchy markers')

@@ -480,10 +480,39 @@ export class VmSubmitTest {
         expect(state.notice).toContain('Wait for the current turn');
     }
 
-    @Test('enter during a running turn steers by default: interrupts and resubmits the draft as a new turn')
-    async enterDuringRunningTurnSteersByDefault() {
+    @Test('enter during a running turn queues by default without cancelling the turn')
+    async enterDuringRunningTurnQueuesByDefault() {
         const runtime = new RuntimeStub();
         const { state, component, sessionService } = createConsoleParts(runtime, new SchedulerStub());
+        component.configure({ sessionId: 'queue-default' });
+        let cancellations = 0;
+        (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };
+        state.setStatus('running');
+        state.setInput('next question');
+
+        await component.submit();
+
+        expect(cancellations).toEqual(0);
+        expect(runtime.calls).toEqual([]);
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('Queued prompt (1)');
+    }
+
+    @Test('enter during a running turn steers when steer mode is enabled: interrupts and resubmits')
+    async enterDuringRunningTurnSteersWhenEnabled() {
+        const runtime = new RuntimeStub();
+        const { state, component, sessionService } = createConsoleParts(
+            runtime,
+            new SchedulerStub(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            { ui: { title: 'Console', steerMode: true } }
+        );
         component.configure({ sessionId: 'steer-session' });
         let cancellations = 0;
         (sessionService as any).cancelTurn = async () => { cancellations += 1; return true; };

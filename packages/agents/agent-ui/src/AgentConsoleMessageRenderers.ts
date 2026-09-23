@@ -655,22 +655,18 @@ export function renderAgentConsoleMessageItem(
         !!context.showTimestamps
     );
     const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
-    // Step boundaries own their duration in meta; event/assistant rows keep it
-    // as a trailing muted token instead (P302 vs P237/elapsed-at-row-end).
+    // Step boundaries own their duration in meta; event rows keep it as a
+    // trailing muted token at the end of the row (P302 vs P237/row-end).
     const durationStaysInMeta = templateKind === 'timelineBoundary';
     const timelineDetails = !durationStaysInMeta && metaDurationSuffix
         ? timelineMeta.slice(0, -metaDurationSuffix.length)
         : timelineMeta;
+    // Final replies render the worked/done summary as a dedicated footer line
+    // instead of gluing it onto the last body line; that footer already carries
+    // the duration, so no trailing token is appended for them.
     const workedSummary = templateKind === 'assistant' && timelineMeta.startsWith('Worked for ');
-    // Final replies moved it out of meta into the worked/done summary, so derive
-    // the trailing token duration directly when meta has no ` (duration)` suffix.
-    let tokenDurationSuffix = durationStaysInMeta ? '' : metaDurationSuffix;
-    if (!tokenDurationSuffix && templateKind === 'assistant') {
-        const durationMs = resolveMessageDurationMs(message);
-        if (Number.isFinite(durationMs) && durationMs >= 0) {
-            tokenDurationSuffix = ` (${formatTimelineDuration(durationMs)})`;
-        }
-    }
+    const metaText = timelineDetails ? `${timelineDetails} ` : '';
+    const tokenDurationSuffix = durationStaysInMeta ? '' : metaDurationSuffix;
     const fallbackLine = templateKind === 'assistant'
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
@@ -681,6 +677,7 @@ export function renderAgentConsoleMessageItem(
         || String(message?.content || '').split('\n').length > detailLimit)
         ? (context.messageDetailOpen && selected ? 'Click to collapse' : 'Click to expand')
         : '';
+    const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
@@ -698,7 +695,6 @@ export function renderAgentConsoleMessageItem(
             statusLabel,
             isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
-        const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
         const tokens = isLast && tokenDurationSuffix
             ? [...rendered.tokens, { text: tokenDurationSuffix, tone: 'muted' as const, style: timelineMetaStyle }]
             : rendered.tokens;
@@ -709,12 +705,12 @@ export function renderAgentConsoleMessageItem(
             toggleContent: isFirst ? detailToggle : '',
             role: isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
-            meta: workedSummary ? (isLast ? timelineDetails : '') : (isFirst ? timelineDetails : ''),
-            metaStyle: workedSummary ? (isLast ? timelineMetaStyle : {}) : (isFirst || isLast ? timelineMetaStyle : {}),
+            meta: workedSummary ? '' : (isFirst ? metaText : ''),
+            metaStyle: workedSummary ? {} : (isFirst || isLast ? timelineMetaStyle : {}),
             ariaLabel: [
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
-                isLast ? timelineMeta : '',
+                isLast && !workedSummary ? timelineMeta : '',
                 rendered.prefix,
                 rendered.content
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
@@ -731,6 +727,45 @@ export function renderAgentConsoleMessageItem(
             semanticKind: presentation.kind
         };
     });
+    if (workedSummary) {
+        const base = lines[lines.length - 1];
+        lines.push({
+            ...base,
+            status: '',
+            statusStyle: {},
+            role: '',
+            roleStyle: {},
+            prefix: '',
+            tokens: [],
+            toggleContent: '',
+            meta: metaText,
+            metaStyle: timelineMetaStyle,
+            ariaLabel: timelineMeta,
+            itemStyle: { ...base.itemStyle },
+            lineStyle: { ...(base.lineStyle || {}) }
+        });
+    }
+    const mentionFiles = templateKind === 'user' && Array.isArray(message?.metadata?.mentionFiles)
+        ? (message!.metadata!.mentionFiles as unknown[]).map(value => String(value)).filter(Boolean)
+        : [];
+    if (mentionFiles.length) {
+        const base = lines[lines.length - 1];
+        lines.push({
+            ...base,
+            status: '',
+            statusStyle: {},
+            role: '',
+            roleStyle: {},
+            prefix: '',
+            toggleContent: '',
+            tokens: [{ text: `Files · ${mentionFiles.join(', ')}`, tone: 'muted' as const, style: timelineMetaStyle }],
+            meta: '',
+            metaStyle: {},
+            ariaLabel: `Files ${mentionFiles.join(', ')}`,
+            itemStyle: { ...base.itemStyle },
+            lineStyle: { ...(base.lineStyle || {}) }
+        });
+    }
     return {
         [noReact]: true,
         kind: roleLabel,
@@ -971,12 +1006,24 @@ function resolveBuiltinMessageRenderer(templateKind: AgentConsoleMessageTemplate
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }
 
+function stripMentionContextBlock(content: string): string {
+    const marker = '[Mention Context]';
+    if (!content.startsWith(marker)) {
+        return content;
+    }
+    const separator = content.indexOf('\n\n', marker.length);
+    return separator >= 0 ? content.slice(separator + 2) : content;
+}
+
 function resolveMessageDisplayContent(
     message: AgentMessage,
     templateKind: AgentConsoleMessageTemplateKind,
     rawMode = false
 ): string {
-    const content = String(message?.content || '');
+    let content = String(message?.content || '');
+    if (templateKind === 'user') {
+        content = stripMentionContextBlock(content);
+    }
     if (templateKind === 'planTodo') {
         return content.trim() ? content : resolvePlanTodoContent(message);
     }
@@ -1139,7 +1186,7 @@ function resolveTimelineMeta(
         if (Number.isFinite(elapsedMs) && elapsedMs >= 0) {
             duration = formatTimelineSessionDuration(elapsedMs);
         }
-        return duration ? ` (${duration})` : '';
+        return duration ? duration : '';
     }
     if (uiKind === 'event') {
         // P237/rule 30: event rows expose total elapsed (backend durationMs
@@ -1151,10 +1198,11 @@ function resolveTimelineMeta(
         }
     } else if (templateKind === 'assistant') {
         // Final replies carry the aggregate Codex-style worked/done summary
-        // instead of a bare timestamp.
+        // instead of a bare timestamp; sub-second turns (often derived) would
+        // only render "Worked for 0s", so the summary needs at least one second.
         const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
         const durationMs = resolveMessageDurationMs(message);
-        if (Number.isFinite(completedAt) && Number.isFinite(durationMs) && durationMs >= 0) {
+        if (Number.isFinite(completedAt) && Number.isFinite(durationMs) && Math.round(durationMs / 1000) > 0) {
             return `Worked for ${formatWorkedDuration(durationMs)} · done ${formatDoneTime(completedAt)}`;
         }
     }
@@ -1186,7 +1234,7 @@ function resolveTimelineMeta(
             parts.push(actionLabel);
         }
     }
-    const details = parts.length ? ` · ${parts.join(' · ')}` : '';
+    const details = parts.join(' · ');
     return `${details}${duration ? ` (${duration})` : ''}`;
 }
 

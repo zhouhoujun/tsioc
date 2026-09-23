@@ -10,6 +10,7 @@
 - 动画值必须由当前时间派生，不得为了动画额外驱动整树渲染。
 - 禁止用布局层脏节点追踪或变化源缓存跳过未变面板。
 - browser 与 TUI 的展示和交互改动必须落在共享 components、components/console 或 agent-ui 层，不做单平台补丁。
+- stream 布局全程使用 native scrollback（含 turn 运行中的流式内容），多轮对话历史不得按视口高度裁剪；仅显式 dynamic 模式才窗口化。
 
 ### 2. 跨平台边界
 
@@ -42,6 +43,8 @@
 - `↑` 从最新 prompt 向旧 prompt 浏览；`↓` 反向浏览并最终恢复按键前的原始草稿。
 - suggestion menu 只在尚未浏览历史时优先消费方向键；历史浏览一旦开始，本次浏览期间 `↑/↓` 必须继续属于历史。
 - pending question 激活时输入框可键入自定义答案：空草稿时数字键选择编号选项，已有草稿时数字属于答案文本，Enter 提交自定义答案或选中项。
+- turn 运行中按 Enter 默认排队（保留当前 turn 不取消）；steer（打断并取消当前 turn 开新 turn）必须显式启用 `ui.steerMode`。
+- 用户消息的 @mention 上下文以紧凑 `Files · <paths>` 展示，不显示原始 `[Mention Context]` 块；发给运行时的提示仍携带完整上下文。
 - browser textarea、TUI escape sequence、Vim history action 必须遵守同一契约。
 
 ### 5. Workspace、Project 与跨会话协同
@@ -225,4 +228,13 @@
 - **事件详情展开修复**：message detail 打开且选中时事件行使用完整正文，此前开关只切换文案而正文仍被截断。
 - **门禁字形误报修复**：TUI gate `single status glyph per line` 仅统计行首状态标记，不再把内容截断省略号 `…` 当作第二个状态标记。
 - **验证**：agent-ui 1392 passing（含新增 `p313-approval-question-ux`）；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
+- **当前状态**：无开放实施批次。
+
+## v66 — 交互体验收尾：排队输入、流式历史与关联文件展示 ✅
+
+- **新输入不再取消当前 turn**：`ui.steerMode` 改为显式 opt-in；turn 运行中按 Enter 默认进入队列，当前 turn 继续跑完、结束后按 FIFO 依次执行，不再出现"输入新问题就把上一问取消"。显式启用 steer 时仍保持 P128 的打断并重提语义。
+- **流式历史不再被顶掉**：stream 布局全程使用 native scrollback（含 turn 运行中），多轮对话历史不再按视口高度裁剪；仅显式 dynamic 模式做窗口化。TUI 长回复尾部可见性与滚动安全由真实 PTY 验收覆盖。
+- **关联文件紧凑展示**：用户消息的 @mention 上下文不再原样显示 `› [Mention Context]` + 原始上下文行；正文只显示干净 prompt，并在其下以 muted `Files · <paths>` 一行展示关联文件；发给运行时的提示仍携带完整上下文（编辑/回放不受影响）。
+- **长回复排版收敛**：meta 与正文之间补空格分隔，去掉 role/meta 重复的 `·  ·`；最终回答的 `Worked for X · done HH:mm` 移到独立 footer 行，不再粘在正文末行；去掉重复的行尾耗时 token；sub-second（含派生 0s）不显示 worked summary，避免噪声。
+- **验证**：agent-ui 1394 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 26 passed / 0 skipped / 26 total，覆盖 agents 10 包、components core/common/html/console、4 项 tsc、Web production build、DOM/TUI 宽度矩阵、metrics regression、真实 PTY、`git diff --check` 与生产数据库完整性检查。
 - **当前状态**：无开放实施批次。
