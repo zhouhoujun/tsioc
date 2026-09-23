@@ -3029,9 +3029,9 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         }
         const toolError = await this.findRecentToolError(sessionId);
         if (toolError) {
-            return `I couldn't complete the request because a required tool failed: ${toolError}`;
+            return `I couldn't complete the request because a required tool failed: ${toolError}. Fix the tool input or path and retry.`;
         }
-        return 'I couldn\'t complete the request because the model returned an empty response.';
+        return 'I couldn\'t complete the request because the model returned an empty response. This is usually a transient provider issue: retry the request, or check the configured model/provider.';
     }
 
     private async findRecentToolError(sessionId: string): Promise<string | undefined> {
