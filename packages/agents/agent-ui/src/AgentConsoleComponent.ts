@@ -439,7 +439,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setInput('');
         this.state.clearPendingAttachments();
         this.state.setQueuedPromptCount(queue.length);
-        this.notify(command ? `Queued command (${queue.length}).` : `Queued prompt (${queue.length}).`);
+        const noticeKey = command ? 'agent.notice.queuedCommand' : 'agent.notice.queuedPrompt';
+        const noticeFallback = command ? `Queued command (${queue.length}).` : `Queued prompt (${queue.length}).`;
+        this.notify(this.translator?.translate(noticeKey, { count: queue.length }) || noticeFallback);
     }
 
     protected queueDraft(): boolean {
@@ -471,7 +473,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async interruptTurn(): Promise<void> {
         if (!this.isTurnInProgress()) return;
         const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
-        this.notify(cancelled ? 'Cancelling current turn...' : 'No running turn to cancel.');
+        this.notify(cancelled
+            ? (this.translator?.translate('agent.notice.cancelling') || 'Cancelling current turn…')
+            : (this.translator?.translate('agent.notice.nothingToCancel') || 'No running turn to cancel.'));
     }
 
     protected notify(message: string, duration?: number): void {
@@ -491,8 +495,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.notify(text);
     }
 
-    protected notifyBusyState(message = 'Wait for the current turn to finish.'): void {
-        this.notify(message);
+    protected notifyBusyState(message?: string): void {
+        this.notify(message || this.translator?.translate('agent.notice.busy') || 'Wait for the current turn to finish.');
     }
 
     protected formatSummaryQualityAggregate(aggregate: Record<string, any>): string {

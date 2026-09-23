@@ -43,6 +43,13 @@ export const agentUiEnglish: TranslationBundle = {
                 tools: 'tools {count}',
                 tokens: '{count} tokens'
             },
+            notice: {
+                cancelling: 'Cancelling current turn…',
+                nothingToCancel: 'No running turn to cancel.',
+                queuedPrompt: 'Queued prompt ({count}).',
+                queuedCommand: 'Queued command ({count}).',
+                busy: 'Wait for the current turn to finish.'
+            },
             message: {
                 expand: '… {count} more lines. Click to expand',
                 collapse: 'Click to collapse',
@@ -86,6 +93,13 @@ export const agentUiChinese: TranslationBundle = {
                 tasks: '任务 {active}/{total}',
                 tools: '工具 {count}',
                 tokens: '{count} tokens'
+            },
+            notice: {
+                cancelling: '正在取消当前轮次…',
+                nothingToCancel: '没有正在运行的轮次可取消。',
+                queuedPrompt: '已排队提示（{count}）。',
+                queuedCommand: '已排队命令（{count}）。',
+                busy: '请等待当前轮次结束。'
             },
             message: {
                 expand: '… 还有 {count} 行，点击展开',
