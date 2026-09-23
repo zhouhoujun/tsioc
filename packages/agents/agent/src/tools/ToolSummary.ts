@@ -316,7 +316,8 @@ function summarizeStringCollection(
     const values = items.map(item => pickString(item)).filter((item): item is string => !!item);
     const preview = values.slice(0, 3).join(', ');
     const remaining = values.length > 3 ? ` +${values.length - 3} more` : '';
-    const parts = [`${values.length} ${label}${values.length === 1 ? '' : 's'}`];
+    const suffix = values.length === 1 ? '' : (/ch$/i.test(label) ? 'es' : 's');
+    const parts = [`${values.length} ${label}${suffix}`];
     if (preview) {
         parts.push(`${preview}${remaining}`);
     }

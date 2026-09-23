@@ -116,6 +116,7 @@ interface ToolCompensationEntry {
 
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
+const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 function sameStringList(left: string[], right: string[]): boolean {
@@ -1051,7 +1052,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
         const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
         const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
-        let emptyResponseRetried = false;
+        let emptyResponseRetryCount = 0;
+        const maxEmptyResponseRetries = 2;
 
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
@@ -1074,8 +1076,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
-            if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
-                emptyResponseRetried = true;
+            if (emptyResponseRetryCount < maxEmptyResponseRetries && this.shouldRetryEmptyResponse(response)) {
+                emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
@@ -1131,7 +1133,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
         const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
         const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
-        let emptyResponseRetried = false;
+        let emptyResponseRetryCount = 0;
+        const maxEmptyResponseRetries = 2;
 
         while (round <= maxRounds) {
             this.throwIfTurnCancelled(sessionId);
@@ -1158,8 +1161,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, response);
-            if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
-                emptyResponseRetried = true;
+            if (emptyResponseRetryCount < maxEmptyResponseRetries && this.shouldRetryEmptyResponse(response)) {
+                emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
@@ -1178,6 +1181,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
+            }
+            if (this.shouldRetryEmptyResponse(response)) {
+                const toolError = await this.findRecentToolError(sessionId);
+                if (toolError) {
+                    response = yield* this.collectStreamingResponse(
+                        sessionId,
+                        this.prepareModelRequest(sessionId, this.buildToolErrorRecoveryRequest(request, toolError), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                    );
+                    await this.recordTokenUsage(sessionId, response);
+                }
             }
 
             const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
@@ -2991,8 +3004,17 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         };
     }
 
-    private async resolveAssistantResponseText(sessionId: string, response: ModelResponse): Promise<string> {
-        const explicitMessage = String(response.message ?? '');
+    private buildToolErrorRecoveryRequest(request: ModelRequest, toolError: string): ModelRequest {
+        return {
+            ...request,
+            messages: [
+                this.createMessage('system', `${TOOL_ERROR_RECOVERY_SYSTEM_PROMPT}\n\nTool error: ${toolError}`),
+                ...request.messages
+            ]
+        };
+    }
+
+    private async resolveAssistantResponseText(sessionId: string, response: ModelResponse): Promise<string> {        const explicitMessage = String(response.message ?? '');
         if (explicitMessage.trim()) {
             return explicitMessage;
         }

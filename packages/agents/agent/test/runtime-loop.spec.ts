@@ -235,8 +235,31 @@ class BlankAfterToolErrorModelAdapter extends EchoModelAdapter {
     }
 }
 
-class BlankResponseModelAdapter extends EchoModelAdapter {
+class BlankThenRecoverAfterToolErrorModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
     async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                message: '',
+                stopReason: 'end'
+            };
+        }
+        return {
+            message: 'Recovered after tool error',
+            stopReason: 'end'
+        };
+    }
+}
+
+class BlankResponseModelAdapter extends EchoModelAdapter {    async complete(): Promise<any> {
         return {
             message: '',
             stopReason: 'end'
@@ -1923,6 +1946,21 @@ export class RuntimeLoopTest {
 
         const result = await runtime.runTurn('s1', 'hello');
         expect(result.message.content).toEqual('Recovered answer');
+    }
+
+    @Test('recovers after a recoverable tool error followed by blank responses')
+    async recoversAfterRecoverableToolError() {
+        const { runtime } = await createRuntime(
+            new BlankThenRecoverAfterToolErrorModelAdapter(),
+            new FailingToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions
+        );
+
+        const result = await runtime.runTurn('s1', 'weather please');
+        expect(result.message.content).toEqual('Recovered after tool error');
     }
 
     @Test('stores each tool result independently after tool failure')
