@@ -127,7 +127,7 @@ export class AgentConsoleDashboardRendererTest {
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const lines = renderer.renderToLines(root);
         const messageIndex = lines.findIndex(line => line.includes('design exam system'));
-        const planIndex = lines.findIndex(line => line.includes('plan 1/2'));
+        const planIndex = lines.findIndex(line => line.includes('计划 1/2'));
 
         expect(messageIndex).toBeGreaterThanOrEqual(0);
         expect(planIndex).toBeGreaterThanOrEqual(0);
@@ -151,7 +151,7 @@ export class AgentConsoleDashboardRendererTest {
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const lines = renderer.renderToLines(root);
 
-        expect(lines.some(line => line.includes('plan 2 · active 2 · thread'))).toBe(true);
+        expect(lines.some(line => line.includes('计划 2 · 进行中 2 · thread'))).toBe(true);
     }
 
     @Test('active plan renders once until the tasks panel is focused')
@@ -209,7 +209,7 @@ export class AgentConsoleDashboardRendererTest {
         const lines = renderer.renderToLines(root);
 
         expect(lines.some(line => line.includes('history stays visible'))).toBe(true);
-        expect(lines.some(line => line.includes('plan 2'))).toBe(false);
+        expect(lines.some(line => line.includes('计划 2'))).toBe(false);
     }
 
     @Test('hides dashboard when only completed plan todos remain')
@@ -1376,7 +1376,7 @@ export class AgentConsoleReviewRendererTest {
         ref.instance.sessionState.setTasksFocused(true);
         const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
 
-        expect(tasksPanel.instance.tasksSummaryLabel.includes('plan 2')).toBe(false);
+        expect(tasksPanel.instance.tasksSummaryLabel.includes('计划 2')).toBe(false);
         expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1/1')).toBe(true);
         expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
         expect(tasksPanel.instance.taskListLabel.includes('Design architecture')).toBe(false);
@@ -1905,7 +1905,7 @@ export class AgentConsoleTuiRendererTest {
         expect(planMessage!.content).toContain('▸ Design architecture');
         expect(planMessage!.content).toContain('☐ Implement API');
         expect(planMessage!.content).toContain('☐ Write tests');
-        expect(planMessage!.content).toContain('plan 1/3 ');
+        expect(planMessage!.content).toContain('计划 1/3 ');
     }
 
     @Test('failed plan step can be reset with retry shortcut')
@@ -1940,7 +1940,7 @@ export class AgentConsoleTuiRendererTest {
         ref.instance.sessionState.setMessagesFocused(true);
         expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
         const expanded = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
-        expect(expanded.content).toContain('plan 2/8 ▓▓░░░░░░');
+        expect(expanded.content).toContain('计划 2/8 ▓▓░░░░░░');
         expect(expanded.content).toContain('1. ✓ Step 1');
         expect(expanded.content).toContain('8. ☐ Step 8');
         expect(expanded.metadata?.planCollapsed).toEqual(false);
@@ -1980,7 +1980,7 @@ export class AgentConsoleTuiRendererTest {
         const rendered = (panel.instance as any).renderedMessageItems as Array<{ lines: Array<{ messageId?: string; content: string }> }>;
         const planItem = rendered.find(item => item.lines.some(line => line.messageId === '__plan_todo_inline__'));
         const contents = planItem!.lines.map(line => line.content).join('\n');
-        expect(contents).toContain('plan 2/8 ▓▓░░░░░░');
+        expect(contents).toContain('计划 2/8 ▓▓░░░░░░');
         expect(contents).toContain('8. ☐ Step 8');
     }
 
@@ -2079,7 +2079,7 @@ export class AgentConsoleTuiRendererTest {
         await Promise.resolve();
 
         const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
-        expect(workingPanel.instance.workingDetail).toContain('plan 2/3: Implement API');
+        expect(workingPanel.instance.workingDetail).toContain('计划 2/3: Implement API');
     }
 
     @Test('working detail exposes background terminal controls')
@@ -2122,7 +2122,7 @@ export class AgentConsoleTuiRendererTest {
             { id: 'p2', content: 'Implement API', status: 'completed' }
         ] as any);
         expect(ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')?.content)
-            .toContain('Plan completed: 2/2 steps, 0 failures');
+            .toContain('计划已完成：2/2 步，0 个失败');
     }
 
     @Test('review diff appends an inline file change summary')

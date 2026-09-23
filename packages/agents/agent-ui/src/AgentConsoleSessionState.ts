@@ -3084,8 +3084,13 @@ export class AgentConsoleSessionState {
         const cancelledCount = this.planTodos.filter(item => item.status === 'cancelled').length;
         const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
         const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
+        const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
         const summary = activeCount === 0
-            ? `Plan completed: ${completedCount}/${total} steps, ${cancelledCount + failedCount} failures`
+            ? fillTimelineLabel(labels.planCompleted, {
+                completed: completedCount,
+                total,
+                failures: cancelledCount + failedCount
+            })
             : '';
         const goalProgress = this.goalCriteriaProgress;
         const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
@@ -3108,7 +3113,7 @@ export class AgentConsoleSessionState {
             const evidence = item.evidenceIds?.length ? ` evidence[${item.evidenceIds.length}]` : '';
             return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
         });
-        const summaryHeader = `plan ${doneCount}/${total} ${bar}${filterLabel} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}`;
+        const summaryHeader = `${labels.planLabel} ${doneCount}/${total} ${bar}${filterLabel} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}`;
         const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
             ? `Plan ${total} steps (${completedCount} done${failedCount ? `, ${failedCount} failed` : ''}${blockedCount ? `, ${blockedCount} blocked` : ''})`
             : activeCount > 0 || (this.planTodoFilter !== 'all' && filtered.length > 0)

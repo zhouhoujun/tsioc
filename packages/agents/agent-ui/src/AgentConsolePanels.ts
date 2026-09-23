@@ -43,7 +43,7 @@ import {
     styleTextToObject
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
-import { resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
+import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import { agentUiDefaultFollowUpOnlyTermLists } from './agent-ui.i18n';
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
@@ -767,7 +767,8 @@ export class AgentConsoleWorkingPanelComponent {
                 || this.state.planTodos.find(todo => todo.status === 'pending');
             if (activePlan) {
                 const index = this.state.planTodos.indexOf(activePlan) + 1;
-                parts.push(`plan ${index}/${this.state.planTodos.length}: ${activePlan.content}`);
+                const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.state.consoleOptions.timelineLabels || {}) };
+                parts.push(`${labels.planLabel} ${index}/${this.state.planTodos.length}: ${activePlan.content}`);
             }
             const latest = [...this.state.activities].reverse().find(activity =>
                 activity.kind !== 'model' && activity.kind !== 'turn'
@@ -1315,7 +1316,8 @@ export class AgentConsoleTasksPanelComponent {
         const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
         const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
         const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
-        const header = `${sourcePrefix}${filterPrefix}plan ${totalCount} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}`;
+        const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.state.consoleOptions.timelineLabels || {}) };
+        const header = `${sourcePrefix}${filterPrefix}${labels.planLabel} ${totalCount} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}`;
         return [header, ...lines].join('\n');
     }
 
@@ -1359,7 +1361,8 @@ export class AgentConsoleTasksPanelComponent {
             const scopeSuffix = this.state.planScope === 'thread' ? ' · thread' : '';
             const filterLabel = this.state.planTodoFilter !== 'all' ? ` · filter ${this.state.planTodoFilterLabel}` : '';
             const selectedSuffix = this.state.selectedPlanTodoIndex >= 0 ? ` · ${this.state.selectedPlanTodoIndex + 1}/${this.state.filteredPlanTodos.length}` : '';
-            return `plan ${this.planTodos.length} · active ${activeCount}${blockedCount ? ` · blocked ${blockedCount}` : ''}${failedCount ? ` · failed ${failedCount}` : ''}${filterLabel}${selectedSuffix}${scopeSuffix}${projectSuffix}`;
+            const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.state.consoleOptions.timelineLabels || {}) };
+            return `${labels.planLabel} ${this.planTodos.length} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}${filterLabel}${selectedSuffix}${scopeSuffix}${projectSuffix}`;
         }
         const totalCount = this.state.reviewTaskChoices.length;
         const filteredCount = this.tasks.length;

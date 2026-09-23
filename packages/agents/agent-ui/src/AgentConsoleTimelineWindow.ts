@@ -109,6 +109,16 @@ export interface AgentConsoleTimelineLabels {
     collapsedChanges?: string;
     /** Collapsed-turn error-count template (P303); `{errors}` placeholder, shown only when > 0. */
     collapsedErrors?: string;
+    /** Plan progress word in the plan header (e.g. `plan`). */
+    planLabel?: string;
+    /** Plan active-count word in the plan header. */
+    planActive?: string;
+    /** Plan blocked-count word in the plan header. */
+    planBlocked?: string;
+    /** Plan failed-count word in the plan header. */
+    planFailed?: string;
+    /** Plan completion summary; `{completed}`, `{total}`, `{failures}` placeholders. */
+    planCompleted?: string;
     // ── P301: sentence action-verb i18n ──────────────────────────────────────
     /** Action verb for approval_request / approval events (P301). */
     actionApprovalRequested?: string;
@@ -165,6 +175,11 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     collapsedTools: '{tools} 个工具',
     collapsedChanges: '{changes} 处变更',
     collapsedErrors: '{errors} 个错误',
+    planLabel: '计划',
+    planActive: '进行中',
+    planBlocked: '阻塞',
+    planFailed: '失败',
+    planCompleted: '计划已完成：{completed}/{total} 步，{failures} 个失败',
     actionApprovalRequested: '请求审批',
     actionFailedToRun: '运行失败',
     actionFinished: '已完成',
@@ -202,6 +217,11 @@ export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     collapsedTools: '{tools} tool calls',
     collapsedChanges: '{changes} change(s)',
     collapsedErrors: '{errors} error(s)',
+    planLabel: 'plan',
+    planActive: 'active',
+    planBlocked: 'blocked',
+    planFailed: 'failed',
+    planCompleted: 'Plan completed: {completed}/{total} steps, {failures} failures',
     actionApprovalRequested: 'Approval requested',
     actionFailedToRun: 'Failed to run',
     actionFinished: 'Finished',
