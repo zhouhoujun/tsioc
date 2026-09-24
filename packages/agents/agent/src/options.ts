@@ -258,6 +258,8 @@ export interface AgentOptions {
     maxRepairRounds?: number;
     /** A4: max loop-recovery prompt injections before a looping turn terminates (default 3). */
     maxLoopRecoveries?: number;
+    /** Max plan-continuation prompts injected when the todo plan still has unfinished items (default 3). */
+    maxPlanContinuations?: number;
     /** B2: tool names treated as write operations for the declared-vs-actual diff check. */
     verificationWriteTools?: string[];
     /** B4: reference to a versioned harness governance snapshot (built-in name or inline profile). */
@@ -282,6 +284,8 @@ export interface AgentOptions {
     gitStepSnapshots?: AgentGitStepSnapshotOptions;
     /** P72: filenames tried per directory when the primary project doc is missing (e.g. ['CLAUDE.md']). */
     projectDocFallbackFilenames?: string[];
+    /** Explicit session workspace root; when omitted the runtime falls back to `ui.console.workspace` then the process cwd. */
+    workspace?: string;
     /** P72: per-file byte cap for project docs (default 32KiB). */
     projectDocMaxBytes?: number;
     /** P106: extra project docs contributed by installed agent plugins (e.g. plugin-scoped AGENTS.md). */
@@ -577,9 +581,10 @@ export const defaultAgentOptions: AgentOptions = {
     name: 'HermesAgent',
     // Generation tasks commonly need discovery, planning, several edits, and
     // verification. Four rounds stops them before the first usable artifact.
-    maxToolRounds: 12,
+    maxToolRounds: 20,
     maxRepairRounds: 2,
     maxLoopRecoveries: 3,
+    maxPlanContinuations: 3,
     session: {
         summaryThreshold: 8,
         recentMessages: 6,

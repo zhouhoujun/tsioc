@@ -1601,7 +1601,65 @@ export class RuntimeLoopTest {
 
         expect(model.requests.length).toEqual(4);
         expect(model.requests.every((request: any) => request.messages.some((message: any) => message.content === 'keep-me'))).toEqual(true);
-        expect(model.requests[3].messages.filter((message: any) => message.role !== 'system').map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-3"}']);
+        expect(model.requests[3].messages.filter((message: any) => message.role !== 'system').map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-1"}', '', '{"value":"round-2"}', '', '{"value":"round-3"}']);
+    }
+
+    @Test('continues the turn while the todo plan still has unfinished items')
+    async continuesTurnWhilePlanHasUnfinishedItems() {
+        class PlanToolRegistry extends ToolRegistry {
+            getTools() {
+                return [{ name: 'todo', description: 'plan' } as any];
+            }
+            getTool() {
+                return this.getTools()[0] as any;
+            }
+            async invoke(name: string, input: any): Promise<any> {
+                if (name === 'todo') {
+                    return {
+                        todos: [
+                            { id: 'a', content: 'step a', status: 'in_progress' },
+                            { id: 'b', content: 'step b', status: 'pending' }
+                        ]
+                    };
+                }
+                return input;
+            }
+        }
+        class PlanContinuationModelAdapter extends EchoModelAdapter {
+            requests: any[] = [];
+            private count = 0;
+            async complete(request: any): Promise<any> {
+                this.requests.push(request);
+                this.count++;
+                if (this.count === 1) {
+                    return {
+                        toolCalls: [{ id: 't1', name: 'todo', input: { todos: [{ id: 'a', content: 'step a', status: 'in_progress' }] } }],
+                        stopReason: 'tool'
+                    };
+                }
+                if (this.count === 2) {
+                    return { message: 'I will continue shortly.', stopReason: 'end' };
+                }
+                return { message: 'All done.', stopReason: 'end' };
+            }
+        }
+
+        const model = new PlanContinuationModelAdapter();
+        const { runtime } = await createRuntime(
+            model,
+            new PlanToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, maxPlanContinuations: 1 }
+        );
+
+        const result = await runtime.runTurn('s1', 'build it');
+
+        expect(model.requests.length).toEqual(3);
+        expect(result.message.content).toEqual('All done.');
+        const messages = await runtime.getMessages('s1');
+        expect(messages.some(message => message.role === 'user' && /unfinished items/.test(message.content))).toEqual(true);
     }
 
     @Test('distills and persists experience memories after completed turn')

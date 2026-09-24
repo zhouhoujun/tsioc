@@ -17,3 +17,13 @@ export const AGENT_SANDBOX_RUNTIME = token<import('./harness/sandbox-exec').Sand
 
 /** G88: Optional provider of MCP server instructions captured from `initialize` responses. */
 export const MCP_SERVER_INSTRUCTIONS = token<Array<{ serverId: string; instructions: string }>>('MCP_SERVER_INSTRUCTIONS');
+
+/**
+ * Optional workspace-trust resolver. When an application provides it, mutating
+ * tools are denied for workspaces that are not trusted, so `doctor`'s
+ * "untrusted workspaces run read-only" contract is actually enforced.
+ */
+export interface AgentWorkspaceTrustResolver {
+    isTrusted(workspace: string): boolean;
+}
+export const AGENT_WORKSPACE_TRUST = token<AgentWorkspaceTrustResolver>('AGENT_WORKSPACE_TRUST');

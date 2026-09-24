@@ -21,7 +21,7 @@ import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, 
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
-import { AGENT_OPTIONS } from '../tokens';
+import { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
 import { AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
@@ -80,6 +80,10 @@ interface TurnExecutionContext {
     recovery?: TurnRecoveryState;
     agent?: AgentTurnAgentConfig;
     toolSteps?: number;
+    /** Set when a `todo` tool result updated this turn's plan; gates plan-continuation. */
+    planTouched?: boolean;
+    /** Number of plan-continuation prompts already injected this turn. */
+    planContinuations?: number;
     /** G29: transient delegation quality note injected into the next model request (proactive mode). */
     delegationQualityNote?: string;
 }
@@ -151,6 +155,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
+    protected sessionPlanState = new Map<string, { pending: number; inProgress: number }>();
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
@@ -179,7 +184,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected hookExecutor?: AgentHookCommandExecutor,
         @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent,
         @Optional() protected goalStore?: GoalStore,
-        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock,
+        @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -534,7 +540,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     protected resolveWorkspace(): string | undefined {
         const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
-        const workspace = String(consoleOptions?.workspace || this.appArgs?.cwd || '').trim();
+        const workspace = String(this.options.workspace || consoleOptions?.workspace || this.appArgs?.cwd || '').trim();
         if (!workspace) {
             return undefined;
         }
@@ -1253,7 +1259,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 createdAt: Date.now()
             }, ...messages];
         }
-        const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId);
+        const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId, currentUserMessageId);
         messages = preparedHistory.messages;
         await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
 
@@ -1314,7 +1320,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString(),
-                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget }
+                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget, workspace: workspaceRoot }
             });
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
@@ -1578,7 +1584,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
             turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
         }
-        if (recovery.consecutiveFalsifications >= maxRepairRounds) {
+        if (recovery.consecutiveFalsifications >= maxRepairRounds && !this.hasUnfinishedPlan(sessionId, turnContext)) {
             recovery.terminated = true;
             recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
         }
@@ -2460,10 +2466,78 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const message = await this.createAssistantMessageFromResponse(sessionId, response);
         this.capturePromptCacheDiagnostics(turnContext, response);
+
+        const planContinuation = this.buildPlanContinuation(sessionId, turnContext, message);
+        if (planContinuation) {
+            await this.sessions.append(sessionId, message);
+            await this.sessions.append(sessionId, this.createMessage('user', planContinuation));
+            return {};
+        }
+
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, message, turnContext);
         return {
             message
         };
+    }
+
+    private trackPlanProgress(sessionId: string, turnContext: TurnExecutionContext, toolName: string, output: unknown): void {
+        if (toolName !== 'todo' || !output || typeof output !== 'object') {
+            return;
+        }
+        const todos = (output as { todos?: unknown }).todos;
+        if (!Array.isArray(todos)) {
+            return;
+        }
+        let pending = 0;
+        let inProgress = 0;
+        for (const item of todos) {
+            const status = String((item as { status?: unknown })?.status || 'pending');
+            if (status === 'in_progress') {
+                inProgress++;
+            } else if (status !== 'completed' && status !== 'cancelled') {
+                pending++;
+            }
+        }
+        this.sessionPlanState.set(sessionId, { pending, inProgress });
+        turnContext.planTouched = true;
+    }
+
+    private hasUnfinishedPlan(sessionId: string, turnContext: TurnExecutionContext): boolean {
+        if (!turnContext.planTouched) {
+            return false;
+        }
+        const state = this.sessionPlanState.get(sessionId);
+        return !!state && state.pending + state.inProgress > 0;
+    }
+
+    private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext, message: AgentMessage): string | undefined {
+        if (!turnContext.planTouched) {
+            return undefined;
+        }
+        const state = this.sessionPlanState.get(sessionId);
+        if (!state || state.pending + state.inProgress === 0) {
+            return undefined;
+        }
+        if (this.isClarificationAssistantMessage(message.content)) {
+            return undefined;
+        }
+        const used = turnContext.planContinuations ?? 0;
+        const cap = this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3;
+        if (used >= cap) {
+            return undefined;
+        }
+        turnContext.planContinuations = used + 1;
+        if (turnContext.diagnostics) {
+            turnContext.diagnostics.planContinuationsCount = used + 1;
+        }
+        const parts: string[] = [];
+        if (state.inProgress) {
+            parts.push(`${state.inProgress} in progress`);
+        }
+        if (state.pending) {
+            parts.push(`${state.pending} pending`);
+        }
+        return `Your plan still has unfinished items (${parts.join(', ')}). Continue executing the remaining steps now using tools; do not stop or summarize until every item is completed or cancelled.`;
     }
 
     private async executeTools(
@@ -2701,6 +2775,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
 const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
 let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
+        if (this.workspaceTrust && turnContext.workspace && isWorkspaceMutatingTool(definition)
+            && !this.workspaceTrust.isTrusted(turnContext.workspace)) {
+            const reason = `Workspace '${turnContext.workspace}' is not trusted; tool "${toolCall.name}" would modify it. Run \`tsdi-agent trust ${turnContext.workspace}\` to allow modifications.`;
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...sandboxReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
+        }
+
         if (this.toolApprovalManager && turnPermission !== 'allow') {
             const forceApproval = turnPermission === 'ask';
             const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId, forceApproval);
@@ -2827,6 +2912,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             if (outcome.error) {
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
+            this.trackPlanProgress(sessionId, turnContext, toolCall.name, outcome.redactedOutput);
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
             await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
             await this.pushFileSnapshot(sessionId, fileSnapshot);
@@ -2849,6 +2935,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         try {
             const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId, turnContext.workspace);
             loopDetector.record(toolCall.name, toolCallInput, output);
+            this.trackPlanProgress(sessionId, turnContext, toolCall.name, output);
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
             const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
@@ -3397,31 +3484,46 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return messages;
         }
         const currentUserMessage = messages.find(message => message.id === currentUserMessageId);
-        // Never slice mid tool-round: orphaned tool results force the adapter to synthesize assistant tool-call messages without reasoning_content (thinking-mode 400).
-        let sliceStart = messages.length - recentLimit;
-        if (messages[sliceStart]?.role === 'tool') {
-            const leadingToolCallId = messages[sliceStart].toolCallId;
-            let probe = sliceStart;
-            while (probe > 0 && messages[probe].role === 'tool') {
-                probe--;
-            }
-            const owner = messages[probe];
-            const toolCalls = owner?.metadata?.toolCalls;
-            const ownerMatches = owner?.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0
-                && (!leadingToolCallId || toolCalls.some((call: { id?: string }) => call.id === leadingToolCallId));
-            if (ownerMatches) {
-                sliceStart = probe;
-            } else {
-                while (sliceStart < messages.length && messages[sliceStart]?.role === 'tool') {
-                    sliceStart++;
-                }
-            }
+        if (!currentUserMessage) {
+            return messages;
         }
-        const recentMessages = messages.slice(sliceStart);
-        if (!currentUserMessage || recentMessages.some(message => message.id === currentUserMessage.id)) {
-            return recentMessages;
+        const currentIndex = messages.indexOf(currentUserMessage);
+        // Keep the whole in-flight turn; window only the prior-turn prefix. Dropping
+        // the active turn's tool history makes the model forget its own actions.
+        const turnMessages = messages.slice(currentIndex);
+        const prefix = messages.slice(0, currentIndex);
+        const prefixBudget = Math.max(0, recentLimit - turnMessages.length);
+        if (prefix.length <= prefixBudget) {
+            return messages;
         }
-        return [currentUserMessage, ...recentMessages];
+        let sliceStart = this.alignSliceStartToToolRound(prefix, prefix.length - prefixBudget);
+        const keptPrefix = prefix.slice(sliceStart);
+        return [...keptPrefix, ...turnMessages];
+    }
+
+    // Never begin a retained window mid tool-round: an orphaned tool result forces
+    // the adapter to synthesize an assistant tool-call message without reasoning_content.
+    private alignSliceStartToToolRound(messages: AgentMessage[], sliceStart: number): number {
+        if (sliceStart <= 0 || messages[sliceStart]?.role !== 'tool') {
+            return sliceStart;
+        }
+        const leadingToolCallId = messages[sliceStart].toolCallId;
+        let probe = sliceStart;
+        while (probe > 0 && messages[probe].role === 'tool') {
+            probe--;
+        }
+        const owner = messages[probe];
+        const toolCalls = owner?.metadata?.toolCalls;
+        const ownerMatches = owner?.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0
+            && (!leadingToolCallId || toolCalls.some((call: { id?: string }) => call.id === leadingToolCallId));
+        if (ownerMatches) {
+            return probe;
+        }
+        let adjusted = sliceStart;
+        while (adjusted < messages.length && messages[adjusted]?.role === 'tool') {
+            adjusted++;
+        }
+        return adjusted;
     }
 
     protected createMessage(
@@ -3443,4 +3545,19 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             metadata
         };
     }
+}
+
+const WORKSPACE_MUTATING_TOOLSETS = new Set(['filesystem_write', 'terminal', 'git', 'process', 'code_execution', 'ai_cli']);
+const WORKSPACE_MUTATING_TOOLS = new Set([
+    'write_file', 'edit_file', 'delete_file', 'move_file', 'copy_file', 'mkdir', 'apply_patch',
+    'terminal', 'git_operations', 'process.start', 'execute_code'
+]);
+
+function isWorkspaceMutatingTool(definition: AgentToolDefinition): boolean {
+    if (WORKSPACE_MUTATING_TOOLS.has(definition.name)) {
+        return true;
+    }
+    return !!definition.toolset
+        && WORKSPACE_MUTATING_TOOLSETS.has(definition.toolset)
+        && definition.execution?.sideEffect === true;
 }

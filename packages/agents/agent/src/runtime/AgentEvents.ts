@@ -67,6 +67,8 @@ export interface AgentTurnDiagnostics {
     repairRoundsUsed?: number;
     /** Number of falsified entries that repeated an already-rejected attempt (P53). */
     repeatedAttemptCount?: number;
+    /** Number of plan-continuation prompts injected because the todo plan still had unfinished items. */
+    planContinuationsCount?: number;
 }
 
 function summarizeEventInput(input: any): string | undefined {
