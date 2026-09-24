@@ -22,3 +22,9 @@
 - 注意：view 签名只保留一次（transform 时丢弃原方法签名行），参数改为 `host: AgentConsoleGlobalKeyInputHost, raw/key: string`；builder 必须补 `canThreadNavigate`/`canMessageNavigate` thunk（否则 TS2739）。
 - 验收（已通过）：tsc 0 错误 → vm-vim-keymap + keymap-context + edit-message + vm-submit + vm-panels EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4704 → 4603，组件 4703 → 4602 行）→ git diff --check 干净 → lsp_diagnostics 双文件无告警。
 - 剩簇：P3 编辑簇（组件 4059-4137 区域）、which-key/thread 辅助簇；下一步按 roadmap 拆 P3 剩余控制器。
+## 2026-09-25 P7 批次6（P3 编辑簇，已定）
+- 目标：`handleIdleEscape`(3699-3713) + `getEditableUserMessages`(3715-3721) + `extractEditableMessageText`(3723-3733) + `getEditableImageParts`(3735-3743) = 45 行 P3 编辑簇；并入既有 `AgentConsoleEditModeHandlers.ts`（96 → 147 行，P199 batch E 同域，不新建控制器）。
+- 变换：`handleIdleEscape` 改为 ctx 驱动 `handleIdleEscape(ctx)` —— `this.lastEscapeAt` → `ctx.getLastEscapeAt()/ctx.setLastEscapeAt()`（ctx 接口新增 2 成员）、`this.editTargetMessageId` → `ctx.getTargetMessageId()`、`this.dismissEditMode()/this.enterEditMode()` → 同模块直调；3 个 helper 变纯函数（`getEditableUserMessages(messages)`/`extractEditableMessageText(message)`/`getEditableImageParts(message)`）。
+- 组件：`handleIdleEscape` 保留同名 3 行薄包装（无测试直调，但 builder thunk 3178 + 全局键 host 需保留）；3 个 helper 方法整体删除；`editCtx()` 改引导入纯函数 + 新增 lastEscapeAt 访问器；import 90 扩展。注意原 editCtx 末成员 `setAttachmentsBefore` 无尾逗号，插新成员后必须补逗号。
+- 验收（已通过）：tsc 0 错误 → edit-message + vm-vim-keymap + keymap-context EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4603 → 4563，组件 4602 → 4562 行）→ git diff --check 干净 → lsp_diagnostics 双文件无告警。diff 已核对与原始实现逐字一致（行为不变）。
+- 剩簇：which-key/thread 辅助簇、`runEditorCommand`/`openExternalEditor`（外部编辑器桥，P2 媒体/IO 类）；下一步按 roadmap 拆 P3 剩余控制器（P3 Turn/Input 已拆完，转 P2 诊断/导出/附件/语音）。
