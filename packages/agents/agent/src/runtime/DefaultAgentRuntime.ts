@@ -156,6 +156,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected sessionPlanState = new Map<string, { pending: number; inProgress: number }>();
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>();
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
@@ -1089,7 +1090,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const falsifyRate = this.computeTurnFalsifyRate(turnContext);
             let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
-            await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
             if (emptyResponseRetryCount < maxEmptyResponseRetries && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
@@ -1100,7 +1101,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
-                await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+                await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
             }
             if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
                 if (turnContext.diagnostics) {
@@ -1110,7 +1111,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
-                await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+                await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
             }
 
             const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
@@ -1133,7 +1134,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
         );
         await this.recordTokenUsage(sessionId, finalResponse);
-        await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
+        await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
 
         const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
         this.capturePromptCacheDiagnostics(turnContext, finalResponse);
@@ -1750,7 +1751,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
-            await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
+            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
             const text = String(finalResponse.message ?? '').trim();
             if (text) {
                 return this.createMessage('assistant', text, undefined, undefined, finalResponse.metadata);
@@ -1800,6 +1801,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private async recordTokenUsage(sessionId: string, response: ModelResponse): Promise<void> {
         this.tokenBudgetTracker.recordUsage(sessionId, await this.resolveSessionThreadId(sessionId), response.metadata?.usage);
+    }
+
+    private buildModelCompletedEvent(sessionId: string, response: ModelResponse): AgentModelCompletedEvent {
+        const usage = response.metadata?.usage;
+        const total = this.sessionUsageTotals.get(sessionId) ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+        if (usage) {
+            const promptTokens = Number(usage.promptTokens ?? 0) || 0;
+            const completionTokens = Number(usage.completionTokens ?? 0) || 0;
+            total.promptTokens += promptTokens;
+            total.completionTokens += completionTokens;
+            total.totalTokens += Number(usage.totalTokens ?? (promptTokens + completionTokens)) || 0;
+            this.sessionUsageTotals.set(sessionId, total);
+        }
+        return new AgentModelCompletedEvent(this, sessionId, response, { ...total });
     }
 
     private async resolveSessionThreadId(sessionId: string): Promise<string | undefined> {
@@ -2412,7 +2427,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 reasoningContent: reasoningContent || undefined
             }
         };
-        await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+        await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
         return response;
     }
 

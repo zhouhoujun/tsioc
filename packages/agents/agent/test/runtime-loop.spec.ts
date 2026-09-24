@@ -23,7 +23,7 @@ import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
 import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
 import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
 import { AgentTool } from '../src/tools/AgentTool';
-import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent } from '../src/runtime/AgentEvents';
+import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentTurnDiagnosticsEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentModelCompletedEvent } from '../src/runtime/AgentEvents';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { provideAgentOrm } from '../src/orm.module';
 import { AGENT_CLOCK, DeterministicAgentClock } from '../src/runtime/Clock';
@@ -37,7 +37,8 @@ const RUNTIME_LOOP_EVENTS = [
     AgentToolInvokedEvent,
     AgentToolSkippedEvent,
     AgentToolCompletedEvent,
-    AgentToolFailedEvent
+    AgentToolFailedEvent,
+    AgentModelCompletedEvent
 ];
 
 interface RuntimeLoopHandle {
@@ -1660,6 +1661,27 @@ export class RuntimeLoopTest {
         expect(result.message.content).toEqual('All done.');
         const messages = await runtime.getMessages('s1');
         expect(messages.some(message => message.role === 'user' && /unfinished items/.test(message.content))).toEqual(true);
+    }
+
+    @Test('model completion exposes cumulative session usage across turns')
+    async modelCompletionExposesCumulativeSessionUsage() {
+        class UsageModelAdapter extends EchoModelAdapter {
+            async complete(): Promise<any> {
+                return {
+                    message: 'ok',
+                    metadata: { usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } }
+                };
+            }
+        }
+
+        const { runtime, events } = await createRuntime(new UsageModelAdapter(), new EmptyToolRegistry());
+        await runtime.runTurn('s-usage', 'one');
+        await runtime.runTurn('s-usage', 'two');
+
+        const completions = events.filter(event => event instanceof AgentModelCompletedEvent) as AgentModelCompletedEvent[];
+        expect(completions.length).toBeGreaterThanOrEqual(2);
+        expect(completions[0].cumulativeUsage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
+        expect(completions[completions.length - 1].cumulativeUsage).toEqual({ promptTokens: 20, completionTokens: 10, totalTokens: 30 });
     }
 
     @Test('distills and persists experience memories after completed turn')

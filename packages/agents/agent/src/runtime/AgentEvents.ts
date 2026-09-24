@@ -197,7 +197,13 @@ export class AgentTaskScheduledEvent extends ApplicationEvent {
 }
 
 export class AgentModelCompletedEvent extends ApplicationEvent {
-    constructor(source: Object, readonly sessionId: string, readonly response: ModelResponse) {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly response: ModelResponse,
+        /** Cumulative token usage for the session since the runtime started, when tracked. */
+        readonly cumulativeUsage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+    ) {
         super(source);
     }
 }
