@@ -316,3 +316,13 @@ export async function navigateThreadCycle(
     await openSession(String(next.childSessionId));
     return true;
 }
+
+export async function refreshCurrentSections(sessionService: any, state: any): Promise<void> {
+    const sessionId = state.sessionId;
+    if (!sessionId || !sessionService) {
+        state.setSections([]);
+        return;
+    }
+    const sections = await sessionService.listSections(sessionId);
+    state.setSections(sections);
+}

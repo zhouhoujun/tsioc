@@ -24,3 +24,33 @@ export async function selectApprovalRequest(
     })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), state.consoleOptions.selectHint);
     return requests.find(request => request.id === selected);
 }
+
+export async function refreshPendingApprovals(
+    sessionId: string,
+    state: any,
+    approvalManager: any,
+    appRpc: any,
+    sessionService: any,
+    updateTitle: () => void
+): Promise<void> {
+    if (approvalManager) {
+        const pending = approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
+        if (sessionId === state.sessionId) {
+            state.setPendingApprovals(pending);
+            updateTitle();
+        }
+        return;
+    }
+    if (appRpc && sessionService) {
+        const requests = await sessionService.listApprovals(sessionId);
+        if (sessionId === state.sessionId) {
+            state.setPendingApprovals(requests);
+            updateTitle();
+        }
+        return;
+    }
+    if (sessionId === state.sessionId) {
+        state.setPendingApprovals([]);
+        updateTitle();
+    }
+}

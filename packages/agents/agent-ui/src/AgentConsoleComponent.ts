@@ -196,11 +196,11 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, f
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
-import { flattenProjectSessions, navigateThreadCycle, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
-import { selectApprovalRequest } from './AgentConsoleApprovalView';
+import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
 import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
@@ -208,6 +208,7 @@ import { runIdeCommand } from './AgentConsoleIdeCommands';
 import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
 import { loadLocalTodoPlan } from './AgentConsoleTodoView';
+import { refreshMentionCatalog } from './AgentConsoleMentions';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -1109,13 +1110,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async refreshCurrentSections(): Promise<void> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            this.state.setSections([]);
-            return;
-        }
-        const sections = await this.sessionService.listSections(sessionId);
-        this.state.setSections(sections);
+        return refreshCurrentSections(this.sessionService, this.state);
     }
 
     protected refreshProjects(): void {
@@ -1298,26 +1293,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
-        if (this.approvalManager) {
-            const pending = this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId);
-            if (sessionId === this.state.sessionId) {
-                this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
-                this.updateTerminalTitle();
-            }
-            return;
-        }
-        if (this.appRpc && this.sessionService) {
-            const requests = await this.sessionService.listApprovals(sessionId);
-            if (sessionId === this.state.sessionId) {
-                this.state.setPendingApprovals(requests as AgentConsoleApprovalRequest[]);
-                this.updateTerminalTitle();
-            }
-            return;
-        }
-        if (sessionId === this.state.sessionId) {
-            this.state.setPendingApprovals([]);
-            this.updateTerminalTitle();
-        }
+        return refreshPendingApprovals(sessionId, this.state, this.approvalManager, this.appRpc, this.sessionService, () => this.updateTerminalTitle());
     }
 
     protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean> {
@@ -2224,34 +2200,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshMentionCatalog(): Promise<void> {
-        const invoke = async (name: string, input: any): Promise<any> => {
-            if (this.appRpc) {
-                const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input }, this.rpcRequestContext());
-                return result?.output;
+        return refreshMentionCatalog({
+            appRpc: this.appRpc,
+            toolRegistry: this.toolRegistry,
+            state: this.state,
+            rpcRequestContext: () => this.rpcRequestContext(),
+            setMentionCatalog: (catalog: any[]) => {
+                this.mentionCatalog = catalog as any;
+                this.state.setMentionCatalog(catalog);
             }
-            if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') return undefined;
-            return this.toolRegistry.invoke(name, input, this.state.sessionId, undefined, this.state.workspace);
-        };
-        const [skillResult, pluginResult] = await Promise.all([
-            invoke('skill_list', {}).catch(() => undefined),
-            invoke('plugins', { action: 'list' }).catch(() => undefined)
-        ]);
-        this.mentionCatalog = [
-            ...(Array.isArray(skillResult?.skills) ? skillResult.skills : []).map((skill: any) => ({
-                kind: 'skill' as const,
-                id: String(skill.id || ''),
-                title: String(skill.title || skill.id || ''),
-                description: String(skill.summary || '')
-            })),
-            ...(Array.isArray(pluginResult?.plugins) ? pluginResult.plugins : []).map((plugin: any) => ({
-                kind: 'plugin' as const,
-                id: String(plugin.id || ''),
-                title: String(plugin.manifest?.name || plugin.id || ''),
-                description: String(plugin.manifest?.description || ''),
-                scope: String(plugin.scope || '')
-            }))
-        ].filter(item => item.id);
-        this.state.setMentionCatalog(this.mentionCatalog);
+        });
     }
 
     protected async bootstrapStateFromAppRpc(): Promise<void> {
