@@ -188,8 +188,8 @@ import {
     isAgentConsoleThreadNavigationAction
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
-import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
-import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
+import type { BackgroundTaskManager } from '@tsdi/agent-tools';
+import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, formatToolCallLabel, resolveStreamEventLabel, resolveToolCallArgument, resolveToolEventKey, resolveToolEventName } from './AgentConsoleStreamHelpers';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
@@ -238,7 +238,9 @@ import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreami
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
-import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
+import { formatDelegationEdge } from './AgentConsoleDelegationView';
+import { HarnessCommandHost, openDelegationTreeView, openHarnessListView, openHarnessTreeView } from './AgentConsoleHarnessCommands';
+import { TodoPlanCommandHost, mergeTodoPlanForSessionsView } from './AgentConsoleTodoPlanCommands';
 import { KeymapCommandHost, resolveKeymapContext as resolveKeymapContextView, runKeymapCommand as runKeymapCommandView } from './AgentConsoleKeymapCommands';
 import { PromptMentionHost, enrichPromptWithMentions as enrichPromptWithMentionsView } from './AgentConsolePromptMentions';
 import { ApprovalInspectorHost, openApprovalInspector as openApprovalInspectorView } from './AgentConsoleApprovalCommands';
@@ -738,69 +740,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
     }
 
-    /**
-     * Opens `/harness tree [sessionId]`: renders the delegation tree of the
-     * resolved session overlaid with live background-task status via the
-     * shared harness projection, and caches the projection on `harnessState`
-     * so TUI and browser renderers draw from the same data.
-     */
     protected async openHarnessTree(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Harness projection is unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
-        if (!resolvedSessionId) {
-            this.notify('No session selected. Run /harness tree <sessionId>.');
-            return true;
-        }
-        const tree = await this.sessionService.getDelegationTree(resolvedSessionId);
-        if (!tree) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        const tasks = await this.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
-        const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
-        this.state.setHarnessState(projection);
-        const lines = formatHarnessTreeLines(tree as DelegationTreeNode, projection);
-        if (!lines.length) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        this.pushCommandOutput('/harness tree', lines.join(' | '));
-        return true;
+        return openHarnessTreeView(this.harnessCommandHost(), sessionId);
     }
 
-    /**
-     * Opens `/harness list [sessionId]`: renders a flat delegation digest with
-     * per-session worker status and plan/step aggregate summary from the shared
-     * harness projection, then caches it on `harnessState`.
-     */
+    private harnessCommandHost(): HarnessCommandHost {
+        return {
+            sessionService: this.sessionService ?? null,
+            state: this.state,
+            notify: message => this.notify(message),
+            pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
+        };
+    }
+
     protected async openHarnessList(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Harness projection is unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
-        if (!resolvedSessionId) {
-            this.notify('No session selected. Run /harness list <sessionId>.');
-            return true;
-        }
-        const tree = await this.sessionService.getDelegationTree(resolvedSessionId);
-        if (!tree) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        const tasks = await this.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
-        const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
-        this.state.setHarnessState(projection);
-        const lines = formatHarnessListLines(projection);
-        if (!lines.length) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        this.pushCommandOutput('/harness list', lines.join(' | '));
-        return true;
+        return openHarnessListView(this.harnessCommandHost(), sessionId);
     }
 
     /**
@@ -913,27 +867,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * session as an indented tree with edge kind/status/timestamps inline.
      */
     protected async openDelegationTree(sessionId?: string, status?: string, depth?: number): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Delegation graph is unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
-        if (!resolvedSessionId) {
-            this.notify('No session selected. Run /delegation tree <sessionId>.');
-            return true;
-        }
-        const tree = await this.sessionService.getDelegationTree(resolvedSessionId, { status, depth });
-        if (!tree) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        const lines = this.formatDelegationTree(tree);
-        if (!lines.length) {
-            this.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        this.pushCommandOutput('/delegation tree', lines.join(' | '));
-        return true;
+        return openDelegationTreeView(this.harnessCommandHost(), sessionId, status, depth);
     }
 
     /**
@@ -965,22 +899,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      */
     protected formatDelegationEdge(edge: Record<string, any>): string {
         return formatDelegationEdge(edge);
-    }
-
-    /**
-     * Renders a delegation tree node recursively as one line per edge with
-     * tree branch prefixes (`└─`, `├─`) so the console digest stays readable.
-     */
-    protected formatDelegationTree(node: Record<string, any>): string[] {
-        return formatDelegationTree(node);
-    }
-
-    protected pickDelegationGoal(edge: Record<string, any>): string {
-        return pickDelegationGoal(edge);
-    }
-
-    protected shortenSessionId(sessionId: string): string {
-        return shortenSessionId(sessionId);
     }
 
     /**
@@ -3336,66 +3254,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         sessionId: string,
         sessions: Array<{ id: string; updatedAt?: number }>
     ): Promise<{ todos: AgentConsolePlanTodoItem[]; sourceSessionId?: string } | null> {
-        if (!this.appRpc) {
-            const todos = await this.loadLocalTodoPlan(sessionId);
-            if (sessionId !== this.state.sessionId) {
-                return null;
-            }
-            if (!todos.length) {
-                this.state.clearPlanTodos();
-                return null;
-            }
-            return { todos, sourceSessionId: sessionId };
-        }
-        const relatedSessions = sessions
-            .slice()
-            .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
-        const results = await Promise.allSettled(relatedSessions.map(async session => ({
-            sessionId: session.id,
-            updatedAt: session.updatedAt || 0,
-            result: await this.appRpc!.request('todo.get', { sessionId: session.id })
-        })));
-        const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
-        let latestAnyTodoSessionId: string | undefined;
-        let latestActiveTodoSessionId: string | undefined;
-        for (const entry of results) {
-            if (entry.status !== 'fulfilled') {
-                continue;
-            }
-            const value = entry.value;
-            const todos = Array.isArray(value.result?.todos)
-                ? value.result.todos.map((item: any) => ({
-                    id: String(item?.id || '').trim(),
-                    content: String(item?.content || '').trim(),
-                    status: this.normalizeTodoStatus(item?.status)
-                })).filter((item: any) => !!item.id && !!item.content)
-                : [];
-            if (!todos.length) {
-                continue;
-            }
-            latestAnyTodoSessionId ||= value.sessionId;
-            if (!latestActiveTodoSessionId && todos.some((todo: any) => todo.status === 'pending' || todo.status === 'in_progress')) {
-                latestActiveTodoSessionId = value.sessionId;
-            }
-            for (const todo of todos) {
-                if (!merged.has(todo.id)) {
-                    merged.set(todo.id, todo);
-                }
-            }
-        }
-        const activeTodos = Array.from(merged.values()).filter(todo => todo.status === 'pending' || todo.status === 'in_progress');
-        const nextTodos = activeTodos.length ? activeTodos : Array.from(merged.values());
-        const sourceSessionId = activeTodos.length
-            ? latestActiveTodoSessionId || latestAnyTodoSessionId
-            : latestAnyTodoSessionId;
-        if (sessionId !== this.state.sessionId) {
-            return null;
-        }
-        if (!nextTodos.length) {
-            this.state.clearPlanTodos();
-            return null;
-        }
-        return { todos: nextTodos, sourceSessionId: sourceSessionId || sessionId };
+        return mergeTodoPlanForSessionsView(this.todoPlanCommandHost(), sessionId, sessions);
+    }
+
+    private todoPlanCommandHost(): TodoPlanCommandHost {
+        return {
+            appRpc: this.appRpc ?? null,
+            state: this.state,
+            loadLocalTodoPlan: sessionId => this.loadLocalTodoPlan(sessionId),
+            normalizeTodoStatus: status => this.normalizeTodoStatus(status)
+        };
     }
 
     protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
@@ -4160,125 +4028,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runBackgroundTasksCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        const parts = parsed.split(/\s+/).filter(Boolean);
-        if (!this.backgroundTasks) {
-            this.notify('Background task manager not available in this environment.');
-            return true;
-        }
-        const sub = (parts[0] || '').toLowerCase();
-        if (sub === 'show') {
-            const taskId = parts[1];
-            if (!taskId) {
-                this.notify('Usage: /ps show <taskId>');
-                return true;
-            }
-            const task = this.findBackgroundTask(taskId);
-            if (!task) {
-                this.notify(`No background task ${taskId}.`);
-                return true;
-            }
-            this.pushCommandOutput(`/ps show ${taskId}`, this.formatBackgroundTaskDetail(task));
-            return true;
-        }
-        if (sub === 'stop') {
-            const taskIds = parts.slice(1);
-            if (!taskIds.length) {
-                this.notify('Usage: /ps stop <taskId> [<taskId> ...]');
-                return true;
-            }
-            const manager = this.backgroundTasks as BackgroundTaskManager & { cancelBatch?: (ids: string[]) => BackgroundTaskCancelOutcome[] };
-            const outcomes = typeof manager.cancelBatch === 'function'
-                ? manager.cancelBatch(taskIds)
-                : taskIds.map(id => {
-                      const ok = manager.cancel(id);
-                      return { id, cancelled: ok, reason: ok ? undefined : ('not-running' as const) };
-                  });
-            const cancelled = outcomes.filter(o => o.cancelled);
-            const lines = [`Cancelled ${cancelled.length}/${outcomes.length} background task(s).`];
-            for (const o of outcomes) {
-                lines.push(
-                    o.cancelled
-                        ? `  \u2713 ${o.id}`
-                        : `  \u2717 ${o.id} - ${o.reason === 'not-found' ? 'not found' : 'not running'}`
-                );
-            }
-            if (cancelled.length) {
-                lines.push('Undo: /ps undo');
-            }
-            this.pushCommandOutput('/ps stop', lines.join('\n'));
-            return true;
-        }
-        if (sub === 'undo') {
-            const taskIds = parts.slice(1);
-            const manager = this.backgroundTasks as BackgroundTaskManager & { restoreBatch?: (ids: string[]) => BackgroundTaskRestoreOutcome[] };
-            if (typeof manager.restoreBatch !== 'function') {
-                this.notify('Undo is not supported by this background task manager.');
-                return true;
-            }
-            const outcomes = manager.restoreBatch(taskIds);
-            const restored = outcomes.filter(o => o.restored);
-            const lines = [`Restored ${restored.length}/${outcomes.length} background task(s).`];
-            for (const o of outcomes) {
-                lines.push(
-                    o.restored
-                        ? `  \u2713 ${o.id}`
-                        : `  \u2717 ${o.id} - ${this.describeRestoreFailure(o.reason)}`
-                );
-            }
-            this.pushCommandOutput('/ps undo', lines.join('\n'));
-            return true;
-        }
-        const filter = (parts[0] || 'current').toLowerCase();
-        const allowed = new Set(['current', 'all', 'running', 'completed', 'failed', 'cancelled']);
-        if (!allowed.has(filter)) {
-            this.notify('Usage: /ps [all|running|completed|failed|cancelled] | /ps show <taskId> | /ps stop <taskId> [...] | /ps undo [...]');
-            return true;
-        }
-        const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
-        const allTasks = this.state.backgroundTaskFeed.length
-            ? this.state.backgroundTaskFeed
-            : typeof manager.listAll === 'function'
-                ? manager.listAll()
-                : manager.list(this.state.sessionId);
-        const tasks = allTasks.filter(task =>
-            (filter === 'all' || filter === 'current' ? filter === 'all' || task.sessionId === this.state.sessionId : true)
-            && (['running', 'completed', 'failed', 'cancelled'].includes(filter) ? task.status === filter : true)
-        );
-        if (!tasks.length) {
-            this.notify(`No ${filter === 'all' ? '' : filter + ' '}background tasks.`);
-            return true;
-        }
-        const lines = tasks.map(task => {
-            const status = String(task.status).toUpperCase();
-            const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
-            return `${status}${meta} ${task.id} [session ${task.sessionId}] - ${task.goal}`;
-        });
-        this.pushCommandOutput(`/ps ${filter}`, `Background tasks (${filter}):\n${lines.join('\n')}`);
-        return true;
+        return runBackgroundTasksCommandView(this.backgroundTaskCommandHost(), args);
     }
 
-    private findBackgroundTask(taskId: string): BackgroundTaskRecord | undefined {
-        const manager = this.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
-        if (this.state.backgroundTaskFeed.length) {
-            return this.state.backgroundTaskFeed.find(task => task.id === taskId);
-        }
-        const records = typeof manager.listAll === 'function' ? manager.listAll() : [];
-        return records.find(task => task.id === taskId);
-    }
-
-    private describeRestoreFailure(reason?: 'not-found' | 'not-cancelled' | 'already-finished'): string {
-        if (reason === 'not-found') {
-            return 'not found';
-        }
-        if (reason === 'not-cancelled') {
-            return 'not cancelled';
-        }
-        return 'run already finished';
-    }
-
-    private formatBackgroundTaskDetail(task: BackgroundTaskRecord): string {
-        return formatBackgroundTaskDetail(task);
+    private backgroundTaskCommandHost(): BackgroundTaskCommandHost {
+        return {
+            backgroundTasks: this.backgroundTasks ?? null,
+            state: this.state,
+            notify: message => this.notify(message),
+            pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
+        };
     }
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
