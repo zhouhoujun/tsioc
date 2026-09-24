@@ -1,4 +1,6 @@
 import type { AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext } from './AgentConsoleKeymap';
+import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
+import { isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
 
 /**
  * Host surface required by the global key input controller.
@@ -27,6 +29,9 @@ export interface AgentConsoleGlobalKeyInputHost {
         setShowThinking(visible: boolean): void;
         toggleWhichKeyLayout(): void;
         toggleWhichKeyFilterCustom(): void;
+        whichKeyPage: number;
+        setWhichKeyPage(page: number): void;
+        messageDetailOpen: boolean;
     };
     globalKeyPending: string;
     keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -39,7 +44,6 @@ export interface AgentConsoleGlobalKeyInputHost {
     persistGlobalKeymap(): Promise<void>;
     runTimelineModeCommand(args?: string): Promise<boolean>;
     runEditorCommand(args?: string): Promise<boolean>;
-    handleGlobalKeySequence(key: string): Promise<boolean>;
     handleIdleEscape(): Promise<boolean>;
     clearScrollback(): boolean;
     toggleWhichKeyOverlay(): void;
@@ -51,6 +55,8 @@ export interface AgentConsoleGlobalKeyInputHost {
     openCommandPalette(query?: string): void;
     requestTerminalExit(message?: string): Promise<void>;
     resolveKeymapContext(): AgentConsoleKeymapContext;
+    canThreadNavigate(): boolean;
+    canMessageNavigate(): boolean;
     toggleModelFavorite(): Promise<void>;
     cycleRecentModel(delta: 1 | -1): Promise<void>;
     cycleModelVariant(): Promise<void>;
@@ -151,7 +157,7 @@ export async function handleBrowserGlobalKeyInputView(
         }
     }
     if (host.state.selectMenu?.title?.startsWith('Command palette')) {
-        if (normalizedKey === 'ctrl+p') return host.handleGlobalKeySequence(normalizedKey);
+        if (normalizedKey === 'ctrl+p') return handleGlobalKeySequenceView(host, normalizedKey);
         if (!ctrlKey && normalizedKey === 'backspace') {
             host.openCommandPalette(host.commandPaletteQuery.slice(0, -1));
             return true;
@@ -205,9 +211,124 @@ export async function handleBrowserGlobalKeyInputView(
         return true;
     }
     if (!ctrlKey && !arrowKeys[normalizedKey] && !navKeys[normalizedKey] && !functionKeys[normalizedKey] && key.length !== 1 && !host.globalKeyPending) return false;
-    return host.handleGlobalKeySequence(mappedKey);
+    return handleGlobalKeySequenceView(host, mappedKey);
 }
 
+
+/**
+ * Handles a raw TUI terminal global key input (control sequences, escape
+ * prefixes, keymap recording, which-key navigation) before composer focus.
+ * Returns whether the input was consumed.
+ */
+export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputHost, raw: string): Promise<boolean> {
+        // Raw terminals encode Ctrl+C as ETX. Handle it before keymap/focus
+        // routing so an active turn is always cancellable.
+        if (raw === '\u0003' || raw === '\u0003'.toString()) {
+            if (host.isTurnInProgress()) {
+                await host.interruptTurn();
+                return true;
+            }
+        }
+        if (host.keymapRecording) {
+            if (raw === '\u001b') {
+                host.keymapRecording = undefined;
+                host.notify('Keymap recording cancelled.');
+                return true;
+            }
+            const key = decodeGlobalKey(raw);
+            if (key) {
+                const { context, action } = host.keymapRecording;
+                host.keymapRecording = undefined;
+                if (host.globalKeymap!.set(key, action, context)) {
+                    await host.persistGlobalKeymap();
+                    host.notify(`Keymap set: ${key} -> ${action} (${context}).`);
+                } else {
+                    host.notify(`Cannot bind ${key}: unknown action ${action}.`);
+                }
+            }
+            return true;
+        }
+        if (raw === '\u001b' && host.state.whichKeyVisible) {
+            host.state.setWhichKeyVisible(false);
+            return true;
+        }
+        // Escape must cancel an active turn even when an input/focus panel is
+        // currently active; focus dismissal is only for idle consoles.
+        if (raw === '\u001b' && host.isTurnInProgress()) {
+            await host.interruptTurn();
+            return true;
+        }
+        if (raw === '\u001b' && (host.state.selectMenu || host.state.isAnyFocusActive())) return false;
+        if (raw === '\u001b') {
+            const action = host.globalKeymap!.resolve('escape', host.resolveKeymapContext());
+            if (action === 'interrupt-turn') {
+                if (!host.isTurnInProgress()) return host.handleIdleEscape();
+                await host.interruptTurn();
+                return true;
+            }
+            if (!action) return false;
+            await executeGlobalKeyActionView(host, action);
+            return true;
+        }
+        const key = decodeGlobalKey(raw);
+        if (!key) {
+            if (raw === '\u001b') host.globalKeyPending = '';
+            return false;
+        }
+        if (host.state.whichKeyVisible && key !== 'ctrl+alt+k') {
+            if (key === 'n') {
+                host.state.setWhichKeyPage(host.state.whichKeyPage + 1);
+                host.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'p') {
+                host.state.setWhichKeyPage(host.state.whichKeyPage - 1);
+                host.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'l' || key === 'L') {
+                host.state.toggleWhichKeyLayout();
+                host.refreshWhichKeyBindings();
+                return true;
+            }
+            if (key === 'f' || key === 'F') {
+                host.state.toggleWhichKeyFilterCustom();
+                host.refreshWhichKeyBindings();
+                return true;
+            }
+            host.state.setWhichKeyVisible(false);
+        }
+        return handleGlobalKeySequenceView(host, key);
+    }
+/**
+ * Resolves a possibly-prefixed global key sequence against the active
+ * keymap context, driving prefix buffering and navigation guards before
+ * dispatching the resolved action.
+ */
+export async function handleGlobalKeySequenceView(host: AgentConsoleGlobalKeyInputHost, key: string): Promise<boolean> {
+        const sequence = host.globalKeyPending ? `${host.globalKeyPending} ${key}` : key;
+        const context = host.resolveKeymapContext();
+        const action = host.globalKeymap!.resolve(sequence, context);
+        const isPrefix = Object.keys(host.globalKeymap!.effectiveBindings(context)).some(binding => binding.startsWith(`${sequence} `));
+        if (isPrefix && !action) {
+            host.globalKeyPending = sequence;
+            return true;
+        }
+        if (host.globalKeyPending) {
+            host.globalKeyPending = '';
+            if (!action) return true;
+        }
+        if (!action) return false;
+        if (isAgentConsoleThreadNavigationAction(action) && !host.canThreadNavigate()) return false;
+        if (isAgentConsoleMessageNavigationAction(action) && !host.canMessageNavigate()) {
+            const canEnterTranscript = action === 'message-page-up'
+                && !host.state.hasMessageFocus()
+                && !host.state.messageDetailOpen
+                && !host.state.selectMenu;
+            if (!canEnterTranscript) return false;
+        }
+        return await executeGlobalKeyActionView(host, action);
+    }
 /**
  * Executes a global keymap action, either natively or by dispatching the
  * equivalent slash command. Returns whether the action was consumed.

@@ -192,7 +192,7 @@ import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
-import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView } from './AgentConsoleGlobalKeyInputController';
+import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
@@ -3175,7 +3175,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             persistGlobalKeymap: () => this.persistGlobalKeymap(),
             runTimelineModeCommand: (args?: string) => this.runTimelineModeCommand(args),
             runEditorCommand: (args?: string) => this.runEditorCommand(args),
-            handleGlobalKeySequence: (key: string) => this.handleGlobalKeySequence(key),
             handleIdleEscape: () => this.handleIdleEscape(),
             clearScrollback: () => this.clearScrollback(),
             toggleWhichKeyOverlay: () => this.toggleWhichKeyOverlay(),
@@ -3187,6 +3186,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             openCommandPalette: (query?: string) => this.openCommandPalette(query),
             requestTerminalExit: (message?: string) => this.requestTerminalExit(message),
             resolveKeymapContext: () => this.resolveKeymapContext(),
+            canThreadNavigate: () => this.canThreadNavigate(),
+            canMessageNavigate: () => this.canMessageNavigate(),
             toggleModelFavorite: () => this.toggleModelFavorite(),
             cycleRecentModel: (delta: 1 | -1) => this.cycleRecentModel(delta),
             cycleModelVariant: () => this.cycleModelVariant(),
@@ -3682,109 +3683,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
-        // Raw terminals encode Ctrl+C as ETX. Handle it before keymap/focus
-        // routing so an active turn is always cancellable.
-        if (raw === '\u0003' || raw === '\u0003'.toString()) {
-            if (this.isTurnInProgress()) {
-                await this.interruptTurn();
-                return true;
-            }
-        }
-        if (this.keymapRecording) {
-            if (raw === '\u001b') {
-                this.keymapRecording = undefined;
-                this.notify('Keymap recording cancelled.');
-                return true;
-            }
-            const key = this.decodeGlobalKey(raw);
-            if (key) {
-                const { context, action } = this.keymapRecording;
-                this.keymapRecording = undefined;
-                if (this.globalKeymap!.set(key, action, context)) {
-                    await this.persistGlobalKeymap();
-                    this.notify(`Keymap set: ${key} -> ${action} (${context}).`);
-                } else {
-                    this.notify(`Cannot bind ${key}: unknown action ${action}.`);
-                }
-            }
-            return true;
-        }
-        if (raw === '\u001b' && this.state.whichKeyVisible) {
-            this.state.setWhichKeyVisible(false);
-            return true;
-        }
-        // Escape must cancel an active turn even when an input/focus panel is
-        // currently active; focus dismissal is only for idle consoles.
-        if (raw === '\u001b' && this.isTurnInProgress()) {
-            await this.interruptTurn();
-            return true;
-        }
-        if (raw === '\u001b' && (this.state.selectMenu || this.state.isAnyFocusActive())) return false;
-        if (raw === '\u001b') {
-            const action = this.globalKeymap!.resolve('escape', this.resolveKeymapContext());
-            if (action === 'interrupt-turn') {
-                if (!this.isTurnInProgress()) return this.handleIdleEscape();
-                await this.interruptTurn();
-                return true;
-            }
-            if (!action) return false;
-            await this.executeGlobalKeyAction(action);
-            return true;
-        }
-        const key = this.decodeGlobalKey(raw);
-        if (!key) {
-            if (raw === '\u001b') this.globalKeyPending = '';
-            return false;
-        }
-        if (this.state.whichKeyVisible && key !== 'ctrl+alt+k') {
-            if (key === 'n') {
-                this.state.setWhichKeyPage(this.state.whichKeyPage + 1);
-                this.refreshWhichKeyBindings();
-                return true;
-            }
-            if (key === 'p') {
-                this.state.setWhichKeyPage(this.state.whichKeyPage - 1);
-                this.refreshWhichKeyBindings();
-                return true;
-            }
-            if (key === 'l' || key === 'L') {
-                this.state.toggleWhichKeyLayout();
-                this.refreshWhichKeyBindings();
-                return true;
-            }
-            if (key === 'f' || key === 'F') {
-                this.state.toggleWhichKeyFilterCustom();
-                this.refreshWhichKeyBindings();
-                return true;
-            }
-            this.state.setWhichKeyVisible(false);
-        }
-        return this.handleGlobalKeySequence(key);
-    }
-
-    protected async handleGlobalKeySequence(key: string): Promise<boolean> {
-        const sequence = this.globalKeyPending ? `${this.globalKeyPending} ${key}` : key;
-        const context = this.resolveKeymapContext();
-        const action = this.globalKeymap!.resolve(sequence, context);
-        const isPrefix = Object.keys(this.globalKeymap!.effectiveBindings(context)).some(binding => binding.startsWith(`${sequence} `));
-        if (isPrefix && !action) {
-            this.globalKeyPending = sequence;
-            return true;
-        }
-        if (this.globalKeyPending) {
-            this.globalKeyPending = '';
-            if (!action) return true;
-        }
-        if (!action) return false;
-        if (isAgentConsoleThreadNavigationAction(action) && !this.canThreadNavigate()) return false;
-        if (isAgentConsoleMessageNavigationAction(action) && !this.canMessageNavigate()) {
-            const canEnterTranscript = action === 'message-page-up'
-                && !this.state.hasMessageFocus()
-                && !this.state.messageDetailOpen
-                && !this.state.selectMenu;
-            if (!canEnterTranscript) return false;
-        }
-        return await this.executeGlobalKeyAction(action);
+        return handleGlobalKeyInputView(this.globalKeyInputHost(), raw);
     }
 
     protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
