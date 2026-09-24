@@ -190,7 +190,8 @@ import {
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
-import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, formatToolCallLabel, resolveStreamEventLabel, resolveToolCallArgument, resolveToolEventKey, resolveToolEventName } from './AgentConsoleStreamHelpers';
+import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
+import { AgentConsoleTurnStreamHost, consumeStreamChunkView, consumeStreamEventChunkView } from './AgentConsoleTurnStreamController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -2841,204 +2842,31 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
-            this.state.setTokenUsage(chunk);
-            if (chunk?.type === 'event') {
-                this.consumeStreamEventChunk(chunk);
-                return;
-            }
-            if (chunk?.type === 'text' && chunk.content) {
-                this.clearStreamingPendingNotice();
-                assistantMessage.content += chunk.content;
-                this.scheduleStreamingAssistantMessageFlush(assistantMessage);
-                return;
-            }
-            if (chunk?.type === 'reasoning' && chunk.content) {
-                this.clearStreamingPendingNotice();
-                this.state.setStatus('reasoning');
-                this.updateTerminalTitle();
-                this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
-                this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('reasoning'), 'Reasoning about implementation', {
-                    eventType: 'reasoning',
-                    label: 'think',
-                    status: 'running'
-                });
-                return;
-            }
-            if (chunk?.type === 'tool_call') {
-                this.clearStreamingPendingNotice();
-                const content = this.describePendingToolCall(chunk);
-                const eventKey = this.qualifyTurnUiEventKey(this.resolveToolEventKey('tool_call', chunk));
-                this.state.pushActivity('tool', `Tool call: ${this.state.summarize(String(content || chunk.content || ''))}`);
-                if (eventKey) {
-                    this.state.upsertUiEventMessage(eventKey, content, {
-                        eventType: 'tool_call',
-                        label: 'tool',
-                        status: 'running',
-                        toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
-                        receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
-                        attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
-                        source: 'stream',
-                        sequence: Number(chunk?.sequence) || undefined
-                    });
-                } else {
-                    this.state.appendUiEventMessage(content, {
-                        eventType: 'tool_call',
-                        label: 'tool',
-                        status: 'running'
-                    });
-                }
-                if (String(chunk.content || '').includes('todo')) {
-                    void this.refreshTodoPlan();
-                }
-                return;
-            }
-            if (chunk?.type === 'done' && chunk.message) {
-                this.clearStreamingPendingNotice();
-                assistantMessage.content = chunk.message.content || assistantMessage.content;
-                assistantMessage.metadata = {
-                    ...(chunk.message.metadata || {}),
-                    streaming: false
-                };
-                this.replaceStreamingAssistantMessage(assistantMessage);
-                this.state.setTokenUsage(chunk.message.metadata?.usage);
-            }
+        consumeStreamChunkView(this.turnStreamHost(), chunk, assistantMessage);
     }
 
     protected consumeStreamEventChunk(chunk: any): void {
-        const eventType = String(chunk?.eventType || 'state').trim() || 'state';
-        if (eventType === 'approval_requested') {
-            const toolName = String(chunk?.toolName || 'tool');
-            const inputSummary = String(chunk?.inputSummary || chunk?.command || chunk?.input || '').trim();
-            this.state.upsertPendingApproval({
-                id: String(chunk?.approvalId || `approval-${Date.now()}`),
-                toolName,
-                sessionId: this.state.sessionId,
-                reason: String(chunk?.content || `Approval required for ${toolName}`),
-                summary: String(chunk?.content || ''),
-                hasInput: true,
-                inputSummary: inputSummary || undefined,
-                createdAt: Date.now(),
-                timeoutMs: Number(chunk?.timeoutMs) || 0
-            } as AgentConsoleApprovalRequest);
-            this.state.requestApprovalAttention();
-            this.state.pushActivity('tool', `Approval required for ${toolName}`);
-            return;
-        }
-        if (eventType === 'approval_completed' || eventType === 'approval_failed') {
-            void this.refreshPendingApprovals();
-            return;
-        }
-        if (eventType === 'compensation') {
-            const compensated = Number(chunk?.compensated || 0);
-            if (compensated > 0) {
-                this.state.pushActivity(
-                    'rollback',
-                    `Rolled back ${compensated} side-effecting tool call${compensated === 1 ? '' : 's'}`
-                );
-            }
-            return;
-        }
-        if (eventType === 'context_prepared') {
-            if (chunk?.report) {
-                    this.state.setContextPreparation(chunk.report);
-                    this.state.pushActivity(
-                        'model',
-                        `Context ${chunk.report.strategy}: ${chunk.report.beforeTokens}→${chunk.report.afterTokens}`
-                    );
-                return;
-            }
-            const contextContent = String(chunk?.content || '').trim();
-            if (contextContent) {
-                this.state.pushActivity('model', contextContent);
-            }
-            return;
-        }
-        if (eventType === 'turn_diagnostics') {
-            const diagnostics = chunk?.diagnostics || {};
-            const compactionCount = Number(diagnostics.compactionCount ?? 0);
-            const totalSavings = Number(diagnostics.totalTokenSavings ?? 0);
-            const promptCache = diagnostics.promptCache;
-            const parts: string[] = [];
-            if (compactionCount > 0 || totalSavings > 0) {
-                parts.push(`${compactionCount} compaction${compactionCount === 1 ? '' : 's'}, ${totalSavings} tokens saved`);
-            }
-            if (promptCache) {
-                const support = String(promptCache.supported || 'none');
-                const applied = promptCache.applied ? 'applied' : 'not applied';
-                const cachedTokens = Number(promptCache.observedCachedPromptTokens ?? 0);
-                parts.push(`prompt cache ${support} (${applied}${cachedTokens ? `, ${cachedTokens} cached tokens` : ''})`);
-            }
-            if (parts.length) {
-                this.state.pushActivity('model', `Turn diagnostics: ${parts.join('; ')}`);
-                return;
-            }
-            const diagnosticsContent = String(chunk?.content || '').trim();
-            if (diagnosticsContent) {
-                this.state.pushActivity('model', diagnosticsContent);
-            }
-            return;
-        }
-        const content = this.describeStreamEventContent(eventType, chunk);
-        if (!content) {
-            return;
-        }
-        const label = String(chunk?.label || this.resolveStreamEventLabel(eventType)).trim() || 'state';
-        const status = this.normalizeUiEventStatus(chunk?.status);
-        const eventKey = this.qualifyTurnUiEventKey(this.resolveToolEventKey(eventType, chunk))
-            || (eventType === 'turn_started'
-                ? this.state.qualifyUiEventKey('turn-start')
-                : eventType === 'reasoning'
-                    ? this.state.qualifyUiEventKey('reasoning')
-                    : undefined);
-            if (eventKey) {
-                this.state.upsertUiEventMessage(eventKey, content, {
-                    eventType,
-                    label,
-                    status,
-                    toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
-                    receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
-                    attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
-                    source: 'stream',
-                    sequence: Number(chunk?.sequence) || undefined
-                });
-                return;
-            }
-            this.state.appendUiEventMessage(content, {
-                eventType,
-                label,
-                status,
-                source: 'stream',
-                sequence: Number(chunk?.sequence) || undefined
-            });
+        consumeStreamEventChunkView(this.turnStreamHost(), chunk);
     }
 
     protected describeStreamEventContent(eventType: string, chunk: any): string {
         return describeStreamEventContent(eventType, chunk, this.translator);
     }
 
-    protected resolveToolEventKey(eventType: string, chunk: any): string | undefined {
-        return resolveToolEventKey(eventType, chunk);
-    }
-
-    protected qualifyTurnUiEventKey(key: string | undefined): string | undefined {
-        const resolvedKey = String(key || '').trim();
-        return resolvedKey ? this.state.qualifyUiEventKey(resolvedKey) : undefined;
-    }
-
-    protected resolveToolEventName(chunk: any): string {
-        return resolveToolEventName(chunk);
-    }
-
     protected describePendingToolCall(chunk: any): string {
         return describePendingToolCall(chunk, this.translator);
     }
 
-    protected formatToolCallLabel(call: any): string {
-        return formatToolCallLabel(call, this.translator);
-    }
-
-    protected resolveToolCallArgument(input: any): string {
-        return resolveToolCallArgument(input);
+    private turnStreamHost(): AgentConsoleTurnStreamHost {
+        return {
+            state: this.state,
+            destroyed: this.destroyed,
+            translator: this.translator,
+            updateTerminalTitle: () => this.updateTerminalTitle(),
+            scheduleStreamingAssistantMessageFlush: message => this.scheduleStreamingAssistantMessageFlush(message),
+            refreshTodoPlan: () => this.refreshTodoPlan(),
+            refreshPendingApprovals: () => this.refreshPendingApprovals()
+        };
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {
@@ -3310,23 +3138,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             default:
                 return 'pending';
         }
-    }
-
-    protected normalizeUiEventStatus(status: unknown): 'running' | 'success' | 'failed' | 'error' {
-        switch (String(status || '').trim()) {
-            case 'success':
-            case 'failed':
-            case 'error':
-                return status as 'success' | 'failed' | 'error';
-            case 'cancelled':
-                return 'failed';
-            default:
-                return 'running';
-        }
-    }
-
-    protected resolveStreamEventLabel(eventType: string): string {
-        return resolveStreamEventLabel(eventType);
     }
 
     protected findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {

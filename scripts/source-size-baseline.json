@@ -12,7 +12,7 @@
   "packages/agents/agent-ui/harness/scenarios.ts": 651,
   "packages/agents/agent-ui/src/AgentConsoleCodingTaskHandlers.ts": 815,
   "packages/agents/agent-ui/src/AgentConsoleCommandHandlers.ts": 1411,
-  "packages/agents/agent-ui/src/AgentConsoleComponent.ts": 5374,
+  "packages/agents/agent-ui/src/AgentConsoleComponent.ts": 5185,
   "packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts": 1484,
   "packages/agents/agent-ui/src/AgentConsolePanels.ts": 4165,
   "packages/agents/agent-ui/src/AgentConsoleRemoteEventBridge.ts": 732,
