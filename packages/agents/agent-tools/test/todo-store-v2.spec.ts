@@ -92,6 +92,29 @@ export class TodoStoreV2Test {
         expect(todos[1].status).toBe('pending');
     }
 
+    @Test('TodoTool rejects a new todo item without content')
+    async todoToolRejectsContentlessNewItem() {
+        const tool = new TodoTool();
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ todos: [{ id: 'a', status: 'pending' }] }, createSessionContext({ sessionId: 'content-guard' }));
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('content is required');
+    }
+
+    @Test('TodoTool allows a status-only update for an existing item')
+    async todoToolAllowsStatusOnlyUpdate() {
+        const tool = new TodoTool();
+        const ctx = createSessionContext({ sessionId: 'status-only' });
+        await tool.invoke({ todos: [{ id: 'a', content: 'do a', status: 'pending' }] }, ctx);
+        await tool.invoke({ merge: true, todos: [{ id: 'a', status: 'completed' }] }, ctx);
+        const result: any = await tool.invoke({}, ctx);
+        expect(result.todos[0].content).toBe('do a');
+        expect(result.todos[0].status).toBe('completed');
+    }
+
     @Test('normalizeItem rejects invalid kind')
     async normalizeRejectsInvalidKind() {
         const store = new TodoStore();

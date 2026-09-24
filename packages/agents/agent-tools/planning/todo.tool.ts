@@ -74,6 +74,8 @@ export class TodoTool implements AgentTool {
             return this.scheduleOnly(input.todos);
         }
 
+        await this.assertNewItemsHaveContent(sessionId, input.todos);
+
         if (input.expectedRevision !== undefined) {
             const result = input.merge
                 ? await this.store.mergeAtRevision(sessionId, input.todos, Number(input.expectedRevision))
@@ -87,6 +89,18 @@ export class TodoTool implements AgentTool {
             await this.store.replace(sessionId, input.todos);
         }
         return this.buildResult(sessionId);
+    }
+
+    private async assertNewItemsHaveContent(sessionId: string, todos: any[]): Promise<void> {
+        const plan = await this.store.readPlan(sessionId);
+        const existingIds = new Set(plan.todos.map(item => item.id));
+        for (const raw of todos) {
+            const id = String(raw?.id ?? '').trim();
+            const hasContent = typeof raw?.content === 'string' && raw.content.trim().length > 0;
+            if (!hasContent && !existingIds.has(id)) {
+                throw new Error(`Invalid todo input: content is required for new item '${id || '(missing id)'}'.`);
+            }
+        }
     }
 
     private async buildResult(sessionId: string): Promise<any> {
