@@ -192,6 +192,7 @@ import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
+import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView } from './AgentConsoleGlobalKeyInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -3362,6 +3363,43 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         };
     }
 
+    protected globalKeyInputHost(): AgentConsoleGlobalKeyInputHost {
+        const self = this;
+        return {
+            state: this.state,
+            globalKeymap: this.globalKeymap,
+            get globalKeyPending() { return self.globalKeyPending; },
+            set globalKeyPending(value) { self.globalKeyPending = value; },
+            get keymapRecording() { return self.keymapRecording; },
+            set keymapRecording(value) { self.keymapRecording = value; },
+            get commandPaletteQuery() { return self.commandPaletteQuery; },
+            set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
+            isTurnInProgress: () => this.isTurnInProgress(),
+            interruptTurn: () => this.interruptTurn(),
+            notify: (message: string, duration?: number) => this.notify(message, duration),
+            handleCommand: (value: string) => this.handleCommand(value),
+            persistGlobalKeymap: () => this.persistGlobalKeymap(),
+            runTimelineModeCommand: (args?: string) => this.runTimelineModeCommand(args),
+            runEditorCommand: (args?: string) => this.runEditorCommand(args),
+            handleGlobalKeySequence: (key: string) => this.handleGlobalKeySequence(key),
+            handleIdleEscape: () => this.handleIdleEscape(),
+            clearScrollback: () => this.clearScrollback(),
+            toggleWhichKeyOverlay: () => this.toggleWhichKeyOverlay(),
+            refreshWhichKeyBindings: () => this.refreshWhichKeyBindings(),
+            toggleHealthPopover: () => this.toggleHealthPopover(),
+            navigateThreadChildFirst: () => this.navigateThreadChildFirst(),
+            navigateThreadCycle: (delta: 1 | -1) => this.navigateThreadCycle(delta),
+            navigateThreadParent: () => this.navigateThreadParent(),
+            openCommandPalette: (query?: string) => this.openCommandPalette(query),
+            requestTerminalExit: (message?: string) => this.requestTerminalExit(message),
+            resolveKeymapContext: () => this.resolveKeymapContext(),
+            toggleModelFavorite: () => this.toggleModelFavorite(),
+            cycleRecentModel: (delta: 1 | -1) => this.cycleRecentModel(delta),
+            cycleModelVariant: () => this.cycleModelVariant(),
+            queueDraft: () => this.queueDraft()
+        };
+    }
+
     protected promptMentionHost(): PromptMentionHost {
         return {
             state: this.state,
@@ -3910,144 +3948,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
-        const ctrlKey = !!(modifiers.ctrlKey || modifiers.metaKey);
-        const altKey = !!modifiers.altKey;
-        const rawKey = String(key || '').toLowerCase();
-        // TUI raw mode delivers Ctrl+C as the ETX control character rather
-        // than a `c` key with ctrlKey metadata.
-        if (rawKey === '\u0003' && this.isTurnInProgress()) {
-            await this.interruptTurn();
-            return true;
-        }
-        const normalizedKey = ctrlKey
-            ? (altKey ? `ctrl+alt+${rawKey}` : `ctrl+${rawKey}`)
-            : /^f\d{1,2}$/.test(rawKey)
-                ? (modifiers.shiftKey ? `shift+${rawKey}` : rawKey)
-                : modifiers.shiftKey && /^[A-Z]$/.test(String(key || ''))
-                    ? `shift+${rawKey}`
-                    : rawKey;
-        const arrowKeys: Record<string, string> = {
-            arrowup: 'up',
-            arrowdown: 'down',
-            arrowleft: 'left',
-            arrowright: 'right'
-        };
-        const navKeys: Record<string, string> = {
-            pageup: 'pageup',
-            pagedown: 'pagedown',
-            home: 'home',
-            end: 'end'
-        };
-        const functionKeys: Record<string, string> = {
-            f1: 'f1', f2: 'f2', f3: 'f3', f4: 'f4',
-            f5: 'f5', f6: 'f6', f7: 'f7', f8: 'f8',
-            f9: 'f9', f10: 'f10', f11: 'f11', f12: 'f12',
-            'shift+f1': 'shift+f1', 'shift+f2': 'shift+f2', 'shift+f3': 'shift+f3', 'shift+f4': 'shift+f4',
-            'shift+f5': 'shift+f5', 'shift+f6': 'shift+f6', 'shift+f7': 'shift+f7', 'shift+f8': 'shift+f8',
-            'shift+f9': 'shift+f9', 'shift+f10': 'shift+f10', 'shift+f11': 'shift+f11', 'shift+f12': 'shift+f12'
-        };
-        const mappedKey = arrowKeys[normalizedKey] || navKeys[normalizedKey] || functionKeys[normalizedKey] || normalizedKey;
-        if (this.keymapRecording) {
-            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
-                this.keymapRecording = undefined;
-                this.notify('Keymap recording cancelled.');
-                return true;
-            }
-            if (mappedKey) {
-                const { context, action } = this.keymapRecording;
-                this.keymapRecording = undefined;
-                if (this.globalKeymap!.set(mappedKey, action, context)) {
-                    await this.persistGlobalKeymap();
-                    this.notify(`Keymap set: ${mappedKey} -> ${action} (${context}).`);
-                } else {
-                    this.notify(`Cannot bind ${mappedKey}: unknown action ${action}.`);
-                }
-            }
-            return true;
-        }
-        if (this.state.hasCommandOutputsFocus()) {
-            if (this.state.commandOutputsFilterMode) {
-                if (!ctrlKey && normalizedKey === 'backspace') {
-                    this.state.setCommandOutputsFilter(this.state.commandOutputsFilter.slice(0, -1));
-                    return true;
-                }
-                if (!ctrlKey && normalizedKey === '/') {
-                    this.state.commandOutputsFilterMode = false;
-                    this.state.setCommandOutputsFilter('');
-                    return true;
-                }
-                if (!ctrlKey && key.length === 1 && !/[\r\n]/.test(key)) {
-                    this.state.setCommandOutputsFilter(`${this.state.commandOutputsFilter}${key}`);
-                    return true;
-                }
-            }
-            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
-                this.state.commandOutputsFilterMode = false;
-                await this.state.dismissFocusLayer();
-                return true;
-            }
-            if (!ctrlKey && mappedKey) {
-                if (await this.state.handleFocusKey(mappedKey)) return true;
-                if (key.length === 1) return true;
-                return false;
-            }
-        }
-        if (this.state.selectMenu?.title?.startsWith('Command palette')) {
-            if (normalizedKey === 'ctrl+p') return this.handleGlobalKeySequence(normalizedKey);
-            if (!ctrlKey && normalizedKey === 'backspace') {
-                this.openCommandPalette(this.commandPaletteQuery.slice(0, -1));
-                return true;
-            }
-            if (!ctrlKey && key.length === 1) {
-                this.openCommandPalette(`${this.commandPaletteQuery}${key}`);
-                return true;
-            }
-            return false;
-        }
-        if (this.state.whichKeyVisible) {
-            if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
-                this.state.setWhichKeyVisible(false);
-                return true;
-            }
-            if (mappedKey && this.globalKeymap!.resolve(mappedKey, this.resolveKeymapContext()) !== 'which-key-toggle') {
-                this.state.setWhichKeyVisible(false);
-            }
-        }
-        // In a terminal, Ctrl+C is commonly configured as copy while idle,
-        // but must act as an interrupt during an active turn. Keep the idle
-        // binding untouched so copy continues to work.
-        if (ctrlKey && rawKey === 'c' && this.isTurnInProgress()) {
-            await this.interruptTurn();
-            return true;
-        }
-        if (ctrlKey && rawKey === 'c') {
-            // Raw-mode terminals do not emit SIGINT. Preserve the familiar
-            // shell behaviour for an idle console; when text is selected the
-            // terminal emulator consumes Ctrl+C for copy before this handler.
-            void this.requestTerminalExit();
-            return true;
-        }
-        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && this.isTurnInProgress()) {
-            await this.interruptTurn();
-            return true;
-        }
-        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (this.state.selectMenu || this.state.isAnyFocusActive())) {
-            this.globalKeyPending = '';
-            return false;
-        }
-        if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
-            const action = this.globalKeymap!.resolve('escape', this.resolveKeymapContext());
-            if (action === 'interrupt-turn') {
-                if (!this.isTurnInProgress()) return this.handleIdleEscape();
-                await this.interruptTurn();
-                return true;
-            }
-            if (!action) return false;
-            await this.executeGlobalKeyAction(action);
-            return true;
-        }
-        if (!ctrlKey && !arrowKeys[normalizedKey] && !navKeys[normalizedKey] && !functionKeys[normalizedKey] && key.length !== 1 && !this.globalKeyPending) return false;
-        return this.handleGlobalKeySequence(mappedKey);
+        return handleBrowserGlobalKeyInputView(this.globalKeyInputHost(), key, modifiers);
     }
 
     /**
@@ -4136,141 +4037,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<boolean> {
-        if (action === 'command-palette') {
-            this.openCommandPalette();
-            return true;
-        }
-        if (action === 'interrupt-turn') {
-            await this.interruptTurn();
-            return true;
-        }
-        if (action === 'theme') {
-            await this.handleCommand('/theme');
-            return true;
-        }
-        if (action === 'toggle-thinking') {
-            this.state.setShowThinking(!this.state.showThinking);
-            this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
-            return true;
-        }
-        if (action === 'open-editor') {
-            await this.runEditorCommand();
-            return true;
-        }
-        if (action === 'thread-child-first') {
-            return this.navigateThreadChildFirst();
-        }
-        if (action === 'thread-cycle-next') {
-            return this.navigateThreadCycle(1);
-        }
-        if (action === 'thread-cycle-prev') {
-            return this.navigateThreadCycle(-1);
-        }
-        if (action === 'thread-parent') {
-            return this.navigateThreadParent();
-        }
-        if (action === 'message-page-up') {
-            if (!this.state.hasMessageFocus()) {
-                return this.state.focusLatestLongMessage();
-            }
-            this.state.moveMessageSelectionPage(-1);
-            return true;
-        }
-        if (action === 'message-page-down') {
-            this.state.moveMessageSelectionPage(1);
-            return true;
-        }
-        if (action === 'message-half-page-up') {
-            this.state.moveMessageSelectionPage(-1, Math.max(1, Math.floor(this.state.consoleOptions.messageSelectionPageSize / 2)));
-            return true;
-        }
-        if (action === 'message-half-page-down') {
-            this.state.moveMessageSelectionPage(1, Math.max(1, Math.floor(this.state.consoleOptions.messageSelectionPageSize / 2)));
-            return true;
-        }
-        if (action === 'message-line-up') {
-            this.state.moveMessageSelectionPage(-1, 1);
-            return true;
-        }
-        if (action === 'message-line-down') {
-            this.state.moveMessageSelectionPage(1, 1);
-            return true;
-        }
-        if (action === 'message-first') {
-            this.state.selectFirstMessage();
-            return true;
-        }
-        if (action === 'message-last') {
-            this.state.selectLastMessage();
-            return true;
-        }
-        if (action === 'message-last-user') {
-            this.state.selectLastUserMessage();
-            return true;
-        }
-        if (action === 'model-favorite-toggle') {
-            await this.toggleModelFavorite();
-            return true;
-        }
-        if (action === 'model-cycle-recent') {
-            await this.cycleRecentModel(1);
-            return true;
-        }
-        if (action === 'model-cycle-recent-back') {
-            await this.cycleRecentModel(-1);
-            return true;
-        }
-        if (action === 'model-variant-cycle') {
-            await this.cycleModelVariant();
-            return true;
-        }
-        if (action === 'which-key-toggle') {
-            this.toggleWhichKeyOverlay();
-            return true;
-        }
-        if (action === 'which-key-layout-toggle') {
-            this.state.toggleWhichKeyLayout();
-            if (this.state.whichKeyVisible) {
-                this.refreshWhichKeyBindings();
-            }
-            return true;
-        }
-        if (action === 'which-key-pending-toggle') {
-            this.state.toggleWhichKeyFilterCustom();
-            if (this.state.whichKeyVisible) {
-                this.refreshWhichKeyBindings();
-            }
-            return true;
-        }
-        if (action === 'status-health') {
-            await this.toggleHealthPopover();
-            return true;
-        }
-        if (action === 'timeline-mode') {
-            await this.runTimelineModeCommand();
-            return true;
-        }
-        if (action === 'queue-follow-up') {
-            return this.queueDraft();
-        }
-        if (action === 'clear-scrollback') {
-            return this.clearScrollback();
-        }
-        const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up' | 'clear-scrollback'>, string> = {
-            'new-session': '/new',
-            compact: '/compact',
-            export: '/export',
-            undo: '/undo',
-            redo: '/redo',
-            sessions: '/sessions',
-            model: '/model',
-            archetypes: '/archetype',
-            status: '/status',
-            copy: '/copy',
-            'command-outputs': '/outputs'
-        };
-        await this.handleCommand(commands[action]);
-        return true;
+        return executeGlobalKeyActionView(this.globalKeyInputHost(), action);
     }
 
     protected clearScrollback(): boolean {
