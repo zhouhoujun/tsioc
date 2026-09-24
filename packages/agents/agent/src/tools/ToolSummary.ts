@@ -176,6 +176,21 @@ function summarizeValue(value: unknown, depth: number): string | undefined {
 }
 
 function summarizeTodoPayload(payload: Record<string, any>): string | undefined {
+    const compiledSteps = Array.isArray(payload.steps) ? payload.steps : undefined;
+    if (compiledSteps) {
+        const accepted = Array.isArray(payload.accepted)
+            ? payload.accepted.length
+            : compiledSteps.filter(step => !step?.proposed).length;
+        const proposals = Array.isArray(payload.proposals)
+            ? payload.proposals.length
+            : compiledSteps.filter(step => step?.proposed).length;
+        const rejected = Array.isArray(payload.rejected) ? payload.rejected.length : 0;
+        const parts = [`${compiledSteps.length} step${compiledSteps.length === 1 ? '' : 's'}`];
+        if (accepted) parts.push(`${accepted} accepted`);
+        if (proposals) parts.push(`${proposals} proposal${proposals === 1 ? '' : 's'}`);
+        if (rejected) parts.push(`${rejected} rejected`);
+        return parts.join(' · ');
+    }
     const todos = Array.isArray(payload.todos) ? payload.todos : [];
     const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : undefined;
     const total = numberOrUndefined(summary?.total) ?? todos.length;
