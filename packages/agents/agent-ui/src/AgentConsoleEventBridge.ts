@@ -271,7 +271,7 @@ export class AgentConsoleEventBridge {
                 });
                 const nonGitRepo = event.toolName === 'git_operations' && /not a Git repository/i.test(event.error.message);
                 this.state.pushActivity('error', nonGitRepo
-                    ? (this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected; continuing with files')
+                    ? (this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).')
                     : (this.translator?.translate('agent.tool.failedWithError', {
                         label: this.describeToolName(event.toolName),
                         error: event.error.message

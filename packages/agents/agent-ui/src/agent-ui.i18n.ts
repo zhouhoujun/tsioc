@@ -81,7 +81,7 @@ export const agentUiEnglish: TranslationBundle = {
                 delete_file: 'Delete file', web_search: 'Web search', web_extract: 'Fetch web page',
                 weather: 'Check weather', location: 'Resolve location', terminal: 'Run command',
                 background_task: 'Run background task', schedule: 'Schedule prompt',
-                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected; continuing with files', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
+                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
             }
         }
     }
@@ -148,7 +148,7 @@ export const agentUiChinese: TranslationBundle = {
                 delete_file: '删除文件', web_search: '联网搜索', web_extract: '抓取网页',
                 weather: '查询天气', location: '解析位置', terminal: '执行命令',
                 background_task: '运行后台任务', schedule: '定时提示',
-                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库，继续处理文件', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
+                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库。如需版本控制，可让 agent 初始化仓库（git init）。', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
             }
         }
     }

@@ -3850,7 +3850,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 + (detail ? ` · ${detail}` : '');
         }
         if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
-            return this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected; continuing with files';
+            return this.translator?.translate('agent.tool.gitMissing') || 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).';
         }
         if (eventType === 'tool_failed' && toolName === 'web_search' && /search adapter/i.test(content)) {
             return this.translator?.translate('agent.tool.searchUnavailable') || 'Web search is not configured; add a search adapter in settings.';
