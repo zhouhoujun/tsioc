@@ -95,3 +95,96 @@ export function resolveStreamEventLabel(eventType: string): string {
             return 'state';
     }
 }
+
+export function resolveToolEventName(chunk: any): string {
+    const explicit = String(chunk?.toolName || '').trim();
+    if (explicit) {
+        return explicit;
+    }
+    const content = String(chunk?.content || '').trim();
+    if (!content) {
+        return '';
+    }
+    return content
+        .split(/[·:(]/, 1)[0]
+        .replace(/\s+(completed|failed|skipped)$/i, '')
+        .trim();
+}
+
+export function resolveToolEventKey(eventType: string, chunk: any): string | undefined {
+    switch (eventType) {
+        case 'tool_call':
+        case 'tool_invoked':
+        case 'tool_completed':
+        case 'tool_failed':
+        case 'tool_skipped': {
+            const toolCallId = String(chunk?.toolCallId || '').trim();
+            const receiptId = String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim();
+            if (toolCallId || receiptId) {
+                return `tool:${toolCallId || receiptId}`;
+            }
+            const toolName = resolveToolEventName(chunk);
+            return toolName ? `tool:${toolName}` : undefined;
+        }
+        default:
+            return undefined;
+    }
+}
+
+export function formatToolCallLabel(call: any, translator?: any): string {
+    const name = String(call?.name || '').trim();
+    if (!name) {
+        return '';
+    }
+    const label = translator?.translate(`agent.tool.${name}`) || name.replace(/[._-]+/g, ' ');
+    const argument = resolveToolCallArgument(call?.input);
+    return argument ? `${label}: ${argument}` : label;
+}
+
+export function describePendingToolCall(chunk: any, translator?: any): string {
+    const toolCalls = Array.isArray(chunk?.toolCalls) ? chunk.toolCalls : [];
+    if (toolCalls.length) {
+        const parts = toolCalls
+            .map((call: any) => formatToolCallLabel(call, translator))
+            .filter(Boolean);
+        if (parts.length) {
+            return parts.length > 3
+                ? [...parts.slice(0, 3), `+${parts.length - 3} more`].join(' · ')
+                : parts.join(' · ');
+        }
+    }
+    const text = String(chunk?.content || '').trim();
+    if (!text) {
+        return 'tool';
+    }
+    const toolName = resolveToolEventName(chunk);
+    return toolName || text;
+}
+
+export function describeStreamEventContent(eventType: string, chunk: any, translator?: any): string {
+    const content = String(chunk?.content || '').trim();
+    const toolName = String(chunk?.toolName || '').trim();
+    if (!toolName || !eventType.startsWith('tool_')) {
+        return content;
+    }
+    const label = translator?.translate(`agent.tool.${toolName}`)
+        || toolName.replace(/[._-]+/g, ' ');
+    const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
+    if (eventType === 'tool_invoked') {
+        return (translator?.translate('agent.tool.invoked', { label }) || `Running ${label}`)
+            + (detail ? ` · ${detail}` : '');
+    }
+    if (eventType === 'tool_completed') {
+        return (translator?.translate('agent.tool.completed', { label }) || `${label} completed`)
+            + (detail ? ` · ${detail}` : '');
+    }
+    if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
+        return translator?.translate('agent.tool.gitMissing') || 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).';
+    }
+    if (eventType === 'tool_failed' && toolName === 'web_search' && /search adapter/i.test(content)) {
+        return translator?.translate('agent.tool.searchUnavailable') || 'Web search is not configured; add a search adapter in settings.';
+    }
+    return eventType === 'tool_failed'
+        ? (translator?.translate('agent.tool.failed', { label }) || `${label} failed`)
+        : content;
+}
