@@ -87,7 +87,7 @@ import {
 import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
-import { dismissEditMode, enterEditMode, EditModeHandlerContext, startEditTarget } from './AgentConsoleEditModeHandlers';
+import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -3697,49 +3697,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
      * at the last editable user message when no dismissal is recent.
      */
     protected async handleIdleEscape(): Promise<boolean> {
-        const now = Date.now();
-        const withinWindow = now - this.lastEscapeAt <= this.state.consoleOptions.editEscapeWindowMs;
-        this.lastEscapeAt = now;
-        if (this.editTargetMessageId) {
-            this.dismissEditMode();
-            return true;
-        }
-        if (withinWindow) {
-            this.lastEscapeAt = 0;
-            await this.enterEditMode();
-            return true;
-        }
-        return false;
-    }
-
-    protected getEditableUserMessages(): AgentMessage[] {
-        return this.state.messages.filter(message =>
-            message.role === 'user'
-            && message.metadata?.kind !== 'steer'
-            && !!String(message.content || '').trim()
-        );
-    }
-
-    protected extractEditableMessageText(message: AgentMessage): string {
-        const content = String(message?.content || '');
-        const marker = '[Mention Context]';
-        if (content.startsWith(marker)) {
-            const separator = content.indexOf('\n\n', marker.length);
-            if (separator >= 0) {
-                return content.slice(separator + 2);
-            }
-        }
-        return content;
-    }
-
-    protected getEditableImageParts(message: AgentMessage): Array<{ imageUrl: string; mediaType?: string; name?: string }> {
-        const images: Array<{ imageUrl: string; mediaType?: string; name?: string }> = [];
-        for (const part of message?.parts || []) {
-            if (part?.type === 'image' && part?.imageUrl) {
-                images.push({ imageUrl: part.imageUrl, mediaType: part.mediaType, name: part.name });
-            }
-        }
-        return images;
+        return handleIdleEscape(this.editCtx());
     }
 
     private editCtx(): EditModeHandlerContext {
@@ -3747,9 +3705,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             state: this.state,
             notify: (message, duration) => this.notify(message, duration),
             editEscapeWindowMs: this.state.consoleOptions.editEscapeWindowMs,
-            getEditableUserMessages: () => this.getEditableUserMessages(),
-            extractEditableMessageText: target => this.extractEditableMessageText(target),
-            getEditableImageParts: target => this.getEditableImageParts(target),
+            getEditableUserMessages: () => getEditableUserMessages(this.state.messages),
+            extractEditableMessageText: target => extractEditableMessageText(target),
+            getEditableImageParts: target => getEditableImageParts(target),
             getTargetMessageId: () => this.editTargetMessageId,
             setTargetMessageId: value => { this.editTargetMessageId = value; },
             getLastSessionMessageId: () => this.lastEditSessionMessageId,
@@ -3759,7 +3717,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             getDraftBefore: () => this.editDraftBefore,
             setDraftBefore: value => { this.editDraftBefore = value; },
             getAttachmentsBefore: () => this.editAttachmentsBefore,
-            setAttachmentsBefore: value => { this.editAttachmentsBefore = value; }
+            setAttachmentsBefore: value => { this.editAttachmentsBefore = value; },
+            getLastEscapeAt: () => this.lastEscapeAt,
+            setLastEscapeAt: value => { this.lastEscapeAt = value; },
         };
     }
 

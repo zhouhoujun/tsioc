@@ -36,6 +36,8 @@ export interface EditModeHandlerContext {
     setDraftBefore(value: string): void;
     getAttachmentsBefore(): AgentConsolePendingAttachment[];
     setAttachmentsBefore(value: AgentConsolePendingAttachment[]): void;
+    getLastEscapeAt(): number;
+    setLastEscapeAt(value: number): void;
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -93,4 +95,52 @@ export function dismissEditMode(ctx: EditModeHandlerContext): boolean {
     ctx.state.setPendingAttachments(ctx.getAttachmentsBefore());
     ctx.notify('Edit cancelled — draft restored.');
     return true;
+}
+
+// ── Idle-escape state machine & editable-message helpers ──────────────────────
+
+export async function handleIdleEscape(ctx: EditModeHandlerContext): Promise<boolean> {
+    const now = Date.now();
+    const withinWindow = now - ctx.getLastEscapeAt() <= ctx.editEscapeWindowMs;
+    ctx.setLastEscapeAt(now);
+    if (ctx.getTargetMessageId()) {
+        dismissEditMode(ctx);
+        return true;
+    }
+    if (withinWindow) {
+        ctx.setLastEscapeAt(0);
+        await enterEditMode(ctx);
+        return true;
+    }
+    return false;
+}
+
+export function getEditableUserMessages(messages: AgentMessage[]): AgentMessage[] {
+    return messages.filter(message =>
+        message.role === 'user'
+        && message.metadata?.kind !== 'steer'
+        && !!String(message.content || '').trim()
+    );
+}
+
+export function extractEditableMessageText(message: AgentMessage): string {
+    const content = String(message?.content || '');
+    const marker = '[Mention Context]';
+    if (content.startsWith(marker)) {
+        const separator = content.indexOf('\n\n', marker.length);
+        if (separator >= 0) {
+            return content.slice(separator + 2);
+        }
+    }
+    return content;
+}
+
+export function getEditableImageParts(message: AgentMessage): Array<{ imageUrl: string; mediaType?: string; name?: string }> {
+    const images: Array<{ imageUrl: string; mediaType?: string; name?: string }> = [];
+    for (const part of message?.parts || []) {
+        if (part?.type === 'image' && part?.imageUrl) {
+            images.push({ imageUrl: part.imageUrl, mediaType: part.mediaType, name: part.name });
+        }
+    }
+    return images;
 }
