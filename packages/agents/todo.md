@@ -49,7 +49,20 @@
 
 > 来源：真实 CLI 会话（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）暴露的差距，对照 codex/opencode 的信息架构与恢复语义。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / PTY）后才能关闭。历史批次见文末 v 系列。
 >
-> **状态（2026-09-23）**：P1–P6 已全部落地并合入统一门禁；当前无开放实施批次。
+> **状态（2026-09-23）**：P1–P6 已全部落地并合入统一门禁；P7（`AgentConsoleComponent` 持续拆解）进行中，见下。
+
+### P7 — AgentConsoleComponent 持续拆解（进行中）
+
+> 依据根 `AGENTS.md` 第 4 条 ratchet 与单一职责规则，按约定顺序 P4→P3→P2→P1 将组合根拆到 `< 1500` 行。
+
+- **当前进度**：baseline `6403 → 5615`，`AgentConsoleComponent.ts` `6402 → 5614` 行。
+- **已抽出模块**：`AgentConsolePreferenceCommands`（`/hooks` `/memories` `/personality` `/debug-config`）、`AgentConsolePolicyCommands`（`/delegation` `/permissions` `/goal`）、`AgentConsoleExtensionCommands`（`/skills` `/plugins` `/apps`）、`AgentConsoleStashCommands`（`/stash`）、`AgentConsoleGitSnapshotCommands`（`/git-snapshots` list/diff/revert）、`AgentConsoleShellCommands`（`!!` 多行草稿 / `!cmd`）、`AgentConsolePromptMentions`（`enrichPromptWithMentions`）、`AgentConsoleApprovalCommands`（approval inspector 循环）、`AgentConsoleKeymapCommands`（`runKeymapCommand` + `resolveKeymapContext`）、`AgentConsoleToolsView`（`refreshTools`）；`refreshProjectContext` 归入 `AgentConsoleProjectProjection`；settings 面板（`/settings`、General、Language、Providers）归入 `AgentConsoleSettingsCommands`。新增 `test/vm-shell-commands.spec.ts`（3 用例）。
+- **不可抽取项（时序约束，务必保留在组件内）**：`refreshSessions`。抽取它会使 `vm-panels.spec.ts` 的 `terminal input submits combined text and return chunks` 稳定失败——该用例经 `void this.submit()` 触发 `/sessions`，依赖命令派发的同步时序；后续任何命令抽取都必须回归该用例。
+- **下一步（待办）**：
+  1. 中耦合批次：`mergeTodoPlanForSessions`、`openHarnessTree/List`、`openDelegationTree`、`runBackgroundTasksCommand`。
+  2. 大块核心（需先切分状态对象或引入子控制器）：`buildCommandContext`、`submit`、`handleBrowserGlobalKeyInput`、`executeGlobalKeyAction`、`handleTerminalInput`、`consumeStreamEventChunk`/`consumeStreamChunk`/`runTurnStream`。
+  3. 每批次收尾流程（缺一不可）：`tsc --noEmit -p packages/agents/agent-ui/tsconfig.json` → 定向 spec → agent-ui 全量（当前 `1404 passing`）→ 在同一提交内下调 `scripts/source-size-baseline.json` 中 `AgentConsoleComponent.ts` → `git diff --check` → 提交。
+  4. 目标：`AgentConsoleComponent.ts < 1500` 行。
 
 ### P1 — 模型配置自愈与路由健壮性（P1.1 / P1.2 / P1.3 ✅ v68+v70+v73）
 
