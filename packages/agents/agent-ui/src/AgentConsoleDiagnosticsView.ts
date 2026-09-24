@@ -195,3 +195,23 @@ export function parseCompactionHistoryTrendArgs(
     }
     return { sessionId, bucketSize, maxBuckets };
 }
+
+export async function runHarnessStopCommand(sessionService: any, notify: (message: string) => void, taskId: string): Promise<boolean> {
+    if (!sessionService) {
+        notify('Background task cancellation is unavailable without app RPC.');
+        return true;
+    }
+    const id = (taskId || '').trim();
+    if (!id) {
+        notify('Usage: /harness stop <taskId>');
+        return true;
+    }
+    const result = await sessionService.cancelBackgroundTasks([id]);
+    const cancelled = result?.cancelled ?? [];
+    if (cancelled.includes(id)) {
+        notify(`Cancelled background task '${id}'.`);
+    } else {
+        notify(`Background task '${id}' was not found or is already finished.`);
+    }
+    return true;
+}

@@ -281,3 +281,7 @@ export function refreshThreads(state: AgentConsoleProjectionState): void {
         sections: p.sections
     })));
 }
+
+export function resolveCurrentProjectSessions(state: AgentConsoleProjectionState): any[] {
+    return resolveProjectSessionsFor(state, state.sessionId || '');
+}

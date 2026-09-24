@@ -194,11 +194,13 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, formatToolCallLabel, resolveStreamEventLabel, resolveToolCallArgument, resolveToolEventKey, resolveToolEventName } from './AgentConsoleStreamHelpers';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshUsageDigest } from './AgentConsoleDiagnosticsView';
+import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
-import { flattenProjectSessions, refreshProjects, refreshThreads, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { flattenProjectSessions, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
-import { parseSlashCommandLine } from './AgentConsoleInputHelpers';
+import { parseSlashCommandLine, handleMenuSelection } from './AgentConsoleInputHelpers';
+import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
+import { selectApprovalRequest } from './AgentConsoleApprovalView';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -764,23 +766,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * over RPC and reports the outcome inline.
      */
     protected async runHarnessStopCommand(taskId: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Background task cancellation is unavailable without app RPC.');
-            return true;
-        }
-        const id = (taskId || '').trim();
-        if (!id) {
-            this.notify('Usage: /harness stop <taskId>');
-            return true;
-        }
-        const result = await this.sessionService.cancelBackgroundTasks([id]);
-        const cancelled = result?.cancelled ?? [];
-        if (cancelled.includes(id)) {
-            this.notify(`Cancelled background task '${id}'.`);
-        } else {
-            this.notify(`Background task '${id}' was not found or is already finished.`);
-        }
-        return true;
+        return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId);
     }
 
     private voiceCtx(): VoiceHandlerContext {
@@ -1280,7 +1266,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
-        return this.resolveProjectSessionsFor(this.state.sessionId);
+        return resolveCurrentProjectSessions(this.state) as any;
     }
 
     protected selectProjectRepresentative<T extends {
@@ -1534,25 +1520,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         requests: AgentConsoleApprovalRequest[],
         selectedIndex = 0
     ): Promise<AgentConsoleApprovalRequest | undefined> {
-        if (!requests.length) {
-            return undefined;
-        }
-        if (requests.length === 1) {
-            return requests[0];
-        }
-        const selected = await this.select('Pending approvals', requests.map(request => ({
-            label: `${request.toolName} (${request.id.slice(0, 8)})`,
-            value: request.id,
-            description: request.reason,
-            detail: [
-                `Tool: ${request.toolName}`,
-                `Reason: ${request.reason}`,
-                request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-                `Timeout: ${request.timeoutMs}ms`,
-                request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
-            ].join('\n')
-        })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), this.state.consoleOptions.selectHint);
-        return requests.find(request => request.id === selected);
+        return selectApprovalRequest(
+            (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
+            this.state,
+            requests,
+            selectedIndex
+        );
     }
 
     protected async openApprovalInspector(requests: AgentConsoleApprovalRequest[]): Promise<void> {
@@ -2840,26 +2813,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
 
     protected async handleMenuSelection(value: string): Promise<void> {
-        const selected = String(value || '').trim();
-        if (!selected) {
-            return;
-        }
-        const currentInput = String(this.state.input || '').trim();
-        if (currentInput === '/help') {
-            this.state.setInput('');
-        }
-        if (selected.startsWith('/')) {
-            await this.handleCommand(selected);
-            return;
-        }
-        if (selected.startsWith('@')) {
-            const base = String(this.state.input || '').trim();
-            const nextInput = base
-                ? `${base} ${selected} `
-                : `${selected} `;
-            this.state.setInput(nextInput, this.state.clampCursor(nextInput, nextInput.length));
-            this.state.setInputFocused(true);
-        }
+        return handleMenuSelection(this.state, (selected: string) => this.handleCommand(selected), value);
     }
 
     protected async submitMultilineDraft(): Promise<void> {
@@ -6383,40 +6337,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected listSshHosts(): void {
-        if (!this.sshManager) {
-            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
-            return;
-        }
-        const infos = this.sshManager.list();
-        if (!infos.length) {
-            this.notify('No SSH hosts configured.');
-            return;
-        }
-        const lines = infos.map(info =>
-            `${info.id} · ${info.username}@${info.host}:${info.port} · ${info.connected ? 'connected' : 'disconnected'}`
-        );
-        this.notify(lines.join('\n'));
+        listSshHosts(this.sshManager, (message: string) => this.notify(message));
     }
 
     protected async connectSshHost(id: string | undefined): Promise<void> {
-        if (!id) {
-            this.notify('Usage: /ssh connect <host>');
-            return;
-        }
-        if (!this.sshManager) {
-            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
-            return;
-        }
-        if (!this.sshManager.hasHost(id)) {
-            this.notify(`SSH host '${id}' is not configured. Use /ssh list to see available hosts.`);
-            return;
-        }
-        try {
-            const client = await this.sshManager.connect(id);
-            this.notify(`Connected to ${client.hostId}.`);
-        } catch (error) {
-            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return connectSshHost(this.sshManager, (message: string) => this.notify(message), id);
     }
 
     protected async disconnectSshHost(id: string | undefined): Promise<void> {
@@ -6435,37 +6360,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async forwardSshTunnel(tokens: string[]): Promise<void> {
-        const id = tokens[0];
-        const destAddr = tokens[1];
-        const destPort = Number(tokens[2]);
-        if (!id || !destAddr || !Number.isInteger(destPort) || destPort < 1 || destPort > 65535) {
-            this.notify('Usage: /ssh forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
-            return;
-        }
-        if (!this.sshManager) {
-            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
-            return;
-        }
-        const srcAddr = tokens[3] || '127.0.0.1';
-        const srcPort = tokens[4] == null ? 0 : Number(tokens[4]);
-        if (!Number.isInteger(srcPort) || srcPort < 0 || srcPort > 65535) {
-            this.notify('Invalid srcPort: must be an integer in 0..65535.');
-            return;
-        }
-        let client: SshClient;
-        try {
-            client = await this.sshManager.connect(id);
-        } catch (error) {
-            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
-            return;
-        }
-        try {
-            const channel = await client.forwardOut(srcAddr, srcPort, destAddr, destPort);
-            channel.close();
-            this.notify(`Tunnel established: ${srcAddr}:${srcPort} -> ${destAddr}:${destPort} via ${client.hostId}.`);
-        } catch (error) {
-            this.notify(`SSH forward failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return forwardSshTunnel(this.sshManager, (message: string) => this.notify(message), tokens);
     }
 
     protected async startSshShell(id: string | undefined): Promise<void> {
