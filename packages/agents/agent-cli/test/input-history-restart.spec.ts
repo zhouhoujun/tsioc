@@ -16,8 +16,7 @@ import {
     CliAgentUiConfigReader,
     NodeAgentHookCommandExecutor,
     createAgentSandboxRuntimeProvider,
-    resolveModelAdapter,
-    withAdapterProviders
+    resolveModelAdapter
 } from '../src';
 
 @Suite('Input History Restart Repro')
@@ -149,7 +148,6 @@ export class InputHistoryRestartRepro {
                 providers: [
                     ...provideAgentOrmStorage(resolved.root),
                     ...provideTools(resolved.tools),
-                    ...withAdapterProviders(cliOptions),
                     createAgentSandboxRuntimeProvider(),
                     resolveModelAdapter(config, cliOptions),
                     NodeAgentHookCommandExecutor,

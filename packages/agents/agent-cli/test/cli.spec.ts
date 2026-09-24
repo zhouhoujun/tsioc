@@ -53,7 +53,6 @@ import {
     NodeAgentHookCommandExecutor,
     createAgentSandboxRuntimeProvider,
     resolveModelAdapter,
-    withAdapterProviders,
     runAgentRpcStdio,
     writeProviderProfile,
     writeSettingsModelProfile,
@@ -198,7 +197,6 @@ export class AgentCliTest {
                 providers: [
                     ...provideAgentOrmStorage(resolved.root),
                     ...provideTools(resolved.tools),
-                    ...withAdapterProviders(cliOptions),
                     createAgentSandboxRuntimeProvider(),
                     resolveModelAdapter(config, cliOptions),
                     NodeAgentHookCommandExecutor,

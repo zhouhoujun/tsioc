@@ -649,7 +649,10 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         registration: {
             ...(toolSettings.registration ?? {}),
             preset: options.defaultTools === false ? 'none' : (toolSettings.registration?.preset ?? 'default'),
-            groups: { ...(toolSettings.registration?.groups ?? {}) },
+            groups: {
+                ...(options.defaultTools === false ? {} : { terminal: true }),
+                ...(toolSettings.registration?.groups ?? {})
+            },
             items: { ...(toolSettings.registration?.items ?? {}) }
         }
     };

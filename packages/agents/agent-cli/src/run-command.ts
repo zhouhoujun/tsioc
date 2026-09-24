@@ -1,9 +1,10 @@
 import { Application } from '@tsdi/core';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AGENT_WORKSPACE_TRUST, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage, TrustedProjectStore } from '@tsdi/agent';
 import { AgentUiConfigService, AgentUiResolvedConfig } from '@tsdi/agent-ui';
-import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
+import { provideTools } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { FileAdapter } from '@tsdi/common';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
@@ -104,6 +105,33 @@ export function createAgentSandboxRuntimeProvider(): any {
     };
 }
 
+export function provideWorkspaceTrust(root: string): any {
+    return {
+        provider(injector: any) {
+            const fileAdapter = injector.get(FileAdapter, null);
+            return [{
+                provide: AGENT_WORKSPACE_TRUST,
+                useValue: {
+                    isTrusted(workspace: string): boolean {
+                        const target = String(workspace || '').trim();
+                        if (!target) {
+                            return true;
+                        }
+                        if (!fileAdapter) {
+                            return false;
+                        }
+                        try {
+                            return new TrustedProjectStore({ root, fileAdapter }).isTrusted(target).trusted;
+                        } catch {
+                            return false;
+                        }
+                    }
+                }
+            }];
+        }
+    };
+}
+
 export function resolveModelAdapter(config: AgentUiConfigService, options: AgentCliOptions): any {
     const resolved = config.resolve(options);
     const modelConfig = resolved.model;
@@ -147,21 +175,6 @@ function buildModelOptions(modelConfig: any, overrides?: { model?: string; tempe
     };
 }
 
-export function withAdapterProviders(baseOptions: AgentCliOptions = {}): any[] {
-    return [
-        {
-            provide: PipelineAdapter,
-            useValue: {
-                list: async () => [],
-                define: async (p: any) => ({ ...p, id: `p-${Date.now()}` }),
-                execute: async (id: string) => ({ pipelineId: id, status: 'completed', stepResults: [], startedAt: Date.now(), completedAt: Date.now() }),
-                get: async () => null,
-                delete: async () => true
-            }
-        }
-    ];
-}
-
 export async function runAgentApplication(options: AgentCliOptions, agentOptions: any, extraProviders: any[] = []): Promise<any> {
     const config = createConfigService(options);
     const resolved = config.resolve();
@@ -171,8 +184,8 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
         providers: [
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
-            ...withAdapterProviders(options),
             createAgentSandboxRuntimeProvider(),
+            provideWorkspaceTrust(resolved.root),
             resolveModelAdapter(config, options),
             NodeAgentHookCommandExecutor,
             { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
@@ -192,8 +205,8 @@ export async function runAgentRpcApplication(options: AgentCliOptions, agentOpti
         providers: [
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
-            ...withAdapterProviders(options),
             createAgentSandboxRuntimeProvider(),
+            provideWorkspaceTrust(resolved.root),
             resolveModelAdapter(config, options),
             NodeAgentHookCommandExecutor,
             { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
@@ -209,7 +222,7 @@ export async function runAgentRpcStdio(
     streams?: { input?: Readable; output?: Writable; principalId?: string; }
 ): Promise<void> {
     const resolved = createConfigService(options).resolve(options);
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace }));
     const input = streams?.input ?? process.stdin;
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
@@ -238,6 +251,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
         harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
         format: resolved.tools.format,
+        workspace: resolved.workspace,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -273,6 +287,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
         harnessProfile: resolved.harnessProfile,
         hooks: resolved.hooks,
         format: resolved.tools.format,
+        workspace: resolved.workspace,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -318,7 +333,7 @@ export async function runAgentJsonStream(
     const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;
