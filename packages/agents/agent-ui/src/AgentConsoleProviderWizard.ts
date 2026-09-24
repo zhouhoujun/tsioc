@@ -42,73 +42,203 @@ export function resolveWizardTierLabel(tier?: string): string {
     return AGENT_WIZARD_TIERS.find(item => item.id === tier)?.label || 'Auto routing';
 }
 
+export function resolveWizardProviderName(values: AgentWizardValues = {}): string {
+    const def = resolveWizardProviderDef(values.providerId);
+    const base = values.providerId || 'custom';
+    if (!def) {
+        return base;
+    }
+    if (def.baseUrl) {
+        return def.id;
+    }
+    const host = String(values.baseUrl || '').replace(/^https?:\/\//i, '').split(/[/:]/)[0].trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    return host || 'custom';
+}
+
+function midpointModel(def?: AgentWizardProviderDef): string {
+    if (!def?.models.length) {
+        return '';
+    }
+    return def.models[Math.floor((def.models.length - 1) / 2)] || def.models[0];
+}
+
+export interface AgentWizardStepHandler {
+    kind: 'choose' | 'enter' | 'confirm';
+    label(values: AgentWizardValues): string;
+    help(values: AgentWizardValues): string;
+    prefill?(values: AgentWizardValues): string;
+    choices?(values: AgentWizardValues): AgentConsoleSelectOption[];
+    choiceTitle?(values: AgentWizardValues): string;
+    choiceIndex?(values: AgentWizardValues): number;
+    applyChoice?(values: AgentWizardValues, value: string): void;
+    applyEnter?(values: AgentWizardValues, value: string): void;
+}
+
+export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHandler> = {
+    provider: {
+        kind: 'choose',
+        label: () => 'Choose a provider',
+        help: () => 'Pick a provider to connect. Custom providers let you bring your own API URL.',
+        choiceTitle: () => 'Add provider · choose provider',
+        choiceIndex: () => 0,
+        choices: () => {
+            const options: AgentConsoleSelectOption[] = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
+                label: item.label,
+                value: item.id,
+                description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
+                detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
+                shortcut: String(index + 1)
+            }));
+            options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
+            return options;
+        },
+        applyChoice: (values, value) => {
+            values.providerId = value;
+            const def = resolveWizardProviderDef(value);
+            values.baseUrl = def?.baseUrl || '';
+            values.authMode = 'key';
+            values.tiers = 'auto';
+        }
+    },
+    'base-url': {
+        kind: 'enter',
+        label: () => 'API base URL',
+        help: () => 'Enter the API endpoint, e.g. https://api.example.com/v1.',
+        prefill: values => values.baseUrl || resolveWizardProviderDef(values.providerId)?.baseUrl || '',
+        applyEnter: (values, value) => {
+            values.baseUrl = value.replace(/\/+$/, '');
+        }
+    },
+    auth: {
+        kind: 'choose',
+        label: () => 'Authentication',
+        help: () => 'Choose how the API key is provided.',
+        choiceTitle: values => `${resolveWizardProviderDef(values.providerId)?.label || 'Provider'} · authentication`,
+        choiceIndex: values => (values.authMode === 'env' ? 1 : 0),
+        choices: values => [
+            { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
+            { label: 'Use environment variable', value: 'env', description: `Reference ${resolveWizardProviderDef(values.providerId)?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
+        ],
+        applyChoice: (values, value) => {
+            if (value === 'key' || value === 'env') {
+                values.authMode = value;
+                if (value === 'env') {
+                    values.credential = resolveWizardProviderDef(values.providerId)?.apiKeyEnv || values.credential;
+                }
+            }
+        }
+    },
+    credential: {
+        kind: 'enter',
+        label: values => (values.authMode === 'env' ? 'Environment variable' : 'API key'),
+        help: values => values.authMode === 'env'
+            ? 'Enter the environment variable that holds the API key, or accept the suggested one.'
+            : 'Paste the API key. It is stored locally and never shown again.',
+        prefill: values => values.credential || (values.authMode === 'env' ? resolveWizardProviderDef(values.providerId)?.apiKeyEnv || '' : ''),
+        applyEnter: (values, value) => {
+            values.credential = value;
+        }
+    },
+    tiers: {
+        kind: 'choose',
+        label: () => 'Model routing',
+        help: () => 'Choose how many models to configure for this provider.',
+        choiceTitle: values => `${resolveWizardProviderDef(values.providerId)?.label || 'Provider'} · model routing`,
+        choiceIndex: values => Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto'))),
+        choices: () => AGENT_WIZARD_TIERS.map((item, index) => ({
+            label: item.label,
+            value: item.id,
+            description: item.description,
+            shortcut: String(index + 1)
+        })),
+        applyChoice: (values, value) => {
+            values.tiers = value as 'single' | 'pair' | 'auto';
+        }
+    },
+    'model-fast': {
+        kind: 'enter',
+        label: values => ((values.tiers || 'auto') === 'single' ? 'Model' : 'Fast model'),
+        help: values => {
+            const def = resolveWizardProviderDef(values.providerId);
+            return def?.models.length ? `Suggested: ${def.models[0]}.` : 'Enter the model identifier to use.';
+        },
+        prefill: values => values.modelFast || resolveWizardProviderDef(values.providerId)?.models[0] || '',
+        applyEnter: (values, value) => {
+            values.modelFast = value;
+        }
+    },
+    'model-balanced': {
+        kind: 'enter',
+        label: () => 'Balanced model',
+        help: values => {
+            const def = resolveWizardProviderDef(values.providerId);
+            return def?.models.length ? `Suggested: ${midpointModel(def)}.` : 'Enter the balanced model identifier.';
+        },
+        prefill: values => values.modelBalanced || midpointModel(resolveWizardProviderDef(values.providerId)) || '',
+        applyEnter: (values, value) => {
+            values.modelBalanced = value;
+        }
+    },
+    'model-strong': {
+        kind: 'enter',
+        label: () => 'Strong model',
+        help: values => {
+            const def = resolveWizardProviderDef(values.providerId);
+            return def?.models.length ? `Suggested: ${def.models[def.models.length - 1]}.` : 'Enter the strong model identifier.';
+        },
+        prefill: values => {
+            const def = resolveWizardProviderDef(values.providerId);
+            const suggested = def?.models.length ? def.models[def.models.length - 1] : '';
+            return values.modelStrong || suggested || '';
+        },
+        applyEnter: (values, value) => {
+            values.modelStrong = value;
+        }
+    },
+    confirm: {
+        kind: 'confirm',
+        label: () => 'Review & save',
+        help: () => 'Review the provider details, then choose how to save.'
+    }
+};
+
 export function buildProviderWizardSteps(values: AgentWizardValues = {}): AgentWizardStepDef[] {
     const def = resolveWizardProviderDef(values.providerId);
     const steps: AgentWizardStepDef[] = [
-        { id: 'provider', kind: 'choose', label: 'Choose a provider' }
+        { id: 'provider', kind: 'choose', label: WIZARD_STEP_HANDLERS.provider.label(values) }
     ];
     if (!def || !def.baseUrl) {
-        steps.push({ id: 'base-url', kind: 'enter', label: 'API base URL' });
+        steps.push({ id: 'base-url', kind: 'enter', label: WIZARD_STEP_HANDLERS['base-url'].label(values) });
     }
-    steps.push({ id: 'auth', kind: 'choose', label: 'Authentication' });
-    steps.push({ id: 'credential', kind: 'enter', label: values.authMode === 'env' ? 'Environment variable' : 'API key' });
-    steps.push({ id: 'tiers', kind: 'choose', label: 'Model routing' });
+    steps.push({ id: 'auth', kind: 'choose', label: WIZARD_STEP_HANDLERS.auth.label(values) });
+    steps.push({ id: 'credential', kind: 'enter', label: WIZARD_STEP_HANDLERS.credential.label(values) });
+    steps.push({ id: 'tiers', kind: 'choose', label: WIZARD_STEP_HANDLERS.tiers.label(values) });
     const tiers = values.tiers || 'auto';
-    steps.push({ id: 'model-fast', kind: 'enter', label: tiers === 'single' ? 'Model' : 'Fast model' });
+    steps.push({ id: 'model-fast', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-fast'].label(values) });
     if (tiers === 'auto') {
-        steps.push({ id: 'model-balanced', kind: 'enter', label: 'Balanced model' });
+        steps.push({ id: 'model-balanced', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-balanced'].label(values) });
     }
     if (tiers !== 'single') {
-        steps.push({ id: 'model-strong', kind: 'enter', label: 'Strong model' });
+        steps.push({ id: 'model-strong', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-strong'].label(values) });
     }
-    steps.push({ id: 'confirm', kind: 'confirm', label: 'Review & save' });
+    steps.push({ id: 'confirm', kind: 'confirm', label: WIZARD_STEP_HANDLERS.confirm.label(values) });
     return steps;
 }
 
 export function buildWizardStepHelp(step: AgentWizardStepDef, values: AgentWizardValues = {}): string {
-    const def = resolveWizardProviderDef(values.providerId);
-    switch (step.id) {
-        case 'provider':
-            return 'Pick a provider to connect. Custom providers let you bring your own API URL.';
-        case 'base-url':
-            return 'Enter the API endpoint, e.g. https://api.example.com/v1.';
-        case 'auth':
-            return 'Choose how the API key is provided.';
-        case 'credential':
-            return values.authMode === 'env'
-                ? 'Enter the environment variable that holds the API key, or accept the suggested one.'
-                : 'Paste the API key. It is stored locally and never shown again.';
-        case 'tiers':
-            return 'Choose how many models to configure for this provider.';
-        case 'model-fast':
-            return def?.models.length ? `Suggested: ${def.models[0]}.` : 'Enter the model identifier to use.';
-        case 'model-balanced':
-            return def?.models.length ? `Suggested: ${def.models[Math.floor((def.models.length - 1) / 2)] || def.models[0]}.` : 'Enter the balanced model identifier.';
-        case 'model-strong':
-            return def?.models.length ? `Suggested: ${def.models[def.models.length - 1]}.` : 'Enter the strong model identifier.';
-        case 'confirm':
-            return 'Review the provider details, then choose how to save.';
-        default:
-            return '';
-    }
+    return WIZARD_STEP_HANDLERS[step.id]?.help(values) ?? '';
 }
 
 export function resolveWizardPrefill(step: AgentWizardStepDef, values: AgentWizardValues = {}): string {
-    const def = resolveWizardProviderDef(values.providerId);
-    switch (step.id) {
-        case 'base-url':
-            return values.baseUrl || def?.baseUrl || '';
-        case 'credential':
-            return values.credential || (values.authMode === 'env' ? def?.apiKeyEnv || '' : '');
-        case 'model-fast':
-            return values.modelFast || (def?.models[0] || '');
-        case 'model-balanced':
-            return values.modelBalanced || (def?.models[Math.floor((def.models.length - 1) / 2)] || def?.models[0] || '');
-        case 'model-strong':
-            return values.modelStrong || (def?.models[def.models.length - 1] || '');
-        default:
-            return '';
-    }
+    return WIZARD_STEP_HANDLERS[step.id]?.prefill?.(values) ?? '';
+}
+
+export function applyWizardStepChoice(values: AgentWizardValues, stepId: AgentWizardStepId, value: string): void {
+    WIZARD_STEP_HANDLERS[stepId]?.applyChoice?.(values, value);
+}
+
+export function applyWizardStepEnter(values: AgentWizardValues, stepId: AgentWizardStepId, value: string): void {
+    WIZARD_STEP_HANDLERS[stepId]?.applyEnter?.(values, value);
 }
 
 export function buildProviderWizardSummary(values: AgentWizardValues = {}): string[] {
@@ -122,19 +252,6 @@ export function buildProviderWizardSummary(values: AgentWizardValues = {}): stri
         resolveWizardTierLabel(values.tiers),
         models ? `Models: ${models}` : ''
     ].filter(Boolean);
-}
-
-export function resolveWizardProviderName(values: AgentWizardValues = {}): string {
-    const def = resolveWizardProviderDef(values.providerId);
-    const base = values.providerId || 'custom';
-    if (!def) {
-        return base;
-    }
-    if (def.baseUrl) {
-        return def.id;
-    }
-    const host = String(values.baseUrl || '').replace(/^https?:\/\//i, '').split(/[/:]/)[0].trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
-    return host || 'custom';
 }
 
 export function buildProviderWizardConfirmOptions(values: AgentWizardValues = {}, canTest = false): AgentConsoleSelectOption[] {
@@ -155,42 +272,14 @@ export function buildProviderWizardChoiceOptions(
     step: AgentWizardStepDef,
     values: AgentWizardValues = {}
 ): { title: string; options: AgentConsoleSelectOption[]; selected: number } | undefined {
-    const def = resolveWizardProviderDef(values.providerId);
-    let title = 'Add provider';
-    let options: AgentConsoleSelectOption[] = [];
-    let selected = 0;
-    switch (step.id) {
-        case 'provider':
-            title = 'Add provider · choose provider';
-            options = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
-                label: item.label,
-                value: item.id,
-                description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
-                detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
-                shortcut: String(index + 1)
-            }));
-            options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
-            break;
-        case 'auth':
-            title = `${def?.label || 'Provider'} · authentication`;
-            options = [
-                { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
-                { label: 'Use environment variable', value: 'env', description: `Reference ${def?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
-            ];
-            selected = values.authMode === 'env' ? 1 : 0;
-            break;
-        case 'tiers':
-            title = `${def?.label || 'Provider'} · model routing`;
-            options = AGENT_WIZARD_TIERS.map((item, index) => ({
-                label: item.label,
-                value: item.id,
-                description: item.description,
-                shortcut: String(index + 1)
-            }));
-            selected = Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto')));
-            break;
-        default:
-            return undefined;
+    const handler = WIZARD_STEP_HANDLERS[step.id];
+    const options = handler?.choices?.(values);
+    if (!options?.length) {
+        return undefined;
     }
-    return { title, options, selected };
+    return {
+        title: handler.choiceTitle?.(values) || 'Add provider',
+        options,
+        selected: handler.choiceIndex?.(values) ?? 0
+    };
 }

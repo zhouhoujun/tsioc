@@ -2,6 +2,8 @@ import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import {
     AgentWizardStepDef,
+    applyWizardStepChoice,
+    applyWizardStepEnter,
     buildProviderWizardChoiceOptions,
     buildProviderWizardConfirmOptions,
     buildProviderWizardSteps,
@@ -159,29 +161,7 @@ export async function handleProviderWizardChoice(ctx: ProviderWizardContext, hol
         }
         const step = providerWizardSteps(holder)[wizard.stepIndex];
         const values = wizard.values;
-        switch (step.id) {
-            case 'provider': {
-                values.providerId = value;
-                const def = resolveWizardProviderDef(value);
-                values.baseUrl = def?.baseUrl || '';
-                values.authMode = 'key';
-                values.tiers = 'auto';
-                break;
-            }
-            case 'auth':
-                if (value === 'key' || value === 'env') {
-                    values.authMode = value;
-                    if (value === 'env') {
-                        values.credential = resolveWizardProviderDef(values.providerId)?.apiKeyEnv || values.credential;
-                    }
-                }
-                break;
-            case 'tiers':
-                values.tiers = value as 'single' | 'pair' | 'auto';
-                break;
-            default:
-                return;
-        }
+        applyWizardStepChoice(values, step.id, value);
         wizard.stepIndex += 1;
         showProviderWizardStep(ctx, holder);
     }
@@ -387,25 +367,7 @@ export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: 
             ctx.notify('Base URL must start with http(s)://.');
             return;
         }
-        switch (step.id) {
-            case 'base-url':
-                values.baseUrl = trimmed.replace(/\/+$/, '');
-                break;
-            case 'credential':
-                values.credential = trimmed;
-                break;
-            case 'model-fast':
-                values.modelFast = trimmed;
-                break;
-            case 'model-balanced':
-                values.modelBalanced = trimmed;
-                break;
-            case 'model-strong':
-                values.modelStrong = trimmed;
-                break;
-            default:
-                return;
-        }
+        applyWizardStepEnter(values, step.id, trimmed);
         wizard.stepIndex += 1;
         ctx.state.setInput('', 0);
         ctx.state.inputSecret = false;
