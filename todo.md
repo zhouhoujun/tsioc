@@ -28,3 +28,10 @@
 - 组件：`handleIdleEscape` 保留同名 3 行薄包装（无测试直调，但 builder thunk 3178 + 全局键 host 需保留）；3 个 helper 方法整体删除；`editCtx()` 改引导入纯函数 + 新增 lastEscapeAt 访问器；import 90 扩展。注意原 editCtx 末成员 `setAttachmentsBefore` 无尾逗号，插新成员后必须补逗号。
 - 验收（已通过）：tsc 0 错误 → edit-message + vm-vim-keymap + keymap-context EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4603 → 4563，组件 4602 → 4562 行）→ git diff --check 干净 → lsp_diagnostics 双文件无告警。diff 已核对与原始实现逐字一致（行为不变）。
 - 剩簇：which-key/thread 辅助簇、`runEditorCommand`/`openExternalEditor`（外部编辑器桥，P2 媒体/IO 类）；下一步按 roadmap 拆 P3 剩余控制器（P3 Turn/Input 已拆完，转 P2 诊断/导出/附件/语音）。
+## 2026-09-25 P7 批次7（终端输入簇，已定）
+- 目标：`openCommandPalette`(3828-3850) + `handleCommandPaletteInput`(3852-3864) + `handleTerminalInput`(3866-3974) + `requestTerminalExit`(3976-4007) + `closingSessionMessage`(4009-4017) + `syncConsoleMessageDetailViewport`(4019-4032) = 205 行终端输入簇。
+- 模块：新建 `AgentConsoleTerminalInputController.ts`（286 行），沿用 host 接口 + view 函数 + 组件薄包装模式。
+  - 组件保留同名薄包装：`openCommandPalette`（p287 spec 直调）、`handleTerminalInput`（vm-commands/ssh-shell/ui-input-regression/vm-submit/vm-vim-keymap/vm-panels/repro-runtime-mouse 直调）、`requestTerminalExit`/`closingSessionMessage`（repro-runtime-mouse 直调 + globalKeyInputHost thunk 引用）；`handleCommandPaletteInput`/`syncConsoleMessageDetailViewport`/`dispatchTerminalMouseAt` 无测试/外部引用 → 整体删除（dispatchMouse 内联进 `handleTerminalInputView`）。
+  - interface：`AgentConsoleTerminalInputHost`（state 子形状 17 项 + closing/destroyed/commandPaletteQuery/sshShell/surfaceAccessor/app/translator/sessionService + 9 个组件方法，共 54 成员）；`closing`/`commandPaletteQuery` 用 get/set 访问器（view 写回组件状态）；`SSH_SHELL_DETACH_SEQUENCE` const 移入控制器。
+- 验收（已通过）：tsc 0 错误 → vm-commands + ssh-shell + ui-input-regression + vm-submit + vm-vim-keymap + vm-panels + repro-runtime-mouse + p287-command-schema-form-echo + keymap-context EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4563 → 4391，组件 4562 → 4390 行）→ git diff --check 干净 → lsp_diagnostics 双文件无告警。diff 与 controller 已核对互译一致。
+- 剩簇：which-key/thread 辅助簇、`runEditorCommand`/`openExternalEditor`（外部编辑器桥，P2 媒体/IO 类）；下一步按 roadmap 转 P2 诊断/导出/附件/语音控制器。
