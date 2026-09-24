@@ -1,4 +1,4 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, FileSnapshot, FileSnapshotStore } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
 import { spawnSync } from 'child_process';
@@ -83,7 +83,9 @@ export class GitOperationsTool implements AgentTool {
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
-        private options?: AgentToolsOptions
+        private options?: AgentToolsOptions,
+        @Optional() @Inject(FileSnapshotStore)
+        private snapshots?: FileSnapshotStore | null
     ) {
     }
 
@@ -93,8 +95,24 @@ export class GitOperationsTool implements AgentTool {
         const isReadOnly = readOnlyActions.includes(action);
 
         const workdir = await this.resolveWorkdir(input?.workdir);
-        if (action !== 'init') {
-            this.assertGitRepo(workdir);
+        if (action !== 'init' && !this.isGitRepo(workdir)) {
+            if (action === 'status' || action === 'diff') {
+                const review = this.buildSnapshotReview(_context.sessionId, action, input?.path);
+                if (review) {
+                    return {
+                        action,
+                        workdir,
+                        readOnly: true,
+                        fallback: 'file_snapshots',
+                        stdout: action === 'diff' ? review.diff : JSON.stringify(review.changedFiles, null, 2),
+                        stderr: `'${workdir}' is not a Git repository; reporting file-change snapshots recorded for this session instead.`,
+                        exitCode: 0,
+                        changedFiles: review.changedFiles,
+                        diff: review.diff
+                    };
+                }
+            }
+            throw new Error(`'${workdir}' is not a Git repository.`);
         }
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
@@ -133,11 +151,37 @@ export class GitOperationsTool implements AgentTool {
         return policy.rootDir;
     }
 
-    private assertGitRepo(workdir: string): void {
-        const result = this.runGit(['rev-parse', '--git-dir'], workdir);
-        if (result.exitCode !== 0) {
-            throw new Error(`'${workdir}' is not a Git repository.`);
+    private isGitRepo(workdir: string): boolean {
+        return this.runGit(['rev-parse', '--git-dir'], workdir).exitCode === 0;
+    }
+
+    private buildSnapshotReview(sessionId: string, _action: string, targetPath?: unknown): {
+        changedFiles: Array<{ path: string; tool?: string; existedBefore: boolean; exists: boolean }>;
+        diff: string;
+    } | null {
+        const snapshots = this.snapshots?.list(sessionId) ?? [];
+        if (!snapshots.length) {
+            return null;
         }
+        const latestByPath = new Map<string, FileSnapshot>();
+        for (const snapshot of snapshots) {
+            latestByPath.set(snapshot.filePath, snapshot);
+        }
+        const target = typeof targetPath === 'string' && targetPath.trim() ? targetPath.trim() : undefined;
+        const entries = [...latestByPath.values()].filter(entry =>
+            !target || entry.filePath === target || entry.filePath.endsWith(`/${target}`) || entry.filePath.endsWith(target));
+        if (!entries.length) {
+            return null;
+        }
+        return {
+            changedFiles: entries.map(entry => ({
+                path: entry.filePath,
+                tool: entry.toolName,
+                existedBefore: entry.before != null,
+                exists: entry.after != null
+            })),
+            diff: entries.map(entry => renderSnapshotDiff(entry)).join('\n')
+        };
     }
 
     private buildArgs(action: string, input: any): { args: string[]; stdin?: string } {
@@ -345,4 +389,39 @@ export class GitOperationsTool implements AgentTool {
             exitCode
         };
     }
+}
+
+function countLines(lines: string[]): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const line of lines) {
+        counts.set(line, (counts.get(line) || 0) + 1);
+    }
+    return counts;
+}
+
+function simpleLineDiff(before: string, after: string): string {
+    const beforeCounts = countLines(before.length ? before.split('\n') : []);
+    const afterCounts = countLines(after.length ? after.split('\n') : []);
+    const removed: string[] = [];
+    const added: string[] = [];
+    for (const [line, count] of beforeCounts) {
+        const remaining = count - (afterCounts.get(line) || 0);
+        for (let index = 0; index < remaining; index++) {
+            removed.push(`-${line}`);
+        }
+    }
+    for (const [line, count] of afterCounts) {
+        const extra = count - (beforeCounts.get(line) || 0);
+        for (let index = 0; index < extra; index++) {
+            added.push(`+${line}`);
+        }
+    }
+    const output = [...removed, ...added].join('\n');
+    return output.length > MAX_OUTPUT_CHARS ? `${output.slice(0, MAX_OUTPUT_CHARS)}...[truncated]` : output;
+}
+
+function renderSnapshotDiff(snapshot: FileSnapshot): string {
+    const header = `--- a/${snapshot.filePath}\n+++ b/${snapshot.filePath}`;
+    const body = simpleLineDiff(snapshot.before ?? '', snapshot.after ?? '');
+    return body ? `${header}\n${body}` : `${header}\n(no content change)`;
 }
