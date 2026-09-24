@@ -1,4 +1,4 @@
-import type { AgentMessage } from '@tsdi/agent';
+import type { AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentTurnMessageInput } from '@tsdi/agent';
 import type { AgentConsoleActivity, AgentConsoleApprovalRequest, AgentConsoleUiEventOptions } from './AgentConsoleSessionState';
 import {
     describePendingToolCall,
@@ -6,7 +6,7 @@ import {
     resolveStreamEventLabel,
     resolveToolEventKey
 } from './AgentConsoleStreamHelpers';
-import { replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
+import { findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 
 /**
  * Host surface required by the turn stream controller.
@@ -15,6 +15,7 @@ import { replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 export interface AgentConsoleTurnStreamHost {
     state: {
         sessionId: string;
+        status: string;
         messages: AgentMessage[];
         setMessages(messages: AgentMessage[], ...rest: any[]): void;
         setTokenUsage(usage?: unknown): void;
@@ -31,9 +32,19 @@ export interface AgentConsoleTurnStreamHost {
     destroyed?: boolean;
     translator?: unknown;
     updateTerminalTitle(): void;
-    scheduleStreamingAssistantMessageFlush(message: AgentMessage): void;
     refreshTodoPlan(): Promise<void>;
     refreshPendingApprovals(): Promise<void>;
+    appRpc?: AgentConsoleAppRpc | null;
+    runtime: AgentRuntime;
+    executeTurn(input: string, message?: AgentTurnMessageInput, profile?: string): Promise<unknown>;
+}
+
+/**
+ * Scratch state shared across the flush cluster of one streaming turn.
+ * Owned by the host component so it survives the per-chunk host objects.
+ */
+export interface AgentConsoleTurnStreamState {
+    streamMessageText: string;
 }
 
 /**
@@ -62,7 +73,12 @@ function qualifyTurnUiEventKey(state: { qualifyUiEventKey(key: string): string }
  * Consumes one streamed turn chunk (text/reasoning/tool_call/done/event) and
  * projects it into the message list, activities and timeline event rows.
  */
-export function consumeStreamChunkView(host: AgentConsoleTurnStreamHost, chunk: any, assistantMessage: AgentMessage): void {
+export function consumeStreamChunkView(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    chunk: any,
+    assistantMessage: AgentMessage
+): void {
     host.state.setTokenUsage(chunk);
     if (chunk?.type === 'event') {
         consumeStreamEventChunkView(host, chunk);
@@ -70,7 +86,7 @@ export function consumeStreamChunkView(host: AgentConsoleTurnStreamHost, chunk: 
     }
     if (chunk?.type === 'text' && chunk.content) {
         assistantMessage.content += chunk.content;
-        host.scheduleStreamingAssistantMessageFlush(assistantMessage);
+        scheduleStreamingAssistantMessageFlush(host, state, assistantMessage);
         return;
     }
     if (chunk?.type === 'reasoning' && chunk.content) {
@@ -232,4 +248,118 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
         source: 'stream',
         sequence: Number(chunk?.sequence) || undefined
     });
+}
+
+/**
+ * Schedule a flush of the in-flight assistant message with the latest streamed
+ * text. The pending-notice lifecycle is driven by incoming stream/turn events,
+ * so no timer-backed notice is scheduled here.
+ */
+export function scheduleStreamingAssistantMessageFlush(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    message: AgentMessage
+): void {
+    state.streamMessageText = message.content || '';
+    if (!host.destroyed) {
+        flushStreamingAssistantMessage(host, state, message);
+    }
+}
+
+/**
+ * Projects the accumulated streaming text onto the tracked assistant message
+ * row. Short-circuits when the row already carries the same text.
+ */
+export function flushStreamingAssistantMessage(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    message?: AgentMessage
+): void {
+    if (host.destroyed) {
+        state.streamMessageText = '';
+        return;
+    }
+    const current = host.state.messages.slice();
+    const targetIndex = findStreamingAssistantMessageIndex(current, message);
+    if (targetIndex >= 0) {
+        const currentMessage = current[targetIndex];
+        if (String(currentMessage.content || '') === state.streamMessageText
+            && currentMessage.metadata?.streaming === true) {
+            return;
+        }
+        current[targetIndex] = {
+            ...(message || currentMessage),
+            content: state.streamMessageText,
+            metadata: {
+                ...(message?.metadata || currentMessage.metadata || {}),
+                streaming: true
+            }
+        };
+        host.state.setMessages(current);
+    }
+}
+
+/**
+ * Resets the streaming scratch text after a turn stream ends (or on dispose).
+ */
+export function clearStreamingMessageState(state: AgentConsoleTurnStreamState): void {
+    state.streamMessageText = '';
+}
+
+/**
+ * Runs one turn against the stream-capable transport, projecting every chunk
+ * into the message list. Falls back to the non-streaming turn execution when
+ * neither the app RPC nor the runtime exposes a streaming turn.
+ */
+export async function runTurnStreamView(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    prompt: string,
+    assistantMessage: AgentMessage,
+    message?: AgentTurnMessageInput,
+    profile?: string
+): Promise<void> {
+    const stream = host.appRpc?.stream?.('run.turn_stream', {
+        sessionId: host.state.sessionId,
+        input: prompt,
+        ...(profile ? { profile } : {}),
+        ...(message ? { message } : {})
+    });
+    if (stream) {
+        try {
+            for await (const chunk of stream) {
+                consumeStreamChunkView(host, state, chunk, assistantMessage);
+            }
+        } finally {
+            clearStreamingMessageState(state);
+        }
+        assistantMessage.metadata = {
+            ...(assistantMessage.metadata || {}),
+            streaming: false
+        };
+        replaceStreamingAssistantMessage(host.state, host.destroyed === true, assistantMessage);
+        return;
+    }
+
+    const runtime: any = host.runtime;
+    if (typeof runtime?.runStreamingTurn === 'function') {
+        for await (const chunk of runtime.runStreamingTurn(host.state.sessionId, prompt, undefined, message, profile)) {
+            consumeStreamChunkView(host, state, chunk, assistantMessage);
+        }
+        assistantMessage.metadata = {
+            ...(assistantMessage.metadata || {}),
+            streaming: false
+        };
+        replaceStreamingAssistantMessage(host.state, host.destroyed === true, assistantMessage);
+        return;
+    }
+
+    const result = await host.executeTurn(prompt, message, profile);
+    if (result && typeof result === 'object' && 'message' in result) {
+        assistantMessage.content = (result as { message: { content: string } }).message.content;
+        if (host.state.status === 'running' || host.state.status === 'reasoning') {
+            host.state.setStatus('idle');
+            host.updateTerminalTitle();
+        }
+    }
 }

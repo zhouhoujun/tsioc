@@ -191,7 +191,7 @@ import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
-import { AgentConsoleTurnStreamHost, consumeStreamChunkView, consumeStreamEventChunkView } from './AgentConsoleTurnStreamController';
+import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -235,7 +235,7 @@ import {
     runPermissionsCommand as runPermissionsCommandView,
     showSandboxCapabilities as showSandboxCapabilitiesView
 } from './AgentConsolePolicyCommands';
-import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
+import { ensureMessageAtTail } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
@@ -348,7 +348,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected pendingCommandRequestId = '';
     protected sessionEpoch = 0;
     protected taskViewContextVersion = 0;
-    protected streamMessageText = '';
+    protected turnStreamState: AgentConsoleTurnStreamState = { streamMessageText: '' };
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -2795,54 +2795,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         message?: AgentTurnMessageInput,
         profile?: string
     ): Promise<void> {
-        this.scheduleStreamingPendingNotice();
-        const stream = this.appRpc?.stream?.('run.turn_stream', {
-            sessionId: this.state.sessionId,
-            input: prompt,
-            ...(profile ? { profile } : {}),
-            ...(message ? { message } : {})
-        });
-        if (stream) {
-            try {
-                for await (const chunk of stream) {
-                    this.consumeStreamChunk(chunk, assistantMessage);
-                }
-            } finally {
-                this.clearStreamingMessageState();
-            }
-            assistantMessage.metadata = {
-                ...(assistantMessage.metadata || {}),
-                streaming: false
-            };
-            this.replaceStreamingAssistantMessage(assistantMessage);
-            return;
-        }
-
-        const runtime: any = this.runtime;
-        if (typeof runtime?.runStreamingTurn === 'function') {
-            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt, undefined, message, profile)) {
-                this.consumeStreamChunk(chunk, assistantMessage);
-            }
-            assistantMessage.metadata = {
-                ...(assistantMessage.metadata || {}),
-                streaming: false
-            };
-            this.replaceStreamingAssistantMessage(assistantMessage);
-            return;
-        }
-
-        const result = await this.executeTurn(prompt, message, profile);
-        if (result && 'message' in result) {
-            assistantMessage.content = result.message.content;
-                if (this.state.status === 'running' || this.state.status === 'reasoning') {
-                    this.state.setStatus('idle');
-                    this.updateTerminalTitle();
-                }
-        }
+        await runTurnStreamView(this.turnStreamHost(), this.turnStreamState, prompt, assistantMessage, message, profile);
     }
 
     protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
-        consumeStreamChunkView(this.turnStreamHost(), chunk, assistantMessage);
+        consumeStreamChunkView(this.turnStreamHost(), this.turnStreamState, chunk, assistantMessage);
     }
 
     protected consumeStreamEventChunk(chunk: any): void {
@@ -2862,8 +2819,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             state: this.state,
             destroyed: this.destroyed,
             translator: this.translator,
+            appRpc: this.appRpc,
+            runtime: this.runtime,
             updateTerminalTitle: () => this.updateTerminalTitle(),
-            scheduleStreamingAssistantMessageFlush: message => this.scheduleStreamingAssistantMessageFlush(message),
+            executeTurn: (input, message, profile) => this.executeTurn(input, message, profile),
             refreshTodoPlan: () => this.refreshTodoPlan(),
             refreshPendingApprovals: () => this.refreshPendingApprovals()
         };
@@ -2924,51 +2883,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return this.surfaceAccessor?.getLastRenderedText(stripAnsi) || '';
     }
 
-    protected scheduleStreamingAssistantMessageFlush(message: AgentMessage): void {
-        this.streamMessageText = message.content || '';
-        if (!this.destroyed) this.flushStreamingAssistantMessage(message);
-    }
-
-    protected flushStreamingAssistantMessage(message?: AgentMessage): void {
-        if (this.destroyed) {
-            this.streamMessageText = '';
-            return;
-        }
-        const current = this.state.messages.slice();
-        const targetIndex = this.findStreamingAssistantMessageIndex(current, message);
-        if (targetIndex >= 0) {
-            const currentMessage = current[targetIndex];
-            if (String(currentMessage.content || '') === this.streamMessageText
-                && currentMessage.metadata?.streaming === true) {
-                return;
-            }
-            current[targetIndex] = {
-                ...(message || currentMessage),
-                content: this.streamMessageText,
-                metadata: {
-                    ...(message?.metadata || currentMessage.metadata || {}),
-                    streaming: true
-                }
-            };
-            this.state.setMessages(current);
-        }
-    }
-
-    protected replaceStreamingAssistantMessage(message: AgentMessage): void {
-        replaceStreamingAssistantMessage(this.state, this.destroyed, message);
-    }
-
     protected clearStreamingMessageState(): void {
-        this.streamMessageText = '';
-        this.clearStreamingPendingNotice();
-    }
-
-    protected scheduleStreamingPendingNotice(): void {
-        // Waiting state is represented by the reactive turn status; no timer-driven notice.
-    }
-
-    protected clearStreamingPendingNotice(): void {
-        // Pending notice lifecycle is driven by incoming stream/turn events.
+        clearStreamingMessageState(this.turnStreamState);
     }
 
     protected ensureMessageAtTail(messageId: string): void {
@@ -3138,10 +3054,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             default:
                 return 'pending';
         }
-    }
-
-    protected findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {
-        return findStreamingAssistantMessageIndex(messages, message);
     }
 
     protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
