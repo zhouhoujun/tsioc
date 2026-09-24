@@ -206,6 +206,7 @@ import {
     runMemoriesCommand as runMemoriesCommandView,
     runPersonalityCommand as runPersonalityCommandView
 } from './AgentConsolePreferenceCommands';
+import { ShellCommandHost, handleShellBang as handleShellBangView } from './AgentConsoleShellCommands';
 import { StashCommandHost, runStashCommand as runStashCommandView } from './AgentConsoleStashCommands';
 import {
     GitSnapshotCommandHost,
@@ -2924,89 +2925,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
      * Returns true when the input was consumed as a shell command.
      */
     protected async handleShellBang(value: string): Promise<boolean> {
-        if (value === '!!') {
-            this.shellMultilineMode = !this.shellMultilineMode;
-            if (this.shellMultilineMode) {
-                this.shellDraftLines = [];
-                this.notify('Shell multiline draft mode: type lines, then submit with `!` to run. `!!` exits.');
-            } else {
-                this.notify(this.shellDraftLines.length
-                    ? 'Shell multiline draft discarded.'
-                    : 'Shell multiline draft mode exited.');
-                this.shellDraftLines = [];
-            }
-            return true;
-        }
-        const command = value.slice(1).trim();
-        if (!this.shellMultilineMode) {
-            if (!command) {
-                this.notify('Usage: `!<command>` runs a local shell command. `!!` enters multiline draft mode.');
-                return true;
-            }
-            await this.runShellCommand(command);
-            return true;
-        }
-        if (!command) {
-            const draft = this.shellDraftLines.join('\n');
-            if (!draft) {
-                this.notify('Shell draft is empty. Type lines first, then submit with `!` to run.');
-                return true;
-            }
-            this.shellDraftLines = [];
-            this.shellMultilineMode = false;
-            await this.runShellCommand(draft);
-            return true;
-        }
-        this.shellDraftLines.push(command);
-        this.notify(`Shell draft +${this.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
-        return true;
+        return handleShellBangView(this.shellCommandHost(), value);
     }
 
     /**
      * Runs a shell command via the terminal tool as a read-only `type: 'shell'`
      * message. The message stays in the UI state and never enters model context.
      */
-    protected async runShellCommand(command: string): Promise<void> {
-        if (this.isTurnInProgress()) {
-            this.notifyBusyState();
-            return;
-        }
-        const messageId = `shell-${Date.now()}`;
-        const shellMessage: AgentMessage = {
-            id: messageId,
-            role: 'tool',
-            name: 'terminal',
-            content: `$ ${command}`,
-            createdAt: Date.now(),
-            metadata: { type: 'shell', status: 'running' }
-        };
-        this.state.appendMessage(shellMessage);
-        try {
-            const result = await this.invokeTerminalTool(command);
-            const stdout = String(result?.stdout ?? '');
-            const stderr = String(result?.stderr ?? '');
-            const exitCode = result?.exitCode;
-            const body = [stdout, stderr].filter(Boolean).join('\n');
-            const exitSuffix = exitCode === 0 || exitCode === undefined
-                ? ''
-                : `\n[exit code: ${exitCode}]`;
-            this.updateShellMessage(messageId, {
-                content: [`$ ${command}`, body, exitSuffix].filter(Boolean).join('\n\n'),
-                metadata: {
-                    type: 'shell',
-                    status: exitCode === 0 || exitCode === undefined ? 'success' : 'failed',
-                    exitCode: exitCode ?? 0,
-                    error: exitCode !== 0 && exitCode !== undefined
-                }
-            });
-        } catch (error: any) {
-            const message = error?.message || String(error || 'Unknown error');
-            this.updateShellMessage(messageId, {
-                content: `$ ${command}\n\n${message}`,
-                metadata: { type: 'shell', status: 'failed', error: true }
-            });
-        }
-    }
 
     protected updateShellMessage(id: string, patch: Partial<AgentMessage>): void {
         const messages = this.state.messages.map(item => item.id === id ? { ...item, ...patch } : item);
@@ -3925,6 +3850,22 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runDebugConfigCommand(): Promise<boolean> {
         return runDebugConfigCommandView(this.preferenceCommandHost());
+    }
+
+    protected shellCommandHost(): ShellCommandHost {
+        const self = this;
+        return {
+            state: this.state,
+            get shellMultilineMode() { return self.shellMultilineMode; },
+            set shellMultilineMode(value: boolean) { self.shellMultilineMode = value; },
+            get shellDraftLines() { return self.shellDraftLines; },
+            set shellDraftLines(value: string[]) { self.shellDraftLines = value; },
+            isTurnInProgress: () => this.isTurnInProgress(),
+            notifyBusyState: (message?: string) => this.notifyBusyState(message),
+            notify: (message: string) => this.notify(message),
+            invokeTerminalTool: (command: string) => this.invokeTerminalTool(command),
+            updateShellMessage: (id: string, patch: Partial<AgentMessage>) => this.updateShellMessage(id, patch)
+        };
     }
 
     protected stashCommandHost(): StashCommandHost {
