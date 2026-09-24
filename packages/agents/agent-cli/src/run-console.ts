@@ -1,22 +1,16 @@
 /**
- * @file CLI TUI launcher — thin wrapper over agent-ui/console.
+ * @file CLI TUI launcher — platform adapter over @tsdi/agent-ui/console.
  *
- * CLI-specific concerns: config resolution, workspace ensuring, CLI providers.
- * TUI orchestration is owned by @tsdi/agent-ui/console.
+ * CLI-specific concerns: config resolution, workspace ensuring, and the Node
+ * platform providers. TUI orchestration and console UI state are owned by
+ * @tsdi/agent-ui/console.
  */
-import { AGENT_CONSOLE_APP_RPC, AgentHookCommandExecutor } from '@tsdi/agent';
+import { AgentHookCommandExecutor } from '@tsdi/agent';
 import { provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
-import { FileAdapter } from '@tsdi/common';
+import { AgentUiConfigService } from '@tsdi/agent-ui';
 import {
-    AgentConsoleSessionState,
-    AgentUiConfigService,
-    BoundedFileCommandOutputStore,
-    HttpAgentConsoleAppRpc
-} from '@tsdi/agent-ui';
-import {
-    runAgentTUI,
-    buildConsoleAgentOptions,
+    runAgentConsole as runConsoleTui,
     createDefaultConsoleUi,
     AgentConsoleLaunchTarget
 } from '@tsdi/agent-ui/console';
@@ -26,8 +20,7 @@ import { provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
-import { NodeAgentEditorBridge } from './NodeAgentEditorBridge';
-import { createAgentSandboxRuntimeProvider, ensureAgentWorkspace, resolveModelAdapter, withAdapterProviders } from './run-command';
+import { createAgentSandboxRuntimeProvider, ensureAgentWorkspace, provideWorkspaceTrust, resolveModelAdapter } from './run-command';
 
 // Re-export types for backward compatibility
 export { AgentConsoleLaunchTarget as AgentCliUiTarget } from '@tsdi/agent-ui/console';
@@ -69,7 +62,7 @@ export async function runAgentAttach(
     explicitUrl: string | undefined,
     options: AgentAttachOptions,
     discoverer?: AgentGatewayDiscoverer,
-    runner: typeof runAgentConsole = runAgentConsole
+    runner: (options: AgentCliOptions) => Promise<any> = runAgentConsole
 ): Promise<string> {
     const gatewayUrl = await resolveAgentAttachUrl(explicitUrl, options, discoverer);
     await runner({ ...options, gatewayUrl } as AgentCliOptions);
@@ -89,43 +82,21 @@ export async function runAgentConsole(
     const config = new AgentUiConfigService(new CliAgentUiConfigReader(), options);
     const resolved = config.resolve(options);
     await ensureAgentWorkspace(resolved);
-    const runtimeAgentOptions = buildConsoleAgentOptions(resolved, options, agentOptions);
     const gatewayUrl = String((options as AgentAttachOptions).gatewayUrl || '').trim().replace(/\/+$/, '');
-    const remoteProviders = gatewayUrl ? [{
-        provide: AGENT_CONSOLE_APP_RPC,
-        useValue: new HttpAgentConsoleAppRpc({ baseUrl: gatewayUrl, token: (options as AgentAttachOptions).token })
-    }] : [];
-    const ctx = await runAgentTUI(ui.entry, {
-        consoleModule: ui.consoleModule,
-        agentOptions: runtimeAgentOptions,
-        deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
-        providers: [
-            ...provideAgentOrmStorage(resolved.root),
-            ...provideTools(resolved.tools),
-            ...withAdapterProviders(options),
-            createAgentSandboxRuntimeProvider(),
-            resolveModelAdapter(config, options),
-            NodeAgentHookCommandExecutor,
-            { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
-            { provide: AgentUiConfigService, useValue: config },
-            { provide: AGENT_SSH_OPTIONS, useValue: resolved.ssh ?? {} },
-            ...remoteProviders,
-            ...(ui.providers || []),
-            ...extraProviders
-        ]
-    });
 
-    // P267: wire the durable command-output store from the app context so
-    // command results survive restarts. The CLI bootstrap already ran
-    // session configure() without a store, so rehydrate explicitly.
-    try {
-        const sessionState = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
-        const fileAdapter = ctx?.get ? ctx.get(FileAdapter) : undefined;
-        if (sessionState && fileAdapter) {
-            sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(fileAdapter, resolved.workspace, undefined, undefined, runtimeAgentOptions.policy));
-            await sessionState.loadCommandOutputHistory();
-        }
-    } catch {
-        // Command-output persistence is best-effort; never break TUI startup.
-    }
+    await runConsoleTui(resolved, options, agentOptions, [
+        ...provideAgentOrmStorage(resolved.root),
+        ...provideTools(resolved.tools),
+        createAgentSandboxRuntimeProvider(),
+        provideWorkspaceTrust(resolved.root),
+        resolveModelAdapter(config, options),
+        NodeAgentHookCommandExecutor,
+        { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
+        { provide: AgentUiConfigService, useValue: config },
+        { provide: AGENT_SSH_OPTIONS, useValue: resolved.ssh ?? {} },
+        ...extraProviders
+    ], ui, {
+        deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
+        persistCommandOutput: true
+    });
 }

@@ -4,16 +4,20 @@
  * This module owns the TUI orchestration that was previously in agent-cli.
  * agent-cli now calls these functions directly.
  */
-import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor } from '@tsdi/agent';
+import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor, AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
+import { FileAdapter } from '@tsdi/common';
 import { TuiConsoleModule } from '@tsdi/components/console';
 import {
     AgentConsoleComponent,
+    AgentConsoleSessionState,
     AgentConsoleThemeName,
     AgentUiResolvedConfig,
+    BoundedFileCommandOutputStore,
+    HttpAgentConsoleAppRpc,
     agentConsoleThemes,
     isAgentConsoleThemeName
 } from '@tsdi/agent-ui';
-import { runAgentTUI, AgentUiApplicationOptions } from './run-agent-ui';
+import { runAgentTUI } from './run-agent-ui';
 
 /**
  * Launch target for a console TUI application.
@@ -38,6 +42,15 @@ export interface AgentConsoleRunOptions {
     gatewayUrl?: string;
     token?: string;
     [key: string]: any;
+}
+
+/**
+ * Host-supplied extras that the console adapter cannot resolve on its own:
+ * platform modules to import and whether to persist command output.
+ */
+export interface AgentConsoleLaunchExtras {
+    deps?: any[];
+    persistCommandOutput?: boolean;
 }
 
 /**
@@ -77,6 +90,7 @@ export function buildConsoleAgentOptions(
     const sessionId = resolveExplicitSessionId(options, agentOptions);
     const merged = mergeAgentOptions({
         ...agentOptions,
+        workspace: agentOptions?.workspace || resolved.workspace,
         hooks: resolved.hooks,
         model: {
             provider: modelConfig.provider,
@@ -138,30 +152,54 @@ export function buildConsoleAgentOptions(
 /**
  * Run the console TUI application.
  *
- * This is the generic entry point that agent-cli calls.
- * It handles agent options building and delegates to runAgentTUI.
+ * Owns the console-side orchestration: console agent options, remote-RPC wiring,
+ * the TUI launch, and command-output persistence. Hosts (CLI, desktop, VS Code)
+ * pass platform providers through `extraProviders` and platform modules through
+ * `extras.deps`; they should not touch `AgentConsoleSessionState` themselves.
  */
 export async function runAgentConsole(
     resolved: AgentConsoleResolvedConfig,
     options: AgentConsoleRunOptions = {},
     agentOptions: any = {},
     extraProviders: any[] = [],
-    ui: AgentConsoleLaunchTarget = createDefaultConsoleUi()
-): Promise<void> {
+    ui: AgentConsoleLaunchTarget = createDefaultConsoleUi(),
+    extras: AgentConsoleLaunchExtras = {}
+): Promise<any> {
     const runtimeAgentOptions = buildConsoleAgentOptions(resolved, options, agentOptions);
     const gatewayUrl = String(options.gatewayUrl || '').trim().replace(/\/+$/, '');
     const remoteProviders = gatewayUrl ? [{
-        provide: '@AGENT_CONSOLE_APP_RPC',
-        useValue: { baseUrl: gatewayUrl, token: options.token }
+        provide: AGENT_CONSOLE_APP_RPC,
+        useValue: new HttpAgentConsoleAppRpc({ baseUrl: gatewayUrl, token: options.token })
     }] : [];
-    await runAgentTUI(ui.entry, {
+    const ctx = await runAgentTUI(ui.entry, {
         consoleModule: ui.consoleModule,
         agentOptions: runtimeAgentOptions,
-        deps: [],
+        deps: extras.deps ?? [],
         providers: [
             ...remoteProviders,
             ...(ui.providers || []),
             ...extraProviders
         ]
     });
+
+    if (extras.persistCommandOutput) {
+        try {
+            const sessionState = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
+            const fileAdapter = ctx?.get ? ctx.get(FileAdapter) : undefined;
+            if (sessionState && fileAdapter) {
+                sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(
+                    fileAdapter,
+                    resolved.workspace,
+                    undefined,
+                    undefined,
+                    runtimeAgentOptions.policy
+                ));
+                await sessionState.loadCommandOutputHistory();
+            }
+        } catch {
+            // Command-output persistence is best-effort; never break TUI startup.
+        }
+    }
+
+    return ctx;
 }
