@@ -4195,6 +4195,25 @@ export class AgentToolsPackageTest {
         expect((await fs.stat(path.join(workspace, '.git'))).isDirectory()).toEqual(true);
     }
 
+    @Test('git operations guides the user to initialize a non-git workspace')
+    async gitOperationsGuidesInitForNonGitWorkspace() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-nongit-'));
+        try {
+            const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any);
+            let error: Error | undefined;
+            try {
+                await tool.invoke({ action: 'log' }, createSessionContext());
+            } catch (err) {
+                error = err as Error;
+            }
+            expect(error?.message).toContain('not a Git repository');
+            expect(error?.message).toContain('ask_user');
+            expect(error?.message).toContain('init');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('git operations apply shared sandbox policy and workspace guard')
     async gitOperationsApplySharedSandboxPolicyAndWorkspaceGuard() {
         const workspace = process.cwd();

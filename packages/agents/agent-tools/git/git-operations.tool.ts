@@ -13,7 +13,7 @@ const MAX_OUTPUT_CHARS = 16000;
 @Injectable()
 export class GitOperationsTool implements AgentTool {
     name = 'git_operations';
-    description = 'Perform Git operations: status, log, diff, branch, commit, push, pull, stash, checkout, worktree, and more.';
+    description = 'Perform Git operations: status, log, diff, branch, commit, push, pull, stash, checkout, worktree, init, and more. When the workspace is not a Git repository, ask the user whether to initialize one before other Git actions.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -104,6 +104,8 @@ export class GitOperationsTool implements AgentTool {
                         workdir,
                         readOnly: true,
                         fallback: 'file_snapshots',
+                        notAGitRepo: true,
+                        canInit: true,
                         stdout: action === 'diff' ? review.diff : JSON.stringify(review.changedFiles, null, 2),
                         stderr: `'${workdir}' is not a Git repository; reporting file-change snapshots recorded for this session instead.`,
                         exitCode: 0,
@@ -112,7 +114,7 @@ export class GitOperationsTool implements AgentTool {
                     };
                 }
             }
-            throw new Error(`'${workdir}' is not a Git repository.`);
+            throw new Error(`'${workdir}' is not a Git repository. Ask the user (ask_user) whether to initialize one; if they agree, call git_operations with action "init".`);
         }
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
