@@ -4,82 +4,9 @@
 
 ## 一、必须遵守的规则
 
-### 1. 响应式与渲染
-
-- UI 完全由真实数据变化驱动；禁止在组件层用定时器主动刷新界面。
-- 动画值必须由当前时间派生，不得为了动画额外驱动整树渲染。
-- 禁止用布局层脏节点追踪或变化源缓存跳过未变面板。
-- browser 与 TUI 的展示和交互改动必须落在共享 components、components/console 或 agent-ui 层，不做单平台补丁。
-- stream 布局全程使用 native scrollback（含 turn 运行中的流式内容），多轮对话历史不得按视口高度裁剪；仅显式 dynamic 模式才窗口化。
-
-### 2. 跨平台边界
-
-- `components/common` 是 renderer-neutral 公共层，只能依赖 components 核心，不得反向引用 `components/html` 或 `components/console`。
-- `components/html` 与 `components/console` 是并列平台 renderer，禁止互相引用、互相模拟或把一端兼容逻辑塞入另一端。
-- `agent-ui/src` 是平台无关 UI 层，不得直接引用 `@tsdi/components/html`、`@tsdi/components/console`、`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等平台私有 API。
-- `agent-ui/console` 只负责连接 agent-ui 与 `components/console`；`agent-ui/web-console` 只负责连接 agent-ui 与 `components/html`，两个适配层禁止互相引用。
-- console 能力统一从 `@tsdi/agent-ui/console` 暴露，Web 能力从 `@tsdi/agent-ui/web-console` 暴露，由 CLI、browser、desktop、VS Code 等宿主选择对应适配。
-- `components/console` 与 agents 库不得直接依赖 Node API；必要环境信息通过受守卫的 `globalThis` 访问。
-- 不复制 Codex/opencode 品牌或配色，只参考其信息架构、稳定 identity、状态层级和交互原则。
-
-### 3. 会话主线与时间线
-
-- 用户请求是 turn 的视觉锚点；最终回答独立于 thought、tool、command 和 lifecycle event。
-- 生命周期事件属于 `event`，不能替换、合并或升级为最终结论。
-- 同一事实默认只出现一次；tool 生命周期按稳定 key 原地归并。
-- 事件主线只展示动作、对象、状态和必要摘要；raw payload、stdout/stderr、stack、diff 进入 inspector。
-- 事件只展示总耗时：后端 `durationMs` 优先，否则按稳定 identity 配对开始/结束时间。
-- execution 轨道紧凑；running/blocked/error 保持较高权重，completed 降噪；错误根因和最终回答不能被折叠吞掉。
-- 用户消息和最终回答由整个动态模板容器提供纵向 padding，禁止给正文每行重复添加上下 padding。
-- 最终回答不显示 assistant `•` role label；Working 状态点只属于执行状态。
-- 长回复在 native scrollback 下不得向上移动超过终端视口高度，不得重复绘制或覆盖视口外历史。
-
-### 4. 输入、历史与候选
-
-- 输入框 `↑/↓` 历史只按规范化 `workspace` 目录关联，与 session、project、thread 和 fresh/resume 状态无关。
-- 同一 workspace 下所有会话的用户 prompt 聚合；不同 workspace 严格隔离。
-- 历史只记录真实用户 prompt；排除 `/` 命令、空输入以及 assistant/tool/system 内容。
-- 历史去重后按最近使用顺序保留最多 200 条。
-- `↑` 从最新 prompt 向旧 prompt 浏览；`↓` 反向浏览并最终恢复按键前的原始草稿。
-- suggestion menu 只在尚未浏览历史时优先消费方向键；历史浏览一旦开始，本次浏览期间 `↑/↓` 必须继续属于历史。
-- pending question 激活时输入框可键入自定义答案：空草稿时数字键选择编号选项，已有草稿时数字属于答案文本，Enter 提交自定义答案或选中项。
-- turn 运行中按 Enter 默认排队（保留当前 turn 不取消）；steer（打断并取消当前 turn 开新 turn）必须显式启用 `ui.steerMode`。
-- 用户消息的 @mention 上下文以紧凑 `Files · <paths>` 展示，不显示原始 `[Mention Context]` 块；发给运行时的提示仍携带完整上下文。
-- browser textarea、TUI escape sequence、Vim history action 必须遵守同一契约。
-
-### 5. Workspace、Project 与跨会话协同
-
-- `workspace` 是文件目录、权限和输入历史边界。
-- workspace 可以直接作为默认 project：没有显式 `projectId` 时，以规范化 workspace 作为稳定默认 project key。
-- workspace 与 project 不强制一一对应：一个 workspace 可以承载多个显式 project，一个协调流程也可以关联多个不同 project。
-- project 分组不得影响 workspace 输入历史聚合。
-- 显式创建、加入、fork、delegate 项目时，必须持久化 `projectId`、`primaryThreadId`、`originThreadId`、`sessionRole` 等关系。
-- project/thread/delegation/background 协同必须可跨进程、跨重启恢复，不能只依赖进程内状态。
-
-### 6. 数据库与数据安全
-
-- 生产库默认位于 `~/.tsdi-agent/agent.db`；测试必须使用独立临时 HOME/root 和独立数据库。
-- 测试、schema 同步和启动流程不得清空、覆盖或重建生产库。
-- 实体字段变化必须验证旧 session/message/memory 数据在升级启动和关闭后仍完整保留。
-- 禁止把删除数据库作为迁移方法。
-- 发现旧库或备份时先只读报告并制定可回滚恢复方案，不得自动覆盖当前库。
-- 输入历史加载失败不得静默伪装成空历史；应保留可诊断错误，同时不阻断 TUI 启动。
-
-### 7. 测试与完成标准
-
-- 单元测试必须覆盖真实调用边界，不能只靠手工设置 state、伪造 renderer 输出或局部纯函数证明完整交互可用。
-- 输入交互至少覆盖真实 ORM、AppRpc、CLI/TUI decoder、component/state 和 PTY 按键链。
-- 回归测试必须先证明在旧实现上稳定失败，再证明修复后通过。
-- 涉及响应式核心时回归 components、components/console、agent-ui；涉及 browser/TUI 时同时验证两端。
-- 收尾门禁包括 agents 各包、framework 核心及 components/common、components/html、components/console、相关 tsc、Web build、DOM/TUI、metrics regression、真实 PTY 和 `git diff --check`。
-- 未解释数据丢失、未覆盖真实复现路径或仍存在开放复现时，不得仅凭测试数字宣布完成。
-
-### 8. 配置、路由与本地化
-
-- 不得把无效/占位配置（`cancel`/`q` sentinel、空 profile、嵌套重复 `profiles`）持久化到 `settings.json`；读取必须净化，且净化结果应可自愈写回。
-- 路由或配置缺失/无效不得静默或抛错终止 turn；必须回退到可用配置并给出可诊断提示。
-- 用户可见文案必须经 i18n，不得硬编码英文（含 plan 头部/结尾、事件句子、状态词）。
-- 工具失败信息必须可操作：包含允许范围（workspace root）与修复建议；越界路径不得只报 `outside the allowed workspace root`。
+> 全部规则已同步至根 `AGENTS.md`，以其为唯一权威来源，本文件不再重复维护（避免两处漂移）。
+>
+> 索引：1 响应式与渲染；2 跨平台边界（含 console/web-console 适配入口、品牌/配色约束）；3 响应式代理机制；4 代码体量与单一职责（ratchet）；5 会话主线与时间线；6 输入、历史与候选；7 Workspace、Project 与跨会话协同；8 数据库与数据安全；9 配置、路由与本地化；以及「测试方式 / 完成标准」。
 
 ## 二、当前已具备的功能点
 
@@ -353,3 +280,11 @@
 - **分层与安全**：工作区解析以显式 workspace（`--workspace`）为准、不再回退进程 cwd，并新增 `AgentOptions.workspace`；落地 workspace trust 门禁（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝写入/终端/git 等变更类工具，提示 `tsdi-agent trust <dir>`）；`pipeline` 归属 `@tsdi/agent-tools`（新增 `LocalPipelineAdapter`，经 `ToolRegistry` 真实执行，移除 agent-cli stub）；完成 TUI 分层抽取——`@tsdi/agent-ui/console` 独占 console 编排（远程 RPC、命令输出持久化），`agent-cli` 仅做平台适配并委托调用。
 - **验证**：agent 896、agent-tools 480、agent-cli 78、agent-ui 1400 passing；`bash scripts/agents-gate.sh agent agent-tools agent-cli agent-ui tsc-agent tsc-agent-ui tsc-agent-tools` → PASS（8 passed / 0 skipped，含 tsc --noEmit 与 production-db-integrity）。真实任务：sleep-mlt 构建任务完成且 `node src/index.js` 磁盘复验通过；失败测试驱动任务修复至 `stats tests passed`；`spawn_agent` 子代理实机返回审查报告。
 - **当前状态**：无开放实施批次；prompt cache 为 provider 侧 `observe_only`（自定义端点）限制，暂缓。
+
+## v75 — 体量 ratchet 门槛与单一职责规则（防再次膨胀）✅
+
+- **问题**：`agent-ui/src/AgentConsoleComponent.ts` 8178 行（395 方法），逻辑虽已部分抽到 `AgentConsoleCommandHandlers` 等模块，但类保留兼容包装 + 单体命令分发器 + 甚广的领域方法，且无行数/职责门槛，新功能持续往组合根里加。
+- **门槛**：新增 `scripts/check-source-size.mjs` + `scripts/source-size-baseline.json`（29 个现存超额文件入基线）；已入基线文件只允许下降，新文件上限 600 行；接入统一 gate 新增 `source-size` 阶段（`ALL_STAGES`）。
+- **规则**：写入根 `AGENTS.md` 第 4 条——禁止 god-object、命令走注册表、抽取保持行为/测试不变、下调体量同提交下调 baseline、约定拆解顺序 P4→P3→P2→P1、目标 `AgentConsoleComponent.ts < 1500`。
+- **验证**：`bash scripts/agents-gate.sh source-size` → PASS。
+- **当前状态**：拆解执行未开始（P4 命令注册表为首个批次）。
