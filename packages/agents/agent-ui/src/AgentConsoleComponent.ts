@@ -196,6 +196,7 @@ import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
 import { formatSummaryQualityTrend } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
+import { flattenProjectSessions, resolveSessionProjectKey, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -1335,33 +1336,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
-        return groups.flatMap(group => {
-            const projectKey = String(group.projectKey || '').trim() || undefined;
-            const projectId = String(group.projectId || '').trim() || undefined;
-            const projectLabel = String(group.label || group.projectId || group.focusSummary || group.workspace || group.primaryThreadId || group.rootRequest || '').trim()
-                || undefined;
-            const primaryThreadId = String(group.primaryThreadId || '').trim() || undefined;
-            const rootRequest = String(group.rootRequest || '').trim() || undefined;
-            const focusSummary = String(group.focusSummary || '').trim() || undefined;
-            return group.sessions.map(item => ({
-                id: item.id,
-                current: !!item.current,
-                workspace: item.workspace || group.workspace,
-                updatedAt: item.lastActiveAt,
-                messageCount: item.messageCount,
-                summary: item.summary,
-                title: item.title,
-                pinned: !!item.pinned,
-                projectKey,
-                projectId,
-                primaryThreadId: item.primaryThreadId || primaryThreadId,
-                originThreadId: String(item.originThreadId || '').trim() || undefined,
-                rootRequest: item.rootRequest || rootRequest,
-                focusSummary: item.focusSummary || focusSummary,
-                projectLabel,
-                projectSessionCount: group.sessionCount
-            }));
-        });
+        return flattenProjectSessions(groups);
     }
 
     protected refreshProjectContext(): void {
@@ -1451,15 +1426,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         id: string;
         updatedAt?: number;
     }>(sessions: T[]): T | undefined {
-        return sessions
-            .slice()
-            .sort((left, right) => {
-                const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
-                if (activityDelta !== 0) {
-                    return activityDelta;
-                }
-                return String(left.id || '').localeCompare(String(right.id || ''));
-            })[0];
+        return selectProjectRepresentative(sessions);
     }
 
     protected resolveSessionProjectKey(session?: {
@@ -1468,24 +1435,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         workspace?: string;
         primaryThreadId?: string;
     } | null): string {
-        const projectKey = String(session?.projectKey || '').trim();
-        if (projectKey) {
-            return projectKey;
-        }
-        const projectId = String(session?.projectId || '').trim();
-        if (projectId) {
-            return `project:${projectId}`;
-        }
-        const primaryThreadId = String(session?.primaryThreadId || '').trim();
-        if (primaryThreadId) {
-            return `thread:${primaryThreadId}`;
-        }
-        const workspace = String(session?.workspace || '').trim();
-        const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
-        if (workspaceKey) {
-            return `workspace:${workspaceKey}`;
-        }
-        return '';
+        return resolveSessionProjectKey(session);
     }
 
     protected resolveSessionThreadKey(session?: {
