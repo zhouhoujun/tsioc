@@ -201,6 +201,7 @@ import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreami
 import { parseSlashCommandLine, handleMenuSelection } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest } from './AgentConsoleApprovalView';
+import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -922,27 +923,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `parent-1 ⇢ child-1 · nested · completed · 12/1 10:00 → 12/1 10:05`.
      */
     protected formatDelegationEdge(edge: Record<string, any>): string {
-        const parent = this.shortenSessionId(String(edge.parentSessionId ?? '?'));
-        const child = this.shortenSessionId(String(edge.childSessionId ?? '?'));
-        const kind = String(edge.kind ?? '').trim();
-        const status = String(edge.status ?? '');
-        const createdAt = Number(edge.createdAt ?? 0);
-        const completedAt = Number(edge.completedAt ?? 0);
-        const parts = [
-            `${parent} ⇢ ${child}`,
-            kind ? `${kind} · ${status}` : status
-        ];
-        if (createdAt) {
-            const range = completedAt
-                ? `${new Date(createdAt).toLocaleString()} → ${new Date(completedAt).toLocaleString()}`
-                : new Date(createdAt).toLocaleString();
-            parts.push(range);
-        }
-        const goal = this.pickDelegationGoal(edge);
-        if (goal) {
-            parts.push(goal);
-        }
-        return parts.join(' · ');
+        return formatDelegationEdge(edge);
     }
 
     /**
@@ -950,47 +931,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * tree branch prefixes (`└─`, `├─`) so the console digest stays readable.
      */
     protected formatDelegationTree(node: Record<string, any>): string[] {
-        const lines: string[] = [];
-        const visit = (current: Record<string, any>, prefix: string, isLast: boolean, isRoot: boolean): void => {
-            if (!isRoot) {
-                const edgeLine = this.formatDelegationEdge({
-                    parentSessionId: String(current.sessionId ?? ''),
-                    childSessionId: String(current.sessionId ?? ''),
-                    kind: current.kind,
-                    status: current.status,
-                    createdAt: current.createdAt,
-                    completedAt: current.completedAt,
-                    metadata: current.metadata
-                });
-                lines.push(`${prefix}${isLast ? '└─ ' : '├─ '}${edgeLine}`);
-            } else {
-                lines.push(`${prefix}${this.shortenSessionId(String(current.sessionId ?? '?'))}`);
-            }
-            const children = Array.isArray(current.children) ? current.children : [];
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                const childPrefix = `${prefix}${isRoot || isLast ? '   ' : '│  '}`;
-                visit(child, childPrefix, i === children.length - 1, false);
-            }
-        };
-        visit(node, '', true, true);
-        return lines;
+        return formatDelegationTree(node);
     }
 
     protected pickDelegationGoal(edge: Record<string, any>): string {
-        const metadata = edge?.metadata;
-        if (!metadata || typeof metadata !== 'object') {
-            return '';
-        }
-        const goal = String(metadata.goal ?? '').trim();
-        if (!goal) {
-            return '';
-        }
-        return goal.length > 40 ? `${goal.slice(0, 38)}…` : goal;
+        return pickDelegationGoal(edge);
     }
 
     protected shortenSessionId(sessionId: string): string {
-        return sessionId.length > 20 ? `${sessionId.slice(0, 18)}…` : sessionId;
+        return shortenSessionId(sessionId);
     }
 
     /**
