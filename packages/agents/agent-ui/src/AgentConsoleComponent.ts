@@ -240,7 +240,18 @@ import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
-import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
+import {
+    SettingsPanelHost,
+    openSettingsGeneralTab as openSettingsGeneralTabView,
+    openSettingsLanguage as openSettingsLanguageView,
+    openSettingsProvidersTab as openSettingsProvidersTabView,
+    openSettingsKeybindsTab,
+    runDisplayCommand,
+    runExperimentalCommand,
+    runSettingsCommand as runSettingsCommandView,
+    runTimelineModeCommand,
+    runVimCommand
+} from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
 import { collectHealthItems } from './AgentConsoleHealthView';
@@ -3852,6 +3863,31 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runDebugConfigCommandView(this.preferenceCommandHost());
     }
 
+    protected settingsPanelHost(): SettingsPanelHost {
+        return {
+            state: this.state,
+            options: this.options,
+            translator: this.translator,
+            activeThemeName: this.activeThemeName,
+            yoloMode: this.yoloMode,
+            modelReasoningEffort: this.modelReasoningEffort,
+            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
+            notify: (message: string) => this.notify(message),
+            runThemeCommand: () => this.runThemeCommand(),
+            runVimCommand: (args?: string) => this.runVimCommand(args || ''),
+            runDisplayCommand: (args?: string) => this.runDisplayCommand(args),
+            runRawModeCommand: () => this.runRawModeCommand(),
+            runFastCommand: (args?: string) => this.runFastCommand(args),
+            runStatusCommand: () => this.runStatusCommand(),
+            runKeymapCommand: (args: string) => this.runKeymapCommand(args),
+            openModelSwitcher: () => this.openModelSwitcher(),
+            openSettingsThinkingLevel: () => this.openSettingsThinkingLevel(),
+            openSettingsLanguage: () => this.openSettingsLanguage(),
+            setYoloMode: (enabled: boolean, showNotice?: boolean) => this.setYoloMode(enabled, showNotice),
+            persistSettings: (patch: any) => this.persistSettings(patch)
+        };
+    }
+
     protected shellCommandHost(): ShellCommandHost {
         const self = this;
         return {
@@ -3930,97 +3966,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runSettingsCommand(): Promise<boolean> {
-        const tab = await this.select('Settings', [
-            { label: 'General', value: 'general', description: 'theme, language, input toggles' },
-            { label: 'Keybinds', value: 'keybinds', description: 'record, conflict detection, reset' },
-            { label: 'Providers', value: 'providers', description: 'model profiles and provider' }
-        ], 0, 'enter select   esc close');
-        if (!tab) return true;
-        if (tab === 'general') return this.openSettingsGeneralTab();
-        if (tab === 'keybinds') return this.openSettingsKeybindsTab();
-        if (tab === 'providers') return this.openSettingsProvidersTab();
-        return true;
+        return runSettingsCommandView(this.settingsPanelHost());
     }
 
     protected async openSettingsGeneralTab(): Promise<boolean> {
-        const option = await this.select('Settings · General', [
-            { label: `Theme: ${this.activeThemeName}`, value: 'theme', description: 'apply and save a UI theme' },
-            { label: `Language: ${this.translator?.currentLocale || 'en'}`, value: 'language', description: 'switch UI language' },
-            { label: `Vim mode: ${this.state.vimMode ? 'on' : 'off'}`, value: 'vim', description: 'vim-style normal/insert input mode' },
-            { label: `Raw mode: ${this.state.rawMode ? 'on' : 'off'}`, value: 'raw', description: 'plain-text scrollback rendering' },
-            { label: `Thinking: ${this.state.showThinking ? 'shown' : 'hidden'}`, value: 'thinking', description: 'reasoning message visibility' },
-            { label: `Yolo mode: ${this.yoloMode ? 'on' : 'off'}`, value: 'yolo', description: 'automatically approve gated tools' },
-            { label: `Timestamps: ${this.state.showTimestamps ? 'shown' : 'hidden'}`, value: 'timestamps', description: 'message timestamp visibility' },
-            { label: `Tool output: ${this.state.showToolOutput ? 'shown' : 'hidden'}`, value: 'tooloutput', description: 'tool output visibility in messages' },
-            { label: `Username: ${this.state.showUsername ? 'shown' : 'hidden'}`, value: 'username', description: 'username label visibility' },
-            { label: `Window title: ${this.options.ui?.terminalTitle === false ? 'off' : 'on'}`, value: 'title', description: 'terminal/document title sync' }
-        ], 0, 'enter apply   esc close');
-        if (!option) return true;
-        if (option === 'theme') {
-            await this.runThemeCommand();
-            return true;
-        }
-        if (option === 'language') {
-            return this.openSettingsLanguage();
-        }
-        if (option === 'vim') {
-            await this.runVimCommand('');
-            try {
-                await this.persistSettings({ vimMode: this.state.vimMode });
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to save vim mode.');
-            }
-            return true;
-        }
-        if (option === 'raw') {
-            return this.runRawModeCommand();
-        }
-        if (option === 'thinking') {
-            this.state.setShowThinking(!this.state.showThinking);
-            this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
-            try {
-                await this.persistSettings({ showThinking: this.state.showThinking });
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to save thinking visibility.');
-            }
-            return true;
-        }
-        if (option === 'yolo') {
-            await this.setYoloMode(!this.yoloMode);
-            return true;
-        }
-        if (option === 'title') {
-            const enabled = this.options.ui?.terminalTitle !== false;
-            this.options.ui = { ...(this.options.ui || {}), terminalTitle: !enabled };
-            this.notify(!enabled ? 'Window title sync enabled.' : 'Window title sync disabled.');
-            return true;
-        }
-        if (option === 'timestamps') {
-            return this.runDisplayCommand('');
-        }
-        if (option === 'tooloutput') {
-            this.state.setShowToolOutput(!this.state.showToolOutput);
-            try {
-                await this.persistSettings({ showToolOutput: this.state.showToolOutput });
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to save tool output visibility.');
-                return true;
-            }
-            this.notify(this.state.showToolOutput ? 'Showing tool output in messages.' : 'Hiding tool output in messages.');
-            return true;
-        }
-        if (option === 'username') {
-            this.state.setShowUsername(!this.state.showUsername);
-            try {
-                await this.persistSettings({ showUsername: this.state.showUsername });
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to save username visibility.');
-                return true;
-            }
-            this.notify(this.state.showUsername ? 'Showing the username label.' : 'Hiding the username label.');
-            return true;
-        }
-        return true;
+        return openSettingsGeneralTabView(this.settingsPanelHost());
     }
 
     protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
@@ -4044,25 +3994,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsLanguage(): Promise<boolean> {
-        const locales = this.translator?.availableLocales?.length
-            ? this.translator.availableLocales
-            : ['en', 'zh-CN'];
-        const current = this.translator?.currentLocale || 'en';
-        const selected = await this.select('Settings · Language', locales.map(locale => ({
-            label: `${locale === current ? '● ' : '  '}${locale}`,
-            value: locale,
-            description: locale === current ? 'current language' : 'switch and save'
-        })), Math.max(0, locales.indexOf(current)), 'enter apply   esc close');
-        if (!selected) return true;
-        this.translator?.setLocale(selected);
-        try {
-            await this.persistSettings({ language: selected });
-        } catch (error: any) {
-            this.notify(error?.message || `Switched to ${selected}, but failed to save the language.`);
-            return true;
-        }
-        this.notify(`Language set to ${selected}.`);
-        return true;
+        return openSettingsLanguageView(this.settingsPanelHost());
     }
 
     protected async openSettingsKeybindsTab(): Promise<boolean> {
@@ -4073,28 +4005,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsProvidersTab(): Promise<boolean> {
-        const option = await this.select('Settings · Providers', [
-            { label: 'Model profiles', value: 'model', description: 'switch the active model profile' },
-            { label: `Thinking level: ${this.modelReasoningEffort}`, value: 'thinking-level', description: 'set model reasoning effort' },
-            { label: 'Fast/strong profile', value: 'fast', description: 'switch between fast and strong profiles' },
-            { label: 'Session status', value: 'status', description: 'show current model / archetype / modes' }
-        ], 0, 'enter select   esc close');
-        if (!option) return true;
-        if (option === 'model') {
-            await this.openModelSwitcher();
-            return true;
-        }
-        if (option === 'thinking-level') {
-            return this.openSettingsThinkingLevel();
-        }
-        if (option === 'fast') {
-            return this.runFastCommand();
-        }
-        if (option === 'status') {
-            await this.runStatusCommand();
-            return true;
-        }
-        return true;
+        return openSettingsProvidersTabView(this.settingsPanelHost());
     }
 
     protected async openSettingsThinkingLevel(): Promise<boolean> {
