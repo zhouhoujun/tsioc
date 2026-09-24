@@ -77,6 +77,9 @@ export class IdentitySection extends PromptSection {
         lines.push('When the user answers a clarification question, continue the task directly with the new information instead of stopping early.');
         if (toolNames.has('git_operations')) {
             lines.push('After modifying code or tests, inspect the resulting git diff before the final answer and summarize the changed files and verification status.');
+            lines.push(toolNames.has('ask_user')
+                ? 'If a Git action reports that the workspace is not a Git repository, ask the user via `ask_user` whether to initialize one; only call `git_operations` with action `init` after the user confirms.'
+                : 'If a Git action reports that the workspace is not a Git repository, tell the user and offer to initialize one with `git_operations` action `init`.');
         }
         lines.push('If a tool or external service is unavailable, say so clearly and provide the next best fallback.');
 
