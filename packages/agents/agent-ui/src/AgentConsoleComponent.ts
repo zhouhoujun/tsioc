@@ -163,8 +163,7 @@ import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
 import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
 import {
     AgentConsoleAppAuthorizer,
-    AgentConsoleAppStatus,
-    extractAgentConsoleAppMentions
+    AgentConsoleAppStatus
 } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
@@ -240,6 +239,8 @@ import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
+import { PromptMentionHost, enrichPromptWithMentions as enrichPromptWithMentionsView } from './AgentConsolePromptMentions';
+import { ApprovalInspectorHost, openApprovalInspector as openApprovalInspectorView } from './AgentConsoleApprovalCommands';
 import {
     SettingsPanelHost,
     openSettingsGeneralTab as openSettingsGeneralTabView,
@@ -1471,71 +1472,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async openApprovalInspector(requests: AgentConsoleApprovalRequest[]): Promise<void> {
-        if (!requests.length) {
-            this.notify(this.translator?.translate('agent.notice.noPendingApprovals') || 'No pending approvals.');
-            return;
-        }
-        let selectedRequestIndex = 0;
-        while (true) {
-            const request = await this.selectApprovalRequest(requests, selectedRequestIndex);
-            if (!request) {
-                return;
-            }
-            selectedRequestIndex = Math.max(0, requests.findIndex(item => item.id === request.id));
-            const detail = [
-                `Tool: ${request.toolName}`,
-                `Reason: ${request.reason}`,
-                request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-                `Timeout: ${request.timeoutMs}ms`,
-                request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
-            ].join('\n');
-            const action = await this.select(`Approval ${request.id.slice(0, 8)}`, [
-                {
-                    label: 'Approve',
-                    value: 'approve',
-                    description: 'Allow this request',
-                    detail
-                },
-                {
-                    label: 'Deny',
-                    value: 'deny',
-                    description: 'Reject this request',
-                    detail
-                },
-                {
-                    label: 'Copy input',
-                    value: 'copy-input',
-                    description: 'Copy request input summary',
-                    detail
-                }
-            ], 0, this.state.consoleOptions.selectHint);
-            if (!action) {
-                if (requests.length === 1) {
-                    return;
-                }
-                continue;
-            }
-            if (action === 'approve') {
-                const approved = await this.applyApprovalDecision('approve', request.id);
-                this.notify(approved
-                    ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
-                    : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
-                await this.refreshPendingApprovals();
-                return;
-            }
-            if (action === 'deny') {
-                const denied = await this.applyApprovalDecision('deny', request.id);
-                this.notify(denied
-                    ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
-                    : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
-                await this.refreshPendingApprovals();
-                return;
-            }
-            if (action === 'copy-input') {
-                await this.copyFocusedTextActionHandler(request.inputSummary || request.summary, 'approval input');
-                return;
-            }
-        }
+        return openApprovalInspectorView(this.approvalInspectorHost(), requests);
     }
 
     get title(): string {
@@ -2182,49 +2119,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async enrichPromptWithMentions(input: string): Promise<string> {
-        const text = String(input || '');
-        const appMentions = extractAgentConsoleAppMentions(text);
-        const matches = text.match(/(^|\s)@([^\s@]+)/g) || [];
-        const mentions = Array.from(new Set(matches.map(item => item.trim())));
-        if (!mentions.length && !appMentions.length) {
-            return text;
-        }
-        const toolMap = new Map((this.state.tools || []).map(tool => [tool.name, tool]));
-        const contextLines = (await Promise.all(mentions.map(async mention => {
-            const name = mention.slice(1);
-            switch (name) {
-                case 'workspace':
-                    return [`Workspace: ${this.state.workspace}`];
-                case 'session':
-                    return [`Session: ${this.state.sessionId}`];
-                case 'model':
-                    return [`Model: ${this.state.provider} / ${this.state.model}`];
-                case 'tools':
-                    return [`Tools: ${(this.state.tools || []).map(tool => tool.name).join(', ') || '(none)'}`];
-                default: {
-                    const tool = toolMap.get(name);
-                    if (tool) {
-                        return [`Tool ${tool.name}: toolset=${tool.toolset || 'default'}, active=${tool.active === false ? 'no' : 'yes'}`];
-                    }
-                    return await this.workspaceMentionsProvider?.resolveContext(this.state.workspace, name, this.mentionCatalog) || [];
-                }
-            }
-        }))).flat();
-        const apps = this.resolveApps();
-        const appContextLines = appMentions.map(id => {
-            const app = apps.find(item => item.id === id)!;
-            return `Connector ${app.name}: id=${app.id}, status=${app.statusLabel}, capabilities=${app.description}`;
-        });
-        if (!contextLines.length && !appContextLines.length) {
-            return text;
-        }
-        return [
-            '[Mention Context]',
-            ...contextLines,
-            ...appContextLines,
-            '',
-            text
-        ].join('\n');
+        return enrichPromptWithMentionsView(this.promptMentionHost(), input);
     }
 
     protected async refreshMentionCatalog(): Promise<void> {
@@ -3861,6 +3756,28 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runDebugConfigCommand(): Promise<boolean> {
         return runDebugConfigCommandView(this.preferenceCommandHost());
+    }
+
+    protected promptMentionHost(): PromptMentionHost {
+        return {
+            state: this.state,
+            mentionCatalog: this.mentionCatalog,
+            workspaceMentionsProvider: this.workspaceMentionsProvider,
+            resolveApps: () => this.resolveApps()
+        };
+    }
+
+    protected approvalInspectorHost(): ApprovalInspectorHost {
+        return {
+            state: this.state,
+            translator: this.translator,
+            notify: (message: string) => this.notify(message),
+            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
+            selectApprovalRequest: (requests: AgentConsoleApprovalRequest[], index: number) => this.selectApprovalRequest(requests, index),
+            applyApprovalDecision: (decision: 'approve' | 'deny', requestId: string) => this.applyApprovalDecision(decision, requestId),
+            refreshPendingApprovals: () => this.refreshPendingApprovals(),
+            copyFocusedTextActionHandler: (text: string, label: string) => this.copyFocusedTextActionHandler(text, label)
+        };
     }
 
     protected settingsPanelHost(): SettingsPanelHost {
