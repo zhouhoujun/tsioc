@@ -207,6 +207,13 @@ import {
     runMemoriesCommand as runMemoriesCommandView,
     runPersonalityCommand as runPersonalityCommandView
 } from './AgentConsolePreferenceCommands';
+import {
+    PolicyCommandHost,
+    runDelegationModeCommand as runDelegationModeCommandView,
+    runGoalCommand as runGoalCommandView,
+    runPermissionsCommand as runPermissionsCommandView,
+    showSandboxCapabilities as showSandboxCapabilitiesView
+} from './AgentConsolePolicyCommands';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
@@ -219,7 +226,7 @@ import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
 import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
@@ -3967,6 +3974,21 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runDebugConfigCommandView(this.preferenceCommandHost());
     }
 
+    protected policyCommandHost(): PolicyCommandHost {
+        return {
+            state: this.state,
+            options: this.options,
+            runtime: this.runtime,
+            appRpc: this.appRpc,
+            notify: (message: string) => this.notify(message),
+            rpcRequestContext: () => this.rpcRequestContext(),
+            getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
+            getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
+            setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => this.setSessionSandboxMode(sessionId, mode),
+            runPlanCommand: (args: string) => this.runPlanCommand(args)
+        };
+    }
+
     protected preferenceCommandHost(): PreferenceCommandHost {
         return {
             state: this.state,
@@ -5616,37 +5638,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runDelegationModeCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        const mode = String(args || '').trim().toLowerCase();
-        const modes = ['disabled', 'explicit', 'proactive'];
-        try {
-            if (!mode || mode === 'default') {
-                if (mode === 'default') {
-                    if (this.appRpc) {
-                        await this.appRpc.request('session.delegation_mode.set', { sessionId, mode: 'default' }, this.rpcRequestContext());
-                    } else {
-                        this.runtime.setSessionDelegationMode(sessionId, null);
-                    }
-                    this.notify('Delegation mode reset to the configured default.');
-                    return;
-                }
-                const current = await this.getSessionDelegationMode(sessionId);
-                this.notify(`Delegation mode: ${current}. Valid modes: ${modes.join(' | ')}.`);
-                return;
-            }
-            if (!modes.includes(mode)) {
-                this.notify(`Invalid delegation mode "${mode}". Valid modes: ${modes.join(' | ')}.`);
-                return;
-            }
-            if (this.appRpc) {
-                await this.appRpc.request('session.delegation_mode.set', { sessionId, mode }, this.rpcRequestContext());
-            } else {
-                this.runtime.setSessionDelegationMode(sessionId, mode as import('@tsdi/agent').AgentDelegationMode);
-            }
-            this.notify(`Session ${sessionId} delegation mode set to "${mode}".`);
-        } catch (error) {
-            this.notify(`Failed to set delegation mode: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return runDelegationModeCommandView(this.policyCommandHost(), args);
     }
 
     protected async runVimCommand(args: string): Promise<void> {
@@ -5878,53 +5870,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPermissionsCommand(args: string): Promise<void> {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        if (!tokens.length || tokens[0].toLowerCase() === 'status') {
-            await this.showSandboxCapabilities();
-            return;
-        }
-        const area = tokens[0].toLowerCase();
-        if (area === 'readonly' || area === 'plan') {
-            await this.runPlanCommand(tokens.slice(1).join(' '));
-            return;
-        }
-        if (area !== 'sandbox') {
-            this.notify('Usage: /permissions [readonly on|off] | [sandbox default|off|workspace|network-block]');
-            return;
-        }
-
-        const rawMode = String(tokens[1] || '').trim().toLowerCase();
-        if (!rawMode) {
-            const mode = await this.getSessionSandboxMode(this.state.sessionId);
-            this.notify(`Sandbox mode ${mode}.`);
-            return;
-        }
-        if (!['default', 'off', 'workspace', 'network-block'].includes(rawMode)) {
-            this.notify('Sandbox mode must be one of: default, off, workspace, network-block.');
-            return;
-        }
-        try {
-            await this.setSessionSandboxMode(this.state.sessionId, rawMode === 'default' ? null : rawMode as SandboxMode);
-            this.notify(`Sandbox mode set to ${rawMode}.`);
-        } catch (error) {
-            this.notify(`Failed to set sandbox mode: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return runPermissionsCommandView(this.policyCommandHost(), args);
     }
 
     protected async showSandboxCapabilities(): Promise<void> {
-        const platform = (globalThis as { process?: { platform?: string } }).process?.platform;
-        const probe = await detectSandboxExecTool(platform);
-        const proxy = this.options?.sandbox?.proxy;
-        const capabilities = describeSandboxCapabilities(platform, probe, !!(proxy?.http || proxy?.https));
-        const mode = await this.getSessionSandboxMode(this.state.sessionId).catch(() => 'default');
-        const lines = [`sandbox ${mode} · ${platform || 'unknown'} · ${probe.tool || 'process fallback'}`];
-        for (const item of capabilities) {
-            lines.push(`${item.capability} ${item.supported ? 'supported' : 'degraded'} · ${item.enforcement}`);
-        }
-        if (proxy?.required) {
-            lines.push(`proxy required · ${proxy.http || proxy.https ? 'configured' : 'missing'}`);
-        }
-        this.notify(lines.join('\n'));
+        return showSandboxCapabilitiesView(this.policyCommandHost());
     }
 
     protected async runCdCommand(args: string): Promise<void> {
@@ -5954,36 +5904,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runGoalCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        const [command = 'show', ...rest] = String(args || '').trim().split(/\s+/);
-        try {
-            if (command === 'create') {
-                const parts = rest.join(' ').split('|').map(item => item.trim());
-                if (parts.length < 2 || !parts[0] || !parts[1]) { this.notify('Usage: /goal create <title> | <objective> | criterion 1; criterion 2'); return; }
-                const input = { title: parts[0], objective: parts[1], successCriteria: (parts[2] || '').split(';').map(item => item.trim()).filter(Boolean) };
-                const goal = this.appRpc ? await this.appRpc.request('goal.create', { sessionId, ...input }, this.rpcRequestContext()) : await this.runtime.createGoal(input, sessionId);
-                this.notify(`Goal ${goal.id} created: ${goal.title}`); return;
-            }
-            if (command === 'list') {
-                const goals = this.appRpc ? await this.appRpc.request('goal.list', {}, this.rpcRequestContext()) : await this.runtime.listGoals();
-                this.notify(goals.length ? goals.map((goal: any) => `${goal.id} [${goal.status}] ${goal.title}`).join('\n') : 'No goals.'); return;
-            }
-            if (command === 'link') {
-                const goalId = rest[0]; if (!goalId) { this.notify('Usage: /goal link <goalId>'); return; }
-                if (this.appRpc) await this.appRpc.request('goal.link', { sessionId, goalId }, this.rpcRequestContext()); else await this.runtime.linkSessionGoal(sessionId, goalId);
-                this.notify(`Goal ${goalId} linked.`); return;
-            }
-            if (command === 'complete' || command === 'reopen') {
-                const goal = this.appRpc ? await this.appRpc.request(`goal.${command}`, { sessionId, goalId: rest[0] }, this.rpcRequestContext()) : await (async () => {
-                    const linked = rest[0] ? await this.runtime.getGoal(rest[0]) : await this.runtime.getSessionGoal(sessionId);
-                    if (!linked) throw new Error('No goal linked to this session.');
-                    return this.runtime.updateGoal(linked.id, { status: command === 'complete' ? 'completed' : 'active' });
-                })();
-                this.notify(`Goal ${goal.id} is ${goal.status}.`); return;
-            }
-            const goal = this.appRpc ? await this.appRpc.request('goal.get', { sessionId, goalId: command === 'show' ? rest[0] : command }, this.rpcRequestContext()) : await (command === 'show' ? (rest[0] ? this.runtime.getGoal(rest[0]) : this.runtime.getSessionGoal(sessionId)) : this.runtime.getGoal(command));
-            this.notify(goal ? `${goal.id} [${goal.status}] ${goal.title}\n${goal.objective}\n${goal.successCriteria.map((item: string) => `- ${item}`).join('\n')}` : 'No goal linked to this session.');
-        } catch (error) { this.notify(`Goal command failed: ${error instanceof Error ? error.message : String(error)}`); }
+        return runGoalCommandView(this.policyCommandHost(), args);
     }
 
     protected async setSessionSandboxMode(
