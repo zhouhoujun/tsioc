@@ -466,4 +466,58 @@ export class ApplyPatchToolTest {
         expect(store.list('s1').length).toEqual(0);
         expect(store.listRedo('s1').length).toEqual(0);
     }
+
+    @Test('apply_patch rejects oversized patches with an actionable error')
+    async rejectsOversizedPatches() {
+        const workspace = await this.createWorkspace();
+        try {
+            const tool = new ApplyPatchTool({ file: { rootDir: workspace } });
+            const hugePatch = [
+                '*** Begin Patch',
+                '*** Add File: src/huge.txt',
+                ...Array.from({ length: 30000 }, (_, index) => `line${index} ${'x'.repeat(40)}`),
+                '*** End Patch'
+            ].join('\n');
+            expect(Buffer.byteLength(hugePatch, 'utf8')).toBeGreaterThan(96 * 1024);
+
+            await expect(tool.invoke({ patch: hugePatch }, {} as any))
+                .rejects.toThrow(/exceeding the \d+ byte limit/);
+            expect(await fs.readFile(path.join(workspace, 'src', 'huge.txt'), 'utf8').catch(() => null))
+                .toEqual(null);
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('apply_patch enforces a configured maxPatchBytes boundary')
+    async enforcesConfiguredMaxPatchBytes() {
+        const workspace = await this.createWorkspace();
+        try {
+            const tool = new ApplyPatchTool({ file: { rootDir: workspace, maxPatchBytes: 256 } });
+            const oversized = [
+                '*** Begin Patch',
+                '*** Add File: src/oversized.txt',
+                ...Array.from({ length: 20 }, (_, index) => `line${index} ${'y'.repeat(30)}`),
+                '*** End Patch'
+            ].join('\n');
+            expect(Buffer.byteLength(oversized, 'utf8')).toBeGreaterThan(256);
+
+            await expect(tool.invoke({ patch: oversized }, {} as any))
+                .rejects.toThrow(/exceeding the 256 byte limit/);
+
+            const fits = [
+                '*** Begin Patch',
+                '*** Add File: src/fits.txt',
+                '+short line',
+                '*** End Patch'
+            ].join('\n');
+            expect(Buffer.byteLength(fits, 'utf8')).toBeLessThan(256);
+            const result = await tool.invoke({ patch: fits }, {} as any);
+            expect(result.ok).toEqual(true);
+            expect(await fs.readFile(path.join(workspace, 'src', 'fits.txt'), 'utf8'))
+                .toEqual('short line');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
 }

@@ -13,6 +13,7 @@ const END_MARKER = '*** End Patch';
 const EOF_MARKER = '*** End of File';
 const HUNK_HEADER = /^\*\*\* (Add|Update|Delete) File: (.+)$/;
 const MOVE_HEADER = /^\*\*\* Move to: (.+)$/;
+const DEFAULT_MAX_PATCH_BYTES = 96 * 1024;
 
 type HunkType = 'add' | 'update' | 'delete';
 
@@ -402,6 +403,15 @@ export class ApplyPatchTool implements AgentTool {
     private requirePatch(value: unknown): string {
         if (typeof value !== 'string' || !value.trim()) {
             throw new Error('Invalid apply_patch input: patch must be a non-empty string.');
+        }
+        const limit = this.options?.file?.maxPatchBytes ?? DEFAULT_MAX_PATCH_BYTES;
+        const bytes = Buffer.byteLength(value, 'utf8');
+        if (bytes > limit) {
+            throw new Error(
+                `apply_patch input is ${bytes} bytes, exceeding the ${limit} byte limit. ` +
+                `Split the patch into smaller per-file patches and apply them incrementally, ` +
+                `or raise the limit via agentTools.file.maxPatchBytes.`
+            );
         }
         return value;
     }

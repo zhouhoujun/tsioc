@@ -136,7 +136,7 @@ function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProvi
                 if (hasInvalidConfigSentinel(sanitized)) {
                     return profiles;
                 }
-                profiles[name] = sanitized;
+                const { profiles: _p, defaultProfile: _d, complexityRouting: _c, savedProfiles: _s, activeSavedProfile: _a, ...leaf } = sanitized; profiles[name] = leaf;
                 return profiles;
             }, {} as Record<string, any>);
         if (Object.keys(sanitizedProfiles).length) {

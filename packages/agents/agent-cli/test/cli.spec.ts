@@ -328,6 +328,62 @@ export class AgentCliTest {
         expect(getLastSettingsHealReport()?.changed).toEqual(false);
     }
 
+    @Test('strips nested container keys from leaf model profiles when healing settings.json')
+    async healsNestedContainerKeysFromLeafProfiles() {
+        const root = await this.createRoot();
+        const settingsPath = path.join(root, 'settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify({
+            workspace: 'workspace',
+            model: {
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                baseUrl: 'https://api.deepseek.com',
+                apiKey: 'sk-real-key',
+                defaultProfile: 'flash',
+                profiles: {
+                    flash: {
+                        provider: 'deepseek',
+                        model: 'deepseek-v4-flash',
+                        baseUrl: 'https://api.deepseek.com',
+                        apiKey: 'sk-real-key',
+                        timeoutMs: 600000,
+                        defaultProfile: 'flash',
+                        profiles: {
+                            flash: { provider: 'deepseek', model: 'deepseek-v4-flash' },
+                            strong: { provider: 'deepseek', model: 'deepseek-v4-pro' }
+                        },
+                        complexityRouting: { simple: 'flash', moderate: 'flash', complex: 'strong' }
+                    },
+                    strong: {
+                        provider: 'deepseek',
+                        model: 'deepseek-v4-pro',
+                        baseUrl: 'https://api.deepseek.com',
+                        timeoutMs: 1800000,
+                        reasoning: true
+                    }
+                },
+                complexityRouting: { simple: 'flash', moderate: 'flash', complex: 'strong' }
+            }
+        }), 'utf8');
+
+        const report = healSettingsModelConfig(root);
+        expect(report.changed).toEqual(true);
+
+        const healed = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        const leaf = healed.model.profiles.flash;
+        expect(leaf.provider).toEqual('deepseek');
+        expect(leaf.model).toEqual('deepseek-v4-flash');
+        expect(leaf.timeoutMs).toEqual(600000);
+        expect(leaf.profiles).toBeUndefined();
+        expect(leaf.defaultProfile).toBeUndefined();
+        expect(leaf.complexityRouting).toBeUndefined();
+        expect(healed.model.complexityRouting).toEqual({ simple: 'flash', moderate: 'flash', complex: 'strong' });
+        expect(healed.model.profiles.strong.reasoning).toEqual(true);
+
+        expect(healSettingsModelConfig(root).changed).toEqual(false);
+        expect(getLastSettingsHealReport()?.changed).toEqual(false);
+    }
+
     @Test('resolves lifecycle hooks from hooks.json')
     async resolvesLifecycleHooksFromHooksJson() {
         const root = await this.createRoot();

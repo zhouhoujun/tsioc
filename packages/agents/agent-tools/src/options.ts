@@ -88,6 +88,7 @@ export interface AgentToolsFileOptions {
     maxReadBytes?: number;
     maxReadLines?: number;
     maxSearchResults?: number;
+    maxPatchBytes?: number;
     defaultGlob?: string[];
     excludedGlobs?: string[];
 }

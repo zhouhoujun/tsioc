@@ -25,5 +25,6 @@ export const MCP_SERVER_INSTRUCTIONS = token<Array<{ serverId: string; instructi
  */
 export interface AgentWorkspaceTrustResolver {
     isTrusted(workspace: string): boolean;
+    trust?(workspace: string): void;
 }
 export const AGENT_WORKSPACE_TRUST = token<AgentWorkspaceTrustResolver>('AGENT_WORKSPACE_TRUST');

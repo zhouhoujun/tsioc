@@ -9,6 +9,7 @@ import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMe
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { findProjectRoot } from '../project/agents-doc';
+import { isWorkspaceMutatingTool, resolveWorkspaceTrustApproval } from '../project/workspace-trust';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
@@ -2790,18 +2791,29 @@ export class DefaultAgentRuntime extends AgentRuntime {
 const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
 let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
+        let trustApprovedForCall = false;
         if (this.workspaceTrust && turnContext.workspace && isWorkspaceMutatingTool(definition)
             && !this.workspaceTrust.isTrusted(turnContext.workspace)) {
-            const reason = `Workspace '${turnContext.workspace}' is not trusted; tool "${toolCall.name}" would modify it. Run \`tsdi-agent trust ${turnContext.workspace}\` to allow modifications.`;
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
-                ...sandboxReceipt,
-                status: 'skipped',
-                durationMs: 0,
-                error: reason
-            }, reason, { sessionId, reason });
+            const trustApproval = await resolveWorkspaceTrustApproval({
+                workspaceTrust: this.workspaceTrust,
+                approvalManager: this.toolApprovalManager,
+                workspace: turnContext.workspace,
+                toolName: toolCall.name,
+                sessionId
+            });
+            if (!trustApproval.approved) {
+                const reason = `Workspace '${turnContext.workspace}' is not trusted; tool "${toolCall.name}" would modify it. Run \`tsdi-agent trust ${turnContext.workspace}\` to allow modifications.`;
+                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                    ...sandboxReceipt,
+                    status: 'skipped',
+                    durationMs: 0,
+                    error: reason
+                }, reason, { sessionId, reason });
+            }
+            trustApprovedForCall = true;
         }
 
-        if (this.toolApprovalManager && turnPermission !== 'allow') {
+        if (this.toolApprovalManager && turnPermission !== 'allow' && !trustApprovedForCall) {
             const forceApproval = turnPermission === 'ask';
             const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId, forceApproval);
             await this.runTurnHooks('onApproval', sessionId, {
@@ -3560,19 +3572,4 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             metadata
         };
     }
-}
-
-const WORKSPACE_MUTATING_TOOLSETS = new Set(['filesystem_write', 'terminal', 'git', 'process', 'code_execution', 'ai_cli']);
-const WORKSPACE_MUTATING_TOOLS = new Set([
-    'write_file', 'edit_file', 'delete_file', 'move_file', 'copy_file', 'mkdir', 'apply_patch',
-    'terminal', 'git_operations', 'process.start', 'execute_code'
-]);
-
-function isWorkspaceMutatingTool(definition: AgentToolDefinition): boolean {
-    if (WORKSPACE_MUTATING_TOOLS.has(definition.name)) {
-        return true;
-    }
-    return !!definition.toolset
-        && WORKSPACE_MUTATING_TOOLSETS.has(definition.toolset)
-        && definition.execution?.sideEffect === true;
 }

@@ -125,6 +125,17 @@ export function provideWorkspaceTrust(root: string): any {
                         } catch {
                             return false;
                         }
+                    },
+                    trust(workspace: string): void {
+                        const target = String(workspace || '').trim();
+                        if (!target || !fileAdapter) {
+                            return;
+                        }
+                        try {
+                            new TrustedProjectStore({ root, fileAdapter }).trust(target);
+                        } catch {
+                            return;
+                        }
                     }
                 }
             }];
