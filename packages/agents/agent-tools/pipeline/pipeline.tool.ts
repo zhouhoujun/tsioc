@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface PipelineStep {
     name: string;
@@ -94,22 +94,23 @@ export class PipelineTool implements AgentTool {
     };
 
     constructor(
-        private adapter: PipelineAdapter
+        @Optional() @Inject(PipelineAdapter) private adapter?: PipelineAdapter | null
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const action = typeof input?.action === 'string' ? input.action : '';
+        const adapter = this.requireAdapter();
 
         switch (action) {
             case 'list': {
-                const pipelines = await this.adapter.list();
+                const pipelines = await adapter.list();
                 return { pipelines, total: pipelines.length };
             }
             case 'define': {
                 const name = this.requireString(input?.name, 'pipeline name');
                 const steps = this.requireSteps(input?.steps);
-                const pipeline = await this.adapter.define({
+                const pipeline = await adapter.define({
                     name,
                     description: typeof input?.description === 'string' ? input.description : undefined,
                     steps
@@ -118,9 +119,16 @@ export class PipelineTool implements AgentTool {
             }
             case 'execute': {
                 const id = this.requireString(input?.pipeline_id, 'pipeline pipeline_id');
-                const result = await this.adapter.execute(
+                const result = await adapter.execute(
                     id,
-                    typeof input?.context === 'object' && input.context !== null ? input.context : undefined
+                    {
+                        ...(typeof input?.context === 'object' && input.context !== null ? input.context : {}),
+                        __pipelineRuntime: {
+                            sessionId: context?.sessionId,
+                            principalId: context?.principalId,
+                            workspace: context?.workspace
+                        }
+                    }
                 );
                 return {
                     pipelineId: result.pipelineId,
@@ -137,7 +145,7 @@ export class PipelineTool implements AgentTool {
             }
             case 'get': {
                 const id = this.requireString(input?.pipeline_id, 'pipeline pipeline_id');
-                const pipeline = await this.adapter.get(id);
+                const pipeline = await adapter.get(id);
                 if (!pipeline) {
                     throw new Error(`Pipeline '${id}' not found.`);
                 }
@@ -145,12 +153,19 @@ export class PipelineTool implements AgentTool {
             }
             case 'delete': {
                 const id = this.requireString(input?.pipeline_id, 'pipeline pipeline_id');
-                const deleted = await this.adapter.delete(id);
+                const deleted = await adapter.delete(id);
                 return { deleted, id };
             }
             default:
                 throw new Error('Invalid action. Must be: define, execute, get, list, delete.');
         }
+    }
+
+    private requireAdapter(): PipelineAdapter {
+        if (!this.adapter) {
+            throw new Error('Pipeline tool is not available: no PipelineAdapter is configured for this host.');
+        }
+        return this.adapter;
     }
 
     private requireSteps(value: unknown): PipelineStep[] {

@@ -76,7 +76,8 @@ import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
-import { PipelineTool } from '../pipeline/pipeline.tool';
+import { PipelineTool, PipelineAdapter } from '../pipeline/pipeline.tool';
+import { LocalPipelineAdapter } from '../pipeline/local-pipeline-adapter';
 import { KanbanTool } from '../kanban/kanban.tool';
 import { BackupTool } from '../backup/backup.tool';
 import { ModelRoutingTool } from '../model-routing/model-routing.tool';
@@ -668,6 +669,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         { provide: BACKGROUND_TASK_HISTORY_STORE, useExisting: TypeOrmBackgroundTaskStore },
         DelegatingSpawnAgentAdapter,
         DelegatingLlmTaskAdapter,
+        LocalPipelineAdapter,
+        { provide: PipelineAdapter, useExisting: LocalPipelineAdapter },
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles(),
         ...withAgentTools(...extraTools)

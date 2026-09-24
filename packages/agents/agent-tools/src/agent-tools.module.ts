@@ -93,7 +93,8 @@ import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
-import { PipelineTool } from '../pipeline/pipeline.tool';
+import { PipelineTool, PipelineAdapter } from '../pipeline/pipeline.tool';
+import { LocalPipelineAdapter } from '../pipeline/local-pipeline-adapter';
 import { KanbanTool } from '../kanban/kanban.tool';
 import { BackupTool } from '../backup/backup.tool';
 import { ModelRoutingTool } from '../model-routing/model-routing.tool';
@@ -211,6 +212,8 @@ function provideCodingTaskToolFactory() {
         ApprovalTool,
         CheckpointTool,
         PipelineTool,
+        LocalPipelineAdapter,
+        { provide: PipelineAdapter, useExisting: LocalPipelineAdapter },
         KanbanTool,
         BackupTool,
         ModelRoutingTool,
