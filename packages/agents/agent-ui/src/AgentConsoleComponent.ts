@@ -239,6 +239,7 @@ import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
+import { KeymapCommandHost, resolveKeymapContext as resolveKeymapContextView, runKeymapCommand as runKeymapCommandView } from './AgentConsoleKeymapCommands';
 import { PromptMentionHost, enrichPromptWithMentions as enrichPromptWithMentionsView } from './AgentConsolePromptMentions';
 import { ApprovalInspectorHost, openApprovalInspector as openApprovalInspectorView } from './AgentConsoleApprovalCommands';
 import {
@@ -3758,6 +3759,18 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runDebugConfigCommandView(this.preferenceCommandHost());
     }
 
+    protected keymapCommandHost(): KeymapCommandHost {
+        const self = this;
+        return {
+            state: this.state,
+            globalKeymap: this.globalKeymap,
+            get keymapRecording() { return self.keymapRecording; },
+            set keymapRecording(value) { self.keymapRecording = value; },
+            persistGlobalKeymap: () => this.persistGlobalKeymap(),
+            notify: (message: string) => this.notify(message)
+        };
+    }
+
     protected promptMentionHost(): PromptMentionHost {
         return {
             state: this.state,
@@ -5289,100 +5302,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected resolveKeymapContext(): AgentConsoleKeymapContext {
-        if (this.state.hasApprovalFocus()) return 'approval';
-        if (this.state.hasMessageFocus() || this.state.hasMessageDetailFocus() || this.state.hasTextOverlayFocus()) return 'pager';
-        if (this.state.hasSessionFocus() || this.state.hasTaskFocus() || this.state.hasScheduledJobFocus()
-            || this.state.hasToolFocus() || this.state.hasBlockingSelectMenu()) return 'list';
-        if (this.state.inputFocused && !this.state.isAnyFocusActive()) return 'composer';
-        return 'global';
+        return resolveKeymapContextView(this.keymapCommandHost());
     }
 
     protected async runKeymapCommand(args: string): Promise<void> {
-        const rawTokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const first = (rawTokens[0] || '').toLowerCase();
-        const isScopeToken = ['global', 'vim', 'composer', 'list', 'approval', 'pager'].includes(first);
-        const scope = isScopeToken && (rawTokens.length > 1 || first !== 'list')
-            ? rawTokens.shift()!.toLowerCase()
-            : '';
-        const context: AgentConsoleKeymapContext = isAgentConsoleKeymapContext(scope) ? scope : 'global';
-        const tokens = rawTokens;
-        const action = (tokens[0] || 'list').toLowerCase();
-        if (action === 'list') {
-            const globalEntries = Object.entries(this.globalKeymap!.effectiveBindings(context)).map(([key, value]) => `${key} -> ${value}`);
-            const vimEntries = Object.entries(this.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
-            const entries = [...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])];
-            if (!entries.length) {
-                this.notify('No key bindings.');
-                return;
-            }
-            this.state.openTextOverlay(scope ? `keymap ${scope}` : 'keymap', entries);
-            return;
-        }
-        if (action === 'set') {
-            const key = tokens[1];
-            const target = tokens[2];
-            if (!key || !target) {
-                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] set <key> <action>');
-                return;
-            }
-            if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && this.globalKeymap!.set(key, target, context)) {
-                await this.persistGlobalKeymap();
-                const conflicts = this.globalKeymap!.conflicts(key, target, context);
-                const conflictText = conflicts.length
-                    ? `  conflicts with ${conflicts.map(({ context: c, action: a }) => `${c}:${a}`).join(', ')}`
-                    : '';
-                this.notify(`Keymap set: ${key} -> ${target}${conflictText}`);
-                return;
-            }
-            if ((scope === 'vim' || scope === '') && isConsoleVimAction(target) && this.state.setVimBinding(key, target)) {
-                this.notify(`Vim keymap set: ${key} -> ${target}`);
-                return;
-            }
-            this.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')}; vim: ${VIM_ACTION_NAMES.join(', ')})`);
-            return;
-        }
-        if (action === 'unset') {
-            const key = tokens[1];
-            if (!key) {
-                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] unset <key>');
-                return;
-            }
-            if (scope !== 'vim' && this.globalKeymap!.unset(key, context)) {
-                await this.persistGlobalKeymap();
-                this.notify(`${context === 'global' ? 'Global' : context} keymap unset: ${key}`);
-                return;
-            }
-            if ((scope === 'vim' || scope === '') && this.state.unsetVimBinding(key)) {
-                this.notify(`Vim keymap unset: ${key} (default restored if any)`);
-                return;
-            }
-            this.notify(`No binding for key: ${key}`);
-            return;
-        }
-        if (action === 'reset') {
-            if (scope === '' || scope === 'vim') this.state.resetVimBindings();
-            if (scope === '' || scope === 'global' || isAgentConsoleKeymapContext(scope)) {
-                this.globalKeymap!.reset(scope === '' ? undefined : context);
-                await this.persistGlobalKeymap();
-            }
-            this.notify('Keymap reset to defaults.');
-            return;
-        }
-        if (action === 'record') {
-            const target = tokens[1];
-            if (!target) {
-                this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] record <action>');
-                return;
-            }
-            if (scope === 'vim' || !isAgentConsoleGlobalAction(target)) {
-                this.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')})`);
-                return;
-            }
-            this.keymapRecording = { context, action: target };
-            this.notify(`Recording key for ${target} (${context}) — press a key now, Esc to cancel.`);
-            return;
-        }
-        this.notify('Usage: /keymap [global|composer|list|approval|pager|vim] [list|set <key> <action>|unset <key>|reset|record <action>]');
+        return runKeymapCommandView(this.keymapCommandHost(), args);
     }
 
     protected async runSshCommand(args: string): Promise<void> {
