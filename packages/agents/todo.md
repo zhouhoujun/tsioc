@@ -344,3 +344,12 @@
 - **P4.3 复核**：真实 dump 验证 renderer 无多余空行，无需改动；P4.1 plan 相位为刷新收敛，无稳定复现，关闭观察。
 - **验证**：agent 894、agent-cli 78、agent-gateway 298、agent-ui 1400 passing；`RUN_PTY=1 bash scripts/agents-gate.sh` 25 个代码/构建/DOM/TUI/PTY 阶段全绿（`production-db-integrity` 期间用户实时会话改动生产库，非测试写入）。
 - **当前状态**：无开放实施批次（P1–P6 全部关闭）。
+
+## v74 — 真实构建任务驱动的差距修复（agent 运行时 / 工具 / 分层）✅
+
+- **同轮上下文不丢**：`getRecentMessages` 改为 turn-aware——当前轮整段保留，只对上一轮前缀开窗；压缩按整轮配对增删并新增 `repairToolPairing` 规范化；`pruneHistory` 修复多工具调用轮的孤儿配对；压缩改为 turn-aware（当前轮视为工作集，只摘要历史轮）。消除 provider `400 No tool output found for function call` 与"谎报未修改文件、验证未执行"。
+- **计划与恢复**：新增 plan-aware continuation（计划有未完成项则续跑）；`falsification` 仅在计划完成（或未触碰）时才终止回合；`todo decompose` 过度拆分修复（移除 `以及/和/、` 等泛化连接词 + `MAX_ATOMIC_FRAGMENTS=5` 护栏）；`maxToolRounds` 默认 12→20；`todo` 支持仅状态的字段级部分更新（省略字段保留原值）；`ToolSummary` 正确渲染 `decompose` 的 `N steps · accepted · proposals`。
+- **能力补齐**：CLI 默认启用 `terminal`（审批策略不变，settings/`--no-default-tools` 可覆盖）；`spawn_agent`/`coding_task`/`LightweightAgentRunner` 改用 `@Inject(INJECTOR)` 惰性解析，修复联合类型元数据导致的 DI 死链（实机验证子代理可用）；`git_operations` 在非 git 工作区回退到会话文件快照 `status`/`diff`；`apply_patch` 修复上下文行被误删的语义 bug 并加入空白容错匹配；`list_dir` 空/缺省路径解析为工作区根。
+- **分层与安全**：工作区解析以显式 workspace（`--workspace`）为准、不再回退进程 cwd，并新增 `AgentOptions.workspace`；落地 workspace trust 门禁（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝写入/终端/git 等变更类工具，提示 `tsdi-agent trust <dir>`）；`pipeline` 归属 `@tsdi/agent-tools`（新增 `LocalPipelineAdapter`，经 `ToolRegistry` 真实执行，移除 agent-cli stub）；完成 TUI 分层抽取——`@tsdi/agent-ui/console` 独占 console 编排（远程 RPC、命令输出持久化），`agent-cli` 仅做平台适配并委托调用。
+- **验证**：agent 896、agent-tools 480、agent-cli 78、agent-ui 1400 passing；`bash scripts/agents-gate.sh agent agent-tools agent-cli agent-ui tsc-agent tsc-agent-ui tsc-agent-tools` → PASS（8 passed / 0 skipped，含 tsc --noEmit 与 production-db-integrity）。真实任务：sleep-mlt 构建任务完成且 `node src/index.js` 磁盘复验通过；失败测试驱动任务修复至 `stats tests passed`；`spawn_agent` 子代理实机返回审查报告。
+- **当前状态**：无开放实施批次；prompt cache 为 provider 侧 `observe_only`（自定义端点）限制，暂缓。
