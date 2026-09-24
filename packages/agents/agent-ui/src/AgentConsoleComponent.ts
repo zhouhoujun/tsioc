@@ -194,6 +194,8 @@ import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
+import { formatSummaryQualityTrend } from './AgentConsoleDiagnosticsView';
+import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -1115,39 +1117,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `deepseek ▃▅▇ (2d · 12/1–12/2 · avg 75.0 · fb 33.3%)`
      */
     protected formatSummaryQualityTrend(trend: Array<Record<string, any>>): string[] {
-        const byProvider = new Map<string, Array<Record<string, any>>>();
-        for (const point of trend) {
-            const provider = String(point.provider ?? 'unknown');
-            const group = byProvider.get(provider) ?? [];
-            group.push(point);
-            byProvider.set(provider, group);
-        }
-        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        const spark = (value: number): string => {
-            const index = Math.min(7, Math.max(0, Math.floor((Number(value) || 0) / 100 * 8)));
-            return sparkChars[index];
-        };
-        const lines: string[] = [];
-        for (const [provider, points] of byProvider) {
-            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
-            const totals = sorted.map(point => Number(point.avgTotal ?? 0));
-            const avgTotal = totals.length
-                ? (totals.reduce((sum, value) => sum + value, 0) / totals.length).toFixed(1)
-                : '0.0';
-            const fallbackRate = totals.length
-                ? (sorted.reduce((sum, point) => sum + Number(point.fallbackRate ?? 0), 0) / sorted.length).toFixed(1)
-                : '0.0';
-            const evidenceCoverage = totals.length
-                ? (sorted.reduce((sum, point) => sum + Number(point.avgEvidenceCoverage ?? 0), 0) / sorted.length).toFixed(1)
-                : '0.0';
-            const from = Number(sorted[0]?.bucketStart ?? 0);
-            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
-            const range = from || to
-                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
-                : '';
-            lines.push(`${provider} ${sorted.map(point => spark(Number(point.avgTotal ?? 0))).join('')} (${sorted.length}d${range} · avg ${avgTotal} · fb ${fallbackRate}% · evidence ${evidenceCoverage}%)`);
-        }
-        return lines.sort((a, b) => a.localeCompare(b));
+        return formatSummaryQualityTrend(trend);
     }
 
     private reviewCtx(): ReviewHandlerContext {
@@ -4063,41 +4033,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMessage[] {
-        const normalized: AgentMessage[] = [];
-        for (const message of messages) {
-            if (!message) {
-                continue;
-            }
-            // Tool-call payloads are projected into compact timeline/event
-            // rows; replaying the raw `tool` messages would print large JSON
-            // blobs (including embedded source files) on startup.
-            if (message.role === 'tool' && message.metadata?.uiKind !== 'event') {
-                continue;
-            }
-            if (message.role === 'assistant' && !String(message.content || '').trim()) {
-                continue;
-            }
-            // Older sessions may contain an accidentally persisted host
-            // transcript (tool payloads, file listings and role separators)
-            // instead of a chat message. Never dump that raw transcript into
-            // the startup viewport.
-            const content = String(message.content || '');
-            const transcriptMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
-            if (transcriptMarkers.length >= 2
-                || (transcriptMarkers.length >= 1
-                    && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))))
-                continue;
-            const previous = normalized[normalized.length - 1];
-            if (message.role === 'assistant'
-                && message.metadata?.error
-                && previous?.role === 'assistant'
-                && previous?.metadata?.error
-                && String(previous.content || '').trim() === String(message.content || '').trim()) {
-                continue;
-            }
-            normalized.push(message);
-        }
-        return normalized;
+        return normalizeLoadedMessages(messages);
     }
 
     protected async refreshTurnArtifacts(): Promise<void> {
