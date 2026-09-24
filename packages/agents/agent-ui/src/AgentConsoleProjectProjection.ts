@@ -326,3 +326,36 @@ export async function refreshCurrentSections(sessionService: any, state: any): P
     const sections = await sessionService.listSections(sessionId);
     state.setSections(sections);
 }
+
+export interface ProjectContextRefreshHost {
+    state: any;
+    updateTerminalTitle(): void;
+}
+
+export function refreshProjectContext(host: ProjectContextRefreshHost): void {
+    const projectSessions = resolveCurrentProjectSessions(host.state);
+    if (!projectSessions.length) {
+        host.state.setProjectContext();
+        host.updateTerminalTitle();
+        return;
+    }
+    const representative = selectProjectRepresentative(projectSessions);
+    const summary = projectSessions
+        .slice()
+        .sort((left, right) => {
+            const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return String(left.id || '').localeCompare(String(right.id || ''));
+        })
+        .map(item => String(item.summary || '').trim())
+        .find(Boolean) || '';
+    host.state.setProjectContext({
+        projectKey: representative ? resolveSessionProjectKey(representative) : undefined,
+        projectLabel: representative?.projectLabel || representative?.projectId || representative?.focusSummary || representative?.workspace || representative?.primaryThreadId || representative?.rootRequest || representative?.id,
+        projectSummary: summary,
+        projectSessionCount: representative?.projectSessionCount || projectSessions.length
+    });
+    host.updateTerminalTitle();
+}

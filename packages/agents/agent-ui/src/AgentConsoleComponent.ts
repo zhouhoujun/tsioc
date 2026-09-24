@@ -197,6 +197,8 @@ import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
+import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
@@ -1139,31 +1141,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected refreshProjectContext(): void {
-        const projectSessions = this.resolveCurrentProjectSessions();
-        if (!projectSessions.length) {
-            this.state.setProjectContext();
-            this.updateTerminalTitle();
-            return;
-        }
-        const representative = this.selectProjectRepresentative(projectSessions);
-        const summary = projectSessions
-            .slice()
-            .sort((left, right) => {
-                const activityDelta = (right.updatedAt || 0) - (left.updatedAt || 0);
-                if (activityDelta !== 0) {
-                    return activityDelta;
-                }
-                return String(left.id || '').localeCompare(String(right.id || ''));
-            })
-            .map(item => String(item.summary || '').trim())
-            .find(Boolean) || '';
-        this.state.setProjectContext({
-            projectKey: representative ? this.resolveSessionProjectKey(representative) : undefined,
-            projectLabel: representative?.projectLabel || representative?.projectId || representative?.focusSummary || representative?.workspace || representative?.primaryThreadId || representative?.rootRequest || representative?.id,
-            projectSummary: summary,
-            projectSessionCount: representative?.projectSessionCount || projectSessions.length
+        return refreshProjectContextView({
+            state: this.state,
+            updateTerminalTitle: () => this.updateTerminalTitle()
         });
-        this.updateTerminalTitle();
     }
 
     protected resolveProjectSessionsFor(sessionId = this.state.sessionId): Array<{
@@ -6377,26 +6358,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshTools(sessionId = this.state.sessionId): Promise<void> {
-        const definitions = await this.loadTools(sessionId);
-        if (!definitions.length) {
-            if (sessionId === this.state.sessionId) {
-                this.state.setTools([]);
-            }
-            return;
-        }
-        const tools = await Promise.all(definitions.map(async def => {
-            const active = this.appRpc
-                ? def.activation?.activated ?? true
-                : this.toolRegistry && typeof this.toolRegistry.isToolActive === 'function'
-                ? await this.toolRegistry.isToolActive(sessionId, def.name)
-                : def.activation?.activated ?? true;
-            return this.state.toToolItem(def, active);
-        }));
-        tools.sort((a, b) => a.name.localeCompare(b.name));
-        if (sessionId !== this.state.sessionId) {
-            return;
-        }
-        this.state.setTools(tools);
+        return refreshToolsView({
+            state: this.state,
+            appRpc: this.appRpc,
+            toolRegistry: this.toolRegistry,
+            loadTools: (sid) => this.loadTools(sid)
+        }, sessionId);
     }
 
 }
