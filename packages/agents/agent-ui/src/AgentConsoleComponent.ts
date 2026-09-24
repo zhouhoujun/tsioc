@@ -199,6 +199,14 @@ import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
 import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
+import {
+    PreferenceCommandHost,
+    resolveProjectMemoryId as resolveProjectMemoryIdView,
+    runDebugConfigCommand as runDebugConfigCommandView,
+    runHooksCommand as runHooksCommandView,
+    runMemoriesCommand as runMemoriesCommandView,
+    runPersonalityCommand as runPersonalityCommandView
+} from './AgentConsolePreferenceCommands';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
@@ -211,7 +219,7 @@ import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
 import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
@@ -3936,92 +3944,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runHooksCommand(): Promise<boolean> {
-        let summary: Array<{ stage: string; commands: string[]; functions: string[] }> = [];
-        if (this.appRpc) {
-            try {
-                const result = await this.appRpc.request('hooks.list', {}, this.rpcRequestContext());
-                if (Array.isArray(result)) {
-                    summary = result;
-                }
-            } catch {
-                summary = [];
-            }
-        }
-        if (!summary.length) {
-            summary = this.runtime.getHookSummary();
-        }
-        const stages = summary.filter(entry => entry.commands.length > 0 || entry.functions.length > 0);
-        if (!stages.length) {
-            this.notify('No hooks registered. Configure hooks in agent options (hooks.beforeTurn, hooks.afterTool, ...).');
-            return true;
-        }
-        const lines = stages.map(entry => {
-            const commands = entry.commands.length ? `cmd: ${entry.commands.join('; ')}` : '';
-            const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
-            return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
-        });
-        this.pushCommandOutput('/hooks', `Registered hooks:\n${lines.join('\n')}`);
-        return true;
+        return runHooksCommandView(this.preferenceCommandHost());
     }
 
     protected async runMemoriesCommand(args?: string): Promise<boolean> {
-        const raw = String(args || '').trim();
-        const parsed = raw.toLowerCase();
-        const current = this.options.ui?.memoryInjection !== false;
-        if (!parsed) {
-            this.notify(`Memory injection ${current ? 'ON' : 'OFF'}. Use /memories list|add|remove or on|off.`);
-            return true;
-        }
-        if (parsed === 'list' || parsed === 'injected') {
-            const projectId = this.resolveProjectMemoryId();
-            const records: Array<{ key: string; value: string }> = this.appRpc
-                ? await this.appRpc.request('project_memory.list', { sessionId: this.state.sessionId }, this.rpcRequestContext()).catch(() => [])
-                : (projectId && this.projectMemory ? await this.projectMemory.list(projectId) : []);
-            if (!records.length) {
-                this.notify(projectId ? 'No project memories.' : 'Project memory requires a project or workspace.');
-                return true;
-            }
-            this.pushCommandOutput('/memories list', `Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
-            return true;
-        }
-        if (parsed.startsWith('add ')) {
-            const projectId = this.resolveProjectMemoryId();
-            const body = raw.slice(4).trim();
-            const separator = body.indexOf('=') >= 0 ? body.indexOf('=') : body.indexOf(' ');
-            if (!projectId || (!this.appRpc && !this.projectMemory) || separator <= 0 || !body.slice(separator + 1).trim()) {
-                this.notify('Usage: /memories add <key>=<value>');
-                return true;
-            }
-            const input = { sessionId: this.state.sessionId, projectId, key: body.slice(0, separator).trim(), value: body.slice(separator + 1).trim(), conflict: 'replace' as const };
-            const record = this.appRpc
-                ? await this.appRpc.request('project_memory.add', input, this.rpcRequestContext())
-                : await this.projectMemory!.add(input);
-            this.notify(`Project memory saved: ${record.key}`);
-            return true;
-        }
-        if (parsed.startsWith('remove ') || parsed.startsWith('rm ')) {
-            const projectId = this.resolveProjectMemoryId();
-            const target = raw.slice(raw.indexOf(' ') + 1).trim();
-            const result = this.appRpc
-                ? await this.appRpc.request('project_memory.remove', { sessionId: this.state.sessionId, target }, this.rpcRequestContext()).catch(() => ({ removed: 0 }))
-                : { removed: projectId && this.projectMemory ? await this.projectMemory.remove(projectId, target) : 0 };
-            const removed = Number(result?.removed || 0);
-            this.notify(removed ? `Removed ${removed} project memory record${removed === 1 ? '' : 's'}.` : `Project memory not found: ${target || '-'}`);
-            return true;
-        }
-        const enabled = parsed === 'on';
-        if (parsed !== 'on' && parsed !== 'off') {
-            this.notify('Usage: /memories [on|off|list|injected|add <key>=<value>|remove <id-or-key>]');
-            return true;
-        }
-        this.options.ui = { ...(this.options.ui || {}), memoryInjection: enabled };
-        this.notify(enabled ? 'Memory injection enabled.' : 'Memory injection disabled.');
-        return true;
+        return runMemoriesCommandView(this.preferenceCommandHost(), args);
     }
 
     protected resolveProjectMemoryId(): string {
-        const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
-        return String(this.state.projectKey || consoleOptions?.workspace || '').trim();
+        return resolveProjectMemoryIdView(this.preferenceCommandHost());
     }
 
     protected async runFastCommand(args?: string): Promise<boolean> {
@@ -4029,59 +3960,26 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPersonalityCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        const parts = parsed.split(/\s+/).filter(Boolean);
-        const verb = parts[0]?.toLowerCase() ?? '';
-        const names = Object.keys(AGENT_PERSONALITY_PRESETS);
-        if (!verb) {
-            const active = this.options.ui?.personality;
-            this.notify(`Personality: ${active || 'none'}. Available: ${names.join(', ')}. Use /personality set <name> or unset.`);
-            return true;
-        }
-        if (verb === 'list') {
-            const lines = names.map(name => `${name === this.options.ui?.personality ? '*' : ' '} ${name}`);
-            this.pushCommandOutput('/personality list', `Personality presets:\n${lines.join('\n')}`);
-            return true;
-        }
-        if (verb === 'set') {
-            const name = parts[1] ?? '';
-            if (!name || !AGENT_PERSONALITY_PRESETS[name]) {
-                this.notify(`Unknown personality preset "${name}". Available: ${names.join(', ')}.`);
-                return true;
-            }
-            this.options.ui = { ...(this.options.ui || {}), personality: name };
-            this.notify(`Personality set to ${name}.`);
-            return true;
-        }
-        if (verb === 'unset') {
-            this.options.ui = { ...(this.options.ui || {}), personality: undefined };
-            this.notify(this.translator?.translate('agent.notice.personalityCleared') || 'Personality cleared.');
-            return true;
-        }
-        this.notify(this.translator?.translate('agent.notice.personalityUsage') || 'Usage: /personality [list|set <name>|unset]');
-        return true;
+        return runPersonalityCommandView(this.preferenceCommandHost(), args);
     }
 
     protected async runDebugConfigCommand(): Promise<boolean> {
-        const model = this.options.model || {};
-        const ui = this.options.ui || {};
-        const profiles = (model.profiles || {}) as Record<string, unknown>;
-        const activeProfile = String(model.defaultProfile || this.state.modelProfile || 'default');
-        const experimental = (ui.experimental || {}) as Record<string, boolean>;
-        const lines = [
-            `model: ${String(model.provider || '-')} / ${String(model.model || '-')}`,
-            `profile: ${activeProfile}${Object.keys(profiles).length ? ` (available: ${Object.keys(profiles).join(', ')})` : ''}`,
-            `ui.title: ${ui.title || '(default)'}`,
-            `ui.statusline: ${Array.isArray(ui.statusline) ? ui.statusline.join(', ') : '(default)'}`,
-            `ui.memoryInjection: ${ui.memoryInjection !== false ? 'on' : 'off'}`,
-            `ui.personality: ${ui.personality || '(none)'}`,
-            `ui.queueMode: ${ui.queueMode || 'off'}`,
-            `ui.planNudges: ${ui.planNudges !== false ? 'on' : 'off'}`,
-            `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${enabled ? 'on' : 'off'}`).join(', ') : '(none)'}`,
-            `session: ${this.state.sessionId} · workspace: ${this.workspace || '(none)'}`
-        ];
-        this.pushCommandOutput('/debug-config', `Debug config:\n${lines.join('\n')}`);
-        return true;
+        return runDebugConfigCommandView(this.preferenceCommandHost());
+    }
+
+    protected preferenceCommandHost(): PreferenceCommandHost {
+        return {
+            state: this.state,
+            options: this.options,
+            workspace: this.workspace,
+            runtime: this.runtime,
+            appRpc: this.appRpc,
+            projectMemory: this.projectMemory,
+            translator: this.translator,
+            rpcRequestContext: () => this.rpcRequestContext(),
+            notify: (message: string) => this.notify(message),
+            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
+        };
     }
 
     protected async runSettingsCommand(): Promise<boolean> {
