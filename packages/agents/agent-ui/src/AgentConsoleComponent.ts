@@ -206,6 +206,14 @@ import {
     runMemoriesCommand as runMemoriesCommandView,
     runPersonalityCommand as runPersonalityCommandView
 } from './AgentConsolePreferenceCommands';
+import { StashCommandHost, runStashCommand as runStashCommandView } from './AgentConsoleStashCommands';
+import {
+    GitSnapshotCommandHost,
+    openGitSnapshotDiff as openGitSnapshotDiffView,
+    openGitSnapshotList as openGitSnapshotListView,
+    revertGitSnapshotFromDetail as revertGitSnapshotFromDetailView,
+    runGitSnapshotsCommand as runGitSnapshotsCommandView
+} from './AgentConsoleGitSnapshotCommands';
 import {
     ExtensionCommandHost,
     formatPluginDetail as formatPluginDetailView,
@@ -3703,74 +3711,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runStashCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        if (!parsed || parsed.toLowerCase() === 'list') {
-            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
-            const names = Object.keys(stashes);
-            if (!names.length) {
-                this.notify(this.translator?.translate('agent.notice.noStashedDrafts') || 'No stashed drafts. Use /stash push <name> to save the current draft.');
-                return true;
-            }
-            this.pushCommandOutput('/stash list', `Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
-            return true;
-        }
-        const [verb, ...rest] = parsed.split(/\s+/);
-        const requested = rest.join(' ').trim();
-        if (verb.toLowerCase() === 'push' || verb.toLowerCase() === 'save') {
-            const draft = String(this.state.input || '').trim();
-            if (!draft) {
-                this.notify(this.translator?.translate('agent.notice.emptyStash') || 'Nothing to stash: the draft is empty.');
-                return true;
-            }
-            const name = requested || 'default';
-            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
-            stashes[name] = draft;
-            try {
-                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to stash the draft.');
-                return true;
-            }
-            this.notify(`Draft stashed as "${name}".`);
-            return true;
-        }
-        if (verb.toLowerCase() === 'pop' || verb.toLowerCase() === 'restore') {
-            const name = requested || 'default';
-            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
-            if (!(name in stashes)) {
-                this.notify(`No stash named "${name}". Available: ${Object.keys(stashes).join(', ') || 'none'}.`);
-                return true;
-            }
-            this.state.updateDraft(stashes[name]);
-            delete stashes[name];
-            try {
-                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
-            } catch (error: any) {
-                this.notify(error?.message || 'Restored the draft, but failed to remove the stash.');
-                return true;
-            }
-            this.notify(`Restored stash "${name}" into the draft.`);
-            return true;
-        }
-        if (verb.toLowerCase() === 'rm' || verb.toLowerCase() === 'drop' || verb.toLowerCase() === 'delete') {
-            const name = requested || 'default';
-            const stashes = await this.stashStore?.load(this.resolveHistoryWorkspace()) || {};
-            if (!(name in stashes)) {
-                this.notify(`No stash named "${name}". Available: ${Object.keys(stashes).join(', ') || 'none'}.`);
-                return true;
-            }
-            delete stashes[name];
-            try {
-                await this.stashStore?.save(this.resolveHistoryWorkspace(), stashes);
-            } catch (error: any) {
-                this.notify(error?.message || 'Failed to remove the stash.');
-                return true;
-            }
-            this.notify(`Removed stash "${name}".`);
-            return true;
-        }
-        this.notify(this.translator?.translate('agent.notice.stashUsage') || 'Usage: /stash [list|push <name>|pop <name>|rm <name>]');
-        return true;
+        return runStashCommandView(this.stashCommandHost(), args);
     }
 
     protected async runQueueCommand(args?: string): Promise<boolean> {
@@ -3984,6 +3925,26 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runDebugConfigCommand(): Promise<boolean> {
         return runDebugConfigCommandView(this.preferenceCommandHost());
+    }
+
+    protected stashCommandHost(): StashCommandHost {
+        return {
+            state: this.state,
+            stashStore: this.stashStore,
+            translator: this.translator,
+            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
+            notify: (message: string) => this.notify(message),
+            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
+        };
+    }
+
+    protected gitSnapshotCommandHost(): GitSnapshotCommandHost {
+        return {
+            state: this.state,
+            sessionService: this.sessionService,
+            notify: (message: string) => this.notify(message),
+            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint)
+        };
     }
 
     protected extensionCommandHost(): ExtensionCommandHost {
@@ -5874,160 +5835,19 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runGitSnapshotsCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            this.notify('No current session for git snapshots.');
-            return;
-        }
-        const parts = args.split(/\s+/).filter(Boolean);
-        const operation = parts[0] || 'list';
-        const ref = parts[1] || '';
-        if (operation === 'revert' || operation === 'restore') {
-            if (!ref) {
-                this.notify('Usage: /git-snapshots revert <messageId>');
-                return;
-            }
-            const confirmed = await this.select(
-                `Revert working tree to snapshot of message ${ref}?`,
-                [
-                    { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
-                    { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
-                ],
-                1,
-                this.state.consoleOptions.selectHint
-            );
-            if (confirmed !== 'yes') {
-                return;
-            }
-            const result = await this.sessionService.revertGitStepSnapshot(sessionId, ref);
-            if (result?.reverted === true) {
-                this.notify(`Working tree reverted to snapshot of message ${ref}. Use /git-snapshots unrevert to restore.`);
-            } else {
-                this.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
-            }
-            return;
-        }
-        if (operation === 'unrevert') {
-            const confirmed = await this.select(
-                'Restore the working tree captured before the last git revert?',
-                [
-                    { label: 'unrevert', value: 'yes', detail: 'restore the working tree' },
-                    { label: 'cancel', value: 'no', detail: 'keep the reverted working tree' }
-                ],
-                1,
-                this.state.consoleOptions.selectHint
-            );
-            if (confirmed !== 'yes') {
-                return;
-            }
-            const result = await this.sessionService.unrevertGitStepSnapshot(sessionId);
-            if (result?.reverted === true) {
-                this.notify('Working tree restored after last git revert.');
-            } else {
-                this.notify(`Unrevert failed: ${String(result?.error || 'unknown error')}`);
-            }
-            return;
-        }
-        if (operation === 'diff') {
-            if (!ref) {
-                this.notify('Usage: /git-snapshots diff <messageId|snapshotId>');
-                return;
-            }
-            await this.openGitSnapshotDiff(ref);
-            return;
-        }
-        if (operation !== 'list') {
-            this.notify('Usage: /git-snapshots [list|diff <ref>|revert <messageId>|unrevert]');
-            return;
-        }
-        await this.openGitSnapshotList();
+        return runGitSnapshotsCommandView(this.gitSnapshotCommandHost(), args);
     }
 
     protected async openGitSnapshotList(): Promise<void> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            this.notify('No current session for git snapshots.');
-            return;
-        }
-        const snapshots = await this.sessionService.listGitStepSnapshots(sessionId);
-        if (!snapshots.length) {
-            this.notify('No git step snapshots for the current session. Run an agent turn in a git workspace first.');
-            return;
-        }
-        const choice = await this.select(
-            `Git step snapshots (${snapshots.length})`,
-            snapshots.map((snapshot, index) => {
-                const label = String(snapshot.label || snapshot.messageId || `snapshot-${index + 1}`).trim();
-                const createdAt = snapshot.timestamp ? ` · ${new Date(snapshot.timestamp).toLocaleString()}` : '';
-                const ds = snapshot.diffStats;
-                const diffLabel = ds ? ` · +${ds.totalAdditions}/-${ds.totalDeletions} (${ds.filesChanged} file${ds.filesChanged === 1 ? '' : 's'})` : '';
-                return {
-                    label: `${label}${createdAt}${diffLabel}`,
-                    value: String(snapshot.messageId || snapshot.id || index),
-                    detail: String(snapshot.id || '')
-                };
-            }),
-            0,
-            this.state.consoleOptions.selectHint
-        );
-        if (!choice) {
-            return;
-        }
-        await this.openGitSnapshotDiff(choice);
+        return openGitSnapshotListView(this.gitSnapshotCommandHost());
     }
 
     protected async openGitSnapshotDiff(ref: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            this.notify('No current session for git snapshot diff.');
-            return;
-        }
-        const diff = await this.sessionService.diffGitStepSnapshot(sessionId, ref);
-        if (!diff) {
-            this.notify(`No git step snapshot found for ${ref}.`);
-            return;
-        }
-        const lines = this.buildGitSnapshotDiffLines(diff);
-        if (!lines.length) {
-            this.notify(`Snapshot ${ref} has no working tree changes to show.`);
-            return;
-        }
-        const fileCount = Array.isArray(diff.files) ? diff.files.length : 0;
-        this.state.closeReview();
-        this.state.openGitSnapshotDetail(
-            `git snapshot ${ref}`,
-            lines,
-            [`ref ${ref}`, fileCount ? `files ${fileCount}` : 'files -'].join(' · '),
-            ref
-        );
+        return openGitSnapshotDiffView(this.gitSnapshotCommandHost(), ref);
     }
 
     protected async revertGitSnapshotFromDetail(): Promise<void> {
-        const ref = this.state.gitSnapshotCurrentRef;
-        const sessionId = this.state.sessionId;
-        if (!ref || !sessionId || !this.sessionService) {
-            this.notify('No git snapshot selected for revert.');
-            return;
-        }
-        const confirmed = await this.select(
-            `Revert working tree to snapshot ${ref}?`,
-            [
-                { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
-                { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
-            ],
-            1,
-            this.state.consoleOptions.selectHint
-        );
-        if (confirmed !== 'yes') {
-            return;
-        }
-        const result = await this.sessionService.revertGitStepSnapshot(sessionId, ref);
-        if (result?.reverted === true) {
-            this.notify(`Working tree reverted to snapshot ${ref}. Use /git-snapshots unrevert to restore.`);
-            this.state.closeGitSnapshotDetail();
-        } else {
-            this.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
-        }
+        return revertGitSnapshotFromDetailView(this.gitSnapshotCommandHost());
     }
 
     protected buildGitSnapshotDiffLines(diff: Record<string, any>): string[] {
