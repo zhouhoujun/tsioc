@@ -36,3 +36,23 @@ export async function handleMenuSelection(state: any, handleCommand: (value: str
         state.setInputFocused(true);
     }
 }
+
+export async function loadInputHistory(
+    store: any,
+    resolveHistoryWorkspace: () => string,
+    state: any
+): Promise<void> {
+    if (!store) {
+        return;
+    }
+    try {
+        const workspace = resolveHistoryWorkspace();
+        const entries = (await store.load(workspace))
+            .filter((entry: any) => !state.shouldSkipHistoryEntry(entry));
+        if (workspace === resolveHistoryWorkspace()) {
+            state.setInputHistoryEntries(entries);
+        }
+    } catch (error) {
+        state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}

@@ -1,11 +1,12 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatUsageSummary } from './AgentConsoleFormatters';
+import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
 
 export interface AgentConsoleDigestState {
     setUsageDigest(value: string): void;
     setSummaryQualityDigest(value: string): void;
     setCompactionDigest(value: string): void;
+    setTurnDiagnosticsDigest(value: string): void;
 }
 
 export async function refreshUsageDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
@@ -213,5 +214,53 @@ export async function runHarnessStopCommand(sessionService: any, notify: (messag
     } else {
         notify(`Background task '${id}' was not found or is already finished.`);
     }
+    return true;
+}
+
+export async function refreshTurnDiagnosticsDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+    if (!sessionService) {
+        state.setTurnDiagnosticsDigest('');
+        return;
+    }
+    try {
+        const aggregate = await sessionService.getTurnDiagnosticsStats();
+        if (!aggregate || !Number(aggregate.totalTurns)) {
+            state.setTurnDiagnosticsDigest('');
+            return;
+        }
+        state.setTurnDiagnosticsDigest(formatTurnDiagnosticsAggregate(aggregate));
+    } catch {
+        state.setTurnDiagnosticsDigest('');
+    }
+}
+
+export async function openSummaryQualityRecords(
+    sessionService: any,
+    notify: (message: string) => void,
+    select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
+    provider?: string
+): Promise<boolean> {
+    if (!sessionService) {
+        notify('Summary quality is unavailable without app RPC.');
+        return true;
+    }
+    const records = await sessionService.listSummaryQuality({ provider, limit: 200 });
+    if (!records.length) {
+        notify(
+            provider
+                ? `No summary quality records for provider '${provider}'.`
+                : 'No summary quality records yet.'
+        );
+        return true;
+    }
+    const options = records.map((record: Record<string, any>) => buildSummaryQualityRecordOption(record));
+    await select(
+        provider
+            ? `Summary quality records (${provider})`
+            : 'Summary quality records',
+        options,
+        0,
+        `${records.length} record${records.length === 1 ? '' : 's'}`
+    );
     return true;
 }

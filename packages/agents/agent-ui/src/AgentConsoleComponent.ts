@@ -194,16 +194,17 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, formatToolCallLabel, resolveStreamEventLabel, resolveToolCallArgument, resolveToolEventKey, resolveToolEventName } from './AgentConsoleStreamHelpers';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
+import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
-import { parseSlashCommandLine, handleMenuSelection } from './AgentConsoleInputHelpers';
+import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
 import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
+import { runIdeCommand } from './AgentConsoleIdeCommands';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -507,29 +508,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Summary quality is unavailable without app RPC.');
-            return true;
-        }
-        const records = await this.sessionService.listSummaryQuality({ provider, limit: 200 });
-        if (!records.length) {
-            this.notify(
-                provider
-                    ? `No summary quality records for provider '${provider}'.`
-                    : 'No summary quality records yet.'
-            );
-            return true;
-        }
-        const options = records.map(record => buildSummaryQualityRecordOption(record));
-        await this.select(
+        return openSummaryQualityRecords(
+            this.sessionService,
+            (message: string) => this.notify(message),
+            (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
             provider
-                ? `Summary quality records (${provider})`
-                : 'Summary quality records',
-            options,
-            0,
-            `${records.length} record${records.length === 1 ? '' : 's'}`
         );
-        return true;
     }
 
     protected buildSummaryQualityRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
@@ -2296,35 +2280,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async restoreInputHistory(): Promise<void> {
-        if (!this.inputHistoryStore) {
-            return;
-        }
-        try {
-            const workspace = this.resolveHistoryWorkspace();
-            const entries = (await this.inputHistoryStore.load(workspace))
-                .filter(entry => !this.state.shouldSkipHistoryEntry(entry));
-            if (workspace === this.resolveHistoryWorkspace()) {
-                this.state.setInputHistoryEntries(entries);
-            }
-        } catch (error) {
-            this.state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return loadInputHistory(this.inputHistoryStore, () => this.resolveHistoryWorkspace(), this.state);
     }
 
     protected async initializeInputHistory(): Promise<void> {
-        if (!this.inputHistoryStore) {
-            return;
-        }
-        try {
-            const workspace = this.resolveHistoryWorkspace();
-            const entries = (await this.inputHistoryStore.load(workspace))
-                .filter(entry => !this.state.shouldSkipHistoryEntry(entry));
-            if (workspace === this.resolveHistoryWorkspace()) {
-                this.state.setInputHistoryEntries(entries);
-            }
-        } catch (error) {
-            this.state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        return loadInputHistory(this.inputHistoryStore, () => this.resolveHistoryWorkspace(), this.state);
     }
 
     protected scheduleInputHistoryRestore(delays: number[] = [0, 150, 750]): void {
@@ -3566,21 +3526,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshTurnDiagnosticsDigest(): Promise<void> {
-        if (!this.sessionService) {
-            this.state.setTurnDiagnosticsDigest('');
-            return;
-        }
-        try {
-            const aggregate = await this.sessionService.getTurnDiagnosticsStats();
-            if (!aggregate || !Number(aggregate.totalTurns)) {
-                this.state.setTurnDiagnosticsDigest('');
-                return;
-            }
-            this.state.setTurnDiagnosticsDigest(this.formatTurnDiagnosticsAggregate(aggregate));
-        } catch (error: any) {
-            this.state.setTurnDiagnosticsDigest('');
-            void error;
-        }
+        return refreshTurnDiagnosticsDigest(this.sessionService, this.state);
     }
 
     protected async refreshCompactionDigest(): Promise<void> {
@@ -4847,29 +4793,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim().toLowerCase();
-        if (!this.ideBridge) {
-            this.notify('No IDE bridge available. Attach an editor host (e.g. VS Code extension) to expose file context.');
-            return true;
-        }
-        if (parsed === 'refresh' || parsed === 'detach') {
-            this.notify(`IDE bridge: ${parsed === 'refresh' ? 'refreshed.' : 'detached.'}`);
-            return true;
-        }
-        try {
-            const context = await this.ideBridge.getContext();
-            if (!context?.activeFile) {
-                this.notify('IDE bridge connected, but no active file selected.');
-                return true;
-            }
-            const selection = context.selection
-                ? ` lines ${context.selection.startLine}-${context.selection.endLine}`
-                : '';
-            this.pushCommandOutput('/ide', `IDE context: ${context.activeFile}${selection}${context.platform ? ` (${context.platform})` : ''}`);
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to read IDE context.');
-        }
-        return true;
+        return runIdeCommand(this.ideBridge, (message: string) => this.notify(message), (command: string, text: string) => this.pushCommandOutput(command, text), args);
     }
 
     protected async runEditorCommand(args?: string): Promise<boolean> {
