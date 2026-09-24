@@ -202,6 +202,7 @@ import { parseSlashCommandLine, handleMenuSelection } from './AgentConsoleInputH
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
+import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -4438,31 +4439,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsKeybindsTab(): Promise<boolean> {
-        const action = await this.select('Settings · Keybinds', [
-            { label: 'List bindings', value: 'list', description: 'show effective key bindings' },
-            { label: 'Record a key', value: 'record', description: 'capture a key for an action' },
-            { label: 'Reset to defaults', value: 'reset', description: 'restore default key bindings' }
-        ], 0, 'enter select   esc close');
-        if (!action) return true;
-        if (action === 'list') {
-            await this.runKeymapCommand('list');
-            return true;
-        }
-        if (action === 'reset') {
-            await this.runKeymapCommand('reset');
-            return true;
-        }
-        if (action === 'record') {
-            const target = await this.select('Settings · Record key', AGENT_CONSOLE_GLOBAL_ACTIONS.map(name => ({
-                label: name,
-                value: name,
-                description: 'press a key to bind after selecting'
-            })), 0, 'enter select   esc close');
-            if (!target) return true;
-            await this.runKeymapCommand(`record ${target}`);
-            return true;
-        }
-        return true;
+        return openSettingsKeybindsTab(
+            (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
+            (args: string) => this.runKeymapCommand(args)
+        );
     }
 
     protected async openSettingsProvidersTab(): Promise<boolean> {
@@ -4503,60 +4483,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runDisplayCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim().toLowerCase();
-        if (requested === 'critical') {
-            this.state.setShowCriticalMarks(!this.state.showCriticalMarks);
-            this.notify(this.state.showCriticalMarks
-                ? 'Critical marking enabled: all messages marked and shown with priority.'
-                : 'Critical marking disabled.');
-            return true;
-        }
-        const current = this.state.showTimestamps;
-        if (requested === 'on' || requested === 'show') {
-            this.state.setShowTimestamps(true);
-        } else if (requested === 'off' || requested === 'hide') {
-            this.state.setShowTimestamps(false);
-        } else {
-            this.state.setShowTimestamps(!current);
-        }
-        try {
-            await this.persistSettings({ showTimestamps: this.state.showTimestamps });
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to save timestamp visibility.');
-            return true;
-        }
-        this.notify(this.state.showTimestamps ? 'Showing message timestamps.' : 'Hiding message timestamps.');
-        return true;
+        return runDisplayCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
     }
 
     protected async runTimelineModeCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim().toLowerCase();
-        const modes: Array<'off' | 'compact' | 'steps' | 'verbose'> = ['off', 'compact', 'steps', 'verbose'];
-        const labels: Record<string, string> = {
-            off: 'Timeline view disabled.',
-            compact: 'Timeline view: compact (current step + anomalies only).',
-            steps: 'Timeline view: steps (default grouped view).',
-            verbose: 'Timeline view: verbose (all events, diagnostic).'
-        };
-        let next: 'off' | 'compact' | 'steps' | 'verbose';
-        if (parsed && modes.includes(parsed as any)) {
-            next = parsed as 'off' | 'compact' | 'steps' | 'verbose';
-        } else if (!parsed) {
-            const current = this.state.timelineViewMode;
-            const idx = modes.indexOf(current);
-            next = modes[(idx + 1) % modes.length];
-        } else {
-            this.notify(`Usage: /timeline [off|compact|steps|verbose]`);
-            return true;
-        }
-        this.state.setTimelineMode(next);
-        this.notify(labels[next]);
-        try {
-            await this.persistSettings({ timelineViewMode: next });
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to save timeline mode.');
-        }
-        return true;
+        return runTimelineModeCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
     }
 
     protected async invokeTool(name: string, input: any): Promise<any> {
@@ -4856,27 +4787,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runExperimentalCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        const parts = parsed.split(/\s+/).filter(Boolean);
-        const experimental = { ...((this.options.ui?.experimental || {}) as Record<string, boolean>) };
-        if (!parts.length) {
-            if (!Object.keys(experimental).length) {
-                this.notify('No experimental features enabled. Use /experimental <name> on|off.');
-                return true;
-            }
-            const lines = Object.entries(experimental).map(([name, enabled]) => `${enabled ? 'on' : 'off'} ${name}`);
-            this.notify(`Experimental features:\n${lines.join('\n')}`);
-            return true;
-        }
-        const [name, state] = parts;
-        if (!name || (state !== 'on' && state !== 'off')) {
-            this.notify('Usage: /experimental [<name> on|off]');
-            return true;
-        }
-        experimental[name] = state === 'on';
-        this.options.ui = { ...(this.options.ui || {}), experimental };
-        this.notify(`Experimental feature "${name}" ${state === 'on' ? 'enabled' : 'disabled'}.`);
-        return true;
+        return runExperimentalCommand(args, this.options, (message: string) => this.notify(message));
     }
 
     protected async runFeedbackCommand(): Promise<boolean> {
@@ -6143,19 +6054,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runVimCommand(args: string): Promise<void> {
-        const raw = String(args || '').trim().toLowerCase();
-        let enabled: boolean;
-        if (raw === 'on' || raw === '1' || raw === 'true') {
-            enabled = true;
-        } else if (raw === 'off' || raw === '0' || raw === 'false') {
-            enabled = false;
-        } else {
-            enabled = !this.state.vimMode;
-        }
-        this.state.setVimMode(enabled);
-        this.notify(enabled
-            ? 'Vim mode enabled — input starts in insert mode; press Esc for normal mode.'
-            : 'Vim mode disabled.');
+        return runVimCommand(args, this.state, (message: string) => this.notify(message));
     }
 
     protected resolveKeymapContext(): AgentConsoleKeymapContext {
