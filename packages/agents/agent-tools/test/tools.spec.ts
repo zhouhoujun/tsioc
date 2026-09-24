@@ -662,13 +662,10 @@ export class AgentToolsPackageTest {
         expect(cappedResult.entries.map((entry: any) => entry.name)).toEqual(['.hidden.txt', 'alpha.txt']);
         expect(cappedResult.truncated).toEqual(true);
 
-        let pathError: Error | undefined;
-        try {
-            await tool.invoke({ path: '' }, createSessionContext());
-        } catch (err) {
-            pathError = err as Error;
-        }
-        expect(pathError?.message).toContain('path');
+        const rootResult = await tool.invoke({ path: '' }, createSessionContext());
+        expect(rootResult.entries.map((entry: any) => entry.name)).toContain('src');
+        const omittedPathResult = await tool.invoke({}, createSessionContext());
+        expect(omittedPathResult.entries.map((entry: any) => entry.name)).toContain('src');
 
         let limitError: Error | undefined;
         try {

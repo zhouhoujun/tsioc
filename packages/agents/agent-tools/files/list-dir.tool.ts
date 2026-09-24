@@ -13,11 +13,10 @@ export class ListDirTool implements AgentTool {
     inputSchema = {
         type: 'object',
         properties: {
-            path: { type: 'string' },
+            path: { type: 'string', description: 'Workspace-relative directory to list (default: workspace root).' },
             limit: { type: 'number' },
             includeHidden: { type: 'boolean' }
-        },
-        required: ['path']
+        }
     };
     toolset = 'filesystem';
     source = 'local';
@@ -69,10 +68,7 @@ export class ListDirTool implements AgentTool {
     }
 
     private requirePath(value: unknown): string {
-        if (typeof value !== 'string' || !value.trim()) {
-            throw new Error('Invalid list_dir input: path must be a non-empty string.');
-        }
-        return value;
+        return typeof value === 'string' && value.trim() ? value.trim() : '.';
     }
 
     private resolveLimit(value: unknown, fallback: number): number {
