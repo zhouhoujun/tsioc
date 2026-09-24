@@ -181,6 +181,18 @@ run_gate_regression() {
     fi
 }
 
+# run_source_size
+run_source_size() {
+    local id="source-size" label="agents source file line budget"
+    local log="$LOG_DIR/$id.log"
+    if node "$ROOT_DIR/scripts/check-source-size.mjs" >"$log" 2>&1; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        cat "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -231,6 +243,7 @@ run_stage() {
         tui-gate)         run_harness tui-gate 'TUI gate (text stream, 5 scenarios)' run-tui-gate.ts --json "$LOG_DIR/tui-gate-metrics.json" ;;
         gate-regression)  run_gate_regression ;;
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;
+        source-size)      run_source_size ;;
         diff-check)       run_diff_check ;;
         *)
             echo "[GATE-UNKNOWN] $1" >&2
@@ -244,7 +257,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
-            pty-acceptance diff-check"
+            pty-acceptance diff-check source-size"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"
