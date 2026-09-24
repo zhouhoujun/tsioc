@@ -49,6 +49,7 @@ import {
     buildTurnDiagnosticsRecordOption,
     parseTrendArgs
 } from './AgentConsoleFormatters';
+import { formatUsageWindow, formatCompactionHistoryRecord, formatCompactionHistoryTrend, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend } from './AgentConsoleFormatters';
 import {
     openCompactionHistory,
     openCompactionHistoryTrend,
@@ -482,7 +483,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected formatUsageWindow(label: string, usage: Record<string, any>): string {
-        return `${label} ${Number(usage?.turns ?? 0)} turns · ${formatCompactNumber(Number(usage?.promptTokens ?? 0))} in · ${formatCompactNumber(Number(usage?.completionTokens ?? 0))} out · ${formatCompactNumber(Number(usage?.totalTokens ?? 0))} total`;
+        return formatUsageWindow(label, usage);
     }
 
     protected formatUsageSummary(usage: Record<string, any>): string {
@@ -1061,21 +1062,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `session-1 · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens · 12/1–12/2`
      */
     protected formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, sessionId?: string): string {
-        const id = sessionId
-            ? (sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId)
-            : 'all sessions';
-        const parts = [
-            `${id} · ${Number(aggregate.totalTurns ?? 0)} turns`,
-            `empty ${Number(aggregate.emptyResponseRate ?? 0)}%`,
-            `repeated ${Number(aggregate.repeatedQuestionRate ?? 0)}%`,
-            `clarif ${Number(aggregate.clarificationRate ?? 0)}%`,
-            `${Number(aggregate.compactionCount ?? 0)} compact(s)`,
-            `saved ${formatCompactNumber(Number(aggregate.totalTokenSavings ?? 0))} tokens`
-        ];
-        const range = aggregate.timeRange
-            ? ` · ${new Date(aggregate.timeRange.from).toLocaleDateString()}–${new Date(aggregate.timeRange.to).toLocaleDateString()}`
-            : '';
-        return parts.join(' · ') + range;
+        return formatTurnDiagnosticsAggregate(aggregate, sessionId);
     }
 
     /**
@@ -1086,35 +1073,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `session-1 ▃▅▇ (3d · 12/1–12/3 · 42 turns · saved 25k tokens)`
      */
     protected formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>): string[] {
-        const bySession = new Map<string, Array<Record<string, any>>>();
-        for (const point of trend) {
-            const sessionId = String(point.sessionId ?? 'unknown');
-            const group = bySession.get(sessionId) ?? [];
-            group.push(point);
-            bySession.set(sessionId, group);
-        }
-        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        const spark = (value: number, max: number): string => {
-            const ratio = max > 0 ? Math.min(1, Math.max(0, Number(value) || 0) / max) : 0;
-            const index = Math.min(7, Math.max(0, Math.floor(ratio * 8)));
-            return sparkChars[index];
-        };
-        const lines: string[] = [];
-        for (const [sessionId, points] of bySession) {
-            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
-            const savings = sorted.map(point => Number(point.totalTokenSavings ?? 0));
-            const maxSaving = Math.max(...savings, 1);
-            const turns = sorted.reduce((sum, point) => sum + Number(point.recordCount ?? 0), 0);
-            const tokensSaved = savings.reduce((sum, value) => sum + value, 0);
-            const from = Number(sorted[0]?.bucketStart ?? 0);
-            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
-            const range = from || to
-                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
-                : '';
-            const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-            lines.push(`${id} ${sorted.map(point => spark(Number(point.totalTokenSavings ?? 0), maxSaving)).join('')} (${sorted.length}d${range} · ${turns} turns · saved ${formatCompactNumber(tokensSaved)} tokens)`);
-        }
-        return lines.sort((a, b) => a.localeCompare(b));
+        return formatTurnDiagnosticsTrend(trend);
     }
 
     /**
@@ -1136,35 +1095,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `session-1 ▃▅▇ (2d · 12/1–12/2 · saved 25k tokens · avg 62.5%)`
      */
     protected formatCompactionHistoryTrend(trend: Array<Record<string, any>>): string[] {
-        const bySession = new Map<string, Array<Record<string, any>>>();
-        for (const point of trend) {
-            const sessionId = String(point.sessionId ?? 'unknown');
-            const group = bySession.get(sessionId) ?? [];
-            group.push(point);
-            bySession.set(sessionId, group);
-        }
-        const sparkChars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        const spark = (value: number): string => {
-            const index = Math.min(7, Math.max(0, Math.floor((Number(value) || 0) / 100 * 8)));
-            return sparkChars[index];
-        };
-        const lines: string[] = [];
-        for (const [sessionId, points] of bySession) {
-            const sorted = points.slice().sort((a, b) => Number(a.bucketStart ?? 0) - Number(b.bucketStart ?? 0));
-            const ratios = sorted.map(point => Number(point.avgCompressionRatio ?? 0));
-            const avgRatio = ratios.length
-                ? (ratios.reduce((sum, value) => sum + value, 0) / ratios.length).toFixed(1)
-                : '0.0';
-            const tokensSaved = sorted.reduce((sum, point) => sum + Number(point.totalTokensSaved ?? 0), 0);
-            const from = Number(sorted[0]?.bucketStart ?? 0);
-            const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
-            const range = from || to
-                ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
-                : '';
-            const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-            lines.push(`${id} ${sorted.map(point => spark(Number(point.avgCompressionRatio ?? 0))).join('')} (${sorted.length}d${range} · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%)`);
-        }
-        return lines.sort((a, b) => a.localeCompare(b));
+        return formatCompactionHistoryTrend(trend);
     }
 
     /**
@@ -1172,20 +1103,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * `compacted L3 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
      */
     protected formatCompactionHistoryRecord(record: Record<string, any>): string {
-        const parts = [
-            record.compactionTriggered ? 'compacted' : record.strategy,
-            record.level ? `L${record.level}` : ''
-        ].filter(Boolean);
-        if (typeof record.beforeMessageCount === 'number' && typeof record.afterMessageCount === 'number') {
-            parts.push(`${record.beforeMessageCount}→${record.afterMessageCount} msgs (${record.compactedMessageCount ?? 0})`);
-        }
-        if (typeof record.beforeTokens === 'number' && typeof record.afterTokens === 'number') {
-            parts.push(`${formatCompactNumber(record.beforeTokens)}→${formatCompactNumber(record.afterTokens)} tokens (${record.compressionRatio ?? 0}%)`);
-        }
-        if (typeof record.cumulativeTokenSavings === 'number' && record.cumulativeTokenSavings > 0) {
-            parts.push(`saved ${formatCompactNumber(record.cumulativeTokenSavings)} total`);
-        }
-        return parts.join(' · ');
+        return formatCompactionHistoryRecord(record);
     }
 
     /**
