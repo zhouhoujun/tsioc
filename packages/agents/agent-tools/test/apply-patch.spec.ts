@@ -99,7 +99,7 @@ export class ApplyPatchToolTest {
             expect(result.ok).toEqual(true);
             expect(result.summary).toEqual('0 file(s) added, 2 updated, 0 deleted, 0 moved');
             const content = await fs.readFile(path.join(workspace, 'src', 'alpha.txt'), 'utf8');
-            expect(content).toEqual('ALPHA\nGAMMA\n');
+            expect(content).toEqual('ALPHA\nbeta\nGAMMA\n');
         } finally {
             await fs.rm(workspace, { recursive: true, force: true });
         }
@@ -194,6 +194,32 @@ export class ApplyPatchToolTest {
             }, {} as any)).rejects.toThrow(/does not match the file content/);
             const content = await fs.readFile(path.join(workspace, 'src', 'alpha.txt'), 'utf8');
             expect(content).toEqual('alpha\nbeta\ngamma\n');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('apply_patch tolerates trailing-whitespace drift in context')
+    async toleratesTrailingWhitespaceDrift() {
+        const workspace = await this.createWorkspace();
+        try {
+            await fs.writeFile(path.join(workspace, 'src', 'ws.txt'), 'alpha\t\nbeta\n', 'utf8');
+            const tool = new ApplyPatchTool({ file: { rootDir: workspace } });
+            const result = await tool.invoke({
+                patch: [
+                    '*** Begin Patch',
+                    '*** Update File: src/ws.txt',
+                    '@@',
+                    '-alpha',
+                    '+ALPHA',
+                    ' beta',
+                    '*** End Patch'
+                ].join('\n')
+            }, {} as any);
+
+            expect(result.ok).toEqual(true);
+            const content = await fs.readFile(path.join(workspace, 'src', 'ws.txt'), 'utf8');
+            expect(content).toEqual('ALPHA\nbeta\n');
         } finally {
             await fs.rm(workspace, { recursive: true, force: true });
         }

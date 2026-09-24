@@ -108,7 +108,50 @@ function readOrNull(filePath: string): Promise<string | null> {
     });
 }
 
-function assertUniqueContextMatch(content: string, removalText: string, relativePath: string): number {
+interface ContextMatch {
+    at: number;
+    length: number;
+}
+
+function normalizeMatchLine(line: string): string {
+    return line.replace(/\r$/, '').replace(/[ \t]+$/, '');
+}
+
+function lineStartOffsets(content: string): number[] {
+    const starts = [0];
+    for (let index = 0; index < content.length; index++) {
+        if (content[index] === '\n') {
+            starts.push(index + 1);
+        }
+    }
+    return starts;
+}
+
+function findTolerantMatches(content: string, removalLines: string[]): ContextMatch[] {
+    const contentLines = content.split('\n');
+    const starts = lineStartOffsets(content);
+    const results: ContextMatch[] = [];
+    const span = removalLines.length;
+    for (let index = 0; index + span <= contentLines.length; index++) {
+        let matched = true;
+        for (let offset = 0; offset < span; offset++) {
+            if (normalizeMatchLine(contentLines[index + offset]) !== normalizeMatchLine(removalLines[offset])) {
+                matched = false;
+                break;
+            }
+        }
+        if (!matched) {
+            continue;
+        }
+        const lastLineIndex = index + span - 1;
+        const at = starts[index];
+        const end = starts[lastLineIndex] + contentLines[lastLineIndex].length;
+        results.push({ at, length: end - at });
+    }
+    return results;
+}
+
+function resolveUniqueContextMatch(content: string, removalText: string, relativePath: string): ContextMatch {
     const matches: number[] = [];
     let index = content.indexOf(removalText);
     while (index !== -1) {
@@ -117,33 +160,42 @@ function assertUniqueContextMatch(content: string, removalText: string, relative
         }
         index = content.indexOf(removalText, index + 1);
     }
-    if (matches.length === 0) {
-        throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' does not match the file content.`);
+    if (matches.length === 1) {
+        return { at: matches[0], length: removalText.length };
     }
     if (matches.length > 1) {
         throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' matches ${matches.length} locations; add more context lines to make it unique.`);
     }
-    return matches[0];
+    const tolerant = findTolerantMatches(content, removalText.split('\n'));
+    if (tolerant.length === 1) {
+        return tolerant[0];
+    }
+    if (tolerant.length > 1) {
+        throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' matches ${tolerant.length} locations after whitespace normalization; add more context lines to make it unique.`);
+    }
+    throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' does not match the file content (whitespace-normalized matching was also attempted). Re-read the file and regenerate the hunk from its current content.`);
 }
 
 function applyUpdateHunk(content: string, hunk: PatchHunk): string {
-    const removals: string[] = [];
-    const additions: string[] = [];
+    const removalLines: string[] = [];
+    const replacementLines: string[] = [];
     for (const line of hunk.lines) {
         if (line.startsWith('+')) {
-            additions.push(line.slice(1));
+            replacementLines.push(line.slice(1));
         } else if (line.startsWith('-')) {
-            removals.push(line.slice(1));
+            removalLines.push(line.slice(1));
         } else {
-            removals.push(line.length > 0 ? line.slice(1) : '');
+            const contextLine = line.length > 0 ? line.slice(1) : '';
+            removalLines.push(contextLine);
+            replacementLines.push(contextLine);
         }
     }
-    if (removals.length === 0) {
+    if (removalLines.length === 0) {
         throw new Error(`Invalid apply_patch input: update hunk for '${hunk.filePath}' must include at least one context or removed line to anchor the change.`);
     }
-    const removalText = removals.join('\n');
-    const at = assertUniqueContextMatch(content, removalText, hunk.filePath);
-    return content.slice(0, at) + additions.join('\n') + content.slice(at + removalText.length);
+    const removalText = removalLines.join('\n');
+    const match = resolveUniqueContextMatch(content, removalText, hunk.filePath);
+    return content.slice(0, match.at) + replacementLines.join('\n') + content.slice(match.at + match.length);
 }
 
 function addedContent(hunk: PatchHunk): string {
