@@ -233,13 +233,15 @@ function normalizeOptionalStringArray(value: unknown): string[] | undefined {
     return result.length > 0 ? result : undefined;
 }
 
-function normalizeItem(input: any): TodoItem {
-    const id = String(input?.id ?? '?').trim() || '?';
-    const content = String(input?.content ?? '(no description)').trim() || '(no description)';
+function normalizeItem(input: any, existing?: TodoItem): TodoItem {
+    const id = String(input?.id ?? existing?.id ?? '?').trim() || '?';
+    const content = input?.content !== undefined
+        ? (String(input.content ?? '').trim() || '(no description)')
+        : (existing?.content ?? '(no description)');
     const item: TodoItem = {
         id,
         content,
-        status: normalizeStatus(input?.status)
+        status: input?.status !== undefined ? normalizeStatus(input.status) : (existing?.status ?? 'pending')
     };
     if (input?.schemaVersion) {
         item.schemaVersion = Number(input.schemaVersion) || undefined;
@@ -517,9 +519,12 @@ export class TodoStore {
     }
 
     async replace(sessionId: string, todos: any[]): Promise<TodoItem[]> {
+        const current = await this.read(sessionId);
+        const existingById = new Map(current.map(item => [item.id, item] as const));
         const next = new Map<string, TodoItem>();
         for (const raw of todos ?? []) {
-            const item = normalizeItem(raw);
+            const id = String(raw?.id ?? '').trim();
+            const item = normalizeItem(raw, id ? existingById.get(id) : undefined);
             next.delete(item.id);
             next.set(item.id, item);
         }
@@ -537,7 +542,8 @@ export class TodoStore {
             if (!id) {
                 continue;
             }
-            deduped.set(id, normalizeItem(raw));
+            const existingIndex = index.get(id);
+            deduped.set(id, normalizeItem(raw, existingIndex != null ? current[existingIndex] : undefined));
         }
         for (const item of deduped.values()) {
             const existingIndex = index.get(item.id);

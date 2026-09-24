@@ -81,7 +81,7 @@ const MEDIUM_RISK_KEYWORDS = /\b(refactor|rename|move|migrat|rewrite|restructure
  */
 export const DEFAULT_CONJUNCTIONS: string[] = [
     'and then', 'also add', 'as well as',
-    '同时', '另外', '并且', '然后再', '并且然后', '以及', '和', '、'
+    '同时', '另外', '并且', '然后再', '并且然后'
 ];
 
 /**
@@ -108,6 +108,8 @@ export function buildMultiActionPattern(conjunctions: string[] = DEFAULT_CONJUNC
 }
 
 const VAGUE_PATTERNS = /\b(something|stuff|etc|etc\.|fix issues|handle things|improve it|make it work|finish up|wrap up)\b/i;
+
+const MAX_ATOMIC_FRAGMENTS = 5;
 
 /**
  * Infer the expected evidence kind for a step from its content. Defaults to
@@ -233,7 +235,11 @@ export function compilePlan(
         }
 
         const fragments = splitAtomicFragments(content, options?.conjunctions);
-        const isMultiAction = fragments.length > 1 || VAGUE_PATTERNS.test(content);
+        // A large fragment count almost always means the conjunction heuristic
+        // over-split natural prose (e.g. enumeration), so keep the item atomic
+        // instead of exploding the plan into many proposal steps.
+        const isMultiAction = (fragments.length > 1 && fragments.length <= MAX_ATOMIC_FRAGMENTS)
+            || VAGUE_PATTERNS.test(content);
 
         if (!isMultiAction) {
             const normalized = autoNormalizeStep({

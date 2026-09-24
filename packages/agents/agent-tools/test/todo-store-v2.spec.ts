@@ -74,6 +74,24 @@ export class TodoStoreV2Test {
         expect(todos[0].estimate).toBe('30m');
     }
 
+    @Test('merge preserves content and status when a status-only update omits them')
+    async mergePreservesOmittedFields() {
+        const store = new TodoStore();
+        await store.replace('s3b', [
+            { id: 'a', content: 'keep my content', status: 'pending' },
+            { id: 'b', content: 'second', status: 'in_progress' }
+        ]);
+        await store.merge('s3b', [
+            { id: 'a', status: 'completed' },
+            { id: 'b', status: 'pending' }
+        ]);
+        const todos = await store.read('s3b');
+        expect(todos[0].content).toBe('keep my content');
+        expect(todos[0].status).toBe('completed');
+        expect(todos[1].content).toBe('second');
+        expect(todos[1].status).toBe('pending');
+    }
+
     @Test('normalizeItem rejects invalid kind')
     async normalizeRejectsInvalidKind() {
         const store = new TodoStore();
