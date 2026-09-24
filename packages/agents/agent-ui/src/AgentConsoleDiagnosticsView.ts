@@ -1,5 +1,73 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatUsageSummary } from './AgentConsoleFormatters';
+
+export interface AgentConsoleDigestState {
+    setUsageDigest(value: string): void;
+    setSummaryQualityDigest(value: string): void;
+    setCompactionDigest(value: string): void;
+}
+
+export async function refreshUsageDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+    if (!sessionService) {
+        state.setUsageDigest('');
+        return;
+    }
+    try {
+        const usage = await sessionService.getUsageStats();
+        const totalTurns = Number(usage?.cumulative?.turns ?? 0);
+        const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
+        if (!totalTurns && !totalTokens) {
+            state.setUsageDigest('');
+            return;
+        }
+        state.setUsageDigest(formatUsageSummary(usage));
+    } catch {
+        state.setUsageDigest('');
+    }
+}
+
+export async function refreshSummaryQualityDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+    if (!sessionService) {
+        state.setSummaryQualityDigest('');
+        return;
+    }
+    try {
+        const aggregates = await sessionService.getSummaryQualityStats();
+        if (!aggregates.length) {
+            state.setSummaryQualityDigest('');
+            return;
+        }
+        state.setSummaryQualityDigest(
+            aggregates
+                .map((item: Record<string, any>) => formatSummaryQualityAggregate(item))
+                .join(' | ')
+        );
+    } catch {
+        state.setSummaryQualityDigest('');
+    }
+}
+
+export async function refreshCompactionDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+    if (!sessionService) {
+        state.setCompactionDigest('');
+        return;
+    }
+    try {
+        const aggregates = await sessionService.getCompactionHistoryStats();
+        if (!aggregates.length) {
+            state.setCompactionDigest('');
+            return;
+        }
+        state.setCompactionDigest(
+            aggregates
+                .map((item: Record<string, any>) => formatCompactionHistoryAggregate(item))
+                .join(' | ')
+        );
+    } catch {
+        state.setCompactionDigest('');
+    }
+}
 
 export function formatSummaryQualityTrend(trend: Array<Record<string, any>>): string[] {
     const byProvider = new Map<string, Array<Record<string, any>>>();

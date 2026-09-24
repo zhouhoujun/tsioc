@@ -194,7 +194,7 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, formatToolCallLabel, resolveStreamEventLabel, resolveToolCallArgument, resolveToolEventKey, resolveToolEventName } from './AgentConsoleStreamHelpers';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs } from './AgentConsoleDiagnosticsView';
+import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshUsageDigest } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, refreshProjects, refreshThreads, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
@@ -3707,23 +3707,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshUsageDigest(): Promise<void> {
-        if (!this.sessionService) {
-            this.state.setUsageDigest('');
-            return;
-        }
-        try {
-            const usage = await this.sessionService.getUsageStats();
-            const totalTurns = Number(usage?.cumulative?.turns ?? 0);
-            const totalTokens = Number(usage?.cumulative?.totalTokens ?? 0);
-            if (!totalTurns && !totalTokens) {
-                this.state.setUsageDigest('');
-                return;
-            }
-            this.state.setUsageDigest(this.formatUsageSummary(usage));
-        } catch (error: any) {
-            this.state.setUsageDigest('');
-            void error;
-        }
+        return refreshUsageDigest(this.sessionService, this.state);
     }
 
     protected async refreshTurnDiagnosticsDigest(): Promise<void> {
@@ -3745,47 +3729,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshCompactionDigest(): Promise<void> {
-        if (!this.sessionService) {
-            this.state.setCompactionDigest('');
-            return;
-        }
-        try {
-            const aggregates = await this.sessionService.getCompactionHistoryStats();
-            if (!aggregates.length) {
-                this.state.setCompactionDigest('');
-                return;
-            }
-            this.state.setCompactionDigest(
-                aggregates
-                    .map(item => this.formatCompactionHistoryAggregate(item))
-                    .join(' | ')
-            );
-        } catch (error: any) {
-            this.state.setCompactionDigest('');
-            void error;
-        }
+        return refreshCompactionDigest(this.sessionService, this.state);
     }
 
     protected async refreshSummaryQualityDigest(): Promise<void> {
-        if (!this.sessionService) {
-            this.state.setSummaryQualityDigest('');
-            return;
-        }
-        try {
-            const aggregates = await this.sessionService.getSummaryQualityStats();
-            if (!aggregates.length) {
-                this.state.setSummaryQualityDigest('');
-                return;
-            }
-            this.state.setSummaryQualityDigest(
-                aggregates
-                    .map(item => this.formatSummaryQualityAggregate(item))
-                    .join(' | ')
-            );
-        } catch (error: any) {
-            this.state.setSummaryQualityDigest('');
-            void error;
-        }
+        return refreshSummaryQualityDigest(this.sessionService, this.state);
     }
 
     protected async mergeTodoPlanForSessions(
