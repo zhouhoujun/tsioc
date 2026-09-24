@@ -164,8 +164,7 @@ import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentCons
 import {
     AgentConsoleAppAuthorizer,
     AgentConsoleAppStatus,
-    extractAgentConsoleAppMentions,
-    resolveAgentConsoleApps
+    extractAgentConsoleAppMentions
 } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
@@ -207,6 +206,19 @@ import {
     runMemoriesCommand as runMemoriesCommandView,
     runPersonalityCommand as runPersonalityCommandView
 } from './AgentConsolePreferenceCommands';
+import {
+    ExtensionCommandHost,
+    formatPluginDetail as formatPluginDetailView,
+    formatPluginLine as formatPluginLineView,
+    formatSkillDetail as formatSkillDetailView,
+    formatSkillLine as formatSkillLineView,
+    insertAppMention as insertAppMentionView,
+    resolveAppAuthorizer as resolveAppAuthorizerView,
+    resolveApps as resolveAppsView,
+    runAppsCommand as runAppsCommandView,
+    runPluginsCommand as runPluginsCommandView,
+    runSkillsCommand as runSkillsCommandView
+} from './AgentConsoleExtensionCommands';
 import {
     PolicyCommandHost,
     runDelegationModeCommand as runDelegationModeCommandView,
@@ -3974,6 +3986,17 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runDebugConfigCommandView(this.preferenceCommandHost());
     }
 
+    protected extensionCommandHost(): ExtensionCommandHost {
+        return {
+            state: this.state,
+            options: this.options,
+            notify: (message: string) => this.notify(message),
+            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
+            pushCommandOutput: (command: string, out: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, out, kind),
+            invokeTool: (name: string, input?: any) => this.invokeTool(name, input)
+        };
+    }
+
     protected policyCommandHost(): PolicyCommandHost {
         return {
             state: this.state,
@@ -4202,53 +4225,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runSkillsCommand(args?: string): Promise<boolean> {
-        const query = String(args || '').trim();
-        const result = await this.invokeTool('skill_list', query ? { query } : {}).catch(() => undefined);
-        const skills = Array.isArray(result?.skills) ? result.skills : [];
-        if (!skills.length) {
-            this.notify(query ? `No skills match "${query}".` : 'No skills available.');
-            return true;
-        }
-        if (query) {
-            this.pushCommandOutput(`/skills ${query}`, skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
-            return true;
-        }
-        const selected = await this.select('Skills', skills.map((skill: any) => ({
-            label: `${skill.id}${String(skill.category || '').trim() ? ` [${skill.category}]` : ''}`,
-            value: String(skill.id || ''),
-            description: String(skill.summary || ''),
-            detail: [
-                `Title: ${String(skill.title || skill.id || '-')}`,
-                String(skill.summary || '') ? `Summary: ${skill.summary}` : '',
-                Array.isArray(skill.aliases) && skill.aliases.length ? `Aliases: ${skill.aliases.join(', ')}` : '',
-                String(skill.source || '') ? `Source: ${skill.source}` : ''
-            ].filter(Boolean).join('\n')
-        })), 0, 'enter detail   esc close');
-        if (!selected) return true;
-        const detail = await this.invokeTool('read_skill', { id: selected }).catch(() => undefined);
-        this.pushCommandOutput(`/skills ${selected}`, detail?.skill
-            ? this.formatSkillDetail(detail.skill)
-            : skills.map((skill: any) => this.formatSkillLine(skill)).join('\n'));
-        return true;
+        return runSkillsCommandView(this.extensionCommandHost(), args);
     }
 
     protected formatSkillLine(skill: any): string {
-        const parts = [String(skill.id || '')];
-        if (String(skill.category || '').trim()) parts.push(`[${skill.category}]`);
-        if (String(skill.summary || '').trim()) parts.push(String(skill.summary));
-        return parts.join(' ');
+        return formatSkillLineView(skill);
     }
 
     protected formatSkillDetail(skill: any): string {
-        const lines = [
-            `Skill: ${String(skill.id || '')}`,
-            String(skill.title || '') ? `Title: ${skill.title}` : '',
-            String(skill.summary || '') ? `Summary: ${skill.summary}` : '',
-            Array.isArray(skill.aliases) && skill.aliases.length ? `Aliases: ${skill.aliases.join(', ')}` : '',
-            String(skill.content || '') ? `Content: ${skill.content}` : '',
-            String(skill.source || '') ? `Source: ${skill.source}` : ''
-        ];
-        return lines.filter(Boolean).join('\n');
+        return formatSkillDetailView(skill);
     }
 
     protected async runMcpCommand(args?: string): Promise<boolean> {
@@ -4279,103 +4264,31 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPluginsCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim();
-        const result = await this.invokeTool('plugins', requested
-            ? { action: 'inspect', id: requested }
-            : { action: 'list' }).catch(() => undefined);
-        const plugins = Array.isArray(result?.plugins) ? result.plugins : [];
-        if (!plugins.length) {
-            this.notify(requested ? `No plugin "${requested}" installed.` : 'No plugins installed.');
-            return true;
-        }
-        if (requested) {
-            this.pushCommandOutput(`/plugins ${requested}`, plugins.map((plugin: any) => this.formatPluginDetail(plugin, result?.contributions)).join('\n'));
-            return true;
-        }
-        this.pushCommandOutput('/plugins', plugins.map((plugin: any) => this.formatPluginLine(plugin)).join('\n'));
-        return true;
+        return runPluginsCommandView(this.extensionCommandHost(), args);
     }
 
     protected resolveApps(): AgentConsoleAppStatus[] {
-        const config = (this.options.ui?.console as any)?.connectors;
-        return resolveAgentConsoleApps(config && typeof config === 'object' ? config : undefined);
+        return resolveAppsView(this.extensionCommandHost());
     }
 
     protected resolveAppAuthorizer(): AgentConsoleAppAuthorizer | undefined {
-        const authorizer = (this.options.ui?.console as any)?.authorizeConnector
-            || (this.options.ui as any)?.authorizeConnector;
-        return typeof authorizer === 'function' ? authorizer : undefined;
+        return resolveAppAuthorizerView(this.extensionCommandHost());
     }
 
     protected async runAppsCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim().replace(/^\$/, '').toLowerCase();
-        const apps = this.resolveApps();
-        if (requested) {
-            let app = apps.find(item => item.id === requested);
-            if (!app) {
-                this.notify(`Unknown connector "${requested}". Use /apps to browse available connectors.`);
-                return true;
-            }
-            if (!app.authorized) {
-                const authorize = this.resolveAppAuthorizer();
-                if (!authorize) {
-                    this.insertAppMention(app);
-                    return true;
-                }
-                let authorized = false;
-                try {
-                    authorized = await authorize(app);
-                } catch (error) {
-                    this.notify(`${app.name} authorization failed: ${error instanceof Error ? error.message : String(error)}`);
-                    return true;
-                }
-                if (!authorized) {
-                    this.notify(`${app.name} authorization was cancelled.`);
-                    return true;
-                }
-                app = { ...app, authorized: true, statusLabel: 'connected' };
-            }
-            this.insertAppMention(app);
-            return true;
-        }
-        const selected = await this.select('Apps', apps.map(app => ({
-            label: `${app.name} · ${app.statusLabel}`,
-            value: app.id,
-            description: `${app.category} · ${app.description}`
-        })), 0, 'enter insert   esc close');
-        if (selected) {
-            const app = apps.find(item => item.id === selected);
-            if (app) this.insertAppMention(app);
-        }
-        return true;
+        return runAppsCommandView(this.extensionCommandHost(), args);
     }
 
     protected insertAppMention(app: AgentConsoleAppStatus): void {
-        const current = String(this.state.input || '');
-        const spacer = current && !/\s$/.test(current) ? ' ' : '';
-        const next = `${current}${spacer}$${app.id} `;
-        this.state.updateDraft(next, next.length);
-        this.notify(`${app.name} connector inserted · ${app.statusLabel}.`);
+        return insertAppMentionView(this.extensionCommandHost(), app);
     }
 
     protected formatPluginLine(plugin: any): string {
-        const name = String(plugin?.manifest?.name || plugin.id || '');
-        const scope = String(plugin?.scope || '').trim();
-        const description = String(plugin?.manifest?.description || '').trim();
-        return `${name}${scope ? ` [${scope}]` : ''}${description ? ` · ${description}` : ''}`;
+        return formatPluginLineView(plugin);
     }
 
     protected formatPluginDetail(plugin: any, contributions?: any): string {
-        const lines = [
-            `Plugin: ${String(plugin?.manifest?.name || plugin.id || '')}`,
-            `Id: ${String(plugin.id || '')}`,
-            String(plugin?.manifest?.description || '') ? `Description: ${plugin.manifest.description}` : '',
-            String(plugin?.scope || '') ? `Scope: ${plugin.scope}` : '',
-            String(plugin?.version || '') ? `Version: ${plugin.version}` : ''
-        ];
-        const skills = Array.isArray(contributions?.skills) ? contributions.skills : [];
-        if (skills.length) lines.push(`Skills: ${skills.map((skill: any) => String(skill.id || '')).join(', ')}`);
-        return lines.filter(Boolean).join('\n');
+        return formatPluginDetailView(plugin, contributions);
     }
 
     protected async runShareCommand(args?: string): Promise<boolean> {
