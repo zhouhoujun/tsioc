@@ -7,7 +7,6 @@ import {
     ConsoleTerminalInputHandler,
     ConsoleTerminalSurfaceAccessor,
     ConsoleTerminalSurfaceLifecycle,
-    SelectMenuMouseEvent,
     TerminalInputSequenceResult
 } from './console-ports';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -36,7 +35,6 @@ import {
     concatUint8Arrays,
     encodeBase64
 } from './AgentConsoleExportHandlers';
-import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import {
     formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
     formatUsageSummary as fmtUsageSummary,
@@ -166,7 +164,6 @@ import {
     AgentConsoleAppStatus
 } from './AgentConsoleApps';
 import { AgentConsoleStashStore } from './AgentConsoleStash';
-import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentUiConfigService } from './agent-ui-config';
 import {
@@ -181,7 +178,6 @@ import {
     AgentConsoleKeymap,
     AgentConsoleKeymapContext,
     AgentConsoleKeymapStore,
-    fuzzyMatchAgentConsoleCommand,
     isAgentConsoleGlobalAction,
     isAgentConsoleKeymapContext,
     isAgentConsoleMessageNavigationAction,
@@ -194,6 +190,7 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } 
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
+import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -273,15 +270,11 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
 import {
     getAgentConsoleCommandDefinition,
     getAgentConsoleCommandName,
-    formatAgentConsoleCommandArgumentForm,
-    formatAgentConsoleCommandArgumentTemplate,
     formatAgentConsoleCommandDiagnosticEcho,
     formatAgentConsoleCommandDiagnostics,
-    parseAgentConsoleCommandArguments,
-    resolveAgentConsoleCommandDescription
+    parseAgentConsoleCommandArguments
 } from './AgentConsoleCommandRegistry';
 
-const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
 interface AgentConsoleQueuedPrompt {
     input: string;
     attachments: AgentConsolePendingAttachment[];
@@ -2851,10 +2844,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-    protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
-        this.surfaceAccessor?.dispatchMouse?.(mouse);
-    }
-
     protected async restoreGlobalKeymap(): Promise<void> {
         const persisted = await this.keymapStore?.load(this.state.workspace) || {};
         this.globalKeymap!.configure({ ...(this.options.ui?.keymap || {}), ...persisted });
@@ -3194,6 +3183,32 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             queueDraft: () => this.queueDraft()
         };
     }
+
+    protected terminalInputHost(): AgentConsoleTerminalInputHost {
+        const self = this;
+        return {
+            state: this.state,
+            get closing() { return self.closing; },
+            set closing(value) { self.closing = value; },
+            destroyed: this.destroyed,
+            get commandPaletteQuery() { return self.commandPaletteQuery; },
+            set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
+            sshShell: this.sshShell,
+            surfaceAccessor: this.surfaceAccessor,
+            app: this.app,
+            translator: this.translator,
+            sessionService: this.sessionService,
+            isTurnInProgress: () => this.isTurnInProgress(),
+            notify: (message: string, duration?: number) => this.notify(message, duration),
+            getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
+            handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
+            detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),
+            submit: () => this.submit(),
+            queueDraft: () => this.queueDraft(),
+            handleCommand: (value: string) => this.handleCommand(value)
+        };
+    }
+
     protected turnInputHost(): AgentConsoleTurnInputHost {
         const self = this;
         return {
@@ -3826,209 +3841,22 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected openCommandPalette(query = ''): void {
-        this.commandPaletteQuery = query;
-        const commands = this.state.commandHints
-            .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
-            .map(command => {
-                const definition = getAgentConsoleCommandDefinition(command);
-                const form = formatAgentConsoleCommandArgumentForm(definition);
-                return {
-                    label: command,
-                    value: command,
-                    description: [
-                        resolveAgentConsoleCommandDescription(command) || 'command',
-                        formatAgentConsoleCommandArgumentTemplate(definition)
-                    ].filter(Boolean).join(' '),
-                    detail: form.length ? form.join('\n') : undefined
-                };
-            });
-        this.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette);
-        this.state.selectMenuAction = async value => {
-            this.commandPaletteQuery = '';
-            if (value) await this.handleCommand(value);
-        };
-    }
-
-    protected async handleCommandPaletteInput(decoded: TerminalInputSequenceResult, raw: string): Promise<boolean> {
-        if (!this.state.selectMenu?.title?.startsWith('Command palette')) return false;
-        if ((decoded.controlKey as string | undefined) === 'backspace' || raw === '\u007f' || raw === '\b') {
-            this.openCommandPalette(this.commandPaletteQuery.slice(0, -1));
-            return true;
-        }
-        if (decoded.controlKey || raw === '\u001b' || raw === '\r' || raw === '\n') return false;
-        if (raw && !/[\u0000-\u001f\u007f]/.test(raw)) {
-            this.openCommandPalette(`${this.commandPaletteQuery}${raw}`);
-            return true;
-        }
-        return false;
+        openCommandPaletteView(this.terminalInputHost(), query);
     }
 
     async handleTerminalInput(
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ): Promise<void> {
-        if (this.closing) {
-            return;
-        }
-        this.syncConsoleMessageDetailViewport();
-        if (decoded.mouse) {
-            this.dispatchTerminalMouseAt(decoded.mouse);
-            return;
-        }
-        if (decoded.partial) {
-            return;
-        }
-        this.surfaceAccessor?.notifyNonMouseInput?.();
-        if (this.state.isSshShellActive && this.sshShell) {
-            const raw = typeof chunk === 'string' ? chunk : chunk.toString();
-            if (raw === SSH_SHELL_DETACH_SEQUENCE) {
-                await this.detachSshShell('detached');
-                return;
-            }
-            this.sshShell.write(raw);
-            return;
-        }
-        const rawChunk = typeof chunk === 'string' ? chunk : chunk.toString();
-        if (await this.handleCommandPaletteInput(decoded, rawChunk)) {
-            return;
-        }
-        if (await this.handleGlobalKeyInput(rawChunk)) {
-            return;
-        }
-        if (this.state.vimMode && !this.state.isAnyFocusActive() && this.state.inputMode === 'normal') {
-            const raw = typeof chunk === 'string' ? chunk : chunk.toString();
-            if (decoded.controlKey === 'return') {
-                return;
-            }
-            if (!decoded.controlKey && raw && raw !== '\u001b' && !/[\u0000-\u001f\u007f]/.test(raw)) {
-                this.state.handleVimKey(raw);
-                return;
-            }
-        }
-        const submitOnEnter = /[\r\n]/.test(rawChunk);
-        const outcome = await this.state.processDecodedInput(decoded, chunk, {
-            isClosed: this.destroyed,
-            onExit: () => {
-                void this.requestTerminalExit(this.closingSessionMessage());
-            },
-            hasActiveTextPrompt: false,
-            lastRenderedLines: this.getTerminalRenderedLines()
-        });
-        if (!outcome.handled && decoded.text) {
-            await this.state.processRawChunk(decoded.text, {
-                submitOnEnter,
-                hasSelectMenu: !!this.state.selectMenu
-            });
-            return;
-        }
-        switch (outcome.action) {
-            case 'submit':
-                // Keep terminal input dispatch available while the turn runs so
-                // Esc/Ctrl+C can reach the cancellation path immediately.
-                void this.submit();
-                return;
-            case 'cancelTurn':
-                if (this.isTurnInProgress()) {
-                    const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
-                    this.notify(cancelled
-                        ? 'Cancelling current turn...'
-                        : 'No running turn to cancel.');
-                }
-                return;
-            case 'queueDraft':
-                this.queueDraft();
-                return;
-            case 'textInput':
-                await this.state.processRawChunk(rawChunk, {
-                    submitOnEnter,
-                    hasSelectMenu: !!this.state.selectMenu
-                });
-                return;
-            case 'draftNavigation':
-                switch (outcome.value) {
-                    case 'left':
-                        this.state.moveInputCursor(-1);
-                        return;
-                    case 'right':
-                        this.state.moveInputCursor(1);
-                        return;
-                    case 'home':
-                        this.state.moveInputCursorToEdge('start');
-                        return;
-                    case 'end':
-                        this.state.moveInputCursorToEdge('end');
-                        return;
-                    default:
-                        return;
-                }
-            case 'altNewline':
-                await this.state.processRawChunk('\n', {
-                    submitOnEnter: false,
-                    altKey: true,
-                    hasSelectMenu: !!this.state.selectMenu
-                });
-                return;
-            default:
-                return;
-        }
+        await handleTerminalInputView(this.terminalInputHost(), decoded, chunk);
     }
 
     protected async requestTerminalExit(message?: string): Promise<void> {
-        const exitMessage = String(message || '').trim();
-        if (this.closing) {
-            return;
-        }
-        this.closing = true;
-        if (!this.app) {
-            if (exitMessage) {
-                this.notify(exitMessage);
-            }
-            this.surfaceAccessor?.stopTerminal?.();
-            return;
-        }
-        this.surfaceAccessor?.stopTerminal?.();
-        const rawWriter = this.surfaceAccessor?.writeRawTerminalData;
-        const wroteExitMessage = !!exitMessage && typeof rawWriter === 'function';
-        if (wroteExitMessage) {
-            rawWriter.call(this.surfaceAccessor, `${exitMessage}\n`);
-        }
-        try {
-            await this.app.close();
-        } catch {
-            // Teardown must not surface as an unhandled rejection: the Ctrl+C
-            // path invokes this fire-and-forget, and /exit awaits it. The core
-            // destroy() fix guarantees super.destroy() (component onDestroy:
-            // terminal restore + history persist) still runs even when a
-            // @Shutdown handler throws during runners.stop().
-        }
-        if (exitMessage && !wroteExitMessage && typeof globalThis.console?.log === 'function') {
-            globalThis.console.log(exitMessage);
-        }
+        await requestTerminalExitView(this.terminalInputHost(), message);
     }
 
     protected closingSessionMessage(): string {
-        const translated = this.translator?.translate('agent.session.closing', {
-            sessionId: this.state.sessionId
-        });
-        if (translated && translated !== 'agent.session.closing') {
-            return translated;
-        }
-        return formatAgentUiSessionClosingMessage(this.translator?.currentLocale, this.state.sessionId);
-    }
-
-    /** Keep the console detail page proportional to the active terminal. */
-    protected syncConsoleMessageDetailViewport(): void {
-        if (this.state.consoleOptions.messageToggleInteraction !== 'enter') {
-            return;
-        }
-        const rows = this.surfaceAccessor?.getTerminalSize?.().rows;
-        if (!Number.isFinite(rows)) {
-            return;
-        }
-        const visibleLines = Math.max(8, Math.min(40, Math.floor(Number(rows)) - 6));
-        if (this.state.messageDetailVisibleLines !== visibleLines) {
-            this.state.setMessageDetailVisibleLines(visibleLines);
-        }
+        return closingSessionMessageView(this.terminalInputHost());
     }
 
     protected async executeTurn(
