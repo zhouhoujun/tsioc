@@ -42,3 +42,16 @@
 - import 清理：ExportHandlers 块只留 `runExportCommandFn`/`buildTurnMessageInput`/`runAttachCommandFn`；SessionService 行移除 `AgentSessionExportFormat`/`AgentSessionExportResult`（仅被删方法使用）。
 - 验收（已通过）：tsc 0 错误 → vm-commands + ssh-shell + ui-input-regression + vm-submit + vm-vim-keymap + vm-panels + repro-runtime-mouse + p287-command-schema-form-echo + keymap-context + p282 EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4391 → 4298，组件 4390 → 4297 行）→ git diff --check 干净 → lsp_diagnostics 无告警。
 - 剩簇：P2 诊断/语音/harness 区（组件 700-1000 区域，含 `openCompactionHistory`/`openTurnDiagnostics`/`openUsage`/`openHarnessAudit`/`openHarnessProfile`/`openHarnessTree`/`openHarnessList`/`runHarnessStopCommand`/`handleVoiceCommand`/`playVoiceReply`/`decodeVoiceAudioChunk` 等薄包装 + 诊断记录格式化纯函数）；下一步按 roadmap 转 P2 诊断/语音控制器。
+## 2026-09-25 P2 批次9（诊断/语音/harness 区 splice，已定）
+- 目标：组件 489-963 区域 —— 5 个真实逻辑方法转薄包装 + 删除 11 个无引用格式化薄包装 + import 清理。
+- 提取（真实逻辑 → view 函数，行为逐字不变）：
+  - `openSummaryQualityTrend`(559-579) → `agentConsoleDiagnosticsView.openSummaryQualityTrendView(sessionService, notify, pushCommandOutput, provider?, bucketSize?, maxBuckets?)`
+  - `openTurnDiagnosticsList`(711-734) → `openTurnDiagnosticsListView(sessionService, notify, select, sessionId?, currentSessionId?)`
+  - `openTurnDiagnosticsTrend`(745-765) → `openTurnDiagnosticsTrendView(sessionService, notify, pushCommandOutput, sessionId?, bucketSize?, maxBuckets?)`
+  - `openDelegationLineage`(780-797) → `agentConsoleHarnessCommands.openDelegationLineageView(host, sessionId?)`
+  - `openDelegationList`(812-831) → `openDelegationListView(host, sessionId?)`
+  - `HarnessCommandHost.sessionService` 接口新增 `getDelegationLineage`/`listDelegationEdges`（结构满足，组件传 this.sessionService 不变）；DiagnosticsView 额外导入 `formatTurnDiagnosticsTrend`。
+- 删除 11 个死包装（核实：无 this. 调用、无 registry thunk、无 CommandHandlerContext 接口声明、测试无引用）：`formatUsageWindow`/`formatUsageSummary`/`formatCompactionHistoryAggregate`/`buildSummaryQualityRecordOption`/`buildTurnDiagnosticsRecordOption`/`formatDelegationEdge`/`formatTurnDiagnosticsAggregate`/`formatTurnDiagnosticsTrend`/`formatCompactionHistoryTrend`/`formatCompactionHistoryRecord`/`formatSummaryQualityTrend`。
+- import 清理：Formatters 别名块只留 `fmtSummaryQualityAggregate`（第 32 行整行删）、`openSummaryQualityRecordsFn` 死别名删、DiagnosticsView 行移除 2 个已删包装、DelegationView 行整行删、HarnessCommands 行加 2 个 view 函数。保留全部 registry 绑定方法（2322-2372 区 thunk 不变）。
+- 验收（已通过）：tsc 0 错误 → 10 定向 spec EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4298 → 4148，组件 4298 → 4147 行）→ git diff --check 干净 → lsp_diagnostics 三文件无告警。
+- 剩簇：P2 语音异步状态机（startVoiceCapture/stopVoiceCapture/playVoiceReply/decodeVoiceAudioChunk 调用点 1795 等）、`runEditorCommand`/`openExternalEditor`（外部编辑器桥）；下一步按 roadmap 转 P2 语音/编辑器控制器。
